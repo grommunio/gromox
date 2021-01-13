@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "common_util.h"
 #include <gromox/fileio.h>
 #include <gromox/proc_common.h>
@@ -165,7 +166,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 	ppermeid->pdn = NULL;
 	if (DT_CONTAINER == display_type) {
 		if (NULL == pobj_guid) {
-			ppermeid->pdn = const_cast<char *>("/");
+			ppermeid->pdn = deconst("/");
 		} else {
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",

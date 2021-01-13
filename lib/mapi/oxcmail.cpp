@@ -2341,7 +2341,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
-	propval.pvalue = (void*)mime_get_content_type(pdmime);
+	propval.pvalue = deconst(mime_get_content_type(pdmime));
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
@@ -2728,7 +2728,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		mime_get_content_type(pmime))) {
 		propval.pvalue = deconst("application/octet-stream");
 	} else {
-		propval.pvalue = (void*)mime_get_content_type(pmime);
+		propval.pvalue = deconst(mime_get_content_type(pmime));
 	}
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		pmime_enum->b_result = FALSE;
@@ -3652,7 +3652,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 		return FALSE;
 	propval.proptag = PROP_TAG_SUPPLEMENTARYINFO;
 	if (NULL != f_info.x_supplementary_info) {
-		propval.pvalue = (void*)f_info.x_supplementary_info;
+		propval.pvalue = deconst(f_info.x_supplementary_info);
 	} else {
 		if (NULL == f_info.diagnostic_code) {
 			snprintf(tmp_buff, 1024, "<%s #%s>",
@@ -3812,7 +3812,7 @@ static BOOL oxcmail_enum_dsn_reporting_mta(
 	
 	if (0 == strcasecmp(tag, "Reporting-MTA")) {
 		propval.proptag = PROP_TAG_REPORTINGMESSAGETRANSFERAGENT;
-		propval.pvalue = (void*)value;
+		propval.pvalue = deconst(value);
 		return tpropval_array_set_propval(
 		       &static_cast<MESSAGE_CONTENT *>(pparam)->proplist, &propval) ?
 		       TRUE : false;
@@ -4173,7 +4173,7 @@ static BOOL oxcmail_parse_smime_message(
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_ATTACHMIMETAG;
-	propval.pvalue = (void*)content_type;
+	propval.pvalue = deconst(content_type);
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_ATTACHEXTENSION;
@@ -5869,7 +5869,7 @@ EXPORT_CONTENT_CLASS:
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_MESSAGELOCALEID);
 	if (NULL != pvalue) {
-		pvalue = (void*)oxcmail_lcid_to_ltag(*(uint32_t*)pvalue);
+		pvalue = deconst(oxcmail_lcid_to_ltag(*static_cast<uint32_t *>(pvalue)));
 		if (NULL != pvalue) {
 			if (!mime_set_field(phead, "Content-Language",
 			    static_cast<char *>(pvalue)))
@@ -7261,7 +7261,7 @@ HTML_ONLY:
 		tmp_method[0] = '\0';
 		piline = ical_get_line((ICAL_COMPONENT*)&ical, "METHOD");
 		if (NULL != piline) {
-			pvalue = (void*)ical_get_first_subvalue(piline);
+			pvalue = deconst(ical_get_first_subvalue(piline));
 			if (NULL != pvalue) {
 				strncpy(tmp_method, static_cast<char *>(pvalue), 32);
 			}

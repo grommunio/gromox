@@ -264,7 +264,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[3].pvalue = &tmp_level;
 	tmp_level = -1;
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
-	propval_buff[4].pvalue = (void*)account;
+	propval_buff[4].pvalue = deconst(account);
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
 	propval_buff[5].pvalue  = deconst("EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
@@ -309,7 +309,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	search_bin1.cb = gx_snprintf(search_buff1, GX_ARRAY_SIZE(search_buff1), "EX:%s", essdn_buff1) + 1;
 	search_bin1.pv = search_buff1;
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
-	propval_buff[10].pvalue = (void*)representing_username;
+	propval_buff[10].pvalue = deconst(representing_username);
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
 	propval_buff[11].pvalue  = deconst("EX");
 	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
@@ -3036,7 +3036,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	}
 	if (NULL != new_name) {
 		propval.proptag = PROP_TAG_DISPLAYNAME;
-		propval.pvalue = (void*)new_name;
+		propval.pvalue = deconst(new_name);
 		common_util_set_propvals(&tmp_propvals, &propval);
 	}
 	if (FALSE == common_util_create_folder(pstore1,

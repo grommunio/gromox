@@ -12,6 +12,7 @@
 #include <ldap.h>
 #include <pthread.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/resource_pool.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
@@ -89,7 +90,7 @@ static ldap_ptr make_conn()
 	}
 
 	struct berval cred;
-	cred.bv_val = const_cast<char *>(g_bind_pass.c_str());
+	cred.bv_val = deconst(g_bind_pass.c_str());
 	cred.bv_len = g_bind_pass.size();
 	ret = ldap_sasl_bind_s(ld.get(), g_bind_user.size() == 0 ? nullptr : g_bind_user.c_str(),
 	      LDAP_SASL_SIMPLE, &cred, nullptr, nullptr, nullptr);
@@ -149,7 +150,7 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 		return FALSE;
 
 	struct berval bv;
-	bv.bv_val = const_cast<char *>(password != nullptr ? password : "");
+	bv.bv_val = deconst(password != nullptr ? password : "");
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
 	ret = gx_auto_retry(ldap_sasl_bind_s, tok.res.bind, dn,
 	      LDAP_SASL_SIMPLE, &bv, nullptr, nullptr, nullptr);

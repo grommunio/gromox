@@ -241,7 +241,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				goto IMPORT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_DISPLAYNAME;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 			propval.proptag = PROP_TAG_NORMALIZEDSUBJECT;
@@ -280,7 +280,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL != pstring) {
 				propval.proptag = PROP_TAG_NICKNAME;
-				propval.pvalue = (void*)pstring;
+				propval.pvalue = deconst(pstring);
 				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
 			}
@@ -353,7 +353,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
 			propval.proptag = PROP_TAG_ATTACHEXTENSION;
-			propval.pvalue = (void*)photo_type;
+			propval.pvalue = deconst(photo_type);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
 			sprintf(tmp_buff, "ContactPhoto.%s", photo_type);
@@ -439,7 +439,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0) {
 				pnode1 = double_list_get_after(
@@ -495,7 +495,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (mail_count > 2)
 				continue;
 			propval.proptag = g_email_proptags[mail_count++];
@@ -507,7 +507,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = PROP_TAG_TITLE;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "ROLE")) {
@@ -516,7 +516,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = PROP_TAG_PROFESSION;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "ORG")) {
@@ -574,7 +574,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = PROP_TAG_BODY;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "REV")) {
@@ -609,7 +609,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0) {
 				propval.proptag = PROP_TAG_PERSONALHOMEPAGE;
@@ -689,7 +689,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (ufld_count > 3) {
 				goto IMPORT_FAILURE;
 			}
@@ -704,7 +704,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = g_im_proptag;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEL")) {
@@ -720,7 +720,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (0 == strcasecmp(pvparam->name, "ASSISTANT")) {
 				propval.proptag = PROP_TAG_ASSISTANTTELEPHONENUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "CALLBACK")) {
@@ -765,7 +765,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = PROP_TAG_SPOUSENAME;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-MANAGER")) {
@@ -783,7 +783,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = PROP_TAG_MANAGERNAME;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ASSISTANT")) {
@@ -801,7 +801,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = PROP_TAG_ASSISTANT;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "FBURL")) {
@@ -810,7 +810,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.proptag = g_fbl_proptag;
-			propval.pvalue = (void*)pstring;
+			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-INTERESTS")) {

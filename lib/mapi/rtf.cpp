@@ -3682,7 +3682,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHMIMETAG;
-			propval.pvalue = (void*)img_ctype;
+			propval.pvalue = deconst(img_ctype);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
@@ -3694,7 +3694,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHEXTENSION;
-			propval.pvalue = (void*)pext;
+			propval.pvalue = deconst(pext);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;

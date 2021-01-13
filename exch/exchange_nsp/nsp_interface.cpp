@@ -100,7 +100,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			if (pprop->value.bin.pv == nullptr)
 				return ecMAPIOOM;
 		} else {
-			pprop->value.bin.pv = const_cast<void *>(pbuff);
+			pprop->value.bin.pv = deconst(pbuff);
 		}
 		common_util_guid_to_binary(&temp_guid, &pprop->value.bin);
 		break;
@@ -114,7 +114,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		break;
 	case PROP_TAG_ADDRESSTYPE:
 	case PROP_TAG_ADDRESSTYPE_STRING8:
-		pprop->value.pstr = const_cast<char *>("EX");
+		pprop->value.pstr = deconst("EX");
 		break;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
@@ -3323,7 +3323,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	switch (proptag) {
 	case PROP_TAG_ADDRESSTYPE:
 	case PROP_TAG_ADDRESSTYPE_STRING8:
-		pprop->value.pstr = const_cast<char *>("SMTP");
+		pprop->value.pstr = deconst("SMTP");
 		break;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:

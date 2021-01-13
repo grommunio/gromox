@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/tpropval_array.hpp>
@@ -823,7 +824,7 @@ static BOOL oxcical_parse_recurring_timezone(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
-	propval.pvalue = (void*)ptzid;
+	propval.pvalue = deconst(ptzid);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
@@ -962,22 +963,22 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_EMAILADDRESS;
-		propval.pvalue = (void*)paddress;
+		propval.pvalue = deconst(paddress);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_SMTPADDRESS;
-		propval.pvalue = (void*)paddress;
+		propval.pvalue = deconst(paddress);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		if (NULL == pdisplay_name) {
 			pdisplay_name = paddress;
 		}
 		propval.proptag = PROP_TAG_DISPLAYNAME;
-		propval.pvalue = (void*)pdisplay_name;
+		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
-		propval.pvalue = (void*)pdisplay_name;
+		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		tmp_bin.pb = tmp_buff;
@@ -1158,7 +1159,7 @@ static BOOL oxcical_parse_body(ICAL_LINE *piline, MESSAGE_CONTENT *pmsg)
 		return TRUE;
 	}
 	propval.proptag = PROP_TAG_BODY;
-	propval.pvalue = (void*)pvalue;
+	propval.pvalue = deconst(pvalue);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	return TRUE;
@@ -1626,7 +1627,7 @@ static BOOL oxcical_parse_location(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
-	propval.pvalue = (void*)pvalue;
+	propval.pvalue = deconst(pvalue);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
@@ -1679,11 +1680,11 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 	pdisplay_name = ical_get_first_paramval(piline, "CN");
 	if (NULL != pdisplay_name) {
 		propval.proptag = PROP_TAG_SENTREPRESENTINGNAME;
-		propval.pvalue = (void*)pdisplay_name;
+		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_SENDERNAME;
-		propval.pvalue = (void*)pdisplay_name;
+		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
 	}
@@ -1701,11 +1702,11 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
-	propval.pvalue = (void*)paddress;
+	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
-	propval.pvalue = (void*)paddress;
+	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_SENTREPRESENTINGENTRYID;
@@ -1717,11 +1718,11 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
-	propval.pvalue = (void*)paddress;
+	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_SENDERSMTPADDRESS;
-	propval.pvalue = (void*)paddress;
+	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_SENDERENTRYID;
@@ -2424,7 +2425,7 @@ static BOOL oxcical_parse_attachment(
 			pvalue1 = ical_get_first_paramval(piline, "FMTYPE");
 			if (NULL != pvalue1) {
 				propval.proptag = PROP_TAG_ATTACHMIMETAG;
-				propval.pvalue = (void*)pvalue1;
+				propval.pvalue = deconst(pvalue1);
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 					return FALSE;
 			}
@@ -2527,11 +2528,11 @@ static BOOL oxcical_parse_attachment(
 			pvalue1 = ".dat";
 		}
 		propval.proptag = PROP_TAG_ATTACHEXTENSION;
-		propval.pvalue = (void*)pvalue1;
+		propval.pvalue = deconst(pvalue1);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
-		propval.pvalue = (void*)pvalue;
+		propval.pvalue = deconst(pvalue);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_DISPLAYNAME;
@@ -2543,7 +2544,7 @@ static BOOL oxcical_parse_attachment(
 		pvalue1 = ical_get_first_paramval(piline, "FMTYPE");
 		if (NULL != pvalue1) {
 			propval.proptag = PROP_TAG_ATTACHMIMETAG;
-			propval.pvalue = (void*)pvalue1;
+			propval.pvalue = deconst(pvalue1);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
 		}

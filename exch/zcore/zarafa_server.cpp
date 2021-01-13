@@ -2870,9 +2870,9 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[1].proptag = PROP_TAG_FOLDERTYPE;
 		propval_buff[1].pvalue = &tmp_type;
 		propval_buff[2].proptag = PROP_TAG_DISPLAYNAME;
-		propval_buff[2].pvalue = (void*)folder_name;
+		propval_buff[2].pvalue = deconst(folder_name);
 		propval_buff[3].proptag = PROP_TAG_COMMENT;
-		propval_buff[3].pvalue = (void*)folder_comment;
+		propval_buff[3].pvalue = deconst(folder_comment);
 		propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
 		propval_buff[4].pvalue = &last_time;
 		propval_buff[5].proptag = PROP_TAG_LASTMODIFICATIONTIME;

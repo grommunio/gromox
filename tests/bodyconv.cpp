@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <unistd.h>
+#include <gromox/defs.h>
 #include <gromox/tie.hpp>
 #include <gromox/html.hpp>
 #include <gromox/mail_func.hpp>
@@ -65,7 +66,7 @@ int main(int argc, const char **argv)
 	} else if (strcmp(argv[1], "rtfcptortf") == 0) {
 		BINARY rtf_comp;
 		rtf_comp.cb = all.size();
-		rtf_comp.pv = const_cast<char *>(all.c_str());
+		rtf_comp.pv = deconst(all.c_str());
 		auto unc_size = rtfcp_uncompressed_size(&rtf_comp);
 		if (unc_size > 0) {
 			std::string unc_data;

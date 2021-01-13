@@ -6,6 +6,7 @@
 #include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/database.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/svc_common.h>
@@ -3396,7 +3397,7 @@ static BOOL message_make_deferred_error_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEPROVIDER;
-	propval.pvalue = (void*)provider;
+	propval.pvalue = deconst(provider);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
@@ -3623,8 +3624,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return FALSE;
 		}
 		if (NULL == pvalue) {
-			(*prcpts->pparray)->ppropval[0].pvalue =
-								(void*)from_address;
+			(*prcpts->pparray)->ppropval[0].pvalue = deconst(from_address);
 		} else {
 			(*prcpts->pparray)->ppropval[0].pvalue = pvalue;
 		}
@@ -3757,7 +3757,7 @@ static BOOL message_bounce_message(const char *from_address,
 		return FALSE;
 	}
 	if (NULL == pvalue) {
-		pnode->pdata = (void*)from_address;
+		pnode->pdata = deconst(from_address);
 	} else {
 		pnode->pdata = pvalue;
 	}
@@ -4115,7 +4115,7 @@ static BOOL message_make_deferred_action_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEPROVIDER;
-	propval.pvalue = (void*)provider;
+	propval.pvalue = deconst(provider);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;

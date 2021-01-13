@@ -15,6 +15,7 @@
 #include "common_util.h"
 #include "object_tree.h"
 #include <gromox/config_file.hpp>
+#include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
@@ -1357,7 +1358,7 @@ static BOOL store_object_get_calculated_property(
 		if (FALSE == system_services_get_timezone(
 			pstore->account, temp_buff) || '\0' ==
 			temp_buff[0]) {
-			*ppvalue = (void*)common_util_get_default_timezone();
+			*ppvalue = deconst(common_util_get_default_timezone());
 		} else {
 			*ppvalue = common_util_dup(temp_buff);
 			if (NULL == *ppvalue) {
@@ -1669,7 +1670,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	tmp_propvals.ppropval = propval_buff;
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PROP_TAG_DISPLAYNAME;
-	tmp_propvals.ppropval[0].pvalue = (void*)pdisplayname;
+	tmp_propvals.ppropval[0].pvalue = deconst(pdisplayname);
 	if (FALSE == exmdb_client_allocate_cn(pstore->dir, &change_num)) {
 		return FALSE;
 	}

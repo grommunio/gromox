@@ -2958,7 +2958,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	attribute.attr_id = ATTRIBUTE_ID_MESSAGECLASS;
 	attribute.lvl = LVL_MESSAGE;
-	attribute.pvalue = (void*)tnef_from_msgclass(message_class);
+	attribute.pvalue = deconst(tnef_from_msgclass(message_class));
 	if (EXT_ERR_SUCCESS != tnef_push_attribute(
 		pext, &attribute, alloc, get_propname)) {
 		return FALSE;
