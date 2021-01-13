@@ -1321,7 +1321,8 @@ BOOL container_object_get_user_table_num(
 				return FALSE;	
 			}
 		}
-		*pnum = pcontainer->contents.prow_set->count;
+		*pnum = pcontainer->contents.prow_set != nullptr ?
+		        pcontainer->contents.prow_set->count : 0;
 	}
 	return TRUE;
 }
@@ -1506,11 +1507,14 @@ BOOL container_object_query_user_table(
 				return FALSE;	
 			}
 		}
-		for (i=first_pos; i<pcontainer->contents.prow_set->count
-			&& i<first_pos+row_count; i++) {
-			pset->pparray[pset->count] =
-				pcontainer->contents.prow_set->pparray[i];
-			pset->count ++;
+		if (pcontainer->contents.prow_set != nullptr) {
+			for (i = first_pos;
+			     i < pcontainer->contents.prow_set->count &&
+			     i < first_pos+row_count; ++i) {
+				pset->pparray[pset->count] =
+					pcontainer->contents.prow_set->pparray[i];
+				pset->count++;
+			}
 		}
 	}
 	if (FALSE == b_forward) {

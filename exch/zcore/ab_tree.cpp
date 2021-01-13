@@ -2309,10 +2309,9 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 			/* =SMTP:user@company.com */
 			ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
-			if (NULL != ptoken) {
+			if (ptoken != nullptr && pvalue != nullptr)
 				if (strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
 					return TRUE;
-			}
 			if (TRUE == ab_tree_fetch_node_property(pnode,
 				codepage, PROP_TAG_DISPLAYNAME, &pvalue) &&
 				NULL != pvalue) {

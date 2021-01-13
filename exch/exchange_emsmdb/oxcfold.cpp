@@ -53,9 +53,8 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		if (1 != replid) {
 			*phas_rules = 0;
 			*ppghost = static_cast<GHOST_SERVER *>(common_util_alloc(sizeof(GHOST_SERVER)));
-			if (NULL == ppghost) {
+			if (*ppghost == nullptr)
 				return ecMAPIOOM;
-			}
 			return rop_getowningservers(folder_id,
 					*ppghost, plogmap, logon_id, hin);
 		}

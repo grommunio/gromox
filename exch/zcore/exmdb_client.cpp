@@ -99,21 +99,21 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return FALSE;
 		}
-		if (NULL == pbin->pb) {
+		if (pbin->pb == nullptr) {
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pv = common_util_alloc(1);
-				if (pbin->pv == nullptr)
+				pbin->pb = static_cast<uint8_t *>(common_util_alloc(1));
+				if (pbin->pb == nullptr)
 					return FALSE;
-				*(uint8_t*)pbin->pb = resp_buff[0];
+				*pbin->pb = resp_buff[0];
 				return TRUE;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pv = common_util_alloc(pbin->cb);
-				if (pbin->pv == nullptr)
+				pbin->pb = static_cast<uint8_t *>(common_util_alloc(pbin->cb));
+				if (pbin->pb == nullptr)
 					return FALSE;
-				memcpy(pbin->pv, resp_buff, 5);
+				memcpy(pbin->pb, resp_buff, 5);
 				offset = 5;
 				if (offset == pbin->cb) {
 					return TRUE;

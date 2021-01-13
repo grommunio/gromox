@@ -727,7 +727,6 @@ int zarafa_server_run()
 	g_notify_table = str_hash_init(
 		g_table_size, sizeof(NOTIFY_ITEM), NULL);
 	if (NULL == g_notify_table) {
-		str_hash_free(g_notify_table);
 		int_hash_free(g_session_table);
 		printf("[zarafa_server]: fail to "
 			"create notify hash table\n");

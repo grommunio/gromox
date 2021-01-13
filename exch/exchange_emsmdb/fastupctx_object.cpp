@@ -1019,8 +1019,6 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 			return GXERR_CALL_FAILED;
 		}
 	}
-	auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
-	auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 	switch (last_marker) {
 	case 0:
 		switch (pctx->root_element) {
@@ -1049,11 +1047,16 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 		return tpropval_array_set_propval(pctx->pproplist, ppropval) ?
 		       GXERR_SUCCESS : GXERR_CALL_FAILED;
 	case STARTMESSAGE:
-	case STARTFAIMSG:
+	case STARTFAIMSG: {
+		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		return tpropval_array_set_propval(tp, ppropval) ?
 				GXERR_SUCCESS : GXERR_CALL_FAILED;
+	}
 	case STARTEMBED:
-	case NEWATTACH:
+	case NEWATTACH: {
+		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return exmdb_client_set_instance_property(
@@ -1065,7 +1068,10 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 			return tpropval_array_set_propval(tp, ppropval) ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
-	case STARTRECIP:
+	}
+	case STARTRECIP: {
+		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return tpropval_array_set_propval(pctx->pproplist, ppropval) ?
@@ -1074,6 +1080,7 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 			return tpropval_array_set_propval(tp, ppropval) ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
+	}
 	default:
 		return GXERR_CALL_FAILED;
 	}

@@ -2054,11 +2054,12 @@ FETCH_ROWS:
 			pnode = ab_tree_minid_to_node(pbase, (*ppoutmids)->pproptag[i]);
 			if (NULL == pnode) {
 				nsp_interface_make_ptyperror_row(pproptags, prow);
+			} else {
+				result = nsp_interface_fetch_row(pnode, TRUE,
+				         pstat->codepage, pproptags, prow);
+				if (result != ecSuccess)
+					nsp_interface_make_ptyperror_row(pproptags, prow);
 			}
-			result = nsp_interface_fetch_row(pnode, TRUE,
-						pstat->codepage, pproptags, prow);
-			if (result != ecSuccess)
-				nsp_interface_make_ptyperror_row(pproptags, prow);
 		}
 	}
 	

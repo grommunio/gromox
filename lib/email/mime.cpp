@@ -2251,6 +2251,8 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 			} else {
 				tmp_len = pmime->content_length;
 			}
+			if (pmime->content_begin == nullptr)
+				return false;
 			ptr = search_string(pmime->content_begin, "begin ", tmp_len);
 			if (NULL == ptr) {
 				return FALSE;

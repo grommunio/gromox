@@ -760,7 +760,7 @@ NEXT_SEARCH:
 						}
 					}
 					db_engine_put_db(pdb);
-					while (0 != table_num) {
+					while (table_num > 0) {
 						table_num --;
 						exmdb_server_reload_content_table(
 							psearch->dir, ptable_ids[table_num]);

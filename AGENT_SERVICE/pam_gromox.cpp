@@ -43,7 +43,7 @@ static int converse(pam_handle_t *pamh, int nargs,
 
 	if (ret == PAM_SUCCESS && conv != nullptr && conv->conv != nullptr)
 		ret = conv->conv(nargs, message, resp, conv->appdata_ptr);
-	if (resp == nullptr || *resp == nullptr || (*resp)->resp == nullptr)
+	if (*resp == nullptr || (*resp)->resp == nullptr)
 		ret = PAM_AUTH_ERR;
 	return ret;
 }

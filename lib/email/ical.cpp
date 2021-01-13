@@ -426,9 +426,8 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 			pivalue = ical_new_value(ptr);
 			ptr1 ++;
 		}
-		if (NULL == pvalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		ical_append_value(piline, pivalue);
 		do {
 			pnext1 = ical_get_value_comma(ptr1);
