@@ -3435,12 +3435,10 @@ int ext_buffer_push_guid(EXT_PUSH *pext, const GUID *r)
 
 int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr)
 {
-	int len;
 	int status;
-	
-	len = strlen(pstr) + 1;
+	size_t len = strlen(pstr);
 	if (pext->flags & EXT_FLAG_TBLLMT) {
-		if (len > 510) {
+		if (len > 509) {
 			status = ext_buffer_push_bytes(pext, pstr, 509);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
@@ -3448,7 +3446,7 @@ int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr)
 			return ext_buffer_push_uint8(pext, 0);
 		}
 	}
-	return ext_buffer_push_bytes(pext, pstr, len);
+	return ext_buffer_push_bytes(pext, pstr, len + 1);
 }
 
 int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
