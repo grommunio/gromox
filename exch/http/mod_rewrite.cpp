@@ -101,6 +101,8 @@ int mod_rewrite_run()
 	
 	line_no = 0;
 	file_ptr = fopen(g_list_path, "r");
+	if (file_ptr == nullptr)
+		return 0;
 	while (NULL != fgets(line, MAX_LINE, file_ptr)) {
 		line_no ++;
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
