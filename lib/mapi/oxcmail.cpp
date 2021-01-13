@@ -3945,9 +3945,8 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 		}
 	} else if (0 == strcasecmp(tag, "Disposition")) {
 		auto ptoken2 = strchr(value, ';');
-		if (NULL == ptoken) {
+		if (ptoken2 == nullptr)
 			return TRUE;
-		}
 		++ptoken2;
 		HX_strlcpy(tmp_buff, ptoken2, GX_ARRAY_SIZE(tmp_buff));
 		HX_strltrim(tmp_buff);

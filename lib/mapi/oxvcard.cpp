@@ -368,6 +368,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "BDAY")) {
 			pstring = vcard_get_first_subvalue(pvline);
+			if (pstring == nullptr)
+				continue;
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
@@ -737,6 +739,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ANNIVERSARY")) {
 			pstring = vcard_get_first_subvalue(pvline);
+			if (pstring == nullptr)
+				continue;
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(

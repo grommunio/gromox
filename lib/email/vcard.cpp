@@ -365,9 +365,8 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 	ptr = pvalue;
 	do {
 		pvvalue = vcard_new_value();
-		if (NULL == pvalue) {
+		if (pvvalue == nullptr)
 			return FALSE;
-		}
 		vcard_append_value(pvline, pvvalue);
 		pnext = vcard_get_semicolon(ptr);
 		ptr1 = ptr;

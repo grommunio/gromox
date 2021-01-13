@@ -3887,6 +3887,8 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
+	if (piline == nullptr)
+		return nullptr;
 	ical_append_line(pcomponent1, piline);
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
 	if (utc_offset >= 0) {
@@ -4031,6 +4033,8 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
+	if (piline == nullptr)
+		return nullptr;
 	ical_append_line(pcomponent1, piline);
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
 	if (utc_offset >= 0) {
@@ -4041,6 +4045,8 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
+	if (piline == nullptr)
+		return nullptr;
 	ical_append_line(pcomponent1, piline);
 	return pcomponent;
 }
