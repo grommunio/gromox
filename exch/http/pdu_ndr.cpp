@@ -208,17 +208,17 @@ static int pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
 	status = ndr_pull_data_blob(pndr, &r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->stub_and_verifier);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->pad);
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->stub_and_verifier);
@@ -260,17 +260,17 @@ static int pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, DCERPC_RESPONSE *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
 	status = ndr_pull_data_blob(pndr, &r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->stub_and_verifier);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->pad);
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->stub_and_verifier);
@@ -316,10 +316,10 @@ static int pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, DCERPC_FAULT *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->pad);
@@ -486,6 +486,7 @@ static int pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		for (i=0; i<r->num_contexts; i++) {
 			pdu_ndr_free_dcerpc_ctx_list(&r->ctx_list[i]);
@@ -497,7 +498,6 @@ static int pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
 		r->num_contexts = 0;
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->auth_info);
@@ -565,10 +565,10 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN4);
 	status = ndr_pull_data_blob(pndr, &r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_uint8(pndr, &r->num_contexts);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
@@ -596,6 +596,7 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 		
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->pad);
 		if (NULL != r->ctx_list) {
@@ -605,7 +606,6 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 		r->num_contexts = 0;
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->pad);
@@ -644,10 +644,10 @@ static int pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, DCERPC_CO_CANCEL *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->auth_info);
@@ -756,10 +756,10 @@ int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->credentials);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->credentials);
@@ -1311,16 +1311,16 @@ static int pdu_ndr_push_dcerpc_request(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
 	status = ndr_push_data_blob(pndr, r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->stub_and_verifier);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1350,16 +1350,16 @@ static int pdu_ndr_push_dcerpc_response(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
 	status = ndr_push_data_blob(pndr, r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->stub_and_verifier);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1392,10 +1392,10 @@ static int pdu_ndr_push_dcerpc_fault(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1535,10 +1535,10 @@ static int pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1609,10 +1609,10 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN4);
 	status = ndr_push_data_blob(pndr, r->pad);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	status = ndr_push_uint8(pndr, r->num_contexts);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
@@ -1625,10 +1625,10 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 	}
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1685,10 +1685,10 @@ static int pdu_ndr_push_dcerpc_co_cancel(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1710,10 +1710,10 @@ static int pdu_ndr_push_dcerpc_orphaned(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -1734,10 +1734,10 @@ static int pdu_ndr_push_dcerpc_auth3(NDR_PUSH *pndr,
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->auth_info);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
@@ -2138,10 +2138,10 @@ int pdu_ndr_push_dcerpc_auth(NDR_PUSH *pndr, const DCERPC_AUTH *r)
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->credentials);
+	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	pndr->flags = saved_flags;
 	return ndr_push_trailer_align(pndr, 4);
 }
 
