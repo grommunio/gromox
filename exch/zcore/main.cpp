@@ -87,7 +87,7 @@ int main(int argc, const char **argv)
 	char separator[16];
 	char org_name[256];
 	int cache_interval;
-	char temp_buff[32];
+	char temp_buff[45];
 	char host_name[256];
 	char console_ip[32];
 	char data_path[256], state_dir[256];

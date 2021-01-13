@@ -76,7 +76,7 @@ int main(int argc, const char **argv)
 	char timezone[64];
 	char org_name[256];
 	int cache_interval;
-	char temp_buff[32];
+	char temp_buff[45];
 	char listen_ip[32];
 	char acl_path[256];
 	uint64_t mmap_size;

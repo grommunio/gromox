@@ -32,7 +32,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	void *pendpoint2;
 	int cache_interval;
 	CONFIG_FILE *pfile;
-	char temp_buff[32];
+	char temp_buff[45];
 	char file_name[256];
 	char temp_path[256];
 	char *str_value, *psearch;

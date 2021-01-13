@@ -688,6 +688,7 @@ char* itvltoa(long interval, char *string)
 	long minutes, seconds;
 	long rest, offset;
 	
+	string[44] = '\0'; /* help static checkers flag callers */
 	days = 0;
 	hours = 0;
 	minutes = 0;

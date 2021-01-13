@@ -23,7 +23,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	char timezone[64];
 	char org_name[256];
 	char separator[16];
-	char temp_buff[32];
+	char temp_buff[45];
 	char tmp_path[256];
 	int cache_interval;
 	int retrying_times;
