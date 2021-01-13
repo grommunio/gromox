@@ -129,7 +129,8 @@ static BOOL gateway_control_send(const char *ip, int port, const char *command)
 	/* send command */
 	cmd_len = sprintf(temp_buff, "%s\r\n", command);
 	write(sockd, temp_buff, cmd_len);
-	read(sockd, temp_buff, 1024);
+	if (read(sockd, temp_buff, 1024))
+		/* cov-ignore */;
 	write(sockd, "quit\r\n", 6);
 	close(sockd);
 	return TRUE;

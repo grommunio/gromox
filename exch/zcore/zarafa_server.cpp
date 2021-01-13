@@ -222,7 +222,8 @@ static void* scan_work_func(void *param)
 				}
 				free(tmp_bin.pb);
 				shutdown(psink_node->clifd, SHUT_WR);
-				read(psink_node->clifd, &tmp_byte, 1);
+				if (read(psink_node->clifd, &tmp_byte, 1))
+					/* ignore */;
 			}
 			close(psink_node->clifd);
 			free(psink_node->sink.padvise);

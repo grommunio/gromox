@@ -768,7 +768,8 @@ NEXT_CLIFD:
 		write(clifd, tmp_bin.pb, tmp_bin.cb);
 	}
 	shutdown(clifd, SHUT_WR);
-	read(clifd, &tmp_byte, 1);
+	if (read(clifd, &tmp_byte, 1))
+		/* ignore */;
 	close(clifd);
 	free(tmp_bin.pb);
 	goto NEXT_CLIFD;
