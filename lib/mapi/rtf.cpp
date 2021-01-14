@@ -3405,7 +3405,6 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	const char *pext;
 	char cid_name[64];
 	uint32_t tmp_int32;
-	BOOL b_hyberlinked;
 	CMD_PROC_FUNC func;
 	BOOL is_cell_group;
 	int paragraph_align;
@@ -3414,7 +3413,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	EXT_PUSH picture_push;
 	const char *img_ctype;
 	TAGGED_PROPVAL propval;
-	bool b_paragraph_begun = false;
+	bool b_paragraph_begun = false, b_hyperlinked = false;
 	SIMPLE_TREE_NODE *pchild;
 	char name[MAX_CONTROL_LEN];
 	ATTACHMENT_CONTENT *pattachment;
@@ -3422,7 +3421,6 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	is_cell_group = FALSE;
 	paragraph_align = ALIGN_LEFT;
 	b_picture_push = FALSE;
-	b_hyberlinked = FALSE;
 	if (simple_tree_node_get_depth(pnode) >= MAX_GROUP_DEPTH) {
 		debug_info("[rtf]: max group depth reached");
 		return false;
@@ -3628,7 +3626,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 						case CMD_RESULT_CONTINUE:
 							break;
 						case CMD_RESULT_HYPERLINKED:
-							b_hyberlinked = TRUE;
+							b_hyperlinked = true;
 							break;
 						case CMD_RESULT_IGNORE_REST:
 							while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr)
@@ -3737,7 +3735,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		preader->is_within_picture = false;
 	}
 	rtf_flush_iconv_cache(preader);
-	if (TRUE == b_hyberlinked) {
+	if (b_hyperlinked) {
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&preader->ext_push, TAG_HYPERLINK_END,
 			sizeof(TAG_HYPERLINK_END) - 1)) {
