@@ -912,7 +912,7 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 		return true;
 	case ATTR_CAPS:
 		preader->b_simulate_allcaps = true;
-		return TRUE;
+		return true;
 	case ATTR_SMALLCAPS:
 		preader->b_simulate_smallcaps = true;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
@@ -1462,7 +1462,7 @@ static char* rtf_read_element(RTF_READER *preader)
 		return input_str;
 	}
 
-	while (TRUE) {
+	while (true) {
 		if ('\t' == ch || '{' == ch || '}' == ch || '\\' == ch) {
 			need_unget = TRUE;
 			break;
@@ -1615,7 +1615,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				return false;
 			}
 			if (rtf_optimize_element(&plast_group->collection_list, input_word))
-				return TRUE;
+				return true;
 			pword = static_cast<SIMPLE_TREE_NODE *>(malloc(sizeof(SIMPLE_TREE_NODE)));
 			if (NULL == pword) {
 				free(input_word);
@@ -2776,7 +2776,7 @@ static int rtf_cmd_ulnone(RTF_READER *preader,
 {
 	int attr;
 	
-	while (TRUE) {
+	while (true) {
 		attr = rtf_attrstack_peek(preader);
 		if (ATTR_UNDERLINE == attr || ATTR_DOT_UL == attr ||
 			ATTR_DASH_UL == attr || ATTR_DOT_DASH_UL == attr||
