@@ -3414,14 +3414,13 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	EXT_PUSH picture_push;
 	const char *img_ctype;
 	TAGGED_PROPVAL propval;
-	BOOL b_paragraph_begined;
+	bool b_paragraph_begun = false;
 	SIMPLE_TREE_NODE *pchild;
 	char name[MAX_CONTROL_LEN];
 	ATTACHMENT_CONTENT *pattachment;
 	
 	is_cell_group = FALSE;
 	paragraph_align = ALIGN_LEFT;
-	b_paragraph_begined = FALSE;
 	b_picture_push = FALSE;
 	b_hyberlinked = FALSE;
 	if (simple_tree_node_get_depth(pnode) >= MAX_GROUP_DEPTH) {
@@ -3455,10 +3454,10 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				if (!rtf_starting_body(preader) ||
 				    !rtf_starting_text(preader))
 					goto CONVERT_FAILURE;
-				if (FALSE == b_paragraph_begined) {
+				if (!b_paragraph_begun) {
 					if (!rtf_starting_paragraph_align(preader, paragraph_align))
 						goto CONVERT_FAILURE;
-					b_paragraph_begined = TRUE;
+					b_paragraph_begun = true;
 				}
 				if (preader->is_within_picture) {
 					if (!rtf_starting_body(preader))
@@ -3552,7 +3551,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					if (!rtf_ending_paragraph_align(preader, paragraph_align))
 						goto CONVERT_FAILURE;
 					paragraph_align = ALIGN_LEFT;
-					b_paragraph_begined = FALSE;
+					b_paragraph_begun = false;
 				} else if (0 == strcmp(string, "cell")) {
 					is_cell_group = TRUE;
 					if (!preader->b_printed_cell_begin) {
@@ -3641,10 +3640,10 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 			}
 		} else {
 			pchild = simple_tree_node_get_child(pnode);
-			if (FALSE == b_paragraph_begined) {
+			if (!b_paragraph_begun) {
 				if (!rtf_starting_paragraph_align(preader, paragraph_align))
 					goto CONVERT_FAILURE;
-				b_paragraph_begined = TRUE;
+				b_paragraph_begun = true;
 			}
 			if (NULL != pchild)  {
 				if (!rtf_convert_group_node(preader, pchild))
@@ -3749,7 +3748,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		if (!rtf_attrstack_pop_express_all(preader))
 			goto CONVERT_FAILURE;
 	}
-	if (TRUE == b_paragraph_begined) {
+	if (b_paragraph_begun) {
 		if (!rtf_ending_paragraph_align(preader, paragraph_align))
 			goto CONVERT_FAILURE;
 	}
