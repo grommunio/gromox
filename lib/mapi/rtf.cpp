@@ -266,7 +266,7 @@ enum {
 	CMD_RESULT_HYPERLINKED
 };
 
-typedef int (*CMD_PROC_FUNC)(RTF_READER*, SIMPLE_TREE_NODE*, int, BOOL, int);
+typedef int (*CMD_PROC_FUNC)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
 
 struct MAP_ITEM {
 	const char *tag;
@@ -1257,7 +1257,6 @@ static bool rtf_attrstack_pop_express_all(RTF_READER *preader)
 static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 {
 	int i;
-	BOOL b_found;
 	DOUBLE_LIST_NODE *pnode;
 	ATTRSTACK_NODE *pattrstack;
 	
@@ -1267,14 +1266,14 @@ static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 		return true;
 	}
 	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
-	b_found = FALSE;
+	bool b_found = false;
 	for (i=0; i<=pattrstack->tos; i++) {
 		if (pattrstack->attr_stack[i] == attr) {
-			b_found = TRUE;
+			b_found = true;
 			break;
 		}
 	}
-	if (FALSE == b_found) {
+	if (!b_found) {
 		debug_info("[rtf]: cannot find attribute in stack node");
 		return true;
 	}
@@ -1359,18 +1358,12 @@ static char* rtf_read_element(RTF_READER *preader)
 {
 	int ch, ch2;
 	unsigned int ix;
-	BOOL need_unget;
-	BOOL have_whitespace;
-	BOOL is_control_word;
-	BOOL b_numeric_param;
+	bool need_unget = false, have_whitespace = false;
+	bool is_control_word = false, b_numeric_param = false;
 	unsigned int current_max_length;
 	
 	
 	ix = 0;
-	have_whitespace = FALSE;
-	is_control_word = FALSE;
-	b_numeric_param = FALSE;
-	need_unget = FALSE;
 	current_max_length = 10;
 	auto input_str = static_cast<char *>(malloc(current_max_length));
 	if (NULL == input_str) {
@@ -1394,9 +1387,9 @@ static char* rtf_read_element(RTF_READER *preader)
 				debug_info("[rtf]: fail to get char from reader");
 				return NULL;
 			}
-			have_whitespace = TRUE;
+			have_whitespace = true;
 		}
-		if (TRUE == have_whitespace) {
+		if (have_whitespace) {
 			rtf_ungetchar(preader, ch);
 			input_str[0] = ' '; 
 			input_str[1] = 0;
@@ -1445,7 +1438,7 @@ static char* rtf_read_element(RTF_READER *preader)
 			input_str[4] = '\0';
 			return input_str;
 		}
-		is_control_word = TRUE;
+		is_control_word = true;
 		ix = 1;
 		input_str[0] = ch;
 		ch = ch2;
@@ -1464,13 +1457,12 @@ static char* rtf_read_element(RTF_READER *preader)
 
 	while (true) {
 		if ('\t' == ch || '{' == ch || '}' == ch || '\\' == ch) {
-			need_unget = TRUE;
+			need_unget = true;
 			break;
 		}
 		if ('\n' == ch) { 
-			if (TRUE == is_control_word) { 
+			if (is_control_word)
 				break;
-			}
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 				free(input_str);
 				debug_info("[rtf]: fail to get char from reader");
@@ -1479,24 +1471,23 @@ static char* rtf_read_element(RTF_READER *preader)
 			continue; 
 		}
 		if (';' == ch) {
-			if (TRUE == is_control_word) {
-				need_unget = TRUE;
+			if (is_control_word) {
+				need_unget = true;
 				break;
 			}
 		}
 		if (' ' == ch) {
-			if (FALSE == is_control_word) {
-				need_unget = TRUE;
-			}
+			if (!is_control_word)
+				need_unget = true;
 			break;
 		}
-		if (TRUE == is_control_word) {
-			if (FALSE == b_numeric_param && (HX_isdigit(ch) || ch == '-')) {
-				b_numeric_param = TRUE;
+		if (is_control_word) {
+			if (!b_numeric_param && (HX_isdigit(ch) || ch == '-')) {
+				b_numeric_param = true;
 			} else {
-				if (TRUE == b_numeric_param && !HX_isdigit(ch)) {
+				if (b_numeric_param && !HX_isdigit(ch)) {
 					if (ch != ' ') {
-						need_unget = TRUE;
+						need_unget = true;
 					}
 					break;
 				}
@@ -1521,9 +1512,8 @@ static char* rtf_read_element(RTF_READER *preader)
 			return NULL;
 		}
 	}
-	if (TRUE == need_unget) {
+	if (need_unget)
 		rtf_ungetchar(preader, ch);
-	}
 	input_str[ix] = '\0';
 	if (0 == memcmp(input_str, "\\bin", 4)
 	    && HX_isdigit(input_str[4])) {
@@ -2232,25 +2222,22 @@ static void rtf_process_color_table(
 
 /*------------------------begin of cmd functions-----------------------------*/
 
-static int rtf_cmd_rtf(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_rtf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fromhtml(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fromhtml(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_cf(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_cf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (FALSE == b_param || num < 0 || num >= preader->total_colors) {
+	if (!have_param || num < 0 || num >= preader->total_colors) {
 		debug_info("[rtf]: font color change attempted is invalid");
 	} else {
 		if (!rtf_attrstack_push_express(preader, ATTR_FOREGROUND,
@@ -2260,11 +2247,10 @@ static int rtf_cmd_cf(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_cb(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_cb(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (FALSE == b_param || num < 0 || num >= preader->total_colors) {
+	if (!have_param || num < 0 || num >= preader->total_colors) {
 		debug_info("[rtf]: font color change attempted is invalid");
 	} else {
 		if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
@@ -2274,32 +2260,29 @@ static int rtf_cmd_cb(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fs(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
-	int align, BOOL b_param, int num)
+static int rtf_cmd_fs(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (FALSE == b_param) {
+	if (!have_param)
 		return CMD_RESULT_CONTINUE;
-	}
 	num /= 2;
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTSIZE, num))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_field(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	int ch;
 	int tmp_len;
 	char tmp_buff[1024];
-	BOOL b_endnotecitations;
+	bool b_endnotecitations = false;
 	SIMPLE_TREE_NODE *pword2;
 	SIMPLE_TREE_NODE *pword3;
 	SIMPLE_TREE_NODE *pword4;
 	SIMPLE_TREE_NODE *pchild;
 	
-	b_endnotecitations = FALSE;
 	do {
 		pchild = simple_tree_node_get_child(pword);
 		if (NULL == pchild) {
@@ -2349,9 +2332,9 @@ static int rtf_cmd_field(RTF_READER *preader,
 						return CMD_RESULT_CONTINUE;
 					}
 					if (strcmp(static_cast<char *>(pword3->pdata), "EN.CITE") == 0) {
-						b_endnotecitations = TRUE;
+						b_endnotecitations = true;
 					} else if (strcmp(static_cast<char *>(pword3->pdata), "HYPERLINK") == 0) {
-						if (FALSE == b_endnotecitations) {
+						if (!b_endnotecitations) {
 							pword4 = simple_tree_node_get_sibling(pword3);
 							while (pword4 != nullptr && pword4->pdata != nullptr &&
 							    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
@@ -2376,13 +2359,11 @@ static int rtf_cmd_field(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_f(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num) 
+static int rtf_cmd_f(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (FALSE == b_param) {
-        return CMD_RESULT_CONTINUE;
-	}
+	if (!have_param)
+		return CMD_RESULT_CONTINUE;
 	const FONTENTRY *pentry = rtf_lookup_font(preader, num);
 	if (pentry == nullptr || strcasestr(pentry->name, "symbol") != nullptr)
 		return CMD_RESULT_CONTINUE;
@@ -2391,21 +2372,18 @@ static int rtf_cmd_f(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_deff(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num) 
+static int rtf_cmd_deff(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-    if (TRUE == b_param) {
-        preader->default_font_number = num;
-	}
+	if (have_param)
+		preader->default_font_number = num;
     return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_highlight(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num) 
+static int rtf_cmd_highlight(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (FALSE == b_param || num < 0 || num >= preader->total_colors) {
+	if (!have_param || num < 0 || num >= preader->total_colors) {
 		debug_info("[rtf]: font background "
 			"color change attempted is invalid");
 	} else {
@@ -2416,9 +2394,8 @@ static int rtf_cmd_highlight(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_tab(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num) 
+static int rtf_cmd_tab(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	int need;
 	
@@ -2446,83 +2423,74 @@ static int rtf_cmd_tab(RTF_READER *preader,
 	
 }
 
-static int rtf_cmd_plain(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_plain(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_pop_express_all(preader))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fnil(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fnil(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -1))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_froman(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_froman(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -2))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fswiss(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fswiss(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -3))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fmodern(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fmodern(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -4))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fscript(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fscript(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -5))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_fdecor(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fdecor(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -6))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ftech(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ftech(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -7))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_expand(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_expand(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param) {
+	if (have_param) {
 		if (0 == num) {
 			if (!rtf_attrstack_pop_express(preader, ATTR_EXPAND))
 				return CMD_RESULT_ERROR;
@@ -2534,11 +2502,10 @@ static int rtf_cmd_expand(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_emboss(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_emboss(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_find_pop_express(preader, ATTR_EMBOSS))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2548,11 +2515,10 @@ static int rtf_cmd_emboss(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_engrave(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_engrave(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_ENGRAVE))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2562,11 +2528,10 @@ static int rtf_cmd_engrave(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_caps(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_caps(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_CAPS))
 			return CMD_RESULT_ERROR;
 	} else { 
@@ -2576,11 +2541,10 @@ static int rtf_cmd_caps(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_scaps(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_scaps(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_SMALLCAPS))
 			return CMD_RESULT_ERROR;
 	} else { 
@@ -2590,9 +2554,8 @@ static int rtf_cmd_scaps(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_bullet(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_bullet(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_BULLET,
@@ -2603,9 +2566,8 @@ static int rtf_cmd_bullet(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ldblquote(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ldblquote(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_LEFT_DBL_QUOTE,
@@ -2616,9 +2578,8 @@ static int rtf_cmd_ldblquote(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_rdblquote(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_rdblquote(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_RIGHT_DBL_QUOTE,
@@ -2629,9 +2590,8 @@ static int rtf_cmd_rdblquote(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_lquote(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_lquote(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_LEFT_QUOTE,
@@ -2642,9 +2602,8 @@ static int rtf_cmd_lquote(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_nonbreaking_space(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_nonbreaking_space(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_NONBREAKING_SPACE,
@@ -2655,9 +2614,8 @@ static int rtf_cmd_nonbreaking_space(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_soft_hyphen(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_soft_hyphen(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_SOFT_HYPHEN,
@@ -2668,16 +2626,14 @@ static int rtf_cmd_soft_hyphen(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_optional_hyphen(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_optional_hyphen(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_emdash(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_emdash(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_EMDASH,
@@ -2688,9 +2644,8 @@ static int rtf_cmd_emdash(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_endash(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_endash(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_ENDASH,
@@ -2701,9 +2656,8 @@ static int rtf_cmd_endash(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_rquote(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_rquote(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_CHARS_RIGHT_QUOTE,
@@ -2714,9 +2668,8 @@ static int rtf_cmd_rquote(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_par(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_par(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	if (preader->have_fromhtml) {
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
@@ -2734,9 +2687,8 @@ static int rtf_cmd_par(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_line(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_line(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_LINE_BREAK,
@@ -2747,9 +2699,8 @@ static int rtf_cmd_line(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_page(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_page(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_PAGE_BREAK,
@@ -2760,9 +2711,8 @@ static int rtf_cmd_page(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_intbl(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_intbl(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->coming_pars_tabular ++;
 	if (!rtf_check_for_table(preader))
@@ -2770,9 +2720,8 @@ static int rtf_cmd_intbl(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ulnone(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num) 
+static int rtf_cmd_ulnone(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	int attr;
 	
@@ -2792,11 +2741,10 @@ static int rtf_cmd_ulnone(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ul(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ul(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool b_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (b_param && num == 0) {
 		return rtf_cmd_ulnone(preader,
 			pword, align, b_param, num);
 	} else {
@@ -2806,101 +2754,90 @@ static int rtf_cmd_ul(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_uld(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_uld(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool b_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_DOUBLE_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_uldb(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_uldb(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_DOT_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_uldash(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_uldash(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_DASH_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_uldashd(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_uldashd(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_DOT_DASH_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_uldashdd(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_uldashdd(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_2DOT_DASH_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ulw(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ulw(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_WORD_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ulth(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ulth(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_THICK_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ulthd(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ulthd(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_THICK_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ulthdash(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ulthdash(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_THICK_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ulwave(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ulwave(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_WAVE_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_strike(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_strike(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_STRIKE))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2910,11 +2847,10 @@ static int rtf_cmd_strike(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_strikedl(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_strikedl(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_DBL_STRIKE))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2924,11 +2860,10 @@ static int rtf_cmd_strikedl(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_striked(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_striked(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_DBL_STRIKE))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2938,18 +2873,16 @@ static int rtf_cmd_striked(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_shppict(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_shppict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_up(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_up(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (FALSE == b_param || 0 == num) {
+	if (have_param || num == 0) { // XXX
 		if (!rtf_attrstack_pop_express(preader, ATTR_SUPER))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2959,9 +2892,8 @@ static int rtf_cmd_up(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_u(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_u(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	char tmp_string[8];
 	
@@ -2973,20 +2905,18 @@ static int rtf_cmd_u(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_uc(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_uc(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	if (!rtf_attrstack_push_express(preader, ATTR_UBYTES, num))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_dn(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_dn(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_SUB))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -2996,9 +2926,8 @@ static int rtf_cmd_dn(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_nosupersub(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_nosupersub(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!rtf_attrstack_pop_express(preader, ATTR_SUPER) ||
 	    !rtf_attrstack_pop_express(preader, ATTR_SUB))
@@ -3006,11 +2935,10 @@ static int rtf_cmd_nosupersub(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_super(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_super(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_SUPER))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -3020,11 +2948,10 @@ static int rtf_cmd_super(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_sub(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_sub(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_SUB))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -3034,11 +2961,10 @@ static int rtf_cmd_sub(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_shad(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_shad(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_SHADOW))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -3048,11 +2974,10 @@ static int rtf_cmd_shad(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_b(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_b(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_find_pop_express(preader, ATTR_BOLD))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -3062,11 +2987,10 @@ static int rtf_cmd_b(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_i(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_i(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_find_pop_express(preader, ATTR_ITALIC))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -3076,16 +3000,14 @@ static int rtf_cmd_i(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_s(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_s(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_sect(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_sect(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&preader->ext_push, TAG_PARAGRAPH_BEGIN,
@@ -3095,18 +3017,16 @@ static int rtf_cmd_sect(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_shp(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_shp(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_outl(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_outl(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (TRUE == b_param && 0 == num) {
+	if (have_param && num == 0) {
 		if (!rtf_attrstack_pop_express(preader, ATTR_OUTLINE))
 			return CMD_RESULT_ERROR;
 	} else {
@@ -3116,50 +3036,44 @@ static int rtf_cmd_outl(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ansi(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ansi(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
     strcpy(preader->default_encoding, "windows-1252");
     return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_ansicpg(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ansicpg(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	HX_strlcpy(preader->default_encoding, rtf_cpid_to_encoding(num), GX_ARRAY_SIZE(preader->default_encoding));
 	preader->have_ansicpg = true;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_pc(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_pc(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	strcpy(preader->default_encoding, "CP437");
     return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_pca(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_pca(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	strcpy(preader->default_encoding, "CP850");
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_mac(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_mac(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	strcpy(preader->default_encoding, "MAC");
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_colortbl(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_colortbl(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	pword = simple_tree_node_get_sibling(pword);
 	if (NULL != pword) {
@@ -3168,9 +3082,8 @@ static int rtf_cmd_colortbl(RTF_READER *preader,
 	return CMD_RESULT_IGNORE_REST;
 }
 
-static int rtf_cmd_fonttbl(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_fonttbl(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	pword = simple_tree_node_get_sibling(pword);
 	if (NULL != pword) {
@@ -3180,16 +3093,14 @@ static int rtf_cmd_fonttbl(RTF_READER *preader,
 	return CMD_RESULT_IGNORE_REST;
 }
 
-static int rtf_cmd_ignore(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_ignore(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	return CMD_RESULT_IGNORE_REST;
 }
 
-static int rtf_cmd_maybe_ignore(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_maybe_ignore(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool b_param, int num)
 {
 	int param;
 	char name[MAX_CONTROL_LEN];
@@ -3208,9 +3119,8 @@ static int rtf_cmd_maybe_ignore(RTF_READER *preader,
 	return CMD_RESULT_IGNORE_REST;
 }
 
-static int rtf_cmd_info(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_info(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	SIMPLE_TREE_NODE *pword1 = simple_tree_node_get_sibling(pword);
 	if (NULL != pword1) {
@@ -3219,9 +3129,8 @@ static int rtf_cmd_info(RTF_READER *preader,
 	return CMD_RESULT_IGNORE_REST;
 }
 
-static int rtf_cmd_pict(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_pict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	rtf_attrstack_push_express(preader, ATTR_PICT, 0);
 	preader->picture_width = 0;
@@ -3230,59 +3139,52 @@ static int rtf_cmd_pict(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_bin(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_bin(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_macpict(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_macpict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_MAC;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_jpegblip(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_jpegblip(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_JPEG;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_pngblip(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_pngblip(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_PNG;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_emfblip(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_emfblip(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_EMF;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_pmmetafile(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_pmmetafile(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_PM;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_wmetafile(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_wmetafile(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_WM;
-	if (preader->is_within_picture && b_param == TRUE) {
+	if (preader->is_within_picture && have_param) {
 		preader->picture_wmf_type = num;
 		switch (num) {
 		case 1:
@@ -3317,57 +3219,50 @@ static int rtf_cmd_wmetafile(RTF_READER *preader,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_wbmbitspixel(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_wbmbitspixel(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (preader->is_within_picture && b_param == TRUE)
+	if (preader->is_within_picture && have_param)
 		preader->picture_bits_per_pixel = num;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_picw(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_picw(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (preader->is_within_picture && b_param == TRUE)
+	if (preader->is_within_picture && have_param)
 		preader->picture_width = num;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_pich(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_pich(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
-	if (preader->is_within_picture && b_param == TRUE)
+	if (preader->is_within_picture && have_param)
 		preader->picture_height = num;
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_xe(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_xe(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_tc(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_tc(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_tcn(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_tcn(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
 {
 	return CMD_RESULT_IGNORE_REST;
 }
 
-static int rtf_cmd_htmltag(RTF_READER *preader,
-	SIMPLE_TREE_NODE *pword, int align,
-	BOOL b_param, int num)
+static int rtf_cmd_htmltag(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
 {
 	if (!preader->have_fromhtml)
 		return CMD_RESULT_IGNORE_REST;
@@ -3401,14 +3296,11 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	int ret_val;
 	char *string;
 	BINARY tmp_bin;
-	BOOL have_param;
 	const char *pext;
 	char cid_name[64];
 	uint32_t tmp_int32;
 	CMD_PROC_FUNC func;
-	BOOL is_cell_group;
 	int paragraph_align;
-	BOOL b_picture_push;
 	char picture_name[64];
 	EXT_PUSH picture_push;
 	const char *img_ctype;
@@ -3417,10 +3309,9 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	SIMPLE_TREE_NODE *pchild;
 	char name[MAX_CONTROL_LEN];
 	ATTACHMENT_CONTENT *pattachment;
+	bool have_param = false, is_cell_group = false, b_picture_push = false;
 	
-	is_cell_group = FALSE;
 	paragraph_align = ALIGN_LEFT;
-	b_picture_push = FALSE;
 	if (simple_tree_node_get_depth(pnode) >= MAX_GROUP_DEPTH) {
 		debug_info("[rtf]: max group depth reached");
 		return false;
@@ -3460,7 +3351,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				if (preader->is_within_picture) {
 					if (!rtf_starting_body(preader))
 						goto CONVERT_FAILURE;
-					if (FALSE == b_picture_push) {
+					if (!b_picture_push) {
 						switch (preader->picture_type) {
 							case PICT_WB:
 								img_ctype = "image/bmp";
@@ -3504,7 +3395,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 							&picture_push, NULL, 0, 0)) {
 							goto CONVERT_FAILURE;
 						}
-						b_picture_push = TRUE;
+						b_picture_push = true;
 					}
 					if (' ' != string[0]) {
 						if (0 != preader->picture_width &&
@@ -3551,7 +3442,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					paragraph_align = ALIGN_LEFT;
 					b_paragraph_begun = false;
 				} else if (0 == strcmp(string, "cell")) {
-					is_cell_group = TRUE;
+					is_cell_group = true;
 					if (!preader->b_printed_cell_begin) {
 						if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 							&preader->ext_push, TAG_TABLE_CELL_BEGIN,
@@ -3589,9 +3480,9 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					if (ret_val < 0) {
 						goto CONVERT_FAILURE;
 					} else if (ret_val > 0) {
-						have_param = TRUE;
+						have_param = true;
 					} else {
-						have_param = FALSE;
+						have_param = false;
 					}
 					if (preader->have_fromhtml) {
 						if (0 == strcmp("par", name) ||
@@ -3652,7 +3543,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 	}
-	if (preader->is_within_picture && b_picture_push == TRUE) {
+	if (preader->is_within_picture && b_picture_push) {
 		if (picture_push.offset > 0) {
 			tmp_bin.cb = picture_push.offset/2;
 			tmp_bin.pv = malloc(tmp_bin.cb);
@@ -3742,10 +3633,9 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 			goto CONVERT_FAILURE;
 		}
 	}
-	if (FALSE == is_cell_group) {
+	if (!is_cell_group)
 		if (!rtf_attrstack_pop_express_all(preader))
 			goto CONVERT_FAILURE;
-	}
 	if (b_paragraph_begun) {
 		if (!rtf_ending_paragraph_align(preader, paragraph_align))
 			goto CONVERT_FAILURE;
@@ -3754,9 +3644,8 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	return true;
 	
 CONVERT_FAILURE:
-	if (TRUE == b_picture_push) {
+	if (b_picture_push)
 		ext_buffer_push_free(&picture_push);
-	}
 	return false;
 }
 
