@@ -2175,22 +2175,21 @@ void http_parser_set_context(int context_id)
 	pthread_setspecific(g_context_key, g_context_list + context_id);
 }
 
-BOOL http_parser_get_password(const char *username, char *password)
+bool http_parser_get_password(const char *username, char *password)
 {
 	HTTP_CONTEXT *pcontext;
 	
 	pcontext = http_parser_get_context();
 	if (NULL == pcontext) {
-		return FALSE;
+		return false;
 	}
 	
 	if (0 != strcasecmp(username, pcontext->username)) {
-		return FALSE;
+		return false;
 	}
 	
 	strncpy(password, pcontext->password, 128);
-	return TRUE;
-	
+	return true;
 }
 
 BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)

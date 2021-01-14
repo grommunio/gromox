@@ -85,14 +85,14 @@ struct NTLMSSP_SESSION_INFO {
 	uint8_t session_key_buff[16];
 };
 
-typedef BOOL (*NTLMSSP_GET_PASSWORD)(const char*, char*);
+typedef bool (*NTLMSSP_GET_PASSWORD)(const char *, char *);
 
 struct NTLMSSP_CTX {
 	pthread_mutex_t lock;
 	uint32_t expected_state;
 	BOOL unicode;
 	BOOL use_nt_response; /* Set to 'False' to debug what happens when the NT response is omited */
-	BOOL allow_lm_key;    /* The LM_KEY code is not very secure... */
+	bool allow_lm_key; /* The LM_KEY code is not very secure... */
 
 	char user[128];
 	char domain[128];
@@ -121,32 +121,13 @@ struct NTLMSSP_CTX {
 	NTLMSSP_GET_PASSWORD get_password;
 };
 
-NTLMSSP_CTX* ntlmssp_init(const char *netbios_name, const char *dns_name,
-	const char *dns_domain, BOOL b_lm_key, uint32_t net_flags,
-	NTLMSSP_GET_PASSWORD get_password);
-
-BOOL ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob);
+extern GX_EXPORT NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name, const char *dns_domain, bool b_lm_key, uint32_t net_flags, NTLMSSP_GET_PASSWORD);
+extern GX_EXPORT bool ntlmssp_update(NTLMSSP_CTX *, DATA_BLOB *);
 extern size_t ntlmssp_sig_size(void);
 uint32_t ntlmssp_expected_state(NTLMSSP_CTX *pntlmssp);
-
-BOOL ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
-	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
-	DATA_BLOB *psig);
-					
-BOOL ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
-	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
-	const DATA_BLOB *psig);
-
-BOOL ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
-	const uint8_t *pwhole_pdu, size_t pdu_length, DATA_BLOB *psig);
-	
-BOOL ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
-	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
-	const DATA_BLOB *psig);
-
-BOOL ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key);
-
-BOOL ntlmssp_session_info(NTLMSSP_CTX *pntlmssp,
-	NTLMSSP_SESSION_INFO *psession);
-
+extern GX_EXPORT bool ntlmssp_sign_packet(NTLMSSP_CTX *, const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
+extern GX_EXPORT bool ntlmssp_check_packet(NTLMSSP_CTX *, const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
+extern GX_EXPORT bool ntlmssp_seal_packet(NTLMSSP_CTX *, uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
+extern GX_EXPORT bool ntlmssp_unseal_packet(NTLMSSP_CTX *, uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
+extern GX_EXPORT bool ntlmssp_session_info(NTLMSSP_CTX *, NTLMSSP_SESSION_INFO *);
 void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp);

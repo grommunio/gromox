@@ -146,9 +146,7 @@ int http_parser_get_param(int param);
 int http_parser_set_param(int param, int value);
 HTTP_CONTEXT *http_parser_get_contexts_list(void);
 int http_parser_threads_event_proc(int action);
-
-BOOL http_parser_get_password(const char *username, char *password);
-
+extern bool http_parser_get_password(const char *username, char *password);
 BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext);
 
 void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,

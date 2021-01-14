@@ -765,10 +765,10 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		if (FALSE == ntlmssp_unseal_packet(pauth_ctx->pntlmssp,
-			pblob->data + hdr_size, prequest->stub_and_verifier.length, 
-			pblob->data, pblob->length - auth.credentials.length,
-			&auth.credentials)) {
+		if (!ntlmssp_unseal_packet(pauth_ctx->pntlmssp,
+		    pblob->data + hdr_size, prequest->stub_and_verifier.length,
+		    pblob->data, pblob->length - auth.credentials.length,
+		    &auth.credentials)) {
 			pdu_ndr_free_dcerpc_auth(&auth);
 			return FALSE;
 		}
@@ -776,10 +776,10 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			prequest->stub_and_verifier.length);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		if (FALSE == ntlmssp_check_packet(pauth_ctx->pntlmssp,
-			prequest->stub_and_verifier.data,
-			prequest->stub_and_verifier.length, pblob->data,
-			pblob->length - auth.credentials.length, &auth.credentials)) {
+		if (!ntlmssp_check_packet(pauth_ctx->pntlmssp,
+		    prequest->stub_and_verifier.data,
+		    prequest->stub_and_verifier.length, pblob->data,
+		    pblob->length - auth.credentials.length, &auth.credentials)) {
 			pdu_ndr_free_dcerpc_auth(&auth);
 			return FALSE;
 		}
@@ -995,18 +995,15 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 		DCERPC_AUTH_LEVEL_NONE == pauth_ctx->auth_info.auth_level)) {
 		return TRUE;
 	}
-	if (FALSE == ntlmssp_update(pauth_ctx->pntlmssp,
-		&pauth_ctx->auth_info.credentials)) {
+	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 		return FALSE;
-	}
-
 	if (NTLMSSP_PROCESS_AUTH == ntlmssp_expected_state(pauth_ctx->pntlmssp)) {
 		pauth_ctx->auth_info.auth_pad_length = 0;
 		pauth_ctx->auth_info.auth_reserved = 0;
 		return TRUE;
 	} else {
 		return ntlmssp_session_info(pauth_ctx->pntlmssp,
-				&pauth_ctx->session_info);
+		       &pauth_ctx->session_info) ? TRUE : false;
 	}
 }
 
@@ -1349,14 +1346,9 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 		&auth_length, TRUE)) {
 		goto AUTH3_FAIL;
 	}
-	
-	if (FALSE == ntlmssp_update(pauth_ctx->pntlmssp,
-		&pauth_ctx->auth_info.credentials)) {
+	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
-	}
-
-	if (FALSE == ntlmssp_session_info(pauth_ctx->pntlmssp,
-		&pauth_ctx->session_info)) {
+	if (!ntlmssp_session_info(pauth_ctx->pntlmssp, &pauth_ctx->session_info)) {
 		debug_info("[pdu_processor]: failed to establish session_info\n");
 		goto AUTH3_FAIL;
 	}
@@ -1708,18 +1700,16 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	/* sign or seal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		if (FALSE == ntlmssp_seal_packet(pauth_ctx->pntlmssp,
-			ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
-			pblob->data, pblob->length, &creds2)) {
+		if (!ntlmssp_seal_packet(pauth_ctx->pntlmssp,
+		    ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
+		    pblob->data, pblob->length, &creds2))
 			return FALSE;
-		}
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		if (FALSE == ntlmssp_sign_packet(pauth_ctx->pntlmssp,
-			ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
-			pblob->data, pblob->length, &creds2)) {
+		if (!ntlmssp_sign_packet(pauth_ctx->pntlmssp,
+		    ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
+		    pblob->data, pblob->length, &creds2))
 			return FALSE;
-		}
 		break;
 
 	default:
