@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/arcfour.hpp>
 #include <gromox/defs.h>
 #include <gromox/ndr.hpp>
 #include <gromox/util.hpp>
@@ -36,6 +37,71 @@
 #define SRV_SIGN		"session key to server-to-client signing key magic constant"
 #define SRV_SEAL		"session key to server-to-client sealing key magic constant"
 
+enum {
+	NTLMSSP_WINDOWS_MAJOR_VERSION_5 = 0x05,
+	NTLMSSP_WINDOWS_MAJOR_VERSION_6 = 0x06,
+	NTLMSSP_WINDOWS_MINOR_VERSION_0 = 0x00,
+	NTLMSSP_WINDOWS_MINOR_VERSION_1 = 0x01,
+	NTLMSSP_WINDOWS_MINOR_VERSION_2 = 0x02,
+	NTLMSSP_REVISION_W2K3_RC10x0A = 0x0A,
+	NTLMSSP_REVISION_W2K3 = 0x0F,
+};
+
+struct NTLM_AUTH_CHALLENGE {
+	DATA_BLOB blob;
+	uint8_t blob_buff[8]; /* buffer for DATA_BLOB's data */
+};
+
+struct NTLMSSP_CRYPT_DIRECTION {
+	uint32_t seq_num;
+	uint8_t sign_key[16];
+	ARCFOUR_STATE seal_state;
+};
+
+struct NTLMSSP_CRYPT_DIRECTION_V2 {
+	NTLMSSP_CRYPT_DIRECTION sending;
+	NTLMSSP_CRYPT_DIRECTION receiving;
+};
+
+union NTLMSSP_CRYPT_STATE {
+	NTLMSSP_CRYPT_DIRECTION ntlm;     /* NTLM */
+	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
+};
+
+struct NTLMSSP_CTX {
+	pthread_mutex_t lock;
+	uint32_t expected_state;
+	BOOL unicode;
+	BOOL use_nt_response; /* Set to 'False' to debug what happens when the NT response is omited */
+	bool allow_lm_key; /* The LM_KEY code is not very secure... */
+
+	char user[128];
+	char domain[128];
+	uint8_t *nt_hash;
+	uint8_t *lm_hash;
+
+	char netbios_name[128];
+	char dns_name[128];
+	char dns_domain[128];
+
+	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
+	uint8_t internal_chal_buff[32];
+
+	DATA_BLOB lm_resp;
+	uint8_t lm_resp_buff[32];
+	DATA_BLOB nt_resp;
+	uint8_t nt_resp_buff[512];
+	DATA_BLOB session_key;
+	uint8_t session_key_buff[32];
+
+	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+
+	NTLMSSP_CRYPT_STATE crypt;
+	NTLM_AUTH_CHALLENGE challenge;
+
+	NTLMSSP_GET_PASSWORD get_password;
+};
+
 struct NTLMSSP_SERVER_AUTH_STATE {
 	DATA_BLOB user_session_key;
 	uint8_t user_session_key_buff[32];
@@ -45,6 +111,14 @@ struct NTLMSSP_SERVER_AUTH_STATE {
 	uint8_t encrypted_session_key_buff[32];
 	BOOL doing_ntlm2;
 	uint8_t session_nonce[16]; /* internal variables used by NTLM2 */
+};
+
+struct NTLMSSP_VERSION {
+	uint8_t major_vers;
+	uint8_t minor_vers;
+	uint16_t product_build;
+	uint8_t reserved[3];
+	uint8_t ntlm_revers;
 };
 
 static void ntlmssp_lm_session_key(const uint8_t lm_hash[16],
