@@ -1644,7 +1644,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (NULL != pvalue) {
 		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 		gmtime_r(&unix_time, &tmp_tm);
-		strftime(tmp_buff, 1024, "%Y-%m-%dT%H:%M:%S", &tmp_tm);
+		strftime(tmp_buff, 1024, "%Y-%m-%dT%H:%M:%SZ", &tmp_tm);
 		pvline = vcard_new_line("REV");
 		if (NULL == pvline) {
 			goto EXPORT_FAILURE;
@@ -1663,10 +1663,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 		}
 		vcard_append_value(pvline, pvvalue);
-		if (FALSE == vcard_append_subval(pvvalue, tmp_buff) ||
-			FALSE == vcard_append_subval(pvvalue, "000Z")) {
+		if (!vcard_append_subval(pvvalue, tmp_buff))
 			goto EXPORT_FAILURE;
-		}
 	}
 	
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_WEDDINGANNIVERSARY));
