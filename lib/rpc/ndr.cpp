@@ -79,7 +79,7 @@ void ndr_pull_destroy(NDR_PULL *pndr)
 	pndr->flags = 0;
 }
 
-static BOOL ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
+static bool ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 {
 	int i;
 	size_t ofs2;
@@ -88,10 +88,10 @@ static BOOL ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 	
 	for (i=pndr->offset; i<ofs2; i++) {
 		if (pndr->data[i] != 0) {
-			return FALSE;
+			return false;
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 int ndr_pull_align(NDR_PULL *pndr, size_t size)
@@ -112,9 +112,8 @@ int ndr_pull_align(NDR_PULL *pndr, size_t size)
 	
 	if (0 == (pndr->flags & NDR_FLAG_NOALIGN)) {
 		if (pndr->flags & NDR_FLAG_PAD_CHECK) {
-			if (FALSE == ndr_pull_check_padding(pndr, size)) {
+			if (!ndr_pull_check_padding(pndr, size))
 				return NDR_ERR_PADDING;
-			}
 		}
 		pndr->offset = (pndr->offset + (size - 1)) & ~(size - 1);
 	}
@@ -477,26 +476,25 @@ void ndr_push_destroy(NDR_PUSH *pndr)
 	pndr->offset = 0;
 }
 
-static BOOL ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
+static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 {
 	uint32_t size;
 	
 	size = extra_size + pndr->offset;
 	if (size > pndr->alloc_size) {
 		/* overflow */
-		return FALSE;
+		return false;
 	}
 	/* not overflow */
-	return TRUE;
+	return true;
 }
 
 static int ndr_push_bytes(NDR_PUSH *pndr, const void *pdata, uint32_t n)
 {
 	if (n == 0)
 		return NDR_ERR_SUCCESS;
-	if (FALSE == ndr_push_check_overflow(pndr, n)) {
+	if (!ndr_push_check_overflow(pndr, n))
 		return NDR_ERR_BUFSIZE;
-	}
 	memcpy(pndr->data + pndr->offset, pdata, n);
 	pndr->offset += n;
 	return NDR_ERR_SUCCESS;
@@ -504,9 +502,8 @@ static int ndr_push_bytes(NDR_PUSH *pndr, const void *pdata, uint32_t n)
 
 int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v)
 {
-	if (FALSE == ndr_push_check_overflow(pndr, 1)) {
+	if (!ndr_push_check_overflow(pndr, 1))
 		return NDR_ERR_BUFSIZE;
-	}
 	SCVAL(pndr->data, pndr->offset, v);
 	pndr->offset += 1;
 	return NDR_ERR_SUCCESS;
@@ -566,9 +563,8 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (FALSE == ndr_push_check_overflow(pndr, 2)) {
+	if (!ndr_push_check_overflow(pndr, 2))
 		return NDR_ERR_BUFSIZE;
-	}
 	NDR_SSVAL(pndr, pndr->offset, v);
 	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
@@ -582,9 +578,8 @@ int ndr_push_int32(NDR_PUSH *pndr, int32_t v)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (FALSE == ndr_push_check_overflow(pndr, 4)) {
+	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
-	}
 	NDR_SIVALS(pndr, pndr->offset, v);
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
@@ -598,9 +593,8 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (FALSE == ndr_push_check_overflow(pndr, 4)) {
+	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
-	}
 	NDR_SIVAL(pndr, pndr->offset, v);
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
@@ -614,9 +608,8 @@ int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (FALSE == ndr_push_check_overflow(pndr, 8)) {
+	if (!ndr_push_check_overflow(pndr, 8))
 		return NDR_ERR_BUFSIZE;
-	}
 	if (NDR_BE(pndr)) {
 		NDR_SIVAL(pndr, pndr->offset, (v>>32));
 		NDR_SIVAL(pndr, pndr->offset+4, (v & 0xFFFFFFFF));
@@ -687,10 +680,8 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 
 int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required)
 {	
-	if (FALSE == ndr_push_check_overflow(pndr, required)) {
+	if (!ndr_push_check_overflow(pndr, required))
 		return NDR_ERR_BUFSIZE;
-	}
-	
 	memcpy(pndr->data + pndr->offset, var, required);
 	pndr->offset += required;
 	return NDR_ERR_SUCCESS;
@@ -752,9 +743,8 @@ int ndr_push_syntax_id(NDR_PUSH *pndr, const SYNTAX_ID *r)
 
 int ndr_push_zero(NDR_PUSH *pndr, uint32_t n)
 {
-	if (FALSE == ndr_push_check_overflow(pndr, n)) {
+	if (!ndr_push_check_overflow(pndr, n))
 		return NDR_ERR_BUFSIZE;
-	}
 	memset(pndr->data + pndr->offset, 0, n);
 	pndr->offset += n;
 	return NDR_ERR_SUCCESS;
