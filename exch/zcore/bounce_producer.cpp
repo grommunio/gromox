@@ -711,7 +711,7 @@ BOOL bounce_producer_make(const char *username,
 	if ('\0' != mime_from[0]) {
 		dsn_append_field(pdsn_fields, "X-Display-Name", mime_from);
 	}
-	if (TRUE == dsn_serialize(&dsn, content_buff, 256*1024)) {
+	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = mail_add_child(pmail, phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			mime_set_content_type(pmime, "message/disposition-notification");

@@ -1,11 +1,11 @@
 #pragma once
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #define DSN_FIELDS			DOUBLE_LIST
 
-typedef BOOL (*RCPTS_FIELDS_ENUM)(DSN_FIELDS*, void*);
-
-typedef BOOL (*DSN_FIELDS_ENUM)(const char*, const char*, void*);
+typedef bool (*RCPTS_FIELDS_ENUM)(DSN_FIELDS *, void *);
+typedef bool (*DSN_FIELDS_ENUM)(const char *, const char *, void *);
 
 struct DSN {
 	DSN_FIELDS message_fields;
@@ -13,23 +13,14 @@ struct DSN {
 };
 
 void dsn_init(DSN *pdsn);
-
-BOOL dsn_retrieve(DSN *pdsn, char *in_buff, size_t length);
-
+extern GX_EXPORT bool dsn_retrieve(DSN *, char *in_buff, size_t length);
 void dsn_clear(DSN *pdsn);
 
 DSN_FIELDS* dsn_get_message_fileds(DSN *pdsn);
 
 DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn);
-BOOL dsn_append_field(DSN_FIELDS *pfields,
-	const char *tag, const char *value);
-
-BOOL dsn_enum_rcpts_fields(DSN *pdsn,
-	RCPTS_FIELDS_ENUM enum_func, void *pparam);
-
-BOOL dsn_enum_fields(DSN_FIELDS *pfields,
-	DSN_FIELDS_ENUM enum_func, void *pparam);
-
-BOOL dsn_serialize(DSN *pdsn, char *out_buff, size_t max_length);
-
+extern GX_EXPORT bool dsn_append_field(DSN_FIELDS *, const char *tag, const char *value);
+extern GX_EXPORT bool dsn_enum_rcpts_fields(DSN *, RCPTS_FIELDS_ENUM, void *pparam);
+extern GX_EXPORT bool dsn_enum_fields(DSN_FIELDS *, DSN_FIELDS_ENUM, void *pparam);
+extern GX_EXPORT bool dsn_serialize(DSN *, char *out, size_t maxlen);
 void dsn_free(DSN *pdsn);

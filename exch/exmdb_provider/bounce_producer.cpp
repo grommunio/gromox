@@ -639,7 +639,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn_append_field(pdsn_fields, "Remote-MTA", tmp_buff);
 	
-	if (TRUE == dsn_serialize(&dsn, content_buff, 256*1024)) {
+	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = mail_add_child(pmail, phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			mime_set_content_type(pmime, "message/delivery-status");
