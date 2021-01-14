@@ -71,8 +71,7 @@ union NTLMSSP_CRYPT_STATE {
 struct NTLMSSP_CTX {
 	pthread_mutex_t lock;
 	uint32_t expected_state;
-	BOOL unicode;
-	BOOL use_nt_response; /* Set to 'False' to debug what happens when the NT response is omited */
+	bool unicode;
 	bool allow_lm_key; /* The LM_KEY code is not very secure... */
 
 	char user[128];
@@ -109,7 +108,7 @@ struct NTLMSSP_SERVER_AUTH_STATE {
 	uint8_t lm_session_key_buff[32];
 	DATA_BLOB encrypted_session_key; /* internal variables used by KEY_EXCH */
 	uint8_t encrypted_session_key_buff[32];
-	BOOL doing_ntlm2;
+	bool doing_ntlm2;
 	uint8_t session_nonce[16]; /* internal variables used by NTLM2 */
 };
 
@@ -620,11 +619,11 @@ static void ntlmssp_handle_neg_flags(NTLMSSP_CTX *pntlmssp, uint32_t neg_flags)
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
-		pntlmssp->unicode = TRUE;
+		pntlmssp->unicode = true;
 	} else {
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
 		pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
-		pntlmssp->unicode = FALSE;
+		pntlmssp->unicode = false;
 	}
 
 	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY && pntlmssp->allow_lm_key)
@@ -788,11 +787,10 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 		version_blob.length = ndr_push.offset;
 	}
 		
-	if (TRUE == pntlmssp->unicode) {
+	if (pntlmssp->unicode)
 		parse_string = "CdUdbddBb";
-	} else {
+	else
 		parse_string = "CdAdbddBb";
-	}
 	if (!ntlmssp_gen_packet(preply, parse_string, "NTLMSSP",
 	    NTLMSSP_PROCESS_CHALLENGE, target_name, chal_flags, cryptkey,
 	    8, 0, 0, struct_blob.data, struct_blob.length, version_blob.data,
@@ -812,12 +810,10 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	uint8_t session_nonce_hash[16];
 	uint32_t ntlmssp_command, auth_flags;
 	
-	
-	if (TRUE == pntlmssp->unicode) {
+	if (pntlmssp->unicode)
 		parse_string = "CdBBUUUBd";
-	} else {
+	else
 		parse_string = "CdBBAAABd";
-	}
 
 	pntlmssp->session_key.data = pntlmssp->session_key_buff;
 	pntlmssp->session_key.length = 0;
@@ -845,11 +841,10 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	    pntlmssp->domain, pntlmssp->user, client_netbios_name,
 	    &pauth->encrypted_session_key, &auth_flags)) {
 		/* Try again with a shorter string (Win9X truncates this packet) */
-		if (TRUE == pntlmssp->unicode) {
+		if (pntlmssp->unicode)
 			parse_string = "CdBBUUU";
-		} else {
+		else
 			parse_string = "CdBBAAA";
-		}
 		pauth->encrypted_session_key.length = 0;
 		auth_flags = 0;
 		
@@ -871,7 +866,7 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (24 == pntlmssp->nt_resp.length && 24 == pntlmssp->lm_resp.length) {
-			pauth->doing_ntlm2 = TRUE;
+			pauth->doing_ntlm2 = true;
 			memcpy(pauth->session_nonce, pntlmssp->internal_chal.data, 8);
 			memcpy(pauth->session_nonce + 8, pntlmssp->lm_resp.data, 8);
 
@@ -1045,7 +1040,6 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	DATA_BLOB *puser_key, DATA_BLOB *plm_key, const char *plain_passwd)
 {
-	BOOL b_result;
 	DATA_BLOB tmp_key;
 	const char *pdomain;
 	DATA_BLOB *pchallenge;
@@ -1130,27 +1124,27 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 
 	tmp_key.data = tmp_key_buff;
 	tmp_key.length = 0;
-	b_result = FALSE;
+	bool b_result = false;
 	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes. */
 	if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 	    pntlmssp->user, pntlmssp->domain, &tmp_key)) {
-		b_result = TRUE;
+		b_result = true;
 		pdomain = pntlmssp->domain;
 	} else {
 		if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 		    pntlmssp->user, upper_domain, &tmp_key)) {
-			b_result = TRUE;
+			b_result = true;
 			pdomain = upper_domain;
 		} else {
 			if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
 			    pntlmssp->user, "", &tmp_key)) {
-				b_result = TRUE;
+				b_result = true;
 				pdomain = "";
 			}
 		}
 	}
 	
-	if (TRUE == b_result) {
+	if (b_result) {
 		if (pnt_response->length > 24) {
 			ntlmssp_sess_key_ntlm2(pnt_response, nt_p16, pchallenge, 
 				pntlmssp->user, pdomain, puser_key);
@@ -1189,7 +1183,6 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 
 static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 {
-	BOOL do_weak;
 	DATA_BLOB seal_key;
 	DATA_BLOB weak_key;
 	DATA_BLOB send_seal_blob;
@@ -1257,18 +1250,18 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		pntlmssp->crypt.ntlm2.receiving.seq_num = 0;
 	} else {
 		seal_key = pntlmssp->session_key;
-		do_weak = FALSE;
+		bool do_weak = false;
 		
 		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
-			do_weak = TRUE;
+			do_weak = true;
 		}
 		
 		if (seal_key.length < 16) {
 			/* TODO: is this really correct? */
-			do_weak = FALSE;
+			do_weak = false;
 		}
 
-		if (TRUE == do_weak) {
+		if (do_weak) {
 			memcpy(weak_session_buff, seal_key.data, 8);
 			seal_key.data = weak_session_buff;
 			seal_key.length = 8;
@@ -1310,7 +1303,7 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	session_key.length = 0;
 	
 	/* Handle the different session key derivation for NTLM2 */
-	if (TRUE == pauth->doing_ntlm2) {
+	if (pauth->doing_ntlm2) {
 		if (16 == puser_key->length) {
 			hmacmd5_init(&hmac_ctx, puser_key->data, 16);
 			hmacmd5_update(&hmac_ctx, pauth->session_nonce,
@@ -1476,9 +1469,8 @@ size_t ntlmssp_sig_size()
 }
 
 static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
-	const uint8_t *pdata, size_t length, const uint8_t *pwhole_pdu,
-	size_t pdu_length, int direction, DATA_BLOB *psig,
-	BOOL encrypt_sig)
+    const uint8_t *pdata, size_t length, const uint8_t *pwhole_pdu,
+    size_t pdu_length, int direction, DATA_BLOB *psig, bool encrypt_sig)
 {
 	uint32_t crc;
 	uint8_t digest[16];
@@ -1505,8 +1497,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 		hmacmd5_update(&hmac_ctx, pwhole_pdu, pdu_length);
 		hmacmd5_final(&hmac_ctx, digest);
 
-		if (TRUE == encrypt_sig &&
-			(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
+		if (encrypt_sig && (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 			switch (direction) {
 			case NTLMSSP_DIRECTION_SEND:
 				arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.sending.seal_state,
@@ -1547,7 +1538,7 @@ bool ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 		return false;
 	}
 	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
-	    pdu_length, NTLMSSP_DIRECTION_SEND, psig, TRUE)) {
+	    pdu_length, NTLMSSP_DIRECTION_SEND, psig, true)) {
 		pthread_mutex_unlock(&pntlmssp->lock);
 		return false;
 	}
@@ -1577,7 +1568,7 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 			"signature (%u bytes)! in check_packet", psig->length);
 	}
 	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
-	    pdu_length, NTLMSSP_DIRECTION_RECEIVE, &local_sig, TRUE))
+	    pdu_length, NTLMSSP_DIRECTION_RECEIVE, &local_sig, true))
 		return false;
 
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -1606,10 +1597,10 @@ bool ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, psig)) {
 		pthread_mutex_unlock(&pntlmssp->lock);
-		return FALSE;
+		return false;
 	}
 	pthread_mutex_unlock(&pntlmssp->lock);
-	return TRUE;
+	return true;
 }
 
 bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
@@ -1629,7 +1620,7 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 	}
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length,
-		    pwhole_pdu, pdu_length, NTLMSSP_DIRECTION_SEND, psig, FALSE)) {
+		    pwhole_pdu, pdu_length, NTLMSSP_DIRECTION_SEND, psig, false)) {
 			pthread_mutex_unlock(&pntlmssp->lock);
 			return false;
 		}
