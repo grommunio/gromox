@@ -2373,7 +2373,7 @@ static int rtf_cmd_field(RTF_READER *preader,
 			pword2 = simple_tree_node_get_sibling(pword2);
 		}
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
-	return TRUE;
+	return CMD_RESULT_CONTINUE;
 }
 
 static int rtf_cmd_f(RTF_READER *preader,
