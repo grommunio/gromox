@@ -66,15 +66,13 @@ struct ICAL_RRULE {
 	ICAL_TIME base_itime;
 	ICAL_TIME next_base_itime;
 	ICAL_TIME instance_itime;
-	BOOL b_until;
 	ICAL_TIME until_itime;
-	BOOL b_start_exceptional;
 	ICAL_TIME real_start_itime;
+	bool b_until, b_start_exceptional, by_mask[9];
 	int interval;
 	int frequency;
 	int real_frequency;
 	int weekstart;
-	BOOL by_mask[9];
 	int cur_setpos;
 	int setpos_count;
 	unsigned char second_bitmap[8];
