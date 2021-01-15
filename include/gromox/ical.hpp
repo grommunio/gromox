@@ -1,6 +1,7 @@
 #pragma once
 #include <ctime>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #define ICAL_NAME_LEN					64
 
@@ -95,11 +96,8 @@ struct ICAL_RRULE {
 void ical_init(ICAL *pical);
 
 void ical_free(ICAL *pical);
-
-BOOL ical_retrieve(ICAL *pical, char *in_buff);
-
-BOOL ical_serialize(ICAL *pical, char *out_buff, size_t max_length);
-
+extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
+extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
 ICAL_COMPONENT* ical_new_component(const char *name);
 
 void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild);
@@ -110,17 +108,13 @@ void ical_append_line(ICAL_COMPONENT *pcomponent, ICAL_LINE *piline);
 ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
 
 ICAL_PARAM* ical_new_param(const char*name);
-
-BOOL ical_append_paramval(ICAL_PARAM *piparam, const char *paramval);
-
+extern GX_EXPORT bool ical_append_paramval(ICAL_PARAM *, const char *paramval);
 void ical_append_param(ICAL_LINE *piline, ICAL_PARAM *piparam);
 
 const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name);
 
 ICAL_VALUE* ical_new_value(const char *name);
-
-BOOL ical_append_subval(ICAL_VALUE *pivalue, const char *subval);
-
+extern GX_EXPORT bool ical_append_subval(ICAL_VALUE *, const char *subval);
 void ical_append_value(ICAL_LINE *piline, ICAL_VALUE *pivalue);
 
 const char* ical_get_first_subvalue_by_name(
@@ -131,16 +125,9 @@ const char* ical_get_first_subvalue(ICAL_LINE *piline);
 DOUBLE_LIST* ical_get_subval_list(ICAL_LINE *piline, const char *name);
 
 ICAL_LINE* ical_new_simple_line(const char *name, const char *value);
-
-BOOL ical_parse_utc_offset(const char *str_offset,
-	int *phour, int *pminute);
-
-BOOL ical_parse_date(const char *str_date,
-	int *pyear, int *pmonth, int *pday);
-
-BOOL ical_parse_datetime(const char *str_datetime,
-	BOOL *pb_utc, ICAL_TIME *pitime);
-
+extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
+extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);
+extern GX_EXPORT bool ical_parse_datetime(const char *str_datetime, bool *pb_utc, ICAL_TIME *pitime);
 int ical_get_dayofweek(int year, int month, int day);
 
 int ical_get_dayofyear(int year, int month, int day);
@@ -158,20 +145,11 @@ int ical_get_negative_yearweekorder(int year, int month, int day);
 int ical_get_dayofmonth(int year, int month, int order, int dayofweek);
 
 void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime);
-
-BOOL ical_parse_byday(const char *str_byday,
-	int *pdayofweek, int *pweekorder);
-
-BOOL ical_parse_duration(const char *str_duration, long *pseconds);
-
-BOOL ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
-	ICAL_TIME itime, time_t *ptime);
-
-BOOL ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
-	const char *str_datetime, time_t *ptime);
-BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
-	time_t utc_time, ICAL_TIME *pitime);
-
+extern GX_EXPORT bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder);
+extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *pseconds);
+extern GX_EXPORT bool ical_itime_to_utc(ICAL_COMPONENT *, ICAL_TIME, time_t *);
+extern GX_EXPORT bool ical_datetime_to_utc(ICAL_COMPONENT *, const char *datetime, time_t *);
+extern GX_EXPORT bool ical_utc_to_datetime(ICAL_COMPONENT *, time_t utc_time, ICAL_TIME *);
 int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2);
 
 void ical_add_year(ICAL_TIME *pitime, int years);
@@ -185,21 +163,14 @@ int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2);
 void ical_add_hour(ICAL_TIME *pitime, int hours);
 void ical_add_minute(ICAL_TIME *pitime, int minutes);
 void ical_add_second(ICAL_TIME *pitime, int seconds);
-BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
-	time_t start_time, DOUBLE_LIST *pvalue_list, ICAL_RRULE *pirrule);
-
-BOOL ical_rrule_iterate(ICAL_RRULE *pirrule);
-
+extern GX_EXPORT bool ical_parse_rrule(ICAL_COMPONENT *, time_t start, DOUBLE_LIST *value_list, ICAL_RRULE *);
+extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
 int ical_rrule_weekstart(ICAL_RRULE *pirrule);
-
-BOOL ical_rrule_endless(ICAL_RRULE *pirrule);
-
+extern GX_EXPORT bool ical_rrule_endless(ICAL_RRULE *);
 const ICAL_TIME* ical_rrule_until_itime(ICAL_RRULE *pirrule);
 
 int ical_rrule_total_count(ICAL_RRULE *pirrule);
-
-BOOL ical_rrule_exceptional(ICAL_RRULE *pirrule);
-
+extern GX_EXPORT bool ical_rrule_exceptional(ICAL_RRULE *);
 ICAL_TIME ical_rrule_base_itime(ICAL_RRULE *pirrule);
 
 int ical_rrule_sequence(ICAL_RRULE *pirrule);
@@ -209,4 +180,4 @@ ICAL_TIME ical_rrule_instance_itime(ICAL_RRULE *pirrule);
 int ical_rrule_interval(ICAL_RRULE *pirrule);
 
 int ical_rrule_frequency(ICAL_RRULE *pirrule);
-BOOL ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by);
+extern GX_EXPORT bool ical_rrule_check_bymask(ICAL_RRULE *, int rrule_by);

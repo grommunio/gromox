@@ -347,7 +347,7 @@ static ICAL_PARAM* ical_retrieve_param(char *ptag)
 	}
 	do {
 		pnext = ical_get_tag_comma(ptr);
-		if (FALSE == ical_append_paramval(piparam, ptr)) {
+		if (!ical_append_paramval(piparam, ptr)) {
 			ical_free_param(piparam);
 			return NULL;
 		}
@@ -432,13 +432,11 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 		do {
 			pnext1 = ical_get_value_comma(ptr1);
 			if ('\0' == *ptr1) {
-				if (FALSE == ical_append_subval(pivalue, NULL)) {
+				if (!ical_append_subval(pivalue, nullptr))
 					return FALSE;
-				}
 			} else {
-				if (FALSE == ical_append_subval(pivalue, ptr1)) {
+				if (!ical_append_subval(pivalue, ptr1))
 					return FALSE;
-				}
 			}
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
@@ -466,9 +464,8 @@ static void ical_unescape_string(char *pstring)
 	}
 }
 
-static BOOL ical_retrieve_component(
-	ICAL_COMPONENT *pcomponent,
-	char *in_buff, char **ppnext)
+static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
+    char *in_buff, char **ppnext)
 {
 	char *pline;
 	char *pnext;
@@ -514,7 +511,7 @@ static BOOL ical_retrieve_component(
 			if (NULL != ppnext) {
 				*ppnext = pnext;
 			}
-			return TRUE;
+			return true;
 		}
 		piline = ical_retrieve_tag(tmp_item.ptag);
 		if (NULL == piline) {
@@ -541,9 +538,8 @@ static BOOL ical_retrieve_component(
 				}
 				ical_append_value(piline, pivalue);
 				ical_unescape_string(tmp_item.pvalue);
-				if (FALSE == ical_append_subval(pivalue, tmp_item.pvalue)) {
+				if (!ical_append_subval(pivalue, tmp_item.pvalue))
 					break;
-				}
 			} else {
 				if (FALSE == ical_retrieve_value(piline, tmp_item.pvalue)) {
 					break;
@@ -552,10 +548,10 @@ static BOOL ical_retrieve_component(
 		}
 	} while ((pline = pnext) != NULL);
 	ical_clear_component(pcomponent);
-	return FALSE;
+	return false;
 }
 
-BOOL ical_retrieve(ICAL *pical, char *in_buff)
+bool ical_retrieve(ICAL *pical, char *in_buff)
 {
 	char *pline;
 	char *pnext;
@@ -570,12 +566,12 @@ BOOL ical_retrieve(ICAL *pical, char *in_buff)
 		pnext = ical_get_string_line(pline, length - (pline - in_buff));
 		if (NULL == pnext) {
 			ical_clear_component(pical);
-			return FALSE;
+			return false;
 		}
 	} while (TRUE == ical_check_empty_line(pline));
 	if (FALSE == ical_retrieve_line_item(pline, &tmp_item)) {
 		ical_clear_component(pical);
-		return FALSE;
+		return false;
 	}
 	if (0 == strcasecmp(tmp_item.ptag, "BEGIN") &&
 		NULL != pnext && (NULL != tmp_item.pvalue &&
@@ -583,7 +579,7 @@ BOOL ical_retrieve(ICAL *pical, char *in_buff)
 		return ical_retrieve_component(pical, pnext, NULL);
 	}
 	ical_clear_component(pical);
-	return FALSE;
+	return false;
 }
 
 static size_t ical_serialize_tag_string(char *pbuff,
@@ -809,12 +805,12 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	return offset;
 }
 
-BOOL ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
+bool ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
 {
 	if (0 == ical_serialize_component(pical, out_buff, max_length)) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 ICAL_LINE* ical_new_line(const char *name)
@@ -860,19 +856,19 @@ ICAL_PARAM* ical_new_param(const char*name)
 	return piparam;
 }
 
-BOOL ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
+bool ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
 {
 	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
-		return FALSE;
+		return false;
 	}
 	pnode->pdata = strdup(paramval);
 	if (NULL == pnode->pdata) {
 		free(pnode);
-		return FALSE;
+		return false;
 	}
 	double_list_append_as_tail(&piparam->paramval_list, pnode);
-	return TRUE;
+	return true;
 }
 
 void ical_append_param(ICAL_LINE *piline, ICAL_PARAM *piparam)
@@ -918,23 +914,23 @@ ICAL_VALUE* ical_new_value(const char *name)
 	return pivalue;
 }
 
-BOOL ical_append_subval(ICAL_VALUE *pivalue, const char *subval)
+bool ical_append_subval(ICAL_VALUE *pivalue, const char *subval)
 {
 	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
-		return FALSE;
+		return false;
 	}
 	if (NULL != subval) {
 		pnode->pdata = strdup(subval);
 		if (NULL == pnode->pdata) {
 			free(pnode);
-			return FALSE;
+			return false;
 		}
 	} else {
 		pnode->pdata = NULL;
 	}
 	double_list_append_as_tail(&pivalue->subval_list, pnode);
-	return TRUE;
+	return true;
 }
 
 void ical_append_value(ICAL_LINE *piline, ICAL_VALUE *pivalue)
@@ -1025,15 +1021,14 @@ ICAL_LINE* ical_new_simple_line(const char *name, const char *value)
 		return NULL;
 	}
 	ical_append_value(piline, pivalue);
-	if (FALSE == ical_append_subval(pivalue, value)) {
+	if (!ical_append_subval(pivalue, value)) {
 		ical_free_line(piline);
 		return NULL;
 	}
 	return piline;
 }
 
-BOOL ical_parse_utc_offset(const char *str_offset,
-	int *phour, int *pminute)
+bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 {
 	int hour;
 	int minute;
@@ -1049,17 +1044,17 @@ BOOL ical_parse_utc_offset(const char *str_offset,
 	} else if ('+' == str_zone[0]) {
 		factor = -1;
 	} else {
-		return FALSE;
+		return false;
 	}
 	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
 	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
-		return FALSE;
+		return false;
 	tmp_buff[0] = str_zone[1];
 	tmp_buff[1] = str_zone[2];
 	tmp_buff[2] = '\0';
 	hour = atoi(tmp_buff);
 	if (hour < 0 || hour > 23) {
-		return FALSE;
+		return false;
 	}
 
 	tmp_buff[0] = str_zone[3];
@@ -1067,15 +1062,14 @@ BOOL ical_parse_utc_offset(const char *str_offset,
 	tmp_buff[2] = '\0';
 	minute = atoi(tmp_buff);
 	if (minute < 0 || minute > 59) {
-		return FALSE;
+		return false;
 	}
 	*phour = factor * hour;
 	*pminute = factor * minute;
-	return TRUE;
+	return true;
 }
 
-BOOL ical_parse_date(const char *str_date,
-	int *pyear, int *pmonth, int *pday)
+bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday)
 {
 	char tmp_buff[128];
 	
@@ -1083,13 +1077,12 @@ BOOL ical_parse_date(const char *str_date,
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	if (sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) < 3) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
-BOOL ical_parse_datetime(const char *str_datetime,
-	BOOL *pb_utc, ICAL_TIME *pitime)
+bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitime)
 {
 	int len;
 	char tsep;
@@ -1100,17 +1093,17 @@ BOOL ical_parse_datetime(const char *str_datetime,
 	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
-		*pb_utc = TRUE;
+		*b_utc = true;
 		len --;
 		tmp_buff[len] = '\0';
 	} else {
-		*pb_utc = FALSE;
+		*b_utc = false;
 	}
 	if (15 == len) {
 		if (7 != sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d",
 			&pitime->year, &pitime->month, &pitime->day, &tsep,
 			&pitime->hour, &pitime->minute, &pitime->second)) {
-			return FALSE;
+			return false;
 		}
 		pitime->leap_second = 0;
 	} else if (17 == len) {
@@ -1118,15 +1111,15 @@ BOOL ical_parse_datetime(const char *str_datetime,
 			&pitime->year, &pitime->month, &pitime->day, &tsep,
 			&pitime->hour, &pitime->minute, &pitime->second,
 			&pitime->leap_second)) {
-			return FALSE;
+			return false;
 		}
 	} else {
-		return FALSE;
+		return false;
 	}
 	if ('T' != tsep) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2)
@@ -1500,8 +1493,7 @@ void ical_add_second(ICAL_TIME *pitime, int seconds)
 	}
 }
 
-BOOL ical_parse_byday(const char *str_byday,
-	int *pdayofweek, int *pweekorder)
+bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 {
 	char *pbegin;
 	BOOL b_negative;
@@ -1535,7 +1527,7 @@ BOOL ical_parse_byday(const char *str_byday,
 	}
 	*pweekorder = atoi(tmp_num);
 	if (*pweekorder < 1 || *pweekorder > 53) {
-		return FALSE;
+		return false;
 	}
 	if (TRUE == b_negative) {
 		*pweekorder *= -1;
@@ -1556,12 +1548,12 @@ PARSE_WEEKDAY:
 	} else if (0 == strcasecmp(pbegin, "SA")) {
 		*pdayofweek = 6;
 	} else {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
-BOOL ical_parse_duration(const char *str_duration, long *pseconds)
+bool ical_parse_duration(const char *str_duration, long *pseconds)
 {
 	int day;
 	int week;
@@ -1588,7 +1580,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 		factor = 1;
 	}
 	if ('P' != *ptoken) {
-		return FALSE;
+		return false;
 	}
 	ptoken ++;
 	b_time = FALSE;
@@ -1601,7 +1593,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 		switch (*ptoken1) {
 		case 'W':
 			if (ptoken1 == ptoken || -1 != week || TRUE == b_time) {
-				return FALSE;
+				return false;
 			}
 			*ptoken1 = '\0';
 			week = atoi(ptoken);
@@ -1609,7 +1601,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 			break;
 		case 'D':
 			if (ptoken1 == ptoken || -1 != day || TRUE == b_time) {
-				return FALSE;
+				return false;
 			}
 			*ptoken1 = '\0';
 			day = atoi(ptoken);
@@ -1617,14 +1609,14 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 			break;
 		case 'T':
 			if (ptoken != ptoken1 || TRUE == b_time) {
-				return FALSE;
+				return false;
 			}
 			b_time = TRUE;
 			ptoken = ptoken1 + 1;
 			break;
 		case 'H':
 			if (ptoken1 == ptoken || -1 != hour || FALSE == b_time) {
-				return FALSE;
+				return false;
 			}
 			*ptoken1 = '\0';
 			hour = atoi(ptoken);
@@ -1632,7 +1624,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 			break;
 		case 'M':
 			if (ptoken1 == ptoken || -1 != minute || FALSE == b_time) {
-				return FALSE;
+				return false;
 			}
 			*ptoken1 = '\0';
 			minute = atoi(ptoken);
@@ -1640,7 +1632,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 			break;
 		case 'S':
 			if (ptoken1 == ptoken || -1 != second || FALSE == b_time) {
-				return FALSE;
+				return false;
 			}
 			*ptoken1 = '\0';
 			second = atoi(ptoken);
@@ -1648,7 +1640,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 			break;
 		default:
 			if (!HX_isdigit(*ptoken1))
-				return FALSE;
+				return false;
 			break;
 		}
 	}
@@ -1669,7 +1661,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 		*pseconds += second;
 	}
 	*pseconds *= factor;
-	return TRUE;
+	return true;
 }
 
 static const char* ical_get_datetime_offset(
@@ -1679,7 +1671,7 @@ static const char* ical_get_datetime_offset(
 	int month;
 	int minute;
 	int second;
-	BOOL b_utc;
+	bool b_utc;
 	int weekorder;
 	int dayofweek;
 	int dayofmonth;
@@ -1722,10 +1714,8 @@ static const char* ical_get_datetime_offset(
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (FALSE == ical_parse_datetime(pvalue,
-			&b_utc, &itime1) || TRUE == b_utc) {
+		if (!ical_parse_datetime(pvalue, &b_utc, &itime1) || b_utc)
 			return NULL;
-		}
 		if (ical_cmp_time(itime, itime1) < 0) {
 			continue;
 		}
@@ -1737,19 +1727,17 @@ static const char* ical_get_datetime_offset(
 		if (NULL == pvalue) {
 			goto FOUND_COMPONENT;
 		}
-		if (FALSE == ical_parse_datetime(pvalue, &b_utc, &itime2)) {
+		if (!ical_parse_datetime(pvalue, &b_utc, &itime2)) {
 			itime2.hour = 0;
 			itime2.minute = 0;
 			itime2.second = 0;
 			itime2.leap_second = 0;
-			if (FALSE == ical_parse_date(pvalue, &itime2.year,
-				&itime2.month, &itime2.day)) {
+			if (!ical_parse_date(pvalue, &itime2.year,
+			    &itime2.month, &itime2.day))
 				return nullptr;
-			}
 		} else {
-			if (FALSE == ical_datetime_to_utc(NULL, pvalue, &tmp_time)) {
+			if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
 				return nullptr;
-			}
 			piline = ical_get_line(pcomponent, "TZOFFSETTO");
 			if (NULL == piline) {
 				return NULL;
@@ -1758,9 +1746,8 @@ static const char* ical_get_datetime_offset(
 			if (NULL == pvalue) {
 				return NULL;
 			}
-			if (FALSE == ical_parse_utc_offset(pvalue, &hour, &minute)) {
+			if (!ical_parse_utc_offset(pvalue, &hour, &minute))
 				return nullptr;
-			}
 			tmp_time -= 60*60*hour + 60*minute;
 			make_gmtm(tmp_time, &tmp_tm);
 			itime2.year = tmp_tm.tm_year + 1900;
@@ -1821,10 +1808,8 @@ FOUND_COMPONENT:
 				itime_daylight.month = month;
 			}
 			if (NULL != pvalue) {
-				if (FALSE == ical_parse_byday(pvalue,
-					&dayofweek, &weekorder)) {
+				if (!ical_parse_byday(pvalue, &dayofweek, &weekorder))
 					return NULL;
-				}
 				if (weekorder > 5 || weekorder < -5 || 0 == weekorder) {
 					return NULL;
 				}
@@ -1924,8 +1909,8 @@ FOUND_COMPONENT:
 	}
 }
 
-BOOL ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
-	ICAL_TIME itime, time_t *ptime)
+bool ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
+    ICAL_TIME itime, time_t *ptime)
 {
 	int hour_offset;
 	struct tm tmp_tm;
@@ -1947,36 +1932,33 @@ BOOL ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
 	tmp_tm.tm_isdst = 0;
 	*ptime = make_gmtime(&tmp_tm);
 	if (NULL == ptz_component) {
-		return TRUE;
+		return true;
 	}
 	str_offset = ical_get_datetime_offset(ptz_component, itime);
 	if (NULL == str_offset) {
-		return FALSE;
+		return false;
 	}
-	if (FALSE == ical_parse_utc_offset(str_offset,
-		&hour_offset, &minute_offset)) {
-		return FALSE;
-	}
+	if (!ical_parse_utc_offset(str_offset, &hour_offset, &minute_offset))
+		return false;
 	*ptime += 60*60*hour_offset + 60*minute_offset;
-	return TRUE;
+	return true;
 }
 
-BOOL ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
+bool ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
 	const char *str_datetime, time_t *ptime)
 {
-	BOOL b_utc;
+	bool b_utc;
 	ICAL_TIME itime;
 	struct tm tmp_tm;
 	
-	if (FALSE == ical_parse_datetime(str_datetime, &b_utc, &itime)) {
-		return FALSE;
-	}
+	if (!ical_parse_datetime(str_datetime, &b_utc, &itime))
+		return false;
 	if (itime.leap_second >= 60) {
 		tmp_tm.tm_sec = itime.leap_second;
 	} else {
 		tmp_tm.tm_sec = itime.second;
 	}
-	if (TRUE == b_utc) {
+	if (b_utc) {
 		tmp_tm.tm_min = itime.minute;
 		tmp_tm.tm_hour = itime.hour;
 		tmp_tm.tm_mday = itime.day;
@@ -1986,12 +1968,12 @@ BOOL ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
 		tmp_tm.tm_yday = 0;
 		tmp_tm.tm_isdst = 0;
 		*ptime = make_gmtime(&tmp_tm);
-		return TRUE;
+		return true;
 	}
 	return ical_itime_to_utc(ptz_component, itime, ptime);
 }
 
-BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
+bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 	time_t utc_time, ICAL_TIME *pitime)
 {
 	int hour;
@@ -2013,7 +1995,7 @@ BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 		pitime->minute = tmp_tm.tm_min;
 		pitime->second = tmp_tm.tm_sec;
 		pitime->leap_second = 0;
-		return TRUE;
+		return true;
 	}
 	for (pnode=double_list_get_head(
 		&ptz_component->component_list); NULL!=pnode;
@@ -2022,19 +2004,18 @@ BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
 		if (0 != strcasecmp(pcomponent->name, "STANDARD") &&
 			0 != strcasecmp(pcomponent->name, "DAYLIGHT")) {
-			return FALSE;
+			return false;
 		}
 		piline = ical_get_line(pcomponent, "TZOFFSETTO");
 		if (NULL == piline) {
-			return FALSE;
+			return false;
 		}
 		pvalue = ical_get_first_subvalue(piline);
 		if (NULL == pvalue) {
-			return FALSE;
+			return false;
 		}
-		if (FALSE == ical_parse_utc_offset(pvalue, &hour, &minute)) {
-			return FALSE;
-		}
+		if (!ical_parse_utc_offset(pvalue, &hour, &minute))
+			return false;
 		tmp_time = utc_time - 60*60*hour - 60*minute;
 		make_gmtm(tmp_time, &tmp_tm);
 		pitime->year = tmp_tm.tm_year + 1900;
@@ -2044,38 +2025,34 @@ BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 		pitime->minute = tmp_tm.tm_min;
 		pitime->second = tmp_tm.tm_sec;
 		pitime->leap_second = 0;
-		if (FALSE == ical_itime_to_utc(
-			ptz_component, *pitime, &tmp_time)) {
-			return FALSE;
-		}
+		if (!ical_itime_to_utc(ptz_component, *pitime, &tmp_time))
+			return false;
 		if (tmp_time == utc_time) {
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 static BOOL ical_parse_until(ICAL_COMPONENT *ptz_component,
 	const char *str_until, time_t *ptime)
 {
-	BOOL b_utc;
+	bool b_utc;
 	ICAL_TIME itime;
 	
-	if (FALSE == ical_parse_datetime(str_until, &b_utc, &itime)) {
-		if (FALSE == ical_parse_date(str_until, &itime.year,
-			&itime.month, &itime.day)) {
+	if (!ical_parse_datetime(str_until, &b_utc, &itime)) {
+		if (!ical_parse_date(str_until, &itime.year,
+		    &itime.month, &itime.day))
 			return FALSE;
-		}
 		itime.hour = 0;
 		itime.minute = 0;
 		itime.second = 0;
 		itime.leap_second = 0;
-		return ical_itime_to_utc(ptz_component, itime, ptime);
+		return ical_itime_to_utc(ptz_component, itime, ptime) ? TRUE : false;
 	} else {
-		if (FALSE == b_utc) {
-			return ical_itime_to_utc(ptz_component, itime, ptime);
-		}
-		return ical_datetime_to_utc(NULL, str_until, ptime);
+		if (!b_utc)
+			return ical_itime_to_utc(ptz_component, itime, ptime) ? TRUE : false;
+		return ical_datetime_to_utc(nullptr, str_until, ptime) ? TRUE : false;
 	}
 }
 
@@ -2508,8 +2485,8 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 }
 
 /* ptz_component can be NULL, represents UTC */
-BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
-	time_t start_time, DOUBLE_LIST *pvalue_list, ICAL_RRULE *pirrule)
+bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
+    DOUBLE_LIST *pvalue_list, ICAL_RRULE *pirrule)
 {
 	int i;
 	int tmp_int;
@@ -2536,7 +2513,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	pvalue = ical_get_first_subvalue_by_name_internal(
 								pvalue_list, "FREQ");
 	if (NULL == pvalue) {
-		return FALSE;
+		return false;
 	}
 	if (0 == strcasecmp(pvalue, "SECONDLY")) {
 		pirrule->frequency = ICAL_FREQUENCY_SECOND;
@@ -2553,7 +2530,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	} else if (0 == strcasecmp(pvalue, "YEARLY")) {
 		pirrule->frequency = ICAL_FREQUENCY_YEAR;
 	} else {
-		return FALSE;
+		return false;
 	}
 	pirrule->real_frequency = pirrule->frequency;
 	pvalue = ical_get_first_subvalue_by_name_internal(
@@ -2563,7 +2540,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	} else {
 		pirrule->interval = atoi(pvalue);
 		if (pirrule->interval <= 0) {
-			return FALSE;
+			return false;
 		}
 	}
 	pvalue = ical_get_first_subvalue_by_name_internal(
@@ -2573,21 +2550,21 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	} else {
 		pirrule->total_count = atoi(pvalue);
 		if (pirrule->total_count <= 0) {
-			return FALSE;
+			return false;
 		}
 	}
 	pvalue = ical_get_first_subvalue_by_name_internal(
 								pvalue_list, "UNTIL");
 	if (NULL != pvalue) {
 		if (0 != pirrule->total_count) {
-			return FALSE;
+			return false;
 		}
 		if (FALSE == ical_parse_until(
 			ptz_component, pvalue, &until_time)) {
-			return FALSE;
+			return false;
 		}
 		if (until_time <= start_time) {
-			return FALSE;
+			return false;
 		}
 		pirrule->b_until = TRUE;
 		ical_utc_to_datetime(ptz_component,
@@ -2601,11 +2578,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbysecond_list); NULL!=pnode;
 			pnode=double_list_get_after(pbysecond_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
-				return FALSE;
+				return false;
 			}
 			ical_set_bitmap(pirrule->second_bitmap, tmp_int);
 		}
@@ -2620,11 +2597,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbyminute_list); NULL!=pnode;
 			pnode=double_list_get_after(pbyminute_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
-				return FALSE;
+				return false;
 			}
 			ical_set_bitmap(pirrule->minute_bitmap, tmp_int);
 		}
@@ -2639,11 +2616,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbyhour_list); NULL!=pnode;
 			pnode=double_list_get_after(pbyhour_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23) {
-				return FALSE;
+				return false;
 			}
 			ical_set_bitmap(pirrule->hour_bitmap, tmp_int);
 		}
@@ -2658,11 +2635,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbymday_list); NULL!=pnode;
 			pnode=double_list_get_after(pbymday_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31) {
-				return FALSE;
+				return false;
 			}
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->mday_bitmap, tmp_int - 1);
@@ -2681,11 +2658,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbyyday_list); NULL!=pnode;
 			pnode=double_list_get_after(pbyyday_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
-				return FALSE;
+				return false;
 			}	
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->yday_bitmap, tmp_int - 1);
@@ -2704,19 +2681,19 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		if (ICAL_FREQUENCY_WEEK != pirrule->frequency &&
 			ICAL_FREQUENCY_MONTH != pirrule->frequency &&
 			ICAL_FREQUENCY_YEAR != pirrule->frequency) {
-			return FALSE;
+			return false;
 		}
 		for (pnode=double_list_get_head(pbywday_list); NULL!=pnode;
 			pnode=double_list_get_after(pbywday_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			if (!ical_parse_byday(static_cast<char *>(pnode->pdata),
 			    &dayofweek, &weekorder))
-				return FALSE;
+				return false;
 			if (ICAL_FREQUENCY_MONTH == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5) {
-					return FALSE;
+					return false;
 				} else if (weekorder > 0) {
 					ical_set_bitmap(pirrule->wday_bitmap,
 						7*(weekorder - 1) + dayofweek);
@@ -2742,7 +2719,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 				}
 			} else {
 				if (0 != weekorder) {
-					return FALSE;
+					return false;
 				}
 				ical_set_bitmap(pirrule->wday_bitmap, dayofweek);
 			}
@@ -2758,11 +2735,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbywnum_list); NULL!=pnode;
 			pnode=double_list_get_after(pbywnum_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53) {
-				return FALSE;
+				return false;
 			}	
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->week_bitmap, tmp_int - 1);
@@ -2781,11 +2758,11 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		for (pnode=double_list_get_head(pbymonth_list); NULL!=pnode;
 			pnode=double_list_get_after(pbymonth_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12) {
-				return FALSE;
+				return false;
 			}
 			ical_set_bitmap(pirrule->month_bitmap, tmp_int - 1);
 		}
@@ -2799,29 +2776,29 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	if (NULL != psetpos_list) {
 		switch (pirrule->frequency) {
 		case ICAL_FREQUENCY_SECOND:
-			return FALSE;
+			return false;
 		case ICAL_FREQUENCY_MINUTE:
 			if (pirrule->real_frequency != ICAL_FREQUENCY_SECOND) {
-				return FALSE;
+				return false;
 			}
 			if (60*pirrule->interval > 366) {
-				return FALSE;
+				return false;
 			}
 			break;
 		case ICAL_FREQUENCY_HOUR:
 			if (pirrule->real_frequency != ICAL_FREQUENCY_MINUTE) {
-				return FALSE;
+				return false;
 			}
 			if (60*pirrule->interval > 366) {
-				return FALSE;
+				return false;
 			}
 			break;
 		case ICAL_FREQUENCY_DAY:
 			if (pirrule->real_frequency != ICAL_FREQUENCY_HOUR) {
-				return FALSE;
+				return false;
 			}
 			if (24*pirrule->interval > 366) {
-				return FALSE;
+				return false;
 			}
 			break;
 		case ICAL_FREQUENCY_WEEK:
@@ -2829,7 +2806,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 				break;
 			} else if (pirrule->real_frequency == ICAL_FREQUENCY_HOUR) {
 				if (7*24*pirrule->interval > 366) {
-					return FALSE;
+					return false;
 				}
 				break;
 			}
@@ -2837,42 +2814,42 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		case ICAL_FREQUENCY_MONTH:
 			if (pirrule->real_frequency == ICAL_FREQUENCY_DAY) {
 				if (31*pirrule->interval > 366) {
-					return FALSE;
+					return false;
 				}
 			} else if (pirrule->real_frequency == ICAL_FREQUENCY_WEEK) {
 				if (5*pirrule->interval > 366) {
-					return FALSE;
+					return false;
 				}
 			} else {
-				return FALSE;
+				return false;
 			}
 			break;
 		case ICAL_FREQUENCY_YEAR:
 			if (pirrule->real_frequency == ICAL_FREQUENCY_DAY) {
 				if (pirrule->interval > 1) {
-					return FALSE;
+					return false;
 				}
 			} else if (pirrule->real_frequency == ICAL_FREQUENCY_WEEK) {
 				if (pirrule->interval > 8) {
-					return FALSE;
+					return false;
 				}
 			} else if (pirrule->real_frequency == ICAL_FREQUENCY_MONTH) {
 				if (pirrule->interval > 30) {
-					return FALSE;
+					return false;
 				}
 			} else {
-				return FALSE;
+				return false;
 			}
 			break;
 		}
 		for (pnode=double_list_get_head(psetpos_list); NULL!=pnode;
 			pnode=double_list_get_after(psetpos_list, pnode)) {
 			if (NULL == pnode->pdata) {
-				return FALSE;
+				return false;
 			}
 			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
-				return FALSE;
+				return false;
 			}
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->setpos_bitmap, tmp_int - 1);
@@ -2900,7 +2877,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 		} else if (0 == strcasecmp(pvalue, "SA")) {
 			pirrule->weekstart = 6;
 		} else {
-			return FALSE;
+			return false;
 		}
 	} else {
 		if (NULL != pbywnum_list) {
@@ -3001,7 +2978,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	while (ical_cmp_time(itime, pirrule->next_base_itime) < 0) {
 		if (TRUE == pirrule->b_until &&
 			ical_cmp_time(itime, pirrule->until_itime) > 0) {
-			return FALSE;
+			return false;
 		}
 		hint_result = ical_hint_rrule(pirrule, itime);
 		if (0 == hint_result) {
@@ -3022,10 +2999,10 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 				pirrule->real_start_itime = itime;
 				pirrule->current_instance = 1;
 				pirrule->next_base_itime = pirrule->base_itime;
-				return TRUE;
+				return true;
 			}
 			pirrule->current_instance = 1;
-			return TRUE;
+			return true;
 		}
 		itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 	}
@@ -3033,7 +3010,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	itime = pirrule->instance_itime;
 	pirrule->current_instance = 1;
 	pirrule->instance_itime = pirrule->next_base_itime;
-	if (FALSE == ical_rrule_iterate(pirrule)) {
+	if (!ical_rrule_iterate(pirrule)) {
 		pirrule->total_count = 1;
 		pirrule->instance_itime = itime;
 	} else {
@@ -3044,30 +3021,30 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	}
 	pirrule->current_instance = 1;
 	pirrule->b_start_exceptional = TRUE;
-	return TRUE;
+	return true;
 }
 
-BOOL ical_rrule_iterate(ICAL_RRULE *pirrule)
+bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 {
 	ICAL_TIME itime;
 	int hint_result;
 	
 	if (0 != pirrule->total_count &&
 		pirrule->current_instance >= pirrule->total_count) {
-		return FALSE;
+		return false;
 	}
 	if (TRUE == pirrule->b_start_exceptional) {
 		itime = pirrule->real_start_itime;
 		if (TRUE == pirrule->b_until && ical_cmp_time(
 			itime, pirrule->until_itime) > 0) {
-			return FALSE;
+			return false;
 		}
 		pirrule->b_start_exceptional = FALSE;
 		pirrule->current_instance ++;
 		pirrule->instance_itime = itime;
 		pirrule->base_itime = pirrule->next_base_itime;
 		ical_next_rrule_base_itime(pirrule);
-		return TRUE;
+		return true;
 	}
 	hint_result = 0;
 	itime = pirrule->instance_itime;
@@ -3075,7 +3052,7 @@ BOOL ical_rrule_iterate(ICAL_RRULE *pirrule)
 		itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 		if (TRUE == pirrule->b_until && ical_cmp_time(
 			itime, pirrule->until_itime) > 0) {
-			return FALSE;
+			return false;
 		}
 		if (ical_cmp_time(itime, pirrule->next_base_itime) >= 0) {
 			pirrule->base_itime = pirrule->next_base_itime;
@@ -3095,7 +3072,7 @@ BOOL ical_rrule_iterate(ICAL_RRULE *pirrule)
 			}
 			pirrule->current_instance ++;
 			pirrule->instance_itime = itime;
-			return TRUE;
+			return true;
 		}
 	}
 }
@@ -3105,12 +3082,12 @@ int ical_rrule_weekstart(ICAL_RRULE *pirrule)
 	return pirrule->weekstart;
 }
 
-BOOL ical_rrule_endless(ICAL_RRULE *pirrule)
+bool ical_rrule_endless(ICAL_RRULE *pirrule)
 {
 	if (0 == pirrule->total_count && FALSE == pirrule->b_until) {
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 const ICAL_TIME* ical_rrule_until_itime(ICAL_RRULE *pirrule)
@@ -3127,7 +3104,7 @@ int ical_rrule_total_count(ICAL_RRULE *pirrule)
 	return pirrule->total_count;
 }
 
-BOOL ical_rrule_exceptional(ICAL_RRULE *pirrule)
+bool ical_rrule_exceptional(ICAL_RRULE *pirrule)
 {
 	return pirrule->b_start_exceptional;
 }
@@ -3157,7 +3134,7 @@ int ical_rrule_frequency(ICAL_RRULE *pirrule)
 	return pirrule->frequency;
 }
 
-BOOL ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by)
+bool ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by)
 {
 	return pirrule->by_mask[rrule_by];
 }

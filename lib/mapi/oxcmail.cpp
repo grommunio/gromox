@@ -4685,8 +4685,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				utf8_filter(pcontent + content_len + 1);
 			}
 			ical_init(&ical);
-			if (FALSE == ical_retrieve(&ical,
-				pcontent + content_len + 1) || 
+			if (!ical_retrieve(&ical, pcontent + content_len + 1) ||
 				NULL == (pmsg1 = oxcical_import(
 				str_zone, &ical, alloc, get_propids,
 				oxcmail_username_to_entryid))) {
@@ -7247,8 +7246,7 @@ HTML_ONLY:
 				strncpy(tmp_method, static_cast<char *>(pvalue), 32);
 			}
 		}
-		if (FALSE == ical_serialize(&ical,
-			tmp_buff, sizeof(tmp_buff))) {
+		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff))) {
 			ical_free(&ical);
 			goto EXPORT_FAILURE;
 		}

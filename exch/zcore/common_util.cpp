@@ -3287,8 +3287,7 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 		ical_free(&ical);
 		return FALSE;
 	}
-	if (FALSE == ical_serialize(&ical,
-		tmp_buff, sizeof(tmp_buff))) {
+	if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff))) {
 		ical_free(&ical);
 		return FALSE;	
 	}
@@ -3318,7 +3317,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
 	ical_init(&ical);
-	if (FALSE == ical_retrieve(&ical, pbuff)) {
+	if (!ical_retrieve(&ical, pbuff)) {
 		ical_free(&ical);
 		return NULL;
 	}
