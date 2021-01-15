@@ -4803,24 +4803,22 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				message_content_free(pmsg);
 				return NULL;
 			}
-			pvalue = alloc(3 * strlen(plainout) + 1);
+			propval.proptag = PROP_TAG_BODY;
+			propval.pvalue = alloc(3 * strlen(plainout) + 1);
 			if (NULL == pvalue) {
 				free(plainout);
 				message_content_free(pmsg);
 				return NULL;
 			}
-			propval.proptag = PROP_TAG_BODY;
-			propval.pvalue = pvalue;
-			memcpy(pvalue, plainout, strlen(plainout) + 1);
-			free(plainout);
 			encoding = oxcmail_cpid_to_charset(tmp_int32);
 			if (NULL == encoding) {
 				encoding = "windows-1252";
 			}
-			if (string_to_utf8(encoding, static_cast<char *>(pvalue), static_cast<char *>(propval.pvalue)) &&
+			if (string_to_utf8(encoding, static_cast<char *>(plainout), static_cast<char *>(propval.pvalue)) &&
 			    utf8_check(static_cast<char *>(propval.pvalue)))
 				tpropval_array_set_propval(
 					&pmsg->proplist, &propval);
+			free(plainout);
 		}
 	}
 	if (NULL == tpropval_array_get_propval(
