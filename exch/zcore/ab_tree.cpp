@@ -2057,7 +2057,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			if (sa->ppstr[i] == nullptr)
 				return false;
 			strcpy(sa->ppstr[i], "SMTP:");
-			strcat(sa->ppstr[i], a.c_str());
+			strcat(sa->ppstr[i++], a.c_str());
 		}
 		*ppvalue = sa;
 		return TRUE;
