@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <pthread.h>
+#include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/lib_buffer.hpp>
+
+static constexpr auto wsize_al = roundup(WSIZE, sizeof(std::max_align_t));
 
 /*
  *	init a buffer pool with specified item size and number
@@ -27,16 +34,16 @@ LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_sa
 		return NULL;
 	}
 
-	if (NULL == (head_listp = malloc((item_size + WSIZE) * 
-			item_num))) {
+	auto item_size_al = roundup(item_size, sizeof(std::max_align_t));
+	head_listp = malloc((item_size_al + wsize_al) * item_num);
+	if (head_listp == nullptr) {
 		debug_info("[lib_buffer]: lib_buffer_init, malloc head_listp fail");
 		free(lib_buffer);
 		return NULL;
 	}
 
 	pthread_mutex_init(&lib_buffer->m_mutex, NULL);
-	memset(head_listp, 0, (item_size+WSIZE)*item_num);
-
+	memset(head_listp, 0, (item_size_al + wsize_al) * item_num);
 	lib_buffer->heap_list_head	= head_listp;
 	lib_buffer->cur_heap_head	= head_listp;
 
@@ -95,15 +102,14 @@ void* lib_buffer_get(LIB_BUFFER* m_buf)
 		pthread_mutex_lock(&m_buf->m_mutex);
 	}
 
+	auto item_size_al = roundup(m_buf->item_size, sizeof(std::max_align_t));
 	if (m_buf->free_list_size > 0) {
 		phead	= (char *)m_buf->free_list_head;
 		ret_buf = m_buf->free_list_head;
-
-		memcpy(&phead, phead + m_buf->item_size, sizeof(void*));
-
+		memcpy(&phead, phead + item_size_al, sizeof(void *));
 #ifdef _DEBUG_UMTA
 		/* check memory */
-		memset(ret_buf+ m_buf->item_size, 0, sizeof(void*));
+		memset(ret_buf + item_size_al, 0, sizeof(void *));
 #endif
 
 		m_buf->free_list_head  = (void*)phead;
@@ -128,9 +134,8 @@ void* lib_buffer_get(LIB_BUFFER* m_buf)
 
 	phead	= (char*)m_buf->cur_heap_head;
 	ret_buf = m_buf->cur_heap_head;
-	memset(phead + m_buf->item_size, 0, sizeof(void*));
-
-	phead  += (m_buf->item_size + WSIZE);
+	memset(phead + item_size_al, 0, sizeof(void *));
+	phead  += item_size_al + wsize_al;
 	m_buf->cur_heap_head	= (void*)phead;
 	m_buf->allocated_num	+= 1;
 
@@ -159,11 +164,11 @@ void lib_buffer_put(LIB_BUFFER* m_buf, void *item)
 		return;
 	}
 	pcur_item	= (char *)item;
-	memset(pcur_item, 0, m_buf->item_size);
-
+	auto item_size_al = roundup(m_buf->item_size, sizeof(std::max_align_t));
+	memset(pcur_item, 0, item_size_al);
 #ifdef _DEBUG_UMTA
 	/* memory check */
-	memcpy(&pzero, pcur_item + m_buf->item_size, sizeof(void*));
+	memcpy(&pzero, pcur_item + item_size_al, sizeof(void *));
 	if (pzero != 0) {
 		debug_info("[lib_buffer]: lib_buffer memory dump");
 	}
@@ -172,10 +177,7 @@ void lib_buffer_put(LIB_BUFFER* m_buf, void *item)
 	if (TRUE == m_buf->is_thread_safe) {
 		pthread_mutex_lock(&m_buf->m_mutex);
 	}
-
-	memcpy(pcur_item + m_buf->item_size, &(m_buf->free_list_head), 
-		sizeof(void*));
-
+	memcpy(pcur_item + item_size_al, &m_buf->free_list_head, sizeof(void *));
 	m_buf->free_list_head = item;
 	m_buf->free_list_size += 1;
 	m_buf->allocated_num  -= 1;
