@@ -7,12 +7,15 @@
  *		In multithread enviroment, we must consider mutual exclusion and 
  *		synchronized problems. 
  */
+#include <cstddef>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/int_hash.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
 
 static size_t g_num_of_collision;
+static constexpr auto inthashitem_al = roundup(sizeof(INT_HASH_ITEM), sizeof(std::max_align_t));
 
 static unsigned int default_int_hash_function(unsigned int);
 
@@ -61,9 +64,7 @@ INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size)
 	for (i = 0; i < table->entry_num; i++) {
 		double_list_init(&(p_map[i]));
 	}
-
-	table->buf_pool = lib_buffer_init(sizeof(INT_HASH_ITEM) + item_size,
-						max_items, FALSE);
+	table->buf_pool = lib_buffer_init(inthashitem_al + item_size, max_items, false);
 	if (NULL == table->buf_pool) {
 		debug_info("[int_hash]: int_hash_init, lib_buffer_init fail");
 		free(table);
@@ -162,9 +163,7 @@ int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
 	item->map_index = index;
 	item->list_node.pdata = item;
 	item->iter_node.pdata = item;
-
-	memcpy((char*)list_node + sizeof(INT_HASH_ITEM), value, ptbl->data_size);
-
+	memcpy(reinterpret_cast<char *>(list_node) + inthashitem_al, value, ptbl->data_size);
 	dlist	= (DOUBLE_LIST*)&(ptbl->hash_map[index]);
 
 	if (NULL == dlist->phead) {
@@ -214,7 +213,6 @@ void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
 {
 	DOUBLE_LIST_NODE* next	= NULL;
 	size_t	index = -1;
-	void*	pdata = NULL;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl) {
@@ -230,16 +228,14 @@ void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
 	next = ptbl->hash_map[index].phead;
 
 	if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key) {
-		pdata = (char*)next->pdata + sizeof(INT_HASH_ITEM);
-		return pdata;
+		return reinterpret_cast<char *>(next->pdata) + inthashitem_al;
 	}
 	next = next->pnext;
 
 	while (next != ptbl->hash_map[index].phead) {
 		if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key)
 		{
-			pdata = (char*)next->pdata + sizeof(INT_HASH_ITEM);
-			return pdata;
+			return reinterpret_cast<char *>(next->pdata) + inthashitem_al;
 		}
 		next = next->pnext;
 	}
@@ -403,8 +399,7 @@ void* int_hash_iter_get_value(INT_HASH_ITER *piter, int *key)
 		return NULL;
 	}
 #endif
-	pvalue = (char *)piter->cur_node->pdata + sizeof(INT_HASH_ITEM);
-	
+	pvalue = reinterpret_cast<char *>(piter->cur_node->pdata) + inthashitem_al;
 	if (NULL != key) {
 		*key = ((INT_HASH_ITEM*)piter->cur_node->pdata)->hash_key;
 	}
