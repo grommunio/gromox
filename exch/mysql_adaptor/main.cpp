@@ -26,7 +26,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 	int conn_num, mysql_port, timeout;
 
     switch(reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -121,7 +121,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 
 		str_value = config_file_get_value(pfile, "schema_upgrades");
-		enum sql_schema_upgrade upg;
+		enum sql_schema_upgrade upg = S_ABORT;
 		if (str_value != nullptr && strcmp(str_value, "skip") == 0)
 			upg = S_SKIP;
 		else if (str_value != nullptr && strcmp(str_value, "autoupgrade") == 0)
@@ -179,6 +179,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		E(mysql_adaptor_get_username, "get_username");
 #undef E
         return TRUE;
+        }
 
     case PLUGIN_FREE:
 		mysql_adaptor_stop();
