@@ -98,3 +98,5 @@ enum {
 extern GX_EXPORT unsigned int gxerr_to_hresult(gxerr_t);
 
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
+#undef roundup /* you naughty glibc */
+template<typename T> constexpr T roundup(T x, T y) { return (x + y - 1) / y * y; }

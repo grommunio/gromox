@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/alloc_context.hpp>
+#include <cstddef>
 #include <cstdlib>
+#include <gromox/alloc_context.hpp>
+#include <gromox/defs.h>
 #define ALLOC_FRAME_SIZE					64*1024
 
 
@@ -26,25 +28,27 @@ void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size)
 	if (0 == double_list_get_nodes_num(&pcontext->list)) {
 		return NULL;
 	}
-	if (size > ALLOC_FRAME_SIZE - sizeof(DOUBLE_LIST_NODE)) {
-		auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(size + sizeof(DOUBLE_LIST_NODE)));
+	static constexpr auto node_al = roundup(sizeof(DOUBLE_LIST_NODE), sizeof(std::max_align_t));
+	auto size_al = roundup(size, sizeof(std::max_align_t));
+	if (size > ALLOC_FRAME_SIZE - node_al) {
+		auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(node_al + size_al));
 		if (NULL == pnode) {
 			return NULL;
 		}
-		pnode->pdata = reinterpret_cast<char *>(pnode) + sizeof(DOUBLE_LIST_NODE);
+		pnode->pdata = reinterpret_cast<char *>(pnode) + node_al;
 		double_list_insert_as_head(&pcontext->list, pnode);
-		pcontext->total += size;
+		pcontext->total += size_al;
 		return pnode->pdata;
 	} else {
-		if (size > ALLOC_FRAME_SIZE - sizeof(DOUBLE_LIST_NODE) - pcontext->offset) {
+		if (size > ALLOC_FRAME_SIZE - node_al - pcontext->offset) {
 			auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(ALLOC_FRAME_SIZE));
 			if (NULL == pnode) {
 				return NULL;
 			}
-			pnode->pdata = reinterpret_cast<char *>(pnode) + sizeof(DOUBLE_LIST_NODE);
+			pnode->pdata = reinterpret_cast<char *>(pnode) + node_al;
 			double_list_append_as_tail(&pcontext->list, pnode);
-			pcontext->offset = size;
-			pcontext->total += size;
+			pcontext->offset = size_al;
+			pcontext->total += size_al;
 			return pnode->pdata;
 		} else {
 			auto pnode = double_list_get_tail(&pcontext->list);
@@ -52,8 +56,8 @@ void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size)
 				return NULL;
 			}
 			ptr = static_cast<char *>(pnode->pdata) + pcontext->offset;
-			pcontext->offset += size;
-			pcontext->total += size;
+			pcontext->offset += size_al;
+			pcontext->total  += size_al;
 			return ptr;
 		}
 	}
