@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/eid_array.hpp>
+#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
@@ -81,8 +82,9 @@ EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 		free(parray1);
 		return NULL;
 	}
-	memcpy(parray1->pids, parray->pids,
-		parray->count*sizeof(uint64_t));
+	assert(parray->pids != nullptr || parray->count == 0);
+	if (parray->pids != nullptr)
+		memcpy(parray1->pids, parray->pids, parray->count * sizeof(uint64_t));
 	return parray1;
 }
 
