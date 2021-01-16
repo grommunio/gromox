@@ -2,6 +2,7 @@
 /*
  * A simple string hash table data structure
  */
+#include <cstddef>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -10,6 +11,7 @@
 #include <cstring>
 
 static size_t g_num_of_collision;
+static constexpr auto strhashitem_al = roundup(sizeof(STR_HASH_ITEM), sizeof(std::max_align_t));
 
 static size_t DJBHash(const char* str)
 {
@@ -67,8 +69,7 @@ STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC
 		double_list_init(&(p_map[i]));
 	}
 
-	table->buf_pool = lib_buffer_init(sizeof(STR_HASH_ITEM) + item_size, 
-						max_items, FALSE);
+	table->buf_pool = lib_buffer_init(strhashitem_al + item_size, max_items, false);
 	if (NULL == table->buf_pool) {
 		debug_info("[str_hash]: str_hash_init, lib_buffer_init fail");
 		free(table);
@@ -175,8 +176,7 @@ int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
 	item->list_node.pdata	= item;
 	item->iter_node.pdata	= item;
 	HX_strlcpy(item->key, key, GX_ARRAY_SIZE(item->key));
-	memcpy((char*)list_node + sizeof(STR_HASH_ITEM), value, ptbl->data_size);
-
+	memcpy(reinterpret_cast<char *>(list_node) + strhashitem_al, value, ptbl->data_size);
 	dlist	= (DOUBLE_LIST*)&(ptbl->hash_map[index]);
 
 	if (NULL == dlist->phead) {
@@ -224,7 +224,6 @@ void* str_hash_query(STR_HASH_TABLE* ptbl, const char *key)
 {
 	DOUBLE_LIST_NODE* next	= NULL;
 	size_t	index = -1;
-	void*	pdata = NULL;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl || NULL == key) {
@@ -242,15 +241,13 @@ void* str_hash_query(STR_HASH_TABLE* ptbl, const char *key)
 	next = ptbl->hash_map[index].phead;
 
 	if (0 == strcmp(key, ((STR_HASH_ITEM*)next->pdata)->key)) {
-		pdata = (char*)next->pdata + sizeof(STR_HASH_ITEM);
-		return pdata;
+		return reinterpret_cast<char *>(next->pdata) + strhashitem_al;
 	}
 	next = next->pnext;
 
 	while (next != ptbl->hash_map[index].phead) {
 		if (0 == strcmp(key, ((STR_HASH_ITEM*)next->pdata)->key)) {
-			pdata = (char*)next->pdata + sizeof(STR_HASH_ITEM);
-			return pdata;
+			return reinterpret_cast<char *>(next->pdata) + strhashitem_al;
 		}
 		next = next->pnext;
 	}
@@ -433,9 +430,7 @@ void* str_hash_iter_get_value(STR_HASH_ITER *piter, char *key)
 		return NULL;
 	}
 #endif
-	pvalue = (char *)piter->cur_node->pdata +
-		sizeof(STR_HASH_ITEM);
-	
+	pvalue = reinterpret_cast<char *>(piter->cur_node->pdata) + strhashitem_al;
 	if (NULL != key) {
 		pkey = ((STR_HASH_ITEM*)piter->cur_node->pdata)->key;
 		strcpy(key, pkey);
