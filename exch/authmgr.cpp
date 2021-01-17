@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
