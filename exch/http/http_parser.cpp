@@ -3,6 +3,7 @@
    relay the stream to pdu processor. it also process other http request
  */ 
 #include <atomic>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>

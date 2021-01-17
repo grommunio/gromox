@@ -2,6 +2,7 @@
 /* pop3 parser is a module, which first read data from socket, parses the pop3 
  * commands and then do the corresponding action. 
  */ 
+#include <cerrno>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
