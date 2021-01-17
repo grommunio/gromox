@@ -12,6 +12,7 @@
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/proptags.hpp>
 #include "ab_tree.h"
 #include <cstdio>
 #include <cstring>
@@ -1339,10 +1340,11 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		strcpy(str_dname, obj->username.c_str());
-		if (obj->realname.size() > 0) {
-			strcpy(str_dname, obj->realname.c_str());
+		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
+		if (it != obj->propvals.cend()) {
+			strcpy(str_dname, it->second.c_str());
 		} else {
+			strcpy(str_dname, obj->username.c_str());
 			ptoken = strchr(str_dname, '@');
 			if (NULL != ptoken) {
 				*ptoken = '\0';
@@ -1352,6 +1354,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	}
 	case NODE_TYPE_MLIST: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
+		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
 			if (FALSE == get_lang(codepage, "mlist0", lang_string, 256)) {
@@ -1363,7 +1366,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 			if (FALSE == get_lang(codepage, "mlist1", lang_string, 256)) {
 				strcpy(lang_string, "all users in department of %s");
 			}
-			snprintf(str_dname, 256, lang_string, obj->title.c_str());
+			snprintf(str_dname, 256, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		case MLIST_TYPE_DOMAIN:
 			if (FALSE == get_lang(codepage, "mlist2", str_dname, 256)) {
@@ -1374,7 +1377,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 			if (FALSE == get_lang(codepage, "mlist3", lang_string, 256)) {
 				strcpy(lang_string, "all users in group of %s");
 			}
-			snprintf(str_dname, 256, lang_string, obj->title.c_str());
+			snprintf(str_dname, 256, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		default:
 			snprintf(str_dname, 256, "unknown address list type %u", obj->list_type);
@@ -1388,8 +1391,8 @@ std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pnode, uns
 {
 	std::vector<std::string> alist;
 	auto pabnode = reinterpret_cast<AB_NODE *>(pnode);
-	for (const auto &pair : static_cast<sql_user *>(pabnode->d_info)->aliases)
-		alist.push_back(pair.second);
+	for (const auto &a : static_cast<sql_user *>(pabnode->d_info)->aliases)
+		alist.push_back(a);
 	return alist;
 }
 
@@ -1406,18 +1409,24 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value)
 		return;
 	}
 	auto u = static_cast<sql_user *>(pabnode->d_info);
+	unsigned int tag = 0;
 	switch (type) {
-	case USER_MAIL_ADDRESS: strcpy(value, u->username.c_str()); break;
-	case USER_REAL_NAME: strcpy(value, u->realname.c_str()); break;
-	case USER_JOB_TITLE: strcpy(value, u->title.c_str()); break;
-	case USER_COMMENT: strcpy(value, u->memo.c_str()); break;
-	case USER_MOBILE_TEL: strcpy(value, u->cell.c_str()); break;
-	case USER_BUSINESS_TEL: strcpy(value, u->tel.c_str()); break;
-	case USER_NICK_NAME: strcpy(value, u->nickname.c_str()); break;
-	case USER_HOME_ADDRESS: strcpy(value, u->homeaddr.c_str()); break;
-	case USER_CREATE_DAY: *value = '\0'; break;
-	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); break;
+	case USER_MAIL_ADDRESS: strcpy(value, u->username.c_str()); return;
+	case USER_REAL_NAME: tag = PROP_TAG_DISPLAYNAME; break;
+	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
+	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
+	case USER_MOBILE_TEL: tag = PROP_TAG_MOBILETELEPHONENUMBER; break;
+	case USER_BUSINESS_TEL: tag = PROP_TAG_PRIMARYTELEPHONENUMBER; break;
+	case USER_NICK_NAME: tag = PROP_TAG_NICKNAME; break;
+	case USER_HOME_ADDRESS: tag = PROP_TAG_HOMEADDRESSSTREET; break;
+	case USER_CREATE_DAY: *value = '\0'; return;
+	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); return;
 	}
+	if (tag == 0)
+		return;
+	auto it = u->propvals.find(tag);
+	if (it != u->propvals.cend())
+		strcpy(value, it->second.c_str());
 }
 
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,

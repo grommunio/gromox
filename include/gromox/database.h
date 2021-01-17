@@ -42,6 +42,7 @@ class GX_EXPORT DB_RESULT final {
 
 	size_t num_rows() const { return mysql_num_rows(m_res); }
 	DB_ROW fetch_row() { return mysql_fetch_row(m_res); }
+	DB_LENGTHS row_lengths() { return mysql_fetch_lengths(m_res); }
 
 	private:
 	MYSQL_RES *m_res = nullptr;

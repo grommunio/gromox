@@ -26,11 +26,10 @@ struct sql_domain {
 };
 
 struct sql_user {
-	using alias_map_type = std::multimap<std::string, std::string>;
-
 	int addr_type = 0, id = 0, list_type = 0, list_priv = 0;
-	std::string username, realname, title, memo, cell, tel, nickname, homeaddr, maildir;
-	alias_map_type aliases;
+	std::string username, maildir;
+	std::vector<std::string> aliases; /* email addresses */
+	std::map<unsigned int, std::string> propvals;
 };
 
 struct sql_group {
