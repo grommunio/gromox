@@ -5,6 +5,7 @@
 #include "config.h"
 #endif
 #include <cstdint>
+#include <cstdio>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdio>
 #include <string>
 #include <unistd.h>
 #include <vector>

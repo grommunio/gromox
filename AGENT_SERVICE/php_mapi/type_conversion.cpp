@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdio>
 #include <gromox/mapidefs.h>
 #include "type_conversion.h"
 #include "ext.hpp"
