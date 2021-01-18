@@ -107,9 +107,7 @@ static void* scan_work_func(void *param);
 
 static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, char *str_dname);
-
-static void ab_tree_get_user_info(
-	SIMPLE_TREE_NODE *pnode, int type, char *value);
+static void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_t vsize);
 
 uint32_t ab_tree_make_minid(uint8_t type, int value)
 {
@@ -1144,7 +1142,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	BOOL b_remote;
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
-	char username[256];
+	char username[324];
 	char hex_string[32];
 	char hex_string1[32];
 	SIMPLE_TREE_NODE **ppnode;
@@ -1184,7 +1182,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		id = pabnode->id;
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		ptoken = strchr(username, '@');
 		if (NULL != ptoken) {
 			*ptoken = '\0';
@@ -1360,8 +1358,8 @@ static std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pno
 	return alist;
 }
 
-static void ab_tree_get_user_info(
-	SIMPLE_TREE_NODE *pnode, int type, char *value)
+static void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type,
+    char *value, size_t vsize)
 {
 	AB_NODE *pabnode;
 	
@@ -1376,7 +1374,7 @@ static void ab_tree_get_user_info(
 	auto u = static_cast<sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
-	case USER_MAIL_ADDRESS: strcpy(value, u->username.c_str()); return;
+	case USER_MAIL_ADDRESS: HX_strlcpy(value, u->username.c_str(), vsize); return;
 	case USER_REAL_NAME: tag = PROP_TAG_DISPLAYNAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
 	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
@@ -1385,13 +1383,13 @@ static void ab_tree_get_user_info(
 	case USER_NICK_NAME: tag = PROP_TAG_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PROP_TAG_HOMEADDRESSSTREET; break;
 	case USER_CREATE_DAY: *value = '\0'; return;
-	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); return;
+	case USER_STORE_PATH: HX_strlcpy(value, u->maildir.c_str(), vsize); return;
 	}
 	if (tag == 0)
 		return;
 	auto it = u->propvals.find(tag);
 	if (it != u->propvals.cend())
-		strcpy(value, it->second.c_str());
+		HX_strlcpy(value, it->second.c_str(), vsize);
 }
 
 static void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
@@ -1426,12 +1424,12 @@ static void ab_tree_get_server_dn(
 	SIMPLE_TREE_NODE *pnode, char *dn, int length)
 {
 	char *ptoken;
-	char username[256];
+	char username[324];
 	char hex_string[32];
 	
 	if (((AB_NODE*)pnode)->node_type < 0x80) {
 		memset(username, 0, sizeof(username));
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		ptoken = strchr(username, '@');
 		HX_strlower(username);
 		if (NULL != ptoken) {
@@ -1836,7 +1834,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	case PROP_TAG_TITLE:
 		if (node_type == NODE_TYPE_PERSON) {
-			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
+			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
 			if ('\0' == dn[0]) {
 				return TRUE;
 			}
@@ -1859,7 +1857,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
+		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1874,7 +1872,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1888,7 +1886,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1902,7 +1900,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1916,7 +1914,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
+		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1975,7 +1973,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
+			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		} else {
 			return TRUE;
 		}
@@ -1994,7 +1992,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
+			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		} else {
 			return TRUE;
 		}
@@ -2036,7 +2034,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type == NODE_TYPE_MLIST) {
 			ab_tree_get_mlist_info(pnode, NULL, dn, NULL);
 		} else if (node_type == NODE_TYPE_PERSON) {
-			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn);
+			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn, GX_ARRAY_SIZE(dn));
 		} else {
 			return TRUE;
 		}
@@ -2054,7 +2052,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn);
+		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
 		strcat(dn, "/config/portrait.jpg");
 		if (!common_util_load_file(dn, static_cast<BINARY *>(pvalue))) {
 			return TRUE;
@@ -2114,31 +2112,31 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	}
 	switch(ab_tree_get_node_type(pnode)) {
 	case NODE_TYPE_PERSON:
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
+		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
+		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
+		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
