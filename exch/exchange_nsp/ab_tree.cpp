@@ -1089,7 +1089,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	BOOL b_remote;
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
-	char username[256];
+	char username[324];
 	char hex_string[32];
 	char hex_string1[32];
 	SIMPLE_TREE_NODE **ppnode;
@@ -1115,7 +1115,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		id = pabnode->id;
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		ptoken = strchr(username, '@');
 		if (NULL != ptoken) {
 			*ptoken = '\0';
@@ -1396,7 +1396,7 @@ std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pnode, uns
 	return alist;
 }
 
-void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value)
+void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_t vsize)
 {
 	AB_NODE *pabnode;
 	
@@ -1411,7 +1411,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value)
 	auto u = static_cast<sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
-	case USER_MAIL_ADDRESS: strcpy(value, u->username.c_str()); return;
+	case USER_MAIL_ADDRESS: HX_strlcpy(value, u->username.c_str(), vsize); return;
 	case USER_REAL_NAME: tag = PROP_TAG_DISPLAYNAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
 	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
@@ -1426,7 +1426,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value)
 		return;
 	auto it = u->propvals.find(tag);
 	if (it != u->propvals.cend())
-		strcpy(value, it->second.c_str());
+		HX_strlcpy(value, it->second.c_str(), vsize);
 }
 
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
@@ -1460,12 +1460,12 @@ void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
 void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 {
 	char *ptoken;
-	char username[256];
+	char username[324];
 	char hex_string[32];
 	
 	if (((AB_NODE*)pnode)->node_type < 0x80) {
 		memset(username, 0, sizeof(username));
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		ptoken = strchr(username, '@');
 		HX_strlower(username);
 		if (NULL != ptoken) {

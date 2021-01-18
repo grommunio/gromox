@@ -74,8 +74,7 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
 void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, char *str_dname);
 extern std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *, unsigned int type);
-void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value);
-	
+extern void ab_tree_get_user_info(SIMPLE_TREE_NODE *, int type, char *value, size_t vsize);
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
 	char *mail_address, char *create_day, int *plist_privilege);
 

@@ -296,7 +296,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		break;
 	case PROP_TAG_TITLE:
 		if (node_type == NODE_TYPE_PERSON) {
-			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
+			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
 			if ('\0' == dn[0]) {
 				return ecNotFound;
 			}
@@ -329,7 +329,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_TITLE_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
+		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -349,7 +349,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_NICKNAME:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
+		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -367,7 +367,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_NICKNAME_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
+		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -388,7 +388,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_BUSINESSTELEPHONENUMBER:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -407,7 +407,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_BUSINESSTELEPHONENUMBER_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -426,7 +426,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_MOBILETELEPHONENUMBER:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -444,7 +444,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_MOBILETELEPHONENUMBER_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -463,7 +463,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_HOMEADDRESSSTREET:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -481,7 +481,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_HOMEADDRESSSTREET_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -500,7 +500,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_COMMENT:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
+		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -518,7 +518,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_COMMENT_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
+		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -642,7 +642,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
+			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		} else {
 			return ecNotFound;
 		}
@@ -667,7 +667,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
+			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		} else {
 			return ecNotFound;
 		}
@@ -738,7 +738,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type == NODE_TYPE_MLIST)
 			ab_tree_get_mlist_info(pnode, NULL, dn, NULL);
 		else if (node_type == NODE_TYPE_PERSON)
-			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn);
+			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn, GX_ARRAY_SIZE(dn));
 		else
 			return ecNotFound;
 		common_util_day_to_filetime(dn, &pprop->value.ftime);
@@ -746,7 +746,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_THUMBNAILPHOTO:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn);
+		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
 		strcat(dn, "/config/portrait.jpg");
 		if (FALSE == common_util_load_file(dn, &pprop->value.bin)) {
 			return ecNotFound;
@@ -1933,7 +1933,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			result = ecInvalidBookmark;
 			goto EXIT_GET_MATCHES;
 		}
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff, GX_ARRAY_SIZE(temp_buff));
 		if (FALSE == get_maildir(temp_buff, maildir)) {
 			result = ecError;
 			goto EXIT_GET_MATCHES;
@@ -2981,7 +2981,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t tmp_mid;
 	LIST_FILE *pfile;
 	char maildir[256];
-	char username[256];
+	char username[324];
 	char temp_path[256];
 	DCERPC_INFO rpc_info;
 	DOUBLE_LIST tmp_list;
@@ -3022,7 +3022,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		result = ecInvalidObject;
 		goto EXIT_MOD_LINKATT;
 	}
-	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username);
+	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 	if (0 != strcasecmp(username, rpc_info.username)) {
 		result = ecAccessDenied;
 		goto EXIT_MOD_LINKATT;
@@ -3068,7 +3068,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		if (NULL == ptnode) {
 			continue;
 		}
-		ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username);
+		ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		if (flags & MOD_FLAG_DELETE) {
 			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
 				pnode=double_list_get_after(&tmp_list, pnode)) {
@@ -3251,31 +3251,31 @@ static BOOL nsp_interface_resolve_node(SIMPLE_TREE_NODE *pnode,
 	}
 	switch(ab_tree_get_node_type(pnode)) {
 	case NODE_TYPE_PERSON:
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
+		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
+		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
+		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
+		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
+		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
