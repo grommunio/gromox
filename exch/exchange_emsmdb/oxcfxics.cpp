@@ -44,7 +44,7 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	} else {
 		tmp_associated = 0;
 	}
-	restriction.rt = RESTRICTION_TYPE_PROPERTY;
+	restriction.rt = RES_PROPERTY;
 	restriction.pres = &res_prop;
 	res_prop.relop = RELOP_EQ;
 	res_prop.proptag = PROP_TAG_ASSOCIATED;

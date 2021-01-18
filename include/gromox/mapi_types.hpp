@@ -3,6 +3,7 @@
 #include <gromox/proptags.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
+#include <gromox/mapidefs.h>
 
 struct BINARY {
 	uint32_t cb;
@@ -60,20 +61,6 @@ struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
 };
-
-#define RESTRICTION_TYPE_AND						0x00
-#define RESTRICTION_TYPE_OR							0x01
-#define RESTRICTION_TYPE_NOT						0x02
-#define RESTRICTION_TYPE_CONTENT					0x03
-#define RESTRICTION_TYPE_PROPERTY					0x04
-#define RESTRICTION_TYPE_PROPCOMPARE				0x05
-#define RESTRICTION_TYPE_BITMASK					0x06
-#define RESTRICTION_TYPE_SIZE						0x07
-#define RESTRICTION_TYPE_EXIST						0x08
-#define RESTRICTION_TYPE_SUBOBJ						0x09
-#define RESTRICTION_TYPE_COMMENT					0x0a
-#define RESTRICTION_TYPE_COUNT						0x0b
-#define RESTRICTION_TYPE_NULL						0xff
 
 struct RESTRICTION {
 	uint8_t rt;

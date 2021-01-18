@@ -1572,7 +1572,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 	PROPERTY_VALUE prop_val;
 	
 	switch (pfilter->res_type) {
-	case RESTRICTION_TYPE_AND:
+	case RES_AND:
 		for (i=0; i<pfilter->res.res_and.cres; i++) {
 			if (FALSE == nsp_interface_match_node(pnode,
 				codepage, &pfilter->res.res_and.pres[i])) {
@@ -1580,7 +1580,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 		}
 		return TRUE;
-	case RESTRICTION_TYPE_OR:
+	case RES_OR:
 		for (i=0; i<pfilter->res.res_and.cres; i++) {
 			if (TRUE == nsp_interface_match_node(pnode,
 				codepage, &pfilter->res.res_or.pres[i])) {
@@ -1588,15 +1588,15 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 		}
 		return FALSE;
-	case RESTRICTION_TYPE_NOT:
+	case RES_NOT:
 		if (TRUE == nsp_interface_match_node(pnode,
 			codepage, pfilter->res.res_not.pres)) {
 			return FALSE;
 		}
 		return TRUE;
-	case RESTRICTION_TYPE_CONTENT:
+	case RES_CONTENT:
 		return FALSE;
-	case RESTRICTION_TYPE_PROPERTY:
+	case RES_PROPERTY:
 		if (NULL == pfilter->res.res_property.pprop) {
 			return TRUE;
 		}
@@ -1829,13 +1829,13 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		return FALSE;
-	case RESTRICTION_TYPE_PROPCOMPARE:
+	case RES_PROPCOMPARE:
 		return FALSE;
-	case RESTRICTION_TYPE_BITMASK:
+	case RES_BITMASK:
 		return FALSE;
-	case RESTRICTION_TYPE_SIZE:
+	case RES_SIZE:
 		return FALSE;
-	case RESTRICTION_TYPE_EXIST:
+	case RES_EXIST:
 		node_type = ab_tree_get_node_type(pnode);
 		if (node_type > 0x80) {
 			return FALSE;
@@ -1845,7 +1845,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 		    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
 		return TRUE;
-	case RESTRICTION_TYPE_SUBRESTRICTION:
+	case RES_SUBRESTRICTION:
 		return FALSE;
 	}	
 	return false;

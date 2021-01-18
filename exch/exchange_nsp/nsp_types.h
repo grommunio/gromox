@@ -1,18 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <gromox/mapidefs.h>
 #include <gromox/rpc_types.hpp>
 #include <gromox/proptags.hpp>
-
-#define RESTRICTION_TYPE_AND				0x0
-#define RESTRICTION_TYPE_OR					0x1
-#define RESTRICTION_TYPE_NOT				0x2
-#define RESTRICTION_TYPE_CONTENT			0x3
-#define RESTRICTION_TYPE_PROPERTY			0x4
-#define RESTRICTION_TYPE_PROPCOMPARE		0x5
-#define RESTRICTION_TYPE_BITMASK			0x6
-#define RESTRICTION_TYPE_SIZE				0x7
-#define RESTRICTION_TYPE_EXIST				0x8
-#define RESTRICTION_TYPE_SUBRESTRICTION		0x9
 
 #define PROPVAL_TYPE_EMBEDDEDTABLE			0x000d
 #define PROPVAL_TYPE_FLATUID				0x0048

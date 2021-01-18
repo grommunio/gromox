@@ -1810,7 +1810,7 @@ static BOOL get_freebusy(const char *dir)
 		permission = PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY;
 	}
 	tmp_true = 1;
-	restriction.rt = RESTRICTION_TYPE_OR;
+	restriction.rt = RES_OR;
 	restriction.pres = malloc(sizeof(RESTRICTION_AND_OR));
 	auto andor = static_cast<RESTRICTION_AND_OR *>(restriction.pres);
 	andor->count = 4;
@@ -1818,20 +1818,20 @@ static BOOL get_freebusy(const char *dir)
 	andor->pres = prestriction;
 	/*OR (pidlidappointmentstartwhole >= start
 		&& pidlidappointmentstartwhole <= end) */
-	prestriction[0].rt = RESTRICTION_TYPE_AND;
+	prestriction[0].rt = RES_AND;
 	prestriction[0].pres = malloc(sizeof(RESTRICTION_AND_OR));
 	andor = static_cast<RESTRICTION_AND_OR *>(prestriction[0].pres);
 	prestriction1 = static_cast<RESTRICTION *>(malloc(2 * sizeof(RESTRICTION)));
 	andor->count = 2;
 	andor->pres = prestriction1;
-	prestriction1[0].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction1[0].rt = RES_PROPERTY;
 	prestriction1[0].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	auto rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction1[0].pres);
 	rprop->relop = RELOP_GE;
 	rprop->proptag = pidlidappointmentstartwhole;
 	rprop->propval.proptag = pidlidappointmentstartwhole;
 	rprop->propval.pvalue = &start_nttime;
-	prestriction1[1].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction1[1].rt = RES_PROPERTY;
 	prestriction1[1].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction1[1].pres);
 	rprop->relop = RELOP_LE;
@@ -1840,20 +1840,20 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.pvalue = &end_nttime;
 	/* OR (pidlidappointmentendwhole >= start
 		&& pidlidappointmentendwhole <= end) */
-	prestriction[1].rt = RESTRICTION_TYPE_AND;
+	prestriction[1].rt = RES_AND;
 	prestriction[1].pres = malloc(sizeof(RESTRICTION_AND_OR));
 	andor = static_cast<RESTRICTION_AND_OR *>(prestriction[1].pres);
 	prestriction1 = static_cast<RESTRICTION *>(malloc(2 * sizeof(RESTRICTION)));
 	andor->count = 2;
 	andor->pres = prestriction1;
-	prestriction1[0].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction1[0].rt = RES_PROPERTY;
 	prestriction1[0].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction1[0].pres);
 	rprop->relop = RELOP_GE;
 	rprop->proptag = pidlidappointmentendwhole;
 	rprop->propval.proptag = pidlidappointmentendwhole;
 	rprop->propval.pvalue = &start_nttime;
-	prestriction1[1].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction1[1].rt = RES_PROPERTY;
 	prestriction1[1].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction1[1].pres);
 	rprop->relop = RELOP_LE;
@@ -1862,20 +1862,20 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.pvalue = &end_nttime;
 	/* OR (pidlidappointmentstartwhole < start
 		&& pidlidappointmentendwhole > end) */
-	prestriction[2].rt = RESTRICTION_TYPE_AND;
+	prestriction[2].rt = RES_AND;
 	prestriction[2].pres = malloc(sizeof(RESTRICTION_AND_OR));
 	andor = static_cast<RESTRICTION_AND_OR *>(prestriction[2].pres);
 	prestriction1 = static_cast<RESTRICTION *>(malloc(2 * sizeof(RESTRICTION)));
 	andor->count = 2;
 	andor->pres = prestriction1;
-	prestriction1[0].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction1[0].rt = RES_PROPERTY;
 	prestriction1[0].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction1[0].pres);
 	rprop->relop = RELOP_LT;
 	rprop->proptag = pidlidappointmentstartwhole;
 	rprop->propval.proptag = pidlidappointmentstartwhole;
 	rprop->propval.pvalue = &start_nttime;
-	prestriction1[1].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction1[1].rt = RES_PROPERTY;
 	prestriction1[1].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction1[1].pres);
 	rprop->relop = RELOP_GT;
@@ -1883,7 +1883,7 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.proptag = pidlidappointmentendwhole;
 	rprop->propval.pvalue = &end_nttime;
 	/* OR */
-	prestriction[3].rt = RESTRICTION_TYPE_OR;
+	prestriction[3].rt = RES_OR;
 	prestriction[3].pres = malloc(sizeof(RESTRICTION_AND_OR));
 	andor = static_cast<RESTRICTION_AND_OR *>(prestriction[3].pres);
 	prestriction1 = static_cast<RESTRICTION *>(malloc(2 * sizeof(RESTRICTION)));
@@ -1892,24 +1892,24 @@ static BOOL get_freebusy(const char *dir)
 	/* OR (EXIST(pidlidclipend) &&
 		pidlidrecurring == true &&
 		pidlidclipend >= start) */
-	prestriction1[0].rt = RESTRICTION_TYPE_AND;
+	prestriction1[0].rt = RES_AND;
 	prestriction1[0].pres = malloc(sizeof(RESTRICTION_AND_OR));
 	andor = static_cast<RESTRICTION_AND_OR *>(prestriction1[0].pres);
 	andor->count = 3;
 	prestriction2 = static_cast<RESTRICTION *>(malloc(3 * sizeof(RESTRICTION)));
 	andor->pres = prestriction2;
-	prestriction2[0].rt = RESTRICTION_TYPE_EXIST;
+	prestriction2[0].rt = RES_EXIST;
 	prestriction2[0].pres = malloc(sizeof(RESTRICTION_EXIST));
 	auto rex = static_cast<RESTRICTION_EXIST *>(prestriction2[0].pres);
 	rex->proptag = pidlidclipend;
-	prestriction2[1].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction2[1].rt = RES_PROPERTY;
 	prestriction2[1].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction2[1].pres);
 	rprop->relop = RELOP_EQ;
 	rprop->proptag = pidlidrecurring;
 	rprop->propval.proptag = pidlidrecurring;
 	rprop->propval.pvalue = &tmp_true;
-	prestriction2[2].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction2[2].rt = RES_PROPERTY;
 	prestriction2[2].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction2[2].pres);
 	rprop->relop = RELOP_GE;
@@ -1919,27 +1919,27 @@ static BOOL get_freebusy(const char *dir)
 	/* OR (!EXIST(pidlidclipend) &&
 		pidlidrecurring == true &&
 		pidlidappointmentstartwhole <= end) */
-	prestriction1[1].rt = RESTRICTION_TYPE_AND;
+	prestriction1[1].rt = RES_AND;
 	prestriction1[1].pres = malloc(sizeof(RESTRICTION_AND_OR));
 	andor = static_cast<RESTRICTION_AND_OR *>(prestriction1[1].pres);
 	andor->count = 3;
 	prestriction2 = static_cast<RESTRICTION *>(malloc(3 * sizeof(RESTRICTION)));
 	andor->pres = prestriction2;
-	prestriction2[0].rt = RESTRICTION_TYPE_NOT;
+	prestriction2[0].rt = RES_NOT;
 	prestriction3 = static_cast<RESTRICTION *>(malloc(sizeof(RESTRICTION)));
 	prestriction2[0].pres = prestriction3;
-	prestriction3->rt = RESTRICTION_TYPE_EXIST;
+	prestriction3->rt = RES_EXIST;
 	prestriction3->pres = malloc(sizeof(RESTRICTION_EXIST));
 	rex = static_cast<RESTRICTION_EXIST *>(prestriction3->pres);
 	rex->proptag = pidlidclipend;
-	prestriction2[1].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction2[1].rt = RES_PROPERTY;
 	prestriction2[1].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction2[1].pres);
 	rprop->relop = RELOP_EQ;
 	rprop->proptag = pidlidrecurring;
 	rprop->propval.proptag = pidlidrecurring;
 	rprop->propval.pvalue = &tmp_true;
-	prestriction2[2].rt = RESTRICTION_TYPE_PROPERTY;
+	prestriction2[2].rt = RES_PROPERTY;
 	prestriction2[2].pres = malloc(sizeof(RESTRICTION_PROPERTY));
 	rprop = static_cast<RESTRICTION_PROPERTY *>(prestriction2[2].pres);
 	rprop->relop = RELOP_LE;

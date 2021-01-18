@@ -3193,8 +3193,8 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 	BOOL b_replaced;
 	
 	switch (pres->rt) {
-	case RESTRICTION_TYPE_AND:
-	case RESTRICTION_TYPE_OR: {
+	case RES_AND:
+	case RES_OR: {
 		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
 		for (i = 0; i < andor->count; ++i)
 			if (!message_replace_restriction_propid(psqlite,
@@ -3202,14 +3202,14 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 				return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_NOT: {
+	case RES_NOT: {
 		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
 		if (!message_replace_restriction_propid(psqlite,
 		    ppropname_info, &rnot->res))
 			return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_CONTENT: {
+	case RES_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
 		if (!message_get_real_propid(psqlite, ppropname_info,
 		    &rcon->proptag, &b_replaced))
@@ -3219,7 +3219,7 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 		}
 		break;
 	}
-	case RESTRICTION_TYPE_PROPERTY: {
+	case RES_PROPERTY: {
 		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
 		if (!message_get_real_propid(psqlite, ppropname_info,
 		    &rprop->proptag, &b_replaced))
@@ -3229,7 +3229,7 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 		}
 		break;
 	}
-	case RESTRICTION_TYPE_PROPCOMPARE: {
+	case RES_PROPCOMPARE: {
 		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
 		if (!message_get_real_propid(psqlite, ppropname_info,
 		    &rprop->proptag1, &b_replaced))
@@ -3239,35 +3239,35 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 			return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_BITMASK: {
+	case RES_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
 		if (!message_get_real_propid(psqlite, ppropname_info,
 		    &rbm->proptag, &b_replaced))
 			return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_SIZE: {
+	case RES_SIZE: {
 		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
 		if (!message_get_real_propid(psqlite, ppropname_info,
 		    &rsize->proptag, &b_replaced))
 			return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_EXIST: {
+	case RES_EXIST: {
 		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
 		if (!message_get_real_propid(psqlite, ppropname_info,
 		    &rex->proptag, &b_replaced))
 			return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_SUBOBJ: {
+	case RES_SUBRESTRICTION: {
 		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
 		if (!message_replace_restriction_propid(psqlite,
 		    ppropname_info, &rsub->res))
 			return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_COMMENT: {
+	case RES_COMMENT: {
 		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
 		for (i = 0; i < rcom->count; ++i)
 			if (!message_get_real_propid(psqlite, ppropname_info,
@@ -3279,7 +3279,7 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 				return FALSE;
 		break;
 	}
-	case RESTRICTION_TYPE_COUNT: {
+	case RES_COUNT: {
 		auto rcnt = static_cast<RESTRICTION_COUNT *>(pres->pres);
 		if (!message_replace_restriction_propid(psqlite,
 		    ppropname_info, &rcnt->sub_res))

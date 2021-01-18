@@ -1753,62 +1753,62 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 	int i;
 	
 	switch (pres->rt) {
-	case RESTRICTION_TYPE_AND:
-	case RESTRICTION_TYPE_OR: {
+	case RES_AND:
+	case RES_OR: {
 		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
 		for (i = 0; i < andor->count; ++i)
 			if (!common_util_convert_restriction(to_unicode, &andor->pres[i]))
 				return FALSE;	
 		break;
 	}
-	case RESTRICTION_TYPE_NOT: {
+	case RES_NOT: {
 		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
 		if (!common_util_convert_restriction(to_unicode, &rnot->res))
 			return FALSE;	
 		break;
 	}
-	case RESTRICTION_TYPE_CONTENT: {
+	case RES_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
 		if (!common_util_convert_tagged_propval(to_unicode, &rcon->propval))
 			return FALSE;	
 		common_util_convert_proptag(to_unicode, &rcon->proptag);
 		break;
 	}
-	case RESTRICTION_TYPE_PROPERTY: {
+	case RES_PROPERTY: {
 		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
 		if (!common_util_convert_tagged_propval(to_unicode, &rprop->propval))
 			return FALSE;	
 		common_util_convert_proptag(to_unicode, &rprop->proptag);
 		break;
 	}
-	case RESTRICTION_TYPE_PROPCOMPARE: {
+	case RES_PROPCOMPARE: {
 		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
 		common_util_convert_proptag(to_unicode, &rprop->proptag1);
 		common_util_convert_proptag(to_unicode, &rprop->proptag2);
 		break;
 	}
-	case RESTRICTION_TYPE_BITMASK: {
+	case RES_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
 		common_util_convert_proptag(to_unicode, &rbm->proptag);
 		break;
 	}
-	case RESTRICTION_TYPE_SIZE: {
+	case RES_SIZE: {
 		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
 		common_util_convert_proptag(to_unicode, &rsize->proptag);
 		break;
 	}
-	case RESTRICTION_TYPE_EXIST: {
+	case RES_EXIST: {
 		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
 		common_util_convert_proptag(to_unicode, &rex->proptag);
 		break;
 	}
-	case RESTRICTION_TYPE_SUBOBJ: {
+	case RES_SUBRESTRICTION: {
 		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
 		if (!common_util_convert_restriction(to_unicode, &rsub->res))
 			return FALSE;	
 		break;
 	}
-	case RESTRICTION_TYPE_COMMENT: {
+	case RES_COMMENT: {
 		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
 		for (i = 0; i < rcom->count; ++i)
 			if (!common_util_convert_tagged_propval(to_unicode, &rcom->ppropval[i]))
@@ -1818,7 +1818,7 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 				return FALSE;	
 		break;
 	}
-	case RESTRICTION_TYPE_COUNT: {
+	case RES_COUNT: {
 		auto rcnt = static_cast<RESTRICTION_COUNT *>(pres->pres);
 		if (!common_util_convert_restriction(to_unicode, &rcnt->sub_res))
 			return FALSE;	

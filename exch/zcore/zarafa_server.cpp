@@ -2627,7 +2627,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		username = pinfo->username;
 	}
 	if (0 == pentryids->count) {
-		restriction.rt = RESTRICTION_TYPE_PROPERTY;
+		restriction.rt = RES_PROPERTY;
 		restriction.pres = &res_prop;
 		if (FLAG_CLEAR_READ == flags) {
 			res_prop.relop = RELOP_NE;

@@ -2828,34 +2828,34 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag, int *ptype, 
 		
 		status = ndr_pull_union_align(pndr, 5);
 		switch (*ptype) {
-		case RESTRICTION_TYPE_AND:
+		case RES_AND:
 			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_and);
 			break;
-		case RESTRICTION_TYPE_OR:
+		case RES_OR:
 			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_or);
 			break;
-		case RESTRICTION_TYPE_NOT:
+		case RES_NOT:
 			status = nsp_ndr_pull_restriction_not(pndr, FLAG_HEADER, &r->res_not);
 			break;
-		case RESTRICTION_TYPE_CONTENT:
+		case RES_CONTENT:
 			status = nsp_ndr_pull_restriction_content(pndr, FLAG_HEADER, &r->res_content);
 			break;
-		case RESTRICTION_TYPE_PROPERTY:
+		case RES_PROPERTY:
 			status = nsp_ndr_pull_restriction_property(pndr, FLAG_HEADER, &r->res_property);
 			break;
-		case RESTRICTION_TYPE_PROPCOMPARE:
+		case RES_PROPCOMPARE:
 			status = nsp_ndr_pull_restriction_propcompare(pndr, &r->res_propcompare);
 			break;
-		case RESTRICTION_TYPE_BITMASK:
+		case RES_BITMASK:
 			status = nsp_ndr_pull_restriction_bitmask(pndr, &r->res_bitmask);
 			break;
-		case RESTRICTION_TYPE_SIZE:
+		case RES_SIZE:
 			status = nsp_ndr_pull_restriction_size(pndr, &r->res_size);
 			break;
-		case RESTRICTION_TYPE_EXIST:
+		case RES_EXIST:
 			status = nsp_ndr_pull_restriction_exist(pndr, &r->res_exist);
 			break;
-		case RESTRICTION_TYPE_SUBRESTRICTION:
+		case RES_SUBRESTRICTION:
 			status = nsp_ndr_pull_restriction_sub(pndr, FLAG_HEADER, &r->res_sub);
 			break;
 		default:
@@ -2869,45 +2869,45 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag, int *ptype, 
 	
 	if (flag & FLAG_CONTENT) {
 		switch (*ptype) {
-		case RESTRICTION_TYPE_AND:
+		case RES_AND:
 			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_and);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case RESTRICTION_TYPE_OR:
+		case RES_OR:
 			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_or);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case RESTRICTION_TYPE_NOT:
+		case RES_NOT:
 			status = nsp_ndr_pull_restriction_not(pndr, FLAG_CONTENT, &r->res_not);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case RESTRICTION_TYPE_CONTENT:
+		case RES_CONTENT:
 			status = nsp_ndr_pull_restriction_content(pndr, FLAG_CONTENT, &r->res_content);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case RESTRICTION_TYPE_PROPERTY:
+		case RES_PROPERTY:
 			status = nsp_ndr_pull_restriction_property(pndr, FLAG_CONTENT, &r->res_property);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case RESTRICTION_TYPE_PROPCOMPARE:
+		case RES_PROPCOMPARE:
 			break;
-		case RESTRICTION_TYPE_BITMASK:
+		case RES_BITMASK:
 			break;
-		case RESTRICTION_TYPE_SIZE:
+		case RES_SIZE:
 			break;
-		case RESTRICTION_TYPE_EXIST:
+		case RES_EXIST:
 			break;
-		case RESTRICTION_TYPE_SUBRESTRICTION:
+		case RES_SUBRESTRICTION:
 			status = nsp_ndr_pull_restriction_sub(pndr, FLAG_CONTENT, &r->res_sub);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -2938,34 +2938,34 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag, int type, co
 			return status;
 		}
 		switch (type) {
-		case RESTRICTION_TYPE_AND:
+		case RES_AND:
 			status = nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_and);
 			break;
-		case RESTRICTION_TYPE_OR:
+		case RES_OR:
 			status = nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_or);
 			break;
-		case RESTRICTION_TYPE_NOT:
+		case RES_NOT:
 			status = nsp_ndr_push_restriction_not(pndr, FLAG_HEADER, &r->res_not);
 			break;
-		case RESTRICTION_TYPE_CONTENT:
+		case RES_CONTENT:
 			status = nsp_ndr_push_restriction_content(pndr, FLAG_HEADER, &r->res_content);
 			break;
-		case RESTRICTION_TYPE_PROPERTY:
+		case RES_PROPERTY:
 			status = nsp_ndr_push_restriction_property(pndr, FLAG_HEADER, &r->res_property);
 			break;
-		case RESTRICTION_TYPE_PROPCOMPARE:
+		case RES_PROPCOMPARE:
 			status = nsp_ndr_push_restriction_propcompare(pndr, &r->res_propcompare);
 			break;
-		case RESTRICTION_TYPE_BITMASK:
+		case RES_BITMASK:
 			status = nsp_ndr_push_restriction_bitmask(pndr, &r->res_bitmask);
 			break;
-		case RESTRICTION_TYPE_SIZE:
+		case RES_SIZE:
 			status = nsp_ndr_push_restriction_size(pndr, &r->res_size);
 			break;
-		case RESTRICTION_TYPE_EXIST:
+		case RES_EXIST:
 			status = nsp_ndr_push_restriction_exist(pndr, &r->res_exist);
 			break;
-		case RESTRICTION_TYPE_SUBRESTRICTION:
+		case RES_SUBRESTRICTION:
 			status = nsp_ndr_push_restriction_sub(pndr, FLAG_HEADER, &r->res_sub);
 			break;
 		default:
@@ -2978,45 +2978,45 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag, int type, co
 	
 	if (flag & FLAG_CONTENT) {
 		switch (type) {
-			case RESTRICTION_TYPE_AND:
+			case RES_AND:
 				status = nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_and);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
 				break;
-			case RESTRICTION_TYPE_OR:
+			case RES_OR:
 				status = nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_or);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
 				break;
-			case RESTRICTION_TYPE_NOT:
+			case RES_NOT:
 				status = nsp_ndr_push_restriction_not(pndr, FLAG_CONTENT, &r->res_not);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
 				break;
-			case RESTRICTION_TYPE_CONTENT:
+			case RES_CONTENT:
 				status = nsp_ndr_push_restriction_content(pndr, FLAG_CONTENT, &r->res_content);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
 				break;
-			case RESTRICTION_TYPE_PROPERTY:
+			case RES_PROPERTY:
 				status = nsp_ndr_push_restriction_property(pndr, FLAG_CONTENT, &r->res_property);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
 				break;
-			case RESTRICTION_TYPE_PROPCOMPARE:
+			case RES_PROPCOMPARE:
 				break;
-			case RESTRICTION_TYPE_BITMASK:
+			case RES_BITMASK:
 				break;
-			case RESTRICTION_TYPE_SIZE:
+			case RES_SIZE:
 				break;
-			case RESTRICTION_TYPE_EXIST:
+			case RES_EXIST:
 				break;
-			case RESTRICTION_TYPE_SUBRESTRICTION:
+			case RES_SUBRESTRICTION:
 				status = nsp_ndr_push_restriction_sub(pndr, FLAG_CONTENT, &r->res_sub);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;

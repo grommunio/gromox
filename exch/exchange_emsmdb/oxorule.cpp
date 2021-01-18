@@ -164,7 +164,7 @@ uint32_t rop_updatedeferredactionmessages(
 		}
 	}
 	
-	restriction.rt = RESTRICTION_TYPE_PROPERTY;
+	restriction.rt = RES_PROPERTY;
 	restriction.pres = &res_property;
 	res_property.relop = RELOP_EQ;
 	res_property.proptag =

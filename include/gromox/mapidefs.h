@@ -51,3 +51,19 @@ enum {
 	PR_HTML = PROP_TAG(PT_BINARY, 0x1013), /* pidTagHtml */
 	PR_RTF_COMPRESSED = PROP_TAG(PT_BINARY, 0x1009), /* pidTagRtfCompressed */
 };
+
+enum {
+	RES_AND = 0x00,
+	RES_OR = 0x01,
+	RES_NOT = 0x02,
+	RES_CONTENT = 0x03,
+	RES_PROPERTY = 0x04,
+	RES_PROPCOMPARE = 0x05,
+	RES_BITMASK = 0x06,
+	RES_SIZE = 0x07,
+	RES_EXIST = 0x08,
+	RES_SUBRESTRICTION = 0x09,
+	RES_COMMENT = 0x0a,
+	RES_COUNT = 0x0b,
+	RES_NULL = 0xff,
+};
