@@ -1549,6 +1549,60 @@ BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode)
 	return FALSE;
 }
 
+static int ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
+    unsigned int proptag, void **prop)
+{
+	auto node_type = ab_tree_get_node_type(node);
+	if (node_type != NODE_TYPE_PERSON && node_type != NODE_TYPE_ROOM &&
+	    node_type != NODE_TYPE_EQUIPMENT && node_type != NODE_TYPE_MLIST)
+		return ecNotFound;
+	const auto &obj = *static_cast<sql_user *>(reinterpret_cast<AB_NODE *>(node)->d_info);
+	auto it = obj.propvals.find(proptag);
+	if (it == obj.propvals.cend())
+		return ecNotFound;
+
+	switch (PROP_TYPE(proptag)) {
+	case PT_BOOLEAN:
+		*prop = common_util_alloc(sizeof(int16_t));
+		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0) != 0;
+		return ecSuccess;
+	case PT_SHORT:
+		*prop = common_util_alloc(sizeof(int16_t));
+		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0);
+		return ecSuccess;
+	case PT_LONG:
+		*prop = common_util_alloc(sizeof(int32_t));
+		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0);
+		return ecSuccess;
+	case PT_I8:
+	case PT_SYSTIME:
+		*prop = common_util_alloc(sizeof(int64_t));
+		*static_cast<int16_t *>(*prop) = strtoll(it->second.c_str(), nullptr, 0);
+		return ecSuccess;
+	case PT_STRING8:
+	case PT_UNICODE:
+		*prop = common_util_alloc(strlen(it->second.c_str()) + 1);
+		if (*prop == nullptr)
+			return ecMAPIOOM;
+		strcpy(static_cast<char *>(*prop), it->second.c_str());
+		return ecSuccess;
+	case PT_BINARY: {
+		*prop = common_util_alloc(sizeof(BINARY));
+		if (*prop == nullptr)
+			return ecMAPIOOM;
+		auto bv = static_cast<BINARY *>(*prop);
+		bv->cb = it->second.size();
+		bv->pv = common_util_alloc(it->second.size());
+		if (bv->pv == nullptr)
+			return ecMAPIOOM;
+		memcpy(bv->pv, it->second.data(), bv->cb);
+		return ecSuccess;
+	}
+	}
+	return ecNotFound;
+}
+
+/* Returns: TRUE (success or notfound), FALSE (fatal error/enomem/etc.) */
 BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, uint32_t proptag, void **ppvalue)
 {
@@ -1564,6 +1618,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	
 	*ppvalue = nullptr;
 	node_type = ab_tree_get_node_type(pnode);
+	/* Properties that need to be force-generated */
 	switch (proptag) {
 	case PROP_TAG_ABPROVIDERID:
 		*ppvalue = common_util_alloc(sizeof(BINARY));
@@ -1724,17 +1779,6 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		static_cast<BINARY *>(pvalue)->pb = deconst(g_guid_nspi);
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_SENDRICHINFO:
-		if (node_type > 0x80) {
-			return TRUE;
-		}
-		pvalue = common_util_alloc(sizeof(uint8_t));
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		*(uint8_t*)pvalue = 1;
-		*ppvalue = pvalue;
-		return TRUE;
 	case PROP_TAG_PARENTENTRYID:
 		pnode = simple_tree_node_get_parent(pnode);
 		if (NULL == pnode) {
@@ -1832,98 +1876,6 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_TITLE:
-		if (node_type == NODE_TYPE_PERSON) {
-			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
-			if ('\0' == dn[0]) {
-				return TRUE;
-			}
-			pvalue = common_util_dup(dn);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-		} else if (NODE_TYPE_MLIST == node_type) {
-			ab_tree_get_mlist_title(codepage, dn);
-			pvalue = common_util_dup(dn);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-		} else {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_NICKNAME:
-		if (node_type != NODE_TYPE_PERSON) {
-			return TRUE;
-		}
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
-		if ('\0' == dn[0]) {
-			return TRUE;
-		}
-		pvalue = common_util_dup(dn);
-		if (NULL == pvalue) {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_PRIMARYTELEPHONENUMBER:
-	case PROP_TAG_BUSINESSTELEPHONENUMBER:
-		if (node_type != NODE_TYPE_PERSON) {
-			return TRUE;
-		}
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
-		if ('\0' == dn[0]) {
-			return TRUE;
-		}
-		pvalue = common_util_dup(dn);
-		if (NULL == pvalue) {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_MOBILETELEPHONENUMBER:
-		if (node_type != NODE_TYPE_PERSON) {
-			return TRUE;
-		}
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
-		if ('\0' == dn[0]) {
-			return TRUE;
-		}
-		pvalue = common_util_dup(dn);
-		if (NULL == pvalue) {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_HOMEADDRESSSTREET:
-		if (node_type != NODE_TYPE_PERSON) {
-			return TRUE;
-		}
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		if ('\0' == dn[0]) {
-			return TRUE;
-		}
-		pvalue = common_util_dup(dn);
-		if (NULL == pvalue) {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_COMMENT:
-		if (node_type != NODE_TYPE_PERSON) {
-			return TRUE;
-		}
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
-		if ('\0' == dn[0]) {
-			return TRUE;
-		}
-		pvalue = common_util_dup(dn);
-		if (NULL == pvalue) {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
 	case PROP_TAG_COMPANYNAME:
 		if (node_type > 0x80) {
 			return TRUE;
@@ -1943,20 +1895,6 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		ab_tree_get_department_name(pnode, dn);
-		if ('\0' == dn[0]) {
-			return TRUE;
-		}
-		pvalue = common_util_dup(dn);
-		if (NULL == pvalue) {
-			return TRUE;
-		}
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_OFFICELOCATION:
-		if (node_type > 0x80) {
-			return TRUE;
-		}
-		ab_tree_get_company_info(pnode, NULL, dn);
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -2026,24 +1964,6 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = sa;
 		return TRUE;
 	}
-	case PROP_TAG_CREATIONTIME:
-		pvalue = common_util_alloc(sizeof(uint64_t));
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		if (node_type == NODE_TYPE_MLIST) {
-			ab_tree_get_mlist_info(pnode, NULL, dn, NULL);
-		} else if (node_type == NODE_TYPE_PERSON) {
-			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn, GX_ARRAY_SIZE(dn));
-		} else {
-			return TRUE;
-		}
-		memset(&tmp_tm, 0, sizeof(tmp_tm));
-		strptime(dn, "%Y-%m-%d", &tmp_tm);
-		tmp_time = mktime(&tmp_tm);
-		*(uint64_t*)pvalue = ((uint64_t)tmp_time + EPOCH_DIFF)*10000000;
-		*ppvalue = pvalue;
-		return TRUE;
 	case PROP_TAG_THUMBNAILPHOTO:
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
@@ -2059,9 +1979,34 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	default:
+	}
+	/* User-defined props */
+	if (node_type == NODE_TYPE_PERSON || node_type == NODE_TYPE_ROOM ||
+	    node_type == NODE_TYPE_EQUIPMENT || node_type == NODE_TYPE_MLIST) {
+		auto ret = ab_tree_fetchprop(pnode, proptag, ppvalue);
+		if (ret == ecSuccess)
+			return TRUE;
+		if (ret != ecNotFound)
+			return false;
+	}
+	/*
+	 * Fallback defaults in case ab_tree does not contain a prop
+	 * (in case e.g. a user has not explicitly set SENDRICHINFO=0)
+	 */
+	switch (proptag) {
+	case PROP_TAG_SENDRICHINFO:
+		if (node_type > 0x80) {
+			return TRUE;
+		}
+		pvalue = common_util_alloc(sizeof(uint8_t));
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		*(uint8_t*)pvalue = 1;
+		*ppvalue = pvalue;
 		return TRUE;
 	}
+	return TRUE;
 }
 
 BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
