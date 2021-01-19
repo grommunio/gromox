@@ -29,6 +29,8 @@
 #define USER_CREATE_DAY						8
 #define USER_STORE_PATH						9
 
+struct PROPERTY_VALUE;
+
 struct DOMAIN_NODE {
 	SINGLE_LIST_NODE node;
 	int domain_id;
@@ -89,3 +91,4 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode,
 void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length);
 
 int ab_tree_get_guid_base_id(GUID guid);
+extern int ab_tree_fetchprop(SIMPLE_TREE_NODE *, unsigned int codepage, unsigned int proptag, PROPERTY_VALUE *);

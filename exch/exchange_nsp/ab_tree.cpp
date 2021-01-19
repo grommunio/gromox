@@ -12,6 +12,7 @@
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/proptags.hpp>
 #include "ab_tree.h"
 #include <cstdio>
@@ -26,7 +27,8 @@
 #include <sys/types.h>
 #include <openssl/md5.h>
 #include "../mysql_adaptor/mysql_adaptor.h"
-
+#include "common_util.h"
+#include "nsp_types.h"
 #define ADDRESS_TYPE_NORMAL					0
 #define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
 #define ADDRESS_TYPE_MLIST					2
@@ -1584,4 +1586,63 @@ int ab_tree_get_guid_base_id(GUID guid)
 	}
 	pthread_mutex_unlock(&g_base_lock);
 	return base_id;
+}
+
+int ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
+    unsigned int proptag, PROPERTY_VALUE *prop)
+{
+	auto node_type = ab_tree_get_node_type(node);
+	if (node_type != NODE_TYPE_PERSON && node_type != NODE_TYPE_ROOM &&
+	    node_type != NODE_TYPE_EQUIPMENT && node_type != NODE_TYPE_MLIST)
+		return ecNotFound;
+	const auto &obj = *static_cast<sql_user *>(reinterpret_cast<AB_NODE *>(node)->d_info);
+	auto it = obj.propvals.find(proptag);
+	if (it == obj.propvals.cend())
+		return ecNotFound;
+
+	switch (PROP_TYPE(proptag)) {
+	case PT_BOOLEAN:
+		prop->value.b = strtol(it->second.c_str(), nullptr, 0) != 0;
+		return ecSuccess;
+	case PT_SHORT:
+		prop->value.s = strtol(it->second.c_str(), nullptr, 0);
+		return ecSuccess;
+	case PT_LONG:
+		prop->value.l = strtol(it->second.c_str(), nullptr, 0);
+		return ecSuccess;
+	case PT_I8:
+		prop->value.l = strtoll(it->second.c_str(), nullptr, 0);
+		return ecSuccess;
+	case PT_SYSTIME:
+		common_util_day_to_filetime(it->second.c_str(), &prop->value.ftime);
+		return ecSuccess;
+	case PT_STRING8: {
+		auto tg = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, it->second.size() + 1));
+		if (tg == nullptr)
+			return ecMAPIOOM;
+		auto ret = common_util_from_utf8(codepage, it->second.c_str(), tg, it->second.size());
+		if (ret < 0)
+			return ecError;
+		tg[ret] = '\0';
+		prop->value.pstr = tg;
+		return ecSuccess;
+	}
+	case PT_UNICODE: {
+		auto tg = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, it->second.size() + 1));
+		if (tg == nullptr)
+			return ecMAPIOOM;
+		strcpy(tg, it->second.c_str());
+		prop->value.pstr = tg;
+		return ecSuccess;
+	}
+	case PT_BINARY: {
+		prop->value.bin.cb = it->second.size();
+		prop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, it->second.size());
+		if (prop->value.bin.pv == nullptr)
+			return ecMAPIOOM;
+		memcpy(prop->value.bin.pv, it->second.data(), prop->value.bin.cb);
+		return ecSuccess;
+	}
+	}
+	return ecNotFound;
 }
