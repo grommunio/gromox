@@ -54,8 +54,8 @@ static decltype(gromox::abkt_tojson) *nsp_abktojson;
 static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
 
 static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
-	BOOL b_ephid, uint32_t codepage, uint32_t proptag,
-	PROPERTY_VALUE *pprop, void *pbuff)
+    BOOL b_ephid, uint32_t codepage, uint32_t proptag, PROPERTY_VALUE *pprop,
+    void *pbuff, size_t pbsize)
 {
 	int minid;
 	int temp_len;
@@ -88,10 +88,11 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
+			strcpy(static_cast<char *>(pprop->value.pv), dn);
 		} else {
 			pprop->value.pv = pbuff;
+			HX_strlcpy(pprop->value.pstr, dn, pbsize);
 		}
-		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_ADDRESSBOOKOBJECTGUID:
 		ab_tree_node_to_guid(pnode, &temp_guid);
@@ -776,8 +777,8 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pprop) {
 			return ecMAPIOOM;
 		}
-		err_val = nsp_interface_fetch_property(pnode, b_ephid,
-				codepage, pproptags->pproptag[i], pprop, NULL);
+		err_val = nsp_interface_fetch_property(pnode, b_ephid, codepage,
+		          pproptags->pproptag[i], pprop, nullptr, 0);
 		if (err_val != ecSuccess) {
 			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PT_ERROR);
 			pprop->value.err = err_val;
@@ -1600,9 +1601,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		if (PROP_TAG_ANR == pfilter->res.res_property.proptag) {
-			if (nsp_interface_fetch_property(pnode,
-			    false, codepage, PROP_TAG_ACCOUNT,
-			    &prop_val, temp_buff) == ecSuccess) {
+			if (nsp_interface_fetch_property(pnode, false, codepage,
+			    PROP_TAG_ACCOUNT, &prop_val, temp_buff,
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1620,9 +1621,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 					return TRUE;
 				}
 			}
-			if (nsp_interface_fetch_property(pnode,
-			    false, codepage, PROP_TAG_DISPLAYNAME,
-			    &prop_val, temp_buff) == ecSuccess) {
+			if (nsp_interface_fetch_property(pnode, false, codepage,
+			    PROP_TAG_DISPLAYNAME, &prop_val, temp_buff,
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1630,9 +1631,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 			return FALSE;
 		} else if (PROP_TAG_ANR_STRING8 == pfilter->res.res_property.proptag) {
-			if (nsp_interface_fetch_property(pnode,
-			    false, codepage, PROP_TAG_ACCOUNT_STRING8,
-			    &prop_val, temp_buff) == ecSuccess) {
+			if (nsp_interface_fetch_property(pnode, false, codepage,
+			    PROP_TAG_ACCOUNT_STRING8, &prop_val, temp_buff,
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1650,9 +1651,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 					return TRUE;
 				}
 			}
-			if (nsp_interface_fetch_property(pnode,
-			    false, codepage, PROP_TAG_DISPLAYNAME_STRING8,
-			    &prop_val, temp_buff) == ecSuccess) {
+			if (nsp_interface_fetch_property(pnode, false, codepage,
+			    PROP_TAG_DISPLAYNAME_STRING8, &prop_val, temp_buff,
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1660,9 +1661,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 			return FALSE;
 		}
-		if (nsp_interface_fetch_property(pnode, false,
-		    codepage, pfilter->res.res_property.proptag,
-		    &prop_val, temp_buff) != ecSuccess)
+		if (nsp_interface_fetch_property(pnode, false, codepage,
+		    pfilter->res.res_property.proptag, &prop_val,
+		    temp_buff, GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
 		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
 		case PT_SHORT:
@@ -1839,9 +1840,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			return FALSE;
 		}
-		if (nsp_interface_fetch_property(pnode, false,
-		    codepage, pfilter->res.res_exist.proptag,
-		    &prop_val, temp_buff) != ecSuccess)
+		if (nsp_interface_fetch_property(pnode, false, codepage,
+		    pfilter->res.res_exist.proptag, &prop_val, temp_buff,
+		    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
 		return TRUE;
 	case RESTRICTION_TYPE_SUBRESTRICTION:
@@ -2031,8 +2032,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	} else {
 		pnode = ab_tree_minid_to_node(pbase, pstat->cur_rec);
 		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
-		    TRUE, pstat->codepage, pstat->container_id,
-		    &prop_val, temp_buff) == ecSuccess) {
+		    TRUE, pstat->codepage, pstat->container_id, &prop_val,
+		    temp_buff, GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
@@ -2421,9 +2422,9 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	    b_unicode, *ppproptags) == ecSuccess) {
 		count = 0;
 		for (i=0; i<(*ppproptags)->cvalues; i++) {
-			if (nsp_interface_fetch_property(pnode,
-			    false, codepage, (*ppproptags)->pproptag[i],
-			    &prop_val, temp_buff) != ecSuccess)
+			if (nsp_interface_fetch_property(pnode, false, codepage,
+			    (*ppproptags)->pproptag[i], &prop_val, temp_buff,
+			    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 				continue;
 			if (i != count) {
 				(*ppproptags)->pproptag[count] = (*ppproptags)->pproptag[i];
