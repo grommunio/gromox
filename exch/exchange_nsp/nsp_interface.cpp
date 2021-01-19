@@ -93,7 +93,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 			HX_strlcpy(pprop->value.pstr, dn, pbsize);
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_ADDRESSBOOKOBJECTGUID:
 		ab_tree_node_to_guid(pnode, &temp_guid);
 		if (NULL == pbuff) {
@@ -104,7 +104,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.bin.pv = deconst(pbuff);
 		}
 		common_util_guid_to_binary(&temp_guid, &pprop->value.bin);
-		break;
+		return ecSuccess;
 	case PROP_TAG_ADDRESSBOOKCONTAINERID:
 		pnode = simple_tree_node_get_parent(pnode);
 		if (NULL == pnode) {
@@ -112,11 +112,11 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			pprop->value.l = ab_tree_get_node_minid(pnode);
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_ADDRESSTYPE:
 	case PROP_TAG_ADDRESSTYPE_STRING8:
 		pprop->value.pstr = deconst("EX");
-		break;
+		return ecSuccess;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
@@ -131,7 +131,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_OBJECTTYPE:
 		if (NODE_TYPE_MLIST == node_type) {
 			pprop->value.l = OT_DISTLIST;
@@ -140,14 +140,14 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			pprop->value.l = OT_MAILUSER;
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_DISPLAYTYPE:
 		if (NODE_TYPE_MLIST == node_type) {
 			pprop->value.l = DT_DISTLIST;
 		} else {
 			pprop->value.l = DT_MAILUSER;
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_DISPLAYTYPEEX:
 		if (NODE_TYPE_ROOM == node_type) {
 			pprop->value.l = DT_ROOM;
@@ -156,7 +156,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			pprop->value.l = DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_MAPPINGSIGNATURE:
 		pprop->value.bin.cb = 16;
 		if (NULL == pbuff) {
@@ -169,10 +169,10 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		pguid = common_util_get_nspi_guid();
 		memcpy(pprop->value.bin.pb, pguid, 16);
-		break;
+		return ecSuccess;
 	case PROP_TAG_SENDRICHINFO:
 		pprop->value.b = 1;
-		break;
+		return ecSuccess;
 	case PROP_TAG_TEMPLATEID:
 		if (NODE_TYPE_MLIST == node_type) {
 			display_type = DT_DISTLIST;
@@ -187,7 +187,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			&permeid, &pprop->value.bin)) {
 			return ecMAPIOOM;
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_ENTRYID:
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_ORIGINALENTRYID:
@@ -213,7 +213,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				return ecMAPIOOM;
 			}
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_SEARCHKEY:
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
@@ -228,7 +228,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		sprintf(pprop->value.bin.pc, "EX:%s", dn);
 		HX_strupper(pprop->value.bin.pc);
-		break;
+		return ecSuccess;
 	case PROP_TAG_INSTANCEKEY:
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 4);
@@ -244,7 +244,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		pprop->value.bin.pb[1] = (minid >> 8) & 0xFF;
 		pprop->value.bin.pb[2] = (minid >> 16) & 0xFF;
 		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
-		break;
+		return ecSuccess;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 		if (node_type != NODE_TYPE_PERSON &&
 			node_type != NODE_TYPE_EQUIPMENT &&
@@ -268,7 +268,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
 		if (node_type != NODE_TYPE_PERSON &&
 			node_type != NODE_TYPE_EQUIPMENT &&
@@ -294,7 +294,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_TITLE:
 		if (node_type == NODE_TYPE_PERSON) {
 			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
@@ -326,7 +326,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			return ecNotFound;
 		}
-		break;
+		return ecSuccess;
 	case PROP_TAG_TITLE_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -346,7 +346,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_NICKNAME:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -364,7 +364,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_NICKNAME_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -384,7 +384,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_PRIMARYTELEPHONENUMBER:
 	case PROP_TAG_BUSINESSTELEPHONENUMBER:
 		if (node_type != NODE_TYPE_PERSON)
@@ -403,7 +403,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8:
 	case PROP_TAG_BUSINESSTELEPHONENUMBER_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
@@ -423,7 +423,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_MOBILETELEPHONENUMBER:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -441,7 +441,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_MOBILETELEPHONENUMBER_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -460,7 +460,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_HOMEADDRESSSTREET:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -478,7 +478,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_HOMEADDRESSSTREET_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -497,7 +497,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_COMMENT:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -515,7 +515,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_COMMENT_STRING8:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -534,7 +534,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_COMPANYNAME:
 		ab_tree_get_company_info(pnode, dn, NULL);
 		if ('\0' == dn[0]) {
@@ -550,7 +550,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_COMPANYNAME_STRING8:
 		ab_tree_get_company_info(pnode, dn, NULL);
 		if ('\0' == dn[0]) {
@@ -567,7 +567,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_DEPARTMENTNAME:
 		ab_tree_get_department_name(pnode, dn);
 		if ('\0' == dn[0]) {
@@ -583,7 +583,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_DEPARTMENTNAME_STRING8:
 		ab_tree_get_department_name(pnode, dn);
 		if ('\0' == dn[0]) {
@@ -600,7 +600,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_OFFICELOCATION:
 		ab_tree_get_company_info(pnode, NULL, dn);
 		if ('\0' == dn[0]) {
@@ -616,7 +616,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_OFFICELOCATION_STRING8:
 		ab_tree_get_company_info(pnode, NULL, dn);
 		if ('\0' == dn[0]) {
@@ -633,7 +633,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
-		break;
+		return ecSuccess;
 	case PROP_TAG_ACCOUNT:
 	case PROP_TAG_ACCOUNT_STRING8:
 	case PROP_TAG_SMTPADDRESS:
@@ -660,7 +660,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
-		break;
+		return ecSuccess;
 	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES:
 	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8: {
 		if (NODE_TYPE_MLIST == node_type) {
@@ -700,7 +700,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			strcpy(pprop->value.string_array.ppstr[i], "smtp:");
 			strcat(pprop->value.string_array.ppstr[i++], a.c_str());
 		}
-		break;
+		return ecSuccess;
 	}
 	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS:
 	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS_STRING8:
@@ -734,7 +734,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			"ncacn_ip_tcp:%s", rpc_info.ep_host);
 		sprintf(pprop->value.string_array.ppstr[1],
 			"ncacn_http:%s", rpc_info.ep_host);
-		break;
+		return ecSuccess;
 	case PROP_TAG_CREATIONTIME:
 		if (node_type == NODE_TYPE_MLIST)
 			ab_tree_get_mlist_info(pnode, NULL, dn, NULL);
@@ -743,7 +743,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		else
 			return ecNotFound;
 		common_util_day_to_filetime(dn, &pprop->value.ftime);
-		break;
+		return ecSuccess;
 	case PROP_TAG_THUMBNAILPHOTO:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -752,11 +752,9 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		if (FALSE == common_util_load_file(dn, &pprop->value.bin)) {
 			return ecNotFound;
 		}
-		break;
-	default:
-		return ecNotFound;
+		return ecSuccess;
 	}
-	return ecSuccess;
+	return ecNotFound;
 }		
 
 static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
