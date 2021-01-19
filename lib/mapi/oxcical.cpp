@@ -27,7 +27,7 @@
 
 struct UID_EVENTS {
 	const char *puid;
-	std::list<ICAL_COMPONENT *> list;
+	std::list<std::shared_ptr<ICAL_COMPONENT>> list;
 };
 
 static constexpr char EncodedGlobalId_hex[] =
@@ -37,8 +37,7 @@ static constexpr uint8_t EncodedGlobalId[16] =
 static constexpr uint8_t ThirdPartyGlobalId[12] =
 	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
 
-static BOOL oxcical_parse_vtsubcomponent(
-	ICAL_COMPONENT *psub_component,
+static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_component,
 	int32_t *pbias, int16_t *pyear,
 	SYSTEMTIME *pdate)
 {
@@ -137,8 +136,7 @@ static int oxcical_cmp_tzrule(const void *prule1, const void *prule2)
 	return ((TZRULE*)prule1)->year - ((TZRULE*)prule2)->year;
 }
 
-static BOOL oxcical_parse_tzdefinition(
-	ICAL_COMPONENT *pvt_component,
+static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_component,
 	TIMEZONEDEFINITION *ptz_definition)
 {
 	int i;
@@ -149,8 +147,6 @@ static BOOL oxcical_parse_tzdefinition(
 	BOOL b_daylight;
 	TZRULE *pstandard_rule;
 	TZRULE *pdaylight_rule;
-	DOUBLE_LIST_NODE *pnode;
-	ICAL_COMPONENT *pcomponent;
 	
 	ptz_definition->major = 2;
 	ptz_definition->minor = 1;
@@ -164,10 +160,7 @@ static BOOL oxcical_parse_tzdefinition(
 		return FALSE;
 	}
 	ptz_definition->crules = 0;
-	for (pnode=double_list_get_head(&pvt_component->component_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		&pvt_component->component_list, pnode)) {
-		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
+	for (auto pcomponent : pvt_component->component_list) {
 		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
 			b_daylight = FALSE;
 		} else if (strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") == 0) {
@@ -308,7 +301,7 @@ static BOOL oxcical_timezonestruct_to_binary(
 }
 
 /* ptz_component can be NULL, represents UTC */
-static BOOL oxcical_parse_rrule(ICAL_COMPONENT *ptz_component,
+static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, uint16_t calendartype, time_t start_time,
 	uint32_t duration_minutes, APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
@@ -694,15 +687,11 @@ SET_INFINITIVE:
 	return TRUE;
 }
 
-static ICAL_COMPONENT* oxcical_find_vtimezone(ICAL *pical, const char *tzid)
+static std::shared_ptr<ICAL_COMPONENT> oxcical_find_vtimezone(ICAL *pical, const char *tzid)
 {
 	const char *pvalue;
-	DOUBLE_LIST_NODE *pnode;
-	ICAL_COMPONENT *pcomponent;
 	
-	for (pnode=double_list_get_head(&pical->component_list); NULL!=pnode;
-		pnode=double_list_get_after(&pical->component_list, pnode)) {
-		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
+	for (auto pcomponent : pical->component_list) {
 		if (strcasecmp(pcomponent->name.c_str(), "VTIMEZONE") != 0)
 			continue;
 		auto piline = ical_get_line(pcomponent, "TZID");
@@ -721,7 +710,7 @@ static ICAL_COMPONENT* oxcical_find_vtimezone(ICAL *pical, const char *tzid)
 }
 
 static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
-	ICAL_COMPONENT *ptz_component, INT_HASH_TABLE *phash,
+    std::shared_ptr<ICAL_COMPONENT> ptz_component, INT_HASH_TABLE *phash,
 	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -758,9 +747,8 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_recurring_timezone(
-	ICAL_COMPONENT *ptz_component, INT_HASH_TABLE *phash,
-	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+static BOOL oxcical_parse_recurring_timezone(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+    INT_HASH_TABLE *phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
 	const char *ptzid;
@@ -868,7 +856,7 @@ static BOOL oxcical_parse_proposal(INT_HASH_TABLE *phash,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
+static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event,
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -1194,10 +1182,9 @@ static BOOL oxcical_parse_dtstamp(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_start_end(BOOL b_start,
-	BOOL b_proposal, ICAL_COMPONENT *pmain_event,
-	time_t unix_time, INT_HASH_TABLE *phash,
-	uint16_t *plast_propid,  MESSAGE_CONTENT *pmsg)
+static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
+    std::shared_ptr<ICAL_COMPONENT> pmain_event, time_t unix_time,
+    INT_HASH_TABLE *phash, uint16_t *plast_propid,  MESSAGE_CONTENT *pmsg)
 {
 	uint64_t tmp_int64;
 	static uint32_t lid1;
@@ -1285,7 +1272,7 @@ static BOOL oxcical_parse_subtype(INT_HASH_TABLE *phash,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_dates(ICAL_COMPONENT *ptz_component,
+static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, uint32_t *pcount, uint32_t *pdates)
 {
 	int i;
@@ -1371,7 +1358,7 @@ static BOOL oxcical_parse_duration(uint32_t minutes,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_dtvalue(ICAL_COMPONENT *ptz_component,
+static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, bool *b_utc, ICAL_TIME *pitime,
     time_t *putc_time)
 {
@@ -1961,7 +1948,7 @@ static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_recurrence_id(ICAL_COMPONENT *ptz_component,
+static BOOL oxcical_parse_recurrence_id(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, INT_HASH_TABLE *phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -2212,9 +2199,9 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_exceptional_attachment(
-	ATTACHMENT_CONTENT *pattachment, ICAL_COMPONENT *pcomponent,
-	ICAL_TIME start_itime, ICAL_TIME end_itime, MESSAGE_CONTENT *pmsg)
+static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment,
+    std::shared_ptr<ICAL_COMPONENT> pcomponent, ICAL_TIME start_itime,
+    ICAL_TIME end_itime, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
 	time_t tmp_time;
@@ -2595,9 +2582,10 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 
 static BOOL oxcical_import_internal(const char *str_zone, const char *method,
     BOOL b_proposal, uint16_t calendartype, ICAL *pical,
-    std::list<ICAL_COMPONENT *> &pevent_list, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
-    MESSAGE_CONTENT *pmsg, ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
+    std::list<std::shared_ptr<ICAL_COMPONENT>> &pevent_list,
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg,
+    ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
 	int i;
@@ -2618,16 +2606,14 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	uint16_t last_propid;
 	ICAL_TIME start_itime;
 	TAGGED_PROPVAL propval;
-	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pembedded;
-	ICAL_COMPONENT *pmain_event;
+	std::shared_ptr<ICAL_COMPONENT> pmain_event;
 	uint32_t deleted_dates[1024];
 	uint32_t modified_dates[1024];
-	ICAL_COMPONENT *ptz_component;
+	std::shared_ptr<ICAL_COMPONENT> ptz_component;
 	ATTACHMENT_LIST *pattachments;
 	EXCEPTIONINFO exceptions[1024];
 	ATTACHMENT_CONTENT *pattachment;
-	ICAL_COMPONENT *palarm_component;
 	EXTENDEDEXCEPTION ext_exceptions[1024];
 	APPOINTMENTRECURRENCEPATTERN apprecurr;
 	
@@ -3188,7 +3174,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			}
 			
-			std::list<ICAL_COMPONENT *> tmp_list;
+			std::list<std::shared_ptr<ICAL_COMPONENT>> tmp_list;
 			try {
 				tmp_list.push_back(event);
 			} catch (...) {
@@ -3281,9 +3267,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	}
 	
 	b_alarm = FALSE;
-	pnode = double_list_get_head(&pmain_event->component_list);
-	if (NULL != pnode) {
-		palarm_component = (ICAL_COMPONENT*)pnode->pdata;
+	if (pmain_event->component_list.size() > 0) {
+		auto palarm_component = pmain_event->component_list.front();
 		if (strcasecmp(palarm_component->name.c_str(), "VALARM") == 0) {
 			b_alarm = TRUE;
 			piline = ical_get_line(palarm_component, "TRIGGER");
@@ -3395,12 +3380,8 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 static BOOL oxcical_classify_calendar(ICAL *pical,
     std::list<std::shared_ptr<UID_EVENTS>> &pevent_uid_list)
 {
-	DOUBLE_LIST_NODE *pnode;
-	ICAL_COMPONENT *pcomponent;
 	
-	for (pnode=double_list_get_head(&pical->component_list); NULL!=pnode;
-		pnode=double_list_get_after(&pical->component_list, pnode)) {
-		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
+	for (auto pcomponent : pical->component_list) {
 		if (strcasecmp(pcomponent->name.c_str(), "VEVENT") != 0)
 			continue;
 		std::shared_ptr<UID_EVENTS> puid_events;
@@ -3583,7 +3564,7 @@ IMPORT_FAILURE:
 	return NULL;
 }
 
-static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
+static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	int year, const char *tzid, TIMEZONESTRUCT *ptzstruct)
 {
 	int day;
@@ -3591,10 +3572,8 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 	int utc_offset;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
-	ICAL_COMPONENT *pcomponent;
-	ICAL_COMPONENT *pcomponent1;
 	
-	pcomponent = ical_new_component("VTIMEZONE");
+	auto pcomponent = ical_new_component("VTIMEZONE");
 	if (NULL == pcomponent) {
 		return NULL;
 	}
@@ -3606,7 +3585,7 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 	if (ical_append_line(pcomponent, piline) < 0)
 		return nullptr;
 	/* STANDARD component */
-	pcomponent1 = ical_new_component("STANDARD");
+	auto pcomponent1 = ical_new_component("STANDARD");
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
@@ -3960,8 +3939,7 @@ FIND_ENTRYID:
 	return TRUE;
 }
 
-static BOOL oxcical_export_recipient_table(
-	ICAL_COMPONENT *pevent_component,
+static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> pevent_component,
 	ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username,
 	EXT_BUFFER_ALLOC alloc, const char *partstat,
@@ -4120,8 +4098,8 @@ static BOOL oxcical_export_recipient_table(
 	return TRUE;
 }
 
-static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
-	ICAL_COMPONENT *pcomponent, APPOINTMENTRECURRENCEPATTERN *papprecurr)
+static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
 	ICAL_TIME itime;
 	time_t unix_time;
@@ -4622,8 +4600,8 @@ static BOOL oxcical_check_exdate(
 	return TRUE;
 }
 
-static BOOL oxcical_export_exdate(const char *tzid,
-	BOOL b_date, ICAL_COMPONENT *pcomponent,
+static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
+    std::shared_ptr<ICAL_COMPONENT> pcomponent,
 	APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
 	int i, j;
@@ -4742,8 +4720,8 @@ static BOOL oxcical_check_rdate(
 	return TRUE;
 }
 
-static BOOL oxcical_export_rdate(const char *tzid,
-	BOOL b_date, ICAL_COMPONENT *pcomponent,
+static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
+     std::shared_ptr<ICAL_COMPONENT> pcomponent,
 	APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
 	int i, j;
@@ -4824,10 +4802,9 @@ static BOOL oxcical_export_rdate(const char *tzid,
 	return TRUE;
 }
 
-static BOOL oxcical_export_internal(const char *method,
-	const char *tzid, ICAL_COMPONENT *ptz_component,
-	MESSAGE_CONTENT *pmsg, ICAL *pical,
-	ENTRYID_TO_USERNAME entryid_to_username,
+static BOOL oxcical_export_internal(const char *method, const char *tzid,
+    std::shared_ptr<ICAL_COMPONENT> ptz_component, MESSAGE_CONTENT *pmsg,
+    ICAL *pical, ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username,
 	LCID_TO_LTAG lcid_to_ltag, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids)
@@ -4862,7 +4839,6 @@ static BOOL oxcical_export_internal(const char *method,
 	PROPNAME_ARRAY propnames;
 	TIMEZONESTRUCT tz_struct;
 	MESSAGE_CONTENT *pembedded;
-	ICAL_COMPONENT *pcomponent;
 	GLOBALOBJECTID globalobjectid;
 	TIMEZONEDEFINITION tz_definition;
 	APPOINTMENTRECURRENCEPATTERN apprecurr;
@@ -5244,7 +5220,7 @@ EXPORT_VEVENT:
 		b_allday = FALSE;
 	}
 
-	pcomponent = ical_new_component("VEVENT");
+	auto pcomponent = ical_new_component("VEVENT");
 	if (NULL == pcomponent) {
 		return FALSE;
 	}

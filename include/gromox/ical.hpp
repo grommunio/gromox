@@ -6,7 +6,6 @@
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #define ICAL_NAME_LEN					64
 
 #define ICAL_FREQUENCY_SECOND			1
@@ -42,20 +41,15 @@ struct ICAL_VALUE {
 using ical_vlist = std::list<std::shared_ptr<ICAL_VALUE>>;
 
 struct ICAL_LINE {
-	DOUBLE_LIST_NODE node;
 	std::string name;
 	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
 	ical_vlist value_list;
 };
 
 struct GX_EXPORT ICAL_COMPONENT {
-	ICAL_COMPONENT();
-	~ICAL_COMPONENT();
-
-	DOUBLE_LIST_NODE node;
 	std::string name;
 	std::list<std::shared_ptr<ICAL_LINE>> line_list;
-	DOUBLE_LIST component_list;
+	std::list<std::shared_ptr<ICAL_COMPONENT>> component_list;
 };
 using ICAL = ICAL_COMPONENT;
 
@@ -103,12 +97,14 @@ struct ICAL_RRULE {
 extern GX_EXPORT int ical_init(ICAL *pical);
 extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
 extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
-ICAL_COMPONENT* ical_new_component(const char *name);
-
-void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild);
+extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name);
+extern GX_EXPORT int ical_append_component(ICAL_COMPONENT *pparent, std::shared_ptr<ICAL_COMPONENT> pchild);
+inline GX_EXPORT int ical_append_component(std::shared_ptr<ICAL_COMPONENT> &k, std::shared_ptr<ICAL_COMPONENT> c) { return ical_append_component(k.get(), std::move(c)); }
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
 extern GX_EXPORT int ical_append_line(ICAL_COMPONENT *pcomponent, std::shared_ptr<ICAL_LINE> piline);
+inline GX_EXPORT int ical_append_line(std::shared_ptr<ICAL_COMPONENT> &c, std::shared_ptr<ICAL_LINE> l) { return ical_append_line(c.get(), std::move(l)); }
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
+inline GX_EXPORT std::shared_ptr<ICAL_LINE> ical_get_line(std::shared_ptr<ICAL_COMPONENT> &c, const char *n) { return ical_get_line(c.get(), n); }
 extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);
 extern GX_EXPORT bool ical_append_paramval(ICAL_PARAM *, const char *paramval);
 inline GX_EXPORT bool ical_append_paramval(std::shared_ptr<ICAL_PARAM> &p, const char *subval) { return ical_append_paramval(p.get(), subval); }
@@ -151,9 +147,9 @@ int ical_get_dayofmonth(int year, int month, int order, int dayofweek);
 void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime);
 extern GX_EXPORT bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder);
 extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *pseconds);
-extern GX_EXPORT bool ical_itime_to_utc(ICAL_COMPONENT *, ICAL_TIME, time_t *);
-extern GX_EXPORT bool ical_datetime_to_utc(ICAL_COMPONENT *, const char *datetime, time_t *);
-extern GX_EXPORT bool ical_utc_to_datetime(ICAL_COMPONENT *, time_t utc_time, ICAL_TIME *);
+extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TIME, time_t *);
+extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
+extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
 int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2);
 
 void ical_add_year(ICAL_TIME *pitime, int years);
@@ -167,7 +163,7 @@ int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2);
 void ical_add_hour(ICAL_TIME *pitime, int hours);
 void ical_add_minute(ICAL_TIME *pitime, int minutes);
 void ical_add_second(ICAL_TIME *pitime, int seconds);
-extern GX_EXPORT bool ical_parse_rrule(ICAL_COMPONENT *, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
+extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
 extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
 int ical_rrule_weekstart(ICAL_RRULE *pirrule);
 extern GX_EXPORT bool ical_rrule_endless(ICAL_RRULE *);

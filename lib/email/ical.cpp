@@ -125,47 +125,30 @@ static int ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
 }
 
 
-ICAL_COMPONENT* ical_new_component(const char *name)
+static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
-	auto pcomponent = new(std::nothrow) ICAL_COMPONENT;
-	if (NULL == pcomponent) {
-		return NULL;
-	}
-	if (ical_init_component(pcomponent, name) < 0) {
-		delete pcomponent;
-		return nullptr;
-	}
-	return pcomponent;
+	pcomponent->component_list.clear();
 }
 
-void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild)
+std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name)
 {
-	double_list_append_as_tail(&pparent->component_list, &pchild->node);
+	try {
+		auto c = std::make_shared<ICAL_COMPONENT>();
+		auto ret = ical_init_component(c.get(), name);
+		if (ret < 0) {
+			errno = -ret;
+			return nullptr;
+		}
+		return c;
+	} catch (...) {
+	}
+	errno = ENOMEM;
+	return nullptr;
 }
 
 int ical_init(ICAL *pical)
 {
 	return ical_init_component(pical, "VCALENDAR");
-}
-
-static void ical_clear_component(ICAL_COMPONENT *pcomponent)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&pcomponent->component_list)) != nullptr)
-		delete static_cast<ICAL_COMPONENT *>(pnode->pdata);
-}
-
-ICAL_COMPONENT::ICAL_COMPONENT()
-{
-	node.pdata = this;
-	double_list_init(&component_list);
-}
-
-ICAL_COMPONENT::~ICAL_COMPONENT()
-{
-	ical_clear_component(this);
-	double_list_free(&component_list);
 }
 
 static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
@@ -439,19 +422,15 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			if (NULL == tmp_item.pvalue) {
 				break;
 			}
-			auto pcomponent1 = new(std::nothrow) ICAL_COMPONENT;
+			auto pcomponent1 = ical_new_component(tmp_item.pvalue);
 			if (NULL == pcomponent1) {
 				break;
 			}
-			if (ical_init_component(pcomponent1, tmp_item.pvalue) < 0) {
-				delete pcomponent1;
+			if (!ical_retrieve_component(pcomponent1.get(), pnext, &pnext)) {
 				break;
 			}
-			if (!ical_retrieve_component(pcomponent1, pnext, &pnext)) {
-				delete pcomponent1;
+			if (ical_append_component(pcomponent, pcomponent1) < 0)
 				break;
-			}
-			ical_append_component(pcomponent, pcomponent1);
 			continue;
 		}
 		if (0 == strcasecmp(tmp_item.ptag, "END")) {
@@ -620,7 +599,6 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	BOOL need_comma;
 	size_t line_begin;
 	BOOL need_semicolon;
-	DOUBLE_LIST_NODE *pnode;
 	
 	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n",
 	                pcomponent->name.c_str());
@@ -715,10 +693,8 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		out_buff[offset] = '\n';
 		offset ++;
 	}
-	for (pnode=double_list_get_head(&pcomponent->component_list); NULL!=pnode;
-		pnode=double_list_get_after(&pcomponent->component_list, pnode)) {
-		offset1 = ical_serialize_component(static_cast<ICAL_COMPONENT *>(pnode->pdata),
-		          out_buff + offset, max_length - offset);
+	for (auto comp : pcomponent->component_list) {
+		offset1 = ical_serialize_component(comp.get(), out_buff + offset, max_length - offset);
 		if (0 == offset1) {
 			return 0;
 		}
@@ -1449,8 +1425,8 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 	return true;
 }
 
-static const char* ical_get_datetime_offset(
-	ICAL_COMPONENT *ptz_component, ICAL_TIME itime)
+static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+    ICAL_TIME itime)
 {
 	int hour;
 	int month;
@@ -1470,20 +1446,14 @@ static const char* ical_get_datetime_offset(
 	const char *pvalue;
 	const char *pvalue1;
 	const char *pvalue2;
-	DOUBLE_LIST_NODE *pnode;
 	ICAL_TIME itime_standard;
 	ICAL_TIME itime_daylight;
-	ICAL_COMPONENT *pcomponent;
 	const char *standard_offset;
 	const char *daylight_offset;
 	
 	b_standard = FALSE;
 	b_daylight = FALSE;
-	for (pnode=double_list_get_head(
-		&ptz_component->component_list); NULL!=pnode;
-		pnode=double_list_get_after(
-		&ptz_component->component_list, pnode)) {
-		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
+	for (auto pcomponent : ptz_component->component_list) {
 		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
@@ -1692,7 +1662,7 @@ FOUND_COMPONENT:
 	}
 }
 
-bool ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
+bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     ICAL_TIME itime, time_t *ptime)
 {
 	int hour_offset;
@@ -1727,7 +1697,7 @@ bool ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
 	return true;
 }
 
-bool ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
+bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	const char *str_datetime, time_t *ptime)
 {
 	bool b_utc;
@@ -1756,7 +1726,7 @@ bool ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
 	return ical_itime_to_utc(ptz_component, itime, ptime);
 }
 
-bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
+bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	time_t utc_time, ICAL_TIME *pitime)
 {
 	int hour;
@@ -1765,8 +1735,6 @@ bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 	struct tm tmp_tm;
 	std::shared_ptr<ICAL_LINE> piline;
 	const char *pvalue;
-	DOUBLE_LIST_NODE *pnode;
-	ICAL_COMPONENT *pcomponent;
 	
 	if (NULL == ptz_component) {
 		/* UTC time */
@@ -1780,11 +1748,7 @@ bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 		pitime->leap_second = 0;
 		return true;
 	}
-	for (pnode=double_list_get_head(
-		&ptz_component->component_list); NULL!=pnode;
-		pnode=double_list_get_after(
-		&ptz_component->component_list, pnode)) {
-		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
+	for (auto pcomponent : ptz_component->component_list) {
 		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
 			return false;
@@ -1816,7 +1780,7 @@ bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 	return false;
 }
 
-static bool ical_parse_until(ICAL_COMPONENT *ptz_component,
+static bool ical_parse_until(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	const char *str_until, time_t *ptime)
 {
 	bool b_utc;
@@ -2228,8 +2192,8 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 }
 
 /* ptz_component can be NULL, represents UTC */
-bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
-    const ical_vlist *pvalue_list, ICAL_RRULE *pirrule)
+bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+    time_t start_time, const ical_vlist *pvalue_list, ICAL_RRULE *pirrule)
 {
 	int i;
 	int tmp_int;

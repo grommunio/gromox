@@ -107,7 +107,7 @@ static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;
 static DOUBLE_LIST g_exmdb_list;
-static ICAL_COMPONENT *g_tz_component;
+static std::shared_ptr<ICAL_COMPONENT> g_tz_component;
 
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
@@ -698,7 +698,7 @@ static int connect_exmdb(const char *dir)
 	return -1;
 }
 
-static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
+static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	const char *tzid, TIMEZONESTRUCT *ptzstruct)
 {
 	int day;
@@ -706,10 +706,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	int utc_offset;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
-	ICAL_COMPONENT *pcomponent;
-	ICAL_COMPONENT *pcomponent1;
 	
-	pcomponent = ical_new_component("VTIMEZONE");
+	auto pcomponent = ical_new_component("VTIMEZONE");
 	if (NULL == pcomponent) {
 		return NULL;
 	}
@@ -720,11 +718,12 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	if (ical_append_line(pcomponent, piline) < 0)
 		return nullptr;
 	/* STANDARD component */
-	pcomponent1 = ical_new_component("STANDARD");
+	auto pcomponent1 = ical_new_component("STANDARD");
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
-	ical_append_component(pcomponent, pcomponent1);
+	if (ical_append_component(pcomponent, pcomponent1) < 0)
+		return nullptr;
 	if (0 == ptzstruct->daylightdate.month) {
 		strcpy(tmp_buff, "16010101T000000");
 	} else {
@@ -884,7 +883,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
-	ical_append_component(pcomponent, pcomponent1);
+	if (ical_append_component(pcomponent, pcomponent1) < 0)
+		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
 		day = ical_get_dayofmonth(year,
 			ptzstruct->daylightdate.month,
@@ -1033,7 +1033,7 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	return pcomponent;
 }
 
-static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
+static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	time_t whole_start_time, const APPOINTMENTRECURRENCEPATTERN *papprecurr,
 	ICAL_RRULE *pirrule)
 {
@@ -1455,7 +1455,7 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		&piline->value_list, pirrule) ? TRUE : false;
 }
 
-static BOOL find_recurrence_times(ICAL_COMPONENT *ptz_component,
+static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	time_t whole_start_time, const APPOINTMENTRECURRENCEPATTERN *papprecurr,
 	time_t start_time, time_t end_time, DOUBLE_LIST *plist)
 {
@@ -1727,7 +1727,7 @@ static BOOL get_freebusy(const char *dir)
 	RESTRICTION *prestriction2;
 	RESTRICTION *prestriction3;
 	uint32_t pidlidreminderset;
-	ICAL_COMPONENT *ptz_component;
+	std::shared_ptr<ICAL_COMPONENT> ptz_component;
 	uint32_t pidlidtimezonestruct;
 	uint32_t pidlidglobalobjectid;
 	uint32_t pidlidappointmentrecur;
