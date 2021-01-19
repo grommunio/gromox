@@ -2,6 +2,12 @@
 #define STPHP_EXT_HPP 1
 
 #include "php.h"
+#undef slprintf
+#undef vslprintf
+#undef snprintf
+#undef vsnprintf
+#undef vasprintf
+#undef asprintf
 #include <memory>
 
 struct zstr_delete {

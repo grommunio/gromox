@@ -2,6 +2,12 @@
 #include <cstdint>
 #include "types.h"
 #include "php.h"
+#undef slprintf
+#undef vslprintf
+#undef snprintf
+#undef vsnprintf
+#undef vasprintf
+#undef asprintf
 
 struct PULL_CTX {
 	union {

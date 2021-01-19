@@ -1,5 +1,11 @@
 #pragma once
 #include "php.h"
+#undef slprintf
+#undef vslprintf
+#undef snprintf
+#undef vsnprintf
+#undef vasprintf
+#undef asprintf
 #include "types.h"
 
 uint64_t unix_to_nttime(time_t unix_time);

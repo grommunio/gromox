@@ -1,5 +1,11 @@
 #pragma once
 #include "php.h"
+#undef slprintf
+#undef vslprintf
+#undef snprintf
+#undef vsnprintf
+#undef vasprintf
+#undef asprintf
 #include "types.h"
 #include <cstdint>
 
