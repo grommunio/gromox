@@ -23,7 +23,10 @@
 #define RRULE_BY_WEEKNO					7
 #define RRULE_BY_MONTH					8
 
-struct ICAL_COMPONENT {
+struct GX_EXPORT ICAL_COMPONENT {
+	ICAL_COMPONENT();
+	~ICAL_COMPONENT();
+
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST line_list;
@@ -32,18 +35,24 @@ struct ICAL_COMPONENT {
 using ICAL = ICAL_COMPONENT;
 
 struct ICAL_PARAM {
+	~ICAL_PARAM();
+
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST paramval_list;
 };
 
 struct ICAL_VALUE {
+	~ICAL_VALUE();
+
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST subval_list;
 };
 
 struct ICAL_LINE {
+	~ICAL_LINE();
+
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST param_list;
@@ -92,8 +101,6 @@ struct ICAL_RRULE {
 };
 
 void ical_init(ICAL *pical);
-
-void ical_free(ICAL *pical);
 extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
 extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
 ICAL_COMPONENT* ical_new_component(const char *name);

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <new>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -16,8 +17,6 @@ struct LINE_ITEM {
 	char *ptag;
 	char *pvalue;
 };
-
-static void ical_free_component(ICAL_COMPONENT *pcomponent);
 
 static char* ical_get_tag_comma(char *pstring)
 {
@@ -126,16 +125,13 @@ static char* ical_get_value_semicolon(char *pstring)
 
 static void ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
 {
-	pcomponent->node.pdata = pcomponent;
-	double_list_init(&pcomponent->line_list);
-	double_list_init(&pcomponent->component_list);
 	HX_strlcpy(pcomponent->name, name, GX_ARRAY_SIZE(pcomponent->name));
 }
 
 
 ICAL_COMPONENT* ical_new_component(const char *name)
 {
-	auto pcomponent = static_cast<ICAL_COMPONENT *>(malloc(sizeof(ICAL_COMPONENT)));
+	auto pcomponent = new(std::nothrow) ICAL_COMPONENT;
 	if (NULL == pcomponent) {
 		return NULL;
 	}
@@ -153,67 +149,64 @@ void ical_init(ICAL *pical)
 	ical_init_component(pical, "VCALENDAR");
 }
 
-static void ical_free_param(ICAL_PARAM *piparam)
+ICAL_PARAM::~ICAL_PARAM()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&piparam->paramval_list)) != NULL) {
+	while ((pnode = double_list_get_from_head(&paramval_list)) != nullptr) {
 		free(pnode->pdata);
 		free(pnode);
 	}
-	double_list_free(&piparam->paramval_list);
-	free(piparam);
+	double_list_free(&paramval_list);
 }
 
-static void ical_free_value(ICAL_VALUE *pivalue)
+ICAL_VALUE::~ICAL_VALUE()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pivalue->subval_list)) != NULL) {
+	while ((pnode = double_list_get_from_head(&subval_list)) != nullptr) {
 		if (NULL != pnode->pdata) {
 			free(pnode->pdata);
 		}
 		free(pnode);
 	}
-	double_list_free(&pivalue->subval_list);
-	free(pivalue);
+	double_list_free(&subval_list);
 }
 
-static void ical_free_line(ICAL_LINE *piline)
+ICAL_LINE::~ICAL_LINE()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&piline->param_list)) != NULL)
-		ical_free_param(static_cast<ICAL_PARAM *>(pnode->pdata));
-	double_list_free(&piline->param_list);
-	while ((pnode = double_list_get_from_head(&piline->value_list)) != NULL)
-		ical_free_value(static_cast<ICAL_VALUE *>(pnode->pdata));
-	double_list_free(&piline->value_list);
-	free(piline);
+	while ((pnode = double_list_get_from_head(&param_list)) != nullptr)
+		delete static_cast<ICAL_PARAM *>(pnode->pdata);
+	double_list_free(&param_list);
+	while ((pnode = double_list_get_from_head(&value_list)) != nullptr)
+		delete static_cast<ICAL_VALUE *>(pnode->pdata);
+	double_list_free(&value_list);
 }
 
 static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pcomponent->line_list)) != NULL)
-		ical_free_line(static_cast<ICAL_LINE *>(pnode->pdata));
-	while ((pnode = double_list_get_from_head(&pcomponent->component_list)) != NULL) {
-		ical_free_component(static_cast<ICAL_COMPONENT *>(pnode->pdata));
-		free(pnode->pdata);
-	}
+	while ((pnode = double_list_get_from_head(&pcomponent->line_list)) != nullptr)
+		delete static_cast<ICAL_LINE *>(pnode->pdata);
+	while ((pnode = double_list_get_from_head(&pcomponent->component_list)) != nullptr)
+		delete static_cast<ICAL_COMPONENT *>(pnode->pdata);
 }
 
-static void ical_free_component(ICAL_COMPONENT *pcomponent)
+ICAL_COMPONENT::ICAL_COMPONENT()
 {
-	ical_clear_component(pcomponent);
-	double_list_free(&pcomponent->line_list);
-	double_list_free(&pcomponent->component_list);
+	node.pdata = this;
+	double_list_init(&line_list);
+	double_list_init(&component_list);
 }
 
-void ical_free(ICAL *pical)
+ICAL_COMPONENT::~ICAL_COMPONENT()
 {
-	ical_free_component(pical);
+	ical_clear_component(this);
+	double_list_free(&line_list);
+	double_list_free(&component_list);
 }
 
 static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
@@ -348,7 +341,7 @@ static ICAL_PARAM* ical_retrieve_param(char *ptag)
 	do {
 		pnext = ical_get_tag_comma(ptr);
 		if (!ical_append_paramval(piparam, ptr)) {
-			ical_free_param(piparam);
+			delete piparam;
 			return NULL;
 		}
 	} while ((ptr = pnext) != NULL);
@@ -486,14 +479,13 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			if (NULL == tmp_item.pvalue) {
 				break;
 			}
-			auto pcomponent1 = static_cast<ICAL_COMPONENT *>(malloc(sizeof(ICAL_COMPONENT)));
+			auto pcomponent1 = new(std::nothrow) ICAL_COMPONENT;
 			if (NULL == pcomponent1) {
 				break;
 			}
 			ical_init_component(pcomponent1, tmp_item.pvalue);
 			if (!ical_retrieve_component(pcomponent1, pnext, &pnext)) {
-				ical_free_component(pcomponent1);
-				free(pcomponent1);
+				delete pcomponent1;
 				break;
 			}
 			ical_append_component(pcomponent, pcomponent1);
@@ -811,7 +803,7 @@ bool ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
 
 ICAL_LINE* ical_new_line(const char *name)
 {
-	auto piline = static_cast<ICAL_LINE *>(malloc(sizeof(ICAL_LINE)));
+	auto piline = new(std::nothrow) ICAL_LINE;
 	if (NULL == piline) {
 		return NULL;
 	}
@@ -842,7 +834,7 @@ ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
 
 ICAL_PARAM* ical_new_param(const char*name)
 {
-	auto piparam = static_cast<ICAL_PARAM *>(malloc(sizeof(ICAL_PARAM)));
+	auto piparam = new(std::nothrow) ICAL_PARAM;
 	if (NULL == piparam) {
 		return NULL;
 	}
@@ -896,7 +888,7 @@ const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name)
 
 ICAL_VALUE* ical_new_value(const char *name)
 {
-	auto pivalue = static_cast<ICAL_VALUE *>(malloc(sizeof(ICAL_VALUE)));
+	auto pivalue = new(std::nothrow) ICAL_VALUE;
 	if (NULL == pivalue) {
 		return NULL;
 	}
@@ -1013,12 +1005,12 @@ ICAL_LINE* ical_new_simple_line(const char *name, const char *value)
 	}
 	pivalue = ical_new_value(NULL);
 	if (NULL == pivalue) {
-		ical_free_line(piline);
+		delete piline;
 		return NULL;
 	}
 	ical_append_value(piline, pivalue);
 	if (!ical_append_subval(pivalue, value)) {
-		ical_free_line(piline);
+		delete piline;
 		return NULL;
 	}
 	return piline;

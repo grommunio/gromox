@@ -3282,14 +3282,10 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 		common_util_entryid_to_username_internal,
 		common_util_essdn_to_username,
 		system_services_lcid_to_ltag)) {
-		ical_free(&ical);
 		return FALSE;
 	}
-	if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff))) {
-		ical_free(&ical);
+	if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))
 		return FALSE;	
-	}
-	ical_free(&ical);
 	pical_bin->cb = strlen(tmp_buff);
 	pical_bin->pc = common_util_dup(tmp_buff);
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
@@ -3315,15 +3311,12 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
 	ical_init(&ical);
-	if (!ical_retrieve(&ical, pbuff)) {
-		ical_free(&ical);
+	if (!ical_retrieve(&ical, pbuff))
 		return NULL;
-	}
 	common_util_set_dir(store_object_get_dir(pstore));
 	pmsgctnt = oxcical_import(timezone, &ical,
 	           common_util_alloc, common_util_get_propids_create,
 		common_util_username_to_entryid);
-	ical_free(&ical);
 	return pmsgctnt;
 }
 

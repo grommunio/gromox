@@ -4691,7 +4691,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				oxcmail_username_to_entryid))) {
 				mime_enum.pcalendar = NULL;
 			}
-			ical_free(&ical);
 		}
 		free(pcontent);
 	}
@@ -7231,11 +7230,9 @@ HTML_ONLY:
 		
 		ical_init(&ical);
 		if (FALSE == oxcical_export(pmsg, &ical, alloc,
-			get_propids, oxcmail_entryid_to_username,
-			oxcmail_essdn_to_username, oxcmail_lcid_to_ltag)) {
-			ical_free(&ical);
+		    get_propids, oxcmail_entryid_to_username,
+		    oxcmail_essdn_to_username, oxcmail_lcid_to_ltag))
 			goto EXPORT_FAILURE;
-		}
 		tmp_method[0] = '\0';
 		piline = ical_get_line((ICAL_COMPONENT*)&ical, "METHOD");
 		if (NULL != piline) {
@@ -7244,11 +7241,8 @@ HTML_ONLY:
 				strncpy(tmp_method, static_cast<char *>(pvalue), 32);
 			}
 		}
-		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff))) {
-			ical_free(&ical);
+		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
-		}
-		ical_free(&ical);
 		if (FALSE == mime_write_content(pcalendar, tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
