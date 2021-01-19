@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <list>
 #include <new>
 #include <optional>
@@ -152,18 +153,6 @@ void ical_init(ICAL *pical)
 	ical_init_component(pical, "VCALENDAR");
 }
 
-ICAL_LINE::~ICAL_LINE()
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_get_from_head(&param_list)) != nullptr)
-		delete static_cast<ICAL_PARAM *>(pnode->pdata);
-	double_list_free(&param_list);
-	while ((pnode = double_list_get_from_head(&value_list)) != nullptr)
-		delete static_cast<ICAL_VALUE *>(pnode->pdata);
-	double_list_free(&value_list);
-}
-
 static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -301,11 +290,10 @@ static bool ical_check_empty_line(const char *pline)
 	return true;
 }
 
-static ICAL_PARAM* ical_retrieve_param(char *ptag)
+static std::shared_ptr<ICAL_PARAM> ical_retrieve_param(char *ptag)
 {
 	char *ptr;
 	char *pnext;
-	ICAL_PARAM *piparam;
 	
 	ptr = strchr(ptag, '=');
 	if (NULL == ptr) {
@@ -313,16 +301,14 @@ static ICAL_PARAM* ical_retrieve_param(char *ptag)
 	}
 	*ptr = '\0';
 	ptr ++;
-	piparam = ical_new_param(ptag);
+	auto piparam = ical_new_param(ptag);
 	if (NULL == piparam) {
 		return NULL;
 	}
 	do {
 		pnext = ical_get_tag_comma(ptr);
-		if (!ical_append_paramval(piparam, ptr)) {
-			delete piparam;
+		if (!ical_append_paramval(piparam, ptr))
 			return NULL;
-		}
 	} while ((ptr = pnext) != NULL);
 	return piparam;
 }
@@ -332,7 +318,6 @@ static ICAL_LINE* ical_retrieve_tag(char *ptag)
 	char *ptr;
 	char *pnext;
 	ICAL_LINE *piline;
-	ICAL_PARAM *piparam;
 	
 	ptr = strchr(ptag, ';');
 	if (NULL != ptr) {
@@ -348,25 +333,21 @@ static ICAL_LINE* ical_retrieve_tag(char *ptag)
 	ptr ++;
 	do {
 		pnext = ical_get_tag_semicolon(ptr);
-		piparam = ical_retrieve_param(ptr);
+		auto piparam = ical_retrieve_param(ptr);
 		if (NULL == piparam) {
 			return nullptr;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return nullptr;
 	} while ((ptr = pnext) != NULL);
 	return piline;
 }
 
 static bool ical_check_base64(ICAL_LINE *piline)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&piline->param_list); NULL!=pnode;
-		pnode=double_list_get_after(&piline->param_list, pnode)) {
-		if (strcasecmp(static_cast<ICAL_PARAM *>(pnode->pdata)->name.c_str(), "ENCODING") == 0)
-			return true;
-	}
-	return false;
+	return std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
+	       [](const auto &e) { return strcasecmp(e->name.c_str(), "ENCODING") == 0; }) !=
+	       piline->param_list.cend();
 }
 
 static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
@@ -375,7 +356,7 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 	char *ptr1;
 	char *pnext;
 	char *pnext1;
-	ICAL_VALUE *pivalue;
+	std::shared_ptr<ICAL_VALUE> pivalue;
 	
 	auto b_base64 = ical_check_base64(piline);
 	ptr = pvalue;
@@ -398,7 +379,8 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 		}
 		if (pivalue == nullptr)
 			return FALSE;
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		do {
 			pnext1 = ical_get_value_comma(ptr1);
 			if ('\0' == *ptr1) {
@@ -434,6 +416,17 @@ static void ical_unescape_string(char *pstring)
 	}
 }
 
+static inline bool r1something(const char *s)
+{
+	return strcasecmp(s, "ATTACH") == 0 || strcasecmp(s, "COMMENT") == 0 ||
+	       strcasecmp(s, "DESCRIPTION") == 0 || strcasecmp(s, "X-ALT-DESC") == 0 ||
+	       strcasecmp(s, "LOCATION") == 0 || strcasecmp(s, "SUMMARY") == 0 ||
+	       strcasecmp(s, "CONTACT") == 0 || strcasecmp(s, "URL") == 0 ||
+	       strcasecmp(s, "UID") == 0 || strcasecmp(s, "TZNAME") == 0 ||
+	       strcasecmp(s, "TZURL") == 0 || strcasecmp(s, "PRODID") == 0 ||
+	       strcasecmp(s, "VERSION") == 0;
+}
+
 static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
     char *in_buff, char **ppnext)
 {
@@ -442,7 +435,6 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 	size_t length;
 	ICAL_LINE *piline;
 	LINE_ITEM tmp_item;
-	ICAL_VALUE *pivalue;
 	
 	ical_clear_component(pcomponent);
 	pline = in_buff;
@@ -484,25 +476,15 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			break;
 		}
 		ical_append_line(pcomponent, piline);
+
 		if (NULL != tmp_item.pvalue) {
-			if (0 == strcasecmp(piline->name, "ATTACH") ||
-				0 == strcasecmp(piline->name, "COMMENT") ||
-				0 == strcasecmp(piline->name, "DESCRIPTION") ||
-				0 == strcasecmp(piline->name, "X-ALT-DESC") ||
-				0 == strcasecmp(piline->name, "LOCATION") ||
-				0 == strcasecmp(piline->name, "SUMMARY") ||
-				0 == strcasecmp(piline->name, "CONTACT") ||
-				0 == strcasecmp(piline->name, "URL") ||
-				0 == strcasecmp(piline->name, "UID") ||
-				0 == strcasecmp(piline->name, "TZNAME") ||
-				0 == strcasecmp(piline->name, "TZURL") ||
-				0 == strcasecmp(piline->name, "PRODID") ||
-				0 == strcasecmp(piline->name, "VERSION")) {
-				pivalue = ical_new_value(NULL);
+			if (r1something(piline->name.c_str())) {
+				auto pivalue = ical_new_value(nullptr);
 				if (NULL == pivalue) {
 					break;
 				}
-				ical_append_value(piline, pivalue);
+				if (ical_append_value(piline, pivalue) < 0)
+					break;
 				ical_unescape_string(tmp_item.pvalue);
 				if (!ical_append_subval(pivalue, tmp_item.pvalue))
 					break;
@@ -646,10 +628,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	size_t line_begin;
 	ICAL_LINE *piline;
 	BOOL need_semicolon;
-	ICAL_PARAM *piparam;
-	ICAL_VALUE *pivalue;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
 	
 	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n", pcomponent->name);
 	if (offset >= max_length) {
@@ -660,13 +639,11 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		line_begin = offset;
 		piline = (ICAL_LINE*)pnode->pdata;
 		offset += gx_snprintf(out_buff + offset,
-			max_length - offset, "%s", piline->name);
+		          max_length - offset, "%s", piline->name.c_str());
 		if (offset >= max_length) {
 			return 0;
 		}
-		for (pnode1=double_list_get_head(&piline->param_list); NULL!=pnode1;
-			pnode1=double_list_get_after(&piline->param_list, pnode1)) {
-			piparam = (ICAL_PARAM*)pnode1->pdata;
+		for (const auto &piparam : piline->param_list) {
 			if (offset + 1 >= max_length) {
 				return 0;
 			}
@@ -701,9 +678,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			return 0;
 		}
 		need_semicolon = FALSE;
-		for (pnode1=double_list_get_head(&piline->value_list); NULL!=pnode1;
-			pnode1=double_list_get_after(&piline->value_list, pnode1)) {
-			pivalue = (ICAL_VALUE*)pnode1->pdata;
+		for (const auto &pivalue : piline->value_list) {
 			if (FALSE == need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
@@ -781,9 +756,12 @@ ICAL_LINE* ical_new_line(const char *name)
 		return NULL;
 	}
 	piline->node.pdata = piline;
-	HX_strlcpy(piline->name, name, GX_ARRAY_SIZE(piline->name));
-	double_list_init(&piline->param_list);
-	double_list_init(&piline->value_list);
+	try {
+		piline->name = name;
+	} catch (...) {
+		delete piline;
+		return nullptr;
+	}
 	return piline;
 }
 
@@ -798,27 +776,10 @@ ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
 	
 	for (pnode=double_list_get_head(&pcomponent->line_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcomponent->line_list, pnode)) {
-		if (0 == strcasecmp(((ICAL_LINE*)pnode->pdata)->name, name)) {
+		if (strcasecmp(static_cast<ICAL_LINE *>(pnode->pdata)->name.c_str(), name) == 0)
 			return static_cast<ICAL_LINE *>(pnode->pdata);
-		}
 	}
 	return NULL;
-}
-
-ICAL_PARAM* ical_new_param(const char*name)
-{
-	auto piparam = new(std::nothrow) ICAL_PARAM;
-	if (NULL == piparam) {
-		return NULL;
-	}
-	piparam->node.pdata = piparam;
-	try {
-		piparam->name = name;
-	} catch (...) {
-		delete piparam;
-		return nullptr;
-	}
-	return piparam;
 }
 
 bool ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
@@ -831,69 +792,18 @@ bool ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
 	return false;
 }
 
-void ical_append_param(ICAL_LINE *piline, ICAL_PARAM *piparam)
+static ical_svlist *ical_get_subval_list_internal(const ical_vlist *pvalue_list, const char *name)
 {
-	double_list_append_as_tail(&piline->param_list, &piparam->node);
-}
-
-const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name)
-{
-	ICAL_PARAM *piparam;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&piline->param_list); NULL!=pnode;
-		pnode=double_list_get_after(&piline->param_list, pnode)) {
-		piparam = (ICAL_PARAM*)pnode->pdata;
-		if (strcasecmp(piparam->name.c_str(), name) == 0)
-			break;
-	}
-	if (NULL == pnode) {
-		return NULL;
-	}
-	if (piparam->paramval_list.size() != 1)
-		return NULL;
-	return piparam->paramval_list.front().c_str();
-}
-
-ICAL_VALUE* ical_new_value(const char *name)
-{
-	auto pivalue = new(std::nothrow) ICAL_VALUE;
-	if (NULL == pivalue) {
-		return NULL;
-	}
-	pivalue->node.pdata = pivalue;
-	try {
-		if (name != nullptr)
-			pivalue->name = name;
-	} catch (...) {
-		delete pivalue;
+	auto end = pvalue_list->cend();
+	auto it  = std::find_if(pvalue_list->cbegin(), end,
+	           [=](const auto &e) { return strcasecmp(e->name.c_str(), name) == 0; });
+	if (it == end)
 		return nullptr;
-	}
-	return pivalue;
-}
-
-void ical_append_value(ICAL_LINE *piline, ICAL_VALUE *pivalue)
-{
-	double_list_append_as_tail(&piline->value_list, &pivalue->node);
-}
-
-static std::list<std::optional<std::string>> *ical_get_subval_list_internal(
-	DOUBLE_LIST *pvalue_list, const char *name)
-{
-	ICAL_VALUE *pivalue;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(pvalue_list); NULL!=pnode;
-		pnode=double_list_get_after(pvalue_list, pnode)) {
-		pivalue = (ICAL_VALUE*)pnode->pdata;
-		if (strcasecmp(pivalue->name.c_str(), name) == 0)
-			return &pivalue->subval_list;
-	}
-	return NULL;
+	return &it->get()->subval_list;
 }
 
 static const char *ical_get_first_subvalue_by_name_internal(
-	DOUBLE_LIST *pvalue_list, const char *name)
+    const ical_vlist *pvalue_list, const char *name)
 {
 	if ('\0' == name[0]) {
 		return NULL;
@@ -917,14 +827,9 @@ const char* ical_get_first_subvalue_by_name(
 
 const char* ical_get_first_subvalue(ICAL_LINE *piline)
 {
-	ICAL_VALUE *pivalue;
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_head(&piline->value_list);
-	if (NULL == pnode) {
+	if (piline->value_list.size() == 0)
 		return NULL;
-	}
-	pivalue = (ICAL_VALUE*)pnode->pdata;
+	const auto &pivalue = piline->value_list.front();
 	if ('\0' != pivalue->name[0]) {
 		return NULL;
 	}
@@ -934,7 +839,7 @@ const char* ical_get_first_subvalue(ICAL_LINE *piline)
 	return pnv2.has_value() ? pnv2->c_str() : nullptr;
 }
 
-std::list<std::optional<std::string>> *ical_get_subval_list(ICAL_LINE *piline, const char *name)
+ical_svlist *ical_get_subval_list(ICAL_LINE *piline, const char *name)
 {
 	return ical_get_subval_list_internal(&piline->value_list, name);
 }
@@ -942,13 +847,12 @@ std::list<std::optional<std::string>> *ical_get_subval_list(ICAL_LINE *piline, c
 ICAL_LINE* ical_new_simple_line(const char *name, const char *value)
 {
 	ICAL_LINE *piline;
-	ICAL_VALUE *pivalue;
 	
 	piline = ical_new_line(name);
 	if (NULL == piline) {
 		return NULL;
 	}
-	pivalue = ical_new_value(NULL);
+	auto pivalue = ical_new_value(nullptr);
 	if (NULL == pivalue) {
 		delete piline;
 		return NULL;
@@ -2373,7 +2277,7 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 
 /* ptz_component can be NULL, represents UTC */
 bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
-    DOUBLE_LIST *pvalue_list, ICAL_RRULE *pirrule)
+    const ical_vlist *pvalue_list, ICAL_RRULE *pirrule)
 {
 	int i;
 	int tmp_int;

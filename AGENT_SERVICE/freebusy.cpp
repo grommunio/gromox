@@ -705,7 +705,7 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	int order;
 	int utc_offset;
 	ICAL_LINE *piline;
-	ICAL_VALUE *pivalue;
+	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	ICAL_COMPONENT *pcomponent;
 	ICAL_COMPONENT *pcomponent1;
@@ -765,14 +765,16 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			if (!ical_append_subval(pivalue, "YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			order = ptzstruct->standarddate.day;
 			if (5 == order) {
 				order = -1;
@@ -808,7 +810,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return NULL;
@@ -822,20 +825,23 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			if (!ical_append_subval(pivalue, "YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.day);
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return NULL;
@@ -909,14 +915,16 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		if (!ical_append_subval(pivalue, "YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYDAY");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		order = ptzstruct->daylightdate.day;
 		if (5 == order) {
 			order = -1;
@@ -952,7 +960,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return NULL;
@@ -966,20 +975,23 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		if (!ical_append_subval(pivalue, "YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYMONTHDAY");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.day);
 		pivalue = ical_new_value("BYMONTH");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return NULL;
@@ -1019,7 +1031,7 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 	time_t unix_time;
 	uint64_t nt_time;
 	ICAL_LINE *piline;
-	ICAL_VALUE *pivalue;
+	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
 	piline = ical_new_line("RRULE");
@@ -1032,7 +1044,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, "DAILY"))
 			return FALSE;
 		sprintf(tmp_buff, "%u",
@@ -1041,7 +1054,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 		break;
@@ -1050,7 +1064,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, "WEEKLY"))
 			return FALSE;
 		sprintf(tmp_buff, "%u",
@@ -1059,14 +1074,16 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 		pivalue = ical_new_value("BYDAY");
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (WEEKRECURRENCEPATTERN_SU&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
@@ -1116,7 +1133,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!ical_append_subval(pivalue, "MONTHLY"))
 				return FALSE;
@@ -1126,14 +1144,16 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (31 == papprecurr->recurrencepattern.
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
@@ -1153,14 +1173,16 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (31 == papprecurr->recurrencepattern.
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
@@ -1175,7 +1197,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			ical_get_itime_from_yearday(1601, 
 				papprecurr->recurrencepattern.firstdatetime/
 				1440 + 1, &itime);
@@ -1190,7 +1213,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!ical_append_subval(pivalue, "MONTHLY"))
 				return FALSE;
@@ -1200,14 +1224,16 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
 				if (!ical_append_subval(pivalue, "SU"))
@@ -1247,7 +1273,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (5 == papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
@@ -1267,14 +1294,16 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
 				if (!ical_append_subval(pivalue, "SU"))
@@ -1314,7 +1343,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (5 == papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
@@ -1329,7 +1359,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.firstdatetime);
 			if (!ical_append_subval(pivalue, tmp_buff))
@@ -1347,7 +1378,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 	} else if (ENDTYPE_AFTER_DATE ==
@@ -1364,7 +1396,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 	}
@@ -1373,7 +1406,8 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		switch (papprecurr->recurrencepattern.firstdow) {
 		case 0:
 			if (!ical_append_subval(pivalue, "SU"))

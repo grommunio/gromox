@@ -1,6 +1,7 @@
 #pragma once
 #include <ctime>
 #include <list>
+#include <memory>
 #include <optional>
 #include <string>
 #include <gromox/common_types.hpp>
@@ -38,7 +39,6 @@ struct GX_EXPORT ICAL_COMPONENT {
 using ICAL = ICAL_COMPONENT;
 
 struct ICAL_PARAM {
-	DOUBLE_LIST_NODE node;
 	std::string name;
 	std::list<std::string> paramval_list;
 };
@@ -46,18 +46,17 @@ struct ICAL_PARAM {
 using ical_svlist = std::list<std::optional<std::string>>;
 
 struct ICAL_VALUE {
-	DOUBLE_LIST_NODE node;
 	std::string name;
 	ical_svlist subval_list;
 };
 
-struct ICAL_LINE {
-	~ICAL_LINE();
+using ical_vlist = std::list<std::shared_ptr<ICAL_VALUE>>;
 
+struct ICAL_LINE {
 	DOUBLE_LIST_NODE node;
-	char name[ICAL_NAME_LEN];
-	DOUBLE_LIST param_list;
-	DOUBLE_LIST value_list;
+	std::string name;
+	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
+	ical_vlist value_list;
 };
 
 struct ICAL_TIME {
@@ -112,17 +111,15 @@ ICAL_LINE* ical_new_line(const char *name);
 
 void ical_append_line(ICAL_COMPONENT *pcomponent, ICAL_LINE *piline);
 ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
-
-ICAL_PARAM* ical_new_param(const char*name);
+extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);
 extern GX_EXPORT bool ical_append_paramval(ICAL_PARAM *, const char *paramval);
-void ical_append_param(ICAL_LINE *piline, ICAL_PARAM *piparam);
-
+inline GX_EXPORT bool ical_append_paramval(std::shared_ptr<ICAL_PARAM> &p, const char *subval) { return ical_append_paramval(p.get(), subval); }
+extern GX_EXPORT int ical_append_param(ICAL_LINE *, std::shared_ptr<ICAL_PARAM>);
 const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name);
-
-ICAL_VALUE* ical_new_value(const char *name);
+extern GX_EXPORT std::shared_ptr<ICAL_VALUE> ical_new_value(const char *name);
 extern GX_EXPORT bool ical_append_subval(ICAL_VALUE *, const char *subval);
-void ical_append_value(ICAL_LINE *piline, ICAL_VALUE *pivalue);
-
+inline GX_EXPORT bool ical_append_subval(std::shared_ptr<ICAL_VALUE> &v, const char *subval) { return ical_append_subval(v.get(), subval); }
+extern GX_EXPORT int ical_append_value(ICAL_LINE *, std::shared_ptr<ICAL_VALUE>);
 const char* ical_get_first_subvalue_by_name(
 	ICAL_LINE *piline, const char *name);
 
@@ -167,7 +164,7 @@ int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2);
 void ical_add_hour(ICAL_TIME *pitime, int hours);
 void ical_add_minute(ICAL_TIME *pitime, int minutes);
 void ical_add_second(ICAL_TIME *pitime, int seconds);
-extern GX_EXPORT bool ical_parse_rrule(ICAL_COMPONENT *, time_t start, DOUBLE_LIST *value_list, ICAL_RRULE *);
+extern GX_EXPORT bool ical_parse_rrule(ICAL_COMPONENT *, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
 extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
 int ical_rrule_weekstart(ICAL_RRULE *pirrule);
 extern GX_EXPORT bool ical_rrule_endless(ICAL_RRULE *);

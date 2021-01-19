@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -910,9 +911,8 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 	for (pnode=double_list_get_head(&pmain_event->line_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmain_event->line_list, pnode)) {
 		piline = (ICAL_LINE*)pnode->pdata;
-		if (0 != strcasecmp(piline->name, "ATTENDEE")) {
+		if (strcasecmp(piline->name.c_str(), "ATTENDEE") != 0)
 			continue;
-		}
 		paddress = ical_get_first_subvalue(piline);
 		if (NULL == paddress || 0 != strncasecmp(paddress, "MAILTO:", 7)) {
 			continue;
@@ -1052,17 +1052,13 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 	MESSAGE_CONTENT *pmsg)
 {
 	char *tmp_buff[128];
-	ICAL_VALUE *pivalue;
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
-	DOUBLE_LIST_NODE *pnode;
 	STRING_ARRAY strings_array;
 	
-	pnode = double_list_get_head(&piline->value_list);
-	if (NULL == pnode) {
+	if (piline->value_list.size() == 0)
 		return TRUE;
-	}
-	pivalue = (ICAL_VALUE*)pnode->pdata;
+	auto pivalue = piline->value_list.front();
 	strings_array.count = 0;
 	strings_array.ppstr = tmp_buff;
 	for (const auto &pnv2 : pivalue->subval_list) {
@@ -1303,16 +1299,12 @@ static BOOL oxcical_parse_dates(ICAL_COMPONENT *ptz_component,
 	time_t tmp_time;
 	uint32_t tmp_date;
 	const char *pvalue;
-	ICAL_VALUE *pivalue;
-	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	pnode = double_list_get_head(&piline->value_list);
-	if (NULL == pnode) {
+	if (piline->value_list.size() == 0)
 		return TRUE;
-	}
 	*pcount = 0;
-	pivalue = (ICAL_VALUE*)pnode->pdata;
+	auto pivalue = piline->value_list.front();
 	pvalue = ical_get_first_paramval(piline, "VALUE");
 	if (NULL == pvalue || 0 == strcasecmp(pvalue, "DATE-TIME")) {
 		for (const auto &pnv2 : pivalue->subval_list) {
@@ -3293,9 +3285,8 @@ static BOOL oxcical_import_internal(
 	for (pnode=double_list_get_head(&pmain_event->line_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmain_event->line_list, pnode)) {
 		piline = (ICAL_LINE*)pnode->pdata;
-		if (0 != strcasecmp(piline->name, "ATTACH")) {
+		if (strcasecmp(piline->name.c_str(), "ATTACH") != 0)
 			continue;
-		}
 		tmp_count ++;
 		if (FALSE == oxcical_parse_attachment(piline, tmp_count, pmsg)) {
 			int_hash_free(phash);
@@ -3685,7 +3676,7 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 	int order;
 	int utc_offset;
 	ICAL_LINE *piline;
-	ICAL_VALUE *pivalue;
+	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	ICAL_COMPONENT *pcomponent;
 	ICAL_COMPONENT *pcomponent1;
@@ -3746,14 +3737,16 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			if (!ical_append_subval(pivalue, "YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			order = ptzstruct->standarddate.day;
 			if (5 == order) {
 				order = -1;
@@ -3789,7 +3782,8 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return NULL;
@@ -3803,20 +3797,23 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			if (!ical_append_subval(pivalue, "YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.day);
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return NULL;
@@ -3888,14 +3885,16 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		if (!ical_append_subval(pivalue, "YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYDAY");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		order = ptzstruct->daylightdate.day;
 		if (5 == order) {
 			order = -1;
@@ -3931,7 +3930,8 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return NULL;
@@ -3945,20 +3945,23 @@ static ICAL_COMPONENT* oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		if (!ical_append_subval(pivalue, "YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYMONTHDAY");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.day);
 		pivalue = ical_new_value("BYMONTH");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return NULL;
@@ -4046,8 +4049,8 @@ static BOOL oxcical_export_recipient_table(
 	ICAL_LINE *piline;
 	char username[128];
 	char tmp_value[256];
-	ICAL_PARAM *piparam;
-	ICAL_VALUE *pivalue;
+	std::shared_ptr<ICAL_PARAM> piparam;
+	std::shared_ptr<ICAL_VALUE> pivalue;
 	
 	if (NULL == pmsg->children.prcpts) {
 		return TRUE;
@@ -4081,7 +4084,8 @@ static BOOL oxcical_export_recipient_table(
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (!ical_append_paramval(piparam, partstat))
 			return FALSE;
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", static_cast<const char *>(pvalue));
@@ -4089,7 +4093,8 @@ static BOOL oxcical_export_recipient_table(
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		return ical_append_subval(pivalue, tmp_value) ? TRUE : false;
 	}	
 	pvalue = tpropval_array_get_propval(
@@ -4125,7 +4130,8 @@ static BOOL oxcical_export_recipient_table(
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (NULL != pvalue && 0x00000002 == *(uint32_t*)pvalue) {
 			if (!ical_append_paramval(piparam, "OPT-PARTICIPANT"))
 				return FALSE;
@@ -4141,7 +4147,8 @@ static BOOL oxcical_export_recipient_table(
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, partstat))
 				return FALSE;
 		}
@@ -4150,7 +4157,8 @@ static BOOL oxcical_export_recipient_table(
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, "TRUE"))
 				return FALSE;
 		}
@@ -4162,7 +4170,8 @@ static BOOL oxcical_export_recipient_table(
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
 				return FALSE;
 		}
@@ -4177,7 +4186,8 @@ static BOOL oxcical_export_recipient_table(
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_value))
 			return FALSE;
 	}
@@ -4192,7 +4202,7 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 	uint64_t nt_time;
 	ICAL_LINE *piline;
 	const char *str_tag;
-	ICAL_VALUE *pivalue;
+	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
 	str_tag = NULL;
@@ -4255,7 +4265,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, "DAILY"))
 			return FALSE;
 		sprintf(tmp_buff, "%u",
@@ -4264,7 +4275,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 		break;
@@ -4273,7 +4285,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, "WEEKLY"))
 			return FALSE;
 		sprintf(tmp_buff, "%u",
@@ -4282,14 +4295,16 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 		pivalue = ical_new_value("BYDAY");
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (WEEKRECURRENCEPATTERN_SU&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
@@ -4339,7 +4354,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!ical_append_subval(pivalue, "MONTHLY"))
 				return FALSE;
@@ -4349,14 +4365,16 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (31 == papprecurr->recurrencepattern.
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
@@ -4376,14 +4394,16 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (31 == papprecurr->recurrencepattern.
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
@@ -4398,7 +4418,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			ical_get_itime_from_yearday(1601, 
 				papprecurr->recurrencepattern.firstdatetime/
 				1440 + 1, &itime);
@@ -4413,7 +4434,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!ical_append_subval(pivalue, "MONTHLY"))
 				return FALSE;
@@ -4423,14 +4445,16 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
 				if (!ical_append_subval(pivalue, "SU"))
@@ -4470,7 +4494,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (5 == papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
@@ -4490,14 +4515,16 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
 				if (!ical_append_subval(pivalue, "SU"))
@@ -4537,7 +4564,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			if (5 == papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
@@ -4552,7 +4580,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			ical_append_value(piline, pivalue);
+			if (ical_append_value(piline, pivalue) < 0)
+				return false;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.firstdatetime);
 			if (!ical_append_subval(pivalue, tmp_buff))
@@ -4570,7 +4599,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 	} else if (ENDTYPE_AFTER_DATE ==
@@ -4590,7 +4620,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
 	}
@@ -4599,7 +4630,8 @@ static BOOL oxcical_export_rrule(ICAL_COMPONENT *ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		switch (papprecurr->recurrencepattern.firstdow) {
 		case 0:
 			if (!ical_append_subval(pivalue, "SU"))
@@ -4674,8 +4706,7 @@ static BOOL oxcical_export_exdate(const char *tzid,
 	ICAL_TIME itime;
 	ICAL_LINE *piline;
 	uint64_t tmp_int64;
-	ICAL_VALUE *pivalue;
-	ICAL_PARAM *piparam;
+	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
 	if (CALENDARTYPE_DEFAULT !=
@@ -4692,17 +4723,19 @@ static BOOL oxcical_export_exdate(const char *tzid,
 		return FALSE;
 	}
 	ical_append_line(pcomponent, piline);
-	pivalue = ical_new_value(NULL);
+	auto pivalue = ical_new_value(nullptr);
 	if (NULL == pivalue) {
 		return FALSE;
 	}
-	ical_append_value(piline, pivalue);
+	if (ical_append_value(piline, pivalue) < 0)
+		return false;
 	if (TRUE == b_date) {
 		piparam = ical_new_param("VALUE");
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (!ical_append_paramval(piparam, "DATE"))
 			return FALSE;
 	} else {
@@ -4711,7 +4744,8 @@ static BOOL oxcical_export_exdate(const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, tzid))
 				return FALSE;
 		}
@@ -4791,8 +4825,7 @@ static BOOL oxcical_export_rdate(const char *tzid,
 	ICAL_TIME itime;
 	ICAL_LINE *piline;
 	uint64_t tmp_int64;
-	ICAL_VALUE *pivalue;
-	ICAL_PARAM *piparam;
+	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
 	piline = ical_new_line("RDATE");
@@ -4800,17 +4833,19 @@ static BOOL oxcical_export_rdate(const char *tzid,
 		return FALSE;
 	}
 	ical_append_line(pcomponent, piline);
-	pivalue = ical_new_value(NULL);
+	auto pivalue = ical_new_value(nullptr);
 	if (NULL == pivalue) {
 		return FALSE;
 	}
-	ical_append_value(piline, pivalue);
+	if (ical_append_value(piline, pivalue) < 0)
+		return false;
 	if (TRUE == b_date) {
 		piparam = ical_new_param("VALUE");
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (!ical_append_paramval(piparam, "DATE"))
 			return FALSE;
 	} else {
@@ -4819,7 +4854,8 @@ static BOOL oxcical_export_rdate(const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, tzid))
 				return FALSE;
 		}
@@ -4887,8 +4923,8 @@ static BOOL oxcical_export_internal(const char *method,
 	BOOL b_recurrence;
 	time_t start_time;
 	BOOL b_exceptional;
-	ICAL_VALUE *pivalue;
-	ICAL_PARAM *piparam;
+	std::shared_ptr<ICAL_VALUE> pivalue;
+	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	char tmp_buff1[2048];
 	uint32_t proptag_xrt;
@@ -5321,7 +5357,8 @@ EXPORT_VEVENT:
 				if (NULL == piparam) {
 					return FALSE;
 				}
-				ical_append_param(piline, piparam);
+				if (ical_append_param(piline, piparam) < 0)
+					return false;
 				if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
 					return FALSE;
 			}
@@ -5353,7 +5390,8 @@ EXPORT_VEVENT:
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, planguage))
 				return FALSE;
 		}
@@ -5548,7 +5586,8 @@ EXPORT_VEVENT:
 				if (NULL == piparam) {
 					return FALSE;
 				}
-				ical_append_param(piline, piparam);
+				if (ical_append_param(piline, piparam) < 0)
+					return false;
 				if (!ical_append_paramval(piparam, tzid))
 					return FALSE;
 			}
@@ -5580,7 +5619,8 @@ EXPORT_VEVENT:
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, planguage))
 				return FALSE;
 		}
@@ -5614,7 +5654,8 @@ EXPORT_VEVENT:
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (!ical_append_paramval(piparam, "DATE"))
 			return FALSE;
 	}
@@ -5623,7 +5664,8 @@ EXPORT_VEVENT:
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (!ical_append_paramval(piparam, tzid))
 			return FALSE;
 	}
@@ -5657,7 +5699,8 @@ EXPORT_VEVENT:
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, "DATE"))
 				return FALSE;
 		}
@@ -5666,7 +5709,8 @@ EXPORT_VEVENT:
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, tzid))
 				return FALSE;
 		}
@@ -5692,7 +5736,8 @@ EXPORT_VEVENT:
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		ical_append_value(piline, pivalue);
+		if (ical_append_value(piline, pivalue) < 0)
+			return false;
 		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
 			if (!ical_append_subval(pivalue, static_cast<STRING_ARRAY *>(pvalue)->ppstr[i]))
 				return FALSE;
@@ -5860,7 +5905,8 @@ EXPORT_VEVENT:
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
 				return FALSE;
 		}
@@ -5869,7 +5915,8 @@ EXPORT_VEVENT:
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			ical_append_param(piline, piparam);
+			if (ical_append_param(piline, piparam) < 0)
+				return false;
 			if (!ical_append_paramval(piparam, planguage))
 				return FALSE;
 		}
@@ -6140,7 +6187,8 @@ EXPORT_VEVENT:
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		ical_append_param(piline, piparam);
+		if (ical_append_param(piline, piparam) < 0)
+			return false;
 		if (!ical_append_paramval(piparam, "START"))
 			return FALSE;
 		piline = ical_new_simple_line("ACTION", "DISPLAY");
