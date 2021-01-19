@@ -149,17 +149,6 @@ void ical_init(ICAL *pical)
 	ical_init_component(pical, "VCALENDAR");
 }
 
-ICAL_PARAM::~ICAL_PARAM()
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_get_from_head(&paramval_list)) != nullptr) {
-		free(pnode->pdata);
-		free(pnode);
-	}
-	double_list_free(&paramval_list);
-}
-
 ICAL_VALUE::~ICAL_VALUE()
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -384,9 +373,8 @@ static bool ical_check_base64(ICAL_LINE *piline)
 	
 	for (pnode=double_list_get_head(&piline->param_list); NULL!=pnode;
 		pnode=double_list_get_after(&piline->param_list, pnode)) {
-		if (0 == strcasecmp(((ICAL_PARAM*)pnode->pdata)->name, "ENCODING")) {
+		if (strcasecmp(static_cast<ICAL_PARAM *>(pnode->pdata)->name.c_str(), "ENCODING") == 0)
 			return true;
-		}
 	}
 	return false;
 }
@@ -696,14 +684,12 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			out_buff[offset] = ';';
 			offset ++;
 			offset += gx_snprintf(out_buff + offset,
-				max_length - offset, "%s=", piparam->name);
+			          max_length - offset, "%s=", piparam->name.c_str());
 			if (offset >= max_length) {
 				return 0;
 			}
 			need_comma = FALSE;
-			for (pnode2=double_list_get_head(&piparam->paramval_list);
-				NULL!=pnode2; pnode2=double_list_get_after(
-				&piparam->paramval_list, pnode2)) {
+			for (const auto &pdata2 : piparam->paramval_list) {
 				if (FALSE == need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -714,7 +700,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 					offset ++;
 				}
 				offset += ical_serialize_tag_string(out_buff + offset,
-				          max_length - offset, static_cast<char *>(pnode2->pdata));
+				          max_length - offset, pdata2.c_str());
 				if (offset >= max_length) {
 					return 0;
 				}
@@ -839,24 +825,23 @@ ICAL_PARAM* ical_new_param(const char*name)
 		return NULL;
 	}
 	piparam->node.pdata = piparam;
-	HX_strlcpy(piparam->name, name, GX_ARRAY_SIZE(piparam->name));
-	double_list_init(&piparam->paramval_list);
+	try {
+		piparam->name = name;
+	} catch (...) {
+		delete piparam;
+		return nullptr;
+	}
 	return piparam;
 }
 
 bool ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
 {
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
-	if (NULL == pnode) {
-		return false;
+	try {
+		piparam->paramval_list.push_back(paramval);
+		return true;
+	} catch (...) {
 	}
-	pnode->pdata = strdup(paramval);
-	if (NULL == pnode->pdata) {
-		free(pnode);
-		return false;
-	}
-	double_list_append_as_tail(&piparam->paramval_list, pnode);
-	return true;
+	return false;
 }
 
 void ical_append_param(ICAL_LINE *piline, ICAL_PARAM *piparam)
@@ -872,18 +857,15 @@ const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name)
 	for (pnode=double_list_get_head(&piline->param_list); NULL!=pnode;
 		pnode=double_list_get_after(&piline->param_list, pnode)) {
 		piparam = (ICAL_PARAM*)pnode->pdata;
-		if (0 == strcasecmp(piparam->name, name)) {
+		if (strcasecmp(piparam->name.c_str(), name) == 0)
 			break;
-		}
 	}
 	if (NULL == pnode) {
 		return NULL;
 	}
-	if (1 != double_list_get_nodes_num(&piparam->paramval_list)) {
+	if (piparam->paramval_list.size() != 1)
 		return NULL;
-	}
-	pnode = double_list_get_head(&piparam->paramval_list);
-	return static_cast<char *>(pnode->pdata);
+	return piparam->paramval_list.front().c_str();
 }
 
 ICAL_VALUE* ical_new_value(const char *name)

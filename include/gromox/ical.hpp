@@ -1,5 +1,7 @@
 #pragma once
 #include <ctime>
+#include <list>
+#include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
@@ -35,11 +37,9 @@ struct GX_EXPORT ICAL_COMPONENT {
 using ICAL = ICAL_COMPONENT;
 
 struct ICAL_PARAM {
-	~ICAL_PARAM();
-
 	DOUBLE_LIST_NODE node;
-	char name[ICAL_NAME_LEN];
-	DOUBLE_LIST paramval_list;
+	std::string name;
+	std::list<std::string> paramval_list;
 };
 
 struct ICAL_VALUE {
