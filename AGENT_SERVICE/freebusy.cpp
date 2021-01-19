@@ -704,7 +704,6 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	int day;
 	int order;
 	int utc_offset;
-	ICAL_LINE *piline;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	ICAL_COMPONENT *pcomponent;
@@ -714,11 +713,12 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	if (NULL == pcomponent) {
 		return NULL;
 	}
-	piline = ical_new_simple_line("TZID", tzid);
+	auto piline = ical_new_simple_line("TZID", tzid);
 	if (NULL == piline) {
 		return NULL;
 	}
-	ical_append_line(pcomponent, piline);
+	if (ical_append_line(pcomponent, piline) < 0)
+		return nullptr;
 	/* STANDARD component */
 	pcomponent1 = ical_new_component("STANDARD");
 	if (NULL == pcomponent1) {
@@ -753,14 +753,16 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	if (NULL == piline) {
 		return NULL;
 	}
-	ical_append_line(pcomponent1, piline);
+	if (ical_append_line(pcomponent1, piline) < 0)
+		return nullptr;
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
 			if (NULL == piline) {
 				return NULL;
 			}
-			ical_append_line(pcomponent1, piline);
+			if (ical_append_line(pcomponent1, piline) < 0)
+				return nullptr;
 			pivalue = ical_new_value("FREQ");
 			if (NULL == pivalue) {
 				return NULL;
@@ -820,7 +822,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 			if (NULL == piline) {
 				return NULL;
 			}
-			ical_append_line(pcomponent1, piline);
+			if (ical_append_line(pcomponent1, piline) < 0)
+				return nullptr;
 			pivalue = ical_new_value("FREQ");
 			if (NULL == pivalue) {
 				return NULL;
@@ -858,7 +861,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	ical_append_line(pcomponent1, piline);
+	if (ical_append_line(pcomponent1, piline) < 0)
+		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
 	if (utc_offset >= 0) {
 		tmp_buff[0] = '+';
@@ -870,7 +874,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	ical_append_line(pcomponent1, piline);
+	if (ical_append_line(pcomponent1, piline) < 0)
+		return nullptr;
 	if (0 == ptzstruct->daylightdate.month) {
 		return pcomponent;
 	}
@@ -904,13 +909,15 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	if (NULL == piline) {
 		return NULL;
 	}
-	ical_append_line(pcomponent1, piline);
+	if (ical_append_line(pcomponent1, piline) < 0)
+		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
 		if (NULL == piline) {
 			return NULL;
 		}
-		ical_append_line(pcomponent1, piline);
+		if (ical_append_line(pcomponent1, piline) < 0)
+			return nullptr;
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
 			return NULL;
@@ -970,7 +977,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 		if (NULL == piline) {
 			return NULL;
 		}
-		ical_append_line(pcomponent1, piline);
+		if (ical_append_line(pcomponent1, piline) < 0)
+			return nullptr;
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
 			return NULL;
@@ -1007,7 +1015,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	ical_append_line(pcomponent1, piline);
+	if (ical_append_line(pcomponent1, piline) < 0)
+		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
 	if (utc_offset >= 0) {
 		tmp_buff[0] = '+';
@@ -1019,7 +1028,8 @@ static ICAL_COMPONENT* tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	ical_append_line(pcomponent1, piline);
+	if (ical_append_line(pcomponent1, piline) < 0)
+		return nullptr;
 	return pcomponent;
 }
 
@@ -1030,11 +1040,10 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 	ICAL_TIME itime;
 	time_t unix_time;
 	uint64_t nt_time;
-	ICAL_LINE *piline;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
-	piline = ical_new_line("RRULE");
+	auto piline = ical_new_line("RRULE");
 	if (NULL == piline) {
 		return FALSE;
 	}

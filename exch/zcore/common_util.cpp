@@ -3275,7 +3275,8 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {
 		return FALSE;
 	}
-	ical_init(&ical);
+	if (ical_init(&ical) < 0)
+		return false;
 	common_util_set_dir(store_object_get_dir(pstore));
 	if (FALSE == oxcical_export(pmsgctnt, &ical,
 		common_util_alloc, common_util_get_propids,
@@ -3310,7 +3311,8 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	}
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
-	ical_init(&ical);
+	if (ical_init(&ical) < 0)
+		return nullptr;
 	if (!ical_retrieve(&ical, pbuff))
 		return NULL;
 	common_util_set_dir(store_object_get_dir(pstore));

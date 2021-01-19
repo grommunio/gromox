@@ -114,9 +114,14 @@ static char *ical_get_value_sep(char *pstring, char sep)
 	return NULL;
 }
 
-static void ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
+static int ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
 {
-	HX_strlcpy(pcomponent->name, name, GX_ARRAY_SIZE(pcomponent->name));
+	try {
+		pcomponent->name = name;
+	} catch (...) {
+		return -ENOMEM;
+	}
+	return 0;
 }
 
 
@@ -126,7 +131,10 @@ ICAL_COMPONENT* ical_new_component(const char *name)
 	if (NULL == pcomponent) {
 		return NULL;
 	}
-	ical_init_component(pcomponent, name);
+	if (ical_init_component(pcomponent, name) < 0) {
+		delete pcomponent;
+		return nullptr;
+	}
 	return pcomponent;
 }
 
@@ -135,17 +143,15 @@ void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild)
 	double_list_append_as_tail(&pparent->component_list, &pchild->node);
 }
 
-void ical_init(ICAL *pical)
+int ical_init(ICAL *pical)
 {
-	ical_init_component(pical, "VCALENDAR");
+	return ical_init_component(pical, "VCALENDAR");
 }
 
 static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(&pcomponent->line_list)) != nullptr)
-		delete static_cast<ICAL_LINE *>(pnode->pdata);
 	while ((pnode = double_list_pop_front(&pcomponent->component_list)) != nullptr)
 		delete static_cast<ICAL_COMPONENT *>(pnode->pdata);
 }
@@ -153,14 +159,12 @@ static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 ICAL_COMPONENT::ICAL_COMPONENT()
 {
 	node.pdata = this;
-	double_list_init(&line_list);
 	double_list_init(&component_list);
 }
 
 ICAL_COMPONENT::~ICAL_COMPONENT()
 {
 	ical_clear_component(this);
-	double_list_free(&line_list);
 	double_list_free(&component_list);
 }
 
@@ -300,17 +304,16 @@ static std::shared_ptr<ICAL_PARAM> ical_retrieve_param(char *ptag)
 	return piparam;
 }
 
-static ICAL_LINE* ical_retrieve_tag(char *ptag)
+static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag)
 {
 	char *ptr;
 	char *pnext;
-	ICAL_LINE *piline;
 	
 	ptr = strchr(ptag, ';');
 	if (NULL != ptr) {
 		*ptr = '\0';
 	}
-	piline = ical_new_line(ptag);
+	auto piline = ical_new_line(ptag);
 	if (NULL == piline) {
 		return NULL;
 	}
@@ -330,14 +333,14 @@ static ICAL_LINE* ical_retrieve_tag(char *ptag)
 	return piline;
 }
 
-static bool ical_check_base64(ICAL_LINE *piline)
+static bool ical_check_base64(std::shared_ptr<ICAL_LINE> piline)
 {
 	return std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
 	       [](const auto &e) { return strcasecmp(e->name.c_str(), "ENCODING") == 0; }) !=
 	       piline->param_list.cend();
 }
 
-static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
+static BOOL ical_retrieve_value(std::shared_ptr<ICAL_LINE> piline, char *pvalue)
 {
 	char *ptr;
 	char *ptr1;
@@ -420,7 +423,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 	char *pline;
 	char *pnext;
 	size_t length;
-	ICAL_LINE *piline;
+	std::shared_ptr<ICAL_LINE> piline;
 	LINE_ITEM tmp_item;
 	
 	ical_clear_component(pcomponent);
@@ -440,7 +443,10 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			if (NULL == pcomponent1) {
 				break;
 			}
-			ical_init_component(pcomponent1, tmp_item.pvalue);
+			if (ical_init_component(pcomponent1, tmp_item.pvalue) < 0) {
+				delete pcomponent1;
+				break;
+			}
 			if (!ical_retrieve_component(pcomponent1, pnext, &pnext)) {
 				delete pcomponent1;
 				break;
@@ -449,10 +455,9 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			continue;
 		}
 		if (0 == strcasecmp(tmp_item.ptag, "END")) {
-			if (NULL == tmp_item.pvalue || 0 != strcasecmp(
-				pcomponent->name, tmp_item.pvalue)) {
+			if (tmp_item.pvalue == nullptr ||
+			    strcasecmp(pcomponent->name.c_str(), tmp_item.pvalue) != 0)
 				break;
-			}
 			if (NULL != ppnext) {
 				*ppnext = pnext;
 			}
@@ -462,7 +467,8 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 		if (NULL == piline) {
 			break;
 		}
-		ical_append_line(pcomponent, piline);
+		if (ical_append_line(pcomponent, piline) < 0)
+			break;
 
 		if (NULL != tmp_item.pvalue) {
 			if (r1something(piline->name.c_str())) {
@@ -613,18 +619,16 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	size_t offset1;
 	BOOL need_comma;
 	size_t line_begin;
-	ICAL_LINE *piline;
 	BOOL need_semicolon;
 	DOUBLE_LIST_NODE *pnode;
 	
-	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n", pcomponent->name);
+	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n",
+	                pcomponent->name.c_str());
 	if (offset >= max_length) {
 		return 0;
 	}
-	for (pnode=double_list_get_head(&pcomponent->line_list); NULL!=pnode;
-		pnode=double_list_get_after(&pcomponent->line_list, pnode)) {
+	for (auto piline : pcomponent->line_list) {
 		line_begin = offset;
-		piline = (ICAL_LINE*)pnode->pdata;
 		offset += gx_snprintf(out_buff + offset,
 		          max_length - offset, "%s", piline->name.c_str());
 		if (offset >= max_length) {
@@ -720,8 +724,8 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		}
 		offset += offset1;
 	}
-	offset += gx_snprintf(out_buff + offset, max_length -
-				offset, "END:%s\r\n", pcomponent->name);
+	offset += gx_snprintf(out_buff + offset, max_length - offset,
+	          "END:%s\r\n", pcomponent->name.c_str());
 	if (offset >= max_length) {
 		return 0;
 	}
@@ -734,39 +738,6 @@ bool ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
 		return false;
 	}
 	return true;
-}
-
-ICAL_LINE* ical_new_line(const char *name)
-{
-	auto piline = new(std::nothrow) ICAL_LINE;
-	if (NULL == piline) {
-		return NULL;
-	}
-	piline->node.pdata = piline;
-	try {
-		piline->name = name;
-	} catch (...) {
-		delete piline;
-		return nullptr;
-	}
-	return piline;
-}
-
-void ical_append_line(ICAL *pical, ICAL_LINE *piline)
-{
-	double_list_append_as_tail(&pical->line_list, &piline->node);
-}
-
-ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pcomponent->line_list); NULL!=pnode;
-		pnode=double_list_get_after(&pcomponent->line_list, pnode)) {
-		if (strcasecmp(static_cast<ICAL_LINE *>(pnode->pdata)->name.c_str(), name) == 0)
-			return static_cast<ICAL_LINE *>(pnode->pdata);
-	}
-	return NULL;
 }
 
 bool ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
@@ -831,22 +802,19 @@ ical_svlist *ical_get_subval_list(ICAL_LINE *piline, const char *name)
 	return ical_get_subval_list_internal(&piline->value_list, name);
 }
 
-ICAL_LINE* ical_new_simple_line(const char *name, const char *value)
+std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value)
 {
-	ICAL_LINE *piline;
-	
-	piline = ical_new_line(name);
+	auto piline = ical_new_line(name);
 	if (NULL == piline) {
 		return NULL;
 	}
 	auto pivalue = ical_new_value(nullptr);
 	if (NULL == pivalue) {
-		delete piline;
 		return NULL;
 	}
-	ical_append_value(piline, pivalue);
+	if (ical_append_value(piline, pivalue) < 0)
+		return nullptr;
 	if (!ical_append_subval(pivalue, value)) {
-		delete piline;
 		return NULL;
 	}
 	return piline;
@@ -1498,7 +1466,7 @@ static const char* ical_get_datetime_offset(
 	ICAL_TIME itime1;
 	ICAL_TIME itime2;
 	struct tm tmp_tm;
-	ICAL_LINE *piline;
+	std::shared_ptr<ICAL_LINE> piline;
 	const char *pvalue;
 	const char *pvalue1;
 	const char *pvalue2;
@@ -1516,10 +1484,9 @@ static const char* ical_get_datetime_offset(
 		pnode=double_list_get_after(
 		&ptz_component->component_list, pnode)) {
 		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
-		if (0 != strcasecmp(pcomponent->name, "STANDARD") &&
-			0 != strcasecmp(pcomponent->name, "DAYLIGHT")) {
+		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
+		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
-		}
 		piline = ical_get_line(pcomponent, "DTSTART");
 		if (NULL == piline) {
 			return NULL;
@@ -1587,7 +1554,7 @@ FOUND_COMPONENT:
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (0 == strcasecmp(pcomponent->name, "STANDARD")) {
+		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
 			b_standard = TRUE;
 			standard_offset = pvalue;
 			itime_standard = itime1;
@@ -1617,7 +1584,7 @@ FOUND_COMPONENT:
 					return NULL;
 				}
 			}
-			if (0 == strcasecmp(pcomponent->name, "STANDARD")) {
+			if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
 				itime_standard.year = itime.year;
 				itime_standard.month = month;
 			} else {
@@ -1672,7 +1639,7 @@ FOUND_COMPONENT:
 					return NULL;
 				}
 			}
-			if (0 == strcasecmp(pcomponent->name, "STANDARD")) {
+			if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
 				itime_standard.day = dayofmonth;
 				itime_standard.hour = hour;
 				itime_standard.minute = minute;
@@ -1686,11 +1653,10 @@ FOUND_COMPONENT:
 				itime_daylight.leap_second = 0;
 			}
 		} else {
-			if (0 == strcasecmp(pcomponent->name, "STANDARD")) {
+			if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0)
 				itime_standard.year = itime.year;
-			} else {
+			else
 				itime_daylight.year = itime.year;
-			}
 		}
 		if (TRUE == b_standard && TRUE == b_daylight) {
 			break;
@@ -1797,7 +1763,7 @@ bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 	int minute;
 	time_t tmp_time;
 	struct tm tmp_tm;
-	ICAL_LINE *piline;
+	std::shared_ptr<ICAL_LINE> piline;
 	const char *pvalue;
 	DOUBLE_LIST_NODE *pnode;
 	ICAL_COMPONENT *pcomponent;
@@ -1819,10 +1785,9 @@ bool ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 		pnode=double_list_get_after(
 		&ptz_component->component_list, pnode)) {
 		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
-		if (0 != strcasecmp(pcomponent->name, "STANDARD") &&
-			0 != strcasecmp(pcomponent->name, "DAYLIGHT")) {
+		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
+		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
 			return false;
-		}
 		piline = ical_get_line(pcomponent, "TZOFFSETTO");
 		if (NULL == piline) {
 			return false;

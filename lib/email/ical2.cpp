@@ -74,3 +74,33 @@ int ical_append_value(ICAL_LINE *l, std::shared_ptr<ICAL_VALUE> v)
 	}
 	return -ENOMEM;
 }
+
+int ical_append_line(ICAL_COMPONENT *c, std::shared_ptr<ICAL_LINE> l)
+{
+	try {
+		c->line_list.push_back(std::move(l));
+		return 0;
+	} catch (...) {
+	}
+	return -ENOMEM;
+}
+
+std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
+{
+	try {
+		auto l = std::make_shared<ICAL_LINE>();
+		l->name = name;
+		return l;
+	} catch (...) {
+	}
+	errno = ENOMEM;
+	return nullptr;
+}
+
+std::shared_ptr<ICAL_LINE> ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
+{
+	for (auto l : pcomponent->line_list)
+		if (strcasecmp(l->name.c_str(), name) == 0)
+			return l;
+	return nullptr;
+}

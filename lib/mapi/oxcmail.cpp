@@ -4684,7 +4684,12 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			if (FALSE == utf8_check(pcontent + content_len + 1)) {
 				utf8_filter(pcontent + content_len + 1);
 			}
-			ical_init(&ical);
+			if (ical_init(&ical) < 0) {
+				free(pcontent);
+				int_hash_free(phash);
+				message_content_free(pmsg);
+				return nullptr;
+			}
 			if (!ical_retrieve(&ical, pcontent + content_len + 1) ||
 				NULL == (pmsg1 = oxcical_import(
 				str_zone, &ical, alloc, get_propids,
@@ -6917,7 +6922,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	BOOL b_inline;
 	MIME *prelated;
 	MIME *pcalendar;
-	ICAL_LINE *piline;
 	char tmp_method[32];
 	char tmp_charset[32];
 	const char *pcharset;
@@ -7228,13 +7232,14 @@ HTML_ONLY:
 	if (NULL != pcalendar) {
 		char tmp_buff[1024*1024];
 		
-		ical_init(&ical);
+		if (ical_init(&ical) < 0)
+			goto EXPORT_FAILURE;
 		if (FALSE == oxcical_export(pmsg, &ical, alloc,
 		    get_propids, oxcmail_entryid_to_username,
 		    oxcmail_essdn_to_username, oxcmail_lcid_to_ltag))
 			goto EXPORT_FAILURE;
 		tmp_method[0] = '\0';
-		piline = ical_get_line((ICAL_COMPONENT*)&ical, "METHOD");
+		auto piline = ical_get_line(const_cast<ICAL_COMPONENT *>(&ical), "METHOD");
 		if (NULL != piline) {
 			pvalue = deconst(ical_get_first_subvalue(piline));
 			if (NULL != pvalue) {

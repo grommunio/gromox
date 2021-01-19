@@ -27,17 +27,6 @@
 #define RRULE_BY_WEEKNO					7
 #define RRULE_BY_MONTH					8
 
-struct GX_EXPORT ICAL_COMPONENT {
-	ICAL_COMPONENT();
-	~ICAL_COMPONENT();
-
-	DOUBLE_LIST_NODE node;
-	char name[ICAL_NAME_LEN];
-	DOUBLE_LIST line_list;
-	DOUBLE_LIST component_list;
-};
-using ICAL = ICAL_COMPONENT;
-
 struct ICAL_PARAM {
 	std::string name;
 	std::list<std::string> paramval_list;
@@ -58,6 +47,17 @@ struct ICAL_LINE {
 	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
 	ical_vlist value_list;
 };
+
+struct GX_EXPORT ICAL_COMPONENT {
+	ICAL_COMPONENT();
+	~ICAL_COMPONENT();
+
+	DOUBLE_LIST_NODE node;
+	std::string name;
+	std::list<std::shared_ptr<ICAL_LINE>> line_list;
+	DOUBLE_LIST component_list;
+};
+using ICAL = ICAL_COMPONENT;
 
 struct ICAL_TIME {
 	int year;
@@ -100,32 +100,35 @@ struct ICAL_RRULE {
 	unsigned char nsetpos_bitmap[46];
 };
 
-void ical_init(ICAL *pical);
+extern GX_EXPORT int ical_init(ICAL *pical);
 extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
 extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
 ICAL_COMPONENT* ical_new_component(const char *name);
 
 void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild);
-
-ICAL_LINE* ical_new_line(const char *name);
-
-void ical_append_line(ICAL_COMPONENT *pcomponent, ICAL_LINE *piline);
-ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
+extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
+extern GX_EXPORT int ical_append_line(ICAL_COMPONENT *pcomponent, std::shared_ptr<ICAL_LINE> piline);
+extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);
 extern GX_EXPORT bool ical_append_paramval(ICAL_PARAM *, const char *paramval);
 inline GX_EXPORT bool ical_append_paramval(std::shared_ptr<ICAL_PARAM> &p, const char *subval) { return ical_append_paramval(p.get(), subval); }
 extern GX_EXPORT int ical_append_param(ICAL_LINE *, std::shared_ptr<ICAL_PARAM>);
+inline GX_EXPORT int ical_append_param(std::shared_ptr<ICAL_LINE> &l, std::shared_ptr<ICAL_PARAM> p) { return ical_append_param(l.get(), std::move(p)); }
 const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name);
+inline GX_EXPORT const char *ical_get_first_paramval(std::shared_ptr<ICAL_LINE> &l, const char *n) { return ical_get_first_paramval(l.get(), n); }
 extern GX_EXPORT std::shared_ptr<ICAL_VALUE> ical_new_value(const char *name);
 extern GX_EXPORT bool ical_append_subval(ICAL_VALUE *, const char *subval);
 inline GX_EXPORT bool ical_append_subval(std::shared_ptr<ICAL_VALUE> &v, const char *subval) { return ical_append_subval(v.get(), subval); }
 extern GX_EXPORT int ical_append_value(ICAL_LINE *, std::shared_ptr<ICAL_VALUE>);
+inline GX_EXPORT int ical_append_value(std::shared_ptr<ICAL_LINE> &l, std::shared_ptr<ICAL_VALUE> v) { return ical_append_value(l.get(), std::move(v)); }
 const char* ical_get_first_subvalue_by_name(
 	ICAL_LINE *piline, const char *name);
-
+inline GX_EXPORT const char *ical_get_first_subvalue_by_name(std::shared_ptr<ICAL_LINE> &l, const char *n) { return ical_get_first_subvalue_by_name(l.get(), n); }
 const char* ical_get_first_subvalue(ICAL_LINE *piline);
+inline GX_EXPORT const char *ical_get_first_subvalue(std::shared_ptr<ICAL_LINE> &l) { return ical_get_first_subvalue(l.get()); }
 extern GX_EXPORT ical_svlist *ical_get_subval_list(ICAL_LINE *, const char *name);
-ICAL_LINE* ical_new_simple_line(const char *name, const char *value);
+inline GX_EXPORT ical_svlist *ical_get_subval_list(std::shared_ptr<ICAL_LINE> &l, const char *n) { return ical_get_subval_list(l.get(), n); }
+extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value);
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);
 extern GX_EXPORT bool ical_parse_datetime(const char *str_datetime, bool *pb_utc, ICAL_TIME *pitime);
