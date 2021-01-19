@@ -1,6 +1,7 @@
 #pragma once
 #include <ctime>
 #include <list>
+#include <optional>
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -42,12 +43,12 @@ struct ICAL_PARAM {
 	std::list<std::string> paramval_list;
 };
 
-struct ICAL_VALUE {
-	~ICAL_VALUE();
+using ical_svlist = std::list<std::optional<std::string>>;
 
+struct ICAL_VALUE {
 	DOUBLE_LIST_NODE node;
-	char name[ICAL_NAME_LEN];
-	DOUBLE_LIST subval_list;
+	std::string name;
+	ical_svlist subval_list;
 };
 
 struct ICAL_LINE {
@@ -126,9 +127,7 @@ const char* ical_get_first_subvalue_by_name(
 	ICAL_LINE *piline, const char *name);
 
 const char* ical_get_first_subvalue(ICAL_LINE *piline);
-
-DOUBLE_LIST* ical_get_subval_list(ICAL_LINE *piline, const char *name);
-
+extern GX_EXPORT ical_svlist *ical_get_subval_list(ICAL_LINE *, const char *name);
 ICAL_LINE* ical_new_simple_line(const char *name, const char *value);
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);

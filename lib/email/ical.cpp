@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <list>
 #include <new>
+#include <optional>
+#include <string>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -147,19 +150,6 @@ void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild)
 void ical_init(ICAL *pical)
 {
 	ical_init_component(pical, "VCALENDAR");
-}
-
-ICAL_VALUE::~ICAL_VALUE()
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_get_from_head(&subval_list)) != nullptr) {
-		if (NULL != pnode->pdata) {
-			free(pnode->pdata);
-		}
-		free(pnode);
-	}
-	double_list_free(&subval_list);
 }
 
 ICAL_LINE::~ICAL_LINE()
@@ -660,7 +650,6 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	ICAL_VALUE *pivalue;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
-	DOUBLE_LIST_NODE *pnode2;
 	
 	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n", pcomponent->name);
 	if (offset >= max_length) {
@@ -726,15 +715,13 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			}
 			if ('\0' != pivalue->name[0]) {
 				offset += gx_snprintf(out_buff + offset,
-					max_length - offset, "%s=", pivalue->name);
+				          max_length - offset, "%s=", pivalue->name.c_str());
 				if (offset >= max_length) {
 					return 0;
 				}
 			}
 			need_comma = FALSE;
-			for (pnode2=double_list_get_head(&pivalue->subval_list);
-				NULL!=pnode2; pnode2=double_list_get_after(
-				&pivalue->subval_list, pnode2)) {
+			for (const auto &pnv2 : pivalue->subval_list) {
 				if (FALSE == need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -744,10 +731,10 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 					out_buff[offset] = ',';
 					offset ++;
 				}
-				if (NULL != pnode2->pdata) {
+				if (pnv2.has_value()) {
 					offset += ical_serialize_value_string(
 						out_buff + offset, max_length - offset,
-					          offset - line_begin, static_cast<char *>(pnode2->pdata));
+					          offset - line_begin, pnv2->c_str());
 					if (offset >= max_length) {
 						return 0;
 					}
@@ -875,32 +862,14 @@ ICAL_VALUE* ical_new_value(const char *name)
 		return NULL;
 	}
 	pivalue->node.pdata = pivalue;
-	if (NULL == name) {
-		pivalue->name[0] = '\0';
-	} else {
-		strncpy(pivalue->name, name, ICAL_NAME_LEN);
+	try {
+		if (name != nullptr)
+			pivalue->name = name;
+	} catch (...) {
+		delete pivalue;
+		return nullptr;
 	}
-	double_list_init(&pivalue->subval_list);
 	return pivalue;
-}
-
-bool ical_append_subval(ICAL_VALUE *pivalue, const char *subval)
-{
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
-	if (NULL == pnode) {
-		return false;
-	}
-	if (NULL != subval) {
-		pnode->pdata = strdup(subval);
-		if (NULL == pnode->pdata) {
-			free(pnode);
-			return false;
-		}
-	} else {
-		pnode->pdata = NULL;
-	}
-	double_list_append_as_tail(&pivalue->subval_list, pnode);
-	return true;
 }
 
 void ical_append_value(ICAL_LINE *piline, ICAL_VALUE *pivalue)
@@ -908,7 +877,7 @@ void ical_append_value(ICAL_LINE *piline, ICAL_VALUE *pivalue)
 	double_list_append_as_tail(&piline->value_list, &pivalue->node);
 }
 
-static DOUBLE_LIST* ical_get_subval_list_internal(
+static std::list<std::optional<std::string>> *ical_get_subval_list_internal(
 	DOUBLE_LIST *pvalue_list, const char *name)
 {
 	ICAL_VALUE *pivalue;
@@ -917,9 +886,8 @@ static DOUBLE_LIST* ical_get_subval_list_internal(
 	for (pnode=double_list_get_head(pvalue_list); NULL!=pnode;
 		pnode=double_list_get_after(pvalue_list, pnode)) {
 		pivalue = (ICAL_VALUE*)pnode->pdata;
-		if (0 == strcasecmp(pivalue->name, name)) {
+		if (strcasecmp(pivalue->name.c_str(), name) == 0)
 			return &pivalue->subval_list;
-		}
 	}
 	return NULL;
 }
@@ -927,21 +895,17 @@ static DOUBLE_LIST* ical_get_subval_list_internal(
 static const char *ical_get_first_subvalue_by_name_internal(
 	DOUBLE_LIST *pvalue_list, const char *name)
 {
-	DOUBLE_LIST *plist;
-	DOUBLE_LIST_NODE *pnode;
-	
 	if ('\0' == name[0]) {
 		return NULL;
 	}
-	plist = ical_get_subval_list_internal(pvalue_list, name);
+	auto plist = ical_get_subval_list_internal(pvalue_list, name);
 	if (NULL == plist) {
 		return NULL;
 	}
-	if (1 != double_list_get_nodes_num(plist)) {
+	if (plist->size() != 1)
 		return NULL;
-	}
-	pnode = double_list_get_head(plist);
-	return static_cast<char *>(pnode->pdata);
+	const auto &pnode = plist->front();
+	return pnode.has_value() ? pnode->c_str() : nullptr;
 }
 
 const char* ical_get_first_subvalue_by_name(
@@ -964,14 +928,13 @@ const char* ical_get_first_subvalue(ICAL_LINE *piline)
 	if ('\0' != pivalue->name[0]) {
 		return NULL;
 	}
-	if (1 != double_list_get_nodes_num(&pivalue->subval_list)) {
+	if (pivalue->subval_list.size() != 1)
 		return NULL;
-	}
-	pnode = double_list_get_head(&pivalue->subval_list);
-	return static_cast<char *>(pnode->pdata);
+	const auto &pnv2 = pivalue->subval_list.front();
+	return pnv2.has_value() ? pnv2->c_str() : nullptr;
 }
 
-DOUBLE_LIST* ical_get_subval_list(ICAL_LINE *piline, const char *name)
+std::list<std::optional<std::string>> *ical_get_subval_list(ICAL_LINE *piline, const char *name)
 {
 	return ical_get_subval_list_internal(&piline->value_list, name);
 }
@@ -2422,16 +2385,6 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 	time_t until_time;
 	const char *pvalue;
 	ICAL_TIME base_itime;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST *psetpos_list;
-	DOUBLE_LIST *pbywnum_list;
-	DOUBLE_LIST *pbywday_list;
-	DOUBLE_LIST *pbymday_list;
-	DOUBLE_LIST *pbyyday_list;
-	DOUBLE_LIST *pbyhour_list;
-	DOUBLE_LIST *pbymonth_list;
-	DOUBLE_LIST *pbysecond_list;
-	DOUBLE_LIST *pbyminute_list;
 	
 	memset(pirrule, 0, sizeof(ICAL_RRULE));
 	pvalue = ical_get_first_subvalue_by_name_internal(
@@ -2494,15 +2447,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 	}
 	ical_utc_to_datetime(ptz_component,
 		start_time, &pirrule->instance_itime);
-	pbysecond_list = ical_get_subval_list_internal(
-						pvalue_list, "BYSECOND");
+	auto pbysecond_list = ical_get_subval_list_internal(pvalue_list, "BYSECOND");
 	if (NULL != pbysecond_list) {
-		for (pnode=double_list_get_head(pbysecond_list); NULL!=pnode;
-			pnode=double_list_get_after(pbysecond_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbysecond_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
 				return false;
 			}
@@ -2513,15 +2463,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_SECOND] = true;
 	}
-	pbyminute_list = ical_get_subval_list_internal(
-						pvalue_list, "BYMINUTE");
+	auto pbyminute_list = ical_get_subval_list_internal(pvalue_list, "BYMINUTE");
 	if (NULL != pbyminute_list) {
-		for (pnode=double_list_get_head(pbyminute_list); NULL!=pnode;
-			pnode=double_list_get_after(pbyminute_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbyminute_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
 				return false;
 			}
@@ -2532,15 +2479,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_MINUTE] = true;
 	}
-	pbyhour_list = ical_get_subval_list_internal(
-						pvalue_list, "BYHOUR");
+	auto pbyhour_list = ical_get_subval_list_internal(pvalue_list, "BYHOUR");
 	if (NULL != pbyhour_list) {
-		for (pnode=double_list_get_head(pbyhour_list); NULL!=pnode;
-			pnode=double_list_get_after(pbyhour_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbyhour_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23) {
 				return false;
 			}
@@ -2551,15 +2495,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_HOUR] = true;
 	}
-	pbymday_list = ical_get_subval_list_internal(
-						pvalue_list, "BYMONTHDAY");
+	auto pbymday_list = ical_get_subval_list_internal(pvalue_list, "BYMONTHDAY");
 	if (NULL != pbymday_list) {
-		for (pnode=double_list_get_head(pbymday_list); NULL!=pnode;
-			pnode=double_list_get_after(pbymday_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbymday_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31) {
 				return false;
 			}
@@ -2574,15 +2515,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_MONTHDAY] = true;
 	}
-	pbyyday_list = ical_get_subval_list_internal(
-						pvalue_list, "BYYEARDAY");
+	auto pbyyday_list = ical_get_subval_list_internal(pvalue_list, "BYYEARDAY");
 	if (NULL != pbyyday_list) {
-		for (pnode=double_list_get_head(pbyyday_list); NULL!=pnode;
-			pnode=double_list_get_after(pbyyday_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbyyday_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
 				return false;
 			}	
@@ -2597,21 +2535,17 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_YEARDAY] = true;
 	}
-	pbywday_list = ical_get_subval_list_internal(
-							pvalue_list, "BYDAY");
+	auto pbywday_list = ical_get_subval_list_internal(pvalue_list, "BYDAY");
 	if (NULL != pbywday_list) {
 		if (ICAL_FREQUENCY_WEEK != pirrule->frequency &&
 			ICAL_FREQUENCY_MONTH != pirrule->frequency &&
 			ICAL_FREQUENCY_YEAR != pirrule->frequency) {
 			return false;
 		}
-		for (pnode=double_list_get_head(pbywday_list); NULL!=pnode;
-			pnode=double_list_get_after(pbywday_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbywday_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			if (!ical_parse_byday(static_cast<char *>(pnode->pdata),
-			    &dayofweek, &weekorder))
+			if (!ical_parse_byday(pnv2->c_str(), &dayofweek, &weekorder))
 				return false;
 			if (ICAL_FREQUENCY_MONTH == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5) {
@@ -2651,15 +2585,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_DAY] = true;
 	}
-	pbywnum_list = ical_get_subval_list_internal(
-						pvalue_list, "BYWEEKNO");
+	auto pbywnum_list = ical_get_subval_list_internal(pvalue_list, "BYWEEKNO");
 	if (NULL != pbywnum_list) {
-		for (pnode=double_list_get_head(pbywnum_list); NULL!=pnode;
-			pnode=double_list_get_after(pbywnum_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbywnum_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53) {
 				return false;
 			}	
@@ -2674,15 +2605,12 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_WEEKNO] = true;
 	}
-	pbymonth_list = ical_get_subval_list_internal(
-						pvalue_list, "BYMONTH");
+	auto pbymonth_list = ical_get_subval_list_internal(pvalue_list, "BYMONTH");
 	if (NULL != pbymonth_list) {
-		for (pnode=double_list_get_head(pbymonth_list); NULL!=pnode;
-			pnode=double_list_get_after(pbymonth_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *pbymonth_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12) {
 				return false;
 			}
@@ -2693,8 +2621,7 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 		}
 		pirrule->by_mask[RRULE_BY_MONTH] = true;
 	}
-	psetpos_list = ical_get_subval_list_internal(
-						pvalue_list, "BYSETPOS");
+	auto psetpos_list = ical_get_subval_list_internal(pvalue_list, "BYSETPOS");
 	if (NULL != psetpos_list) {
 		switch (pirrule->frequency) {
 		case ICAL_FREQUENCY_SECOND:
@@ -2764,12 +2691,10 @@ bool ical_parse_rrule(ICAL_COMPONENT *ptz_component, time_t start_time,
 			}
 			break;
 		}
-		for (pnode=double_list_get_head(psetpos_list); NULL!=pnode;
-			pnode=double_list_get_after(psetpos_list, pnode)) {
-			if (NULL == pnode->pdata) {
+		for (const auto &pnv2 : *psetpos_list) {
+			if (!pnv2.has_value())
 				return false;
-			}
-			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
+			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
 				return false;
 			}

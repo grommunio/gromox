@@ -322,28 +322,21 @@ static BOOL oxcical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	ICAL_TIME itime_base;
 	ICAL_TIME itime_first;
 	const ICAL_TIME *pitime;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST *psubval_list;
 	
 	if (NULL != ical_get_subval_list(piline, "BYYEARDAY") ||
 		NULL != ical_get_subval_list(piline, "BYWEEKNO")) {
 		return FALSE;
 	}
-	psubval_list = ical_get_subval_list(piline, "BYMONTHDAY");
-	if (NULL != psubval_list && double_list_get_nodes_num(
-		psubval_list) > 1) {
+	auto psubval_list = ical_get_subval_list(piline, "BYMONTHDAY");
+	if (psubval_list != nullptr && psubval_list->size() > 1)
 		return FALSE;
-	}
 	psubval_list = ical_get_subval_list(piline, "BYSETPOS");
-	if (NULL != psubval_list && double_list_get_nodes_num(
-		psubval_list) > 1) {
+	if (psubval_list != nullptr && psubval_list->size() > 1)
 		return FALSE;
-	}
 	psubval_list = ical_get_subval_list(piline, "BYSECOND");
 	if (NULL != psubval_list) {
-		if (double_list_get_nodes_num(psubval_list) > 1) {
+		if (psubval_list->size() > 1)
 			return FALSE;
-		}
 		pvalue = ical_get_first_subvalue_by_name(piline, "BYSECOND");
 		if (NULL != pvalue && atoi(pvalue) != start_time%60) {
 			return FALSE;
@@ -469,9 +462,8 @@ SET_INFINITIVE:
 			psubval_list = ical_get_subval_list(piline, "BYDAY");
 			papprecurr->recurrencepattern.
 				patterntypespecific.weekrecurrence = 0;
-			for (pnode=double_list_get_head(psubval_list); NULL!=pnode;
-				pnode=double_list_get_after(psubval_list, pnode)) {
-				auto wd = static_cast<char *>(pnode->pdata);
+			for (const auto &pnv2 : *psubval_list) {
+				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
 				if (strcasecmp(wd, "SU") == 0) {
 					papprecurr->recurrencepattern.
 						patterntypespecific.weekrecurrence |= 0x00000001;
@@ -532,9 +524,8 @@ SET_INFINITIVE:
 			psubval_list = ical_get_subval_list(piline, "BYDAY");
 			papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence = 0;
-			for (pnode=double_list_get_head(psubval_list); NULL!=pnode;
-				pnode=double_list_get_after(psubval_list, pnode)) {
-				auto wd = static_cast<char *>(pnode->pdata);
+			for (const auto &pnv2 : *psubval_list) {
+				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
 				if (strcasecmp(wd, "SU") == 0) {
 					papprecurr->recurrencepattern.
 								patterntypespecific.monthnth.
@@ -626,9 +617,8 @@ SET_INFINITIVE:
 			psubval_list = ical_get_subval_list(piline, "BYDAY");
 			papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence = 0;
-			for (pnode=double_list_get_head(psubval_list); NULL!=pnode;
-				pnode=double_list_get_after(psubval_list, pnode)) {
-				auto wd = static_cast<char *>(pnode->pdata);
+			for (const auto &pnv2 : *psubval_list) {
+				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
 				if (strcasecmp(wd, "SU") == 0) {
 					papprecurr->recurrencepattern.
 						patterntypespecific.monthnth.
@@ -1066,7 +1056,6 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
 	STRING_ARRAY strings_array;
 	
 	pnode = double_list_get_head(&piline->value_list);
@@ -1076,13 +1065,10 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 	pivalue = (ICAL_VALUE*)pnode->pdata;
 	strings_array.count = 0;
 	strings_array.ppstr = tmp_buff;
-	for (pnode1=double_list_get_head(&pivalue->subval_list);
-		NULL!=pnode1; pnode1=double_list_get_after(
-		&pivalue->subval_list, pnode1)) {
-		if (NULL == pnode1->pdata) {
+	for (const auto &pnv2 : pivalue->subval_list) {
+		if (!pnv2.has_value())
 			continue;
-		}
-		strings_array.ppstr[strings_array.count] = static_cast<char *>(pnode1->pdata);
+		strings_array.ppstr[strings_array.count] = deconst(pnv2->c_str());
 		strings_array.count ++;
 		if (strings_array.count >= 128) {
 			break;
@@ -1329,14 +1315,10 @@ static BOOL oxcical_parse_dates(ICAL_COMPONENT *ptz_component,
 	pivalue = (ICAL_VALUE*)pnode->pdata;
 	pvalue = ical_get_first_paramval(piline, "VALUE");
 	if (NULL == pvalue || 0 == strcasecmp(pvalue, "DATE-TIME")) {
-		for (pnode1=double_list_get_head(&pivalue->subval_list);
-			NULL!=pnode1; pnode1=double_list_get_after(
-			&pivalue->subval_list, pnode1)) {
-			if (NULL == pnode1->pdata) {
+		for (const auto &pnv2 : pivalue->subval_list) {
+			if (!pnv2.has_value())
 				continue;
-			}
-			if (!ical_parse_datetime(static_cast<char *>(pnode1->pdata),
-			    &b_utc, &itime))
+			if (!ical_parse_datetime(pnv2->c_str(), &b_utc, &itime))
 				continue;
 			if (b_utc && ptz_component != nullptr) {
 				ical_itime_to_utc(NULL, itime, &tmp_time);
@@ -1359,15 +1341,11 @@ static BOOL oxcical_parse_dates(ICAL_COMPONENT *ptz_component,
 			}
 		}
 	} else if (0 == strcasecmp(pvalue, "DATE")) {
-		for (pnode1=double_list_get_head(&pivalue->subval_list);
-			NULL!=pnode1; pnode1=double_list_get_after(
-			&pivalue->subval_list, pnode1)) {
-			if (NULL == pnode1->pdata) {
+		for (const auto &pnv2 : pivalue->subval_list) {
+			if (!pnv2.has_value())
 				continue;
-			}
 			memset(&itime, 0, sizeof(ICAL_TIME));
-			if (!ical_parse_date(static_cast<char *>(pnode1->pdata),
-			    &itime.year, &itime.month, &itime.day))
+			if (!ical_parse_date(pnv2->c_str(), &itime.year, &itime.month, &itime.day))
 				continue;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
 			pdates[*pcount] = rop_util_unix_to_nttime(tmp_time)/600000000;
