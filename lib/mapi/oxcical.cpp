@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -24,9 +26,8 @@
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)
 
 struct UID_EVENTS {
-	DOUBLE_LIST_NODE node;
 	const char *puid;
-	DOUBLE_LIST list;
+	std::list<ICAL_COMPONENT *> list;
 };
 
 static constexpr char EncodedGlobalId_hex[] =
@@ -2592,13 +2593,12 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	return TRUE;
 }
 
-static BOOL oxcical_import_internal(
-	const char *str_zone, const char *method, BOOL b_proposal,
-	uint16_t calendartype, ICAL *pical, DOUBLE_LIST *pevent_list,
-	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg,
-	ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
-	EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
+static BOOL oxcical_import_internal(const char *str_zone, const char *method,
+    BOOL b_proposal, uint16_t calendartype, ICAL *pical,
+    std::list<ICAL_COMPONENT *> &pevent_list, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
+    MESSAGE_CONTENT *pmsg, ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
+    EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
 	int i;
 	BOOL b_alarm;
@@ -2615,12 +2615,10 @@ static BOOL oxcical_import_internal(
 	const char *pvalue;
 	const char *pvalue1;
 	ICAL_TIME end_itime;
-	DOUBLE_LIST tmp_list;
 	uint16_t last_propid;
 	ICAL_TIME start_itime;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE tmp_node;
 	MESSAGE_CONTENT *pembedded;
 	ICAL_COMPONENT *pmain_event;
 	uint32_t deleted_dates[1024];
@@ -2633,29 +2631,24 @@ static BOOL oxcical_import_internal(
 	EXTENDEDEXCEPTION ext_exceptions[1024];
 	APPOINTMENTRECURRENCEPATTERN apprecurr;
 	
-	
-	if (1 == double_list_get_nodes_num(pevent_list)) {
-		pnode = double_list_get_head(pevent_list);
-		pmain_event = static_cast<ICAL_COMPONENT *>(pnode->pdata);
+	if (pevent_list.size() == 1) {
+		pmain_event = pevent_list.front();
 	} else {
 		pmain_event = NULL;
-		for (pnode=double_list_get_head(pevent_list); NULL!=pnode;
-			pnode=double_list_get_after(pevent_list, pnode)) {
-			piline = ical_get_line(static_cast<ICAL_COMPONENT *>(pnode->pdata), "RECURRENCE-ID");
+		for (auto event : pevent_list) {
+			piline = ical_get_line(event, "RECURRENCE-ID");
 			if (NULL == piline) {
 				if (NULL != pmain_event) {
 					return FALSE;
 				}
-				pmain_event = static_cast<ICAL_COMPONENT *>(pnode->pdata);
+				pmain_event = event;
 				if (NULL == ical_get_line(pmain_event, "X-MICROSOFT-RRULE")
 					&& NULL == ical_get_line(pmain_event, "RRULE")) {
 					return FALSE;
 				}
 			} else {
-				if (ical_get_line(static_cast<ICAL_COMPONENT *>(pnode->pdata),
-				    "X-MICROSOFT-RRULE") != nullptr ||
-				    ical_get_line(static_cast<ICAL_COMPONENT *>(pnode->pdata),
-				    "RRULE") != nullptr)
+				if (ical_get_line(event, "X-MICROSOFT-RRULE") != nullptr ||
+				    ical_get_line(event, "RRULE") != nullptr)
 					return FALSE;
 			}
 		}
@@ -3160,7 +3153,7 @@ static BOOL oxcical_import_internal(
 			apprecurr.exceptioncount = 0;
 		}
 		
-		if (double_list_get_nodes_num(pevent_list) > 1) {
+		if (pevent_list.size() > 1) {
 			pattachments = attachment_list_init();
 			if (NULL == pattachments) {
 				int_hash_free(phash);
@@ -3168,11 +3161,9 @@ static BOOL oxcical_import_internal(
 			}
 			message_content_set_attachments_internal(pmsg, pattachments);
 		}
-		for (pnode=double_list_get_head(pevent_list); NULL!=pnode;
-			pnode=double_list_get_after(pevent_list, pnode)) {
-			if (pnode->pdata == pmain_event) {
+		for (auto event : pevent_list) {
+			if (event == pmain_event)
 				continue;
-			}
 			pattachment = attachment_content_init();
 			if (NULL == pattachment) {
 				int_hash_free(phash);
@@ -3197,26 +3188,29 @@ static BOOL oxcical_import_internal(
 				return FALSE;
 			}
 			
-			double_list_init(&tmp_list);
-			double_list_append_as_tail(&tmp_list, &tmp_node);
-			tmp_node.pdata = pnode->pdata;
-			if (FALSE == oxcical_import_internal(str_zone, method,
-				FALSE, calendartype, pical, &tmp_list, alloc,
-				get_propids, username_to_entryid, pembedded, &start_itime,
-				&end_itime, exceptions + apprecurr.exceptioncount,
-				ext_exceptions + apprecurr.exceptioncount)) {
+			std::list<ICAL_COMPONENT *> tmp_list;
+			try {
+				tmp_list.push_back(event);
+			} catch (...) {
+				int_hash_free(phash);
+				return false;
+			}
+			if (!oxcical_import_internal(str_zone, method, false,
+			    calendartype, pical, tmp_list, alloc, get_propids,
+			    username_to_entryid, pembedded, &start_itime,
+			    &end_itime, exceptions + apprecurr.exceptioncount,
+			    ext_exceptions + apprecurr.exceptioncount)) {
 				int_hash_free(phash);
 				return FALSE;
 			}
 			
 			if (!oxcical_parse_exceptional_attachment(pattachment,
-			    static_cast<ICAL_COMPONENT *>(pnode->pdata), start_itime,
-				end_itime, pmsg)) {
+			    event, start_itime, end_itime, pmsg)) {
 				int_hash_free(phash);
 				return FALSE;
 			}
 			
-			piline = ical_get_line(static_cast<ICAL_COMPONENT *>(pnode->pdata), "RECURRENCE-ID");
+			piline = ical_get_line(event, "RECURRENCE-ID");
 			if (FALSE == oxcical_parse_dtvalue(ptz_component,
 				piline, &b_utc, &itime, &tmp_time)) {
 				int_hash_free(phash);
@@ -3355,15 +3349,12 @@ static BOOL oxcical_import_internal(
 	return TRUE;
 }
 
-static BOOL oxcical_import_events(
-	const char *str_zone, uint16_t calendartype, ICAL *pical,
-	DOUBLE_LIST *pevents_list, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
-	MESSAGE_CONTENT *pmsg)
+static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
+    ICAL *pical, std::list<std::shared_ptr<UID_EVENTS>> &pevents_list,
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
 	TAGGED_PROPVAL propval;
-	UID_EVENTS *puid_events;
-	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pembedded;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
@@ -3373,9 +3364,7 @@ static BOOL oxcical_import_events(
 		return FALSE;
 	}
 	message_content_set_attachments_internal(pmsg, pattachments);
-	for (pnode=double_list_get_head(pevents_list); NULL!=pnode;
-		pnode=double_list_get_after(pevents_list, pnode)) {
-		puid_events = (UID_EVENTS*)pnode->pdata;
+	for (auto puid_events : pevents_list) {
 		pattachment = attachment_content_init();
 		if (NULL == pattachment) {
 			return FALSE;
@@ -3394,38 +3383,19 @@ static BOOL oxcical_import_events(
 		propval.pvalue  = deconst("IPM.Appointment");
 		if (!tpropval_array_set_propval(&pembedded->proplist, &propval))
 			return FALSE;
-		if (FALSE == oxcical_import_internal(str_zone, "PUBLISH",
-			FALSE, calendartype, pical, &puid_events->list, alloc,
-			get_propids, username_to_entryid, pembedded, NULL,
-			NULL, NULL, NULL)) {
+		if (!oxcical_import_internal(str_zone, "PUBLISH", false,
+		    calendartype, pical, puid_events->list, alloc, get_propids,
+		    username_to_entryid, pembedded, nullptr, nullptr, nullptr,
+		    nullptr))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
 
-static void oxcical_clear_event_uid_list(DOUBLE_LIST *plist)
+static BOOL oxcical_classify_calendar(ICAL *pical,
+    std::list<std::shared_ptr<UID_EVENTS>> &pevent_uid_list)
 {
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	
-	while ((pnode = double_list_pop_front(plist)) != nullptr) {
-		auto puid_events = static_cast<UID_EVENTS *>(pnode->pdata);
-		while ((pnode1 = double_list_pop_front(&puid_events->list)) != nullptr)
-			free(pnode1);
-		double_list_free(&puid_events->list);
-		free(puid_events);
-	}
-}
-
-static BOOL oxcical_classify_calendar(
-	ICAL *pical, DOUBLE_LIST *pevent_uid_list)
-{
-	const char *puid;
-	UID_EVENTS *puid_events;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	DOUBLE_LIST_NODE *pnode2;
 	ICAL_COMPONENT *pcomponent;
 	
 	for (pnode=double_list_get_head(&pical->component_list); NULL!=pnode;
@@ -3433,61 +3403,37 @@ static BOOL oxcical_classify_calendar(
 		pcomponent = (ICAL_COMPONENT*)pnode->pdata;
 		if (strcasecmp(pcomponent->name.c_str(), "VEVENT") != 0)
 			continue;
+		std::shared_ptr<UID_EVENTS> puid_events;
 		auto piline = ical_get_line(pcomponent, "UID");
-		if (NULL == piline) {
-			puid = NULL;
-			goto NEW_UID_EVENTS;
+		auto puid = piline != nullptr ? ical_get_first_subvalue(piline) : nullptr;
+		if (puid != nullptr) {
+			auto i = std::find_if(pevent_uid_list.cbegin(), pevent_uid_list.cend(),
+			         [=](const auto &e) { return e->puid != nullptr && strcmp(e->puid, puid) == 0; });
+			if (i != pevent_uid_list.cend())
+				puid_events = *i;
 		}
-		puid = ical_get_first_subvalue(piline);
-		if (NULL == puid) {
-			goto NEW_UID_EVENTS;
+		if (puid_events == nullptr) try {
+			puid_events = std::make_shared<UID_EVENTS>();
+			puid_events->puid = puid;
+			pevent_uid_list.push_back(puid_events);
+		} catch (...) {
+			return false;
 		}
-		for (pnode1=double_list_get_head(pevent_uid_list); NULL!=pnode1;
-			pnode1=double_list_get_after(pevent_uid_list, pnode1)) {
-			puid_events = (UID_EVENTS*)pnode1->pdata;
-			if (NULL == puid_events->puid) {
-				continue;
-			}
-			if (0 == strcmp(puid_events->puid, puid)) {
-				break;
-			}
+		try {
+			puid_events->list.push_back(pcomponent);
+		} catch (...) {
+			return false;
 		}
-		if (NULL != pnode1) {
-			goto APPEND_EVENT;
-		}
-NEW_UID_EVENTS:
-		puid_events = static_cast<UID_EVENTS *>(malloc(sizeof(UID_EVENTS)));
-		if (NULL == puid_events) {
-			return FALSE;
-		}
-		puid_events->node.pdata = puid_events;
-		puid_events->puid = puid;
-		double_list_init(&puid_events->list);
-		double_list_append_as_tail(pevent_uid_list, &puid_events->node);
-APPEND_EVENT:
-		pnode2 = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
-		if (NULL == pnode2) {
-			return FALSE;
-		}
-		pnode2->pdata = pcomponent;
-		double_list_append_as_tail(&puid_events->list, pnode2);
 	}
 	return TRUE;
 }
 
-static const char* oxcical_get_partstat(const DOUBLE_LIST *pevents_list)
+static const char *oxcical_get_partstat(const std::list<std::shared_ptr<UID_EVENTS>> &pevents_list)
 {
-	UID_EVENTS *puid_events;
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_head((DOUBLE_LIST*)pevents_list);
-	if (NULL == pnode) {
-		return NULL;
-	}
-	puid_events = (UID_EVENTS*)pnode->pdata;
-	for (pnode=double_list_get_head(&puid_events->list); NULL!=pnode;
-		pnode=double_list_get_after(&puid_events->list, pnode)) {
-		auto piline = ical_get_line(static_cast<ICAL_COMPONENT *>(pnode->pdata), "ATTENDEE");
+	if (pevents_list.size() == 0)
+		return nullptr;
+	for (auto event : pevents_list.front()->list) {
+		auto piline = ical_get_line(event, "ATTENDEE");
 		if (NULL != piline) {
 			return ical_get_first_paramval(piline, "PARTSTAT");
 		}
@@ -3560,9 +3506,7 @@ MESSAGE_CONTENT* oxcical_import(
 	uint16_t calendartype;
 	MESSAGE_CONTENT *pmsg;
 	TAGGED_PROPVAL propval;
-	DOUBLE_LIST events_list;
-	UID_EVENTS *puid_events;
-	DOUBLE_LIST_NODE *pnode;
+	std::list<std::shared_ptr<UID_EVENTS>> events_list;
 	
 	b_proposal = FALSE;
 	pmsg = message_content_init();
@@ -3571,11 +3515,9 @@ MESSAGE_CONTENT* oxcical_import(
 	}
 	auto piline = ical_get_line(const_cast<ICAL *>(pical), "X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
-	double_list_init(&events_list);
-	if (FALSE == oxcical_classify_calendar((ICAL*)pical, &events_list)
-		|| 0 == double_list_get_nodes_num(&events_list)) {
+	if (!oxcical_classify_calendar(deconst(pical), events_list) ||
+	    events_list.size() == 0)
 		goto IMPORT_FAILURE;
-	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	piline = ical_get_line((ICAL_COMPONENT*)pical, "METHOD");
 	propval.pvalue = deconst("IPM.Appointment");
@@ -3583,27 +3525,23 @@ MESSAGE_CONTENT* oxcical_import(
 		pvalue = ical_get_first_subvalue(piline);
 		if (NULL != pvalue) {
 			if (0 == strcasecmp(pvalue, "PUBLISH")) {
-				if (double_list_get_nodes_num(&events_list) > 1) {
-					if (FALSE == oxcical_import_events(str_zone,
-						calendartype, (ICAL*)pical, &events_list, alloc,
-						get_propids, username_to_entryid, pmsg)) {
+				if (events_list.size() > 1) {
+					if (!oxcical_import_events(str_zone,
+					    calendartype, deconst(pical),
+					    events_list, alloc, get_propids,
+					    username_to_entryid, pmsg))
 						goto IMPORT_FAILURE;
-					}
-					oxcical_clear_event_uid_list(&events_list);
-					double_list_free(&events_list);
 					return pmsg;
 				}
 				propval.pvalue = deconst("IPM.Appointment");
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
-				if (1 != double_list_get_nodes_num(&events_list)) {
+				if (events_list.size() != 1)
 					goto IMPORT_FAILURE;
-				}
 				propval.pvalue = deconst("IPM.Schedule.Meeting.Request");
 			} else if (0 == strcasecmp(pvalue, "REPLY")) {
-				if (1 != double_list_get_nodes_num(&events_list)) {
+				if (events_list.size() != 1)
 					goto IMPORT_FAILURE;
-				}
-				pvalue1 = oxcical_get_partstat(&events_list);
+				pvalue1 = oxcical_get_partstat(events_list);
 				if (NULL != pvalue1) {
 					if (0 == strcasecmp(pvalue1, "ACCEPTED")) {
 						propval.pvalue = deconst("IPM.Schedule.Meeting.Resp.Pos");
@@ -3614,10 +3552,9 @@ MESSAGE_CONTENT* oxcical_import(
 					}
 				}
 			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
-				if (1 != double_list_get_nodes_num(&events_list)) {
+				if (events_list.size() != 1)
 					goto IMPORT_FAILURE;
-				}
-				pvalue1 = oxcical_get_partstat(&events_list);
+				pvalue1 = oxcical_get_partstat(events_list);
 				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
 					propval.pvalue = deconst("IPM.Schedule.Meeting.Resp.Tent");
 					b_proposal = TRUE;
@@ -3627,32 +3564,21 @@ MESSAGE_CONTENT* oxcical_import(
 			}
 		}
 	} else {
-		if (double_list_get_nodes_num(&events_list) > 1) {
-			if (FALSE == oxcical_import_events(str_zone,
-				calendartype, (ICAL*)pical, &events_list, alloc,
-				get_propids, username_to_entryid, pmsg)) {
+		if (events_list.size() > 1) {
+			if (!oxcical_import_events(str_zone, calendartype,
+			    deconst(pical), events_list, alloc, get_propids,
+			    username_to_entryid, pmsg))
 				goto IMPORT_FAILURE;
-			}
-			oxcical_clear_event_uid_list(&events_list);
-			double_list_free(&events_list);
 			return pmsg;
 		}
 	}
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		goto IMPORT_FAILURE;
-	pnode = double_list_get_head(&events_list);
-	puid_events = (UID_EVENTS*)pnode->pdata;
-	if (TRUE == oxcical_import_internal(str_zone, pvalue,
-		b_proposal, calendartype, (ICAL*)pical, &puid_events->list,
-		alloc, get_propids, username_to_entryid, pmsg, NULL, NULL,
-		NULL, NULL)) {
-		oxcical_clear_event_uid_list(&events_list);
-		double_list_free(&events_list);
+	if (oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
+	    deconst(pical), events_list.front()->list, alloc, get_propids,
+	    username_to_entryid, pmsg, nullptr, nullptr, nullptr, nullptr))
 		return pmsg;
-	}
 IMPORT_FAILURE:
-	oxcical_clear_event_uid_list(&events_list);
-	double_list_free(&events_list);
 	message_content_free(pmsg);
 	return NULL;
 }
