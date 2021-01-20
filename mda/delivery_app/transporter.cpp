@@ -1127,7 +1127,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	} else {
 		ret_val = TRUE;
 	}
-	pnode = double_list_get_from_tail(&pthr_data->anti_loop.throwed_list);
+	pnode = double_list_pop_back(&pthr_data->anti_loop.throwed_list);
 	double_list_append_as_tail(&pthr_data->anti_loop.free_list, pnode);
 	transporter_put_context(pcontext);
 	/* recover last thrower and last hook, like function's return operation */

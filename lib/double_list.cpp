@@ -254,12 +254,12 @@ DOUBLE_LIST_NODE* double_list_get_from_head(DOUBLE_LIST *plist)
  *	  @return
  *		  the pointer to the poped node
  */
-DOUBLE_LIST_NODE* double_list_get_from_tail(DOUBLE_LIST *plist)
+DOUBLE_LIST_NODE *double_list_pop_back(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE* pnode;
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[double_list]: double_list_get_from_tail, param NULL");
+		debug_info("[double_list]: double_list_pop_back, param NULL");
 		return NULL;
 	}
 #endif

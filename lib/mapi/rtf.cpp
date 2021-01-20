@@ -1228,9 +1228,7 @@ static int rtf_attrstack_peek(RTF_READER *preader)
 
 static void rtf_stack_list_free_node(RTF_READER *preader) 
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_from_tail(&preader->attr_stack_list);
+	auto pnode = double_list_pop_back(&preader->attr_stack_list);
 	if (NULL != pnode) {
 		free(pnode->pdata);
 	}

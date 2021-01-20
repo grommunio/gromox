@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <gromox/defs.h>
 
 /* double list is composed by the base unit DOUBLE_LIST_NODE */
 struct DOUBLE_LIST_NODE {
@@ -38,7 +39,7 @@ void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode);
 DOUBLE_LIST_NODE* double_list_get_from_head(DOUBLE_LIST *plist);
 
 /* get tail node and remove it from list */
-DOUBLE_LIST_NODE* double_list_get_from_tail(DOUBLE_LIST *plist);
+extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_back(DOUBLE_LIST *);
 
 /* merge the plist into plist_des */
 void double_list_append_list(DOUBLE_LIST *plist_des, DOUBLE_LIST *plist);

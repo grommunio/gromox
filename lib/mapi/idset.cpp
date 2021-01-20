@@ -527,9 +527,7 @@ static BOOL idset_statck_push(DOUBLE_LIST *pstack,
 
 static void idset_statck_pop(DOUBLE_LIST *pstack)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_from_tail(pstack);
+	auto pnode = double_list_pop_back(pstack);
 	if (NULL == pnode) {
 		return;
 	}
