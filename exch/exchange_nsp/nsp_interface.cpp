@@ -510,6 +510,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		auto ret = ab_tree_fetchprop(pnode, codepage, proptag, pprop);
 		if (ret == ecSuccess)
 			return ret;
+		if (ret != ecNotFound)
+			return ret;
 	}
 	/*
 	 * Fallback defaults in case ab_tree does not contain a prop
