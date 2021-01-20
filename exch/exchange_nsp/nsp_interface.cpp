@@ -2803,7 +2803,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	
 EXIT_MOD_LINKATT:
 	ab_tree_put_base(pbase);
-	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		free(pnode->pdata);
 		free(pnode);
 	}

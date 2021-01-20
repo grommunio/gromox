@@ -243,7 +243,7 @@ void stream_free(STREAM *pstream)
 	}
 #endif
 	stream_clear(pstream);
-	phead = double_list_get_from_head(&pstream->list);
+	phead = double_list_pop_front(&pstream->list);
 	lib_buffer_put(pstream->allocator, phead);
 	pstream->allocator = NULL;
 	double_list_free(&pstream->list);

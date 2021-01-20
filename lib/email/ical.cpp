@@ -144,9 +144,9 @@ static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pcomponent->line_list)) != nullptr)
+	while ((pnode = double_list_pop_front(&pcomponent->line_list)) != nullptr)
 		delete static_cast<ICAL_LINE *>(pnode->pdata);
-	while ((pnode = double_list_get_from_head(&pcomponent->component_list)) != nullptr)
+	while ((pnode = double_list_pop_front(&pcomponent->component_list)) != nullptr)
 		delete static_cast<ICAL_COMPONENT *>(pnode->pdata);
 }
 

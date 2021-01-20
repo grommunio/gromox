@@ -387,7 +387,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 		}
 	}
 	len1 = *plen - len;
-	while ((pnode = double_list_get_from_head(&pctx->flow_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr) {
 		pflow = (FAST_FLOW_NODE*)pnode->pdata;
 		switch (pflow->func_id) {
 		case FUNC_ID_UINT32:
@@ -528,7 +528,7 @@ void fastdownctx_object_free(FASTDOWNCTX_OBJECT *pctx)
 	DOUBLE_LIST_NODE *pnode;
 	
 	ftstream_producer_free(pctx->pstream);
-	while ((pnode = double_list_get_from_head(&pctx->flow_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->flow_list);
 	if (NULL!= pctx->pfldctnt) {

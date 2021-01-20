@@ -445,11 +445,11 @@ int main(int argc, const char **argv)
 
 	close(sockd);
 	close(g_list_fd);
-	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
+	while ((pnode = double_list_pop_front(&g_acl_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&g_acl_list);
 
-	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -457,7 +457,7 @@ int main(int argc, const char **argv)
 
 	double_list_free(&g_connection_list);
 
-	while ((pnode = double_list_get_from_head(&g_connection_list1)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_connection_list1)) != nullptr) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -627,7 +627,7 @@ NEXT_LOOP:
 	pthread_mutex_unlock(&g_cond_mutex);
 
 	pthread_mutex_lock(&g_connection_lock);
-	pnode = double_list_get_from_head(&g_connection_list1);
+	pnode = double_list_pop_front(&g_connection_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_connection_list, pnode);
 	}

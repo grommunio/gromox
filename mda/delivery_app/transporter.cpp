@@ -371,7 +371,7 @@ static void transporter_collect_hooks()
 		stack.pop_back();
     }
 	transporter_clean_up_unloading();
-	while ((pnode = double_list_get_from_head(&g_hook_list)) != NULL)
+	while ((pnode = double_list_pop_front(&g_hook_list)) != nullptr)
 		free(pnode->pdata);
 }
 
@@ -416,7 +416,7 @@ int transporter_stop()
 
 	g_notify_stop = TRUE;
 	pthread_mutex_lock(&g_threads_list_mutex);
-	while ((pnode = double_list_get_from_head(&g_threads_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
 		pthr = (THREAD_DATA*)pnode->pdata;
 		pthread_cond_broadcast(&g_waken_cond);
         pthread_cancel(pthr->id);
@@ -677,7 +677,7 @@ static void* scan_work_func(void* arg)
 			pthread_mutex_unlock(&g_threads_list_mutex);
 			/* get a thread data node from free list */
 			pthread_mutex_lock(&g_free_threads_mutex);
-			pnode = double_list_get_from_head(&g_free_threads);
+			pnode = double_list_pop_front(&g_free_threads);
 			pthread_mutex_unlock(&g_free_threads_mutex);
 			if (NULL == pnode) {
 				continue;
@@ -874,7 +874,8 @@ static void transporter_clean_up_unloading()
 			} catch (...) {
 			}
 			/* empty the list_hook of plib */
-			while ((pnode1 = double_list_get_from_head(&plib->list_hook)));
+			while ((pnode1 = double_list_pop_front(&plib->list_hook)) != nullptr)
+				/* nothing */;
 			double_list_free(&plib->list_hook);
 			/* free the service reference of the plugin */
 			for (pnode1=double_list_get_head(&plib->list_reference); NULL!=pnode1;
@@ -883,7 +884,7 @@ static void transporter_clean_up_unloading()
 					plib->file_name);
 			}
 			/* free the reference list */
-			while ((pnode1 = double_list_get_from_head(&plib->list_reference))) {
+			while ((pnode1 = double_list_pop_front(&plib->list_reference)) != nullptr) {
 				free(((SERVICE_NODE*)(pnode1->pdata))->service_name);
 				free(pnode1->pdata);
 			}
@@ -985,7 +986,7 @@ static MESSAGE_CONTEXT* transporter_get_context()
 	MESSAGE_CONTEXT *pcontext;
 
 	pthread_mutex_lock(&g_context_lock);
-	pnode = single_list_get_from_head(&g_free_list);	
+	pnode = single_list_pop_front(&g_free_list);	
 	pthread_mutex_unlock(&g_context_lock);
 	if (NULL == pnode) {
 		return NULL;
@@ -1053,7 +1054,7 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
 	SINGLE_LIST_NODE *pnode;
 
 	pthread_mutex_lock(&g_queue_lock);
-	pnode = single_list_get_from_head(&g_queue_list);	
+	pnode = single_list_pop_front(&g_queue_list);	
 	pthread_mutex_unlock(&g_queue_lock);
 	if (NULL == pnode) {
 		return NULL;
@@ -1103,8 +1104,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		return FALSE;
 	}
 	/* append this hook into throwed list */
-	pcircle = (CIRCLE_NODE*)double_list_get_from_head(
-				&pthr_data->anti_loop.free_list);
+	pcircle = reinterpret_cast<CIRCLE_NODE *>(double_list_pop_front(&pthr_data->anti_loop.free_list));
 	if (NULL == pcircle) {
 		printf("[transporter]: exceed the maximum depth that one thread "
 			"can throw\n");

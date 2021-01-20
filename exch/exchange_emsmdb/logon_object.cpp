@@ -178,7 +178,7 @@ void logon_object_free(LOGON_OBJECT *plogon)
 	if (NULL != plogon->pgpinfo) {
 		property_groupinfo_free(plogon->pgpinfo);
 	}
-	while ((pnode = double_list_get_from_head(&plogon->group_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&plogon->group_list)) != nullptr) {
 		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
 		free(pnode);
 	}

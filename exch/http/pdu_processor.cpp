@@ -251,7 +251,7 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 	if (TRUE == pcall->pkt_loaded) {
 		pdu_ndr_free_ncacnpkt(&pcall->pkt);
 	}
-	while ((pnode = double_list_get_from_head(&pcall->reply_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		pblob_node = (BLOB_NODE*)pnode->pdata;
 		free(pblob_node->blob.data);
 		lib_buffer_put(g_bnode_allocator, pblob_node);
@@ -267,7 +267,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 	
 	while (TRUE) {
 		pthread_mutex_lock(&g_async_lock);
-		pnode = double_list_get_from_head(&pcontext->async_list);
+		pnode = double_list_pop_front(&pcontext->async_list);
 		if (NULL == pnode) {
 			pthread_mutex_unlock(&g_async_lock);
 			break;
@@ -295,10 +295,9 @@ int pdu_processor_stop()
 	PDU_PROCESSOR *pprocessor;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
-	
-	while ((pnode = double_list_get_from_head(&g_processor_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_processor_list)) != nullptr) {
 		pprocessor = (PDU_PROCESSOR*)pnode->pdata;
-		while ((pnode1 = double_list_get_from_head(&pprocessor->context_list)) != NULL) {
+		while ((pnode1 = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
 			pcontext = (DCERPC_CONTEXT*)pnode1->pdata;
 			if (NULL != pcontext->pinterface->unbind) {
 				handle = pcontext->assoc_group_id;
@@ -310,7 +309,7 @@ int pdu_processor_stop()
 		}
 		double_list_free(&pprocessor->context_list);
 		
-		while ((pnode = double_list_get_from_head(&pprocessor->auth_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
 			pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 			pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 			if (NULL != pauth_ctx->pntlmssp) {
@@ -321,7 +320,7 @@ int pdu_processor_stop()
 		}
 		double_list_free(&pprocessor->auth_list);
 		
-		while ((pnode1 = double_list_get_from_head(&pprocessor->fragmented_list)) != NULL)
+		while ((pnode1 = double_list_pop_front(&pprocessor->fragmented_list)) != nullptr)
 			pdu_processor_free_call(static_cast<DCERPC_CALL *>(pnode1->pdata));
 		double_list_free(&pprocessor->fragmented_list);
 		lib_buffer_put(g_processor_allocator, pprocessor);
@@ -341,7 +340,7 @@ int pdu_processor_stop()
 		stack.pop_back();
 	}
 	
-	while ((pnode = double_list_get_from_head(&g_endpoint_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_endpoint_list)) != nullptr) {
 		double_list_free(&((DCERPC_ENDPOINT*)pnode->pdata)->interface_list);
 		free(pnode->pdata);
 	}
@@ -496,7 +495,7 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 		}
 	}
 	
-	while ((pnode = double_list_get_from_head(&pprocessor->context_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
 		pcontext = (DCERPC_CONTEXT*)pnode->pdata;
 		if (NULL != pcontext->pinterface->unbind) {
 			fake_call.pprocessor = pprocessor;
@@ -511,7 +510,7 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	}
 	double_list_free(&pprocessor->context_list);
 	
-	while ((pnode = double_list_get_from_head(&pprocessor->auth_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
 		pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 		if (NULL != pauth_ctx->pntlmssp) {
@@ -522,7 +521,7 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	}
 	double_list_free(&pprocessor->auth_list);
 	
-	while ((pnode = double_list_get_from_head(&pprocessor->fragmented_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pprocessor->fragmented_list)) != nullptr) {
 		pcall = (DCERPC_CALL*)pnode->pdata;
 		pdu_processor_free_call(pcall);
 	}
@@ -561,7 +560,7 @@ void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 	BLOB_NODE *pblob_node;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pcall->reply_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		pblob_node = (BLOB_NODE*)pnode->pdata;
 		stream_write(pstream, pblob_node->blob.data, pblob_node->blob.length);
 		free(pblob_node->blob.data);
@@ -573,7 +572,7 @@ void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pcall->reply_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr)
 		double_list_append_as_tail(ppdu_list, pnode);
 }
 
@@ -2192,7 +2191,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	b_cancel = FALSE;
 	pthread_mutex_lock(&g_async_lock);
 	plist = &pcall->pprocessor->context_list;
-	for (pnode=double_list_get_from_head(plist); NULL!=pnode;
+	for (pnode = double_list_pop_front(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
 		pcontext = (DCERPC_CONTEXT*)pnode->pdata;
 		for (pnode1=double_list_get_head(&pcontext->async_list); NULL!=pnode1;
@@ -3517,7 +3516,7 @@ static void pdu_processor_unload_library(const char* plugin_name)
         return;
     }
 	
-	while ((pnode = double_list_get_from_head(&pplugin->interface_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pplugin->interface_list)) != nullptr) {
 		pif_node = (INTERFACE_NODE*)pnode->pdata;
 		plist = &pif_node->pendpoint->interface_list;
 		for (pnode1=double_list_get_head(plist); NULL!=pnode1;
@@ -3539,7 +3538,7 @@ static void pdu_processor_unload_library(const char* plugin_name)
 		func(PLUGIN_FREE, NULL);
 	
 	/* free the reference list */
-	while ((pnode = double_list_get_from_head(&pplugin->list_reference))) {
+	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
 		service_release(((SERVICE_NODE*)(pnode->pdata))->service_name,
 			pplugin->file_name);
 		free(((SERVICE_NODE*)(pnode->pdata))->service_name);

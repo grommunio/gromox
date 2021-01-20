@@ -78,7 +78,7 @@ void fastupctx_object_free(FASTUPCTX_OBJECT *pctx)
 	if (NULL != pctx->pmsgctnt) {
 		message_content_free(pctx->pmsgctnt);
 	}
-	while ((pnode = double_list_get_from_head(&pctx->marker_stack)) != NULL)
+	while ((pnode = double_list_pop_front(&pctx->marker_stack)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->marker_stack);
 	free(pctx);

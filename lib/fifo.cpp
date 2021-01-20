@@ -133,8 +133,7 @@ void fifo_dequeue(FIFO* pfifo)
 	if (pfifo->cur_size <= 0) {
 		return;
 	}
-
-	node = single_list_get_from_head(&pfifo->mlist);
+	node = single_list_pop_front(&pfifo->mlist);
 	lib_buffer_put(pfifo->mbuf_pool, node);
 	pfifo->cur_size -= 1;
 	return;

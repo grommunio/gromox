@@ -265,7 +265,7 @@ int service_unload_library(const char *path)
 				&((SERVICE_ENTRY*)(pnode->pdata))->node_service);
 		}
 		/* free lib's service list */
-		while ((pnode = double_list_get_from_head(&plib->list_service))) {
+		while ((pnode = double_list_pop_front(&plib->list_service)) != nullptr) {
 			free(pnode->pdata);
 			pnode = NULL;
 		}

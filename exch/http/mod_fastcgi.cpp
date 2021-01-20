@@ -241,7 +241,7 @@ void mod_fastcgi_stop(void)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	while ((pnode = double_list_get_from_head(&g_fastcgi_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_fastcgi_list)) != nullptr) {
 		pfnode = (FASTCGI_NODE*)pnode->pdata;
 		free(pfnode->domain);
 		free(pfnode->path);
@@ -249,7 +249,7 @@ void mod_fastcgi_stop(void)
 		free(pfnode->suffix);
 		free(pfnode->index);
 		free(pfnode->sock_path);
-		while ((pnode1 = double_list_get_from_head(&pfnode->header_list)) != NULL) {
+		while ((pnode1 = double_list_pop_front(&pfnode->header_list)) != nullptr) {
 			free(pnode1->pdata);
 			free(pnode1);
 		}

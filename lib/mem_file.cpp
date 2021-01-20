@@ -663,7 +663,7 @@ void mem_file_free(MEM_FILE *pfile)
 	}
 #endif
 	mem_file_clear(pfile);
-	phead = double_list_get_from_head(&pfile->list);
+	phead = double_list_pop_front(&pfile->list);
 	lib_buffer_put(pfile->allocator, phead);
 	pfile->allocator = NULL;
 	double_list_free(&pfile->list);

@@ -126,7 +126,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		if (i < conn_num) {
 			g_notify_stop = TRUE;
-			while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
+			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 				pback = (BACK_CONN*)pnode->pdata;
 				if (-1 != pback->sockd) {
 					close(pback->sockd);
@@ -148,7 +148,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;
-			while ((pnode = double_list_get_from_head(&g_back_list)) != nullptr) {
+			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 				pback = static_cast<BACK_CONN *>(pnode->pdata);
 				pthread_join(pback->thr_id, nullptr);
 			}

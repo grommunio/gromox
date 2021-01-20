@@ -218,7 +218,7 @@ int mod_cache_stop()
 		g_notify_stop = TRUE;
 		pthread_join(g_scan_tid, NULL);
 	}
-	while ((pnode = double_list_get_from_head(&g_directory_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_directory_list)) != nullptr) {
 		pdnode = (DIRECTORY_NODE*)pnode->pdata;
 		free(pdnode->domain);
 		free(pdnode->path);
@@ -241,7 +241,7 @@ int mod_cache_stop()
 		str_hash_free(g_cache_hash);
 		g_cache_hash = NULL;
 	}
-	while ((pnode = double_list_get_from_head(&g_item_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_item_list)) != nullptr) {
 		pitem = (CACHE_ITEM*)pnode->pdata;
 		free(pitem->blob.data);
 		free(pitem);

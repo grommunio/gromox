@@ -663,7 +663,7 @@ WAIT_CLIFD:
 	pthread_mutex_unlock(&g_cond_mutex);
 NEXT_CLIFD:
 	pthread_mutex_lock(&g_conn_lock);
-	pnode = double_list_get_from_head(&g_conn_list);
+	pnode = double_list_pop_front(&g_conn_list);
 	pthread_mutex_unlock(&g_conn_lock);
 
 	if (NULL == pnode) {

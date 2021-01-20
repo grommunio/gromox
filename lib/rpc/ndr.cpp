@@ -467,7 +467,7 @@ void ndr_push_destroy(NDR_PUSH *pndr)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pndr->full_ptr_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pndr->full_ptr_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pndr->full_ptr_list);
 	pndr->data = NULL;

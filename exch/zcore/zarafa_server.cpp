@@ -151,7 +151,7 @@ static void* scan_work_func(void *param)
 				continue;
 			}
 			ptail = double_list_get_tail(&pinfo->sink_list);
-			while ((pnode = double_list_get_from_head(&pinfo->sink_list)) != NULL) {
+			while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
 				psink_node = (SINK_NODE*)pnode->pdata;
 				if (cur_time >= psink_node->until_time) {
 					double_list_append_as_tail(&temp_list1, pnode);
@@ -203,14 +203,14 @@ static void* scan_work_func(void *param)
 		}
 		int_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_table_lock);
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			common_util_build_environment();
 			exmdb_client_ping_store(static_cast<char *>(pnode->pdata));
 			common_util_free_environment();
 			free(pnode->pdata);
 			free(pnode);
 		}
-		while ((pnode = double_list_get_from_head(&temp_list1)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list1)) != nullptr) {
 			psink_node = (SINK_NODE*)pnode->pdata;
 			if (TRUE == rpc_ext_push_response(
 				&response, &tmp_bin)) {
@@ -240,7 +240,7 @@ static void* scan_work_func(void *param)
 			str_hash_iter_forward(iter1)) {
 			pnitem = static_cast<NOTIFY_ITEM *>(str_hash_iter_get_value(iter1, nullptr));
 			if (cur_time - pnitem->last_time >= g_cache_interval) {
-				while ((pnode = double_list_get_from_head(&pnitem->notify_list)) != NULL) {
+				while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
 					common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
 					free(pnode);
 				}
@@ -761,7 +761,7 @@ int zarafa_server_stop()
 		FALSE == int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
 		pinfo = static_cast<USER_INFO *>(int_hash_iter_get_value(iter, nullptr));
-		while ((pnode = double_list_get_from_head(&pinfo->sink_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
 			psink_node = (SINK_NODE*)pnode->pdata;
 			close(psink_node->clifd);
 			free(psink_node->sink.padvise);
@@ -1602,7 +1602,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 			zarafa_server_put_user_info(pinfo);
 			return ecAmbiguousRecip;
 		}
-		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
+		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 			single_list_append_as_tail(&result_list, pnode);
 	}
 	presult_set->count = 0;
@@ -3653,7 +3653,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	pthread_mutex_lock(&g_notify_lock);
 	pnitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
 	if (NULL != pnitem) {
-		while ((pnode = double_list_get_from_head(&pnitem->notify_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
 			common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
 			free(pnode);
 		}
@@ -3699,7 +3699,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			continue;
 		}
 		time(&pnitem->last_time);
-		while ((pnode = double_list_get_from_head(&pnitem->notify_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
 			ppnotifications[count] = common_util_dup_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata), true);
 			common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
 			free(pnode);

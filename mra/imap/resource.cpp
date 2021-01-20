@@ -185,7 +185,7 @@ int resource_stop()
     }
 	
 	if (NULL != g_lang_list) {
-		while ((pnode = single_list_get_from_head(g_lang_list)) != NULL)
+		while ((pnode = single_list_pop_front(g_lang_list)) != nullptr)
 			free(pnode->pdata);
 		single_list_free(g_lang_list);
 		free(g_lang_list);
@@ -492,7 +492,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			printf("[resource]: line %d format error in %s\n", total + 1,
                 filename);
 			fclose(file_ptr);
-			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
+			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
 			single_list_free(&temp_list);
 			return -1;
@@ -504,7 +504,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			printf("[resource]: out of memory while loading file %s\n",
                 filename);
 			fclose(file_ptr);
-			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
+			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
 			single_list_free(&temp_list);
 			return -1;
@@ -536,7 +536,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);
 			free(plang);
 			fclose(file_ptr);
-			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
+			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
 			single_list_free(&temp_list);
 			return -1;
@@ -559,7 +559,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	
 	if (NULL == pnode) {
 		printf("[resource]: cannot find default lang (%s) in %s\n", dfl_lang, filename);
-		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
+		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 			free(pnode->pdata);
 		single_list_free(&temp_list);
 		return -1;
@@ -567,7 +567,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	
 	if (single_list_get_nodes_num(&temp_list) > 127) {
 		printf("[resource]: too many langs in %s\n", filename);
-		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
+		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 			free(pnode->pdata);
 		single_list_free(&temp_list);
 		return -1;

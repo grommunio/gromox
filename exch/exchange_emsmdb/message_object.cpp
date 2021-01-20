@@ -251,7 +251,7 @@ void message_object_free(MESSAGE_OBJECT *pmessage)
 	if (NULL != pmessage->premoved_proptags) {
 		proptag_array_free(pmessage->premoved_proptags);
 	}
-	while ((pnode = double_list_get_from_head(&pmessage->stream_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr)
 		free(pnode);
 	double_list_free(&pmessage->stream_list);
 	free(pmessage);
@@ -900,7 +900,7 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_touched = FALSE;
-	while ((pnode = double_list_get_from_head(&pmessage->stream_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr)
 		free(pnode);
 	pmessage->change_num = 0;
 	if (FALSE == pmessage->b_new) {
@@ -1098,7 +1098,7 @@ BOOL message_object_flush_streams(MESSAGE_OBJECT *pmessage)
 	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
 	
-	while ((pnode = double_list_get_from_head(&pmessage->stream_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr) {
 		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
 		tmp_propval.proptag = stream_object_get_proptag(pstream);
 		tmp_propval.pvalue = stream_object_get_content(pstream);

@@ -196,7 +196,7 @@ static FLUSH_ENTITY* flusher_get_from_queue()
 {
 	SINGLE_LIST_NODE*   pnode;
 	pthread_mutex_lock(&g_flush_mutex);
-	pnode = single_list_get_from_head(&g_flush_queue);
+	pnode = single_list_pop_front(&g_flush_queue);
 	pthread_mutex_unlock(&g_flush_mutex);
 	if (NULL == pnode) {
 		return NULL;
@@ -292,7 +292,7 @@ static BOOL flusher_unload_plugin()
 							g_flusher_plug->file_name);
 		}
 		/* free the reference list */
-		while ((pnode = single_list_get_from_head(&g_flusher_plug->list_reference))) {
+		while ((pnode = single_list_pop_front(&g_flusher_plug->list_reference)) != nullptr) {
 			free(((SERVICE_NODE*)(pnode->pdata))->service_name);
 			free(pnode->pdata);
 			pnode = NULL;

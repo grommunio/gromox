@@ -1284,7 +1284,7 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
 	
-	while ((pnode = double_list_get_from_head(plist)) != NULL) {
+	while ((pnode = double_list_pop_front(plist)) != nullptr) {
 		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
 		if (NULL != ptree_node->pbranch) {
 			mail_engine_ct_destroy_internal(ptree_node->pbranch);
@@ -1712,7 +1712,7 @@ static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(plist)) != NULL)
+	while ((pnode = double_list_pop_front(plist)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(plist);
 	free(plist);
@@ -1847,7 +1847,7 @@ static void mail_engine_ct_free_result(CONDITION_RESULT *presult)
 {
 	SINGLE_LIST_NODE *pnode;
 	
-	while ((pnode = single_list_get_from_head(&presult->list)) != NULL)
+	while ((pnode = single_list_pop_front(&presult->list)) != nullptr)
 		free(pnode);
 	free(presult);
 }
@@ -2386,7 +2386,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			sqlite3_close(psqlite);
 			return FALSE;
 		}
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
@@ -2741,7 +2741,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			" FROM folders WHERE folder_id=?");
 		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
 			goto SYNC_FAILURE;
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
@@ -2978,7 +2978,7 @@ static void *scan_work_func(void *param)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_hash_lock);
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			psub = (SUB_NODE*)pnode->pdata;
 			if (TRUE == common_util_build_environment(psub->maildir)) {
 				exmdb_client_unsubscribe_notification(
@@ -3613,7 +3613,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	}
 	offset = sprintf(list_buff, "TRUE %zu\r\n",
 		double_list_get_nodes_num(&tmp_list));
-	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		pinode = (IDL_NODE*)pnode->pdata;
 		temp_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%s %u\r\n",
 						pinode->mid_string, pinode->size);

@@ -251,9 +251,8 @@ void xarray_clear(XARRAY* pxarray)
 		debug_info("[xarray]: NULL pointer found in xarray_clear");
 	}
 #endif
-	while (NULL != (pnode=double_list_get_from_head(&pxarray->mlist))) {
+	while ((pnode = double_list_pop_front(&pxarray->mlist)) != nullptr)
 		lib_buffer_put(pxarray->mbuf_pool, pnode->pdata);
-	}
 	pxarray->cur_size = 0;
 	memset(pxarray->cache_ptrs, 0, sizeof(pxarray->cache_ptrs));
 	memset(pxarray->hash_lists, 0, sizeof(pxarray->hash_lists));

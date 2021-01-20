@@ -218,7 +218,7 @@ static void *thread_work_func(void *argp)
 		}
 		/* try to get a free node from free list */
 		pthread_mutex_lock(&g_list_lock);
-		pnode = double_list_get_from_head(&g_free_list);
+		pnode = double_list_pop_front(&g_free_list);
 		if (NULL == pnode) {
 			pthread_mutex_unlock(&g_list_lock);
 			write(client_fd, EXCEED_STRING, sizeof(EXCEED_STRING) - 1);
@@ -482,7 +482,7 @@ void console_server_notify_main_stop()
 	b_console = FALSE;
 	pthread_join(g_listening_tid, NULL);
 	pthread_mutex_lock(&g_list_lock);
-	while ((pnode = double_list_get_from_head(&g_console_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_console_list)) != nullptr) {
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
 		if (0 == pthread_equal(pthread_self(), pconsole->tid)) {
 			pthread_cancel(pconsole->tid);
@@ -492,7 +492,7 @@ void console_server_notify_main_stop()
 		write(pconsole->client_fd, STOP_STRING, sizeof(STOP_STRING) - 1);
 		close(pconsole->client_fd);
 	}
-	while ((pnode = double_list_get_from_head(&g_free_list)) != NULL)
+	while ((pnode = double_list_pop_front(&g_free_list)) != nullptr)
 		/* do nothing */;
 	pthread_mutex_unlock(&g_list_lock);
 	g_notify_stop = TRUE;

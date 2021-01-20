@@ -163,7 +163,7 @@ int cmd_parser_stop()
 		pthread_join(g_thread_ids[i], NULL);
 	}
 
-	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
 		pconnection = (CONNECTION*)pnode->pdata;
 		if (-1 != pconnection->sockd) {
 			close(pconnection->sockd);
@@ -171,7 +171,7 @@ int cmd_parser_stop()
 		free(pconnection);
 	}
 
-	while ((pnode = double_list_get_from_head(&g_connection_list1)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_connection_list1)) != nullptr) {
 		pconnection = (CONNECTION*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -218,7 +218,7 @@ NEXT_LOOP:
 	}
 	
 	pthread_mutex_lock(&g_connection_lock);
-	pnode = double_list_get_from_head(&g_connection_list1);
+	pnode = double_list_pop_front(&g_connection_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_connection_list, pnode);
 	}

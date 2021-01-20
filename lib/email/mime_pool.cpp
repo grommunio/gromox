@@ -118,7 +118,7 @@ MIME* mime_pool_get(MIME_POOL *pmime_pool)
 	if (TRUE == pmime_pool->thread_safe) {
 		pthread_mutex_lock(&pmime_pool->mutex);
 	}
-	pnode = single_list_get_from_head(&pmime_pool->free_list);
+	pnode = single_list_pop_front(&pmime_pool->free_list);
 	if (TRUE == pmime_pool->thread_safe) {
 		pthread_mutex_unlock(&pmime_pool->mutex);
 	}

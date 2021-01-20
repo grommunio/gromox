@@ -385,7 +385,7 @@ static void hpm_processor_unload_library(const char *plugin_name)
 		func(PLUGIN_FREE, NULL);
 
 	/* free the reference list */
-	while ((pnode = double_list_get_from_head(&pplugin->list_reference))) {
+	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
 		service_release(((SERVICE_NODE*)(pnode->pdata))->service_name,
 			pplugin->file_name);
 		free(((SERVICE_NODE*)(pnode->pdata))->service_name);

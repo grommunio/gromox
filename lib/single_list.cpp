@@ -104,13 +104,13 @@ BOOL single_list_insert_as_head(SINGLE_LIST* plist, SINGLE_LIST_NODE* node)
  *		front of the list
  *		NULL if the list is empty
  */
-SINGLE_LIST_NODE* single_list_get_from_head(SINGLE_LIST* plist)
+SINGLE_LIST_NODE *single_list_pop_front(SINGLE_LIST *plist)
 {
 	SINGLE_LIST_NODE*  node = NULL;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[single_list]: single_list_get_from_head, param NULL");
+		debug_info("[single_list]: single_list_pop_front, param NULL");
 		return NULL;
 	}
 #endif

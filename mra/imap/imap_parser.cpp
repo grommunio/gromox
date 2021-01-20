@@ -1729,7 +1729,7 @@ static void* thread_work_func(void *argp)
 		
 		do {
 			pthread_mutex_lock(&g_list_lock);
-			pnode=double_list_get_from_head(&g_sleeping_list);
+			pnode = double_list_pop_front(&g_sleeping_list);
 			pthread_mutex_unlock(&g_list_lock);
 			pcontext = (IMAP_CONTEXT*)pnode->pdata;
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {

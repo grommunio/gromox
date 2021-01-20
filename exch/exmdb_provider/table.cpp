@@ -3887,7 +3887,7 @@ static BOOL table_traverse_sub_contents(uint32_t step,
 	if (1 == step) {
 		return TRUE;
 	}
-	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		if (FALSE == table_traverse_sub_contents(step - 1,
 			*(uint64_t*)pnode->pdata, pstmt, pstmt1, pcount)) {
 			return FALSE;	

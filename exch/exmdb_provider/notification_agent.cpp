@@ -82,7 +82,7 @@ void notification_agent_thread_work(ROUTER_CONNECTION *prouter)
 			&prouter->cond_mutex, &ts);
 		pthread_mutex_unlock(&prouter->cond_mutex);
 		pthread_mutex_lock(&prouter->lock);
-		pnode = double_list_get_from_head(&prouter->datagram_list);
+		pnode = double_list_pop_front(&prouter->datagram_list);
 		pthread_mutex_unlock(&prouter->lock);
 		if (NULL == pnode) {
 			ping_buff = 0;
@@ -106,7 +106,7 @@ void notification_agent_thread_work(ROUTER_CONNECTION *prouter)
 			free(pdnode);
 			pthread_mutex_unlock(&prouter->cond_mutex);
 			pthread_mutex_lock(&prouter->lock);
-			pnode = double_list_get_from_head(&prouter->datagram_list);
+			pnode = double_list_pop_front(&prouter->datagram_list);
 			pthread_mutex_unlock(&prouter->lock);
 			if (NULL == pnode) {
 				break;
@@ -121,7 +121,7 @@ EXIT_THREAD:
 	pthread_mutex_destroy(&prouter->lock);
 	pthread_mutex_destroy(&prouter->cond_mutex);
 	pthread_cond_destroy(&prouter->waken_cond);
-	while ((pnode = double_list_get_from_head(&prouter->datagram_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&prouter->datagram_list)) != nullptr) {
 		pdnode = (DATAGRAM_NODE*)pnode->pdata;
 		free(pdnode->data_bin.pb);
 		free(pdnode);

@@ -292,7 +292,7 @@ NEXT_WAKEUP:
 			break;
 		}
 		pthread_mutex_lock(&g_list_lock);
-		pnode = double_list_get_from_head(&g_wakeup_list);
+		pnode = double_list_pop_front(&g_wakeup_list);
 		pthread_mutex_unlock(&g_list_lock);
 		if (NULL == pnode) {
 			continue;
@@ -331,7 +331,7 @@ static void *scan_work_func(void *param)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_async_lock);
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr)
 			asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), FALSE);
 	}
 	double_list_free(&temp_list);

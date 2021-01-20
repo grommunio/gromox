@@ -279,12 +279,12 @@ static void ab_tree_unload_base(AB_BASE *pbase)
 {
 	SINGLE_LIST_NODE *pnode;
 	
-	while ((pnode = single_list_get_from_head(&pbase->list)) != NULL) {
+	while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
 		ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
 		free(pnode->pdata);
 	}
 	single_list_free(&pbase->list);
-	while ((pnode = single_list_get_from_head(&pbase->gal_list)) != NULL)
+	while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
 		ab_tree_put_snode(pnode);
 	single_list_free(&pbase->gal_list);
 	if (NULL != pbase->phash) {
@@ -900,11 +900,11 @@ static void *scan_work_func(void *param)
 			sleep(1);
 			continue;
 		}
-		while ((pnode = single_list_get_from_head(&pbase->list)) != NULL) {
+		while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
 			ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
 			free(pnode->pdata);
 		}
-		while ((pnode = single_list_get_from_head(&pbase->gal_list)) != NULL)
+		while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
 			ab_tree_put_snode(pnode);
 		if (NULL != pbase->phash) {
 			int_hash_free(pbase->phash);

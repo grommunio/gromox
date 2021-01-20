@@ -217,7 +217,7 @@ void store_object_free(STORE_OBJECT *pstore)
 	if (NULL != pstore->pgpinfo) {
 		property_groupinfo_free(pstore->pgpinfo);
 	}
-	while ((pnode = double_list_get_from_head(&pstore->group_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pstore->group_list)) != nullptr) {
 		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
 		free(pnode);
 	}

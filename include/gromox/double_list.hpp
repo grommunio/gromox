@@ -36,7 +36,7 @@ void double_list_append_after(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pbase_node,
 void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode);
 
 /* get head node and remove it from list */
-DOUBLE_LIST_NODE* double_list_get_from_head(DOUBLE_LIST *plist);
+extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_front(DOUBLE_LIST *);
 
 /* get tail node and remove it from list */
 extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_back(DOUBLE_LIST *);

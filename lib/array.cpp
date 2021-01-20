@@ -232,7 +232,7 @@ void array_clear(ARRAY* parray)
 		debug_info("[array]: NULL pointer found in array_clear");
 	}
 #endif
-	while ((pnode = single_list_get_from_head(&parray->mlist)) != NULL)
+	while ((pnode = single_list_pop_front(&parray->mlist)) != nullptr)
 		lib_buffer_put(parray->mbuf_pool, pnode);
 	parray->cur_size = 0;
 	if (NULL != parray->cache_ptrs) {

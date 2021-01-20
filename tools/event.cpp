@@ -395,7 +395,7 @@ int main(int argc, const char **argv)
 		
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
+		while ((pnode = double_list_pop_front(&g_acl_list)) != nullptr)
 			free(pnode->pdata);
 		double_list_free(&g_acl_list);
 
@@ -436,11 +436,11 @@ int main(int argc, const char **argv)
 	
 	lib_buffer_free(g_file_alloc);
 	fifo_allocator_free(g_fifo_alloc);
-	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
+	while ((pnode = double_list_pop_front(&g_acl_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&g_acl_list);
 
-	while ((pnode = double_list_get_from_head(&g_enqueue_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_enqueue_list)) != nullptr) {
 		penqueue = (ENQUEUE_NODE*)pnode->pdata;
 		close(penqueue->sockd);
 		free(penqueue);
@@ -448,7 +448,7 @@ int main(int argc, const char **argv)
 
 	double_list_free(&g_enqueue_list);
 
-	while ((pnode = double_list_get_from_head(&g_enqueue_list1)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_enqueue_list1)) != nullptr) {
 		penqueue= (ENQUEUE_NODE*)pnode->pdata;
 		close(penqueue->sockd);
 		free(penqueue);
@@ -456,7 +456,7 @@ int main(int argc, const char **argv)
 
 	double_list_free(&g_enqueue_list1);
 	
-	while ((pnode = double_list_get_from_head(&g_dequeue_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_dequeue_list)) != nullptr) {
 		pdequeue = (DEQUEUE_NODE*)pnode->pdata;
 		close(pdequeue->sockd);
 		free(pdequeue);
@@ -464,7 +464,7 @@ int main(int argc, const char **argv)
 
 	double_list_free(&g_dequeue_list);
 
-	while ((pnode = double_list_get_from_head(&g_dequeue_list1)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_dequeue_list1)) != nullptr) {
 		pdequeue= (DEQUEUE_NODE*)pnode->pdata;
 		close(pdequeue->sockd);
 		free(pdequeue);
@@ -508,7 +508,7 @@ static void* scan_work_func(void *param)
 		pthread_mutex_lock(&g_host_lock);
 		time(&cur_time);
 		ptail = double_list_get_tail(&g_host_list);
-		while ((pnode = double_list_get_from_head(&g_host_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&g_host_list)) != nullptr) {
 			phost = (HOST_NODE*)pnode->pdata;
 			if (0 == double_list_get_nodes_num(&phost->list) &&
 				cur_time - phost->last_time > HOST_INTERVAL) {
@@ -531,7 +531,7 @@ static void* scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_host_lock);
 		
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			phost = (HOST_NODE*)pnode->pdata;
 			double_list_free(&phost->list);
 			str_hash_free(phost->phash);
@@ -640,7 +640,7 @@ NEXT_LOOP:
 	pthread_mutex_unlock(&g_enqueue_cond_mutex);
 
 	pthread_mutex_lock(&g_enqueue_lock);
-	pnode = double_list_get_from_head(&g_enqueue_list1);
+	pnode = double_list_pop_front(&g_enqueue_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_enqueue_list, pnode);
 	}
@@ -848,7 +848,7 @@ NEXT_LOOP:
 					continue;
 				}
 				
-				pnode1 = double_list_get_from_head(&phost->list);
+				pnode1 = double_list_pop_front(&phost->list);
 				if (NULL != pnode1) {
 					pdequeue = (DEQUEUE_NODE*)pnode1->pdata;
 					mem_file_init(&temp_file, g_file_alloc);
@@ -893,7 +893,7 @@ NEXT_LOOP:
 	pthread_mutex_unlock(&g_dequeue_cond_mutex);
 
 	pthread_mutex_lock(&g_dequeue_lock);
-	pnode = double_list_get_from_head(&g_dequeue_list1);
+	pnode = double_list_pop_front(&g_dequeue_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_dequeue_list, pnode);
 	}

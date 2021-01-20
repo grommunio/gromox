@@ -234,7 +234,7 @@ MESSAGE* message_dequeue_get()
 	SINGLE_LIST_NODE *pnode;
 
 	pthread_mutex_lock(&g_used_mutex);
-	pnode = single_list_get_from_head(&g_used_list);
+	pnode = single_list_pop_front(&g_used_list);
 	pthread_mutex_unlock(&g_used_mutex);
 	if (NULL == pnode) {
 		return NULL;
@@ -344,7 +344,7 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 		pthread_mutex_unlock(&g_mess_mutex);
 	}
 	pthread_mutex_lock(&g_free_mutex);
-	pnode = single_list_get_from_head(&g_free_list);
+	pnode = single_list_pop_front(&g_free_list);
 	pthread_mutex_unlock(&g_free_mutex);
 	if (NULL == pnode) {
 		debug_info("[message_dequeue]: fatal error in "

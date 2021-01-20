@@ -2113,7 +2113,7 @@ static BOOL get_freebusy(const char *dir)
 				g_end_time, &tmp_list)) {
 				continue;	
 			}
-			while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
+			while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 				pevnode = (EVENT_NODE*)pnode->pdata;
 				if (NULL != pevnode->pexception &&
 					NULL != pevnode->pex_exception) {

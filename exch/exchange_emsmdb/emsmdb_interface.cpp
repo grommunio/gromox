@@ -341,7 +341,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 		}
 	}
 	plogmap = phandle->info.plogmap;
-	while ((pnode = double_list_get_from_head(&phandle->notify_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
 		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
 		free(pnode->pdata);
 		free(pnode);
@@ -1301,7 +1301,7 @@ static void* scan_work_func(void *pparam)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_lock);
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
 			guid_from_string(&cxh.guid, static_cast<char *>(pnode->pdata));
 			emsmdb_interface_remove_handle(&cxh);

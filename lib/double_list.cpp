@@ -230,12 +230,12 @@ void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode)
  *	  @return
  *		  the pointer to the poped node
  */
-DOUBLE_LIST_NODE* double_list_get_from_head(DOUBLE_LIST *plist)
+DOUBLE_LIST_NODE *double_list_pop_front(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE* pnode;
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[double_list]: double_list_get_from_head, param NULL");
+		debug_info("[double_list]: double_list_pop_front, param NULL");
 		return NULL;
 	}
 #endif

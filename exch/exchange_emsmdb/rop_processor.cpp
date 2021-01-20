@@ -420,7 +420,7 @@ static void *scan_work_func(void *param)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_hash_lock);
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			exmdb_client_ping_store(static_cast<char *>(pnode->pdata));
 			free(pnode->pdata);
 			free(pnode);
@@ -639,7 +639,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		if (NULL == pnotify_list) {
 			return ecRpcFailed;
 		}
-		pnode = double_list_get_from_head(pnotify_list);
+		pnode = double_list_pop_front(pnotify_list);
 		emsmdb_interface_put_notify_list();
 		if (NULL == pnode) {
 			break;
@@ -799,7 +799,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
 			if (result != ecSuccess)
 				break;
-			pnode1 = double_list_get_from_head(&response_list);
+			pnode1 = double_list_pop_front(&response_list);
 			if (NULL == pnode1) {
 				break;
 			}
@@ -824,7 +824,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
 			if (result != ecSuccess)
 				break;
-			pnode1 = double_list_get_from_head(&response_list);
+			pnode1 = double_list_pop_front(&response_list);
 			if (NULL == pnode1) {
 				break;
 			}
@@ -853,7 +853,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
 			if (result != ecSuccess)
 				break;
-			pnode1 = double_list_get_from_head(&response_list);
+			pnode1 = double_list_pop_front(&response_list);
 			if (NULL == pnode1) {
 				break;
 			}

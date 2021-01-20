@@ -70,7 +70,7 @@ static void vcard_free_param(VCARD_PARAM *pvparam)
 		free(pvparam);
 		return;
 	}
-	while ((pnode = double_list_get_from_head(pvparam->pparamval_list)) != NULL) {
+	while ((pnode = double_list_pop_front(pvparam->pparamval_list)) != nullptr) {
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -83,7 +83,7 @@ static void vcard_free_value(VCARD_VALUE *pvvalue)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pvvalue->subval_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pvvalue->subval_list)) != nullptr) {
 		if (NULL != pnode->pdata) {
 			free(pnode->pdata);
 		}
@@ -97,10 +97,10 @@ static void vcard_free_line(VCARD_LINE *pvline)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pvline->param_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pvline->param_list)) != nullptr)
 		vcard_free_param(static_cast<VCARD_PARAM *>(pnode->pdata));
 	double_list_free(&pvline->param_list);
-	while ((pnode = double_list_get_from_head(&pvline->value_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pvline->value_list)) != nullptr)
 		vcard_free_value(static_cast<VCARD_VALUE *>(pnode->pdata));
 	double_list_free(&pvline->value_list);
 	free(pvline);
@@ -110,7 +110,7 @@ void vcard_free(VCARD *pvcard)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
+	while ((pnode = double_list_pop_front(pvcard)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	double_list_free(pvcard);
 }
@@ -418,7 +418,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 	VCARD_VALUE *pvvalue;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
+	while ((pnode = double_list_pop_front(pvcard)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	b_begin = FALSE;
 	pline = in_buff;
@@ -482,7 +482,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 		}
 		
 	} while ((pline = pnext) != NULL);
-	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
+	while ((pnode = double_list_pop_front(pvcard)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	return FALSE;
 }

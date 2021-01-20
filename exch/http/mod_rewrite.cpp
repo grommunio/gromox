@@ -166,7 +166,7 @@ void mod_rewrite_stop(void)
 	REWRITE_NODE *prnode;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&g_rewite_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&g_rewite_list)) != nullptr) {
 		prnode = (REWRITE_NODE*)pnode->pdata;
 		regfree(&prnode->search_pattern);
 		free(prnode->replace_string);

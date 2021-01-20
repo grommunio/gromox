@@ -127,7 +127,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 		if (ret != 0) {
 			g_notify_stop = TRUE;
-			while ((pnode = double_list_get_from_head(&g_back_list)) != NULL)
+			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr)
 				free(pnode->pdata);
 			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
@@ -147,10 +147,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			g_notify_stop = TRUE;
 			pthread_join(g_scan_id, NULL);
 
-			while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
+			while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 				free(pnode->pdata);
 
-			while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
+			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 				pback = (BACK_CONN*)pnode->pdata;
 				write(pback->sockd, "QUIT\r\n", 6);
 				close(pback->sockd);
@@ -185,7 +185,7 @@ static void *scan_work_func(void *param)
 		pthread_mutex_lock(&g_back_lock);
 		time(&now_time);
 		ptail = double_list_get_tail(&g_back_list);
-		while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
 			if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
 				double_list_append_as_tail(&temp_list, &pback->node);
@@ -199,7 +199,7 @@ static void *scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_back_lock);
 
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
 			write(pback->sockd, "PING\r\n", 6);
 			tv_msec = SOCKET_TIMEOUT * 1000;
@@ -221,11 +221,11 @@ static void *scan_work_func(void *param)
 		}
 
 		pthread_mutex_lock(&g_back_lock);
-		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
+		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 			double_list_append_as_tail(&temp_list, pnode);
 		pthread_mutex_unlock(&g_back_lock);
 
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
+		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
 			pback->sockd = connect_event();
 			if (-1 != pback->sockd) {
@@ -269,7 +269,7 @@ static void broadcast_event(const char *event)
 
 	
 	pthread_mutex_lock(&g_back_lock);
-	pnode = double_list_get_from_head(&g_back_list);
+	pnode = double_list_pop_front(&g_back_list);
 	pthread_mutex_unlock(&g_back_lock);
 
 	if (NULL == pnode) {

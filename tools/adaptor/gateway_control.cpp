@@ -89,7 +89,7 @@ int gateway_control_stop()
 {
 	SINGLE_LIST_NODE *pnode;
 
-	while ((pnode = single_list_get_from_head(&g_console_list)) != NULL)
+	while ((pnode = single_list_pop_front(&g_console_list)) != nullptr)
 		free(pnode->pdata);
 	return 0;
 }

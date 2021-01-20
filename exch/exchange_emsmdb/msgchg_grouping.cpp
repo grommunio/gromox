@@ -60,7 +60,7 @@ static void msgchg_grouping_free_group_node(GROUP_NODE *pgp_node)
 	TAG_NODE *ptag_node;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pgp_node->tag_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pgp_node->tag_list)) != nullptr) {
 		ptag_node = (TAG_NODE*)pnode->pdata;
 		if (0 == ptag_node->propid) {
 			switch (ptag_node->ppropname->kind) {
@@ -95,7 +95,7 @@ static void msgchg_grouping_free_info_node(INFO_NODE *pinfo_node)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&pinfo_node->group_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pinfo_node->group_list)) != nullptr)
 		msgchg_grouping_free_group_node(static_cast<GROUP_NODE *>(pnode->pdata));
 	double_list_free(&pinfo_node->group_list);
 	free(pinfo_node);
@@ -491,7 +491,7 @@ int msgchg_grouping_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(&g_info_list)) != NULL)
+	while ((pnode = double_list_pop_front(&g_info_list)) != nullptr)
 		msgchg_grouping_free_info_node(static_cast<INFO_NODE *>(pnode->pdata));
 	return 0;
 }

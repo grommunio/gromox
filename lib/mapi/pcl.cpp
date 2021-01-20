@@ -64,7 +64,7 @@ void pcl_free(PCL *ppcl)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_get_from_head(ppcl)) != NULL)
+	while ((pnode = double_list_pop_front(ppcl)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(ppcl);
 	free(ppcl);

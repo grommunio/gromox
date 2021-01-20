@@ -575,7 +575,7 @@ static void rtf_free_collection(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode;
 	COLLECTION_NODE *pcollection;
 
-	while ((pnode = double_list_get_from_head(plist)) != NULL) {
+	while ((pnode = double_list_pop_front(plist)) != nullptr) {
 		pcollection = (COLLECTION_NODE*)pnode->pdata;
 		free(pcollection->text);
 		free(pcollection);
@@ -636,7 +636,7 @@ static void rtf_free_reader(RTF_READER *preader)
 	ATTRSTACK_NODE *pattrstack;
 	
 	int_hash_free(preader->pfont_hash);
-	while ((pnode = double_list_get_from_head(&preader->attr_stack_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&preader->attr_stack_list)) != nullptr) {
 		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
 		free(pattrstack);
 	}

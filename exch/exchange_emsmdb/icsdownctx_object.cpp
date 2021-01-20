@@ -1757,7 +1757,7 @@ static BOOL icsdownctx_object_get_buffer_internal(
 	}
 	partial_count = 0;
 	len1 = *plen - len;
-	while ((pnode = double_list_get_from_head(&pctx->flow_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr) {
 		pctx->progress_steps = pctx->next_progress_steps;
 		pflow = (ICS_FLOW_NODE*)pnode->pdata;
 		switch (pflow->func_id) {
@@ -1855,10 +1855,10 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 	DOUBLE_LIST_NODE *pnode;
 	
 	ftstream_producer_free(pctx->pstream);
-	while ((pnode = double_list_get_from_head(&pctx->flow_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->flow_list);
-	while ((pnode = double_list_get_from_head(&pctx->group_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pctx->group_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->group_list);
 	if (NULL != pctx->pprogtotal) {

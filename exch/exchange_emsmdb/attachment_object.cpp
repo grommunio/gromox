@@ -119,7 +119,7 @@ void attachment_object_free(ATTACHMENT_OBJECT *pattachment)
 			logon_object_get_dir(pattachment->pparent->plogon),
 			pattachment->instance_id);
 	}
-	while ((pnode = double_list_get_from_head(&pattachment->stream_list)) != NULL)
+	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr)
 		free(pnode);
 	double_list_free(&pattachment->stream_list);
 	free(pattachment);
@@ -233,7 +233,7 @@ BOOL attachment_object_flush_streams(ATTACHMENT_OBJECT *pattachment)
 	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
 	
-	while ((pnode = double_list_get_from_head(&pattachment->stream_list)) != NULL) {
+	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr) {
 		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
 		tmp_propval.proptag = stream_object_get_proptag(pstream);
 		tmp_propval.pvalue = stream_object_get_content(pstream);
