@@ -471,8 +471,6 @@ int main(int argc, const char **argv)
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: listener start OK\n");
 	}
 	auto cleanup_3 = make_scope_exit(listener_free);
 	auto cleanup_4 = make_scope_exit(listener_stop);
@@ -519,15 +517,12 @@ int main(int argc, const char **argv)
 	} else {
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
-		printf("[system]: run service OK\n");
 	}
 	auto cleanup_6 = make_scope_exit(service_stop);
 	
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run system service OK\n");
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
@@ -535,8 +530,6 @@ int main(int argc, const char **argv)
 	if (0 != files_allocator_run()) { 
 		printf("[system]: can not run file allocator\n"); 
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run file allocator OK\n");
 	}
 	auto cleanup_9 = make_scope_exit(files_allocator_free);
 	auto cleanup_10 = make_scope_exit(files_allocator_stop);
@@ -546,8 +539,6 @@ int main(int argc, const char **argv)
 	if (0 != blocks_allocator_run()) { 
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run blocks allocator OK\n");
 	}
 	auto cleanup_11 = make_scope_exit(blocks_allocator_free);
 	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
@@ -572,8 +563,6 @@ int main(int argc, const char **argv)
 	if (0 != smtp_parser_run()) { 
 		printf("[system]: failed to run smtp parser\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run smtp parser OK\n");
 	}
 	auto cleanup_15 = make_scope_exit(smtp_parser_free);
 	auto cleanup_16 = make_scope_exit(smtp_parser_stop);
@@ -587,8 +576,6 @@ int main(int argc, const char **argv)
 	if (0 != contexts_pool_run()) { 
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run contexts pool OK\n");
 	}
 	auto cleanup_17 = make_scope_exit(contexts_pool_free);
 	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
@@ -598,8 +585,6 @@ int main(int argc, const char **argv)
 	if (0 != flusher_run()) {
 		printf("[system]: failed to run flusher\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run flusher OK\n");
 	}
 	auto cleanup_19 = make_scope_exit(flusher_free);
 	auto cleanup_20 = make_scope_exit(flusher_stop);
@@ -609,8 +594,6 @@ int main(int argc, const char **argv)
 	if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run console server OK\n");
 	}
 	auto cleanup_21 = make_scope_exit(console_server_free);
 	auto cleanup_22 = make_scope_exit(console_server_stop);
@@ -620,8 +603,6 @@ int main(int argc, const char **argv)
 	if (0 != threads_pool_run()) {
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run threads pool OK\n");
 	}
 	auto cleanup_25 = make_scope_exit(threads_pool_free);
 	auto cleanup_26 = make_scope_exit(threads_pool_stop);

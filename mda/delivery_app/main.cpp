@@ -307,15 +307,12 @@ int main(int argc, const char **argv)
     } else {
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
-        printf("[system]: run service OK\n");
     }
 	auto cleanup_4 = make_scope_exit(service_stop);
 
     if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
-    } else {
-        printf("[system]: run system service OK\n");
     }
 	auto cleanup_6 = make_scope_exit(system_services_stop);
 
@@ -323,8 +320,6 @@ int main(int argc, const char **argv)
     if (0 != message_dequeue_run()) { 
 		printf("[system]: failed to run message dequeue\n");
 		return EXIT_FAILURE;
-    } else {
-        printf("[system]: run message dequeue OK\n");
     }
 	auto cleanup_7 = make_scope_exit(message_dequeue_free);
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
@@ -334,8 +329,6 @@ int main(int argc, const char **argv)
     if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");
 		return EXIT_FAILURE;
-    } else {
-        printf("[system]: run console server OK\n");
     }
 	auto cleanup_9 = make_scope_exit(console_server_free);
 	auto cleanup_10 = make_scope_exit(console_server_stop);
@@ -354,7 +347,6 @@ int main(int argc, const char **argv)
     } else {
 		printf("----------------------------- mpc plugins end"
 			"-----------------------------\n");
-        printf("[system]: run transporter OK\n");
     }
 	auto cleanup_11 = make_scope_exit(transporter_free);
 	auto cleanup_12 = make_scope_exit(transporter_stop);
