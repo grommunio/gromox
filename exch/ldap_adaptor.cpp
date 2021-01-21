@@ -208,7 +208,9 @@ static bool ldap_adaptor_load()
 
 	val = config_file_get_value(pfile, "ldap_host");
 	g_ldap_host = val != nullptr ? val : "";
-	printf("[ldap_adaptor]: hostlist is \"%s\"\n", g_ldap_host.c_str());
+	g_use_tls = parse_bool(config_file_get_value(pfile, "ldap_start_tls"));
+	printf("[ldap_adaptor]: hostlist is \"%s\"%s\n", g_ldap_host.c_str(),
+	       g_use_tls ? " (+STARTTLS)" : "");
 
 	val = config_file_get_value(pfile, "ldap_bind_user");
 	if (val != nullptr)

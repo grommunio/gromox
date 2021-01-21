@@ -40,6 +40,11 @@ Default: \fImail\fP
 .SS ldap_search_base
 .PP
 Default: (libldap default)
+.SS ldap_start_tls
+.PP
+Enable TLS on ldap:// connections.
+.PP
+Default: \fIoff\fP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)
