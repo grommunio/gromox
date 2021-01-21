@@ -419,6 +419,16 @@ static const char tbl_users_top[] =
 "  KEY `maildir` (`maildir`,`address_type`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_uprops_top[] =
+"CREATE TABLE `user_properties` ("
+"  `user_id` int(10) unsigned NOT NULL,"
+"  `proptag` int(10) unsigned NOT NULL,"
+"  `propval_bin` varbinary(4096) DEFAULT NULL,"
+"  `propval_str` varchar(4096) DEFAULT NULL,"
+"  PRIMARY KEY (`user_id`,`proptag`),"
+"  CONSTRAINT `user_properties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") DEFAULT CHARSET=utf8mb4";
+
 static const struct tbl_init tbl_init_top[] = {
 	{"admin_roles", tbl_admroles_41},
 	{"associations", tbl_assoc_top},
@@ -434,7 +444,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"specifieds", tbl_specifieds_top},
 	{"users", tbl_users_top},
 	{"aliases", tbl_alias_top},
-	{"user_properties", tbl_uprops_25},
+	{"user_properties", tbl_uprops_top},
 	{"admin_role_permission_relation", tbl_admroleperm_42},
 	{"admin_user_role_relation", tbl_admuserrole_43},
 	{nullptr},
@@ -537,6 +547,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{53, "ALTER TABLE `domains` DROP COLUMN `privilege_bits`"},
 	{54, "ALTER TABLE `users` DROP COLUMN `max_file`"},
 	{55, "ALTER TABLE `users` ADD COLUMN `externid` varbinary(64) DEFAULT NULL"},
+	{56, "ALTER TABLE user_properties DROP CONSTRAINT user_properties_ibfk_1"},
+	{57, "ALTER TABLE user_properties ADD CONSTRAINT user_properties_ibfk_1 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE"},
 	{0, nullptr},
 };
 
