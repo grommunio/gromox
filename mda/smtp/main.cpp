@@ -458,14 +458,12 @@ int main(int argc, const char **argv)
 		console_server_ip = "::1";
 		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
 	}
-	printf("[console_server]: console server ipaddr %s\n", console_server_ip);
- 
 	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
 		console_server_port = 5566; 
 		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
 	}
-	printf("[console_server]: console server is port %d\n",
-		console_server_port);
+	printf("[console_server]: console server is address [%s]:%d\n",
+	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	listener_init(listen_port, listen_ssl_port);
 																			
 	if (0 != listener_run()) {

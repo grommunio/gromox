@@ -61,7 +61,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		} else {
 			HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 		}
-		printf("[mysql_adaptor]: mysql host is %s\n", mysql_host);
 
 		str_value = config_file_get_value(pfile, "MYSQL_PORT");
 		if (NULL == str_value) {
@@ -74,7 +73,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 				config_file_set_value(pfile, "MYSQL_PORT", "3306");
 			}
 		}
-		printf("[mysql_adaptor]: mysql port is %d\n", mysql_port);
+		printf("[mysql_adaptor]: mysql address is [%s]:%d\n",
+		       *mysql_host == '\0' ? "*" : mysql_host, mysql_port);
 
 		str_value = config_file_get_value(pfile, "MYSQL_USERNAME");
 		if (NULL == str_value) {

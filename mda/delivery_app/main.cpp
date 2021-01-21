@@ -268,14 +268,12 @@ int main(int argc, const char **argv)
 		console_server_ip = "::1";
 		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
     }
-	printf("[console_server]: console server ipaddr %s\n", console_server_ip);
-
 	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
         console_server_port = 6677; 
 		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
     }
-    printf("[console_server]: console server port is %d\n",
-		console_server_port);
+	printf("[console_server]: console server address is [%s]:%d\n",
+	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	
 	if (*user_name != '\0') {
         puser_pass = getpwnam(user_name);

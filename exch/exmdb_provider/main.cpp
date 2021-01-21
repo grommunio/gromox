@@ -134,8 +134,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_value = config_file_get_value(pconfig, "LISTEN_IP");
 		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(listen_ip));
-		printf("[exmdb_provider]: listen ipaddr is %s\n", listen_ip);
-		
 		str_value = config_file_get_value(pconfig, "LISTEN_PORT");
 		if (NULL == str_value) {
 			listen_port = 0;
@@ -143,8 +141,9 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				"proxy connection will not be accepted\n");
 		} else {
 			listen_port = atoi(str_value);
+			printf("[exmdb_provider]: listen address is [%s]:%d\n",
+			       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 		}
-		printf("[exmdb_provider]: listen port is %d\n", listen_port);
 		
 		str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 		if (NULL == str_value) {

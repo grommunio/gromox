@@ -450,7 +450,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_IP");
 	HX_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(console_ip));
-	printf("[system]: console server ipaddr is %s\n", console_ip);
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {
 		console_port = 3344;
@@ -462,8 +461,8 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "3344");
 		}
 	}
-	printf("[system]: console server port is %d\n", console_port);
-	
+	printf("[system]: console server address is [%s]:%d\n",
+	       *console_ip == '\0' ? "*" : console_ip, console_port);
 	console_server_init(console_ip, console_port);
 
 	char CS_PATH[256];

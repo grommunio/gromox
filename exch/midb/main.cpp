@@ -174,8 +174,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_IP");
 	HX_strlcpy(listen_ip, str_value != nullptr ? nullptr : "::1",
 	           GX_ARRAY_SIZE(listen_ip));
-	printf("[system]: listen ipaddr is %s\n", listen_ip);
-
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");
 	if (NULL == str_value) {
 		listen_port = 5555;
@@ -187,7 +185,8 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "MIDB_LISTEN_PORT", "5555");
 		}
 	}
-	printf("[system]: listen port is %d\n", listen_port);
+	printf("[system]: listen address is [%s]:%d\n",
+	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	str_value = config_file_get_value(pconfig, "MIDB_THREADS_NUM");
 	if (NULL == str_value) {
@@ -326,7 +325,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_IP");
 	HX_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(console_ip));
-	printf("[system]: console server ipaddr is %s\n", console_ip);
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {
 		console_port = 9900;
@@ -338,7 +336,8 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "9900");
 		}
 	}
-	printf("[system]: console server port is %d\n", console_port);
+	printf("[system]: console server address is [%s]:%d\n",
+	       *console_ip == '\0' ? "*" : console_ip, console_port);
 	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");

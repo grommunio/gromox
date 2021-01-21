@@ -91,8 +91,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "EVENT_HOST");
 		HX_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(g_event_ip));
-		printf("[event_proxy]: event host is %s\n", g_event_ip);
-
 		str_value = config_file_get_value(pfile, "EVENT_PORT");
 		if (NULL == str_value) {
 			g_event_port = 33333;
@@ -104,7 +102,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "EVENT_PORT", "33333");
 			}
 		}
-		printf("[event_proxy]: event port is %d\n", g_event_port);
+		printf("[event_proxy]: event address is [%s]:%d\n",
+		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
 		config_file_free(pfile);
 
 		g_notify_stop = FALSE;

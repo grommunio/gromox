@@ -101,8 +101,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "TIMER_HOST");
 		HX_strlcpy(g_timer_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(g_timer_ip));
-		printf("[timer_agent]: timer host is %s\n", g_timer_ip);
-
 		str_value = config_file_get_value(pfile, "TIMER_PORT");
 		if (NULL == str_value) {
 			g_timer_port = 6666;
@@ -114,7 +112,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "TIMER_PORT", "6666");
 			}
 		}
-		printf("[timer_agent]: timer port is %d\n", g_timer_port);
+		printf("[timer_agent]: timer address is [%s]:%d\n",
+		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 		config_file_free(pfile);
 
 		for (i=0; i<conn_num; i++) {

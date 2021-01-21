@@ -98,7 +98,6 @@ int main(int argc, const char **argv)
 	} else {
 		HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
-	printf("[system]: mysql host is %s\n", mysql_host);
 
 	str_value = config_file_get_value(pconfig, "MYSQL_PORT");
 	if (NULL == str_value) {
@@ -111,7 +110,7 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "MYSQL_PORT", "3306");
 		}
 	}
-	printf("[system]: mysql port is %d\n", mysql_port);
+	printf("[system]: mysql host is [%s]:%d\n", mysql_host, mysql_port);
 
 	str_value = config_file_get_value(pconfig, "MYSQL_USERNAME");
 	if (NULL == str_value) {

@@ -147,10 +147,8 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_IP");
 	if (NULL == str_value) {
 		HX_strlcpy(listen_ip, "::1", GX_ARRAY_SIZE(listen_ip));
-		printf("[system]: listen ipaddr is ::1\n");
 	} else {
 		HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
-		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	}
 
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_PORT");
@@ -164,7 +162,8 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "TIMER_LISTEN_PORT", "6666");
 		}
 	}
-	printf("[system]: listen port is %d\n", listen_port);
+	printf("[system]: listen address is [%s]:%d\n",
+	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	str_value = config_file_get_value(pconfig, "TIMER_THREADS_NUM");
 	if (NULL == str_value) {

@@ -171,10 +171,8 @@ int main(int argc, const char **argv)
 		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(listen_ip));
 		g_list_path[0] ='\0';
-		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	} else {
 		listen_ip[0] = '\0';
-		printf("[system]: listen ipaddr is ANY\n");
 	}
 
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_PORT");
@@ -188,8 +186,8 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "EVENT_LISTEN_PORT", "33333");
 		}
 	}
-	printf("[system]: listen port is %d\n", listen_port);
-	
+	printf("[system]: listen address is [%s]:%d\n",
+	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	str_value = config_file_get_value(pconfig, "EVENT_THREADS_NUM");
 	if (NULL == str_value) {
