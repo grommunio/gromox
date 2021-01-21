@@ -560,10 +560,12 @@ int dbop_mysql_recentversion()
 int dbop_mysql_upgrade(MYSQL *conn)
 {
 	auto current = dbop_mysql_schemaversion(conn);
-	printf("Current schema n%u\n", current);
+	printf("Current schema n%d\n", current);
+	if (current < 0)
+		return EXIT_FAILURE;
 
 	auto *entry = tbl_upgrade_list;
-	while (entry->v <= current && entry->v != 0)
+	while (entry->v <= static_cast<unsigned int>(current) && entry->v != 0)
 		++entry;
 
 	for (; entry->v != 0; ++entry) {
