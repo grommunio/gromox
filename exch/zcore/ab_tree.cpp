@@ -1598,6 +1598,21 @@ static int ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 		memcpy(bv->pv, it->second.data(), bv->cb);
 		return ecSuccess;
 	}
+	case PT_MV_UNICODE: {
+		*prop = common_util_alloc(sizeof(STRING_ARRAY));
+		if (*prop == nullptr)
+			return ecMAPIOOM;
+		auto sa = static_cast<STRING_ARRAY *>(*prop);
+		sa->count = 1;
+		sa->ppstr = static_cast<char **>(common_util_alloc(sizeof(char *)));
+		if (sa->ppstr == nullptr)
+			return ecMAPIOOM;
+		sa->ppstr[0] = static_cast<char *>(common_util_alloc(it->second.size() + 1));
+		if (sa->ppstr[0] == nullptr)
+			return ecMAPIOOM;
+		strcpy(sa->ppstr[0], it->second.c_str());
+		return ecSuccess;
+	}
 	}
 	return ecNotFound;
 }
