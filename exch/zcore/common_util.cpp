@@ -93,17 +93,15 @@ BOOL common_util_verify_columns_and_sorts(
 	
 	proptag = 0;
 	for (i=0; i<psort_criteria->count; i++) {
-		if (0 == (psort_criteria->psort[i].type & 0x2000)) {
+		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;
-		}
-		if (0 == (psort_criteria->psort[i].type & 0x1000)) {
+		if (!(psort_criteria->psort[i].type & MV_FLAG))
 			return FALSE;
-		}
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
 	for (i=0; i<pcolumns->count; i++) {
-		if (pcolumns->pproptag[i] & 0x2000) {
+		if (pcolumns->pproptag[i] & MV_INSTANCE) {
 			if (proptag != pcolumns->pproptag[i]) {
 				return FALSE;
 			}

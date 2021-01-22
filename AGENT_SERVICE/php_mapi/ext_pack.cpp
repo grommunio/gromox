@@ -781,9 +781,8 @@ zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r)
 zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 {
 	/* convert multi-value instance into single value */
-	if (0x3000 == (type & 0x3000)) {
-		type &= ~0x3000;
-	}
+	if ((type & MVI_FLAG) == MVI_FLAG)
+		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_SHORT:
 		*ppval = emalloc(sizeof(uint16_t));
@@ -1916,9 +1915,8 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
     const void *pval)
 {
 	/* convert multi-value instance into single value */
-	if (0x3000 == (type & 0x3000)) {
-		type &= ~0x3000;
-	}
+	if ((type & MVI_FLAG) == MVI_FLAG)
+		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_SHORT:
 		return ext_pack_push_uint16(pctx, *(uint16_t*)pval);
@@ -2101,9 +2099,9 @@ zend_bool ext_pack_push_tarray_set(PUSH_CTX *pctx, const TARRAY_SET *r)
 
 zend_bool ext_pack_push_sort_order(PUSH_CTX *pctx, const SORT_ORDER *r)
 {
-	if (r->type & 0x1000 && 0 == (r->type & 0x2000)) {
+	if ((r->type & MVI_FLAG) == MV_FLAG)
+		/* MV_FLAG set without MV_INSTANCE */
 		return 0;
-	}
 	if (!ext_pack_push_uint16(pctx, r->type)) {
 		return 0;
 	}

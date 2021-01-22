@@ -45,6 +45,12 @@ enum {
 };
 
 enum {
+	MV_FLAG = 0x1000,
+	MV_INSTANCE = 0x2000,
+	MVI_FLAG = MV_FLAG | MV_INSTANCE,
+};
+
+enum {
 	PR_BODY_A = PROP_TAG(PT_STRING8, 0x1000),
 	PR_BODY_W = PROP_TAG(PT_UNICODE, 0x1000),
 	PR_BODY = PR_BODY_W, /* pidTagBody */

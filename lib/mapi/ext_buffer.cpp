@@ -1151,9 +1151,8 @@ int ext_buffer_pull_rule_actions(EXT_PULL *pext, RULE_ACTIONS *r)
 int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 {
 	/* convert multi-value instance into single value */
-	if (0x3000 == (type & 0x3000)) {
-		type &= ~0x3000;
-	}
+	if ((type & MVI_FLAG) == MVI_FLAG)
+		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_UNSPECIFIED:
 		*ppval = pext->alloc(sizeof(TYPED_PROPVAL));
@@ -1969,9 +1968,9 @@ int ext_buffer_pull_sort_order(EXT_PULL *pext, SORT_ORDER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (r->type & 0x1000 && 0 == (r->type & 0x2000)) {
+	if ((r->type & MVI_FLAG) == MV_FLAG)
+		/* MV_FLAG set without MV_INSTANCE */
 		return EXT_ERR_FORMAT;
-	}
 	status = ext_buffer_pull_uint16(pext, &r->propid);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -4116,9 +4115,8 @@ int ext_buffer_push_rule_actions(EXT_PUSH *pext, const RULE_ACTIONS *r)
 int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 {
 	/* convert multi-value instance into single value */
-	if (0x3000 == (type & 0x3000)) {
-		type &= ~0x3000;
-	}
+	if ((type & MVI_FLAG) == MVI_FLAG)
+		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_UNSPECIFIED:
 		return ext_buffer_push_typed_propval(pext, static_cast<const TYPED_PROPVAL *>(pval));
@@ -4551,9 +4549,9 @@ int ext_buffer_push_sort_order(EXT_PUSH *pext, const SORT_ORDER *r)
 {
 	int status;
 	
-	if (r->type & 0x1000 && 0 == (r->type & 0x2000)) {
+	if ((r->type & MVI_FLAG) == MV_FLAG)
+		/* MV_FLAG set without MV_INSTANCE */
 		return EXT_ERR_FORMAT;
-	}
 	status = ext_buffer_push_uint16(pext, r->type);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;

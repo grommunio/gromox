@@ -1361,11 +1361,9 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt_insert, 6, 0);
 		sqlite3_bind_int64(pstmt_insert, 7, 0);
 		sqlite3_bind_int64(pstmt_insert, 8, 0);
-		if (0x3000 == (psorts->psort[i].type & 0x3000)) {
-			type = psorts->psort[i].type & (~0x3000);
-		} else {
-			type = psorts->psort[i].type;
-		}
+		type = psorts->psort[i].type;
+		if ((type & MVI_FLAG) == MVI_FLAG)
+			type &= ~MVI_FLAG;
 		if (NULL == ppropvals[i].pvalue) {
 			sqlite3_bind_null(pstmt_insert, 9);
 		} else {
@@ -1867,12 +1865,11 @@ static void db_engine_notify_content_table_add_row(
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
 					multi_index = i;
-					if (FALSE == common_util_get_property(
-						MESSAGE_PROPERTIES_TABLE, message_id, ptable->cpid,
-						pdb->psqlite, propvals[i].proptag & (~0x2000),
-						&propvals[i].pvalue)) {
+					if (!common_util_get_property(
+					    MESSAGE_PROPERTIES_TABLE, message_id, ptable->cpid,
+					    pdb->psqlite, propvals[i].proptag & ~MV_INSTANCE,
+					    &propvals[i].pvalue))
 						goto ADD_CONTENT_ROW_FAIL;
-					}
 				} else {
 					if (FALSE == common_util_get_property(
 						MESSAGE_PROPERTIES_TABLE, message_id,
@@ -1890,8 +1887,7 @@ static void db_engine_notify_content_table_add_row(
 				if (NULL == pmultival) {
 					multi_num = 1;
 				} else {
-					type = ptable->psorts->psort[
-						multi_index].type & (~0x2000);
+					type = ptable->psorts->psort[multi_index].type & ~MV_INSTANCE;
 					switch (type) {
 					case PT_MV_SHORT:
 						multi_num = ((SHORT_ARRAY*)pmultival)->count;
@@ -1988,8 +1984,7 @@ static void db_engine_notify_content_table_add_row(
 			for (j=0; j<multi_num; j++) {
 				if (NULL != pmultival) {
 					inst_num = j + 1;
-					type = ptable->psorts->psort[
-						multi_index].type & (~0x2000);
+					type = ptable->psorts->psort[multi_index].type & ~MV_INSTANCE;
 					switch (type) {
 					case PT_MV_SHORT:
 						propvals[multi_index].pvalue =
@@ -2025,11 +2020,9 @@ static void db_engine_notify_content_table_add_row(
 				parent_id = 0;
 				b_break = FALSE;
 				for (i=0; i<ptable->psorts->ccategories; i++) {
-					if (0x3000 == (ptable->psorts->psort[i].type & 0x3000)) {
-						type = ptable->psorts->psort[i].type & (~0x3000);
-					} else {
-						type = ptable->psorts->psort[i].type;
-					}
+					type = ptable->psorts->psort[i].type;
+					if ((type & MVI_FLAG) == MVI_FLAG)
+						type &= ~MVI_FLAG;
 					sqlite3_reset(pstmt);
 					sqlite3_bind_int64(pstmt, 1, (-1)*row_id1);
 					while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2137,8 +2130,7 @@ MATCH_SUB_HEADER:
 					type = 0;
 					pvalue = NULL;
 				} else {
-					type = ptable->psorts->psort[
-						multi_index].type & (~0x3000);
+					type = ptable->psorts->psort[multi_index].type & ~MVI_FLAG;
 					pvalue = propvals[multi_index].pvalue;
 				}
 				if (FALSE == db_engine_insert_message(
@@ -4257,14 +4249,11 @@ static void db_engine_notify_content_table_modify_row(
 		} else {
 			/* check if the multiple instance value is changed */ 
 			if (0 != ptable->instance_tag) {
-				type = PROP_TYPE(ptable->instance_tag) & ~0x3000;
-				if (FALSE == common_util_get_property(
-					MESSAGE_PROPERTIES_TABLE, message_id,
-					ptable->cpid, pdb->psqlite,
-					ptable->instance_tag & (~0x2000),
-					&pmultival)) {
+				type = PROP_TYPE(ptable->instance_tag) & ~MVI_FLAG;
+				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				    message_id, ptable->cpid, pdb->psqlite,
+				    ptable->instance_tag & ~MV_INSTANCE, &pmultival))
 					continue;
-				}
 				if (NULL != pmultival) {
 					switch (type) {
 					case PT_SHORT:

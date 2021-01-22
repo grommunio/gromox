@@ -199,9 +199,8 @@ static BOOL rpc_ext_pull_propval(
 	EXT_PULL *pext, uint16_t type, void **ppval)
 {
 	/* convert multi-value instance into single value */
-	if (0x3000 == (type & 0x3000)) {
-		type &= ~0x3000;
-	}
+	if ((type & MVI_FLAG) == MVI_FLAG)
+		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_SHORT:
 		*ppval = pext->alloc(sizeof(uint16_t));
@@ -696,9 +695,8 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 	uint16_t type, const void *pval)
 {
 	/* convert multi-value instance into single value */
-	if (0x3000 == (type & 0x3000)) {
-		type &= ~0x3000;
-	}
+	if ((type & MVI_FLAG) == MVI_FLAG)
+		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_SHORT:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint16(

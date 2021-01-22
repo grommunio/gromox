@@ -478,7 +478,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 	if (depth == psorts->ccategories) {
 		multi_index = -1;
 		for (i=0; i<psorts->ccategories; i++) {
-			if (0x3000 == (psorts->psort[i].type & 0x3000)) {
+			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
 				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 				multi_index = i;
 				break;
@@ -532,11 +532,9 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
 			pnode=double_list_get_after(pcondition_list, pnode),i++) {
 			if (NULL != ((CONDITION_NODE*)pnode->pdata)->pvalue) {
-				if (0x3000 == (psorts->psort[i].type & 0x3000)) {
-					type = psorts->psort[i].type & (~0x3000);
-				} else {
-					type = psorts->psort[i].type;
-				}
+				type = psorts->psort[i].type;
+				if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG)
+					type &= ~MVI_FLAG;
 				if (FALSE == common_util_bind_sqlite_statement(
 					pstmt, bind_index, type,
 					((CONDITION_NODE*)pnode->pdata)->pvalue)) {
@@ -569,7 +567,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 			if (-1 != multi_index) {
 				sqlite3_bind_int64(pstmt_insert, 7,
 					sqlite3_column_int64(pstmt, 2));
-				type = psorts->psort[multi_index].type & (~0x3000);
+				type = psorts->psort[multi_index].type & ~MVI_FLAG;
 				pvalue = common_util_column_sqlite_statement(pstmt, 3, type);
 				if (NULL == pvalue) {
 					sqlite3_bind_null(pstmt_insert, 8);
@@ -638,11 +636,9 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 	for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
 		pnode=double_list_get_after(pcondition_list, pnode),i++) {
 		if (NULL != ((CONDITION_NODE*)pnode->pdata)->pvalue) {
-			if (0x3000 == (psorts->psort[i].type & 0x3000)) {
-				type = psorts->psort[i].type & (~0x3000);
-			} else {
-				type = psorts->psort[i].type;
-			}
+			type = psorts->psort[i].type;
+			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG)
+				type &= ~MVI_FLAG;
 			if (FALSE == common_util_bind_sqlite_statement(
 				pstmt, bind_index, type,
 				((CONDITION_NODE*)pnode->pdata)->pvalue)) {
@@ -670,11 +666,9 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt_insert, 6,
 			sqlite3_column_int64(pstmt, 1));
 		sqlite3_bind_int64(pstmt_insert, 7, 0);
-		if (0x3000 == (psorts->psort[depth].type & 0x3000)) {
-			type = psorts->psort[depth].type & (~0x3000);
-		} else {
-			type = psorts->psort[depth].type;
-		}
+		type = psorts->psort[depth].type;
+		if ((type & MVI_FLAG) == MVI_FLAG)
+			type &= ~MVI_FLAG;
 		if (TRUE == b_extremum && NULL != 
 			(pvalue = common_util_column_sqlite_statement(
 			pstmt, 2, psorts->psort[depth + 1].type))) {
@@ -917,12 +911,11 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				}
 			}
 			tag_count ++;
-			if (0x3000 == (psorts->psort[i].type & 0x3000)) {
+			type = psorts->psort[i].type;
+			if ((type & MVI_FLAG) == MVI_FLAG) {
+				type &= ~MVI_FLAG;
 				ptnode->instance_tag = tmp_proptag;
 				multi_index = i + 2;
-				type = psorts->psort[i].type & (~0x3000);
-			} else {
-				type = psorts->psort[i].type;
 			}
 			switch (type) {
 			case PT_STRING8:
@@ -1185,12 +1178,11 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			/* inssert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
 				type = PROP_TYPE(ptnode->instance_tag);
-				type &= ~0x2000;
-				if (FALSE == common_util_get_property(
-					MESSAGE_PROPERTIES_TABLE, mid_val, cpid, pdb->psqlite,
-					ptnode->instance_tag & (~0x2000), &pvalue)) {
+				type &= ~MV_INSTANCE;
+				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				    mid_val, cpid, pdb->psqlite,
+				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
 					goto LOAD_CONTENT_FAIL;
-				}
 				if (NULL == pvalue) {
 BIND_NULL_INSTANCE:
 					sqlite3_bind_null(pstmt1, multi_index);
@@ -2139,7 +2131,7 @@ static BOOL table_column_content_tmptbl(
 	if (CONTENT_ROW_MESSAGE == row_type) {
 		if (0 != instance_tag && instance_tag == proptag) {
 			*ppvalue = common_util_column_sqlite_statement(pstmt,
-			           11, PROP_TYPE(instance_tag) & ~0x3000);
+			           11, PROP_TYPE(instance_tag) & ~MVI_FLAG);
 			return TRUE;
 		}
 		return FALSE;
@@ -2177,13 +2169,12 @@ static BOOL table_column_content_tmptbl(
 	if (SQLITE_ROW != sqlite3_step(pstmt2)) {
 		return FALSE;
 	}
-	if (0x3000 == (proptag & 0x3000)) {
+	if ((proptag & MVI_FLAG) == MVI_FLAG)
 		*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
-		           PROP_TYPE(proptag) & ~0x3000);
-	} else {
+		           PROP_TYPE(proptag) & ~MVI_FLAG);
+	else
 		*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
 		           PROP_TYPE(proptag));
-	}
 	sqlite3_reset(pstmt2);
 	return TRUE;
 }
@@ -4450,11 +4441,9 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (i=0; i<ptnode->psorts->ccategories; i++) {
 		tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
-		if (ptnode->instance_tag == tmp_proptag) {
-			type = ptnode->psorts->psort[i].type & (~0x3000);
-		} else {
-			type = ptnode->psorts->psort[i].type;
-		}
+		type = ptnode->psorts->psort[i].type;
+		if (ptnode->instance_tag == tmp_proptag)
+			type &= ~MVI_FLAG;
 		switch (type) {
 		case PT_STRING8:
 		case PT_UNICODE:
@@ -4590,11 +4579,9 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		i = depth;
 		while (TRUE) {
 			sqlite3_bind_int64(pstmt3, 1, row_id);
-			if (0x3000 == (ptnode->psorts->psort[i].type & 0x3000)) {
-				type = ptnode->psorts->psort[i].type & (~0x3000);
-			} else {
-				type = ptnode->psorts->psort[i].type;
-			}
+			type = ptnode->psorts->psort[i].type;
+			if ((type & MVI_FLAG) == MVI_FLAG)
+				type &= ~MVI_FLAG;
 			if (SQLITE_ROW != sqlite3_step(pstmt3)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -4885,11 +4872,9 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		depth = sqlite3_column_int64(pstmt, 0);
 		row_id = 0;
 		for (i=0; i<=depth; i++) {
-			if (0x3000 == (ptnode->psorts->psort[i].type & 0x3000)) {
-				type = ptnode->psorts->psort[i].type& (~0x3000);
-			} else {
-				type = ptnode->psorts->psort[i].type;
-			}
+			type = ptnode->psorts->psort[i].type;
+			if ((type & MVI_FLAG) == MVI_FLAG)
+				type &= ~MVI_FLAG;
 			pvalue = common_util_column_sqlite_statement(pstmt, i + 1, type);
 			if (NULL == pvalue) {
 				sqlite3_bind_int64(pstmt1, 1, row_id);

@@ -4089,14 +4089,14 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 			return ecInvalidParam;
 		}
 		type = psortset->psort[i].type;
-		if (type & 0x1000) {
+		if (type & MV_FLAG) {
 			/* we do not support multivalue property
 				without multivalue instances */
-			if (0 == (type & 0x2000)) {
+			if (!(type & MV_INSTANCE)) {
 				zarafa_server_put_user_info(pinfo);
 				return ecNotSupported;
 			}
-			type &= ~0x2000;
+			type &= ~MV_INSTANCE;
 			/* MUST NOT contain more than one multivalue property! */
 			if (TRUE == b_multi_inst) {
 				zarafa_server_put_user_info(pinfo);

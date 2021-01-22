@@ -21,17 +21,15 @@ static BOOL oxctable_verify_columns_and_sorts(
 	
 	proptag = 0;
 	for (i=0; i<psort_criteria->count; i++) {
-		if (0 == (psort_criteria->psort[i].type & 0x2000)) {
+		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;
-		}
-		if (0 == (psort_criteria->psort[i].type & 0x1000)) {
+		if (!(psort_criteria->psort[i].type & MV_FLAG))
 			return FALSE;
-		}
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
 	for (i=0; i<pcolumns->count; i++) {
-		if (pcolumns->pproptag[i] & 0x2000) {
+		if (pcolumns->pproptag[i] & MV_INSTANCE) {
 			if (proptag != pcolumns->pproptag[i]) {
 				return FALSE;
 			}
@@ -62,14 +60,12 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 	}
 	for (i=0; i<pproptags->count; i++) {
 		type = PROP_TYPE(pproptags->pproptag[i]);
-		if (type & 0x1000) {
-			if (type & 0x2000) {
+		if ((type & MVI_FLAG) == MVI_FLAG) {
 				if (ropGetContentsTable !=
 					table_object_get_rop_id(ptable)) {
 					return ecNotSupported;
 				}
-				type &= (~0x2000);
-			}
+				type &= ~MV_INSTANCE;
 		}
 		switch (type) {
 		case PT_SHORT:
@@ -178,13 +174,12 @@ uint32_t rop_sorttable(uint8_t table_flags,
 			return ecInvalidParam;
 		}
 		type = psort_criteria->psort[i].type;
-		if (type & 0x1000) {
+		if (type & MV_FLAG) {
 			/* we do not support multivalue property
 				without multivalue instances */
-			if (0 == (type & 0x2000)) {
+			if (!(type & MV_INSTANCE))
 				return ecNotSupported;
-			}
-			type &= ~0x2000;
+			type &= ~MV_INSTANCE;
 			/* MUST NOT contain more than one multivalue property! */
 			if (TRUE == b_multi_inst) {
 				return ecInvalidParam;
