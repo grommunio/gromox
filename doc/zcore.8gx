@@ -196,6 +196,10 @@ Default: \fI4096\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI100\fP
+.SH Notes
+.PP
+Behavior for the address book generally mirrors exchange_nsp(4gx), so see that
+manpage for additional notes.
 .SH See also
 .PP
 \fBgromox\fP(7)
