@@ -1643,6 +1643,19 @@ int ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 		memcpy(prop->value.bin.pv, it->second.data(), prop->value.bin.cb);
 		return ecSuccess;
 	}
+	case PT_MV_UNICODE: {
+		auto &x = prop->value.string_array;
+		x.cvalues = 1;
+		x.ppstr = static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(char *)));
+		if (x.ppstr == nullptr)
+			return ecMAPIOOM;
+		auto tg = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, it->second.size() + 1));
+		if (tg == nullptr)
+			return ecMAPIOOM;
+		strcpy(tg, it->second.c_str());
+		x.ppstr[0] = tg;
+		return ecSuccess;
+	}
 	}
 	return ecNotFound;
 }
