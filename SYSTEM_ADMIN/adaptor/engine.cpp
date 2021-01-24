@@ -18,17 +18,15 @@
 
 static BOOL g_notify_stop;
 static pthread_t g_thread_id1;
-static char g_mount_path[256];
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
 static char g_unchkusr_path[256];
 
 static void* thread_work_func1(void *param);
 
-void engine_init(const char *mount_path, const char *domainlist_path,
-	const char *aliasaddress_path, const char *unchkusr_path)
+void engine_init(const char *domainlist_path,
+    const char *aliasaddress_path, const char *unchkusr_path)
 {
-	HX_strlcpy(g_mount_path, mount_path, GX_ARRAY_SIZE(g_mount_path));
 	HX_strlcpy(g_domainlist_path, domainlist_path, GX_ARRAY_SIZE(g_domainlist_path));
 	HX_strlcpy(g_aliasaddress_path, aliasaddress_path, GX_ARRAY_SIZE(g_aliasaddress_path));
 	HX_strlcpy(g_unchkusr_path, unchkusr_path, GX_ARRAY_SIZE(g_unchkusr_path));
@@ -105,10 +103,6 @@ static void* thread_work_func1(void *param)
 
 		if (0 != file_operation_compare(temp_path, g_domainlist_path)) {
 			rename(temp_path, g_domainlist_path);
-			file_operation_broadcast(g_domainlist_path,
-				"data/smtp/domain_list.txt");
-			file_operation_broadcast(g_domainlist_path,
-				"data/delivery/domain_list.txt");
 			gateway_control_notify("libmtasvc_domain_list.so reload",
 				NOTIFY_SMTP|NOTIFY_DELIVERY);
 		}
@@ -140,8 +134,6 @@ static void* thread_work_func1(void *param)
 
 		if (0 != file_operation_compare(temp_path, g_aliasaddress_path)) {
 			rename(temp_path, g_aliasaddress_path);
-			file_operation_broadcast(g_aliasaddress_path,
-				"data/delivery/alias_addresses.txt");
 			gateway_control_notify("libmtahook_alias_translator.so reload addresses",
 				NOTIFY_DELIVERY);
 		}

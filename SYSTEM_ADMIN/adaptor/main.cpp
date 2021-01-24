@@ -36,7 +36,6 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 {
 	char *str_value;
-	char mount_path[256];
 	char log_path[256];
 	char state_dir[256], domainlist_path[256];
 	char aliasaddress_path[256];
@@ -82,15 +81,6 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: log path is %s\n", log_path);
 
-	str_value = config_file_get_value(pconfig, "GATEWAY_MOUNT_PATH");
-	if (NULL == str_value) {
-		strcpy(mount_path, PKGSTATEGATEWAYDIR);
-		config_file_set_value(pconfig, "GATEWAY_MOUNT_PATH", mount_path);
-	} else {
-		strcpy(mount_path, str_value);
-	}
-	printf("[system]: gateway mount path is %s\n", mount_path);
-	
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
@@ -141,15 +131,12 @@ int main(int argc, const char **argv)
 		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
 	printf("[system]: mysql database name is %s\n", db_name);
-
-	file_operation_init(mount_path);
-
 	system_log_init(log_path);
 	
 	gateway_control_init(console_path);
 	
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
-	engine_init(mount_path, domainlist_path, aliasaddress_path, unchkusr_path);
+	engine_init(domainlist_path, aliasaddress_path, unchkusr_path);
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {

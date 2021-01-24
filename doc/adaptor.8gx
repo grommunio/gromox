@@ -31,9 +31,6 @@ used by mysql_adaptor(4gx).
 .SS collector_mailbox
 .PP
 Default: (unset)
-.SS gateway_mount_path
-.PP
-Default: \fI/var/lib/gromox/gateway\fP
 .SS limit_type
 .PP
 Default: (unset)

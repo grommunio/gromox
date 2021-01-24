@@ -12,13 +12,6 @@
 #include <cstdlib>
 #include <dirent.h>
 
-static char g_gateway_path[256];
-
-void file_operation_init(const char *gateway_path)
-{
-	HX_strlcpy(g_gateway_path, gateway_path, GX_ARRAY_SIZE(g_gateway_path));
-}
-
 int file_operation_compare(const char *file1, const char *file2)
 {
 	int fd1, fd2;
@@ -62,58 +55,4 @@ int file_operation_compare(const char *file1, const char *file2)
 		free(ptr);
 		return FILE_COMPARE_DIFFERENT;
 	}
-}
-
-void file_operation_broadcast(const char *src_file, const char *dst_file)
-{
-	int fd;
-	DIR *dirp;
-	char temp_path[256];
-	struct stat node_stat;
-	struct dirent *direntp;
-
-	if (0 != stat(src_file, &node_stat)) {
-		return;
-	}
-	auto pbuff = static_cast<char *>(malloc(node_stat.st_size));
-	if (NULL == pbuff) {
-		return;
-	}
-	fd = open(src_file, O_RDONLY);
-	if (-1 == fd) {
-		free(pbuff);
-		return;
-	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		free(pbuff);
-		close(fd);
-		return;
-	}
-	close(fd);
-
-	dirp = opendir(g_gateway_path);
-	if (NULL == dirp){
-		free(pbuff);
-		return;
-	}
-	/*
-	 * enumerate the sub-directory of source director each
-	 * sub-directory represents one MTA
-	 */
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..")) {
-			continue;
-		}
-		sprintf(temp_path, "%s/%s/%s", g_gateway_path,
-			direntp->d_name, dst_file);
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			continue;
-		}
-		write(fd, pbuff, node_stat.st_size);
-		close(fd);
-	}
-	closedir(dirp);
-	free(pbuff);
 }
