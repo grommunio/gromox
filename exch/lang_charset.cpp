@@ -22,8 +22,6 @@ enum{
 static int table_refresh(void);
 static BOOL table_query(const char* str, char *charset);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 static STR_HASH_TABLE *g_hash_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
@@ -53,12 +51,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[lang_charset]: failed to register \"lang_to_charset\" service\n");
 			return FALSE;
 		}
-		
-		if (FALSE == register_talk(console_talk)) {
-			printf("[lang_charset]: failed to register console talk\n");
-			return FALSE;
-		}
-		
 		return TRUE;
 	case PLUGIN_FREE:
 		if (NULL != g_hash_table) {
@@ -141,49 +133,3 @@ static int table_refresh()
 
     return REFRESH_OK;
 }
-
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	char charset[32];
-	char help_string[] = "250 lang charset help information:\r\n"
-						 "\t%s reload\r\n"
-						 "\t    --reload the string table from list file\r\n"
-						 "\t%s search <string>\r\n"
-						 "\t    --search string in the string table";
-
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0], argv[0]);
-		result[length - 1] ='\0';
-		return;
-	}
-	if (2 == argc && 0 == strcmp("reload", argv[1])) {
-		switch(table_refresh()) {
-		case REFRESH_OK:
-			strncpy(result, "250 lang charset reload OK", length);
-			return;
-		case REFRESH_FILE_ERROR:
-			strncpy(result, "550 lang charset file error", length);
-			return;
-		case REFRESH_HASH_FAIL:
-			strncpy(result, "550 hash map error for lang charset", length);
-			return;
-		}
-	}
-	
-	if (3 == argc && 0 == strcmp("search", argv[1])) {
-		if (TRUE == table_query(argv[2], charset)) {
-			snprintf(result, length, "250 charset for %s is %s", argv[2], charset);
-		} else {
-			snprintf(result, length, "550 charset not found for %s", argv[2]);
-		}
-		return;
-	}
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-	return;
-}
-
