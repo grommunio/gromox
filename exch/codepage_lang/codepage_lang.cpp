@@ -309,23 +309,3 @@ BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	pthread_rwlock_unlock(&g_list_lock);
 	return FALSE;
 }
-
-BOOL codepage_lang_reload()
-{
-	SINGLE_LIST cp_list;
-	SINGLE_LIST temp_list;
-	
-	single_list_init(&cp_list);
-	if (FALSE == codepage_lang_load_cplist(&cp_list)) {
-		codepage_lang_unload_cplist(&cp_list);
-		single_list_free(&cp_list);
-		return FALSE;
-	}
-	pthread_rwlock_wrlock(&g_list_lock);
-	temp_list = g_cp_list;
-	g_cp_list = cp_list;
-	pthread_rwlock_unlock(&g_list_lock);
-	codepage_lang_unload_cplist(&temp_list);
-	single_list_free(&temp_list);
-	return TRUE;
-}

@@ -8,8 +8,6 @@
 
 DECLARE_API;
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
 	char *psearch;
@@ -23,10 +21,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
-		}
-		if (FALSE == register_talk(console_talk)) {
-			printf("[codepage_lang]: failed to register console talk\n");
-			return FALSE;
 		}
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		codepage_lang_init(tmp_path);
@@ -45,31 +39,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		return TRUE;
 	}
 	return false;
-}
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	char help_string[] = "250 codepage lang help information:\r\n"
-						 "\t%s reload\r\n"
-						 "\t    --reload list from file";
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0]);
-		result[length - 1] = '\0';
-		return;
-	}
-
-	if (2 == argc && 0 == strcmp("reload", argv[1])) {
-		if (TRUE == codepage_lang_reload()) {
-			strncpy(result, "250 reload list OK", length);
-		} else {
-			strncpy(result, "550 fail to reload list", length);
-		}
-		return;
-	}
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-	return;
 }
