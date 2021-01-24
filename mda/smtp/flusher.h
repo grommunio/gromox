@@ -30,5 +30,3 @@ extern int flusher_stop(void);
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);
 
 void flusher_cancel(SMTP_CONTEXT *pcontext);
-
-void flusher_console_talk(int argc, char** argv, char* reason, int len);

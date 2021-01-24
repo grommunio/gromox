@@ -420,38 +420,3 @@ static int message_enqueue_retrieve_max_ID()
     closedir(dirp);
     return max_ID;
 }
-
-/*
- *  message enqueue's console talk function
- *  @param
- *      argc            argument number
- *      argv [in]       arguments value
- *      result [out]    buffer for passing out result
- *      length          result buffer length
- */
-void message_enqueue_console_talk(int argc, char **argv, char *result,
-    int length)
-{
-	char help_string[] = "250 message enqueue help information:\r\n"
-                         "\tflusher status\r\n"
-                         "\t    --print message enqueue status";
-	if (1 == argc) {
-        strncpy(result, "550 too few arguments", length);
-        return;
-    }
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		strncpy(result, help_string, length);
-		result[length - 1] = '\0';
-		return;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "status")) {
-		snprintf(result, length,
-                    "250 message enqueue information:\r\n"
-                    "\tmessage enqueued      %d", g_enqueued_num);
-		g_enqueued_num = 0;
-        return;
-	}
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-    return;
-}
-

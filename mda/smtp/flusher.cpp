@@ -40,7 +40,6 @@ struct PLUG_ENTITY {
 	void*           handle;
 	PLUGIN_MAIN     appmain;
 	CANCEL_FUNCTION flush_cancel;
-	TALK_MAIN       console_talk;
 	SINGLE_LIST			list_reference;
 	char			file_name[256];
 	char            path[256];
@@ -62,7 +61,6 @@ static const char* flusher_get_extra_tag(int context_ID, int pos);
 static const char* flusher_get_extra_value(int context_ID, int pos);
 
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func);
-static BOOL flusher_register_talk(TALK_MAIN talk_main);
 static const char *flusher_get_plugin_name(void);
 static const char *flusher_get_config_path(void);
 static const char *flusher_get_data_path(void);
@@ -89,7 +87,6 @@ void flusher_init(const char* path, size_t queue_len)
 	g_flusher_plug->appmain      = NULL;
 	g_flusher_plug->handle       = NULL;
 	g_flusher_plug->flush_cancel = NULL;
-	g_flusher_plug->console_talk = NULL;
 	HX_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
 	HX_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
@@ -348,7 +345,6 @@ static void* flusher_queryservice(const char *service)
 	E("feedback_entity", flusher_feedback_entity);
 	E("get_queue_length", flusher_get_queue_length);
 	E("register_cancel", flusher_register_cancel);
-	E("register_talk", flusher_register_talk);
 	E("get_from_queue", flusher_get_from_queue);
 	E("get_host_ID", flusher_get_host_ID);
 	E("get_extra_num", flusher_get_extra_num);
@@ -431,30 +427,12 @@ static int flusher_get_queue_length()
 	return g_max_queue_len;
 }
 
-void flusher_console_talk(int argc, char** argv, char* result, int len)
-{
-	if (NULL != g_flusher_plug->console_talk) {
-		g_flusher_plug->console_talk(argc, argv, result, len);
-	} else {
-		sprintf(result, "550 not implement");
-	}
-}
-
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
 {
 	if (FALSE == g_can_register || NULL != g_flusher_plug->flush_cancel) {
 		return FALSE;
 	}
 	g_flusher_plug->flush_cancel = cancel_func;
-	return TRUE;
-}
-
-static BOOL flusher_register_talk(TALK_MAIN talk_main)
-{
-	if (FALSE == g_can_register || NULL != g_flusher_plug->console_talk) {
-		return FALSE;
-	}
-	g_flusher_plug->console_talk = talk_main;
 	return TRUE;
 }
 

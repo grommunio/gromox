@@ -415,22 +415,6 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	return TRUE;
 }
 
-BOOL cmd_handler_flusher_control(int argc, char** argv)
-{
-
-	static char result[TALK_BUFFER_LEN];
-
-	memset(result, '\0', TALK_BUFFER_LEN);
-	flusher_console_talk(argc, argv, result, TALK_BUFFER_LEN);
-	if (0 == strlen(result)) {
-		strncpy(result, "550 flusher plugin console talk is error "
-			"implemented", sizeof(result) - 1);
-		result[sizeof(result) - 1] = '\0';
-	}
-	console_server_reply_to_client("%s", result);
-	return TRUE;
-}
-
 BOOL cmd_handler_service_plugins(int argc, char** argv)
 {
 	char buf[TALK_BUFFER_LEN];

@@ -73,7 +73,6 @@ extern GET_QUEUE_LENGTH get_queue_length;
 extern LOG_INFO log_info;
 extern FEEDBACK_ENTITY feedback_entity;
 extern CANCEL_REGISTRATION register_cancel;
-extern TALK_REGISTRATION register_talk;
 extern QUEUE_OPERATION get_from_queue;
 extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_plugin_name;
@@ -93,7 +92,6 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	LOG_INFO log_info; \
 	FEEDBACK_ENTITY feedback_entity; \
 	CANCEL_REGISTRATION register_cancel; \
-	TALK_REGISTRATION register_talk; \
 	QUEUE_OPERATION get_from_queue; \
 	GET_ENVIRONMENT get_host_ID; \
 	GET_ENVIRONMENT get_plugin_name; \
@@ -112,7 +110,6 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	get_queue_length = (GET_QUEUE_LENGTH)query_service("get_queue_length"); \
 	feedback_entity = (FEEDBACK_ENTITY)query_service("feedback_entity"); \
 	register_cancel = (CANCEL_REGISTRATION)query_service("register_cancel"); \
-    register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
 	get_from_queue = (QUEUE_OPERATION)query_service("get_from_queue"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	log_info = (LOG_INFO)query_service("log_info"); \

@@ -511,8 +511,6 @@ static void console_server_install_command()
 					cmd_handler_smtp_control);
 	console_server_register_command("system",
 					cmd_handler_system_control);
-	console_server_register_command("flusher",
-					cmd_handler_flusher_control);
 	console_server_register_command("help",
 					cmd_handler_help);
 	console_server_register_command(NULL,
