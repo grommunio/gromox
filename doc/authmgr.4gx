@@ -1,17 +1,18 @@
 .TH authmgr 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
-authmgr is a service plugin that invokes mail account authentication through
-e.g. mysql_adaptor. The libgxsvc_mysql_adaptor.so plugin needs to be loaded in
-advance.
+authmgr is a service plugin that, for mail account authentication, dynamically
+selects the authentication backend per user account. The
+libgxsvc_mysql_adaptor.so and/or libgxsvc_ldap_adaptor.so plugins need to be
+loaded in advance (this is the case by default).
 .SH Configuration file directives
-.SS auth_method
+.SS auth_backend_selection
 .PP
-Authentications will be passed to one of the available adaptor plugins.
+This controls how authmgr picks the backend.
 .PP
-Default: \fImysql\fP
+Available: \fIalways_mysql\fP, \fIalways_ldap\fP, \fIexternid\fP
 .PP
-Available: mysql, ldap
+Default: \fIexternid\fP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)

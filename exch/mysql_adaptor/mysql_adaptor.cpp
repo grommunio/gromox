@@ -182,7 +182,7 @@ void mysql_adaptor_free()
 
 BOOL mysql_adaptor_meta(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode,
-    char *encrypt_passwd, size_t encrypt_size)
+    char *encrypt_passwd, size_t encrypt_size, uint8_t *externid_present)
 {
 	int temp_type;
 	int temp_status;
@@ -190,8 +190,9 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	char sql_string[1024];
 
 	mysql_adaptor_encode_squote(username, temp_name);
-	snprintf(sql_string, 1024, "SELECT password, address_type, address_status, "
-		"privilege_bits, maildir, lang FROM users WHERE username='%s'", temp_name);
+	snprintf(sql_string, 1024, "SELECT password, address_type, "
+	         "address_status, privilege_bits, maildir, lang, externid "
+	         "FROM users WHERE username='%s'", temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(sql_string))
 		return false;
@@ -241,6 +242,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		strcpy(lang, myrow[5]);
 	}
 	encrypt_passwd[encrypt_size-1] = '\0';
+	*externid_present = myrow[6] != nullptr;
 	return TRUE;
 }
 

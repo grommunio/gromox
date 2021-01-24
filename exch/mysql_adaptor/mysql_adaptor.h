@@ -46,7 +46,7 @@ extern void mysql_adaptor_init(const struct mysql_adaptor_init_param &);
 extern int mysql_adaptor_run(void);
 extern int mysql_adaptor_stop(void);
 extern void mysql_adaptor_free(void);
-extern BOOL mysql_adaptor_meta(const char *username, const char *password, char *maildir, char *lang, char *reason, int length, unsigned int mode, char *encrypted_passwd, size_t enc_size);
+extern BOOL mysql_adaptor_meta(const char *username, const char *password, char *maildir, char *lang, char *reason, int length, unsigned int mode, char *encrypted_passwd, size_t enc_size, uint8_t *externid_present);
 extern BOOL mysql_adaptor_login2(const char *username, const char *password, char *encrypt_passwd, size_t enc_size, char *reason, int length, unsigned int mode);
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);

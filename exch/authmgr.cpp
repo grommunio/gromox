@@ -11,20 +11,32 @@
 #include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
+enum { A_MYSQL, A_LDAP, A_EXTERNID };
 
 DECLARE_API;
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
-static decltype(mysql_adaptor_login2) *fptr_login;
+static decltype(mysql_adaptor_login2) *fptr_mysql_login, *fptr_ldap_login;
+static unsigned int am_choice = A_EXTERNID;
 
 static BOOL login_gen(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
 	char ep[40];
+	uint8_t xip = false;
 	auto ret = fptr_mysql_meta(username, password, maildir, lang, reason,
-	           length, mode, ep, sizeof(ep));
+	           length, mode, ep, sizeof(ep), &xip);
 	if (ret == FALSE)
 		return FALSE;
-	return fptr_login(username, password, ep, sizeof(ep),
+	if (am_choice == A_MYSQL)
+		return fptr_mysql_login(username, password, ep, sizeof(ep),
+		       reason, length, mode);
+	else if (am_choice == A_LDAP)
+		return fptr_ldap_login(username, password, ep, sizeof(ep),
+		       reason, length, mode);
+	if (xip)
+		return fptr_ldap_login(username, password, ep, sizeof(ep),
+		       reason, length, mode);
+	return fptr_mysql_login(username, password, ep, sizeof(ep),
 	       reason, length, mode);
 }
 
@@ -59,30 +71,35 @@ static BOOL authmgr_init()
 		return false;
 	}
 
-	auto val = config_file_get_value(pfile, "auth_method");
-	auto ldap = val != nullptr && strcmp(val, "ldap") == 0;
+	auto val = config_file_get_value(pfile, "auth_backend_selection");
+	if (val == nullptr)
+		/* nothing */;
+	else if (strcmp(val, "always_mysql") == 0)
+		am_choice = A_MYSQL;
+	else if (strcmp(val, "always_ldap") == 0)
+		am_choice = A_LDAP;
+	else if (strcmp(val, "externid") == 0)
+		am_choice = A_EXTERNID;
 
 	fptr_mysql_meta = reinterpret_cast<decltype(fptr_mysql_meta)>(query_service("mysql_auth_meta"));
 	if (fptr_mysql_meta == nullptr) {
 		printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
 		return false;
 	}
-
-	if (ldap) {
+	if (am_choice >= A_LDAP) {
 		auto fload = reinterpret_cast<bool (*)()>(query_service("ldap_adaptor_load"));
-		fptr_login = reinterpret_cast<decltype(fptr_login)>(query_service("ldap_auth_login2"));
-		if (fload == nullptr || fptr_login == nullptr) {
+		fptr_ldap_login = reinterpret_cast<decltype(fptr_ldap_login)>(query_service("ldap_auth_login2"));
+		if (fload == nullptr || fptr_ldap_login == nullptr) {
 			printf("[authmgr]: ldap_adaptor plugin not loaded yet\n");
 			return false;
 		}
 		if (!fload())
 			return false;
-	} else {
-		fptr_login = reinterpret_cast<decltype(fptr_login)>(query_service("mysql_auth_login2"));
-		if (fptr_login == nullptr) {
-			printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
-			return false;
-		}
+	}
+	fptr_mysql_login = reinterpret_cast<decltype(fptr_mysql_login)>(query_service("mysql_auth_login2"));
+	if (fptr_mysql_login == nullptr) {
+		printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
+		return false;
 	}
 	if (!register_service("auth_login_exch", reinterpret_cast<void *>(login_exch)) ||
 	    !register_service("auth_login_pop3", reinterpret_cast<void *>(login_pop3)) ||
