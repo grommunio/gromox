@@ -2,14 +2,13 @@
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include "codepage_lang.h"
 #include <gromox/single_list.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <pthread.h>
-
 
 enum {
 	RETRIEVE_NONE,
@@ -37,7 +36,7 @@ struct LANG_NODE {
 static char g_file_path[256];
 static SINGLE_LIST g_cp_list;
 static pthread_rwlock_t g_list_lock;
-
+DECLARE_API;
 
 static void codepage_lang_unload_langlist(SINGLE_LIST *plist)
 {
@@ -247,14 +246,14 @@ static void codepage_lang_unload_cplist(SINGLE_LIST *plist)
 	}
 }
 
-void codepage_lang_init(const char *path)
+static void codepage_lang_init(const char *path)
 {
 	HX_strlcpy(g_file_path, path, GX_ARRAY_SIZE(g_file_path));
 	single_list_init(&g_cp_list);
 	pthread_rwlock_init(&g_list_lock, NULL);
 }
 
-int codepage_lang_run()
+static int codepage_lang_run()
 {
     if (FALSE == codepage_lang_load_cplist(&g_cp_list)) {
 		return -1;
@@ -262,19 +261,19 @@ int codepage_lang_run()
 	return 0;
 }
 
-int codepage_lang_stop()
+static int codepage_lang_stop()
 {
 	codepage_lang_unload_cplist(&g_cp_list);
 	return 0;
 }
 
-void codepage_lang_free()
+static void codepage_lang_free()
 {
 	single_list_free(&g_cp_list);
 	pthread_rwlock_destroy(&g_list_lock);
 }
 
-BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
+static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	char *value, int len)
 {
 	LANG_NODE *plang;
@@ -308,4 +307,34 @@ BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	}
 	pthread_rwlock_unlock(&g_list_lock);
 	return FALSE;
+}
+
+BOOL SVC_LibMain(int reason, void **ppdata)
+{
+	char *psearch, tmp_path[256], file_name[256];
+
+	switch (reason) {
+	case PLUGIN_INIT:
+		LINK_API(ppdata);
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		psearch = strrchr(file_name, '.');
+		if (psearch != nullptr)
+			*psearch = '\0';
+		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
+		codepage_lang_init(tmp_path);
+		if (codepage_lang_run() != 0) {
+			printf("[codepage_lang]: failed to run the module\n");
+			return false;
+		}
+		if (!register_service("get_lang", reinterpret_cast<void *>(codepage_lang_get_lang))) {
+			printf("[codepage_lang]: failed to register \"get_lang\" service\n");
+			return false;
+		}
+		return TRUE;
+	case PLUGIN_FREE:
+		codepage_lang_stop();
+		codepage_lang_free();
+		return TRUE;
+	}
+	return false;
 }
