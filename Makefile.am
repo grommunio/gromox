@@ -359,8 +359,7 @@ exch/exmdb_provider/exmdb_rpc.cpp: exch/exmdb_provider/exmdb_client.h exmidl
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${pkgdatadir}
-	install -pm0644 data/* ${DESTDIR}${pkgdatadir}/
-	install -pm0644 data/*.abkt ${DESTDIR}${pkgdatadir}/
+	cp -av data/* ${DESTDIR}${pkgdatadir}/
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
