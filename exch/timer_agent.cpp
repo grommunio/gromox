@@ -45,8 +45,6 @@ static void* scan_work_func(void *param);
 
 static int read_line(int sockd, char *buff, int length);
 static int connect_timer(void);
-static void console_talk(int argc, char **argv, char *result, int length);
-
 static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
@@ -139,10 +137,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[timer_agent]: failed to register add_timer\n");
 		if (!register_service("cancel_timer", reinterpret_cast<void *>(cancel_timer)))
 			printf("[timer_agent]: failed to register cancel_timer\n");
-        if (FALSE == register_talk(console_talk)) {
-			printf("[timer_agent]: failed to register console talk\n");
-			return FALSE;
-		}
 		return TRUE;
 	}
 	case PLUGIN_FREE:
@@ -171,40 +165,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
-
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-
-	char help_string[] = "250 timer agent help information:\r\n"
-		                 "\t%s info\r\n"
-						 "\t    --print the module information";
-
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0]);
-		result[length - 1] = '\0';
-		return;
-	}
-
-	if (2 == argc && 0 == strcmp("info", argv[1])) {
-		snprintf(result, length,
-			"250 timer agent information:\r\n"
-			"\ttotal timer connections    %zu\r\n"
-			"\talive timer connections    %zu",
-			double_list_get_nodes_num(&g_back_list) +
-			double_list_get_nodes_num(&g_lost_list),
-			double_list_get_nodes_num(&g_back_list));
-		result[length - 1] = '\0';
-		return;
-	}
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-	return;
-}
-
 
 static void *scan_work_func(void *param)
 {
