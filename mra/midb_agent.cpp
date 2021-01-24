@@ -3529,7 +3529,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 				return;
 			}
 		}
-		snprintf(result, length, "250 no agent inforamtion of midb(mp:%s)", 
+		snprintf(result, length, "250 no agent information of midb(mp:%s)",
 			argv[2]);
 		return;
 	}

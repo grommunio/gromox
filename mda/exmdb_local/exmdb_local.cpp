@@ -666,7 +666,7 @@ void exmdb_local_console_talk(int argc,
 							 "\t%s set response-interval <interval>\r\n"
 							 "\t    --set auto response interval\r\n"
 							 "\t%s echo <prefix>\r\n"
-							 "\t	--echo exmdb connection inforamtion";
+							 "\t	--echo exmdb connection information";
 
 	if (1 == argc) {
 		strncpy(result, "550 too few arguments", length);
@@ -864,7 +864,7 @@ void exmdb_local_console_talk(int argc,
 			result[length - 1] = '\0';
 			return;
 		}
-		snprintf(result, length, "250 no inforamtion"
+		snprintf(result, length, "250 no information"
 			" about exmdb(dir:%s)", argv[2]);
 		return;
 	}
