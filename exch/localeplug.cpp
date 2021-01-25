@@ -3,7 +3,6 @@
 // This file is part of Gromox.
 #include <cstdio>
 #include <gromox/localemap.hpp>
-#include <gromox/paths.h>
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 
@@ -17,7 +16,7 @@ BOOL SVC_LibMain(int reason, void **apidata)
 		return false;
 	LINK_API(apidata);
 	using namespace gromox;
-	localemap_init(PKGDATADIR);
+	localemap_init(get_data_path());
 	if (!register_service("verify_cpid", reinterpret_cast<void *>(verify_cpid)) ||
 	    !register_service("cpid_to_charset", reinterpret_cast<void *>(cpid_to_cset)) ||
 	    !register_service("charset_to_cpid", reinterpret_cast<void *>(cset_to_cpid)) ||
