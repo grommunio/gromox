@@ -289,11 +289,11 @@ gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_mailq_SOURCES = SYSTEM_ADMIN/mailq.cpp
 mkmidb_SOURCES = SYSTEM_ADMIN/mkmidb.cpp
-mkmidb_LDADD = ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
+mkmidb_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
 mkprivate_SOURCES = SYSTEM_ADMIN/mkprivate.cpp
-mkprivate_LDADD = ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 mkpublic_SOURCES = SYSTEM_ADMIN/mkpublic.cpp
-mkpublic_LDADD = ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 rebuild_SOURCES = SYSTEM_ADMIN/rebuild.cpp
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 timer_SOURCES = SYSTEM_ADMIN/timer.cpp
@@ -309,7 +309,7 @@ EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 # tests
 noinst_PROGRAMS = tests/abktconv tests/bodyconv
 tests_abktconv_SOURCES = tests/abktconv.cpp
-tests_abktconv_LDADD = libgromox_cplus.la
+tests_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 
