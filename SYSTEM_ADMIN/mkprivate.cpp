@@ -426,8 +426,6 @@ int main(int argc, const char **argv)
 	int user_id;
 	int i, j, fd;
 	int line_num;
-	int str_size;
-	int str_size1;
 	char *err_msg;
 	char lang[32];
 	MYSQL *pmysql;
@@ -439,7 +437,6 @@ int main(int argc, const char **argv)
 	MYSQL_ROW myrow;
 	LIST_FILE *pfile;
 	uint64_t nt_time;
-	char *sql_string;
 	sqlite3 *psqlite;
 	uint64_t max_size;
 	char db_name[256];
@@ -500,6 +497,9 @@ int main(int argc, const char **argv)
 	} else {
 		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
+	const char *datadir = config_file_get_value(pconfig, "data_file_path");
+	if (datadir == nullptr)
+		datadir = PKGDATADIR;
 	
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("Failed to init mysql object\n");
@@ -557,12 +557,13 @@ int main(int argc, const char **argv)
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	
-	pfile = list_file_init(PKGDATASADIR "/folder_lang.txt",
+	char folderlang[256];
+	snprintf(folderlang, GX_ARRAY_SIZE(folderlang), "%s/folder_lang.txt", datadir);
+	pfile = list_file_init(folderlang,
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == pfile) {
-		printf("Failed to read %s: %s\n",
-			PKGDATASADIR "/folder_lang.txt", strerror(errno));
+		printf("Failed to read %s: %s\n", folderlang, strerror(errno));
 		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);
@@ -608,61 +609,42 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 	
-	if (0 != stat(PKGDATASADIR "/doc/sqlite3_common.txt", &node_stat)) {
-		printf("can not find store template"
-			" file \"sqlite3_common.txt\"\n");	
+	char common_tpl[256], priv_tpl[256];
+	snprintf(common_tpl, GX_ARRAY_SIZE(common_tpl), "%s/sqlite3_common.txt", datadir);
+	snprintf(priv_tpl, GX_ARRAY_SIZE(priv_tpl), "%s/sqlite3_private.txt", datadir);
+	fd = open(common_tpl, O_RDONLY);
+	if (fd < 0) {
+		printf("Failed to open \"%s\": %s\n", common_tpl, strerror(errno));
 		return 7;
 	}
-	if (0 == S_ISREG(node_stat.st_mode)) {
-		printf("\"sqlite3_common.txt\" is not a regular file\n");
-		return 7;
-	}
-	str_size = node_stat.st_size;
-	
-	if (0 != stat(PKGDATASADIR "/doc/sqlite3_private.txt", &node_stat)) {
-		printf("can not find store template "
-			"file \"sqlite3_private.txt\"\n");	
-		return 7;
-	}
-	if (0 == S_ISREG(node_stat.st_mode)) {
-		printf("\"sqlite3_private.txt\" is not a regular file\n");
-		return 7;
-	}
-	str_size1 = node_stat.st_size;
-	
-	sql_string = static_cast<char *>(malloc(str_size + str_size1 + 1));
-	if (NULL == sql_string) {
-		printf("Failed to allocate memory\n");
-		return 8;
-	}
-	fd = open(PKGDATASADIR "/doc/sqlite3_common.txt", O_RDONLY);
-	if (-1 == fd) {
-		printf("Failed to open \"sqlite3_common.txt\": %s\n", strerror(errno));
-		free(sql_string);
-		return 7;
-	}
-	if (str_size != read(fd, sql_string, str_size)) {
-		printf("fail to read content from store"
-			" template file \"sqlite3_common.txt\"\n");
+	size_t str_size = fstat(fd, &node_stat) ? node_stat.st_size : 0;
+	auto sql_string = static_cast<char *>(malloc(str_size));
+	if (read(fd, sql_string, str_size) != str_size) {
+		printf("read %s: %s\n", common_tpl, strerror(errno));
 		close(fd);
 		free(sql_string);
 		return 7;
 	}
 	close(fd);
-	fd = open(PKGDATASADIR "/doc/sqlite3_private.txt", O_RDONLY);
-	if (-1 == fd) {
-		printf("Failed to open \"sqlite3_private.txt\": %s\n", strerror(errno));
-		free(sql_string);
+	fd = open(priv_tpl, O_RDONLY);
+	if (fd < 0) {
+		printf("Failed to open \"%s\": %s\n", priv_tpl, strerror(errno));
 		return 7;
 	}
-	if (str_size1 != read(fd, sql_string + str_size, str_size1)) {
-		printf("fail to read content from store"
-			" template file \"sqlite3_private.txt\"\n");
+	size_t str_size1 = fstat(fd, &node_stat) ? node_stat.st_size : 0;
+	auto sql_string1 = static_cast<char *>(realloc(sql_string, str_size + str_size1 + 1));
+	if (sql_string1 == nullptr) {
+		printf("%s\n", strerror(errno));
+		close(fd);
+		return 7;
+	}
+	sql_string = sql_string1;
+	if (read(fd, sql_string + str_size, str_size1) != str_size1) {
+		printf("read %s: %s\n", priv_tpl, strerror(errno));
 		close(fd);
 		free(sql_string);
 		return 7;
 	}
-	close(fd);
 	sql_string[str_size + str_size1] = '\0';
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
@@ -690,9 +672,11 @@ int main(int argc, const char **argv)
 	}
 	free(sql_string);
 	
-	pfile = list_file_init(PKGDATASADIR "/propnames.txt", "%s:256");
+	char proppath[256];
+	snprintf(proppath, GX_ARRAY_SIZE(proppath), "%s/propnames.txt", datadir);
+	pfile = list_file_init(proppath, "%s:256");
 	if (NULL == pfile) {
-		printf("fail to read \"propnames.txt\"\n");
+		printf("fail to read \"%s\": %s\n", proppath, strerror(errno));
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 7;

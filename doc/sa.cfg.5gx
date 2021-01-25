@@ -13,7 +13,7 @@ Default: \fI30\fP
 .PP
 Directory where plugin instances will look for their data files.
 .PP
-Default: \fI/usr/share/gromox/sa\fP
+Default: \fI/usr/share/gromox\fP
 .SS extpasswd_type
 .PP
 A value >= 2 and <= 5.

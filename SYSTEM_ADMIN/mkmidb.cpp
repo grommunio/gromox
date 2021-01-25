@@ -28,7 +28,6 @@ static const struct HXoption g_options_table[] = {
 int main(int argc, const char **argv)
 {
 	int fd;
-	int str_size;
 	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
@@ -92,6 +91,9 @@ int main(int argc, const char **argv)
 	} else {
 		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
+	const char *datadir = config_file_get_value(pconfig, "data_file_path");
+	if (datadir == nullptr)
+		datadir = PKGDATADIR;
 	
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("Failed to init mysql object\n");
@@ -154,28 +156,20 @@ int main(int argc, const char **argv)
 			" %s already exits\n", temp_path);
 		return 6;
 	}
-	
-	if (0 != stat(PKGDATASADIR "/doc/sqlite3_midb.txt", &node_stat)) {
-		printf("can not find store template"
-			" file \"sqlite3_midb.txt\"\n");	
-		return 7;
-	}
-	if (0 == S_ISREG(node_stat.st_mode)) {
-		printf("\"sqlite3_midb.txt\" is not a regular file\n");
-		return 7;
-	}
-	str_size = node_stat.st_size;
-	
-	auto sql_string = static_cast<char *>(malloc(str_size + 1));
-	if (NULL == sql_string) {
-		printf("Failed to allocate memory\n");
-		return 8;
-	}
-	fd = open(PKGDATASADIR "/doc/sqlite3_midb.txt", O_RDONLY);
+
+	char midb_tpl[256];
+	snprintf(midb_tpl, GX_ARRAY_SIZE(midb_tpl), "%s/sqlite3_midb.txt", datadir);
+	fd = open(midb_tpl, O_RDONLY);
 	if (-1 == fd) {
-		printf("Failed to open \"sqlite3_midb.txt\": %s\n", strerror(errno));
-		free(sql_string);
+		printf("Failed to open \"%s\": %s\n", midb_tpl, strerror(errno));
 		return 7;
+	}
+	size_t str_size = fstat(fd, &node_stat) == 0 ? node_stat.st_size : 0;
+	auto sql_string = static_cast<char *>(malloc(str_size + 1));
+	if (sql_string == nullptr) {
+		printf("Failed to allocate memory\n");
+		close(fd);
+		return 8;
 	}
 	if (str_size != read(fd, sql_string, str_size)) {
 		printf("fail to read content from store"
