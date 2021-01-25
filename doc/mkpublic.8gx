@@ -1,14 +1,15 @@
 .TH mkpublic 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
-\fBmkpublic\fP \fIdomainname\fP
+\fBmkpublic\fP [\fB\-c\fP \fIconfig\fP] \fIdomainname\fP
 .SH Options
 .TP
-\fB\-\-version\fP
-Output version information and exit.
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/sa.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBsa.cfg\fP(5gx)

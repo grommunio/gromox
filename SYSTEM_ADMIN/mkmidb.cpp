@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
@@ -17,6 +18,12 @@
 #include <sys/types.h>
 #include <mysql.h>
 #define CONFIG_ID_USERNAME				1
+
+static char *opt_config_file;
+static const struct HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	HXOPT_TABLEEND,
+};
 
 int main(int argc, const char **argv)
 {
@@ -41,13 +48,15 @@ int main(int argc, const char **argv)
 	struct stat node_stat;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
 	if (2 != argc) {
 		printf("usage: %s <username>\n", argv[0]);
 		return 1;
 	}
-	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/sa.cfg");
-	if (NULL == pconfig) {
-		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/sa.cfg", strerror(errno));
+	pconfig = config_file_init2(opt_config_file, config_default_path("sa.cfg"));
+	if (opt_config_file != nullptr && pconfig == nullptr) {
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
 

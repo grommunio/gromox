@@ -69,4 +69,4 @@ Default: \fI/run/gromox/sa\fP
 Default: \fI10 minutes\fP
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBmkmidb\fP(8gx), \fBmkprivate\fP(8gx), \fBmkpublic\fP(8gx)

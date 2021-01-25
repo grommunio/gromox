@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
@@ -29,6 +30,13 @@
 static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
+static char *opt_config_file;
+
+static const struct HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	HXOPT_TABLEEND,
+};
+
 
 static BOOL create_generic_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t parent_id, int domain_id,
@@ -254,13 +262,15 @@ int main(int argc, const char **argv)
 	char mysql_string[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
 	if (2 != argc) {
 		printf("usage: %s <domainname>\n", argv[0]);
 		return 1;
 	}
-	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/sa.cfg");
-	if (NULL == pconfig) {
-		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/sa.cfg", strerror(errno));
+	pconfig = config_file_init2(opt_config_file, config_default_path("sa.cfg"));
+	if (opt_config_file != nullptr && pconfig == nullptr) {
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
 	str_value = config_file_get_value(pconfig, "PUBLIC_STORE_RATIO");

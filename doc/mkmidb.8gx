@@ -1,14 +1,15 @@
 .TH mkmidb 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
-\fBmkmidb\fP \fIusername\fP
+\fBmkmidb\fP [\fB\-c\fP \fIconfig\fP] \fIusername\fP
 .SH Options
 .TP
-\fB\-\-version\fP
-Output version information and exit.
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/sa.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBsa.cfg\fP(5gx)
