@@ -294,8 +294,16 @@ int main(int argc, const char **argv)
 
 	if ('\0' != g_acl_path[0]) {
 		struct ipitem { char ip_addr[32]; };
-		plist = list_file_init3(g_acl_path, "%s:32", false);
-		if (NULL == plist) {
+		plist = list_file_init(g_acl_path, "%s:32");
+		if (plist == nullptr && errno == ENOENT) {
+			printf("[system]: Using implicit event_acl with ::1.\n");
+			pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
+			if (pacl == nullptr)
+				abort();
+			pacl->node.pdata = pacl;
+			HX_strlcpy(pacl->ip_addr, "::1", GX_ARRAY_SIZE(pacl->ip_addr));
+			double_list_append_as_tail(&g_acl_list, &pacl->node);
+		} else if (plist == nullptr) {
 			for (i=g_threads_num-1; i>=0; i--) {
 				pthread_cancel(thr_ids[i]);
 			}
@@ -314,21 +322,20 @@ int main(int argc, const char **argv)
 			pthread_cond_destroy(&g_waken_cond);
 			printf("[system]: Failed to load ACL from %s\n", g_acl_path);
 			return 9;
-		}
-
-		auto parray = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
-		num = list_file_get_item_num(plist);
-		for (i=0; i<num; i++) {
-			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
-			if (NULL == pacl) {
-				continue;
+		} else {
+			auto parray = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
+			num = list_file_get_item_num(plist);
+			for (i = 0; i < num; i++) {
+				pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
+				if (NULL == pacl) {
+					continue;
+				}
+				pacl->node.pdata = pacl;
+				HX_strlcpy(pacl->ip_addr, parray[i].ip_addr, sizeof(pacl->ip_addr));
+				double_list_append_as_tail(&g_acl_list, &pacl->node);
 			}
-			pacl->node.pdata = pacl;
-			HX_strlcpy(pacl->ip_addr, parray[i].ip_addr, sizeof(pacl->ip_addr));
-			double_list_append_as_tail(&g_acl_list, &pacl->node);
+			list_file_free(plist);
 		}
-		list_file_free(plist);
-
 	}
 	
 	int ret = pthread_create(&thr_accept_id, nullptr, accept_work_func,
@@ -380,7 +387,7 @@ int main(int argc, const char **argv)
 
 		if (cur_time - last_cltime > 7 * 86400) {
 			close(g_list_fd);
-			pfile = list_file_init(g_list_path, "%d%l%s:512");
+			pfile = list_file_init3(g_list_path, "%d%l%s:512", false);
 			if (NULL != pfile) {
 				item_num = list_file_get_item_num(pfile);
 				pitem = static_cast<srcitem *>(list_file_get_list(pfile));
