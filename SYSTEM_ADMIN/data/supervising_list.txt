@@ -1,1 +1,0 @@
-#SMTP_IN, SMTP_OUT or POP3	address		username	password	ip		port

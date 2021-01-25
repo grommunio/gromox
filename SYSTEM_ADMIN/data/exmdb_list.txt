@@ -1,1 +1,0 @@
-../../exch/http/data/exmdb_list.txt
