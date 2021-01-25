@@ -11,6 +11,7 @@
 #include <libHX/option.h>
 #include <gromox/localemap.hpp>
 #include <gromox/oxoabkt.hpp>
+#include <gromox/paths.h>
 
 using namespace gromox;
 
@@ -30,7 +31,7 @@ int main(int argc, const char **argv)
 {
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	localemap_init();
+	localemap_init(PKGDATADIR);
 	if (g_cpid != 0 && cpid_to_cset(g_cpid) == nullptr) {
 		printf("Unknown codepage %u\n", g_cpid);
 		return EXIT_FAILURE;

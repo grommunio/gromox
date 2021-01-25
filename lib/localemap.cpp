@@ -32,17 +32,19 @@ struct icasecmp {
 	}
 };
 
+using namespace std::string_literals;
 using fwd_map_t  = std::unordered_map<unsigned int, std::string>;
 using back_map_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
 static fwd_map_t g_cpid_map, g_lcid_map;
 static back_map_t g_charset_map, g_ltag_map;
 static std::once_flag g_cpid_done;
 
-static void xmap_read2(const char *file, fwd_map_t &fm, back_map_t &bm)
+static void xmap_read2(const std::string &file, fwd_map_t &fm, back_map_t &bm)
 {
 	std::ifstream input(file);
 	if (!input.is_open()) {
-		fprintf(stderr, "[localemap]: error reading %s: %s\n", file, strerror(errno));
+		fprintf(stderr, "[localemap]: error reading %s: %s\n",
+		        file.c_str(), strerror(errno));
 		return;
 	}
 	for (std::string line; std::getline(input, line); ) {
@@ -60,11 +62,11 @@ static void xmap_read2(const char *file, fwd_map_t &fm, back_map_t &bm)
 	}
 }
 
-static void xmap_read(const char *file, fwd_map_t &fm, back_map_t &bm)
+static void xmap_read(const std::string &file, fwd_map_t &fm, back_map_t &bm)
 {
 	xmap_read2(file, fm, bm);
-	fprintf(stderr, "[localemap]: %s: loaded %zu IDs\n", file, fm.size());
-	fprintf(stderr, "[localemap]: %s: loaded %zu names\n", file, bm.size());
+	fprintf(stderr, "[localemap]: %s: loaded %zu IDs\n", file.c_str(), fm.size());
+	fprintf(stderr, "[localemap]: %s: loaded %zu names\n", file.c_str(), bm.size());
 }
 
 bool verify_cpid(uint32_t id)
@@ -98,11 +100,11 @@ uint32_t ltag_to_lcid(const char *s)
 	return i != g_ltag_map.cend() ? i->second : 0;
 }
 
-void localemap_init()
+void localemap_init(const char *datapath)
 {
-	std::call_once(g_cpid_done, []() {
-		xmap_read(PKGDATADIR "/cpid.txt", g_cpid_map, g_charset_map);
-		xmap_read(PKGDATADIR "/lcid.txt", g_lcid_map, g_ltag_map);
+	std::call_once(g_cpid_done, [=]() {
+		xmap_read(datapath + "/cpid.txt"s, g_cpid_map, g_charset_map);
+		xmap_read(datapath + "/lcid.txt"s, g_lcid_map, g_ltag_map);
 	});
 }
 
