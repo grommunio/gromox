@@ -9,8 +9,7 @@ text file. The plugin can be used in any Gromox process, but in practice
 only makes an appeareance in smtp(8gx) and delivery(8gx).
 .PP
 The str_table plugin has multiple instances. These are:
-\fBboundary_list\fP, \fBdomain_list\fP,
-\fBsingle_rcpt\fP.
+\fBboundary_list\fP, \fBdomain_list\fP.
 .PP
 These instances are factual copies of the module to please the plugin loader
 and make it load different .cfg files. (This is clearly inefficient and may be
