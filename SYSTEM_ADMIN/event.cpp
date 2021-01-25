@@ -155,25 +155,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: acl file path is %s\n", g_list_path);
 
-	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_ANY");
-	if (NULL == str_value) {
-		b_listen = FALSE;
-	} else {
-		if (0 == strcasecmp(str_value, "TRUE")) {
-			b_listen = TRUE;
-		} else {
-			b_listen = FALSE;
-		}
-	}
-
-	if (FALSE == b_listen) {
-		str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
-		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
-		           GX_ARRAY_SIZE(listen_ip));
-		g_list_path[0] ='\0';
-	} else {
-		listen_ip[0] = '\0';
-	}
+	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
+	HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
+	           GX_ARRAY_SIZE(listen_ip));
 
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_PORT");
 	if (NULL == str_value) {
@@ -342,7 +326,15 @@ int main(int argc, const char **argv)
 	if ('\0' != g_list_path[0]) {
 		struct ipitem { char ip_addr[32]; };
 		plist = list_file_init(g_list_path, "%s:32");
-		if (NULL == plist) {
+		if (plist == nullptr && errno == ENOENT) {
+			printf("[system]: Using implicit event_acl with ::1.\n");
+			pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
+			if (pacl == nullptr)
+				abort();
+			pacl->node.pdata = pacl;
+			HX_strlcpy(pacl->ip_addr, "::1", GX_ARRAY_SIZE(pacl->ip_addr));
+			double_list_append_as_tail(&g_acl_list, &pacl->node);
+		} else if (plist == nullptr) {
 			for (i=0; i<g_threads_num; i++) {
 				pthread_cancel(en_ids[i]);
 			}
@@ -372,19 +364,20 @@ int main(int argc, const char **argv)
 			pthread_cond_destroy(&g_dequeue_waken_cond);
 			printf("[system]: Failed to load ACL from %s\n", g_list_path);
 			return 10;
-		}
-		num = list_file_get_item_num(plist);
-		auto pitem = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
-		for (i=0; i<num; i++) {
-			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
-			if (NULL == pacl) {
-				continue;
+		} else {
+			num = list_file_get_item_num(plist);
+			auto pitem = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
+			for (i = 0; i < num; i++) {
+				pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
+				if (NULL == pacl) {
+					continue;
+				}
+				pacl->node.pdata = pacl;
+				HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
+				double_list_append_as_tail(&g_acl_list, &pacl->node);
 			}
-			pacl->node.pdata = pacl;
-			HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
-			double_list_append_as_tail(&g_acl_list, &pacl->node);
+			list_file_free(plist);
 		}
-		list_file_free(plist);
 	}
 
 	int ret = 0;
