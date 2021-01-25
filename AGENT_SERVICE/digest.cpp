@@ -119,8 +119,7 @@ int main(int argc, const char **argv)
 
 	tmp_len = strlen(pbuff1);
 	memcpy(pbuff1+ tmp_len, "}", 2);
-	printf(pbuff1);
-
+	fputs(pbuff1, stdout);
 	mail_free(&imail);
 	mime_pool_free(ppool);
 	free(pbuff);
