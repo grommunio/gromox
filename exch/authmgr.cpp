@@ -16,7 +16,7 @@ enum { A_MYSQL, A_LDAP, A_EXTERNID };
 DECLARE_API;
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login, *fptr_ldap_login;
-static unsigned int am_choice = A_EXTERNID;
+static unsigned int am_choice = A_MYSQL;
 
 static BOOL login_gen(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)

@@ -8,11 +8,13 @@ loaded in advance (this is the case by default).
 .SH Configuration file directives
 .SS auth_backend_selection
 .PP
-This controls how authmgr picks the backend.
+This controls how authmgr picks the backend. Once \fBalways_ldap\fP or
+\fBexternid\fP is set, ldap_adaptor(4gx) becomes mandatory, as does its
+configuration, i.e. LDAP search base and access credentials need to be valid.
 .PP
 Available: \fIalways_mysql\fP, \fIalways_ldap\fP, \fIexternid\fP
 .PP
-Default: \fIexternid\fP
+Default: \fIalways_mysql\fP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)
