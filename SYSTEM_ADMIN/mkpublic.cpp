@@ -23,7 +23,7 @@
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 #define LLU(x) static_cast<unsigned long long>(x)
 
 static uint32_t g_last_art;

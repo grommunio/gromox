@@ -8,8 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <mysql/mysql.h>
-
+#include <mysql.h>
 #define DOMAIN_PRIVILEGE_SUBSYSTEM          0x8
 
 #define DOMAIN_PRIVILEGE_NETDISK            0x10

@@ -19,7 +19,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include <pthread.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 #include "sql2.hpp"
 #define MLIST_PRIVILEGE_ALL				0
 #define MLIST_PRIVILEGE_INTERNAL		1

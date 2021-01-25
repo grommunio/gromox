@@ -15,7 +15,7 @@
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 #define CONFIG_ID_USERNAME				1
 
 int main(int argc, const char **argv)
