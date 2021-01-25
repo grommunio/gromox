@@ -91,10 +91,10 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to uncompress rtf\n");
 		return 2;
 	}
-	g_list_file = list_file_init(PKGDATADIR "/cpid.txt", "%d%s:64");
+	g_list_file = list_file_init3(PKGDATADIR "/cpid.txt", "%d%s:64", false);
 	if (NULL == g_list_file) {
 		fprintf(stderr, "list_file_init %s: %s\n",
-			PKGDATAAGENTDIR "/cpid.txt", strerror(errno));
+			PKGDATADIR "/cpid.txt", strerror(errno));
 		return 3;
 	}
 	pattachments = attachment_list_init();
