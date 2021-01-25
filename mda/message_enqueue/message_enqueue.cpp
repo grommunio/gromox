@@ -8,11 +8,14 @@
  *  message queue to indicate there's a new mail arrived!
  */
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
-#include "message_enqueue.h"
+#include <gromox/flusher_common.h>
+#include <gromox/paths.h>
 #include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -24,10 +27,18 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <pthread.h>
-
-
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
+
+enum {
+	MESSAGE_MESS = 2,
+};
+
+enum {
+	SMTP_IN = 1,
+	SMTP_OUT,
+	SMTP_RELAY
+};
 
 struct MSG_BUFF {
     long msg_type;
@@ -37,7 +48,7 @@ struct MSG_BUFF {
 static void* thread_work_func(void* arg);
 static BOOL message_enqueue_check(void);
 static int message_enqueue_retrieve_max_ID(void);
-BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity);
+static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
 
 static char         g_path[256];
 static int			g_msg_id;
@@ -46,14 +57,14 @@ static BOOL         g_notify_stop;
 static int			g_last_flush_ID;
 static int			g_enqueued_num;
 static int			g_last_pos;
-
+DECLARE_API;
 
 /*
  *    message queue's construct function
  *    @param
  *    	path [in]    	path for saving files
  */
-void message_enqueue_init(const char *path)
+static void message_enqueue_init(const char *path)
 {
 	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
     g_notify_stop = TRUE;
@@ -68,7 +79,7 @@ void message_enqueue_init(const char *path)
  *    	0			success
  *		<>0			fail
  */
-int message_enqueue_run()
+static int message_enqueue_run()
 {
 	key_t k_msg;
     char name[256];
@@ -111,7 +122,7 @@ int message_enqueue_run()
  *  @param
  *      pentity [in]     indicate the mail object for cancelling
  */
-void message_enqueue_cancel(FLUSH_ENTITY *pentity)
+static void message_enqueue_cancel(FLUSH_ENTITY *pentity)
 {
     char file_name[256];
     
@@ -129,7 +140,7 @@ void message_enqueue_cancel(FLUSH_ENTITY *pentity)
  *       0  success
  *      -1  fail
  */
-int message_enqueue_stop()
+static int message_enqueue_stop()
 {
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
@@ -143,7 +154,7 @@ int message_enqueue_stop()
  *	@return
  *		flush ID
  */
-int message_enqueue_retrieve_flush_ID()
+static int message_enqueue_retrieve_flush_ID()
 {
 	return g_last_flush_ID;
 }
@@ -151,7 +162,7 @@ int message_enqueue_retrieve_flush_ID()
 /*
  *  message queue's destruct function
  */
-void message_enqueue_free()
+static void message_enqueue_free()
 {
     g_path[0] = '\0';
     g_notify_stop = TRUE;
@@ -419,4 +430,54 @@ static int message_enqueue_retrieve_max_ID()
     }
     closedir(dirp);
     return max_ID;
+}
+
+BOOL FLH_LibMain(int reason, void** ppdata)
+{
+	const char *queue_path;
+	char *psearch;
+	char file_name[256], temp_path[256];
+	CONFIG_FILE *pfile;
+
+	switch (reason) {
+	case PLUGIN_INIT:
+		LINK_API(ppdata);
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		psearch = strrchr(file_name, '.');
+		if (psearch != nullptr)
+			*psearch = '\0';
+		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
+		pfile = config_file_init2(nullptr, temp_path);
+		if (pfile == nullptr) {
+			printf("[message_enqueue]: config_file_init %s: %s\n",
+				temp_path, strerror(errno));
+			return false;
+		}
+		queue_path = config_file_get_value(pfile, "ENQUEUE_PATH");
+		if (queue_path == nullptr) {
+			queue_path = PKGSTATEQUEUEDIR;
+			config_file_set_value(pfile, "ENQUEUE_PATH", queue_path);
+		}
+		printf("[message_enqueue]: enqueue path is %s\n", queue_path);
+
+		message_enqueue_init(queue_path);
+		if (message_enqueue_run() != 0) {
+			printf("[message_enqueue]: failed to run the module\n");
+			config_file_free(pfile);
+			return false;
+		}
+		config_file_free(pfile);
+		if (!register_cancel(message_enqueue_cancel)) {
+			printf("[message_enqueue]: failed to register cancel flushing\n");
+			return false;
+		}
+		set_flush_ID(message_enqueue_retrieve_flush_ID());
+		return TRUE;
+	case PLUGIN_FREE:
+		if (message_enqueue_stop() != 0)
+			return false;
+		message_enqueue_free();
+		return TRUE;
+	}
+	return false;
 }
