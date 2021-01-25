@@ -30,10 +30,11 @@
 static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
-static char *opt_config_file;
+static char *opt_config_file, *opt_datadir;
 
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
 	HXOPT_TABLEEND,
 };
 
@@ -311,7 +312,8 @@ int main(int argc, const char **argv)
 	} else {
 		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
-	const char *datadir = config_file_get_value(pconfig, "data_file_path");
+	const char *datadir = opt_datadir != nullptr ? opt_datadir :
+	                      config_file_get_value(pconfig, "data_file_path");
 	if (datadir == nullptr)
 		datadir = PKGDATADIR;
 	

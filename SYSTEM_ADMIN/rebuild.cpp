@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -46,6 +47,11 @@ struct UNLOAD_STORE_REQUEST {
 };
 
 static DOUBLE_LIST g_exmdb_list;
+static char *opt_datadir;
+static const struct HXoption g_options_table[] = {
+	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
+	HXOPT_TABLEEND,
+};
 
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
@@ -330,10 +336,7 @@ int main(int argc, const char **argv)
 {
 	int i, fd;
 	int list_num;
-	int str_size;
-	int str_size1;
 	char *err_msg;
-	char *sql_string;
 	sqlite3 *psqlite;
 	EXMDB_ITEM *pitem;
 	char tmp_sql[1024];
@@ -355,62 +358,44 @@ int main(int argc, const char **argv)
 			" %s does not exit\n", temp_path);
 		return 1;
 	}
-	
-	if (0 != stat(PKGDATASADIR "/doc/sqlite3_common.txt", &node_stat)) {
-		printf("can not find store template"
-			" file \"sqlite3_common.txt\"\n");	
-		return 2;
-	}
-	if (0 == S_ISREG(node_stat.st_mode)) {
-		printf("\"sqlite3_common.txt\" is not a regular file\n");
-		return 3;
-	}
-	str_size = node_stat.st_size;
-	
-	if (0 != stat(PKGDATASADIR "/doc/sqlite3_private.txt", &node_stat)) {
-		printf("can not find store template "
-			"file \"sqlite3_private.txt\"\n");	
-		return 4;
-	}
-	if (0 == S_ISREG(node_stat.st_mode)) {
-		printf("\"sqlite3_private.txt\" is not a regular file\n");
-		return 5;
-	}
-	str_size1 = node_stat.st_size;
-	
-	sql_string = static_cast<char *>(malloc(str_size + str_size1 + 1));
-	if (NULL == sql_string) {
-		printf("Failed to allocate memory\n");
-		return 6;
-	}
-	fd = open(PKGDATASADIR "/doc/sqlite3_common.txt", O_RDONLY);
-	if (-1 == fd) {
-		printf("Failed to open \"sqlite3_common.txt\": %s\n", strerror(errno));
-		free(sql_string);
+
+	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
+	char common_tpl[256], priv_tpl[256];
+	snprintf(common_tpl, GX_ARRAY_SIZE(common_tpl), "%s/sqlite3_common.txt", datadir);
+	snprintf(priv_tpl, GX_ARRAY_SIZE(priv_tpl), "%s/sqlite3_private.txt", datadir);
+	fd = open(common_tpl, O_RDONLY);
+	if (fd < 0) {
+		printf("Failed to open \"%s\": %s\n", common_tpl, strerror(errno));
 		return 7;
 	}
-	if (str_size != read(fd, sql_string, str_size)) {
-		printf("fail to read content from store"
-			" template file \"sqlite3_common.txt\"\n");
+	size_t str_size = fstat(fd, &node_stat) ? node_stat.st_size : 0;
+	auto sql_string = static_cast<char *>(malloc(str_size));
+	if (read(fd, sql_string, str_size) != str_size) {
+		printf("read %s: %s\n", common_tpl, strerror(errno));
 		close(fd);
 		free(sql_string);
 		return 7;
 	}
 	close(fd);
-	fd = open(PKGDATASADIR "/doc/sqlite3_private.txt", O_RDONLY);
-	if (-1 == fd) {
-		printf("Failed to open \"sqlite3_private.txt\": %s\n", strerror(errno));
-		free(sql_string);
+	fd = open(priv_tpl, O_RDONLY);
+	if (fd < 0) {
+		printf("Failed to open \"%s\": %s\n", priv_tpl, strerror(errno));
 		return 7;
 	}
-	if (str_size1 != read(fd, sql_string + str_size, str_size1)) {
-		printf("fail to read content from store"
-			" template file \"sqlite3_private.txt\"\n");
+	size_t str_size1 = fstat(fd, &node_stat) ? node_stat.st_size : 0;
+	auto sql_string1 = static_cast<char *>(realloc(sql_string, str_size + str_size1 + 1));
+	if (sql_string1 == nullptr) {
+		printf("%s\n", strerror(errno));
+		close(fd);
+		return 7;
+	}
+	sql_string = sql_string1;
+	if (read(fd, sql_string + str_size, str_size1) != str_size1) {
+		printf("read %s: %s\n", priv_tpl, strerror(errno));
 		close(fd);
 		free(sql_string);
 		return 7;
 	}
-	close(fd);
 	sql_string[str_size + str_size1] = '\0';
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
