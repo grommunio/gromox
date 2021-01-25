@@ -22,11 +22,9 @@ Output version information and exit.
 \fB\-?\fP
 Display option summary.
 .SH Configuration file directives
-.SS data_file_path
+.SS acl_path
 .PP
-Directory where plugin instances will look for their data files.
-.PP
-Default: \fI/usr/share/gromox/sa\fP
+Default: \fI/etc/gromox/event_acl.txt\fP
 .SS event_listen_ip
 .PP
 An IPv6 address (or v4-mapped address) for exposing the event service on.

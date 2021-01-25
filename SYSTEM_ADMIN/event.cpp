@@ -147,12 +147,9 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 
-	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
-	if (NULL == str_value) {
-		HX_strlcpy(g_list_path, PKGDATASADIR "/event_acl.txt", sizeof(g_list_path));
-	} else {
-		snprintf(g_list_path, 255, "%s/event_acl.txt", str_value);
-	}
+	str_value = config_file_get_value(pconfig, "acl_path");
+	HX_strlcpy(g_list_path, str_value != nullptr ? str_value :
+	           PKGSYSCONFDIR "/event_acl.txt", GX_ARRAY_SIZE(g_list_path));
 	printf("[system]: acl file path is %s\n", g_list_path);
 
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
