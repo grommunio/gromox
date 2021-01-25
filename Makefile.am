@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 ACLOCAL_AMFLAGS = -I build-aux
-AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${ssl_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${zlib_CFLAGS}
+AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${zlib_CFLAGS}
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
