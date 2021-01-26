@@ -5237,8 +5237,8 @@ static BOOL common_util_evaluate_subitem_restriction(
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FUZZY_LEVEL_FULLSTRING:
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+		case FL_FULLSTRING:
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
@@ -5250,8 +5250,8 @@ static BOOL common_util_evaluate_subitem_restriction(
 				return FALSE;
 			}
 			return FALSE;
-		case FUZZY_LEVEL_SUBSTRING:
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+		case FL_SUBSTRING:
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strcasestr(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
@@ -5262,9 +5262,9 @@ static BOOL common_util_evaluate_subitem_restriction(
 					return TRUE;
 			}
 			return FALSE;
-		case FUZZY_LEVEL_PREFIX:
+		case FL_PREFIX:
 			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;
@@ -5486,8 +5486,8 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FUZZY_LEVEL_FULLSTRING:
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+		case FL_FULLSTRING:
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
@@ -5499,8 +5499,8 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 				return FALSE;
 			}
 			return FALSE;
-		case FUZZY_LEVEL_SUBSTRING:
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+		case FL_SUBSTRING:
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strcasestr(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
@@ -5511,9 +5511,9 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 					return TRUE;
 			}
 			return FALSE;
-		case FUZZY_LEVEL_PREFIX:
+		case FL_PREFIX:
 			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;
@@ -5658,8 +5658,8 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FUZZY_LEVEL_FULLSTRING:
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+		case FL_FULLSTRING:
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
@@ -5671,8 +5671,8 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 				return FALSE;
 			}
 			return FALSE;
-		case FUZZY_LEVEL_SUBSTRING:
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+		case FL_SUBSTRING:
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strcasestr(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
@@ -5683,9 +5683,9 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 					return TRUE;
 			}
 			return FALSE;
-		case FUZZY_LEVEL_PREFIX:
+		case FL_PREFIX:
 			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;

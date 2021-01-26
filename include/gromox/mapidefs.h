@@ -89,3 +89,13 @@ enum res_type {
 	RES_COUNT = 0x0b,
 	RES_NULL = 0xff,
 };
+
+enum {
+	FL_FULLSTRING = 0,
+	FL_SUBSTRING,
+	FL_PREFIX,
+
+	FL_IGNORECASE = 1 << 16,
+	FL_IGNORENONSPACE = 1 << 17,
+	FL_LOOSE = 1 << 18,
+};

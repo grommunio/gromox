@@ -76,13 +76,6 @@ struct RESTRICTION_NOT {
 	RESTRICTION res;
 };
 
-#define FUZZY_LEVEL_FULLSTRING						0x00000
-#define FUZZY_LEVEL_SUBSTRING						0x00001
-#define FUZZY_LEVEL_PREFIX							0x00002
-#define FUZZY_LEVEL_IGNORECASE						0x10000
-#define FUZZY_LEVEL_IGNORENONSPACE					0x20000
-#define FUZZY_LEVEL_LOOSE							0x40000
-
 struct RESTRICTION_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
