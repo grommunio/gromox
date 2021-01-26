@@ -31,8 +31,7 @@ mta_plugins = \
 	libmtahook_from_replace.la \
 	libmtahook_mlist_expand.la \
 	libmtasvc_boundary_list.la \
-	libmtasvc_domain_list.la \
-	libmtasvc_midb_agent.la
+	libmtasvc_domain_list.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
@@ -40,17 +39,16 @@ noinst_DATA += \
 	libmtahook_from_replace.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtasvc_boundary_list.ldd \
-	libmtasvc_domain_list.ldd \
-	libmtasvc_midb_agent.la
+	libmtasvc_domain_list.ldd
 mra_system = pop3 imap
 mra_plugins = \
 	libgxsvc_event_proxy.la \
 	libmrasvc_event_stub.la \
-	libmrasvc_midb_agent.la
+	libgxsvc_midb_agent.la
 noinst_DATA += \
 	libgxsvc_event_proxy.ldd \
 	libmrasvc_event_stub.ldd \
-	libmrasvc_midb_agent.ldd
+	libgxsvc_midb_agent.ldd
 exchange_progs = http midb zcore
 exchange_plugins = \
 	libexsvc_codepage_lang.la \
@@ -155,10 +153,6 @@ libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_midb_agent_la_SOURCES = mda/midb_agent.cpp
-libmtasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
 pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mra/pop3/console_cmd_handler.cpp mra/pop3/console_server.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp mra/pop3/units_allocator.cpp
@@ -173,10 +167,10 @@ libmrasvc_event_stub_la_SOURCES = mra/event_stub.cpp
 libmrasvc_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_event_stub_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmrasvc_event_stub_la_DEPENDENCIES = ${default_sym}
-libmrasvc_midb_agent_la_SOURCES = mra/midb_agent.cpp
-libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmrasvc_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
+libgxsvc_midb_agent_la_SOURCES = mra/midb_agent.cpp
+libgxsvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # exch
 http_SOURCES = exch/http/blocks_allocator.cpp exch/http/console_cmd_handler.cpp exch/http/console_server.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp
