@@ -109,9 +109,6 @@ struct RESTRICTION_PROPCOMPARE {
 	uint32_t proptag2;
 };
 
-#define BITMASK_RELOP_EQZ							0x0
-#define BITMASK_RELOP_NEZ							0x1
-
 struct RESTRICTION_BITMASK {
 	uint8_t bitmask_relop;
 	uint32_t proptag;

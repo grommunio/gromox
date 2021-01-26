@@ -5316,11 +5316,11 @@ static BOOL common_util_evaluate_subitem_restriction(
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rbm->bitmask_relop) {
-		case BITMASK_RELOP_EQZ:
+		case BMR_EQZ:
 			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
 			break;
-		case BITMASK_RELOP_NEZ:
+		case BMR_NEZ:
 			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
 			break;
@@ -5569,11 +5569,11 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		switch (rbm->bitmask_relop) {
-		case BITMASK_RELOP_EQZ:
+		case BMR_EQZ:
 			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
 			break;
-		case BITMASK_RELOP_NEZ:
+		case BMR_NEZ:
 			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
 			break;
@@ -5754,11 +5754,11 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		switch (rbm->bitmask_relop) {
-		case BITMASK_RELOP_EQZ:
+		case BMR_EQZ:
 			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
 			break;
-		case BITMASK_RELOP_NEZ:
+		case BMR_NEZ:
 			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
 			break;

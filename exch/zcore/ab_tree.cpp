@@ -2257,11 +2257,11 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rbm->bitmask_relop) {
-		case BITMASK_RELOP_EQZ:
+		case BMR_EQZ:
 			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
 			break;
-		case BITMASK_RELOP_NEZ:
+		case BMR_NEZ:
 			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
 			break;

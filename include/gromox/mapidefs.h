@@ -58,6 +58,11 @@ enum {
 	PR_RTF_COMPRESSED = PROP_TAG(PT_BINARY, 0x1009), /* pidTagRtfCompressed */
 };
 
+enum bm_relop {
+	BMR_EQZ = 0,
+	BMR_NEZ,
+};
+
 enum {
 	RES_AND = 0x00,
 	RES_OR = 0x01,

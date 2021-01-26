@@ -169,11 +169,11 @@ static BOOL container_object_match_contact_message(
 			return FALSE;
 		}
 		switch (rbm->bitmask_relop) {
-		case BITMASK_RELOP_EQZ:
+		case BMR_EQZ:
 			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
 			break;
-		case BITMASK_RELOP_NEZ:
+		case BMR_NEZ:
 			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
 			break;
