@@ -229,12 +229,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
 		
 		str_value = config_file_get_value(pconfig, "CONTEXT_AVERAGE_MEM");
-		if (NULL == str_value) {
-			g_file_ratio = 0;
-		} else {
-			g_file_ratio = atoi(str_value);
-		}
-		
+		g_file_ratio = str_value == nullptr ? 1024 : strtoul(str_value, nullptr, 0);
 		if (g_file_ratio > 0) {
 			printf("[midb_agent]: context average number is %d\n", g_file_ratio);
 		} else {

@@ -10,7 +10,11 @@ The number of connections to keep open towards midb(8gx).
 Default: \fI5\fP
 .SS context_average_mem
 .PP
-Default: \fI0\fP
+Enables and sets the size of a memory pool (in object count; the actual size is
+256 bytes * context_num * context_average_mem). imap(8gx) and pop3(8gx) require
+this to be non-zero for full functionality.
+.PP
+Default: \fI1024\fP
 .SH Files
 .PP
 \fIdata_file_path\fP/midb_list.txt: midb multiserver map
