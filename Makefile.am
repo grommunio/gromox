@@ -96,7 +96,7 @@ agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
-pkglibexec_SCRIPTS = tools/sa_format_area.sh
+pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
