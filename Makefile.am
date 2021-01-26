@@ -96,7 +96,7 @@ agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
-pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
+pkglibexec_SCRIPTS = tools/sa_format_area.sh
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
@@ -278,25 +278,25 @@ pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.cpp
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 
-# SYSTEM_ADMIN
+# tools
 saphpdir = ${pkgdatadir}/sa
-saphp_DATA = SYSTEM_ADMIN/php/conf.php SYSTEM_ADMIN/php/db.php SYSTEM_ADMIN/php/submit.php
-adaptor_SOURCES = lib/system_log.cpp SYSTEM_ADMIN/adaptor/data_source.cpp SYSTEM_ADMIN/adaptor/engine.cpp SYSTEM_ADMIN/adaptor/file_operation.cpp SYSTEM_ADMIN/adaptor/gateway_control.cpp SYSTEM_ADMIN/adaptor/main.cpp
+saphp_DATA = tools/php/conf.php tools/php/db.php tools/php/submit.php
+adaptor_SOURCES = lib/system_log.cpp tools/adaptor/data_source.cpp tools/adaptor/engine.cpp tools/adaptor/file_operation.cpp tools/adaptor/gateway_control.cpp tools/adaptor/main.cpp
 adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
-event_SOURCES = SYSTEM_ADMIN/event.cpp lib/fifo.cpp
+event_SOURCES = tools/event.cpp lib/fifo.cpp
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
-gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
+gromox_dbop_SOURCES = lib/dbop_mysql.cpp tools/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
-gromox_mailq_SOURCES = SYSTEM_ADMIN/mailq.cpp
-mkmidb_SOURCES = SYSTEM_ADMIN/mkmidb.cpp
+gromox_mailq_SOURCES = tools/mailq.cpp
+mkmidb_SOURCES = tools/mkmidb.cpp
 mkmidb_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
-mkprivate_SOURCES = SYSTEM_ADMIN/mkprivate.cpp
+mkprivate_SOURCES = tools/mkprivate.cpp
 mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-mkpublic_SOURCES = SYSTEM_ADMIN/mkpublic.cpp
+mkpublic_SOURCES = tools/mkpublic.cpp
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-rebuild_SOURCES = SYSTEM_ADMIN/rebuild.cpp
+rebuild_SOURCES = tools/rebuild.cpp
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-timer_SOURCES = SYSTEM_ADMIN/timer.cpp
+timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
 # php_mapi
