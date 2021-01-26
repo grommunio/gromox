@@ -74,7 +74,7 @@ enum relop {
 	RELOP_MEMBER_OF_DL = 0x64,
 };
 
-enum {
+enum res_type {
 	RES_AND = 0x00,
 	RES_OR = 0x01,
 	RES_NOT = 0x02,

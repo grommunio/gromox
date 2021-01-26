@@ -425,9 +425,11 @@ static zend_bool ext_pack_pull_restriction_content(
 static zend_bool ext_pack_pull_restriction_property(
 	PULL_CTX *pctx, RESTRICTION_PROPERTY *r)
 {
-	if (!ext_pack_pull_uint8(pctx, &r->relop)) {
+	uint8_t relop;
+	if (!ext_pack_pull_uint8(pctx, &relop)) {
 		return 0;
 	}
+	r->relop = static_cast<enum relop>(relop);
 	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
 		return 0;
 	}
@@ -437,9 +439,11 @@ static zend_bool ext_pack_pull_restriction_property(
 static zend_bool ext_pack_pull_restriction_propcompare(
 	PULL_CTX *pctx, RESTRICTION_PROPCOMPARE *r)
 {
-	if (!ext_pack_pull_uint8(pctx, &r->relop)) {
+	uint8_t relop;
+	if (!ext_pack_pull_uint8(pctx, &relop)) {
 		return 0;
 	}
+	r->relop = static_cast<enum relop>(relop);
 	if (!ext_pack_pull_uint32(pctx, &r->proptag1)) {
 		return 0;
 	}
@@ -449,9 +453,11 @@ static zend_bool ext_pack_pull_restriction_propcompare(
 static zend_bool ext_pack_pull_restriction_bitmask(
 	PULL_CTX *pctx, RESTRICTION_BITMASK *r)
 {
-	if (!ext_pack_pull_uint8(pctx, &r->bitmask_relop)) {
+	uint8_t relop;
+	if (!ext_pack_pull_uint8(pctx, &relop)) {
 		return 0;
 	}
+	r->bitmask_relop = static_cast<enum bm_relop>(relop);
 	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
 		return 0;
 	}
@@ -461,9 +467,11 @@ static zend_bool ext_pack_pull_restriction_bitmask(
 static zend_bool ext_pack_pull_restriction_size(
 	PULL_CTX *pctx, RESTRICTION_SIZE *r)
 {
-	if (!ext_pack_pull_uint8(pctx, &r->relop)) {
+	uint8_t relop;
+	if (!ext_pack_pull_uint8(pctx, &relop)) {
 		return 0;
 	}
+	r->relop = static_cast<enum relop>(relop);
 	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
 		return 0;
 	}
@@ -531,9 +539,11 @@ static zend_bool ext_pack_pull_restriction_count(
 
 zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r)
 {
-	if (!ext_pack_pull_uint8(pctx, &r->rt)) {
+	uint8_t rt;
+	if (!ext_pack_pull_uint8(pctx, &rt)) {
 		return 0;
 	}
+	r->rt = static_cast<enum res_type>(rt);
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:

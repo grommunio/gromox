@@ -813,7 +813,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	auto type_entry = zend_hash_get_current_data_ex(pres_hash, &hpos);
 	zend_hash_move_forward_ex(pres_hash, &hpos);
 	auto value_entry = zend_hash_get_current_data_ex(pres_hash, &hpos);
-	pres->rt = zval_get_long(type_entry);
+	pres->rt = static_cast<enum res_type>(zval_get_long(type_entry));
 	ZVAL_DEREF(value_entry);
 	pdata_hash = HASH_OF(value_entry);
 	if (NULL == pdata_hash) {
@@ -934,7 +934,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
 			return 0;
-		rprop->relop = zval_get_long(value_entry);
+		rprop->relop = static_cast<enum relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_VALUE);
 		if (value_entry == nullptr)
 			return 0;
@@ -962,7 +962,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		if (value_entry == nullptr)
 			/* memory leak */
 			return 0;
-		rprop->relop = zval_get_long(value_entry);
+		rprop->relop = static_cast<enum relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG1);
 		if (value_entry == nullptr)
 			return 0;
@@ -982,7 +982,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		if (value_entry == nullptr)
 			/* memory leak */
 			return 0;
-		rbm->bitmask_relop = zval_get_long(value_entry);
+		rbm->bitmask_relop = static_cast<enum bm_relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_MASK);
 		if (value_entry == nullptr)
 			return 0;
@@ -1006,7 +1006,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
 			return 0;
-		rsize->relop = zval_get_long(value_entry);
+		rsize->relop = static_cast<enum relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;

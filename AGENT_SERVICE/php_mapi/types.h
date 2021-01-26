@@ -72,7 +72,7 @@ struct TAGGED_PROPVAL {
 };
 
 struct RESTRICTION {
-	uint8_t rt;
+	enum res_type rt;
 	void *pres;
 };
 
@@ -92,25 +92,25 @@ struct RESTRICTION_CONTENT {
 };
 
 struct RESTRICTION_PROPERTY {
-	uint8_t relop;
+	enum relop relop;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
 };
 
 struct RESTRICTION_PROPCOMPARE {
-	uint8_t relop;
+	enum relop relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
 };
 
 struct RESTRICTION_BITMASK {
-	uint8_t bitmask_relop;
+	enum bm_relop bitmask_relop;
 	uint32_t proptag;
 	uint32_t mask;
 };
 
 struct RESTRICTION_SIZE {
-	uint8_t relop;
+	enum relop relop;
 	uint32_t proptag;
 	uint32_t size;
 };

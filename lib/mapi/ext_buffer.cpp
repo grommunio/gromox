@@ -642,11 +642,13 @@ static int ext_buffer_pull_restriction_property(
 	EXT_PULL *pext, RESTRICTION_PROPERTY *r)
 {
 	int status;
+	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &r->relop);
+	status = ext_buffer_pull_uint8(pext, &relop);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
+	r->relop = static_cast<enum relop>(relop);
 	status = ext_buffer_pull_uint32(pext, &r->proptag);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -658,11 +660,13 @@ static int ext_buffer_pull_restriction_propcompare(
 	EXT_PULL *pext, RESTRICTION_PROPCOMPARE *r)
 {
 	int status;
+	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &r->relop);
+	status = ext_buffer_pull_uint8(pext, &relop);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
+	r->relop = static_cast<enum relop>(relop);
 	status = ext_buffer_pull_uint32(pext, &r->proptag1);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -674,11 +678,13 @@ static int ext_buffer_pull_restriction_bitmask(
 	EXT_PULL *pext, RESTRICTION_BITMASK *r)
 {
 	int status;
+	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &r->bitmask_relop);
+	status = ext_buffer_pull_uint8(pext, &relop);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
+	r->bitmask_relop = static_cast<enum bm_relop>(relop);
 	status = ext_buffer_pull_uint32(pext, &r->proptag);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -690,11 +696,13 @@ static int ext_buffer_pull_restriction_size(
 	EXT_PULL *pext, RESTRICTION_SIZE *r)
 {
 	int status;
+	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &r->relop);
+	status = ext_buffer_pull_uint8(pext, &relop);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
+	r->relop = static_cast<enum relop>(relop);
 	status = ext_buffer_pull_uint32(pext, &r->proptag);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -774,11 +782,13 @@ static int ext_buffer_pull_restriction_count(
 int ext_buffer_pull_restriction(EXT_PULL *pext, RESTRICTION *r)
 {
 	int status;
+	uint8_t rt;
 	
-	status = ext_buffer_pull_uint8(pext, &r->rt);
+	status = ext_buffer_pull_uint8(pext, &rt);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
+	r->rt = static_cast<res_type>(rt);
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
