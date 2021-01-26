@@ -70,15 +70,6 @@
 #define FL_IGNORENONSPACE				0x02
 #define FL_LOOSE						0x04
 
-/* for restriction property */
-#define RELOP_LT						0x00
-#define RELOP_LE						0x01
-#define RELOP_GT						0x02
-#define RELOP_GE						0x03
-#define RELOP_EQ						0x04
-#define RELOP_NE						0x05
-#define RELOP_MEMBER_OF_DL				0x64
-
 #define EPOCH_DIFF 						11644473600LL
 
 extern const uint8_t *common_util_get_nspi_guid(void);

@@ -63,6 +63,17 @@ enum bm_relop {
 	BMR_NEZ,
 };
 
+enum relop {
+	RELOP_LT = 0x00,
+	RELOP_LE,
+	RELOP_GT,
+	RELOP_GE,
+	RELOP_EQ,
+	RELOP_NE,
+	RELOP_RE,
+	RELOP_MEMBER_OF_DL = 0x64,
+};
+
 enum {
 	RES_AND = 0x00,
 	RES_OR = 0x01,

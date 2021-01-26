@@ -89,14 +89,6 @@ struct RESTRICTION_CONTENT {
 	TAGGED_PROPVAL propval;
 };
 
-#define RELOP_LT									0x00
-#define RELOP_LE									0x01
-#define RELOP_GT									0x02
-#define RELOP_GE									0x03
-#define RELOP_EQ									0x04
-#define RELOP_NE									0x05
-#define RELOP_MEMBER_OF_DL							0x64
-
 struct RESTRICTION_PROPERTY {
 	uint8_t relop;
 	uint32_t proptag;
