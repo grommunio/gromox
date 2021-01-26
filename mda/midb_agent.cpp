@@ -21,16 +21,13 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <poll.h>
 #define SOCKET_TIMEOUT			60
 
 #define MIDB_RESULT_OK			0
-
 #define MIDB_NO_SERVER			1
-
 #define MIDB_RDWR_ERROR			2
-
 #define MIDB_RESULT_ERROR		3
-
 #define MIDB_MAILBOX_FULL		4
 
 struct BACK_SVR {
@@ -113,7 +110,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pconfig, "CONNECTION_NUM", "5");
 			}
 		}
-
 		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
 		config_file_free(pconfig);
 
@@ -130,7 +126,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			char prefix[256], ip_addr[32];
 			int port;
 		};
-		MIDB_ITEM *pitem = (MIDB_ITEM*)list_file_get_list(plist);
+		auto pitem = reinterpret_cast<MIDB_ITEM *>(list_file_get_list(plist));
 		for (i=0; i<list_num; i++) {
 			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));
 			if (NULL == pserver) {
@@ -141,7 +137,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			pserver->node.pdata = pserver;
 			strcpy(pserver->prefix, pitem[i].prefix);
 			pserver->prefix_len = strlen(pserver->prefix);
-			HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, sizeof(pserver->ip_addr));
+			HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
 			pserver->port = pitem[i].port;
 			double_list_init(&pserver->conn_list);
 			double_list_append_as_tail(&g_server_list, &pserver->node);
@@ -216,10 +212,9 @@ static void *scan_work_func(void *param)
 	BACK_SVR *pserver;
 	BACK_CONN *pback;
 	time_t now_time;
+	int tv_msec;
 	char temp_buff[1024];
-	fd_set myset;
-	struct timeval tv;
-
+	struct pollfd pfd_read;
 
 	double_list_init(&temp_list);
 
@@ -249,11 +244,10 @@ static void *scan_work_func(void *param)
 		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			write(pback->sockd, "PING\r\n", 6);
-			tv.tv_usec = 0;
-			tv.tv_sec = SOCKET_TIMEOUT;
-			FD_ZERO(&myset);
-			FD_SET(pback->sockd, &myset);
-			if (select(pback->sockd + 1, &myset, NULL, NULL, &tv) <= 0 ||
+			tv_msec = SOCKET_TIMEOUT * 1000;
+			pfd_read.fd = pback->sockd;
+			pfd_read.events = POLLIN|POLLPRI;
+			if (1 != poll(&pfd_read, 1, tv_msec) ||
 				read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
@@ -407,19 +401,18 @@ CHECK_ERROR:
 
 static int connect_midb(const char *ip_addr, int port)
 {
+	int tv_msec;
     int read_len;
-	fd_set myset;
-	struct timeval tv;
     char temp_buff[1024];
+	struct pollfd pfd_read;
 
 	int sockd = gx_inet_connect(ip_addr, port, 0);
 	if (sockd < 0)
 		return -1;
-	tv.tv_usec = 0;
-	tv.tv_sec = SOCKET_TIMEOUT;
-	FD_ZERO(&myset);
-	FD_SET(sockd, &myset);
-	if (select(sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
+	tv_msec = SOCKET_TIMEOUT * 1000;
+	pfd_read.fd = sockd;
+	pfd_read.events = POLLIN|POLLPRI;
+	if (1 != poll(&pfd_read, 1, tv_msec)) {
 		close(sockd);
 		return -1;
 	}

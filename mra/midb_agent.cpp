@@ -26,13 +26,13 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <poll.h>
-
 #define SOCKET_TIMEOUT			60
 
 #define MIDB_RESULT_OK			0
 #define MIDB_NO_SERVER			1
 #define MIDB_RDWR_ERROR			2
 #define MIDB_RESULT_ERROR		3
+#define MIDB_MAILBOX_FULL		4
 
 #define FLAG_RECENT				0x1
 #define FLAG_ANSWERED			0x2
@@ -42,12 +42,6 @@
 #define FLAG_DRAFT				0x20
 
 #define FLAG_LOADED				0x80
-
-struct MIDB_ITEM {
-	char prefix[256];
-	char ip_addr[32];
-	int port;
-};
 
 struct MITEM {
 	SINGLE_LIST_NODE node;
@@ -170,6 +164,8 @@ static int imap_search(char *path, char *folder, char *charset,
 static int imap_search_uid(char *path, char *folder, char *charset,
 	int argc, char **argv, char *ret_buff, int *plen, int *perrno);
 
+static BOOL check_full(char *path);
+
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static int g_conn_num;
@@ -194,7 +190,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char config_path[256];
     BACK_CONN *pback;
 	BACK_SVR *pserver;
-	MIDB_ITEM *pitem;
 	CONFIG_FILE *pconfig;
     DOUBLE_LIST_NODE *pnode;
 
@@ -256,7 +251,11 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 
 		list_num = list_file_get_item_num(plist);
-		pitem = (MIDB_ITEM*)list_file_get_list(plist);
+		struct MIDB_ITEM {
+			char prefix[256], ip_addr[32];
+			int port;
+		};
+		auto pitem = reinterpret_cast<MIDB_ITEM *>(list_file_get_list(plist));
 		for (i=0; i<list_num; i++) {
 			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));
 			if (NULL == pserver) {
@@ -313,12 +312,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		    !E(fetch_simple_uid) || !E(fetch_detail_uid) ||
 		    !E(free_result) || !E(set_mail_flags) ||
 		    !E(unset_mail_flags) || !E(get_mail_flags) ||
-		    !E(copy_mail) || !E(imap_search) || !E(imap_search_uid)) {
+		    !E(copy_mail) || !E(imap_search) || !E(imap_search_uid) ||
+		    !E(check_full)) {
 			printf("[midb_agent]: failed to register services\n");
 			return FALSE;
 		}
 #undef E
-
 		if (FALSE == register_talk(console_talk)) {
 			printf("[midb_agent]: failed to register console talk\n");
 			return FALSE;
@@ -374,7 +373,6 @@ static void *scan_work_func(void *param)
 	int tv_msec;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
-
 
 	double_list_init(&temp_list);
 
@@ -3467,12 +3465,85 @@ static BOOL read_line(int sockd, char *buff, int length)
 	
 }
 
+static BOOL check_full(char *path)
+{
+	int length;
+	int offset;
+	int read_len;
+	fd_set myset;
+	BACK_CONN *pback;
+	struct timeval tv;
+	char buff[1024];
+
+
+	pback = get_connection(path);
+	if (NULL == pback) {
+		return TRUE;
+	}
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-CKFL %s\r\n", path);
+	if (length != write(pback->sockd, buff, length)) {
+		goto CHECK_ERROR;
+	}
+
+	offset = 0;
+	while (TRUE) {
+		tv.tv_usec = 0;
+		tv.tv_sec = SOCKET_TIMEOUT;
+		FD_ZERO(&myset);
+		FD_SET(pback->sockd, &myset);
+		if (select(pback->sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
+			goto CHECK_ERROR;
+		}
+		read_len = read(pback->sockd, buff + offset, 1024 - offset);
+		if (read_len <= 0) {
+			goto CHECK_ERROR;
+		}
+		offset += read_len;
+		if (offset >= 2 && '\r' == buff[offset - 2] &&
+			'\n' == buff[offset - 1]) {
+			if (8 == offset && 0 == strncasecmp("TRUE ", buff, 5)) {
+				time(&pback->last_time);
+				pthread_mutex_lock(&g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list,
+					&pback->node);
+				pthread_mutex_unlock(&g_server_lock);
+				if ('1' == buff[5]) {
+					return FALSE;
+				} else {
+					return TRUE;
+				}
+			} else if (offset > 8 && 0 == strncasecmp("FALSE ", buff, 6)) {
+				time(&pback->last_time);
+				pthread_mutex_lock(&g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list,
+					&pback->node);
+				pthread_mutex_unlock(&g_server_lock);
+				return TRUE;
+			} else {
+				goto CHECK_ERROR;
+			}
+		}
+		if (1024 == offset) {
+			goto CHECK_ERROR;
+		}
+	}
+
+CHECK_ERROR:
+	close(pback->sockd);
+	pback->sockd = -1;
+	pthread_mutex_lock(&g_server_lock);
+	double_list_append_as_tail(&g_lost_list, &pback->node);
+	pthread_mutex_unlock(&g_server_lock);
+	return TRUE;
+}
+
 static int connect_midb(const char *ip_addr, int port)
 {
 	int tv_msec;
     int read_len;
     char temp_buff[1024];
 	struct pollfd pfd_read;
+
 	int sockd = gx_inet_connect(ip_addr, port, 0);
 	if (sockd < 0)
 		return -1;
