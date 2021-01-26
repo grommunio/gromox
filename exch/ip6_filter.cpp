@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <chrono>
 #include <cstdio>
@@ -30,7 +31,6 @@ static std::mutex g_templist_lock, g_auditlist_lock;
 static size_t g_templist_maxsize;
 static duration g_audit_intvl;
 static unsigned int g_max_within_interval, g_audit_max;
-DECLARE_API;
 
 static size_t ip6tl_collect(time_point limit)
 {

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <unistd.h>
 #include <libHX/string.h>
@@ -49,8 +50,6 @@ static BOOL log_plugin_flush_log(void);
 static int log_plugin_open_redirect(const char *filename);
 static int log_plugin_close_redirect(void);
 static void* thread_work_func(void *arg);
-
-DECLARE_API;
 
 /*
  *	log plugin's construct function

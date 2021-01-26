@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -18,8 +19,6 @@ struct CPID_ITEM {
 	uint32_t cpid;
 	char charset[64];
 };
-
-DECLARE_API;
 
 static INT_HASH_TABLE *g_cpid_hash;
 static INT_HASH_TABLE *g_lcid_hash;

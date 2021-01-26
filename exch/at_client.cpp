@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -8,8 +9,6 @@
 #include <libHX/proc.h>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
-
-DECLARE_API;
 
 static int at_add_timer(const char *command, int seconds)
 {

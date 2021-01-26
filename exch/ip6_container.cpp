@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -15,7 +16,6 @@ using namespace std::string_literals;
 static std::map<std::string, size_t> g_cont_tbl;
 static std::mutex g_cont_lock;
 static unsigned int g_max_num;
-DECLARE_API;
 
 static BOOL ip6co_add(const char *addr)
 {

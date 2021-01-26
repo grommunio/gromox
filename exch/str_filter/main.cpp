@@ -13,7 +13,7 @@
 #include <cstring>
 #include <sys/types.h>
 
-DECLARE_API;
+DECLARE_API();
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {

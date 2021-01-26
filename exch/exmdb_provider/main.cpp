@@ -16,8 +16,7 @@
 #include <cstdlib>
 #include <cstdio>
 
-DECLARE_API;
-
+DECLARE_API();
 
 /*
  *	console talk for exchange_emsmdb plugin

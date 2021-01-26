@@ -67,54 +67,34 @@ typedef void (*ASYNC_REPLY)(int, void*);
 /* represent function type of log_info */
 typedef void (*LOG_INFO)(int, const char *, ...);
 
-extern QUERY_SERVICE query_service;
-extern EP_REGISTRATION register_endpoint;
-extern IF_REGISTRATION register_interface;
-extern TALK_REGISTRATION register_talk;
-extern LOG_INFO log_info;
-extern GET_ENVIRONMENT get_host_ID;
-extern GET_ENVIRONMENT get_default_domain;
-extern GET_ENVIRONMENT get_plugin_name;
-extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path, get_state_path;
-extern GET_INTEGER get_context_num;
-extern GET_BINDING_HANDLE get_binding_handle;
-extern GET_RPC_INFO get_rpc_info;
-extern GET_BOOLEAN is_rpc_bigendian;
-extern NDR_STACK_ALLOC ndr_stack_alloc;
-extern GET_INTEGER apply_async_id;
-extern SET_INTEGER activate_async_id;
-extern SET_INTEGER cancel_async_id;
-extern BUILD_ENVIRONMENT rpc_build_environment;
-extern NEW_ENVIRONMENT rpc_new_environment;
-extern FREE_ENVIRONMENT rpc_free_environment;
-extern ASYNC_REPLY async_reply;
-
-	
-#define DECLARE_API \
-	QUERY_SERVICE query_service; \
-	EP_REGISTRATION register_endpoint; \
-	IF_REGISTRATION register_interface; \
-	TALK_REGISTRATION register_talk; \
-	LOG_INFO log_info; \
-	GET_ENVIRONMENT get_host_ID; \
-	GET_ENVIRONMENT get_default_domain; \
-	GET_ENVIRONMENT get_plugin_name; \
-	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path, get_state_path; \
-	GET_INTEGER get_context_num; \
-	GET_BINDING_HANDLE get_binding_handle; \
-	GET_RPC_INFO get_rpc_info; \
-	GET_BOOLEAN is_rpc_bigendian; \
-	NDR_STACK_ALLOC ndr_stack_alloc; \
-	GET_INTEGER apply_async_id; \
-	SET_INTEGER activate_async_id; \
-	SET_INTEGER cancel_async_id; \
-	BUILD_ENVIRONMENT rpc_build_environment; \
-	NEW_ENVIRONMENT rpc_new_environment; \
-	FREE_ENVIRONMENT rpc_free_environment; \
-	ASYNC_REPLY async_reply;
-	
+#define DECLARE_API(x) \
+	x QUERY_SERVICE query_service; \
+	x EP_REGISTRATION register_endpoint; \
+	x IF_REGISTRATION register_interface; \
+	x TALK_REGISTRATION register_talk; \
+	x LOG_INFO log_info; \
+	x GET_ENVIRONMENT get_host_ID; \
+	x GET_ENVIRONMENT get_default_domain; \
+	x GET_ENVIRONMENT get_plugin_name; \
+	x GET_ENVIRONMENT get_config_path; \
+	x GET_ENVIRONMENT get_data_path, get_state_path; \
+	x GET_INTEGER get_context_num; \
+	x GET_BINDING_HANDLE get_binding_handle; \
+	x GET_RPC_INFO get_rpc_info; \
+	x GET_BOOLEAN is_rpc_bigendian; \
+	x NDR_STACK_ALLOC ndr_stack_alloc; \
+	x GET_INTEGER apply_async_id; \
+	x SET_INTEGER activate_async_id; \
+	x SET_INTEGER cancel_async_id; \
+	x BUILD_ENVIRONMENT rpc_build_environment; \
+	x NEW_ENVIRONMENT rpc_new_environment; \
+	x FREE_ENVIRONMENT rpc_free_environment; \
+	x ASYNC_REPLY async_reply;
+#ifdef DECLARE_API_STATIC
+DECLARE_API(static);
+#else
+DECLARE_API(extern);
+#endif
 
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \

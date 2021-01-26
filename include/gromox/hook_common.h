@@ -44,49 +44,32 @@ typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
-extern QUERY_SERVICE query_service;
-extern HOOK_REGISTRATION register_hook;
-extern HOOK_REGISTRATION register_local;
-extern TALK_REGISTRATION register_talk;
-extern LOG_INFO log_info;
-extern GET_ENVIRONMENT get_host_ID;
-extern GET_ENVIRONMENT get_default_domain;
-extern GET_ENVIRONMENT get_admin_mailbox;
-extern GET_ENVIRONMENT get_plugin_name;
-extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path, get_state_path;
-extern GET_ENVIRONMENT get_queue_path;
-extern GET_INTEGER get_context_num;
-extern GET_INTEGER get_threads_num;
-extern GET_CONTEXT get_context;
-extern PUT_CONTEXT put_context;
-extern ENQUEUE_CONTEXT enqueue_context;
-extern THROW_CONTEXT throw_context;
-extern CHECKING_FUNCTION check_domain;
-extern IS_DOMAINLIST_VALID is_domainlist_valid;
-
-	
-#define DECLARE_API \
-	QUERY_SERVICE query_service; \
-	HOOK_REGISTRATION register_hook; \
-	HOOK_REGISTRATION register_local; \
-	TALK_REGISTRATION register_talk; \
-	LOG_INFO log_info; \
-	GET_ENVIRONMENT get_host_ID; \
-	GET_ENVIRONMENT get_default_domain; \
-	GET_ENVIRONMENT get_admin_mailbox; \
-	GET_ENVIRONMENT get_plugin_name; \
-	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path, get_state_path; \
-	GET_ENVIRONMENT get_queue_path; \
-	GET_INTEGER get_context_num; \
-	GET_INTEGER get_threads_num; \
-    GET_CONTEXT get_context; \
-    PUT_CONTEXT put_context; \
-	ENQUEUE_CONTEXT enqueue_context; \
-    THROW_CONTEXT throw_context; \
-	CHECKING_FUNCTION check_domain; \
-	IS_DOMAINLIST_VALID is_domainlist_valid
+#define DECLARE_API(x) \
+	x QUERY_SERVICE query_service; \
+	x HOOK_REGISTRATION register_hook; \
+	x HOOK_REGISTRATION register_local; \
+	x TALK_REGISTRATION register_talk; \
+	x LOG_INFO log_info; \
+	x GET_ENVIRONMENT get_host_ID; \
+	x GET_ENVIRONMENT get_default_domain; \
+	x GET_ENVIRONMENT get_admin_mailbox; \
+	x GET_ENVIRONMENT get_plugin_name; \
+	x GET_ENVIRONMENT get_config_path; \
+	x GET_ENVIRONMENT get_data_path, get_state_path; \
+	x GET_ENVIRONMENT get_queue_path; \
+	x GET_INTEGER get_context_num; \
+	x GET_INTEGER get_threads_num; \
+	x GET_CONTEXT get_context; \
+	x PUT_CONTEXT put_context; \
+	x ENQUEUE_CONTEXT enqueue_context; \
+	x THROW_CONTEXT throw_context; \
+	x CHECKING_FUNCTION check_domain; \
+	x IS_DOMAINLIST_VALID is_domainlist_valid;
+#ifdef DECLARE_API_STATIC
+DECLARE_API(static);
+#else
+DECLARE_API(extern);
+#endif
 
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \

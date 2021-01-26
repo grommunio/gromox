@@ -7,6 +7,7 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -57,7 +58,6 @@ static BOOL         g_notify_stop;
 static int			g_last_flush_ID;
 static int			g_enqueued_num;
 static int			g_last_pos;
-DECLARE_API;
 
 /*
  *    message queue's construct function

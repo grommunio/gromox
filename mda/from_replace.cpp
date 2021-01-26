@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -10,10 +11,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/util.hpp>
 #include <pthread.h>
-
-
-DECLARE_API;
-
 
 enum{
 	REFRESH_OK,

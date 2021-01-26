@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -35,7 +36,6 @@ static BOOL g_case_sensitive;
 static char g_module_name[256];
 static int g_growing_num;
 static int g_hash_cap;
-DECLARE_API;
 
 /*
  *	string table's construct function

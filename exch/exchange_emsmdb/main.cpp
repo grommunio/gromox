@@ -22,9 +22,6 @@
 #include <cstring>
 #include <cstdio>
 
-DECLARE_API;
-
-
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
 
 static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
@@ -44,6 +41,8 @@ static int exchange_async_emsmdb_ndr_push(int opnum,
 	NDR_PUSH *pndr, void *pout);
 
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
+
+DECLARE_API();
 
 BOOL PROC_LibMain(int reason, void **ppdata)
 {

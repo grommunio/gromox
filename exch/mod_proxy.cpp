@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -39,8 +40,6 @@ struct PROXY_CONTEXT {
 	int buff_offset;
 	int buff_length;
 };
-
-DECLARE_API;
 
 static int g_epoll_fd = -1;
 static pthread_t g_thread_id;

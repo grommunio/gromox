@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -10,8 +11,6 @@
 #include <cstdio>
 #include <cstring>
 #include <sys/stat.h>
-
-DECLARE_API;
 
 enum{
 	REFRESH_OK,

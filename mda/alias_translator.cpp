@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -16,8 +17,6 @@
 #include <sys/types.h>
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-
-DECLARE_API;
 
 enum{
 	REFRESH_OK,

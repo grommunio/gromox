@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -36,7 +37,6 @@ struct LANG_NODE {
 static char g_file_path[256];
 static SINGLE_LIST g_cp_list;
 static pthread_rwlock_t g_list_lock;
-DECLARE_API;
 
 static void codepage_lang_unload_langlist(SINGLE_LIST *plist)
 {

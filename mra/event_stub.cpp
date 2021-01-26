@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -43,8 +44,6 @@ static void* thread_work_func(void *param);
 static int read_line(int sockd, char *buff, int length);
 static int connect_event(void);
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
-
-DECLARE_API;
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {

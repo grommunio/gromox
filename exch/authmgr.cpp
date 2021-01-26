@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -13,7 +14,6 @@
 using namespace std::string_literals;
 enum { A_MYSQL, A_LDAP, A_EXTERNID };
 
-DECLARE_API;
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login, *fptr_ldap_login;
 static unsigned int am_choice = A_MYSQL;

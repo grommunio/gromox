@@ -14,7 +14,7 @@
 #include <gromox/util.hpp>
 #include <cstdio>
 
-DECLARE_API;
+DECLARE_API();
 
 BOOL HOOK_LibMain(int reason, void **ppdata)
 {

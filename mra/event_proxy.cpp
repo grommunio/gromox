@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -49,8 +50,6 @@ static void broadcast_event(const char *event);
 static void broadcast_select(const char *username, const char *folder);
 
 static void broadcast_unselect(const char *username, const char *folder);
-
-DECLARE_API;
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {

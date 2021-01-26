@@ -68,42 +68,29 @@ typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
-extern QUERY_SERVICE query_service;
-extern GET_QUEUE_LENGTH get_queue_length;
-extern LOG_INFO log_info;
-extern FEEDBACK_ENTITY feedback_entity;
-extern CANCEL_REGISTRATION register_cancel;
-extern QUEUE_OPERATION get_from_queue;
-extern GET_ENVIRONMENT get_host_ID;
-extern GET_ENVIRONMENT get_plugin_name;
-extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path, get_state_path;
-extern GET_EXTRA_NUM get_extra_num;
-extern GET_EXTRA_TAGVAL get_extra_tag;
-extern GET_EXTRA_TAGVAL get_extra_value;
-extern SET_FLUSH_ID set_flush_ID;
-extern INC_FLUSH_ID inc_flush_ID;
-extern CHECKING_FUNCTION check_domain;
-extern IS_DOMAINLIST_VALID is_domainlist_valid;
-
-#define DECLARE_API \
-	QUERY_SERVICE query_service; \
-	GET_QUEUE_LENGTH get_queue_length; \
-	LOG_INFO log_info; \
-	FEEDBACK_ENTITY feedback_entity; \
-	CANCEL_REGISTRATION register_cancel; \
-	QUEUE_OPERATION get_from_queue; \
-	GET_ENVIRONMENT get_host_ID; \
-	GET_ENVIRONMENT get_plugin_name; \
-	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path, get_state_path; \
-    GET_EXTRA_NUM get_extra_num; \
-    GET_EXTRA_TAGVAL get_extra_tag; \
-    GET_EXTRA_TAGVAL get_extra_value; \
-	SET_FLUSH_ID set_flush_ID; \
-	INC_FLUSH_ID inc_flush_ID; \
-	CHECKING_FUNCTION check_domain; \
-	IS_DOMAINLIST_VALID is_domainlist_valid
+#define DECLARE_API(x) \
+	x QUERY_SERVICE query_service; \
+	x GET_QUEUE_LENGTH get_queue_length; \
+	x LOG_INFO log_info; \
+	x FEEDBACK_ENTITY feedback_entity; \
+	x CANCEL_REGISTRATION register_cancel; \
+	x QUEUE_OPERATION get_from_queue; \
+	x GET_ENVIRONMENT get_host_ID; \
+	x GET_ENVIRONMENT get_plugin_name; \
+	x GET_ENVIRONMENT get_config_path; \
+	x GET_ENVIRONMENT get_data_path, get_state_path; \
+	x GET_EXTRA_NUM get_extra_num; \
+	x GET_EXTRA_TAGVAL get_extra_tag; \
+	x GET_EXTRA_TAGVAL get_extra_value; \
+	x SET_FLUSH_ID set_flush_ID; \
+	x INC_FLUSH_ID inc_flush_ID; \
+	x CHECKING_FUNCTION check_domain; \
+	x IS_DOMAINLIST_VALID is_domainlist_valid;
+#ifdef DECLARE_API_STATIC
+DECLARE_API(static);
+#else
+DECLARE_API(extern);
+#endif
 
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \

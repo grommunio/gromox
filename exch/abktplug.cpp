@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cstdio>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/svc_common.h>
-DECLARE_API;
 BOOL SVC_LibMain(int reason, void **apidata)
 {
 	if (reason == PLUGIN_FREE)

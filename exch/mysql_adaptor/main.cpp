@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <pthread.h>
 
-DECLARE_API;
+DECLARE_API();
 
 static char g_config_path[256];
 

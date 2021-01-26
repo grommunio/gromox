@@ -4,7 +4,7 @@
 #include <cstdio>
 #include "../../exch/mysql_adaptor/mysql_adaptor.h"
 
-DECLARE_API;
+DECLARE_API();
 
 #define MLIST_RESULT_OK                 0
 #define MLIST_RESULT_NONE               1

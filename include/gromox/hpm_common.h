@@ -79,50 +79,33 @@ typedef BOOL (*NEW_ENVIRONMENT)(void);
 typedef void (*FREE_ENVIRONMENT)(void);
 typedef void (*LOG_INFO)(int, const char *, ...);
 
-extern QUERY_SERVICE query_service;
-extern TALK_REGISTRATION register_talk;
-extern REGISTER_INTERFACE register_interface;
-extern GET_CONNECTION get_connection;
-extern GET_REQUEST get_request;
-extern GET_AUTH_INFO get_auth_info;
-extern WRITE_RESPONSE write_response;
-extern WAKEUP_CONTEXT wakeup_context;
-extern ACTIVATE_CONTEXT activate_context;
-extern LOG_INFO log_info;
-extern GET_ENVIRONMENT get_host_ID;
-extern GET_ENVIRONMENT get_default_domain;
-extern GET_ENVIRONMENT get_plugin_name;
-extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path, get_state_path;
-extern GET_INTEGER get_context_num;
-extern SET_INTEGER set_context;
-extern SET_EP_INFO set_ep_info;
-extern NDR_STACK_ALLOC ndr_stack_alloc;
-extern NEW_ENVIRONMENT rpc_new_environment;
-extern FREE_ENVIRONMENT rpc_free_environment;
-	
-#define DECLARE_API \
-	QUERY_SERVICE query_service; \
-	REGISTER_INTERFACE register_interface; \
-	TALK_REGISTRATION register_talk; \
-	GET_CONNECTION get_connection; \
-	GET_REQUEST get_request; \
-	GET_AUTH_INFO get_auth_info; \
-	WRITE_RESPONSE write_response; \
-	WAKEUP_CONTEXT wakeup_context; \
-	ACTIVATE_CONTEXT activate_context; \
-	LOG_INFO log_info; \
-	GET_ENVIRONMENT get_host_ID; \
-	GET_ENVIRONMENT get_default_domain; \
-	GET_ENVIRONMENT get_plugin_name; \
-	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path, get_state_path; \
-	GET_INTEGER get_context_num; \
-	SET_INTEGER set_context; \
-	SET_EP_INFO set_ep_info; \
-	NDR_STACK_ALLOC ndr_stack_alloc; \
-	NEW_ENVIRONMENT rpc_new_environment; \
-	FREE_ENVIRONMENT rpc_free_environment;
+#define DECLARE_API(x) \
+	x QUERY_SERVICE query_service; \
+	x REGISTER_INTERFACE register_interface; \
+	x TALK_REGISTRATION register_talk; \
+	x GET_CONNECTION get_connection; \
+	x GET_REQUEST get_request; \
+	x GET_AUTH_INFO get_auth_info; \
+	x WRITE_RESPONSE write_response; \
+	x WAKEUP_CONTEXT wakeup_context; \
+	x ACTIVATE_CONTEXT activate_context; \
+	x LOG_INFO log_info; \
+	x GET_ENVIRONMENT get_host_ID; \
+	x GET_ENVIRONMENT get_default_domain; \
+	x GET_ENVIRONMENT get_plugin_name; \
+	x GET_ENVIRONMENT get_config_path; \
+	x GET_ENVIRONMENT get_data_path, get_state_path; \
+	x GET_INTEGER get_context_num; \
+	x SET_INTEGER set_context; \
+	x SET_EP_INFO set_ep_info; \
+	x NDR_STACK_ALLOC ndr_stack_alloc; \
+	x NEW_ENVIRONMENT rpc_new_environment; \
+	x FREE_ENVIRONMENT rpc_free_environment;
+#ifdef DECLARE_API_STATIC
+DECLARE_API(static);
+#else
+DECLARE_API(extern);
+#endif
 	
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \

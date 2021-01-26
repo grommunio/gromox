@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -13,9 +14,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-
-DECLARE_API;
-
 
 static STR_HASH_TABLE *g_mime_hash;
 static STR_HASH_TABLE *g_extension_hash;

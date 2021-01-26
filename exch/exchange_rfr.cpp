@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -8,8 +9,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
-
-DECLARE_API;
 
 struct RFRGETNEWDSA_IN {
 	uint32_t flags;

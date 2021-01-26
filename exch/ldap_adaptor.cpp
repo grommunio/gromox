@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <typeinfo>
 #include <cstdio>
@@ -38,8 +39,6 @@ enum {
 	USER_PRIVILEGE_POP3_IMAP = 1 << 0,
 	USER_PRIVILEGE_SMTP = 1 << 1,
 };
-
-DECLARE_API;
 
 static std::string g_config_path, g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;

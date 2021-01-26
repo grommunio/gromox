@@ -13,14 +13,14 @@
 #include <cstring>
 #include <cstdio>
 
-DECLARE_API;
-
 static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin);
 
 static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 	uint64_t handle, void *pin, void **ppout);
 static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 static void exchange_nsp_unbind(uint64_t handle);
+
+DECLARE_API();
 
 BOOL PROC_LibMain(int reason, void **ppdata)
 {

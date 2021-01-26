@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#define DECLARE_API_STATIC
 #include <cstdio>
 #include <gromox/localemap.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
-
-DECLARE_API;
 
 BOOL SVC_LibMain(int reason, void **apidata)
 {

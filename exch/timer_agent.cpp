@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -48,8 +49,6 @@ static int connect_timer(void);
 static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
-
-DECLARE_API;
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {

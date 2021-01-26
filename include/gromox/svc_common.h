@@ -15,26 +15,21 @@ typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 
-extern QUERY_SERVICE query_service;
-extern SERVICE_REGISTRATION register_service;
-extern TALK_REGISTRATION register_talk;
-extern GET_ENVIRONMENT get_plugin_name;
-extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path, get_state_path;
-extern GET_INTEGER get_context_num;
-extern GET_ENVIRONMENT get_host_ID;
-extern NDR_STACK_ALLOC ndr_stack_alloc;
-
-#define	DECLARE_API \
-	QUERY_SERVICE query_service; \
-	SERVICE_REGISTRATION register_service; \
-	TALK_REGISTRATION register_talk; \
-	GET_ENVIRONMENT get_plugin_name; \
-	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path, get_state_path; \
-	GET_INTEGER get_context_num; \
-	GET_ENVIRONMENT get_host_ID; \
-	NDR_STACK_ALLOC ndr_stack_alloc
+#define	DECLARE_API(x) \
+	x QUERY_SERVICE query_service; \
+	x SERVICE_REGISTRATION register_service; \
+	x TALK_REGISTRATION register_talk; \
+	x GET_ENVIRONMENT get_plugin_name; \
+	x GET_ENVIRONMENT get_config_path; \
+	x GET_ENVIRONMENT get_data_path, get_state_path; \
+	x GET_INTEGER get_context_num; \
+	x GET_ENVIRONMENT get_host_ID; \
+	x NDR_STACK_ALLOC ndr_stack_alloc;
+#ifdef DECLARE_API_STATIC
+DECLARE_API(static);
+#else
+DECLARE_API(extern);
+#endif
 
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \

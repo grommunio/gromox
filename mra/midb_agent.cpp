@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#define DECLARE_API_STATIC
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -176,8 +177,6 @@ static DOUBLE_LIST g_server_list;
 static pthread_mutex_t g_server_lock;
 static LIB_BUFFER *g_file_allocator;
 static int g_file_ratio;
-
-DECLARE_API;
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
