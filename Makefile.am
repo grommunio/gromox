@@ -322,7 +322,7 @@ man_MANS = \
 	doc/gromox-sa.target.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx \
 	doc/ldap_adaptor.4gx doc/localemap.4gx \
-	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
+	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \

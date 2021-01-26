@@ -1,0 +1,19 @@
+.TH midb_agent 4gx "" "Gromox" "Gromox admin reference"
+.SH Synopsis
+.PP
+midb_agent \(em midb(8gx) connector for smtp(8gx), imap(8gx), pop3(8gx)
+.SH Configuration file directives
+.SS connection_num
+.PP
+The number of connections to keep open towards midb(8gx).
+.PP
+Default: \fI5\fP
+.SS context_average_mem
+.PP
+Default: \fI0\fP
+.SH Files
+.PP
+\fIdata_file_path\fP/midb_list.txt: midb multiserver map
+.SH See also
+.PP
+\fBgromox\fP(7)
