@@ -492,27 +492,27 @@ uint32_t restriction_size(const RESTRICTION *r)
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
-		return restriction_and_or_size(static_cast<RESTRICTION_AND_OR *>(r->pres)) + sizeof(uint8_t);
+		return restriction_and_or_size(r->andor) + sizeof(uint8_t);
 	case RES_NOT:
-		return restriction_not_size(static_cast<RESTRICTION_NOT *>(r->pres)) + sizeof(uint8_t);
+		return restriction_not_size(r->xnot) + sizeof(uint8_t);
 	case RES_CONTENT:
-		return restriction_content_size(static_cast<RESTRICTION_CONTENT *>(r->pres)) + sizeof(uint8_t);
+		return restriction_content_size(r->cont) + sizeof(uint8_t);
 	case RES_PROPERTY:
-		return restriction_property_size(static_cast<RESTRICTION_PROPERTY *>(r->pres)) + sizeof(uint8_t);
+		return restriction_property_size(r->prop) + sizeof(uint8_t);
 	case RES_PROPCOMPARE:
-		return restriction_propcompare_size(static_cast<RESTRICTION_PROPCOMPARE *>(r->pres)) + sizeof(uint8_t);
+		return restriction_propcompare_size(r->pcmp) + sizeof(uint8_t);
 	case RES_BITMASK:
-		return restriction_bitmask_size(static_cast<RESTRICTION_BITMASK *>(r->pres)) + sizeof(uint8_t);
+		return restriction_bitmask_size(r->bm) + sizeof(uint8_t);
 	case RES_SIZE:
-		return restriction_size_size(static_cast<RESTRICTION_SIZE *>(r->pres)) + sizeof(uint8_t);
+		return restriction_size_size(r->size) + sizeof(uint8_t);
 	case RES_EXIST:
-		return restriction_exist_size(static_cast<RESTRICTION_EXIST *>(r->pres)) + sizeof(uint8_t);
+		return restriction_exist_size(r->exist) + sizeof(uint8_t);
 	case RES_SUBRESTRICTION:
-		return restriction_size_subobj(static_cast<RESTRICTION_SUBOBJ *>(r->pres)) + sizeof(uint8_t);
+		return restriction_size_subobj(r->sub) + sizeof(uint8_t);
 	case RES_COMMENT:
-		return restriction_comment_size(static_cast<RESTRICTION_COMMENT *>(r->pres)) + sizeof(uint8_t);
+		return restriction_comment_size(r->comment) + sizeof(uint8_t);
 	case RES_COUNT:
-		return restriction_count_size(static_cast<RESTRICTION_COUNT *>(r->pres)) + sizeof(uint8_t);
+		return restriction_count_size(r->count) + sizeof(uint8_t);
 	}
 	return 0;
 }

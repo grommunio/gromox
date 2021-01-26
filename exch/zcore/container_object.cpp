@@ -62,28 +62,22 @@ static BOOL container_object_match_contact_message(
 	void *pvalue;
 	
 	switch (pfilter->rt) {
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
-		for (i = 0; i < andor->count; ++i)
-			if (!container_object_match_contact_message(ppropvals, &andor->pres[i]))
+	case RES_AND:
+		for (i = 0; i < pfilter->andor->count; ++i)
+			if (!container_object_match_contact_message(ppropvals, &pfilter->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
-		for (i = 0; i < andor->count; ++i)
-			if (container_object_match_contact_message(ppropvals, &andor->pres[i]))
+	case RES_OR:
+		for (i = 0; i < pfilter->andor->count; ++i)
+			if (container_object_match_contact_message(ppropvals, &pfilter->andor->pres[i]))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pfilter->pres);
-		if (container_object_match_contact_message(ppropvals, &rnot->res))
+	case RES_NOT:
+		if (container_object_match_contact_message(ppropvals, &pfilter->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
+		auto rcon = pfilter->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
@@ -133,7 +127,7 @@ static BOOL container_object_match_contact_message(
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pfilter->pres);
+		auto rprop = pfilter->prop;
 		if (rprop->proptag == PROP_TAG_ANR) {
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_SMTPADDRESS);
@@ -161,7 +155,7 @@ static BOOL container_object_match_contact_message(
 	case RES_PROPCOMPARE:
 		return FALSE;
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
+		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
@@ -182,14 +176,12 @@ static BOOL container_object_match_contact_message(
 	}
 	case RES_SIZE:
 		return FALSE;
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pfilter->pres);
-		pvalue = common_util_get_propvals(ppropvals, rex->proptag);
+	case RES_EXIST:
+		pvalue = common_util_get_propvals(ppropvals, pfilter->exist->proptag);
 		if (NULL != pvalue) {
 			return TRUE;	
 		}
 		return FALSE;
-	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
 	}

@@ -5227,7 +5227,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 	
 	switch (pres->rt) {
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
 		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
@@ -5280,7 +5280,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
@@ -5296,7 +5296,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
@@ -5309,7 +5309,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
@@ -5328,7 +5328,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		return FALSE;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rsize->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
@@ -5337,14 +5337,14 @@ static BOOL common_util_evaluate_subitem_restriction(
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+		auto rex = pres->exist;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rex->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		return TRUE;
 	}
 	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		auto rcom = pres->comment;
 		if (rcom->pres == nullptr)
 			return TRUE;
 		return common_util_evaluate_subitem_restriction(psqlite, cpid,
@@ -5393,7 +5393,7 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 		}
 	}
 	sqlite3_finalize(pstmt);
-	if (pres->rt == RES_COUNT && count == static_cast<RESTRICTION_COUNT *>(pres->pres)->count)
+	if (pres->rt == RES_COUNT && count == pres->count->count)
 		return TRUE;
 	return FALSE;
 }
@@ -5405,29 +5405,23 @@ static BOOL common_util_evaluate_subobject_restriction(
 	int i;
 	
 	switch (pres->rt) {
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_OR:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (common_util_evaluate_subobject_restriction(psqlite,
-			    cpid, message_id, proptag, &andor->pres[i]))
+			    cpid, message_id, proptag, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_AND:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (!common_util_evaluate_subobject_restriction(psqlite,
-			    cpid, message_id, proptag, &andor->pres[i]))
+			    cpid, message_id, proptag, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+	case RES_NOT:
 		if (common_util_evaluate_subobject_restriction(psqlite, cpid,
-		    message_id, proptag, &rnot->res))
+		    message_id, proptag, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT:
 	case RES_PROPERTY:
 	case RES_PROPCOMPARE:
@@ -5452,31 +5446,25 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	uint32_t val_size;
 	
 	switch (pres->rt) {
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_OR:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (common_util_evaluate_folder_restriction(psqlite,
-			    folder_id, &andor->pres[i]))
+			    folder_id, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_AND:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (!common_util_evaluate_folder_restriction(psqlite,
-			    folder_id, &andor->pres[i]))
+			    folder_id, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+	case RES_NOT:
 		if (common_util_evaluate_folder_restriction(psqlite,
-		    folder_id, &rnot->res))
+		    folder_id, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
@@ -5529,7 +5517,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    folder_id, 0, psqlite, rprop->proptag, &pvalue) ||
 		    pvalue == nullptr)
@@ -5546,7 +5534,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
@@ -5561,7 +5549,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
@@ -5581,7 +5569,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    folder_id, 0, psqlite, rsize->proptag, &pvalue) ||
 		    pvalue == nullptr)
@@ -5590,23 +5578,19 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+	case RES_EXIST:
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
-		    folder_id, 0, psqlite, rex->proptag, &pvalue) ||
+		    folder_id, 0, psqlite, pres->exist->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
-	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
-		if (rcom->pres == nullptr)
+	case RES_COMMENT:
+		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return common_util_evaluate_folder_restriction(psqlite,
-		       folder_id, rcom->pres);
-	}
+		       folder_id, pres->comment->pres);
 	case RES_COUNT:
 		return FALSE;
 	}	
@@ -5623,31 +5607,25 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	uint32_t val_size;
 	
 	switch (pres->rt) {
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_OR:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (common_util_evaluate_message_restriction(psqlite,
-			    cpid, message_id, &andor->pres[i]))
+			    cpid, message_id, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_AND:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (!common_util_evaluate_message_restriction(psqlite,
-			    cpid, message_id, &andor->pres[i]))
+			    cpid, message_id, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+	case RES_NOT:
 		if (common_util_evaluate_message_restriction(psqlite,
-		    cpid, message_id, &rnot->res))
+		    cpid, message_id, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
 		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
@@ -5701,7 +5679,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		switch (rprop->proptag) {
 		case PROP_TAG_PARENTSVREID:
 		case PROP_TAG_PARENTENTRYID:
@@ -5731,7 +5709,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
@@ -5746,7 +5724,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
@@ -5766,7 +5744,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite, rsize->proptag, &pvalue) ||
 		    pvalue == nullptr)
@@ -5775,16 +5753,14 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+	case RES_EXIST:
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
-		    message_id, cpid, psqlite, rex->proptag, &pvalue) ||
+		    message_id, cpid, psqlite, pres->exist->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	}
 	case RES_SUBRESTRICTION: {
-		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
+		auto rsub = pres->sub;
 		switch (rsub->subobject) {
 		case PROP_TAG_MESSAGERECIPIENTS:
 			return common_util_evaluate_subobject_restriction(psqlite,
@@ -5799,15 +5775,13 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		}
 		return FALSE;
 	}
-	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
-		if (rcom->pres == nullptr)
+	case RES_COMMENT:
+		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return common_util_evaluate_message_restriction(psqlite, cpid,
-		       message_id, rcom->pres);
-	}
+		       message_id, pres->comment->pres);
 	case RES_COUNT: {
-		auto rcnt = static_cast<RESTRICTION_COUNT *>(pres->pres);
+		auto rcnt = pres->count;
 		if (rcnt->count == 0)
 			return FALSE;
 		if (common_util_evaluate_message_restriction(psqlite,

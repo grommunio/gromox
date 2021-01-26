@@ -796,67 +796,67 @@ int ext_buffer_pull_restriction(EXT_PULL *pext, RESTRICTION *r)
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_and_or(pext, static_cast<RESTRICTION_AND_OR *>(r->pres));
+		return ext_buffer_pull_restriction_and_or(pext, r->andor);
 	case RES_NOT:
 		r->pres = pext->alloc(sizeof(RESTRICTION_NOT));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_not(pext, static_cast<RESTRICTION_NOT *>(r->pres));
+		return ext_buffer_pull_restriction_not(pext, r->xnot);
 	case RES_CONTENT:
 		r->pres = pext->alloc(sizeof(RESTRICTION_CONTENT));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_content(pext, static_cast<RESTRICTION_CONTENT *>(r->pres));
+		return ext_buffer_pull_restriction_content(pext, r->cont);
 	case RES_PROPERTY:
 		r->pres = pext->alloc(sizeof(RESTRICTION_PROPERTY));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_property(pext, static_cast<RESTRICTION_PROPERTY *>(r->pres));
+		return ext_buffer_pull_restriction_property(pext, r->prop);
 	case RES_PROPCOMPARE:
 		r->pres = pext->alloc(sizeof(RESTRICTION_PROPCOMPARE));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_propcompare(pext, static_cast<RESTRICTION_PROPCOMPARE *>(r->pres));
+		return ext_buffer_pull_restriction_propcompare(pext, r->pcmp);
 	case RES_BITMASK:
 		r->pres = pext->alloc(sizeof(RESTRICTION_BITMASK));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_bitmask(pext, static_cast<RESTRICTION_BITMASK *>(r->pres));
+		return ext_buffer_pull_restriction_bitmask(pext, r->bm);
 	case RES_SIZE:
 		r->pres = pext->alloc(sizeof(RESTRICTION_SIZE));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_size(pext, static_cast<RESTRICTION_SIZE *>(r->pres));
+		return ext_buffer_pull_restriction_size(pext, r->size);
 	case RES_EXIST:
 		r->pres = pext->alloc(sizeof(RESTRICTION_EXIST));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_exist(pext, static_cast<RESTRICTION_EXIST *>(r->pres));
+		return ext_buffer_pull_restriction_exist(pext, r->exist);
 	case RES_SUBRESTRICTION:
 		r->pres = pext->alloc(sizeof(RESTRICTION_SUBOBJ));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_subobj(pext, static_cast<RESTRICTION_SUBOBJ *>(r->pres));
+		return ext_buffer_pull_restriction_subobj(pext, r->sub);
 	case RES_COMMENT:
 		r->pres = pext->alloc(sizeof(RESTRICTION_COMMENT));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_comment(pext, static_cast<RESTRICTION_COMMENT *>(r->pres));
+		return ext_buffer_pull_restriction_comment(pext, r->comment);
 	case RES_COUNT:
 		r->pres = pext->alloc(sizeof(RESTRICTION_COUNT));
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction_count(pext, static_cast<RESTRICTION_COUNT *>(r->pres));
+		return ext_buffer_pull_restriction_count(pext, r->count);
 	case RES_NULL:
 		r->pres = NULL;
 		return EXT_ERR_SUCCESS;
@@ -3815,27 +3815,27 @@ int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r)
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
-		return ext_buffer_push_restriction_and_or(pext, static_cast<RESTRICTION_AND_OR *>(r->pres));
+		return ext_buffer_push_restriction_and_or(pext, r->andor);
 	case RES_NOT:
-		return ext_buffer_push_restriction_not(pext, static_cast<RESTRICTION_NOT *>(r->pres));
+		return ext_buffer_push_restriction_not(pext, r->xnot);
 	case RES_CONTENT:
-		return ext_buffer_push_restriction_content(pext, static_cast<RESTRICTION_CONTENT *>(r->pres));
+		return ext_buffer_push_restriction_content(pext, r->cont);
 	case RES_PROPERTY:
-		return ext_buffer_push_restriction_property(pext, static_cast<RESTRICTION_PROPERTY *>(r->pres));
+		return ext_buffer_push_restriction_property(pext, r->prop);
 	case RES_PROPCOMPARE:
-		return ext_buffer_push_restriction_propcompare(pext, static_cast<RESTRICTION_PROPCOMPARE *>(r->pres));
+		return ext_buffer_push_restriction_propcompare(pext, r->pcmp);
 	case RES_BITMASK:
-		return ext_buffer_push_restriction_bitmask(pext, static_cast<RESTRICTION_BITMASK *>(r->pres));
+		return ext_buffer_push_restriction_bitmask(pext, r->bm);
 	case RES_SIZE:
-		return ext_buffer_push_restriction_size(pext, static_cast<RESTRICTION_SIZE *>(r->pres));
+		return ext_buffer_push_restriction_size(pext, r->size);
 	case RES_EXIST:
-		return ext_buffer_push_restriction_exist(pext, static_cast<RESTRICTION_EXIST *>(r->pres));
+		return ext_buffer_push_restriction_exist(pext, r->exist);
 	case RES_SUBRESTRICTION:
-		return ext_buffer_push_restriction_subobj(pext, static_cast<RESTRICTION_SUBOBJ *>(r->pres));
+		return ext_buffer_push_restriction_subobj(pext, r->sub);
 	case RES_COMMENT:
-		return ext_buffer_push_restriction_comment(pext, static_cast<RESTRICTION_COMMENT *>(r->pres));
+		return ext_buffer_push_restriction_comment(pext, r->comment);
 	case RES_COUNT:
-		return ext_buffer_push_restriction_count(pext, static_cast<RESTRICTION_COUNT *>(r->pres));
+		return ext_buffer_push_restriction_count(pext, r->count);
 	case RES_NULL:
 		return EXT_ERR_SUCCESS;
 	}

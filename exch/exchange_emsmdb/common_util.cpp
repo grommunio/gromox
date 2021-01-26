@@ -1754,62 +1754,44 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 	
 	switch (pres->rt) {
 	case RES_AND:
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
-			if (!common_util_convert_restriction(to_unicode, &andor->pres[i]))
+	case RES_OR:
+		for (i = 0; i < pres->andor->count; ++i)
+			if (!common_util_convert_restriction(to_unicode, &pres->andor->pres[i]))
 				return FALSE;	
 		break;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
-		if (!common_util_convert_restriction(to_unicode, &rnot->res))
+	case RES_NOT:
+		if (!common_util_convert_restriction(to_unicode, &pres->xnot->res))
 			return FALSE;	
 		break;
-	}
-	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if (!common_util_convert_tagged_propval(to_unicode, &rcon->propval))
+	case RES_CONTENT:
+		if (!common_util_convert_tagged_propval(to_unicode, &pres->cont->propval))
 			return FALSE;	
-		common_util_convert_proptag(to_unicode, &rcon->proptag);
+		common_util_convert_proptag(to_unicode, &pres->cont->proptag);
 		break;
-	}
-	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
-		if (!common_util_convert_tagged_propval(to_unicode, &rprop->propval))
+	case RES_PROPERTY:
+		if (!common_util_convert_tagged_propval(to_unicode, &pres->prop->propval))
 			return FALSE;	
-		common_util_convert_proptag(to_unicode, &rprop->proptag);
+		common_util_convert_proptag(to_unicode, &pres->prop->proptag);
 		break;
-	}
-	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
-		common_util_convert_proptag(to_unicode, &rprop->proptag1);
-		common_util_convert_proptag(to_unicode, &rprop->proptag2);
+	case RES_PROPCOMPARE:
+		common_util_convert_proptag(to_unicode, &pres->pcmp->proptag1);
+		common_util_convert_proptag(to_unicode, &pres->pcmp->proptag2);
 		break;
-	}
-	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		common_util_convert_proptag(to_unicode, &rbm->proptag);
+	case RES_BITMASK:
+		common_util_convert_proptag(to_unicode, &pres->bm->proptag);
 		break;
-	}
-	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
-		common_util_convert_proptag(to_unicode, &rsize->proptag);
+	case RES_SIZE:
+		common_util_convert_proptag(to_unicode, &pres->size->proptag);
 		break;
-	}
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
-		common_util_convert_proptag(to_unicode, &rex->proptag);
+	case RES_EXIST:
+		common_util_convert_proptag(to_unicode, &pres->exist->proptag);
 		break;
-	}
-	case RES_SUBRESTRICTION: {
-		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
-		if (!common_util_convert_restriction(to_unicode, &rsub->res))
+	case RES_SUBRESTRICTION:
+		if (!common_util_convert_restriction(to_unicode, &pres->sub->res))
 			return FALSE;	
 		break;
-	}
 	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		auto rcom = pres->comment;
 		for (i = 0; i < rcom->count; ++i)
 			if (!common_util_convert_tagged_propval(to_unicode, &rcom->ppropval[i]))
 				return FALSE;	
@@ -1818,12 +1800,10 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 				return FALSE;	
 		break;
 	}
-	case RES_COUNT: {
-		auto rcnt = static_cast<RESTRICTION_COUNT *>(pres->pres);
-		if (!common_util_convert_restriction(to_unicode, &rcnt->sub_res))
+	case RES_COUNT:
+		if (!common_util_convert_restriction(to_unicode, &pres->count->sub_res))
 			return FALSE;	
 		break;
-	}
 	}
 	return TRUE;
 }

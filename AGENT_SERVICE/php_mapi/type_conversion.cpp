@@ -823,7 +823,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	case RES_AND:
 	case RES_OR: {
 		pres->pres = emalloc(sizeof(RESTRICTION_AND_OR));
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
+		auto andor = pres->andor;
 		if (andor == nullptr)
 			return 0;
 		andor->count = zend_hash_num_elements(pdata_hash);
@@ -839,7 +839,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_NOT: {
 		pres->pres = emalloc(sizeof(RESTRICTION_NOT));
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+		auto rnot = pres->xnot;
 		if (rnot == nullptr)
 			return 0;
 		i = 0;
@@ -852,7 +852,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_SUBRESTRICTION: {
 		pres->pres = emalloc(sizeof(RESTRICTION_SUBOBJ));
-		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
+		auto rsub = pres->sub;
 		if (rsub == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
@@ -868,7 +868,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_COMMENT: {
 		pres->pres = emalloc(sizeof(RESTRICTION_COMMENT));
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		auto rcom = pres->comment;
 		if (rcom == nullptr)
 			return 0;
 		rcom->pres = st_malloc<RESTRICTION>();
@@ -893,7 +893,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_CONTENT: {
 		pres->pres = emalloc(sizeof(RESTRICTION_CONTENT));
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (rcon == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
@@ -924,7 +924,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_PROPERTY: {
 		pres->pres = emalloc(sizeof(RESTRICTION_PROPERTY));
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		if (rprop == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
@@ -955,7 +955,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_PROPCOMPARE: {
 		pres->pres = emalloc(sizeof(RESTRICTION_PROPCOMPARE));
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (rprop == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
@@ -975,7 +975,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_BITMASK: {
 		pres->pres = emalloc(sizeof(RESTRICTION_BITMASK));
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (rbm == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_TYPE);
@@ -995,7 +995,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_SIZE: {
 		pres->pres = emalloc(sizeof(RESTRICTION_SIZE));
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		if (rsize == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_SIZE);
@@ -1015,7 +1015,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	case RES_EXIST: {
 		pres->pres = emalloc(sizeof(RESTRICTION_EXIST));
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+		auto rex = pres->exist;
 		if (rex == nullptr)
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
@@ -1042,7 +1042,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 	switch (pres->rt) {
 	case RES_AND:
 	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
+		auto andor = pres->andor;
 		array_init(&pzarray);
 		for (i = 0; i < andor->count; ++i) {
 			sprintf(key, "%i", i);
@@ -1053,7 +1053,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+		auto rnot = pres->xnot;
 		array_init(&pzarray);
 		if (!restriction_to_php(&rnot->res, &pzentry TSRMLS_CC))
 			return 0;	
@@ -1061,7 +1061,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		tmp_propvals.count = 1;
 		tmp_propvals.ppropval = &rcon->propval;
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
@@ -1077,7 +1077,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		tmp_propvals.count = 1;
 		tmp_propvals.ppropval = &rprop->propval;
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
@@ -1093,7 +1093,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_RELOP);
 		add_assoc_long(&pzarray, key, rprop->relop);
@@ -1104,7 +1104,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_TYPE);
 		add_assoc_long(&pzarray, key, rbm->bitmask_relop);
@@ -1115,7 +1115,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_RELOP);
 		add_assoc_long(&pzarray, key, rsize->relop);
@@ -1126,14 +1126,14 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+		auto rex = pres->exist;
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rex->proptag));
 		break;
 	}
 	case RES_SUBRESTRICTION: {
-		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
+		auto rsub = pres->sub;
 		if (!restriction_to_php(&rsub->res, &pzrestriction TSRMLS_CC))
 			return 0;	
 		array_init(&pzarray);
@@ -1144,7 +1144,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		break;
 	}
 	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		auto rcom = pres->comment;
 		tmp_propvals.count = rcom->count;
 		tmp_propvals.ppropval = rcom->ppropval;
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {

@@ -759,7 +759,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 		if (prestriction != nullptr &&
 		    prestriction->rt == RES_PROPERTY &&
-		    (pres = static_cast<RESTRICTION_PROPERTY *>(prestriction->pres)) != nullptr &&
+		    (pres = prestriction->prop) != nullptr &&
 		    pres->relop == RELOP_EQ &&
 		    pres->proptag == PROP_TAG_CONVERSATIONID &&
 		    static_cast<BINARY *>(pres->propval.pvalue)->cb == 16)
@@ -1681,23 +1681,19 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	
 	switch (pres->rt) {
 	case RES_OR:
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_AND:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (!table_evaluate_rule_restriction(psqlite,
-			    rule_id, &andor->pres[i]))
+			    rule_id, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+	case RES_NOT:
 		if (table_evaluate_rule_restriction(psqlite,
-		    rule_id, &rnot->res))
+		    rule_id, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
@@ -1751,7 +1747,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
@@ -1767,7 +1763,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
@@ -1780,7 +1776,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
@@ -1799,7 +1795,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rsize->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
@@ -1807,22 +1803,18 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+	case RES_EXIST:
 		if (!common_util_get_rule_property(rule_id, psqlite,
-		    rex->proptag, &pvalue) || pvalue == nullptr)
+		    pres->exist->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
-	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
-		if (rcom->pres == nullptr)
+	case RES_COMMENT:
+		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_evaluate_rule_restriction(psqlite, rule_id,
-		       rcom->pres);
-	}
+		       pres->comment->pres);
 	case RES_COUNT:
 		return FALSE;
 	}	
@@ -2763,31 +2755,25 @@ static BOOL table_evaluate_row_restriction(
 	uint32_t val_size;
 	
 	switch (pres->rt) {
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
-			if (!table_evaluate_row_restriction(&andor->pres[i],
+	case RES_AND:
+		for (i = 0; i < pres->andor->count; ++i)
+			if (!table_evaluate_row_restriction(&pres->andor->pres[i],
 			    pparam, get_property))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
-			if (table_evaluate_row_restriction(&andor->pres[i],
+	case RES_OR:
+		for (i = 0; i < pres->andor->count; ++i)
+			if (table_evaluate_row_restriction(&pres->andor->pres[i],
 			    pparam, get_property))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
-		if (table_evaluate_row_restriction(&rnot->res,
+	case RES_NOT:
+		if (table_evaluate_row_restriction(&pres->xnot->res,
 		    pparam, get_property))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
@@ -2841,7 +2827,7 @@ static BOOL table_evaluate_row_restriction(
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		if (!get_property(pparam, rprop->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -2857,7 +2843,7 @@ static BOOL table_evaluate_row_restriction(
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!get_property(pparam, rprop->proptag1, &pvalue) ||
@@ -2870,7 +2856,7 @@ static BOOL table_evaluate_row_restriction(
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!get_property(pparam, rbm->proptag, &pvalue) ||
@@ -2889,7 +2875,7 @@ static BOOL table_evaluate_row_restriction(
 		return FALSE;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		if (!get_property(pparam, rsize->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -2897,22 +2883,18 @@ static BOOL table_evaluate_row_restriction(
 		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
-		if (!get_property(pparam, rex->proptag, &pvalue) ||
+	case RES_EXIST:
+		if (!get_property(pparam, pres->exist->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
-	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
-		if (rcom->pres == nullptr)
+	case RES_COMMENT:
+		if (pres->comment->pres == nullptr)
 			return TRUE;
-		return table_evaluate_row_restriction(rcom->pres,
+		return table_evaluate_row_restriction(pres->comment->pres,
 		       pparam, get_property);
-	}
 	case RES_COUNT:
 		return FALSE;
 	}	

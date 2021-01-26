@@ -1043,30 +1043,24 @@ static BOOL table_object_evaluate_restriction(
 	uint32_t val_size;
 	
 	switch (pres->rt) {
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_OR:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (table_object_evaluate_restriction(ppropvals,
-			    &andor->pres[i]))
+			    &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
-		for (i = 0; i < andor->count; ++i)
+	case RES_AND:
+		for (i = 0; i < pres->andor->count; ++i)
 			if (!table_object_evaluate_restriction(ppropvals,
-			    &andor->pres[i]))
+			    &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
-		if (table_object_evaluate_restriction(ppropvals, &rnot->res))
+	case RES_NOT:
+		if (table_object_evaluate_restriction(ppropvals, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
@@ -1121,7 +1115,7 @@ static BOOL table_object_evaluate_restriction(
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		auto rprop = pres->prop;
 		pvalue = common_util_get_propvals(ppropvals, rprop->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1138,7 +1132,7 @@ static BOOL table_object_evaluate_restriction(
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
-		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rprop->proptag1);
@@ -1153,7 +1147,7 @@ static BOOL table_object_evaluate_restriction(
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
@@ -1173,7 +1167,7 @@ static BOOL table_object_evaluate_restriction(
 		return FALSE;
 	}
 	case RES_SIZE: {
-		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		auto rsize = pres->size;
 		pvalue = common_util_get_propvals(ppropvals, rsize->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1182,22 +1176,18 @@ static BOOL table_object_evaluate_restriction(
 		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
-		pvalue = common_util_get_propvals(ppropvals, rex->proptag);
+	case RES_EXIST:
+		pvalue = common_util_get_propvals(ppropvals, pres->exist->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		return TRUE;
-	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
-	case RES_COMMENT: {
-		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
-		if (rcom->pres == nullptr)
+	case RES_COMMENT:
+		if (pres->comment->pres == nullptr)
 			return TRUE;
-		return table_object_evaluate_restriction(ppropvals, rcom->pres);
-	}
+		return table_object_evaluate_restriction(ppropvals, pres->comment->pres);
 	case RES_COUNT:
 		return FALSE;
 	}	

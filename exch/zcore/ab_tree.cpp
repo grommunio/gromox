@@ -2144,28 +2144,22 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	uint8_t node_type;
 	
 	switch (pfilter->rt) {
-	case RES_AND: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
-		for (unsigned int i = 0; i < andor->count; ++i)
-			if (!ab_tree_match_node(pnode, codepage, &andor->pres[i]))
+	case RES_AND:
+		for (unsigned int i = 0; i < pfilter->andor->count; ++i)
+			if (!ab_tree_match_node(pnode, codepage, &pfilter->andor->pres[i]))
 				return FALSE;
 		return TRUE;
-	}
-	case RES_OR: {
-		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
-		for (unsigned int i = 0; i < andor->count; ++i)
-			if (ab_tree_match_node(pnode, codepage, &andor->pres[i]))
+	case RES_OR:
+		for (unsigned int i = 0; i < pfilter->andor->count; ++i)
+			if (ab_tree_match_node(pnode, codepage, &pfilter->andor->pres[i]))
 				return TRUE;
 		return FALSE;
-	}
-	case RES_NOT: {
-		auto rnot = static_cast<RESTRICTION_NOT *>(pfilter->pres);
-		if (ab_tree_match_node(pnode, codepage, &rnot->res))
+	case RES_NOT:
+		if (ab_tree_match_node(pnode, codepage, &pfilter->xnot->res))
 			return FALSE;
 		return TRUE;
-	}
 	case RES_CONTENT: {
-		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
+		auto rcon = pfilter->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
 		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
@@ -2218,7 +2212,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		return FALSE;
 	}
 	case RES_PROPERTY: {
-		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pfilter->pres);
+		auto rprop = pfilter->prop;
 		if (rprop->proptag == PROP_TAG_ANR) {
 			if (TRUE == ab_tree_fetch_node_property(pnode,
 				codepage, PROP_TAG_ACCOUNT, &pvalue) &&
@@ -2250,7 +2244,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	case RES_PROPCOMPARE:
 		return FALSE;
 	case RES_BITMASK: {
-		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
+		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
@@ -2270,17 +2264,15 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	}
 	case RES_SIZE:
 		return FALSE;
-	case RES_EXIST: {
-		auto rex = static_cast<RESTRICTION_EXIST *>(pfilter->pres);
+	case RES_EXIST:
 		node_type = ab_tree_get_node_type(pnode);
 		if (node_type > 0x80) {
 			return FALSE;
 		}
 		if (ab_tree_fetch_node_property(pnode, codepage,
-		    rex->proptag, &pvalue) && pvalue != nullptr)
+		    pfilter->exist->proptag, &pvalue) && pvalue != nullptr)
 			return TRUE;	
 		return FALSE;
-	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
 	}

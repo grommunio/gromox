@@ -551,78 +551,67 @@ zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r)
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_and_or(pctx,
-		       static_cast<RESTRICTION_AND_OR *>(r->pres));
+		return ext_pack_pull_restriction_and_or(pctx, r->andor);
 	case RES_NOT:
 		r->pres = emalloc(sizeof(RESTRICTION_NOT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_not(pctx,
-		       static_cast<RESTRICTION_NOT *>(r->pres));
+		return ext_pack_pull_restriction_not(pctx, r->xnot);
 	case RES_CONTENT:
 		r->pres = emalloc(sizeof(RESTRICTION_CONTENT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_content(pctx,
-		       static_cast<RESTRICTION_CONTENT *>(r->pres));
+		return ext_pack_pull_restriction_content(pctx, r->cont);
 	case RES_PROPERTY:
 		r->pres = emalloc(sizeof(RESTRICTION_PROPERTY));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_property(pctx,
-		       static_cast<RESTRICTION_PROPERTY *>(r->pres));
+		return ext_pack_pull_restriction_property(pctx, r->prop);
 	case RES_PROPCOMPARE:
 		r->pres = emalloc(sizeof(RESTRICTION_PROPCOMPARE));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_propcompare(pctx,
-		       static_cast<RESTRICTION_PROPCOMPARE *>(r->pres));
+		return ext_pack_pull_restriction_propcompare(pctx, r->pcmp);
 	case RES_BITMASK:
 		r->pres = emalloc(sizeof(RESTRICTION_BITMASK));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_bitmask(pctx,
-		       static_cast<RESTRICTION_BITMASK *>(r->pres));
+		return ext_pack_pull_restriction_bitmask(pctx, r->bm);
 	case RES_SIZE:
 		r->pres = emalloc(sizeof(RESTRICTION_SIZE));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_size(pctx,
-		       static_cast<RESTRICTION_SIZE *>(r->pres));
+		return ext_pack_pull_restriction_size(pctx, r->size);
 	case RES_EXIST:
 		r->pres = emalloc(sizeof(RESTRICTION_EXIST));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_exist(pctx,
-		       static_cast<RESTRICTION_EXIST *>(r->pres));
+		return ext_pack_pull_restriction_exist(pctx, r->exist);
 	case RES_SUBRESTRICTION:
 		r->pres = emalloc(sizeof(RESTRICTION_SUBOBJ));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_subobj(pctx,
-		       static_cast<RESTRICTION_SUBOBJ *>(r->pres));
+		return ext_pack_pull_restriction_subobj(pctx, r->sub);
 	case RES_COMMENT:
 		r->pres = emalloc(sizeof(RESTRICTION_COMMENT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_comment(pctx,
-		       static_cast<RESTRICTION_COMMENT *>(r->pres));
+		return ext_pack_pull_restriction_comment(pctx, r->comment);
 	case RES_COUNT:
 		r->pres = emalloc(sizeof(RESTRICTION_COUNT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_count(pctx,
-		       static_cast<RESTRICTION_COUNT *>(r->pres));
+		return ext_pack_pull_restriction_count(pctx, r->count);
 	case RES_NULL:
 		r->pres = NULL;
 		return 1;
@@ -1735,38 +1724,27 @@ zend_bool ext_pack_push_restriction(PUSH_CTX *pctx, const RESTRICTION *r)
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
-		return ext_pack_push_restriction_and_or(pctx,
-		       static_cast<RESTRICTION_AND_OR *>(r->pres));
+		return ext_pack_push_restriction_and_or(pctx, r->andor);
 	case RES_NOT:
-		return ext_pack_push_restriction_not(pctx,
-		       static_cast<RESTRICTION_NOT *>(r->pres));
+		return ext_pack_push_restriction_not(pctx, r->xnot);
 	case RES_CONTENT:
-		return ext_pack_push_restriction_content(pctx,
-		       static_cast<RESTRICTION_CONTENT *>(r->pres));
+		return ext_pack_push_restriction_content(pctx, r->cont);
 	case RES_PROPERTY:
-		return ext_pack_push_restriction_property(pctx,
-		       static_cast<RESTRICTION_PROPERTY *>(r->pres));
+		return ext_pack_push_restriction_property(pctx, r->prop);
 	case RES_PROPCOMPARE:
-		return ext_pack_push_restriction_propcompare(pctx,
-		       static_cast<RESTRICTION_PROPCOMPARE *>(r->pres));
+		return ext_pack_push_restriction_propcompare(pctx, r->pcmp);
 	case RES_BITMASK:
-		return ext_pack_push_restriction_bitmask(pctx,
-		       static_cast<RESTRICTION_BITMASK *>(r->pres));
+		return ext_pack_push_restriction_bitmask(pctx, r->bm);
 	case RES_SIZE:
-		return ext_pack_push_restriction_size(pctx,
-		       static_cast<RESTRICTION_SIZE *>(r->pres));
+		return ext_pack_push_restriction_size(pctx, r->size);
 	case RES_EXIST:
-		return ext_pack_push_restriction_exist(pctx,
-		       static_cast<RESTRICTION_EXIST *>(r->pres));
+		return ext_pack_push_restriction_exist(pctx, r->exist);
 	case RES_SUBRESTRICTION:
-		return ext_pack_push_restriction_subobj(pctx,
-		       static_cast<RESTRICTION_SUBOBJ *>(r->pres));
+		return ext_pack_push_restriction_subobj(pctx, r->sub);
 	case RES_COMMENT:
-		return ext_pack_push_restriction_comment(pctx,
-		       static_cast<RESTRICTION_COMMENT *>(r->pres));
+		return ext_pack_push_restriction_comment(pctx, r->comment);
 	case RES_COUNT:
-		return ext_pack_push_restriction_count(pctx,
-		       static_cast<RESTRICTION_COUNT *>(r->pres));
+		return ext_pack_push_restriction_count(pctx, r->count);
 	case RES_NULL:
 		return 1;
 	}
