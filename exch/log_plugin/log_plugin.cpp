@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include "log_plugin.h"
 #include <gromox/config_file.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <cstdio>
 #include <cstdarg>
@@ -50,12 +50,14 @@ static int log_plugin_open_redirect(const char *filename);
 static int log_plugin_close_redirect(void);
 static void* thread_work_func(void *arg);
 
+DECLARE_API;
+
 /*
  *	log plugin's construct function
  *	@param
  *		cache_size		size of cache
  */
-void log_plugin_init(const char *config_path, const char* log_file_name,
+static void log_plugin_init(const char *config_path, const char *log_file_name,
 	int log_level, int files_num, int cache_size)
 {
 	const char *psearch;
@@ -92,7 +94,7 @@ void log_plugin_init(const char *config_path, const char* log_file_name,
 /*
  *	log plugin's destruct function
  */
-void log_plugin_free()
+static void log_plugin_free()
 {
 	pthread_mutex_destroy(&g_buffer_lock);
 	pthread_mutex_destroy(&g_redirect_lock);
@@ -104,7 +106,7 @@ void log_plugin_free()
  *		 0		success
  *		<>0		fail
  */
-int log_plugin_run()
+static int log_plugin_run()
 {
 	pthread_attr_t  attr;
 	
@@ -138,7 +140,7 @@ int log_plugin_run()
  *		 0		success
  *		<>0		fail
  */
-int log_plugin_stop()
+static int log_plugin_stop()
 {
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
@@ -162,7 +164,7 @@ int log_plugin_stop()
  *		level			log level
  *		format [in]		format string
  */
-void log_plugin_log_info(int level, const char *format, ...)
+static void log_plugin_log_info(int level, const char *format, ...)
 {
 	char log_buf[LOG_LEN];
 	time_t time_now;
@@ -272,7 +274,7 @@ WAIT_CLEAN:
  *		result [out]	buffer for passing out result
  *		length			result buffer length
  */
-void log_plugin_console_talk(int argc, char **argv, char *result, int length)
+static void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 {
 	BOOL flush_result;
 	CONFIG_FILE *pfile;
@@ -508,3 +510,94 @@ static BOOL log_plugin_flush_log()
 
 }
 
+BOOL SVC_LibMain(int reason, void **ppdata)
+{
+	CONFIG_FILE *pfile;
+	char file_name[256], tmp_path[256], temp_buff[64], log_file_name[256];
+	char *str_value, *psearch;
+	int cache_size, log_level, files_num;
+
+	switch (reason) {
+	case PLUGIN_INIT:
+		LINK_API(ppdata);
+		if (!register_talk(log_plugin_console_talk)) {
+			printf("[log_plugin]: failed to register console talk\n");
+			return false;
+		}
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		psearch = strrchr(file_name, '.');
+		if (psearch != nullptr)
+			*psearch = '\0';
+		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
+		pfile = config_file_init2(NULL, tmp_path);
+		if (pfile == nullptr) {
+			printf("[log_plugin]: config_file_init %s: %s\n", tmp_path, strerror(errno));
+			return false;
+		}
+		str_value = config_file_get_value(pfile, "LOG_LEVEL");
+		if (str_value == nullptr) {
+			log_level = 0;
+			config_file_set_value(pfile, "LOG_LEVEL", "0");
+		} else {
+			log_level = atoi(str_value);
+			if (log_level < 0 || log_level > 8) {
+				log_level = 0;
+				config_file_set_value(pfile, "LOG_LEVEL", "0");
+			}
+		}
+		printf("[log_plugin]: log level is %d\n", log_level);
+		str_value = config_file_get_value(pfile, "LOG_CACHE_SIZE");
+		if (str_value == nullptr) {
+			cache_size = 1024*1024;
+			config_file_set_value(pfile, "LOG_CACHE_SIZE", "1M");
+		} else {
+			cache_size = atobyte(str_value);
+			if (cache_size <= 0) {
+				cache_size = 1024*1024;
+				config_file_set_value(pfile, "LOG_CACHE_SIZE", "1M");
+			}
+		}
+		bytetoa(cache_size, temp_buff);
+		printf("[log_plugin]: log cache size is %s\n", temp_buff);
+		str_value = config_file_get_value(pfile, "FILES_NUM");
+		if (str_value == nullptr) {
+			files_num = 30;
+			config_file_set_value(pfile, "FILES_NUM", "30");
+		} else {
+			files_num = atoi(str_value);
+			if (files_num < 0) {
+				files_num = 0;
+				config_file_set_value(pfile, "FILES_NUM", "30");
+			} else if (files_num > 1024) {
+				files_num = 1024;
+				config_file_set_value(pfile, "FILES_NUM", "1024");
+			}
+		}
+		printf("[log_plugin]: files number is %d\n", files_num);
+		str_value = config_file_get_value(pfile, "LOG_FILE_NAME");
+		if (str_value == nullptr) {
+			strcpy(log_file_name, "log.txt");
+			config_file_set_value(pfile, "LOG_FILE_NAME", "log.txt");
+		} else {
+			strcpy(log_file_name, str_value);
+		}
+		printf("[log_plugin]: log file name is %s\n", log_file_name);
+		config_file_free(pfile);
+		log_plugin_init(tmp_path, log_file_name, log_level, files_num,
+			cache_size);
+		if (log_plugin_run() != 0) {
+			printf("[log_plugin]: failed to run log plugin\n");
+			return false;
+		}
+		if (!register_service("log_info", reinterpret_cast<void *>(log_plugin_log_info))) {
+			printf("[log_plugin]: failed to register \"log_info\" service\n");
+			return false;
+		}
+		return TRUE;
+	case PLUGIN_FREE:
+		log_plugin_stop();
+		log_plugin_free();
+		return TRUE;
+	}
+	return false;
+}
