@@ -1986,7 +1986,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	BOOL b_unicode, PROPTAG_ARRAY *pproptags)
 {
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE(PT_STRING8, (x)))
-	static constexpr size_t UPPER_LIMIT = 31;
+	static constexpr size_t UPPER_LIMIT = 32;
 	unsigned int &z = pproptags->cvalues;
 	pproptags->cvalues  = 0;
 	pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
@@ -2001,6 +2001,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
 	t[z++] = PROP_TAG_OBJECTTYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPE;
+	t[z++] = PROP_TAG_DISPLAYTYPEEX;
 	t[z++] = PROP_TAG_ENTRYID;
 	t[z++] = PROP_TAG_RECORDKEY;
 	t[z++] = PROP_TAG_ORIGINALENTRYID;
@@ -2041,11 +2042,9 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PROP_TAG_COMPANYNAME);
 		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
 		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
-		t[z++] = PROP_TAG_DISPLAYTYPEEX;
 		t[z++] = PROP_TAG_CREATIONTIME;
 		break;
 	case NODE_TYPE_FOLDER:
-		t[z++] = PROP_TAG_DISPLAYTYPEEX;
 		t[z++] = PROP_TAG_COMPANYNAME_STRING8;
 		t[z++] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		break;
