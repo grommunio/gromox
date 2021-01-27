@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <cassert>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -1984,6 +1985,31 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 static int nsp_interface_get_default_proptags(int node_type,
 	BOOL b_unicode, PROPTAG_ARRAY *pproptags)
 {
+#define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE(PT_STRING8, (x)))
+	static constexpr size_t UPPER_LIMIT = 31;
+	unsigned int &z = pproptags->cvalues;
+	pproptags->cvalues  = 0;
+	pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
+	                      sizeof(uint32_t) * UPPER_LIMIT));
+	if (pproptags->pproptag == nullptr)
+		return ecMAPIOOM;
+
+	auto &t = pproptags->pproptag;
+	t[z++] = U(PROP_TAG_DISPLAYNAME);
+	t[z++] = U(PROP_TAG_ADDRESSTYPE);
+	t[z++] = U(PROP_TAG_EMAILADDRESS);
+	t[z++] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
+	t[z++] = PROP_TAG_OBJECTTYPE;
+	t[z++] = PROP_TAG_DISPLAYTYPE;
+	t[z++] = PROP_TAG_ENTRYID;
+	t[z++] = PROP_TAG_RECORDKEY;
+	t[z++] = PROP_TAG_ORIGINALENTRYID;
+	t[z++] = PROP_TAG_SEARCHKEY;
+	t[z++] = PROP_TAG_INSTANCEKEY;
+	t[z++] = PROP_TAG_MAPPINGSIGNATURE;
+	t[z++] = PROP_TAG_SENDRICHINFO;
+	t[z++] = PROP_TAG_TEMPLATEID;
+	t[z++] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
 	switch (node_type) {
 	case NODE_TYPE_DOMAIN:
 	case NODE_TYPE_GROUP:
@@ -1992,150 +2018,43 @@ static int nsp_interface_get_default_proptags(int node_type,
 	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
+		t[z++] = U(PROP_TAG_NICKNAME);
+		t[z++] = U(PROP_TAG_TITLE);
+		t[z++] = U(PROP_TAG_PRIMARYTELEPHONENUMBER);
+		t[z++] = U(PROP_TAG_MOBILETELEPHONENUMBER);
+		t[z++] = U(PROP_TAG_HOMEADDRESSSTREET);
+		t[z++] = U(PROP_TAG_COMMENT);
+		t[z++] = U(PROP_TAG_COMPANYNAME);
+		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
+		t[z++] = U(PROP_TAG_OFFICELOCATION);
+		t[z++] = U(PROP_TAG_SMTPADDRESS);
+		t[z++] = U(PROP_TAG_ACCOUNT);
+		t[z++] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
+		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
+		t[z++] = U(PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE);
+		t[z++] = PROP_TAG_CREATIONTIME;
 		if (node_type == NODE_TYPE_PERSON)
-			pproptags->cvalues = 31;
-		else
-			pproptags->cvalues = 30;
-		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-		                      sizeof(uint32_t) * pproptags->cvalues));
-		if (NULL == pproptags->pproptag) {
-			return ecMAPIOOM;
-		}
-		if (TRUE == b_unicode) {
-			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME;
-			pproptags->pproptag[1] = PROP_TAG_NICKNAME;
-			pproptags->pproptag[2] = PROP_TAG_TITLE;
-			pproptags->pproptag[3] = PROP_TAG_PRIMARYTELEPHONENUMBER;
-			pproptags->pproptag[4] = PROP_TAG_MOBILETELEPHONENUMBER;
-			pproptags->pproptag[5] = PROP_TAG_HOMEADDRESSSTREET;
-			pproptags->pproptag[6] = PROP_TAG_COMMENT;
-			pproptags->pproptag[7] = PROP_TAG_COMPANYNAME;
-			pproptags->pproptag[8] = PROP_TAG_DEPARTMENTNAME;
-			pproptags->pproptag[9] = PROP_TAG_OFFICELOCATION;
-			pproptags->pproptag[10] = PROP_TAG_ADDRESSTYPE;
-			pproptags->pproptag[11] = PROP_TAG_SMTPADDRESS;
-			pproptags->pproptag[12] = PROP_TAG_EMAILADDRESS;
-			pproptags->pproptag[13] = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
-			pproptags->pproptag[14] = PROP_TAG_ACCOUNT;
-			pproptags->pproptag[15] = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
-			pproptags->pproptag[16] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES;
-			pproptags->pproptag[17] = PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE;
-		} else {
-			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME_STRING8;
-			pproptags->pproptag[1] = PROP_TAG_NICKNAME_STRING8;
-			pproptags->pproptag[2] = PROP_TAG_TITLE_STRING8;
-			pproptags->pproptag[3] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
-			pproptags->pproptag[4] = PROP_TAG_MOBILETELEPHONENUMBER_STRING8;
-			pproptags->pproptag[5] = PROP_TAG_HOMEADDRESSSTREET_STRING8;
-			pproptags->pproptag[6] = PROP_TAG_COMMENT_STRING8;
-			pproptags->pproptag[7] = PROP_TAG_COMPANYNAME_STRING8;
-			pproptags->pproptag[8] = PROP_TAG_DEPARTMENTNAME_STRING8;
-			pproptags->pproptag[9] = PROP_TAG_OFFICELOCATION_STRING8;
-			pproptags->pproptag[10] = PROP_TAG_ADDRESSTYPE_STRING8;
-			pproptags->pproptag[11] = PROP_TAG_SMTPADDRESS_STRING8;
-			pproptags->pproptag[12] = PROP_TAG_EMAILADDRESS_STRING8;
-			pproptags->pproptag[13] =
-				PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8;
-			pproptags->pproptag[14] = PROP_TAG_ACCOUNT_STRING8;
-			pproptags->pproptag[15] = PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8;
-			pproptags->pproptag[16] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8;
-			pproptags->pproptag[17] = PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE_STRING8;
-		}
-		pproptags->pproptag[18] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[19] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[20] = PROP_TAG_ENTRYID;
-		pproptags->pproptag[21] = PROP_TAG_RECORDKEY;
-		pproptags->pproptag[22] = PROP_TAG_ORIGINALENTRYID;
-		pproptags->pproptag[23] = PROP_TAG_SEARCHKEY;
-		pproptags->pproptag[24] = PROP_TAG_INSTANCEKEY;
-		pproptags->pproptag[25] = PROP_TAG_MAPPINGSIGNATURE;
-		pproptags->pproptag[26] = PROP_TAG_SENDRICHINFO;
-		pproptags->pproptag[27] = PROP_TAG_TEMPLATEID;
-		pproptags->pproptag[28] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
-		pproptags->pproptag[29] = PROP_TAG_CREATIONTIME;
-		if (node_type == NODE_TYPE_PERSON)
-			pproptags->pproptag[30] = PROP_TAG_THUMBNAILPHOTO;
+			t[z++] = PROP_TAG_THUMBNAILPHOTO;
 		break;
 	case NODE_TYPE_MLIST:
-		pproptags->cvalues = 21;
-		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-		                      sizeof(uint32_t) * pproptags->cvalues));
-		if (NULL == pproptags->pproptag) {
-			return ecMAPIOOM;
-		}
-		if (TRUE == b_unicode) {
-			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME;
-			pproptags->pproptag[1] = PROP_TAG_ADDRESSTYPE;
-			pproptags->pproptag[2] = PROP_TAG_SMTPADDRESS;
-			pproptags->pproptag[3] = PROP_TAG_EMAILADDRESS;
-			pproptags->pproptag[4] = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
-			pproptags->pproptag[5] = PROP_TAG_COMPANYNAME;
-			pproptags->pproptag[6] = PROP_TAG_DEPARTMENTNAME;
-			pproptags->pproptag[7] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES;
-		} else {
-			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME_STRING8;
-			pproptags->pproptag[1] = PROP_TAG_ADDRESSTYPE_STRING8;
-			pproptags->pproptag[2] = PROP_TAG_SMTPADDRESS_STRING8;
-			pproptags->pproptag[3] = PROP_TAG_EMAILADDRESS_STRING8;
-			pproptags->pproptag[4] =
-				PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8;
-			pproptags->pproptag[5] = PROP_TAG_COMPANYNAME_STRING8;
-			pproptags->pproptag[6] = PROP_TAG_DEPARTMENTNAME_STRING8;
-			pproptags->pproptag[7] =
-				PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8;
-		}
-		pproptags->pproptag[8] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[9] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[10] = PROP_TAG_DISPLAYTYPEEX;
-		pproptags->pproptag[11] = PROP_TAG_ENTRYID;
-		pproptags->pproptag[12] = PROP_TAG_RECORDKEY;
-		pproptags->pproptag[13] = PROP_TAG_ORIGINALENTRYID;
-		pproptags->pproptag[14] = PROP_TAG_SEARCHKEY;
-		pproptags->pproptag[15] = PROP_TAG_INSTANCEKEY;
-		pproptags->pproptag[16] = PROP_TAG_MAPPINGSIGNATURE;
-		pproptags->pproptag[17] = PROP_TAG_SENDRICHINFO;
-		pproptags->pproptag[18] = PROP_TAG_TEMPLATEID;
-		pproptags->pproptag[19] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
-		pproptags->pproptag[20] = PROP_TAG_CREATIONTIME;
+		t[z++] = U(PROP_TAG_SMTPADDRESS);
+		t[z++] = U(PROP_TAG_COMPANYNAME);
+		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
+		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
+		t[z++] = PROP_TAG_DISPLAYTYPEEX;
+		t[z++] = PROP_TAG_CREATIONTIME;
 		break;
 	case NODE_TYPE_FOLDER:
-		pproptags->cvalues = 18;
-		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-		                      sizeof(uint32_t) * pproptags->cvalues));
-		if (NULL == pproptags->pproptag) {
-			return ecMAPIOOM;
-		}
-		if (TRUE == b_unicode) {
-			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME;
-			pproptags->pproptag[1] = PROP_TAG_ADDRESSTYPE;
-			pproptags->pproptag[2] = PROP_TAG_EMAILADDRESS;
-			pproptags->pproptag[3] = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
-		} else {
-			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME_STRING8;
-			pproptags->pproptag[1] = PROP_TAG_ADDRESSTYPE_STRING8;
-			pproptags->pproptag[2] = PROP_TAG_EMAILADDRESS_STRING8;
-			pproptags->pproptag[3] =
-				PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8;
-		}
-		pproptags->pproptag[4] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[5] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[6] = PROP_TAG_DISPLAYTYPEEX;
-		pproptags->pproptag[7] = PROP_TAG_ENTRYID;
-		pproptags->pproptag[8] = PROP_TAG_RECORDKEY;
-		pproptags->pproptag[9] = PROP_TAG_ORIGINALENTRYID;
-		pproptags->pproptag[10] = PROP_TAG_SEARCHKEY;
-		pproptags->pproptag[11] = PROP_TAG_INSTANCEKEY;
-		pproptags->pproptag[12] = PROP_TAG_COMPANYNAME_STRING8;
-		pproptags->pproptag[13] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		pproptags->pproptag[14] = PROP_TAG_MAPPINGSIGNATURE;
-		pproptags->pproptag[15] = PROP_TAG_SENDRICHINFO;
-		pproptags->pproptag[16] = PROP_TAG_TEMPLATEID;
-		pproptags->pproptag[17] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
+		t[z++] = PROP_TAG_DISPLAYTYPEEX;
+		t[z++] = PROP_TAG_COMPANYNAME_STRING8;
+		t[z++] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		break;
 	default:
 		return ecInvalidObject;
 	}
+	assert(z <= UPPER_LIMIT);
 	return ecSuccess;
+#undef U
 }
 
 
@@ -2916,59 +2835,40 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 		*ppcolumns = NULL;
 		return ecMAPIOOM;
 	}
-	if (TRUE == b_unicode) {
-		pcolumns->pproptag[0] = PROP_TAG_DISPLAYNAME;
-		pcolumns->pproptag[1] = PROP_TAG_NICKNAME;
-		pcolumns->pproptag[2] = PROP_TAG_TITLE;
-		pcolumns->pproptag[3] = PROP_TAG_BUSINESSTELEPHONENUMBER;
-		pcolumns->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER;
-		pcolumns->pproptag[5] = PROP_TAG_MOBILETELEPHONENUMBER;
-		pcolumns->pproptag[6] = PROP_TAG_HOMEADDRESSSTREET;
-		pcolumns->pproptag[7] = PROP_TAG_COMMENT;
-		pcolumns->pproptag[8] = PROP_TAG_COMPANYNAME;
-		pcolumns->pproptag[9] = PROP_TAG_DEPARTMENTNAME;
-		pcolumns->pproptag[10] = PROP_TAG_OFFICELOCATION;
-		pcolumns->pproptag[11] = PROP_TAG_ADDRESSTYPE;
-		pcolumns->pproptag[12] = PROP_TAG_SMTPADDRESS;
-		pcolumns->pproptag[13] = PROP_TAG_EMAILADDRESS;
-		pcolumns->pproptag[14] = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
-		pcolumns->pproptag[15] = PROP_TAG_ACCOUNT;
-		pcolumns->pproptag[16] = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
-		pcolumns->pproptag[17] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES;
-	} else {
-		pcolumns->pproptag[0] = PROP_TAG_DISPLAYNAME_STRING8;
-		pcolumns->pproptag[1] = PROP_TAG_NICKNAME_STRING8;
-		pcolumns->pproptag[2] = PROP_TAG_TITLE_STRING8;
-		pcolumns->pproptag[3] = PROP_TAG_BUSINESSTELEPHONENUMBER_STRING8;
-		pcolumns->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
-		pcolumns->pproptag[5] = PROP_TAG_MOBILETELEPHONENUMBER_STRING8;
-		pcolumns->pproptag[6] = PROP_TAG_HOMEADDRESSSTREET_STRING8;
-		pcolumns->pproptag[7] = PROP_TAG_COMMENT_STRING8;
-		pcolumns->pproptag[8] = PROP_TAG_COMPANYNAME_STRING8;
-		pcolumns->pproptag[9] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		pcolumns->pproptag[10] = PROP_TAG_OFFICELOCATION_STRING8;
-		pcolumns->pproptag[11] = PROP_TAG_ADDRESSTYPE_STRING8;
-		pcolumns->pproptag[12] = PROP_TAG_SMTPADDRESS_STRING8;
-		pcolumns->pproptag[13] = PROP_TAG_EMAILADDRESS_STRING8;
-		pcolumns->pproptag[14] =
-			PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8;
-		pcolumns->pproptag[15] = PROP_TAG_ACCOUNT_STRING8;
-		pcolumns->pproptag[16] = PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8;
-		pcolumns->pproptag[17] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8;
-	}
-	pcolumns->pproptag[18] = PROP_TAG_OBJECTTYPE;
-	pcolumns->pproptag[19] = PROP_TAG_DISPLAYTYPE;
-	pcolumns->pproptag[20] = PROP_TAG_DISPLAYTYPEEX;
-	pcolumns->pproptag[21] = PROP_TAG_ENTRYID;
-	pcolumns->pproptag[22] = PROP_TAG_RECORDKEY;
-	pcolumns->pproptag[23] = PROP_TAG_ORIGINALENTRYID;
-	pcolumns->pproptag[24] = PROP_TAG_SEARCHKEY;
-	pcolumns->pproptag[25] = PROP_TAG_INSTANCEKEY;
-	pcolumns->pproptag[26] = PROP_TAG_MAPPINGSIGNATURE;
-	pcolumns->pproptag[27] = PROP_TAG_SENDRICHINFO;
-	pcolumns->pproptag[28] = PROP_TAG_TEMPLATEID;
-	pcolumns->pproptag[29] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
-	pcolumns->pproptag[30] = PROP_TAG_CREATIONTIME;
+#define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
+	auto &t = pcolumns->pproptag;
+	t[0] = U(PROP_TAG_DISPLAYNAME);
+	t[1] = U(PROP_TAG_NICKNAME);
+	t[2] = U(PROP_TAG_TITLE);
+	t[3] = U(PROP_TAG_BUSINESSTELEPHONENUMBER);
+	t[4] = U(PROP_TAG_PRIMARYTELEPHONENUMBER);
+	t[5] = U(PROP_TAG_MOBILETELEPHONENUMBER);
+	t[6] = U(PROP_TAG_HOMEADDRESSSTREET);
+	t[7] = U(PROP_TAG_COMMENT);
+	t[8] = U(PROP_TAG_COMPANYNAME);
+	t[9] = U(PROP_TAG_DEPARTMENTNAME);
+	t[10] = U(PROP_TAG_OFFICELOCATION);
+	t[11] = U(PROP_TAG_ADDRESSTYPE);
+	t[12] = U(PROP_TAG_SMTPADDRESS);
+	t[13] = U(PROP_TAG_EMAILADDRESS);
+	t[14] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
+	t[15] = U(PROP_TAG_ACCOUNT);
+	t[16] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
+	t[17] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
+	t[18] = PROP_TAG_OBJECTTYPE;
+	t[19] = PROP_TAG_DISPLAYTYPE;
+	t[20] = PROP_TAG_DISPLAYTYPEEX;
+	t[21] = PROP_TAG_ENTRYID;
+	t[22] = PROP_TAG_RECORDKEY;
+	t[23] = PROP_TAG_ORIGINALENTRYID;
+	t[24] = PROP_TAG_SEARCHKEY;
+	t[25] = PROP_TAG_INSTANCEKEY;
+	t[26] = PROP_TAG_MAPPINGSIGNATURE;
+	t[27] = PROP_TAG_SENDRICHINFO;
+	t[28] = PROP_TAG_TEMPLATEID;
+	t[29] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
+	t[30] = PROP_TAG_CREATIONTIME;
+#undef U
 	return ecSuccess;
 }
 
