@@ -125,7 +125,8 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 		return false;
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
-	         "INNER JOIN aliases AS a ON u.class_id=%d AND u.username=a.mainname", class_id);
+	         "INNER JOIN aliases AS a ON u.username=a.mainname "
+	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username", class_id);
 	aliasmap_t amap;
 	aliasmap_load(conn.res, query, amap);
 
