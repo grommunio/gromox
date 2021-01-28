@@ -301,11 +301,13 @@ mapi_la_LIBADD = ${HX_LIBS}
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 # tests
-noinst_PROGRAMS = tests/abktconv tests/bodyconv
+noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/icalparse
 tests_abktconv_SOURCES = tests/abktconv.cpp
 tests_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
+tests_icalparse_SOURCES = tests/icalparse.cpp
+tests_icalparse_LDADD = libgromox_email.la libgromox_mapi.la
 
 # doc
 man_MANS = \

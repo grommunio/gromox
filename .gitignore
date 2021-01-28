@@ -49,3 +49,4 @@ Makefile.in
 /system/*.service
 /tests/abktconv
 /tests/bodyconv
+/tests/icalparse
