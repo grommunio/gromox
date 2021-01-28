@@ -348,11 +348,7 @@ static const char tbl_groups_top[] =
 "  `groupname` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
-"  `max_size` int(10) unsigned NOT NULL,"
-"  `max_user` int(10) unsigned NOT NULL,"
 "  `title` varchar(128) NOT NULL,"
-"  `privilege_bits` int(10) unsigned NOT NULL,"
-"  `group_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `groupname` (`groupname`),"
 "  KEY `domain_id` (`domain_id`)"
@@ -549,6 +545,10 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{55, "ALTER TABLE `users` ADD COLUMN `externid` varbinary(64) DEFAULT NULL"},
 	{56, "ALTER TABLE user_properties DROP CONSTRAINT user_properties_ibfk_1"},
 	{57, "ALTER TABLE user_properties ADD CONSTRAINT user_properties_ibfk_1 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE"},
+	{58, "ALTER TABLE `groups` DROP COLUMN `group_status`"},
+	{59, "ALTER TABLE `groups` DROP COLUMN `privilege_bits`"},
+	{60, "ALTER TABLE `groups` DROP COLUMN `max_user`"},
+	{61, "ALTER TABLE `groups` DROP COLUMN `max_size`"},
 	{0, nullptr},
 };
 
