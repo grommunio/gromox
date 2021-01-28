@@ -1003,9 +1003,8 @@ BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &pfile
 {
 	char sql_string[1024];
 
-	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
-			"hierarchy INNER JOIN classes ON class_id=0 AND "
-			"hierarchy.group_id=%d AND child_id=classes.id", group_id);
+	snprintf(sql_string, 1024, "SELECT h.child_id, c.classname FROM hierarchy AS h "
+	         "INNER JOIN classes AS c ON h.class_id=0 AND h.group_id=%d AND h.child_id=c.id", group_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(sql_string))
 		return false;
@@ -1031,9 +1030,9 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile) 
 {
 	char sql_string[1024];
 
-	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
-		"hierarchy INNER JOIN classes ON class_id=%d AND "
-		"child_id=classes.id", class_id);
+	snprintf(sql_string, 1024, "SELECT h.child_id, c.classname FROM "
+		"hierarchy AS h INNER JOIN classes AS c ON h.class_id=%d AND "
+		"h.child_id=c.id", class_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(sql_string))
 		return false;
