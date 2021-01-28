@@ -55,18 +55,6 @@ static char* ical_get_tag_comma(char *pstring)
 	return NULL;
 }
 
-static char* ical_get_value_comma(char *pstring)
-{
-	char *ptoken;
-	
-	ptoken = strchr(pstring, ',');
-	if (NULL == ptoken) {
-		return NULL;
-	}
-	*ptoken = '\0';
-	return ptoken + 1;
-}
-
 static char* ical_get_tag_semicolon(char *pstring)
 {
 	int i;
@@ -97,7 +85,7 @@ static char* ical_get_tag_semicolon(char *pstring)
 	return NULL;
 }
 
-static char* ical_get_value_semicolon(char *pstring)
+static char *ical_get_value_sep(char *pstring, char sep)
 {
 	int i;
 	int tmp_len;
@@ -105,8 +93,7 @@ static char* ical_get_value_semicolon(char *pstring)
 	tmp_len = strlen(pstring);
 	for (i=0; i<tmp_len; i++) {
 		if ('\\' == pstring[i]) {
-			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
-				',' == pstring[i + 1]) {
+			if (pstring[i+1] == '\\' || pstring[i+1] == sep) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i - 1);
 				pstring[tmp_len-1] = '\0';
 				tmp_len --;
@@ -114,7 +101,7 @@ static char* ical_get_value_semicolon(char *pstring)
 				pstring[i] = '\r';
 				pstring[i + 1] = '\n';
 			}
-		} else if (';' == pstring[i]) {
+		} else if (pstring[i] == sep) {
 			pstring[i] = '\0';
 			for (i+=1; i<tmp_len; i++) {
 				if (' ' != pstring[i] && '\t' != pstring[i]) {
@@ -361,7 +348,7 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 	auto b_base64 = ical_check_base64(piline);
 	ptr = pvalue;
 	do {
-		pnext = ical_get_value_semicolon(ptr);
+		pnext = ical_get_value_sep(ptr, ';');
 		if (!b_base64) {
 			ptr1 = strchr(ptr, '=');
 			if (NULL != ptr1) {
@@ -382,7 +369,7 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 		if (ical_append_value(piline, pivalue) < 0)
 			return false;
 		do {
-			pnext1 = ical_get_value_comma(ptr1);
+			pnext1 = ical_get_value_sep(ptr1, ',');
 			if ('\0' == *ptr1) {
 				if (!ical_append_subval(pivalue, nullptr))
 					return FALSE;
