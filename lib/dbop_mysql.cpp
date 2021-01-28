@@ -354,6 +354,18 @@ static const char tbl_groups_top[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_hierarchy_top[] =
+"CREATE TABLE `hierarchy` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `class_id` int(10) unsigned NOT NULL,"
+"  `child_id` int(10) unsigned NOT NULL,"
+"  `group_id` int(10) unsigned NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  KEY `class_id` (`class_id`),"
+"  KEY `child_id` (`child_id`),"
+"  KEY `group_id` (`group_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
 static const char tbl_members_top[] =
 "CREATE TABLE `members` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -432,7 +444,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"domains", tbl_domains_top},
 	{"forwards", tbl_forwards_top},
 	{"groups", tbl_groups_top},
-	{"hierarchy", tbl_hierarchy_0},
+	{"hierarchy", tbl_hierarchy_top},
 	{"members", tbl_members_top},
 	{"mlists", tbl_mlists_top},
 	{"options", tbl_options_1},
@@ -549,6 +561,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{59, "ALTER TABLE `groups` DROP COLUMN `privilege_bits`"},
 	{60, "ALTER TABLE `groups` DROP COLUMN `max_user`"},
 	{61, "ALTER TABLE `groups` DROP COLUMN `max_size`"},
+	{62, "ALTER TABLE `hierarchy` DROP COLUMN `domain_id`"},
 	{0, nullptr},
 };
 
