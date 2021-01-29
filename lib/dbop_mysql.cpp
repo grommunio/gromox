@@ -305,12 +305,8 @@ static const char tbl_classes_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
 "  `listname` varchar(320) CHARACTER SET ascii DEFAULT NULL,"
-"  `domain_id` int(10) unsigned NOT NULL,"
-"  `group_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
 "  KEY `listname` (`listname`),"
-"  KEY `domain_id` (`domain_id`),"
-"  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_domains_top[] =
@@ -562,6 +558,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{60, "ALTER TABLE `groups` DROP COLUMN `max_user`"},
 	{61, "ALTER TABLE `groups` DROP COLUMN `max_size`"},
 	{62, "ALTER TABLE `hierarchy` DROP COLUMN `domain_id`"},
+	{63, "ALTER TABLE `classes` DROP COLUMN `domain_id`"},
+	{64, "ALTER TABLE `classes` DROP COLUMN `group_id`"},
 	{0, nullptr},
 };
 
