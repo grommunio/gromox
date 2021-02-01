@@ -1753,7 +1753,7 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-int html_to_plain(const void *inbuf, int len, char **outbufp) try
+int html_to_plain(const void *inbuf, int len, std::string &outbuf) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
@@ -1762,7 +1762,6 @@ int html_to_plain(const void *inbuf, int len, char **outbufp) try
 	int depth = 0, in_q = 0;
 	char *tp, lc;
 	
-	*outbufp = nullptr;
 	auto rbuf = std::make_unique<char[]>(len + 1);
 	if (rbuf == nullptr)
 		return -1;
@@ -1952,8 +1951,8 @@ REG_CHAR:
 	if (rp < rbuf.get() + len) {
 		*rp = '\0';
 	}
-	*outbufp = rbuf.release();
-	return static_cast<int>(rp - *outbufp);
+	outbuf = rbuf.get();
+	return outbuf.size();
 } catch (...) {
 	return -1;
 }

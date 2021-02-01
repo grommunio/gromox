@@ -92,14 +92,15 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 		ret = instance_conv_htmlfromhigher(mc, bin);
 	if (ret <= 0)
 		return ret;
-	std::unique_ptr<char, instbody_free> outbuf;
-	ret = html_to_plain(bin->pc, bin->cb, &unique_tie(outbuf));
-	if (ret <= 0)
+	std::string plainbuf;
+	ret = html_to_plain(bin->pc, bin->cb, plainbuf);
+	if (ret < 0)
 		return 0;
-	bin->pv = common_util_alloc(strlen(outbuf.get()) + 1);
+	auto outbuf = plainbuf.c_str();
+	bin->pv = common_util_alloc(strlen(outbuf) + 1);
 	if (bin->pv == nullptr)
 		return -1;
-	memcpy(bin->pv, outbuf.get(), strlen(outbuf.get()) + 1);
+	memcpy(bin->pv, outbuf, strlen(outbuf) + 1);
 	return 1;
 }
 

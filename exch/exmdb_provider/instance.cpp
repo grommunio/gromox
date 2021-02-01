@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <string>
 #include <libHX/defs.h>
 #include <gromox/database.h>
 #include <gromox/fileio.h>
@@ -1922,19 +1923,18 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		pcpid = static_cast<uint32_t *>(tpropval_array_get_propval(
 		        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_INTERNETCODEPAGE));
 		if (NULL != pbin && NULL != pcpid) {
-			char *plainout = nullptr;
-			if (html_to_plain(pbin->pc, pbin->cb, &plainout) < 0) {
+			std::string plainbuf;
+			if (html_to_plain(pbin->pc, pbin->cb, plainbuf) < 0) {
 				db_engine_put_db(pdb);
 				return false;
 			}
+			auto plainout = plainbuf.c_str();
 			pvalue = common_util_alloc(3 * strlen(plainout) + 1);
 			if (NULL == pvalue) {
-				free(plainout);
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			memcpy(pvalue, plainout, strlen(plainout) + 1);
-			free(plainout);
 			pvalue = static_cast<char *>(common_util_convert_copy(TRUE, *pcpid, static_cast<char *>(pvalue)));
 			if (NULL != pvalue) {
 				propval.proptag = PROP_TAG_BODY;

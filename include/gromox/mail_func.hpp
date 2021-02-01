@@ -3,6 +3,7 @@
  */
 #pragma once
 #include <ctime>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/mem_file.hpp>
 #define MIME_NAME_LEN			80
@@ -60,5 +61,5 @@ BOOL mime_string_to_utf8(const char *charset,
 
 void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
-extern GX_EXPORT int html_to_plain(const void *inbuf, int inlen, char **outbufp);
+extern GX_EXPORT int html_to_plain(const void *inbuf, int inlen, std::string &outbuf);
 extern GX_EXPORT char *plain_to_html(const char *rbuf);

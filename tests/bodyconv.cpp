@@ -49,9 +49,9 @@ int main(int argc, const char **argv)
 		if (out != nullptr)
 			std::cout << out.get() << std::endl;
 	} else if (strcmp(argv[1], "htmltotext") == 0) {
-		std::unique_ptr<char, stdlib_free> out;
-		if (html_to_plain(all.c_str(), all.size(), &unique_tie(out)) >= 0)
-			std::cout << out.get() << std::endl;
+		std::string out;
+		if (html_to_plain(all.c_str(), all.size(), out) >= 0)
+			std::cout << out << std::endl;
 	} else if (strcmp(argv[1], "htmltortf") == 0) {
 		std::unique_ptr<char, stdlib_free> out;
 		size_t outlen = 0;

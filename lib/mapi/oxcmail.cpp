@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <cstdint>
+#include <string>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -4802,15 +4803,15 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			} else {
 				tmp_int32 = *(uint32_t*)pvalue;
 			}
-			char *plainout = nullptr;
-			if (html_to_plain(phtml_bin->pc, phtml_bin->cb, &plainout) < 0) {
+			std::string plainbuf;
+			if (html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf) < 0) {
 				message_content_free(pmsg);
 				return NULL;
 			}
+			auto plainout = plainbuf.c_str();
 			propval.proptag = PROP_TAG_BODY;
 			propval.pvalue = alloc(3 * strlen(plainout) + 1);
 			if (NULL == pvalue) {
-				free(plainout);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -4818,11 +4819,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			if (NULL == encoding) {
 				encoding = "windows-1252";
 			}
-			if (string_to_utf8(encoding, static_cast<char *>(plainout), static_cast<char *>(propval.pvalue)) &&
+			if (string_to_utf8(encoding, plainout, static_cast<char *>(propval.pvalue)) &&
 			    utf8_check(static_cast<char *>(propval.pvalue)))
 				tpropval_array_set_propval(
 					&pmsg->proplist, &propval);
-			free(plainout);
 		}
 	}
 	if (NULL == tpropval_array_get_propval(
