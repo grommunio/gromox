@@ -1067,12 +1067,11 @@ int wildcard_match(const char *data, const char *mask, BOOL icase)
   return (mask >= ma) ? NOMATCH : MATCH;   /* Start of both = match */
 }
 
-void randstring(char *buff, int length)
+void randstring_k(char *buff, int length, const char *string)
 {	 
 	int i, key;
 	int string_len;
 	static int myseed = 25011984;
-	const char string[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
 	
 	if (length <= 0) {
 		length = 1;
@@ -1087,6 +1086,12 @@ void randstring(char *buff, int length)
 		buff[i] = string[key];
 	}
 	buff[length] = '\0';
+}
+
+void randstring(char *b, int l)
+{
+	const char p[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
+	return randstring_k(b, l, p);
 }
 
 #define OK	(0)

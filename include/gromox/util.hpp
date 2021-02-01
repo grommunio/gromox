@@ -47,6 +47,7 @@ uint64_t atobyte(const char *string);
 char* md5_crypt_wrapper(const char *pw);
 
 int wildcard_match(const char *data, const char *mask, BOOL icase);
+extern GX_EXPORT void randstring_k(char *out, int len, const char *pool);
 void randstring(char *buff, int length);
 extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);

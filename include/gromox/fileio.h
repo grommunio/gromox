@@ -13,5 +13,7 @@ extern char **read_file_by_line(const char *file);
 namespace gromox {
 
 extern std::string iconvtext(const char *, size_t, const char *from, const char *to);
+extern GX_EXPORT int popenfd(const char *const *, int *, int *, int *, const char **);
+extern GX_EXPORT ssize_t feed_w3m(const void *in, size_t insize, std::string &out);
 
 }

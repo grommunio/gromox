@@ -5,15 +5,20 @@
  *	  Addr_kids, for parse the email addr
  */
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
+
+using namespace gromox;
 
 enum {
 	SW_USUAL = 0,
@@ -1753,7 +1758,7 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-int html_to_plain(const void *inbuf, int len, std::string &outbuf) try
+static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
@@ -1955,6 +1960,14 @@ REG_CHAR:
 	return outbuf.size();
 } catch (...) {
 	return -1;
+}
+
+int html_to_plain(const void *inbuf, int len, std::string &outbuf)
+{
+	auto ret = feed_w3m(inbuf, len, outbuf);
+	if (ret >= 0)
+		return ret;
+	return html_to_plain_boring(inbuf, len, outbuf);
 }
 
 char *plain_to_html(const char *rbuf)
