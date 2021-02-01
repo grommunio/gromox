@@ -1755,6 +1755,7 @@ void enriched_to_html(const char *enriched_txt,
 int html_to_plain(const void *inbuf, int len, char **outbufp)
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
+	bool linebegin = true;
 	int i = 0;
 	char is_xml = 0;
 	int depth = 0, in_q = 0;
@@ -1791,6 +1792,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 					0 == strncasecmp(p, "</p>", 4)) {
 					*(rp ++) = '\r';
 					*(rp ++) = '\n';
+					linebegin = true;
 					i += 3;
 					p += 3;
 				} else if (0 == strncasecmp(p, "<style", 6)) {
@@ -1843,12 +1845,15 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 					i += 5;
 					p += 5;
 				}
+				linebegin = false;
 			}
 			break;
 		case '(':
 		case ')':
-			if (state == st::NONE)
+			if (state == st::NONE) {
 				*(rp ++) = c;
+				linebegin = false;
+			}
 			break;
 		case '>':
 			if (depth) {
@@ -1882,6 +1887,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 				break;
 			default:
 				*(rp ++) = c;
+				linebegin = false;
 				break;
 			}
 			break;
@@ -1892,6 +1898,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 				break;
 			} else if (state == st::NONE) {
 				*(rp ++) = c;
+				linebegin = false;
 			}
 			if (state != st::NONE && p != buf && (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q)) {
 				if (in_q) {
@@ -1906,8 +1913,10 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			if (state == st::TAG && p[-1] == '<') {
 				state = st::QUOTE;
 			} else {
-				if (state == st::NONE)
+				if (state == st::NONE) {
 					*(rp ++) = c;
+					linebegin = false;
+				}
 			}
 			break;
 		case '-':
@@ -1929,8 +1938,10 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			/* fall-through */
 		default:
 REG_CHAR:
-			if (state == st::NONE)
-				*(rp ++) = c;
+			if (state == st::NONE && (!HX_isspace(c) || !linebegin)) {
+				*rp++ = c;
+				linebegin = false;
+			}
 			break;
 		}
 		c = *(++ p);
