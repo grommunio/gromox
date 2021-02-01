@@ -1754,9 +1754,9 @@ void enriched_to_html(const char *enriched_txt,
 
 int html_to_plain(const void *inbuf, int len, char **outbufp)
 {
+	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	int i = 0;
 	char is_xml = 0;
-	uint8_t state = 0;
 	int depth = 0, in_q = 0;
 	char *tp, lc;
 	
@@ -1786,7 +1786,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			}
 			if (HX_isspace(p[1]))
 				goto REG_CHAR;
-			if (0 == state) {
+			if (state == st::NONE) {
 				if (0 == strncasecmp(p, "<br>", 4) ||
 					0 == strncasecmp(p, "</p>", 4)) {
 					*(rp ++) = '\r';
@@ -1795,33 +1795,33 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 					p += 3;
 				} else if (0 == strncasecmp(p, "<style", 6)) {
 					lc = 1;
-					state = 2;
+					state = st::EXTRA;
 					i += 6;
 					p += 6;
 				} else if (0 == strncasecmp(p, "<script", 7)) {
 					lc = 2;
-					state = 2;
+					state = st::EXTRA;
 					i += 7;
 					p += 7;
 				} else {
-					state = 1;
+					state = st::TAG;
 				}
-			} else if (1 == state) {
+			} else if (state == st::TAG) {
 				depth ++;
-			} else if (2 == state) {
+			} else if (state == st::EXTRA) {
 				if (1 == lc && 0 == strncasecmp(p, "</style>", 8)) {
-					state = 0;
+					state = st::NONE;
 					i += 7;
 					p += 7;
 				} else if (2 == lc && 0 == strncasecmp(p, "</script>", 9)) {
-					state = 0;
+					state = st::NONE;
 					i += 8;
 					p += 8;
 				}
 			}
 			break;
 		case '&':
-			if (0 == state) {
+			if (state == st::NONE) {
 				if (0 == strncasecmp(p, "&quot;", 6)) {
 					*(rp ++) = '"';
 					i += 5;
@@ -1847,9 +1847,8 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			break;
 		case '(':
 		case ')':
-			if (0 == state) {
+			if (state == st::NONE)
 				*(rp ++) = c;
-			}
 			break;
 		case '>':
 			if (depth) {
@@ -1860,21 +1859,24 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 				break;
 			}
 			switch (state) {
-			case 1: /* HTML/XML */
+			case st::TAG:
 				if (is_xml && '-' == *(p - 1)) {
 					break;
 				}
-				in_q = state = is_xml = 0;
+				state = st::NONE;
+				in_q = is_xml = 0;
 				break;
-			case 2: /* <style>/<script> */
+			case st::EXTRA:
 				break;
-			case 3:
-				in_q = state = 0;
+			case st::QUOTE:
+				state = st::NONE;
+				in_q = 0;
 				tp = tbuf;
 				break;
-			case 4: /* JavaScript/CSS/etc... */
-				if (p >= buf + 2 && '-' == *(p - 1) && '-' == *(p - 2)) {
-					in_q = state = 0;
+			case st::COMMENT:
+				if (p >= buf + 2 && p[-1] == '-' && p[-2] == '-') {
+					state = st::NONE;
+					in_q = 0;
 					tp = tbuf;
 				}
 				break;
@@ -1885,13 +1887,13 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			break;
 		case '"':
 		case '\'':
-			if (4 == state) {
+			if (state == st::COMMENT) {
 				/* Inside <!-- comment --> */
 				break;
-			} else if (0 == state) {
+			} else if (state == st::NONE) {
 				*(rp ++) = c;
 			}
-			if (state && p != buf && (1 == state || *(p - 1) != '\\') && (!in_q || *p == in_q)) {
+			if (state != st::NONE && p != buf && (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q)) {
 				if (in_q) {
 					in_q = 0;
 				} else {
@@ -1901,40 +1903,34 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			break;
 		case '!':
 			/* JavaScript & Other HTML scripting languages */
-			if (1 == state && '<' == *(p - 1)) {
-				state = 3;
+			if (state == st::TAG && p[-1] == '<') {
+				state = st::QUOTE;
 			} else {
-				if (0 == state) {
+				if (state == st::NONE)
 					*(rp ++) = c;
-				}
 			}
 			break;
 		case '-':
-			if (3 == state && p >= buf + 2 && '-' == *(p - 1) && '!' == *(p - 2)) {
-				state = 4;
-			} else {
+			if (state == st::QUOTE && p >= buf + 2 && p[-1] == '-' && p[-2] == '!')
+				state = st::COMMENT;
+			else
 				goto REG_CHAR;
-			}
 			break;
 		case 'E':
 		case 'e':
 			/* !DOCTYPE exception */
-			if (3 == state && p > buf + 6
-				&& HX_tolower(*(p - 1)) == 'p'
-				&& HX_tolower(*(p - 2)) == 'y'
-				&& HX_tolower(*(p - 3)) == 't'
-				&& HX_tolower(*(p - 4)) == 'c'
-				&& HX_tolower(*(p - 5)) == 'o'
-				&& HX_tolower(*(p - 6)) == 'd') {
-				state = 1;
+			if (state == st::QUOTE && p > buf + 6 &&
+			    tolower(p[-6]) == 'd' && tolower(p[-5]) == 'o' &&
+			    tolower(p[-4]) == 'c' && tolower(p[-3]) == 't' &&
+			    tolower(p[-2]) == 'y' && tolower(p[-1]) == 'p') {
+				state = st::TAG;
 				break;
 			}
 			/* fall-through */
 		default:
 REG_CHAR:
-			if (0 == state) {
+			if (state == st::NONE)
 				*(rp ++) = c;
-			}
 			break;
 		}
 		c = *(++ p);
