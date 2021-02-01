@@ -6,6 +6,7 @@
  */
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
@@ -1752,7 +1753,7 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-int html_to_plain(const void *inbuf, int len, char **outbufp)
+int html_to_plain(const void *inbuf, int len, char **outbufp) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
@@ -1762,20 +1763,20 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 	char *tp, lc;
 	
 	*outbufp = nullptr;
-	auto rbuf = static_cast<char *>(malloc(len + 1));
+	auto rbuf = std::make_unique<char[]>(len + 1);
 	if (rbuf == nullptr)
 		return -1;
-	memcpy(rbuf, inbuf, len);
+	memcpy(rbuf.get(), inbuf, len);
 	rbuf[len] = '\0';
-	auto buf = static_cast<char *>(malloc(len + 1));
+	auto buf = std::make_unique<char[]>(len + 1);
 	if (NULL == buf) {
 		return -1;
 	}
-	memcpy(buf, rbuf, len);
+	memcpy(buf.get(), rbuf.get(), len);
 	buf[len] = '\0';
-	char c = *buf;
-	char *p = buf;
-	char *rp = rbuf;
+	char c = buf[0];
+	char *p = buf.get();
+	char *rp = rbuf.get();
 	char *tbuf = tp = NULL;
 	while (i < len) {
 		switch (c) {
@@ -1879,7 +1880,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 				tp = tbuf;
 				break;
 			case st::COMMENT:
-				if (p >= buf + 2 && p[-1] == '-' && p[-2] == '-') {
+				if (p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '-') {
 					state = st::NONE;
 					in_q = 0;
 					tp = tbuf;
@@ -1900,7 +1901,8 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 				*(rp ++) = c;
 				linebegin = false;
 			}
-			if (state != st::NONE && p != buf && (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q)) {
+			if (state != st::NONE && p != buf.get() &&
+			    (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q)) {
 				if (in_q) {
 					in_q = 0;
 				} else {
@@ -1920,7 +1922,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 			}
 			break;
 		case '-':
-			if (state == st::QUOTE && p >= buf + 2 && p[-1] == '-' && p[-2] == '!')
+			if (state == st::QUOTE && p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '!')
 				state = st::COMMENT;
 			else
 				goto REG_CHAR;
@@ -1928,7 +1930,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 		case 'E':
 		case 'e':
 			/* !DOCTYPE exception */
-			if (state == st::QUOTE && p > buf + 6 &&
+			if (state == st::QUOTE && p > buf.get() + 6 &&
 			    tolower(p[-6]) == 'd' && tolower(p[-5]) == 'o' &&
 			    tolower(p[-4]) == 'c' && tolower(p[-3]) == 't' &&
 			    tolower(p[-2]) == 'y' && tolower(p[-1]) == 'p') {
@@ -1947,12 +1949,13 @@ REG_CHAR:
 		c = *(++ p);
 		i ++;
 	}
-	if (rp < rbuf + len) {
+	if (rp < rbuf.get() + len) {
 		*rp = '\0';
 	}
-	*outbufp = rbuf;
-	free(buf);
-	return (int)(rp - rbuf);
+	*outbufp = rbuf.release();
+	return static_cast<int>(rp - *outbufp);
+} catch (...) {
+	return -1;
 }
 
 char *plain_to_html(const char *rbuf)
