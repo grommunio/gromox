@@ -1130,9 +1130,8 @@ static zend_bool rpc_ext_push_configsync_request(
 static zend_bool rpc_ext_pull_configsync_response(
 	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
 {
-	if (!ext_pack_pull_bool(pctx, &ppayload->configsync.b_changed)) {
+	if (!ext_pack_pull_uint8(pctx, &ppayload->configsync.b_changed))
 		return 0;
-	}
 	return ext_pack_pull_uint32(pctx,
 		&ppayload->configsync.count);
 }
@@ -1164,9 +1163,8 @@ static zend_bool rpc_ext_push_syncmessagechange_request(
 static zend_bool rpc_ext_pull_syncmessagechange_response(
 	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
 {
-	if (!ext_pack_pull_bool(pctx, &ppayload->syncmessagechange.b_new)) {
+	if (!ext_pack_pull_uint8(pctx, &ppayload->syncmessagechange.b_new))
 		return 0;
-	}
 	return ext_pack_pull_tpropval_array(pctx,
 		&ppayload->syncmessagechange.proplist);
 }

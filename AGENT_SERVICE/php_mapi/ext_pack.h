@@ -27,10 +27,6 @@ struct PUSH_CTX {
 	uint32_t offset;
 };
 
-
-#define ext_pack_pull_bool	ext_pack_pull_uint8
-#define ext_pack_pusg_bool	ext_pack_push_uint8
-
 void ext_pack_pull_init(PULL_CTX *pctx,
 	const uint8_t *pdata, uint32_t data_size);
 	
