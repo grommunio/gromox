@@ -1163,8 +1163,10 @@ static zend_bool rpc_ext_push_syncmessagechange_request(
 static zend_bool rpc_ext_pull_syncmessagechange_response(
 	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
 {
-	if (!ext_pack_pull_uint8(pctx, &ppayload->syncmessagechange.b_new))
+	uint8_t v = 0;
+	if (!ext_pack_pull_uint8(pctx, &v))
 		return 0;
+	ppayload->syncmessagechange.b_new = v;
 	return ext_pack_pull_tpropval_array(pctx,
 		&ppayload->syncmessagechange.proplist);
 }
