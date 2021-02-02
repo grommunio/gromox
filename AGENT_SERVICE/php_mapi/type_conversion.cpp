@@ -63,8 +63,7 @@ uint32_t phptag_to_proptag(uint32_t proptag)
 	return proptag1;
 }
 
-zend_bool php_to_binary_array(zval *pzval,
-	BINARY_ARRAY *pbins TSRMLS_DC)
+zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 {
 	HashTable *ptarget_hash;
 	
@@ -105,8 +104,7 @@ zend_bool php_to_binary_array(zval *pzval,
 	return 1;
 }
 
-zend_bool binary_array_to_php(const BINARY_ARRAY *pbins,
-	zval *pzval TSRMLS_DC)
+zend_bool binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 {
 	int i;
 	
@@ -119,8 +117,7 @@ zend_bool binary_array_to_php(const BINARY_ARRAY *pbins,
 	return 1;
 }
 
-zend_bool php_to_sortorder_set(zval *pzval,
-	SORTORDER_SET *pset TSRMLS_DC)
+zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 {
 	unsigned long idx;
 	HashTable *ptarget_hash;
@@ -158,8 +155,7 @@ zend_bool php_to_sortorder_set(zval *pzval,
 	return 1;
 }
 
-zend_bool php_to_proptag_array(zval *pzval,
-	PROPTAG_ARRAY *pproptags TSRMLS_DC)
+zend_bool php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
 {
 	HashTable *ptarget_hash;
 	
@@ -609,9 +605,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				int k = 0;
 				ZEND_HASH_FOREACH_VAL(precipient_hash, data_entry) {
 					if (!php_to_tpropval_array(data_entry,
-						&tmp_propvals TSRMLS_CC)) {
+					    &tmp_propvals))
 						return NULL;
-					}
 					prcpt_block = &xq->pblock[k];
 					prcpt_block->reserved = 0;
 					prcpt_block->count = tmp_propvals.count;
@@ -624,7 +619,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				data_entry = zend_hash_find(paction_hash, str_proptag.get());
 				if (data_entry == nullptr)
 					return NULL;
-				if (!php_to_tpropval_array(data_entry, &tmp_propvals TSRMLS_CC))
+				if (!php_to_tpropval_array(data_entry, &tmp_propvals))
 					return NULL;
 				if (1 != tmp_propvals.count) {
 					return NULL;
@@ -647,7 +642,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (!php_to_restriction(entry, static_cast<RESTRICTION *>(pvalue) TSRMLS_CC))
+		if (!php_to_restriction(entry, static_cast<RESTRICTION *>(pvalue)))
 			return NULL;
 		break;
 	default:
@@ -656,8 +651,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	return pvalue;
 }
 
-zend_bool php_to_tpropval_array(zval *pzval,
-	TPROPVAL_ARRAY *ppropvals TSRMLS_DC)
+zend_bool php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 {
 	zend_string *pstring;
 	unsigned long idx;
@@ -694,7 +688,7 @@ zend_bool php_to_tpropval_array(zval *pzval,
 	return 1;
 }
 
-zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset TSRMLS_DC) 
+zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset) 
 {
 	HashTable *ptarget_hash;
 	
@@ -727,14 +721,14 @@ zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset TSRMLS_DC)
 		if (NULL == pset->pparray[i]) {
 			return 0;
 		}
-		if (!php_to_tpropval_array(entry, pset->pparray[i] TSRMLS_CC))
+		if (!php_to_tpropval_array(entry, pset->pparray[i]))
 			return 0;
 		++i;
 	} ZEND_HASH_FOREACH_END();
 	return 1;
 }
 
-zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist TSRMLS_DC)
+zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
 {
 	zstrplus str_properties(zend_string_init("properties", sizeof("properties") - 1, 0));
 	zstrplus str_rowflags(zend_string_init("rowflags", sizeof("rowflags") - 1, 0));
@@ -769,7 +763,7 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist TSRMLS_DC)
 		auto data = zend_hash_find(HASH_OF(entry), str_properties.get());
 		if (data == nullptr)
 			return 0;	
-		if (!php_to_tpropval_array(data, &plist->prule[i].propvals TSRMLS_CC))
+		if (!php_to_tpropval_array(data, &plist->prule[i].propvals))
 			return 0;
 		data = zend_hash_find(HASH_OF(entry), str_rowflags.get());
 		if (data == nullptr)
@@ -792,7 +786,7 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist TSRMLS_DC)
 #define IDX_PROPVALS								9
 #define IDX_RESTRICTION								10
 
-zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
+zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 {
 	int i;
 	HashTable *pres_hash;
@@ -832,7 +826,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			return 0;
 		i = 0;
 		ZEND_HASH_FOREACH_VAL(pdata_hash, value_entry) {
-			if (!php_to_restriction(value_entry, &andor->pres[i++] TSRMLS_CC))
+			if (!php_to_restriction(value_entry, &andor->pres[i++]))
 				return 0;
 		} ZEND_HASH_FOREACH_END();
 		break;
@@ -846,7 +840,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		HashPosition hpos;
 		zend_hash_internal_pointer_reset_ex(pdata_hash, &hpos);
 		value_entry = zend_hash_get_current_data_ex(pdata_hash, &hpos);
-		if (!php_to_restriction(value_entry, &rnot->res TSRMLS_CC))
+		if (!php_to_restriction(value_entry, &rnot->res))
 			return 0;
 		break;
 	}
@@ -862,7 +856,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RESTRICTION);
 		if (value_entry == nullptr)
 			return 0;
-		if (!php_to_restriction(value_entry, &rsub->res TSRMLS_CC))
+		if (!php_to_restriction(value_entry, &rsub->res))
 			return 0;	
 		break;
 	}
@@ -878,15 +872,13 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RESTRICTION);
 		if (value_entry == nullptr)
 			return 0;
-		if (!php_to_restriction(value_entry, rcom->pres TSRMLS_CC))
+		if (!php_to_restriction(value_entry, rcom->pres))
 			return 0;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPVALS);
 		if (value_entry == nullptr)
 			return 0;
-		if (!php_to_tpropval_array(
-			value_entry, &tmp_propvals TSRMLS_CC)) {
+		if (!php_to_tpropval_array(value_entry, &tmp_propvals))
 			return 0;
-		}
 		rcom->count = tmp_propvals.count;
 		rcom->ppropval = tmp_propvals.ppropval;
 		break;
@@ -908,7 +900,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		if (value_entry == nullptr)
 			return 0;
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
-			if (!php_to_tpropval_array(value_entry, &tmp_propvals TSRMLS_CC))
+			if (!php_to_tpropval_array(value_entry, &tmp_propvals))
 				return 0;
 			if (1 != tmp_propvals.count) {
 				return 0;
@@ -939,7 +931,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		if (value_entry == nullptr)
 			return 0;
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
-			if (!php_to_tpropval_array(value_entry, &tmp_propvals TSRMLS_CC))
+			if (!php_to_tpropval_array(value_entry, &tmp_propvals))
 				return 0;
 			if (1 != tmp_propvals.count) {
 				return 0;
@@ -1030,8 +1022,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	return 1;
 }
 
-zend_bool restriction_to_php(const RESTRICTION *pres,
-	zval *pzret TSRMLS_DC)
+zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 {
 	int i;
 	char key[16];
@@ -1046,7 +1037,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		array_init(&pzarray);
 		for (i = 0; i < andor->count; ++i) {
 			sprintf(key, "%i", i);
-			if (!restriction_to_php(&andor->pres[i], &pzentry TSRMLS_CC))
+			if (!restriction_to_php(&andor->pres[i], &pzentry))
 				return 0;
 			add_assoc_zval(&pzarray, key, &pzentry);
 		}
@@ -1055,7 +1046,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 	case RES_NOT: {
 		auto rnot = pres->xnot;
 		array_init(&pzarray);
-		if (!restriction_to_php(&rnot->res, &pzentry TSRMLS_CC))
+		if (!restriction_to_php(&rnot->res, &pzentry))
 			return 0;	
 		add_assoc_zval(&pzarray, "0", &pzentry);
 		break;
@@ -1064,9 +1055,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		auto rcon = pres->cont;
 		tmp_propvals.count = 1;
 		tmp_propvals.ppropval = &rcon->propval;
-		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
+		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
-		}
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);		
@@ -1080,9 +1070,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		auto rprop = pres->prop;
 		tmp_propvals.count = 1;
 		tmp_propvals.ppropval = &rprop->propval;
-		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
+		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
-		}
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);
@@ -1134,7 +1123,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 	}
 	case RES_SUBRESTRICTION: {
 		auto rsub = pres->sub;
-		if (!restriction_to_php(&rsub->res, &pzrestriction TSRMLS_CC))
+		if (!restriction_to_php(&rsub->res, &pzrestriction))
 			return 0;	
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_PROPTAG);
@@ -1147,10 +1136,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		auto rcom = pres->comment;
 		tmp_propvals.count = rcom->count;
 		tmp_propvals.ppropval = rcom->ppropval;
-		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
+		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
-		}
-		if (!restriction_to_php(rcom->pres, &pzrestriction TSRMLS_CC))
+		if (!restriction_to_php(rcom->pres, &pzrestriction))
 			return 0;	
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_PROPVALS);
@@ -1167,8 +1155,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 	return 1;
 }
 
-zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags,
-	zval *pzret TSRMLS_DC)
+zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
 {
 	int i;
 	
@@ -1180,8 +1167,7 @@ zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags,
 	return 1;
 }
 
-zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
-	zval *pzret TSRMLS_DC)
+zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 {
 	int i, j, k;
 	char key[16];
@@ -1343,10 +1329,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 					for (k = 0; k < xq->count; ++k) {
 						tmp_propvals.count = xq->pblock[k].count;
 						tmp_propvals.ppropval = xq->pblock[k].ppropval;
-						if (!tpropval_array_to_php(&tmp_propvals,
-							&pzpropval TSRMLS_CC)) {
+						if (!tpropval_array_to_php(&tmp_propvals, &pzpropval))
 							return 0;
-						}
 						zend_hash_next_index_insert(HASH_OF(&pzalist),
 									&pzpropval);
 					}
@@ -1356,10 +1340,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 				case ACTION_TYPE_OP_TAG:
 					tmp_propvals.count = 1;
 					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(prule->pblock[j].pdata);
-					if (!tpropval_array_to_php(&tmp_propvals,
-						&pzalist TSRMLS_CC)) {
+					if (!tpropval_array_to_php(&tmp_propvals, &pzalist))
 						return 0;
-					}
 					add_assoc_zval(&pzactval, "proptag", &pzalist);
 					break;
 				case ACTION_TYPE_OP_DELETE:
@@ -1374,10 +1356,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_zval(pzret, proptag_string, &pzactarray);
 			break;
 		case PT_SRESTRICT:
-			if (!restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue),
-				&pzactval TSRMLS_CC)) {
+			if (!restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval))
 				return 0;
-			}
 			add_assoc_zval(pzret, proptag_string, &pzactval);
 			break;
 		}
@@ -1385,23 +1365,20 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 	return 1;
 }
 
-zend_bool tarray_set_to_php(const TARRAY_SET *pset,
-	zval *pret TSRMLS_DC)
+zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 {
 	int i;
 	zval pzpropval;
 	
 	array_init(pret);
 	for (i=0; i<pset->count; i++) {
-		tpropval_array_to_php(pset->pparray[i],
-						&pzpropval TSRMLS_CC);
+		tpropval_array_to_php(pset->pparray[i], &pzpropval);
 		zend_hash_next_index_insert(HASH_OF(pret), &pzpropval);
 	}
 	return 1;
 }
 
-zend_bool state_array_to_php(const STATE_ARRAY *pstates,
-	zval *pzret TSRMLS_DC)
+zend_bool state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)
 {
 	int i;
 	zval pzval;
@@ -1419,8 +1396,7 @@ zend_bool state_array_to_php(const STATE_ARRAY *pstates,
 	return 1;
 }
 
-zend_bool php_to_state_array(zval *pzval,
-	STATE_ARRAY *pstates TSRMLS_DC)
+zend_bool php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 {
 	int i; 
 	zval *pentry;
@@ -1466,8 +1442,7 @@ zend_bool php_to_state_array(zval *pzval,
 	return 1;
 }
 
-zend_bool znotification_array_to_php(
-	ZNOTIFICATION_ARRAY *pnotifications, zval *pzret TSRMLS_DC)
+zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *pzret)
 {
 	int i;
 	zval pzvalprops, pzvalnotif;
@@ -1527,11 +1502,8 @@ zend_bool znotification_array_to_php(
 				pobject_notification->pold_parentid->cb);
 			}
 			if (NULL != pobject_notification->pproptags) {
-				if (!proptag_array_to_php(
-					pobject_notification->pproptags,
-					&pzvalprops TSRMLS_CC)) {
+				if (!proptag_array_to_php(pobject_notification->pproptags, &pzvalprops))
 					return 0;
-				}
 				add_assoc_zval(&pzvalnotif, "proptagarray", &pzvalprops);
 			}
 			break;
@@ -1543,8 +1515,8 @@ zend_bool znotification_array_to_php(
 	return 1;
 }
 
-zend_bool php_to_propname_array(zval *pzval_names,
-	zval *pzval_guids, PROPNAME_ARRAY *ppropnames TSRMLS_DC)
+zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
+    PROPNAME_ARRAY *ppropnames)
 {
 	int i;
 	zval *guidentry;
