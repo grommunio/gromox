@@ -1804,6 +1804,8 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 		if (!common_util_convert_restriction(to_unicode, &pres->count->sub_res))
 			return FALSE;	
 		break;
+	default:
+		return TRUE;
 	}
 	return TRUE;
 }

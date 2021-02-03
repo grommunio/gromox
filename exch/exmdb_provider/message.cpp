@@ -3272,6 +3272,8 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 		    ppropname_info, &pres->count->sub_res))
 			return FALSE;
 		break;
+	default:
+		return TRUE;
 	}
 	return TRUE;
 }

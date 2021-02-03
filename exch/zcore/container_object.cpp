@@ -152,8 +152,6 @@ static BOOL container_object_match_contact_message(
 		return propval_compare_relop(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
-	case RES_PROPCOMPARE:
-		return FALSE;
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
@@ -174,15 +172,13 @@ static BOOL container_object_match_contact_message(
 		}
 		return FALSE;
 	}
-	case RES_SIZE:
-		return FALSE;
 	case RES_EXIST:
 		pvalue = common_util_get_propvals(ppropvals, pfilter->exist->proptag);
 		if (NULL != pvalue) {
 			return TRUE;	
 		}
 		return FALSE;
-	case RES_SUBRESTRICTION:
+	default:
 		return FALSE;
 	}
 	return false;

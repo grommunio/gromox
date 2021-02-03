@@ -348,6 +348,7 @@ static void* restriction_dup_by_type(
 	default:
 		return NULL;
 	}
+	return nullptr;
 }
 
 static void restriction_free_by_type(
@@ -513,6 +514,8 @@ uint32_t restriction_size(const RESTRICTION *r)
 		return restriction_comment_size(r->comment) + sizeof(uint8_t);
 	case RES_COUNT:
 		return restriction_count_size(r->count) + sizeof(uint8_t);
+	default:
+		return 0;
 	}
 	return 0;
 }

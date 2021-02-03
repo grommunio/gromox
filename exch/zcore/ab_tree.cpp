@@ -2241,8 +2241,6 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		return propval_compare_relop(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
-	case RES_PROPCOMPARE:
-		return FALSE;
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
@@ -2262,8 +2260,6 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		}
 		return FALSE;
 	}
-	case RES_SIZE:
-		return FALSE;
 	case RES_EXIST:
 		node_type = ab_tree_get_node_type(pnode);
 		if (node_type > 0x80) {
@@ -2273,7 +2269,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		    pfilter->exist->proptag, &pvalue) && pvalue != nullptr)
 			return TRUE;	
 		return FALSE;
-	case RES_SUBRESTRICTION:
+	default:
 		return FALSE;
 	}
 	return false;

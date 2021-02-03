@@ -1808,14 +1808,12 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		    pres->exist->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	case RES_SUBRESTRICTION:
-		return FALSE;
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_evaluate_rule_restriction(psqlite, rule_id,
 		       pres->comment->pres);
-	case RES_COUNT:
+	default:
 		return FALSE;
 	}	
 	return FALSE;
@@ -2888,14 +2886,12 @@ static BOOL table_evaluate_row_restriction(
 		    pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	case RES_SUBRESTRICTION:
-		return FALSE;
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_evaluate_row_restriction(pres->comment->pres,
 		       pparam, get_property);
-	case RES_COUNT:
+	default:
 		return FALSE;
 	}	
 	return FALSE;

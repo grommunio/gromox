@@ -1182,13 +1182,11 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		return TRUE;
-	case RES_SUBRESTRICTION:
-		return FALSE;
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_object_evaluate_restriction(ppropvals, pres->comment->pres);
-	case RES_COUNT:
+	default:
 		return FALSE;
 	}	
 	return FALSE;

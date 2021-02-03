@@ -5350,6 +5350,8 @@ static BOOL common_util_evaluate_subitem_restriction(
 		return common_util_evaluate_subitem_restriction(psqlite, cpid,
 		       table_type, id, rcom->pres);
 	}
+	default:
+		return false;
 	}
 	return FALSE;
 }
@@ -5432,6 +5434,8 @@ static BOOL common_util_evaluate_subobject_restriction(
 	case RES_COUNT:
 		return common_util_evaluate_msgsubs_restriction(
 				psqlite, cpid, message_id, proptag, pres);
+	default:
+		return false;
 	}	
 	return FALSE;
 }
@@ -5584,14 +5588,12 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	case RES_SUBRESTRICTION:
-		return FALSE;
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return common_util_evaluate_folder_restriction(psqlite,
 		       folder_id, pres->comment->pres);
-	case RES_COUNT:
+	default:
 		return FALSE;
 	}	
 	return FALSE;
