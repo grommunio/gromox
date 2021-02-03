@@ -56,7 +56,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pb = static_cast<uint8_t *>(emalloc(1));
+				pbin->pb = sta_malloc<uint8_t>(1);
 				if (NULL == pbin->pb) {
 					return 0;
 				}
@@ -64,7 +64,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 				return 1;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pb = static_cast<uint8_t *>(emalloc(pbin->cb));
+				pbin->pb = sta_malloc<uint8_t>(pbin->cb);
 				if (NULL == pbin->pb) {
 					return 0;
 				}

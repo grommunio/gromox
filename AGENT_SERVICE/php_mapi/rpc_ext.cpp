@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
+#include "ext.hpp"
 #include "rpc_ext.h"
 
 static zend_bool rpc_ext_push_logon_request(
@@ -1375,8 +1376,7 @@ static zend_bool rpc_ext_pull_getsearchcriteria_response(
 	if (0 == tmp_byte) {
 		ppayload->getsearchcriteria.prestriction = NULL;
 	} else {
-		ppayload->getsearchcriteria.prestriction =
-			static_cast<RESTRICTION *>(emalloc(sizeof(RESTRICTION)));
+		ppayload->getsearchcriteria.prestriction = st_malloc<RESTRICTION>();
 		if (NULL == ppayload->getsearchcriteria.prestriction) {
 			return 0;
 		}

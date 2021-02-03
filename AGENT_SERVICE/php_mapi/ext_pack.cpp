@@ -5,6 +5,7 @@
 #include <cstring>
 #include <iconv.h>
 #include <cstdint>
+#include "ext.hpp"
 #define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf, pos) (((uint8_t *)(buf))[pos])
 #define PVAL(buf, pos) (CVAL(buf,pos))
@@ -184,7 +185,7 @@ zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 		return 0;
 	}
 	len ++;
-	*ppstr = static_cast<char *>(emalloc(len));
+	*ppstr = sta_malloc<char>(len);
 	if (NULL == *ppstr) {
 		return 0;
 	}
@@ -210,7 +211,7 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 		return 0;
 	}
 	len = i + 2;
-	*ppstr = static_cast<char *>(emalloc(2 * len));
+	*ppstr = sta_malloc<char>(2 * len);
 	if (NULL == *ppstr) {
 		return 0;
 	}
@@ -253,7 +254,7 @@ zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 		r->ps = NULL;
 		return 1;
 	}
-	r->ps = static_cast<uint16_t *>(emalloc(sizeof(uint16_t) * r->count));
+	r->ps = sta_malloc<uint16_t>(r->count);
 	if (NULL == r->ps) {
 		return 0;
 	}
@@ -276,7 +277,7 @@ zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 		r->pl = NULL;
 		return 1;
 	}
-	r->pl = static_cast<uint32_t *>(emalloc(sizeof(uint32_t) * r->count));
+	r->pl = sta_malloc<uint32_t>(r->count);
 	if (NULL == r->pl) {
 		return 0;
 	}
@@ -299,7 +300,7 @@ zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 		r->pll = NULL;
 		return 1;
 	}
-	r->pll = static_cast<uint64_t *>(emalloc(sizeof(uint64_t) * r->count));
+	r->pll = sta_malloc<uint64_t>(r->count);
 	if (NULL == r->pll) {
 		return 0;
 	}
@@ -322,7 +323,7 @@ zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 		r->pbin = NULL;
 		return 1;
 	}
-	r->pbin = static_cast<BINARY *>(emalloc(sizeof(BINARY) * r->count));
+	r->pbin = sta_malloc<BINARY>(r->count);
 	if (NULL == r->pbin) {
 		return 0;
 	}
@@ -345,7 +346,7 @@ zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 		r->ppstr = NULL;
 		return 1;
 	}
-	r->ppstr = static_cast<char **>(emalloc(sizeof(char *) * r->count));
+	r->ppstr = sta_malloc<char *>(r->count);
 	if (NULL == r->ppstr) {
 		return 0;
 	}
@@ -368,7 +369,7 @@ zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 		r->pguid = NULL;
 		return 1;
 	}
-	r->pguid = static_cast<GUID *>(emalloc(sizeof(GUID) * r->count));
+	r->pguid = sta_malloc<GUID>(r->count);
 	if (NULL == r->pguid) {
 		return 0;
 	}
@@ -392,7 +393,7 @@ static zend_bool ext_pack_pull_restriction_and_or(
 		r->pres = NULL;
 		return 1;
 	}
-	r->pres = static_cast<RESTRICTION *>(emalloc(r->count * sizeof(RESTRICTION)));
+	r->pres = sta_malloc<RESTRICTION>(r->count);
 	if (NULL == r->pres) {
 		return 0;
 	}
@@ -505,7 +506,7 @@ static zend_bool ext_pack_pull_restriction_comment(
 	if (0 == r->count) {
 		return 0;
 	}
-	r->ppropval = static_cast<TAGGED_PROPVAL *>(emalloc(sizeof(TAGGED_PROPVAL) * r->count));
+	r->ppropval = sta_malloc<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		return 0;
 	}
@@ -518,7 +519,7 @@ static zend_bool ext_pack_pull_restriction_comment(
 		return 0;
 	}
 	if (0 != res_present) {
-		r->pres = static_cast<RESTRICTION *>(emalloc(sizeof(RESTRICTION)));
+		r->pres = st_malloc<RESTRICTION>();
 		if (NULL == r->pres) {
 			return 0;
 		}
@@ -649,7 +650,7 @@ static zend_bool ext_pack_pull_recipient_block(PULL_CTX *pctx, RECIPIENT_BLOCK *
 	if (0 == r->count) {
 		return 0;
 	}
-	r->ppropval = static_cast<TAGGED_PROPVAL *>(emalloc(sizeof(TAGGED_PROPVAL) * r->count));
+	r->ppropval = sta_malloc<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		return 0;
 	}
@@ -672,7 +673,7 @@ static zend_bool ext_pack_pull_forwarddelegate_action(
 	if (0 == r->count) {
 		return 0;
 	}
-	r->pblock = static_cast<RECIPIENT_BLOCK *>(emalloc(sizeof(RECIPIENT_BLOCK) * r->count));
+	r->pblock = sta_malloc<RECIPIENT_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		return 0;
 	}
@@ -765,7 +766,7 @@ zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r)
 	if (0 == r->count) {
 		return 0;
 	}
-	r->pblock = static_cast<ACTION_BLOCK *>(emalloc(sizeof(ACTION_BLOCK) * r->count));
+	r->pblock = sta_malloc<ACTION_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		return 0;
 	}
@@ -910,7 +911,7 @@ zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r)
 		r->pproptag = NULL;
 		return 1;
 	}
-	r->pproptag = static_cast<uint32_t *>(emalloc(sizeof(uint32_t) * r->count));
+	r->pproptag = sta_malloc<uint32_t>(r->count);
 	if (NULL == r->pproptag) {
 		return 0;
 	}
@@ -936,7 +937,7 @@ zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r)
 	r->plid = NULL;
 	r->pname = NULL;
 	if (r->kind == MNID_ID) {
-		r->plid = static_cast<uint32_t *>(emalloc(sizeof(uint32_t)));
+		r->plid = st_malloc<uint32_t>();
 		if (NULL == r->plid) {
 			return 0;
 		}
@@ -973,7 +974,7 @@ zend_bool ext_pack_pull_propname_array(PULL_CTX *pctx, PROPNAME_ARRAY *r)
 		r->ppropname = NULL;
 		return 1;
 	}
-	r->ppropname = static_cast<PROPERTY_NAME *>(emalloc(sizeof(PROPERTY_NAME) * r->count));
+	r->ppropname = sta_malloc<PROPERTY_NAME>(r->count);
 	if (NULL == r->ppropname) {
 		return 0;
 	}
@@ -996,7 +997,7 @@ zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r)
 		r->ppropid = NULL;
 		return 1;
 	}
-	r->ppropid = static_cast<uint16_t *>(emalloc(sizeof(uint16_t) * r->count));
+	r->ppropid = sta_malloc<uint16_t>(r->count);
 	if (NULL == r->ppropid) {
 		return 0;
 	}
@@ -1019,7 +1020,7 @@ zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r)
 		r->ppropval = NULL;
 		return 1;
 	}
-	r->ppropval = static_cast<TAGGED_PROPVAL *>(emalloc(sizeof(TAGGED_PROPVAL) * r->count));
+	r->ppropval = sta_malloc<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		return 0;
 	}
@@ -1042,12 +1043,12 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 		r->pparray = NULL;
 		return 1;
 	}
-	r->pparray = static_cast<TPROPVAL_ARRAY **>(emalloc(sizeof(TPROPVAL_ARRAY *) * r->count));
+	r->pparray = sta_malloc<TPROPVAL_ARRAY *>(r->count);
 	if (NULL == r->pparray) {
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		r->pparray[i] = static_cast<TPROPVAL_ARRAY *>(emalloc(sizeof(TPROPVAL_ARRAY)));
+		r->pparray[i] = st_malloc<TPROPVAL_ARRAY>();
 		if (NULL == r->pparray[i]) {
 			return 0;
 		}
@@ -1077,7 +1078,7 @@ zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r)
 	if (!ext_pack_pull_uint16(pctx, &r->count)) {
 		return 0;
 	}
-	r->prows = static_cast<PERMISSION_ROW *>(emalloc(sizeof(PERMISSION_ROW) * r->count));
+	r->prows = sta_malloc<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		return 0;
 	}
@@ -1141,7 +1142,7 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 		r->pstate = NULL;
 		return 1;
 	}
-	r->pstate = static_cast<MESSAGE_STATE *>(emalloc(sizeof(MESSAGE_STATE) * r->count));
+	r->pstate = sta_malloc<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
 		return 0;
 	}
@@ -1185,7 +1186,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pentryid = NULL;
 	} else {
-		r->pentryid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
+		r->pentryid = st_malloc<BINARY>();
 		if (NULL == r->pentryid) {
 			return 0;
 		}
@@ -1199,7 +1200,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pparentid = NULL;
 	} else {
-		r->pparentid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
+		r->pparentid = st_malloc<BINARY>();
 		if (NULL == r->pparentid) {
 			return 0;
 		}
@@ -1213,7 +1214,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pold_entryid = NULL;
 	} else {
-		r->pold_entryid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
+		r->pold_entryid = st_malloc<BINARY>();
 		if (NULL == r->pold_entryid) {
 			return 0;
 		}
@@ -1227,7 +1228,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pold_parentid = NULL;
 	} else {
-		r->pold_parentid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
+		r->pold_parentid = st_malloc<BINARY>();
 		if (NULL == r->pold_parentid) {
 			return 0;
 		}
@@ -1242,7 +1243,7 @@ static zend_bool ext_pack_pull_object_znotification(
 		r->pproptags = NULL;
 		return 1;
 	} else {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(emalloc(sizeof(PROPTAG_ARRAY)));
+		r->pproptags = st_malloc<PROPTAG_ARRAY>();
 		if (NULL == r->pproptags) {
 			return 0;
 		}
@@ -1294,12 +1295,12 @@ zend_bool ext_pack_pull_znotification_array(
 		r->ppnotification = NULL;
 		return 1;
 	}
-	r->ppnotification = static_cast<ZNOTIFICATION **>(emalloc(sizeof(ZNOTIFICATION *) * r->count));
+	r->ppnotification = sta_malloc<ZNOTIFICATION *>(r->count);
 	if (NULL == r->ppnotification) {
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		r->ppnotification[i] = static_cast<ZNOTIFICATION *>(emalloc(sizeof(ZNOTIFICATION)));
+		r->ppnotification[i] = st_malloc<ZNOTIFICATION>();
 		if (NULL == r->ppnotification[i]) {
 			return 0;
 		}
