@@ -407,7 +407,7 @@ static void *scan_work_func(void *param)
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			str_hash_iter_get_value(iter, tmp_dir);
-			pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+			pnode = me_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				continue;
 			}

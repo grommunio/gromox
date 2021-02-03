@@ -31,7 +31,7 @@ ICS_STATE* ics_state_create(LOGON_OBJECT *plogon, int type)
 {
 	BINARY tmp_bin;
 	
-	auto pstate = static_cast<ICS_STATE *>(malloc(sizeof(ICS_STATE)));
+	auto pstate = me_alloc<ICS_STATE>();
 	if (NULL == pstate) {
 		return NULL;
 	}

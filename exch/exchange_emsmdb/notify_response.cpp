@@ -4,6 +4,7 @@
 #include <gromox/rop_util.hpp>
 #include <cstdlib>
 #include <cstring>
+#include "common_util.h"
 
 struct NOTIFICATION_DATA_MEMORY {
 	uint16_t table_event;
@@ -104,7 +105,7 @@ static BOOL notify_response_specify_folder_created(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
+	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -130,7 +131,7 @@ static BOOL notify_response_specify_message_created(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
+	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -161,7 +162,7 @@ static BOOL notify_response_specify_link_created(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
+	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -251,7 +252,7 @@ static BOOL notify_response_specify_folder_modified(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
+	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -278,7 +279,7 @@ static BOOL notify_response_specify_message_modified(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
+	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}

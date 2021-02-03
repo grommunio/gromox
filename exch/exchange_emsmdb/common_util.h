@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstdlib>
 #include "logon_object.h"
 #include <gromox/mapi_types.hpp>
 #include <gromox/mem_file.hpp>
@@ -23,6 +24,8 @@ enum {
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
 template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
+template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
+template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 int common_util_mb_from_utf8(uint32_t cpid,
 	const char *src, char *dst, size_t len);
 

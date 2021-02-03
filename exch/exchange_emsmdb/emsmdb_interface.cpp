@@ -1218,12 +1218,12 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 	cxr = phandle->cxr;
 	strcpy(username, phandle->username);
-	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
-	pnode->pdata = malloc(sizeof(ROP_RESPONSE));
+	pnode->pdata = me_alloc<ROP_RESPONSE>();
 	if (NULL == pnode->pdata) {
 		emsmdb_interface_put_handle_notify_list(phandle);
 		free(pnode);
@@ -1287,7 +1287,7 @@ static void* scan_work_func(void *pparam)
 				continue;
 			}
 			if (cur_time - phandle->last_time > HANLDE_VALID_INTERVAL) {
-				pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+				pnode = me_alloc<DOUBLE_LIST_NODE>();
 				if (NULL == pnode) {
 					continue;
 				}

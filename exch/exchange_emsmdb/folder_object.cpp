@@ -17,7 +17,7 @@
 FOLDER_OBJECT* folder_object_create(LOGON_OBJECT *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
-	auto pfolder = static_cast<FOLDER_OBJECT *>(malloc(sizeof(FOLDER_OBJECT)));
+	auto pfolder = me_alloc<FOLDER_OBJECT>();
 	if (NULL == pfolder) {
 		return NULL;
 	}

@@ -16,7 +16,7 @@ ICSUPCTX_OBJECT* icsupctx_object_create(
 	} else {
 		state_type = ICS_STATE_HIERARCHY_UP;
 	}
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(malloc(sizeof(ICSUPCTX_OBJECT)));
+	auto pctx = me_alloc<ICSUPCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;
 	}

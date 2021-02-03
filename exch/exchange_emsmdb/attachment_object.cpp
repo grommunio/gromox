@@ -15,7 +15,7 @@
 ATTACHMENT_OBJECT* attachment_object_create(MESSAGE_OBJECT *pparent,
 	uint32_t attachment_num, uint8_t open_flags)
 {
-	auto pattachment = static_cast<ATTACHMENT_OBJECT *>(malloc(sizeof(ATTACHMENT_OBJECT)));
+	auto pattachment = me_alloc<ATTACHMENT_OBJECT>();
 	if (NULL == pattachment) {
 		return NULL;
 	}
@@ -190,7 +190,7 @@ BOOL attachment_object_append_stream_object(
 			return TRUE;
 		}
 	}
-	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}

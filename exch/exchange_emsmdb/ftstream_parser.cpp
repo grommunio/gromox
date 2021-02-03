@@ -93,7 +93,7 @@ static char* ftstream_parser_read_wstring(
 		return NULL;
 	}
 	tmp_len = 2*len;
-	pbuff = static_cast<char *>(malloc(len + 2));
+	pbuff = me_alloc<char>(len + 2);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -931,7 +931,7 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 	DCERPC_INFO rpc_info;
 	struct stat node_stat;
 	
-	auto pstream = static_cast<FTSTREAM_PARSER *>(malloc(sizeof(FTSTREAM_PARSER)));
+	auto pstream = me_alloc<FTSTREAM_PARSER>();
 	if (NULL == pstream) {
 		return NULL;
 	}

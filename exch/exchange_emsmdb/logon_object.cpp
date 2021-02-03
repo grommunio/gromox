@@ -94,7 +94,7 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
-		tmp_name.plid = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
+		tmp_name.plid = me_alloc<uint32_t>();
 		if (NULL == tmp_name.plid) {
 			return FALSE;
 		}
@@ -151,7 +151,7 @@ LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
 {
-	auto plogon = static_cast<LOGON_OBJECT *>(malloc(sizeof(LOGON_OBJECT)));
+	auto plogon = me_alloc<LOGON_OBJECT>();
 	if (NULL == plogon) {
 		return NULL;
 	}
@@ -509,7 +509,7 @@ PROPERTY_GROUPINFO* logon_object_get_property_groupinfo(
 			return pgpinfo;
 		}
 	}
-	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return NULL;
 	}

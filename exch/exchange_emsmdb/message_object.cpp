@@ -92,7 +92,7 @@ MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY tmp_columns;
 	
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(malloc(sizeof(MESSAGE_OBJECT)));
+	auto pmessage = me_alloc<MESSAGE_OBJECT>();
 	if (NULL == pmessage) {
 		return NULL;
 	}
@@ -1053,7 +1053,7 @@ BOOL message_object_append_stream_object(
 		proptag_array_remove(
 			pmessage->premoved_proptags, proptag);
 	}
-	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}

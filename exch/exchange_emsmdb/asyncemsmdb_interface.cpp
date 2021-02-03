@@ -67,7 +67,7 @@ int asyncemsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_thread_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * g_threads_num));
+	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
 	if (NULL == g_thread_ids) {
 		printf("[exchange_emsmdb]: Failed to allocate thread id buffer\n");
 		return -1;

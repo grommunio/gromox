@@ -43,7 +43,7 @@ static void ftstream_producer_try_recode_nbp(
 	}
 	if (pstream->offset - last_seek >=
 		FTSTREAM_PRODUCER_POINT_LENGTH) {
-		ppoint = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
+		ppoint = me_alloc<POINT_NODE>();
 		if (NULL == ppoint) {
 			return;
 		}
@@ -64,7 +64,7 @@ static void ftstream_producer_record_nbp(
 	pnode = double_list_get_tail(&pstream->bp_list);
 	if (NULL == pnode || nbp > 
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
+		pbpnode = me_alloc<POINT_NODE>();
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -86,7 +86,7 @@ static void ftstream_producer_record_lvp(
 	pnode = double_list_get_tail(&pstream->bp_list);
 	if (NULL == pnode || position >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
+		pbpnode = me_alloc<POINT_NODE>();
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -99,7 +99,7 @@ static void ftstream_producer_record_lvp(
 	}
 	if (position + length >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
+		pbpnode = me_alloc<POINT_NODE>();
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -121,7 +121,7 @@ static void ftstream_producer_record_wsp(
 	pnode = double_list_get_tail(&pstream->bp_list);
 	if (NULL == pnode || position >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
+		pbpnode = me_alloc<POINT_NODE>();
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -134,7 +134,7 @@ static void ftstream_producer_record_wsp(
 	}
 	if (position + length >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
+		pbpnode = me_alloc<POINT_NODE>();
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -252,7 +252,7 @@ static BOOL ftstream_producer_write_wstring(
 	uint32_t position;
 	
 	len = 2*strlen(pstr) + 2;
-	auto pbuff = static_cast<char *>(malloc(len));
+	auto pbuff = me_alloc<char>(len);
 	if (NULL == pbuff) {
 		return FALSE;
 	}
@@ -1228,7 +1228,7 @@ FTSTREAM_PRODUCER* ftstream_producer_create(
 	DCERPC_INFO rpc_info;
 	struct stat node_stat;
 	
-	auto pstream = static_cast<FTSTREAM_PRODUCER *>(malloc(sizeof(FTSTREAM_PRODUCER)));
+	auto pstream = me_alloc<FTSTREAM_PRODUCER>();
 	if (NULL == pstream) {
 		return NULL;
 	}

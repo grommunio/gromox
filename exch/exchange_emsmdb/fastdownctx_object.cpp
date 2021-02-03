@@ -31,7 +31,7 @@ static BOOL fastdownctx_object_record_subfolder(
 static BOOL fastdownctx_object_record_flow_node(
 	DOUBLE_LIST *pflow_list, int func_id, void *pparam)
 {
-	auto pflow = static_cast<FAST_FLOW_NODE *>(malloc(sizeof(FAST_FLOW_NODE)));
+	auto pflow = me_alloc<FAST_FLOW_NODE>();
 	if (NULL == pflow) {
 		return FALSE;
 	}
@@ -507,7 +507,7 @@ BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
 FASTDOWNCTX_OBJECT* fastdownctx_object_create(
 	LOGON_OBJECT *plogon, uint8_t string_option)
 {
-	auto pctx = static_cast<FASTDOWNCTX_OBJECT *>(malloc(sizeof(FASTDOWNCTX_OBJECT)));
+	auto pctx = me_alloc<FASTDOWNCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;
 	}

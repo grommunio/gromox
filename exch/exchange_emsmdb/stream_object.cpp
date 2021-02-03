@@ -24,7 +24,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
 	
-	auto pstream = static_cast<STREAM_OBJECT *>(malloc(sizeof(STREAM_OBJECT)));
+	auto pstream = me_alloc<STREAM_OBJECT>();
 	if (NULL == pstream) {
 		return NULL;
 	}

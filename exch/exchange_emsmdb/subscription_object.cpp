@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include "common_util.h"
 #include "subscription_object.h"
 #include "exmdb_client.h"
 
@@ -8,7 +9,7 @@ SUBSCRIPTION_OBJECT* subscription_object_create(
 	uint16_t notification_types, BOOL b_whole,
 	uint64_t folder_id, uint64_t message_id)
 {
-	auto psub = static_cast<SUBSCRIPTION_OBJECT *>(malloc(sizeof(SUBSCRIPTION_OBJECT)));
+	auto psub = me_alloc<SUBSCRIPTION_OBJECT>();
 	if (NULL == psub) {
 		return NULL;
 	}

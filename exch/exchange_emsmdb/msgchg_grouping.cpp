@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <cstdio>
+#include "common_util.h"
 
 struct TAG_NODE {
 	DOUBLE_LIST_NODE node;
@@ -45,7 +46,7 @@ void msgchg_grouping_init(const char *path)
 
 static GROUP_NODE* msgchg_grouping_create_group_node(uint32_t index)
 {
-	auto pgp_node = static_cast<GROUP_NODE *>(malloc(sizeof(GROUP_NODE)));
+	auto pgp_node = me_alloc<GROUP_NODE>();
 	if (NULL == pgp_node) {
 		return NULL;
 	}
@@ -81,7 +82,7 @@ static void msgchg_grouping_free_group_node(GROUP_NODE *pgp_node)
 
 static INFO_NODE* msgchg_grouping_create_info_node(uint32_t group_id)
 {
-	auto pinfo_node = static_cast<INFO_NODE *>(malloc(sizeof(INFO_NODE)));
+	auto pinfo_node = me_alloc<INFO_NODE>();
 	if (NULL == pinfo_node) {
 		return NULL;
 	}
@@ -236,7 +237,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				list_file_free(pfile);
 				return NULL;
 			}
-			ptag_node = static_cast<TAG_NODE *>(malloc(sizeof(TAG_NODE)));
+			ptag_node = me_alloc<TAG_NODE>();
 			if (NULL == ptag_node) {
 				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
@@ -280,7 +281,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				list_file_free(pfile);
 				return NULL;
 			}
-			ptag_node = static_cast<TAG_NODE *>(malloc(sizeof(TAG_NODE)));
+			ptag_node = me_alloc<TAG_NODE>();
 			if (NULL == ptag_node) {
 				printf("[exchange_emsmdb]: out of memory "
 					"when loading property group info\n");
@@ -296,7 +297,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				list_file_free(pfile);
 				return NULL;
 			}
-			ptag_node->ppropname = static_cast<PROPERTY_NAME *>(malloc(sizeof(PROPERTY_NAME)));
+			ptag_node->ppropname = me_alloc<PROPERTY_NAME>();
 			if (NULL == ptag_node->ppropname) {
 				free(ptag_node);
 				printf("[exchange_emsmdb]: out of memory when "
@@ -315,7 +316,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			}
 			if (0 == strncasecmp(ptoken, "LID=", 4)) {
 				ptag_node->ppropname->kind = MNID_ID;
-				ptag_node->ppropname->plid = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
+				ptag_node->ppropname->plid = me_alloc<uint32_t>();
 				if (NULL == ptag_node->ppropname->plid) {
 					free(ptag_node->ppropname);
 					free(ptag_node);

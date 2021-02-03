@@ -43,7 +43,7 @@ struct GROUP_NODE {
 static BOOL icsdownctx_object_record_flow_node(
 	DOUBLE_LIST *pflow_list, int func_id, void *pparam)
 {
-	auto pflow = static_cast<ICS_FLOW_NODE *>(malloc(sizeof(ICS_FLOW_NODE)));
+	auto pflow = me_alloc<ICS_FLOW_NODE>();
 	if (NULL == pflow) {
 		return FALSE;
 	}
@@ -66,7 +66,7 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 	} else {
 		state_type = ICS_STATE_HIERARCHY_DOWN;
 	}
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(malloc(sizeof(ICSDOWNCTX_OBJECT)));
+	auto pctx = me_alloc<ICSDOWNCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -146,7 +146,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	}
 	
 	if (pctx->sync_flags & SYNC_FLAG_PROGRESS) {
-		pctx->pprogtotal = static_cast<PROGRESS_INFORMATION *>(malloc(sizeof(PROGRESS_INFORMATION)));
+		pctx->pprogtotal = me_alloc<PROGRESS_INFORMATION>();
 		if (NULL == pctx->pprogtotal) {
 			return FALSE;
 		}
@@ -1003,7 +1003,7 @@ static BOOL icsdownctx_object_get_changepartial(
 		pmsg->pgpinfo= &pctx->fake_gpinfo;
 	} else {
 		pmsg->pgpinfo = pgpinfo;
-		pgpnode = static_cast<GROUP_NODE *>(malloc(sizeof(GROUP_NODE)));
+		pgpnode = me_alloc<GROUP_NODE>();
 		if (NULL == pgpnode) {
 			return FALSE;
 		}

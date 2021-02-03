@@ -221,7 +221,6 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
 static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist)
 {
 	DIR *sub_dirp;
-	RESOURCE_NODE *presource;
 	struct dirent *sub_direntp;
 	struct stat node_stat;
 	char dir_buff[256], sub_buff[256];
@@ -230,7 +229,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
 
-	presource = (RESOURCE_NODE*)malloc(sizeof(RESOURCE_NODE));
+	auto presource = me_alloc<RESOURCE_NODE>();
 	if (NULL == presource) {
 		printf("[exmdb_provider]: Failed to allocate resource node memory\n");
 		return;
@@ -264,7 +263,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		presource->content[i] = static_cast<char *>(malloc(node_stat.st_size));
+		presource->content[i] = me_alloc<char>(node_stat.st_size);
 		if (NULL == presource->content[i]) {
 			closedir(sub_dirp);
 			goto FREE_RESOURCE;

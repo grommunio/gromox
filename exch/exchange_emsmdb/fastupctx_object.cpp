@@ -30,7 +30,7 @@ struct MARKER_NODE {
 FASTUPCTX_OBJECT* fastupctx_object_create(
 	LOGON_OBJECT *plogon, void *pobject, int root_element)
 {
-	auto pctx = static_cast<FASTUPCTX_OBJECT *>(malloc(sizeof(FASTUPCTX_OBJECT)));
+	auto pctx = me_alloc<FASTUPCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -472,7 +472,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		if (NULL == pctx->pproplist) {
 			return GXERR_CALL_FAILED;
 		}
-		pmarker = static_cast<MARKER_NODE *>(malloc(sizeof(MARKER_NODE)));
+		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {
 			return GXERR_CALL_FAILED;
 		}
@@ -491,7 +491,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		if (NULL == pctx->pproplist) {
 			return GXERR_CALL_FAILED;
 		}
-		pmarker = static_cast<MARKER_NODE *>(malloc(sizeof(MARKER_NODE)));
+		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {
 			return GXERR_CALL_FAILED;
 		}
@@ -557,7 +557,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return GXERR_CALL_FAILED;
-		pmarker = static_cast<MARKER_NODE *>(malloc(sizeof(MARKER_NODE)));
+		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {
 			return GXERR_CALL_FAILED;
 		}
@@ -628,7 +628,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				return GXERR_CALL_FAILED;
 			}
 		}
-		pmarker = static_cast<MARKER_NODE *>(malloc(sizeof(MARKER_NODE)));
+		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {
 			return GXERR_CALL_FAILED;
 		}
@@ -706,7 +706,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				return GXERR_CALL_FAILED;
 			}
 		}
-		pmarker = static_cast<MARKER_NODE *>(malloc(sizeof(MARKER_NODE)));
+		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {
 			return GXERR_CALL_FAILED;
 		}
@@ -795,7 +795,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				static_cast<ATTACHMENT_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement),
 				pmsgctnt);
 		}
-		pmarker = static_cast<MARKER_NODE *>(malloc(sizeof(MARKER_NODE)));
+		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {
 			return GXERR_CALL_FAILED;
 		}
