@@ -66,7 +66,7 @@ bool tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
 			return true;
 		}
 	}
-	return tpropval_array_append(parray, ppropval) ? TRUE : false;
+	return tpropval_array_append(parray, ppropval);
 }
 
 void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
