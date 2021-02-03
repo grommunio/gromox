@@ -127,14 +127,13 @@ struct KEYWORD_ENUM {
 };
 
 struct IDB_ITEM {
-	sqlite3 *psqlite;
+	sqlite3 *psqlite = nullptr;
 	/* client reference count, item can be flushed into file system only count is 0 */
-	char *username;
-	time_t last_time;
-	time_t load_time;
-	uint32_t sub_id;
-	std::atomic<int> reference;
-	pthread_mutex_t lock;
+	char *username = nullptr;
+	time_t last_time = 0, load_time = 0;
+	uint32_t sub_id = 0;
+	std::atomic<int> reference{0};
+	pthread_mutex_t lock{};
 };
 
 enum {
@@ -2813,15 +2812,14 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
 	char sql_string[1024];
-	IDB_ITEM *pidb, temp_idb;
 	struct timespec timeout_tm;
 	
 	b_load = FALSE;
 	swap_string(htag, path);
 	pthread_mutex_lock(&g_hash_lock);
-	pidb = (IDB_ITEM*)str_hash_query(g_hash_table, htag);
+	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pidb) {
-		memset(&temp_idb, 0, sizeof(IDB_ITEM));
+		IDB_ITEM temp_idb;
 		if (1 != str_hash_add(g_hash_table, htag, &temp_idb)) {
 			pthread_mutex_unlock(&g_hash_lock);
 			debug_info("[mail_engine]: no room in idb hash table!");
@@ -3081,18 +3079,16 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 
 static int mail_engine_mfree(int argc, char **argv, int sockd)
 {
-	IDB_ITEM *pidb;
 	char htag[256];
-	IDB_ITEM temp_idb;
 	
 	if (2 != argc || strlen(argv[1]) >= 256) {
 		return 1;
 	}
 	swap_string(htag, argv[1]);
 	pthread_mutex_lock(&g_hash_lock);
-	pidb = (IDB_ITEM*)str_hash_query(g_hash_table, htag);
+	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pidb) {
-		memset(&temp_idb, 0, sizeof(IDB_ITEM));
+		IDB_ITEM temp_idb;
 		temp_idb.last_time = time(NULL) + g_cache_interval - 10;
 		str_hash_add(g_hash_table, htag, &temp_idb);
 		pthread_mutex_unlock(&g_hash_lock);

@@ -169,9 +169,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 DB_ITEM* db_engine_get_db(const char *path)
 {
 	BOOL b_new;
-	DB_ITEM *pdb;
 	char htag[256];
-	DB_ITEM temp_db;
 	char db_path[256];
 	char sql_string[256];
 	struct timespec timeout_tm;
@@ -179,9 +177,9 @@ DB_ITEM* db_engine_get_db(const char *path)
 	b_new = FALSE;
 	swap_string(htag, path);
 	pthread_mutex_lock(&g_hash_lock);
-	pdb = (DB_ITEM*)str_hash_query(g_hash_table, htag);
+	auto pdb = static_cast<DB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pdb) {
-		memset(&temp_db, 0, sizeof(DB_ITEM));
+		DB_ITEM temp_db;
 		if (1 != str_hash_add(g_hash_table, htag, &temp_db)) {
 			pthread_mutex_unlock(&g_hash_lock);
 			printf("[exmdb_provider]: no room in db hash table!\n");
@@ -260,16 +258,14 @@ void db_engine_put_db(DB_ITEM *pdb)
 BOOL db_engine_unload_db(const char *path)
 {
 	int i;
-	DB_ITEM *pdb;
 	char htag[256];
-	DB_ITEM temp_db;
 	
 	swap_string(htag, path);
 	for (i=0; i<20; i++) {
 		pthread_mutex_lock(&g_hash_lock);
-		pdb = (DB_ITEM*)str_hash_query(g_hash_table, htag);
+		auto pdb = static_cast<DB_ITEM *>(str_hash_query(g_hash_table, htag));
 		if (NULL == pdb) {
-			memset(&temp_db, 0, sizeof(DB_ITEM));
+			DB_ITEM temp_db;
 			temp_db.last_time = time(NULL) + g_cache_interval - 10;
 			str_hash_add(g_hash_table, htag, &temp_db);
 			pthread_mutex_unlock(&g_hash_lock);

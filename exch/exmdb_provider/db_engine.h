@@ -93,14 +93,14 @@ struct MEMORY_TABLES {
 
 struct DB_ITEM {
 	/* client reference count, item can be flushed into file system only count is 0 */
-	std::atomic<int> reference;
-	time_t last_time;
-	pthread_mutex_t lock;
-	sqlite3 *psqlite;
-	DOUBLE_LIST dynamic_list;	/* dynamic search list */
-	DOUBLE_LIST nsub_list;
-	DOUBLE_LIST instance_list;
-	MEMORY_TABLES tables;
+	std::atomic<int> reference{0};
+	time_t last_time = 0;
+	pthread_mutex_t lock{};
+	sqlite3 *psqlite = nullptr;
+	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
+	DOUBLE_LIST nsub_list{};
+	DOUBLE_LIST instance_list{};
+	MEMORY_TABLES tables{};
 };
 
 void db_engine_init(int table_size, int cache_interval,
