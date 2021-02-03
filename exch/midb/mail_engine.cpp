@@ -209,7 +209,6 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 {
 	int length;
 	iconv_t conv_id;
-	char *ret_string;
 	char *pin, *pout;
 	size_t in_len, out_len;
 
@@ -218,7 +217,7 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 		return strdup(string);
 	}	
 	length = strlen(string) + 1;
-	ret_string = static_cast<char *>(malloc(2 * length));
+	auto ret_string = me_alloc<char>(2 * length);
 	if (NULL == ret_string) {
 		return NULL;
 	}
@@ -266,7 +265,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			0 == S_ISREG(node_stat.st_mode)) {
 			return 0;
 		}
-		pbuff = static_cast<char *>(malloc(node_stat.st_size));
+		pbuff = me_alloc<char>(node_stat.st_size);
 		if (NULL == pbuff) {
 			return 0;
 		}
@@ -385,7 +384,7 @@ static char* mail_engine_ct_decode_mime(
 	char temp_buff[1024];
 
 	buff_len = strlen(mime_string);
-	auto ret_string = static_cast<char *>(malloc(2 * (buff_len + 1)));
+	auto ret_string = me_alloc<char>(2 * (buff_len + 1));
 	if (NULL == ret_string) {
 		return NULL;
 	}
@@ -485,7 +484,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 	}
 	if (0 == strncmp(mjson_get_mime_ctype(pmime), "text/", 5)) {
 		length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
-		pbuff = static_cast<char *>(malloc(2 * length + 1));
+		pbuff = me_alloc<char>(2 * length + 1);
 		if (NULL == pbuff) {
 			return;
 		}
@@ -1326,19 +1325,17 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 	int tmp_argc1;
 	struct tm tmp_tm;
 	char* tmp_argv[256];
-	DOUBLE_LIST *plist;
 	DOUBLE_LIST *plist1;
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
 
-	plist = (DOUBLE_LIST*)malloc(sizeof(DOUBLE_LIST));
+	auto plist = me_alloc<DOUBLE_LIST>();
 	if (NULL == plist) {
 		return NULL;
 	}
 	double_list_init(plist);
 	for (i=0; i<argc; i++) {
-		ptree_node = (CONDITION_TREE_NODE*)malloc(
-					sizeof(CONDITION_TREE_NODE));
+		ptree_node = me_alloc<CONDITION_TREE_NODE>();
 		if (NULL == ptree_node) {
 			mail_engine_ct_destroy_internal(plist);
 			return NULL;
@@ -1525,7 +1522,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 			ptree_node->condition = CONDITION_UNSEEN;
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
 			ptree_node->condition = CONDITION_HEADER;
-			ptree_node->pstatment = malloc(2*sizeof(char*));
+			ptree_node->pstatment = me_alloc<char *>(2);
 			if (NULL == ptree_node->pstatment) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
@@ -1612,7 +1609,6 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 	int i, len, temp;
 	char *last_colon;
 	char *last_break;
-	DOUBLE_LIST *plist;
 	SEQUENCE_NODE *pseq;
 	
 	len = strlen(string);
@@ -1621,7 +1617,7 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 	} else {
 		string[len] = ',';
 	}
-	plist = (DOUBLE_LIST*)malloc(sizeof(DOUBLE_LIST));
+	auto plist = me_alloc<DOUBLE_LIST>();
 	if (NULL == plist) {
 		return NULL;
 	}
@@ -1648,7 +1644,7 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 				return NULL;
 			}
 			string[i] = '\0';
-			pseq = static_cast<SEQUENCE_NODE *>(malloc(sizeof(*pseq)));
+			pseq = me_alloc<SEQUENCE_NODE>();
 			if (NULL == pseq) {
 				mail_engine_ct_free_sequence(plist);
 				return NULL;
@@ -1756,7 +1752,6 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 	char sql_string[1024];
 	const char *mid_string;
 	SINGLE_LIST_NODE *pnode;
-	CONDITION_RESULT *presult;
 	sqlite3_stmt *pstmt_message;
 
 	sprintf(sql_string, "SELECT count(message_id) "
@@ -1785,7 +1780,7 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 		"WHERE mid_string=?");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt_message))
 		return NULL;
-	presult = (CONDITION_RESULT*)malloc(sizeof(CONDITION_RESULT));
+	auto presult = me_alloc<CONDITION_RESULT>();
 	if (NULL == presult) {
 		sqlite3_finalize(pstmt_message);
 		return NULL;
@@ -1807,7 +1802,7 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 		if (TRUE == mail_engine_ct_match_mail(psqlite,
 			charset, pstmt_message, mid_string, i + 1,
 			total_mail, uidnext, ptree)) {
-			pnode = static_cast<SINGLE_LIST_NODE *>(malloc(sizeof(SINGLE_LIST_NODE)));
+			pnode = me_alloc<SINGLE_LIST_NODE>();
 			if (NULL == pnode) {
 				continue;
 			}
@@ -2961,7 +2956,7 @@ static void *scan_work_func(void *param)
 				now_time - pidb->load_time > RELOAD_INTERVAL)) {
 				swap_string(path, htag);
 				if (0 != pidb->sub_id) {
-					psub = static_cast<SUB_NODE *>(malloc(sizeof(SUB_NODE)));
+					psub = me_alloc<SUB_NODE>();
 					if (NULL != psub) {
 						psub->node.pdata = psub;
 						strcpy(psub->maildir, path);
@@ -3667,7 +3662,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	int fd;
 	MAIL imail;
 	XID tmp_xid;
-	char *pbuff;
 	int tmp_len;
 	int user_id;
 	BINARY *pbin;
@@ -3715,7 +3709,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		0 == S_ISREG(node_stat.st_mode)) {
 		return 1;
 	}
-	pbuff = static_cast<char *>(malloc(node_stat.st_size));
+	auto pbuff = me_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return 4;
 	}
@@ -4174,7 +4168,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	MAIL imail;
 	int tmp_len;
 	XID tmp_xid;
-	char *pbuff;
 	int user_id;
 	BINARY *pbin;
 	char lang[32];
@@ -4212,7 +4205,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		0 == S_ISREG(node_stat.st_mode)) {
 		return 1;
 	}
-	pbuff = static_cast<char *>(malloc(node_stat.st_size));
+	auto pbuff = me_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return 4;
 	}

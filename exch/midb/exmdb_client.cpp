@@ -515,7 +515,7 @@ int exmdb_client_run()
 		if (0 != strcasecmp(pitem[i].type, "private") ||
 		    !gx_peer_is_local(pitem[i].ip_addr))
 			continue;	
-		pserver = static_cast<REMOTE_SVR *>(malloc(sizeof(REMOTE_SVR)));
+		pserver = me_alloc<REMOTE_SVR>();
 		if (NULL == pserver) {
 			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");
 			list_file_free(plist);
@@ -530,7 +530,7 @@ int exmdb_client_run()
 		double_list_init(&pserver->conn_list);
 		double_list_append_as_tail(&g_server_list, &pserver->node);
 		for (j=0; j<g_conn_num; j++) {
-			pconn = static_cast<REMOTE_CONN *>(malloc(sizeof(REMOTE_CONN)));
+			pconn = me_alloc<REMOTE_CONN>();
 			if (NULL == pconn) {
 				printf("[exmdb_client]: fail to "
 					"allocate memory for exmdb\n");
@@ -544,7 +544,7 @@ int exmdb_client_run()
 			double_list_append_as_tail(&g_lost_list, &pconn->node);
 		}
 		for (j=0; j<g_threads_num; j++) {
-			pagent = static_cast<AGENT_THREAD *>(malloc(sizeof(AGENT_THREAD)));
+			pagent = me_alloc<AGENT_THREAD>();
 			if (NULL == pagent) {
 				printf("[exmdb_client]: fail to "
 					"allocate memory for exmdb\n");

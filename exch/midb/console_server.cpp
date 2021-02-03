@@ -23,6 +23,7 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#include "common_util.h"
 #define TIMEOUT             300    
 #define MAXLINE             65536  /* max line size */
 #define MAXARGS             128    /* max args on a command line */
@@ -114,14 +115,12 @@ void console_server_free()
  */
 int console_server_run()
 {
-	CONSOLE_NODE *pnodes;
-
 	auto sock = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (sock < 0) {
 		printf("[console_server]: failed to create socket: %s\n", strerror(errno));
         return -1;
 	}
-	pnodes = (CONSOLE_NODE*)malloc(MAX_CONSOLE_NUMBER*sizeof(CONSOLE_NODE));
+	auto pnodes = me_alloc<CONSOLE_NODE>(MAX_CONSOLE_NUMBER);
 	if (NULL == pnodes) {
 		printf("[console_server]: Failed to allocate console nodes buffer\n");
 		close(sock);

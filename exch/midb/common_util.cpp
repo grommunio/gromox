@@ -46,7 +46,7 @@ void common_util_free()
 
 BOOL common_util_build_environment(const char *maildir)
 {
-	auto pctx = static_cast<COMMAND_CONTEXT *>(malloc(sizeof(COMMAND_CONTEXT)));
+	auto pctx = me_alloc<COMMAND_CONTEXT>();
 	if (NULL == pctx) {
 		return FALSE;
 	}
@@ -96,7 +96,7 @@ BOOL common_util_switch_allocator()
 		free(pctx->ptmp_ctx);
 		pctx->ptmp_ctx = NULL;
 	} else {
-		pctx->ptmp_ctx = static_cast<ALLOC_CONTEXT *>(malloc(sizeof(ALLOC_CONTEXT)));
+		pctx->ptmp_ctx = me_alloc<ALLOC_CONTEXT>();
 		if (NULL == pctx->ptmp_ctx) {
 			return FALSE;
 		}

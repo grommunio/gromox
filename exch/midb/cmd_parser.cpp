@@ -71,8 +71,6 @@ void cmd_parser_free()
 
 CONNECTION* cmd_parser_get_connection()
 {
-	CONNECTION *pconnection;
-
 	pthread_mutex_lock(&g_connection_lock);
 	if (double_list_get_nodes_num(&g_connection_list) + 1 +
 		double_list_get_nodes_num(&g_connection_list1) >= g_threads_num) {
@@ -81,9 +79,7 @@ CONNECTION* cmd_parser_get_connection()
 	}
 	
 	pthread_mutex_unlock(&g_connection_lock);
-
-	pconnection = (CONNECTION*)malloc(sizeof(CONNECTION));
-
+	auto pconnection = me_alloc<CONNECTION>();
 	pconnection->node.pdata = pconnection;
 
 	return pconnection;
@@ -106,7 +102,7 @@ int cmd_parser_run()
 
 	cmd_parser_register_command("PING", cmd_parser_ping);
 
-	g_thread_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
+	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
 	pthread_attr_init(&thr_attr);
 	g_notify_stop = FALSE;
 
