@@ -308,7 +308,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		zarafa_server_put_user_info(pinfo);
 		return;
 	}
-	pnotification = static_cast<ZNOTIFICATION *>(common_util_alloc(sizeof(*pnotification)));
+	pnotification = cu_alloc<ZNOTIFICATION>();
 	if (NULL == pnotification) {
 		zarafa_server_put_user_info(pinfo);
 		return;
@@ -316,7 +316,7 @@ static void zarafa_server_notification_proc(const char *dir,
 	switch (pdb_notify->type) {
 	case DB_NOTIFY_TYPE_NEW_MAIL:
 		pnotification->event_type = EVENT_TYPE_NEWMAIL;
-		pnew_mail = static_cast<NEWMAIL_ZNOTIFICATION *>(common_util_alloc(sizeof(*pnew_mail)));
+		pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
 		if (NULL == pnew_mail) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -365,7 +365,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_FOLDER_CREATED:
 		pnotification->event_type = EVENT_TYPE_OBJECTCREATED;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -392,7 +392,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_MESSAGE_CREATED:
 		pnotification->event_type = EVENT_TYPE_OBJECTCREATED;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -416,7 +416,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_FOLDER_DELETED:
 		pnotification->event_type = EVENT_TYPE_OBJECTDELETED;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -443,7 +443,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_MESSAGE_DELETED:
 		pnotification->event_type = EVENT_TYPE_OBJECTDELETED;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -471,7 +471,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
 		pnotification->event_type = EVENT_TYPE_OBJECTMODIFIED;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -490,7 +490,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
 		pnotification->event_type = EVENT_TYPE_OBJECTMODIFIED;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -523,7 +523,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		} else {
 			pnotification->event_type = EVENT_TYPE_OBJECTCOPIED;
 		}
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -571,7 +571,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		} else {
 			pnotification->event_type = EVENT_TYPE_OBJECTCOPIED;
 		}
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -618,7 +618,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		break;
 	case DB_NOTIFY_TYPE_SEARCH_COMPLETED:
 		pnotification->event_type = EVENT_TYPE_SEARCHCOMPLETE;
-		pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			zarafa_server_put_user_info(pinfo);
 			return;
@@ -1612,8 +1612,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotFound;
 	}
-	presult_set->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) *
-	                       single_list_get_nodes_num(&result_list)));
+	presult_set->pparray = cu_alloc<TPROPVAL_ARRAY *>(single_list_get_nodes_num(&result_list));
 	if (NULL == presult_set->pparray) {
 		ab_tree_put_base(pbase);
 		zarafa_server_put_user_info(pinfo);
@@ -1622,8 +1621,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	container_object_get_user_table_all_proptags(&proptags);
 	for (pnode=single_list_get_head(&result_list); NULL!=pnode;
 		pnode=single_list_get_after(&result_list, pnode)) {
-		presult_set->pparray[presult_set->count] = static_cast<TPROPVAL_ARRAY *>(
-			common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		presult_set->pparray[presult_set->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == presult_set->pparray[presult_set->count] ||
 		    !ab_tree_fetch_node_properties(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata),
 		    &proptags, presult_set->pparray[presult_set->count])) {
@@ -2288,7 +2286,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		username = NULL;
 	}
 	ids.count = 0;
-	ids.pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * pentryids->count));
+	ids.pids = cu_alloc<uint64_t>(pentryids->count);
 	if (NULL == ids.pids) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -2322,7 +2320,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		return ecSuccess;
 	}
 	ids1.count = 0;
-	ids1.pids  = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * ids.count));
+	ids1.pids  = cu_alloc<uint64_t>(ids.count);
 	if (NULL == ids1.pids) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -2523,7 +2521,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 		return ecSuccess;
 	}
 	ids.count = 0;
-	ids.pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * pentryids->count));
+	ids.pids = cu_alloc<uint64_t>(pentryids->count);
 	if (NULL == ids.pids) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -2663,8 +2661,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			pstore), table_id);
 		if (tmp_set.count > 0) {
 			tmp_bins.count = 0;
-			tmp_bins.pbin = static_cast<BINARY *>(common_util_alloc(
-			                tmp_set.count * sizeof(BINARY)));
+			tmp_bins.pbin = cu_alloc<BINARY>(tmp_set.count);
 			if (NULL == tmp_bins.pbin) {
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
@@ -3718,8 +3715,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	if (count > 0) {
 		zarafa_server_put_user_info(pinfo);
 		pnotifications->count = count;
-		pnotifications->ppnotification =
-			static_cast<ZNOTIFICATION **>(common_util_alloc(sizeof(ZNOTIFICATION *) * count));
+		pnotifications->ppnotification = cu_alloc<ZNOTIFICATION *>(count);
 		if (NULL == pnotifications->ppnotification) {
 			return ecError;
 		}
@@ -3807,8 +3803,7 @@ uint32_t zarafa_server_queryrows(
 				row_num = count;
 			}
 			prowset->count = 0;
-			prowset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-			                   sizeof(TPROPVAL_ARRAY *) * row_num));
+			prowset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_num);
 			if (NULL == prowset->pparray) {
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
@@ -3885,8 +3880,7 @@ uint32_t zarafa_server_queryrows(
 		break;
 	}
 	for (i=0; i<prowset->count; i++) {
-		ppropvals = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-		            sizeof(TAGGED_PROPVAL) * (prowset->pparray[i]->count + 1)));
+		ppropvals = cu_alloc<TAGGED_PROPVAL>(prowset->pparray[i]->count + 1);
 		if (NULL == ppropvals) {
 			return ecError;
 		}
@@ -4530,8 +4524,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			}
 		} else {
 			prcpt = prcpt_list->pparray[i];
-			ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-			           sizeof(TAGGED_PROPVAL) * (prcpt->count + 1)));
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
 			if (NULL == ppropval) {
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
@@ -4539,8 +4532,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			memcpy(ppropval, prcpt->ppropval,
 				sizeof(TAGGED_PROPVAL)*prcpt->count);
 			ppropval[prcpt->count].proptag = PROP_TAG_ROWID;
-			ppropval[prcpt->count].pvalue =
-				common_util_alloc(sizeof(uint32_t));
+			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
 			if (NULL == ppropval[prcpt->count].pvalue) {
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
@@ -4580,7 +4572,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					!= ab_entryid.type) {
 					continue;
 				}
-				ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc((prcpt->count + 4) * sizeof(TAGGED_PROPVAL)));
+				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
 				if (NULL == ppropval) {
 					zarafa_server_put_user_info(pinfo);
 					return ecError;
@@ -4631,7 +4623,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					oneoff_entry.paddress_type, "SMTP")) {
 					continue;
 				}
-				ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc((prcpt->count + 5) * sizeof(TAGGED_PROPVAL)));
+				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
 				if (NULL == ppropval) {
 					zarafa_server_put_user_info(pinfo);
 					return ecError;
@@ -5231,8 +5223,7 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 			*ppropvals = *(TPROPVAL_ARRAY*)pobject;
 		} else {
 			ppropvals->count = 0;
-			ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-				sizeof(TAGGED_PROPVAL) * pproptags->count));
+			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (NULL == ppropvals->ppropval) {
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
@@ -5730,8 +5721,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		common_util_reduce_proptags(&proptags, pexclude_proptags);
 		tmp_proptags.count = 0;
-		tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-		                        sizeof(uint32_t) * proptags.count));
+		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
 		if (NULL == tmp_proptags.pproptag) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
@@ -6762,8 +6752,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			return ecError;
 		}
 		tmp_propvals.count = 0;
-		tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-			(8 + ppropvals->count) * sizeof(TAGGED_PROPVAL)));
+		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (NULL == tmp_propvals.ppropval) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
@@ -6871,8 +6860,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		return ecError;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        (5 + ppropvals->count) * sizeof(TAGGED_PROPVAL)));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -6974,8 +6962,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 	}
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
-		message_ids.pids = static_cast<uint64_t *>(common_util_alloc(
-		                   sizeof(uint64_t) * pbins->count));
+		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
 		if (NULL == message_ids.pids) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
@@ -7306,8 +7293,7 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecSuccess;
 	}
-	pfolder_array->pbin = static_cast<BINARY *>(common_util_alloc(
-	                      sizeof(BINARY) * folder_ids.count));
+	pfolder_array->pbin = cu_alloc<BINARY>(folder_ids.count);
 	if (NULL == pfolder_array->pbin) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -7403,8 +7389,7 @@ uint32_t zarafa_server_setsearchcriteria(
 		}
 	}
 	folder_ids.count = pfolder_array->count;
-	folder_ids.pll   = static_cast<uint64_t *>(common_util_alloc(
-	                   sizeof(uint64_t) * folder_ids.count));
+	folder_ids.pll   = cu_alloc<uint64_t>(folder_ids.count);
 	if (NULL == folder_ids.pll) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -7728,7 +7713,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	close(pipes_out[1]);
 	write(pipes_in[1], cookie_buff, tmp_len);
 	close(pipes_in[1]);
-	*ppresult_string = static_cast<char *>(common_util_alloc(1024 * 1024));
+	*ppresult_string = cu_alloc<char>(1024 * 1024);
 	if (NULL == *ppresult_string) {
 		waitpid(pid, &status, 0);
 		return ecError;

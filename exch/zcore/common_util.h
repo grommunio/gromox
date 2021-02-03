@@ -341,7 +341,8 @@ BOOL common_util_exmdb_locinfo_from_string(
 extern BOOL common_util_build_environment(void);
 extern void common_util_free_environment(void);
 void* common_util_alloc(size_t size);
-
+template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
+template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
 void common_util_set_clifd(int clifd);
 extern int common_util_get_clifd(void);
 char* common_util_dup(const char *pstr);

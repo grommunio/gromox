@@ -71,8 +71,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 		pfolder->folder_id, &tmp_proptags)) {
 		return FALSE;		
 	}
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + 30)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 30);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -251,7 +250,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_CONTENTUNREADCOUNT:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
-			*ppvalue = common_util_alloc(sizeof(uint32_t));
+			*ppvalue = cu_alloc<uint32_t>();
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
@@ -263,14 +262,14 @@ static BOOL folder_object_get_calculated_property(
 		}
 		return FALSE;
 	case PROP_TAG_FOLDERID:
-		*ppvalue = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t)));
+		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
 		return TRUE;
 	case PROP_TAG_RIGHTS:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -464,13 +463,13 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+		*ppvalue = cu_alloc<BINARY_ARRAY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		ba->count = 5;
-		ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * ba->count));
+		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr)
 			return FALSE;
 		pbin = common_util_to_folder_entryid(pfolder->pstore,
@@ -525,19 +524,17 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		auto bv = static_cast<BINARY *>(*ppvalue);
 		persistdatas.count = 3;
-		persistdatas.ppitems = static_cast<PERSISTDATA **>(common_util_alloc(
-		                       sizeof(PERSISTDATA *) * persistdatas.count));
+		persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 		if (NULL == persistdatas.ppitems) {
 			return FALSE;
 		}
-		ppersistdata = static_cast<PERSISTDATA *>(common_util_alloc(
-		               sizeof(PERSISTDATA) * persistdatas.count));
+		ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
 		if (NULL == ppersistdata) {
 			return FALSE;
 		}
@@ -591,13 +588,13 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+		*ppvalue = cu_alloc<BINARY_ARRAY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		ba->count = 4;
-		ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * ba->count));
+		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr)
 			return FALSE;
 		ba->pbin[0].cb = 0;
@@ -615,7 +612,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	}
 	case PROP_TAG_OBJECTTYPE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -634,14 +631,12 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-		sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -696,8 +691,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	if (ppropvals->count == 0)
 		return TRUE;
 	count = ppropvals->count + 4;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        sizeof(TAGGED_PROPVAL) * count));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
@@ -776,8 +770,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	TAGGED_PROPVAL propval_buff[4];
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -879,8 +872,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	}
 	exmdb_client_unload_table(dir, table_id);
 	pperm_set->count = 0;
-	pperm_set->prows = static_cast<PERMISSION_ROW *>(common_util_alloc(
-	                   sizeof(PERMISSION_ROW) * permission_set.count));
+	pperm_set->prows = cu_alloc<PERMISSION_ROW>(permission_set.count);
 	if (NULL == pperm_set->prows) {
 		return FALSE;
 	}
@@ -937,8 +929,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	exmdb_client_unload_table(dir, table_id);
-	pperm_data = static_cast<PERMISSION_DATA *>(common_util_alloc(
-	             sizeof(PERMISSION_DATA) * pperm_set->count));
+	pperm_data = cu_alloc<PERMISSION_DATA>(pperm_set->count);
 	if (NULL == pperm_data) {
 		return FALSE;
 	}
@@ -965,8 +956,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 				}
 				pperm_data[count].flags = PERMISSION_DATA_FLAG_MODIFY_ROW;
 				pperm_data[count].propvals.count = 2;
-				pperm_data[count].propvals.ppropval =
-					static_cast<TAGGED_PROPVAL *>(common_util_alloc(2 * sizeof(TAGGED_PROPVAL)));
+				pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 				if (NULL == pperm_data[i].propvals.ppropval) {
 					return FALSE;
 				}
@@ -985,8 +975,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		if (pperm_set->prows[i].flags & RIGHT_NEW) {
 			pperm_data[count].flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			pperm_data[count].propvals.count = 2;
-			pperm_data[count].propvals.ppropval =
-				static_cast<TAGGED_PROPVAL *>(common_util_alloc(2 * sizeof(TAGGED_PROPVAL)));
+			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 			if (NULL == pperm_data[i].propvals.ppropval) {
 				return FALSE;
 			}
@@ -1021,8 +1010,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 			}
 			pperm_data[count].flags = PERMISSION_DATA_FLAG_REMOVE_ROW;
 			pperm_data[count].propvals.count = 1;
-			pperm_data[count].propvals.ppropval =
-				static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL)));
+			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>();
 			if (NULL == pperm_data[i].propvals.ppropval) {
 				return FALSE;
 			}

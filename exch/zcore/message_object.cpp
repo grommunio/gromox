@@ -209,14 +209,14 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	propvals.count = 0;
-	propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 20));
+	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);
 	if (NULL == propvals.ppropval) {
 		return FALSE;
 	}
 	
 	propvals.ppropval[propvals.count].proptag =
 						PROP_TAG_MESSAGECODEPAGE;
-	pvalue = common_util_alloc(sizeof(uint32_t));
+	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -226,7 +226,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_IMPORTANCE;
-	pvalue = common_util_alloc(sizeof(uint32_t));
+	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -241,7 +241,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_SENSITIVITY;
-	pvalue = common_util_alloc(sizeof(uint32_t));
+	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -266,7 +266,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_MESSAGEFLAGS;
-	pvalue = common_util_alloc(sizeof(uint32_t));
+	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -277,7 +277,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 								PROP_TAG_READ;
-	pvalue = common_util_alloc(sizeof(uint8_t));
+	pvalue = cu_alloc<uint8_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -287,7 +287,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_ASSOCIATED;
-	pvalue = common_util_alloc(sizeof(uint8_t));
+	pvalue = cu_alloc<uint8_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -301,7 +301,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_TRUSTSENDER;
-	pvalue = common_util_alloc(sizeof(uint32_t));
+	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -311,7 +311,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_CREATIONTIME;
-	pvalue = common_util_alloc(sizeof(uint64_t));
+	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -321,7 +321,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_SEARCHKEY;
-	pvalue = common_util_alloc(sizeof(BINARY));
+	pvalue = cu_alloc<BINARY>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -335,7 +335,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 						PROP_TAG_MESSAGELOCALEID;
-	pvalue = common_util_alloc(sizeof(uint32_t));
+	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -457,14 +457,14 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		b_fai = TRUE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 8));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (NULL == tmp_propvals.ppropval) {
 		return GXERR_CALL_FAILED;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 								PROP_TAG_LOCALCOMMITTIME;
-	pvalue = common_util_alloc(sizeof(uint64_t));
+	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return GXERR_CALL_FAILED;
 	}
@@ -741,8 +741,7 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 	PROBLEM_ARRAY tmp_problems;
 	
 	msgctnt = *pmsgctnt;
-	msgctnt.proplist.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                            sizeof(TAGGED_PROPVAL) * pmsgctnt->proplist.count));
+	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count);
 	if (NULL == msgctnt.proplist.ppropval) {
 		return FALSE;
 	}
@@ -937,8 +936,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 		return FALSE;	
 	}
 	pproptags->count = 0;
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + 15)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -1053,7 +1051,7 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = &pmessage->tag_access;
 		return TRUE;
 	case PROP_TAG_ACCESSLEVEL:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1078,7 +1076,7 @@ static BOOL message_object_get_calculated_property(
 		}
 		return FALSE;
 	case PROP_TAG_OBJECTTYPE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1143,14 +1141,12 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t lcid_default = 0x0409;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -1227,19 +1223,16 @@ static BOOL message_object_set_properties_internal(
 		return FALSE;
 	}
 	problems.count = 0;
-	problems.pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                    sizeof(PROPERTY_PROBLEM) * ppropvals->count));
+	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == problems.pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropvals->count));
+	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -1403,19 +1396,16 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	problems.count = 0;
-	problems.pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                    sizeof(PROPERTY_PROBLEM) * pproptags->count));
+	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == problems.pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
-	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * pproptags->count));
+	poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}

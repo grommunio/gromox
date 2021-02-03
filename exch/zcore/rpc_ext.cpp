@@ -2507,8 +2507,7 @@ static BOOL rpc_ext_pull_deletepropvals_request(
 		pext, &ppayload->deletepropvals.hobject)) {
 		return FALSE;
 	}
-	ppayload->deletepropvals.pproptags =
-		static_cast<PROPTAG_ARRAY *>(common_util_alloc(sizeof(PROPTAG_ARRAY)));
+	ppayload->deletepropvals.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (NULL == ppayload->deletepropvals.pproptags) {
 		return FALSE;
 	}

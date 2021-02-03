@@ -193,8 +193,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		pinfo->homedir, &tmp_proptags2)) {
 		return FALSE;
 	}
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) *
-	                      (tmp_proptags1.count + tmp_proptags2.count + 25)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags1.count + tmp_proptags2.count + 25);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -371,8 +370,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				end_pos = ptable->position + row_needed;
 			}
 			pset->count = 0;
-			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-			                sizeof(TPROPVAL_ARRAY *) * (end_pos - ptable->position)));
+			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
@@ -387,8 +385,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				end_pos = ptable->position - row_needed + 1;
 			}
 			pset->count = 0;
-			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-			                sizeof(TPROPVAL_ARRAY *) * (ptable->position - end_pos + 1)));
+			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
@@ -415,14 +412,13 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pvalue) {
 				continue;
 			}
-			pentryid = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+			pentryid = cu_alloc<BINARY>();
 			if (NULL == pentryid) {
 				return FALSE;
 			}
 			if (!common_util_essdn_to_entryid(static_cast<char *>(pvalue), pentryid))
 				return FALSE;	
-			pvalue = common_util_alloc(sizeof(TAGGED_PROPVAL)
-							*(pset->pparray[i]->count + 1));
+			pvalue = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 1);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -472,8 +468,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				end_pos = 1;
 			}
 			pset->count = 0;
-			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-			                sizeof(TPROPVAL_ARRAY *) *(end_pos - ptable->position + 1)));
+			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
@@ -481,8 +476,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				if (0 != i && 1 != i) {
 					continue;
 				}
-				pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-					common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
 				}
@@ -510,8 +504,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				end_pos = 0;
 			}
 			pset->count = 0;
-			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-			                sizeof(TPROPVAL_ARRAY *) * (ptable->position - end_pos + 1)));
+			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
@@ -519,8 +512,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				if (0 != i && 1 != i) {
 					continue;
 				}
-				pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-					common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
 				}
@@ -565,8 +557,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			idx2 = -1;
 		}
 		if (idx >= 0 || idx1 >= 0 || idx2 >= 0) {
-			tmp_columns.pproptag = static_cast<uint32_t *>(common_util_alloc(
-			                       sizeof(uint32_t) * pcolumns->count));
+			tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
 			if (NULL == tmp_columns.pproptag) {
 				return FALSE;
 			}
@@ -641,7 +632,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								temp_set.pparray[i]->ppropval[j].proptag) {
 								tmp_eid = *(uint64_t*)
 									temp_set.pparray[i]->ppropval[j].pvalue;
-								ptag_access = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+								ptag_access = cu_alloc<uint32_t>();
 								if (NULL == ptag_access) {
 									return FALSE;
 								}
@@ -664,7 +655,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								temp_set.pparray[i]->ppropval[j].proptag) {
 								tmp_eid = *(uint64_t*)
 									temp_set.pparray[i]->ppropval[j].pvalue;
-								ppermission = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+								ppermission = cu_alloc<uint32_t>();
 								if (NULL == ppermission) {
 									return FALSE;
 								}
@@ -697,13 +688,12 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				return FALSE;
 			}
 			for (i=0; i<temp_set.count; i++) {
-				ppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+				ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == ppropvals) {
 					return FALSE;
 				}
 				ppropvals->count = temp_set.pparray[i]->count + 1;
-				ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-				                      sizeof(TAGGED_PROPVAL) * ppropvals->count));
+				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 				if (NULL == ppropvals->ppropval) {
 					return FALSE;
 				}
@@ -1233,7 +1223,7 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 		return FALSE;	
 	}
 	pset->count = 0;
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * tmp_set.count));
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(tmp_set.count);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}

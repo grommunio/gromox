@@ -103,14 +103,14 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pb = static_cast<uint8_t *>(common_util_alloc(1));
+				pbin->pb = cu_alloc<uint8_t>(1);
 				if (pbin->pb == nullptr)
 					return FALSE;
 				*pbin->pb = resp_buff[0];
 				return TRUE;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pb = static_cast<uint8_t *>(common_util_alloc(pbin->cb));
+				pbin->pb = cu_alloc<uint8_t>(pbin->cb);
 				if (pbin->pb == nullptr)
 					return FALSE;
 				memcpy(pbin->pb, resp_buff, 5);

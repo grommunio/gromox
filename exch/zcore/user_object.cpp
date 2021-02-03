@@ -77,8 +77,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
-			ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-			                      3 * sizeof(TAGGED_PROPVAL)));
+			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 			if (NULL == ppropvals->ppropval) {
 				return FALSE;
 			}
@@ -169,8 +168,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		}
 		return TRUE;
 	}
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		ab_tree_put_base(pbase);
 		return FALSE;

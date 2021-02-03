@@ -286,7 +286,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -328,7 +328,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -679,7 +679,7 @@ BOOL container_object_fetch_special_property(
 	
 	switch (proptag) {
 	case PROP_TAG_ABPROVIDERID:
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -687,7 +687,7 @@ BOOL container_object_fetch_special_property(
 		static_cast<BINARY *>(*ppvalue)->pb = deconst(common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_ENTRYID: {
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -715,7 +715,7 @@ BOOL container_object_fetch_special_property(
 		return TRUE;
 	}
 	case PROP_TAG_CONTAINERFLAGS:
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -724,7 +724,7 @@ BOOL container_object_fetch_special_property(
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_DEPTH:
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -739,7 +739,7 @@ BOOL container_object_fetch_special_property(
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:
-		pvalue = common_util_alloc(sizeof(uint8_t));
+		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -758,8 +758,7 @@ static BOOL container_object_fetch_special_properties(
 	int i;
 	void *pvalue;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -797,8 +796,7 @@ static BOOL container_object_fetch_folder_properties(
 	}
 	folder_id = *(uint64_t*)pvalue;
 	pout_propvals->count = 0;
-	pout_propvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-		sizeof(TAGGED_PROPVAL) * pproptags->count));
+	pout_propvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == pout_propvals->ppropval) {
 		return FALSE;
 	}
@@ -807,7 +805,7 @@ static BOOL container_object_fetch_folder_properties(
 										pproptags->pproptag[i];
 		switch (pproptags->pproptag[i]) {
 		case PROP_TAG_ABPROVIDERID:
-			pvalue = common_util_alloc(sizeof(BINARY));
+			pvalue = cu_alloc<BINARY>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -854,7 +852,7 @@ static BOOL container_object_fetch_folder_properties(
 			} else {
 				b_sub = TRUE;
 			}
-			pvalue = common_util_alloc(sizeof(uint32_t));
+			pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -880,7 +878,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			count -= 2;
-			pvalue = common_util_alloc(sizeof(uint32_t));
+			pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -899,7 +897,7 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->count ++;
 			break;
 		case PROP_TAG_ADDRESSBOOKISMASTER:
-			pvalue = common_util_alloc(sizeof(uint8_t));
+			pvalue = cu_alloc<uint8_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -1018,7 +1016,7 @@ static BOOL container_object_get_specialtables_from_node(
 	count = (pset->count / 100 + 1) * 100;
 	if (pset->count + 1 >= count) {
 		count += 100;
-		pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
+		pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 		if (NULL == pparray) {
 			return FALSE;
 		}
@@ -1026,8 +1024,7 @@ static BOOL container_object_get_specialtables_from_node(
 			pset->count*sizeof(TPROPVAL_ARRAY*));
 		pset->pparray = pparray;
 	}
-	pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-		common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+	pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 	if (NULL == pset->pparray[pset->count]) {
 		return FALSE;
 	}
@@ -1094,7 +1091,7 @@ static BOOL container_object_query_folder_hierarchy(
 		count = (pset->count / 100 + 1) * 100;
 		if (pset->count + 1 >= count) {
 			count += 100;
-			pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
+			pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 			if (NULL == pparray) {
 				return FALSE;
 			}
@@ -1102,8 +1099,7 @@ static BOOL container_object_query_folder_hierarchy(
 				pset->count*sizeof(TPROPVAL_ARRAY*));
 			pset->pparray = pparray;
 		}
-		pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-			common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count]) {
 			return FALSE;
 		}
@@ -1136,7 +1132,7 @@ BOOL container_object_query_container_table(
 		return TRUE;
 	}
 	tmp_set.count = 0;
-	tmp_set.pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * 100));
+	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(100);
 	if (NULL == tmp_set.pparray) {
 		return FALSE;
 	}
@@ -1152,8 +1148,7 @@ BOOL container_object_query_container_table(
 			return FALSE;
 		}
 		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
-			tmp_set.pparray[tmp_set.count] = static_cast<TPROPVAL_ARRAY *>(
-				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
@@ -1165,8 +1160,7 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			tmp_set.count ++;
-			tmp_set.pparray[tmp_set.count] = static_cast<TPROPVAL_ARRAY *>(
-				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
@@ -1178,8 +1172,7 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			tmp_set.count ++;
-			tmp_set.pparray[tmp_set.count] = static_cast<TPROPVAL_ARRAY *>(
-				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
@@ -1240,8 +1233,7 @@ BOOL container_object_query_container_table(
 		ab_tree_put_base(pbase);
 	}
 	pset->count = 0;
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-		sizeof(TPROPVAL_ARRAY *) * tmp_set.count));
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(tmp_set.count);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
@@ -1390,7 +1382,7 @@ BOOL container_object_query_user_table(
 		}
 	}
 	pset->count = 0;
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * row_count));
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_count);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
@@ -1413,8 +1405,7 @@ BOOL container_object_query_user_table(
 				if (NULL == ptnode) {
 					continue;
 				}
-				pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-					common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {
 					ab_tree_put_base(pbase);
 					return FALSE;
@@ -1433,8 +1424,7 @@ BOOL container_object_query_user_table(
 					if (i < first_pos) {
 						continue;
 					}
-					pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-						common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+					pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 					if (NULL == pset->pparray[pset->count]) {
 						ab_tree_put_base(pbase);
 						return FALSE;
@@ -1469,8 +1459,7 @@ BOOL container_object_query_user_table(
 						continue;
 					}
 					i ++;
-					pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
-						common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+					pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 					if (NULL == pset->pparray[pset->count]) {
 						ab_tree_put_base(pbase);
 						return FALSE;

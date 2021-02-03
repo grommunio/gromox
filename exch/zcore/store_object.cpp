@@ -296,19 +296,17 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 		ppropnames->count = 0;
 		return TRUE;
 	}
-	auto pindex_map = static_cast<int *>(common_util_alloc(ppropids->count * sizeof(int)));
+	auto pindex_map = cu_alloc<int>(ppropids->count);
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
-	ppropnames->ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
-	                        sizeof(PROPERTY_NAME) * ppropids->count));
+	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
 	if (NULL == ppropnames->ppropname) {
 		return FALSE;
 	}
 	ppropnames->count = ppropids->count;
 	tmp_propids.count = 0;
-	tmp_propids.ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                      sizeof(uint16_t) * ppropids->count));
+	tmp_propids.ppropid = cu_alloc<uint16_t>(ppropids->count);
 	if (NULL == tmp_propids.ppropid) {
 		return FALSE;
 	}
@@ -317,8 +315,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 			rop_util_get_common_pset(PS_MAPI,
 				&ppropnames->ppropname[i].guid);
 			ppropnames->ppropname[i].kind = MNID_ID;
-			ppropnames->ppropname[i].plid =
-				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+			ppropnames->ppropname[i].plid = cu_alloc<uint32_t>();
 			if (NULL == ppropnames->ppropname[i].plid) {
 				return FALSE;
 			}
@@ -426,19 +423,17 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 		return TRUE;
 	}
 	rop_util_get_common_pset(PS_MAPI, &guid);
-	auto pindex_map = static_cast<int *>(common_util_alloc(ppropnames->count * sizeof(int)));
+	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
 	ppropids->count = ppropnames->count;
-	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropnames->count));
+	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
 	if (NULL == ppropids->ppropid) {
 		return FALSE;
 	}
 	tmp_propnames.count = 0;
-	tmp_propnames.ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
-	                          sizeof(PROPERTY_NAME) * ppropnames->count));
+	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
 	if (NULL == tmp_propnames.ppropname) {
 		return FALSE;
 	}
@@ -621,8 +616,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pstore->dir, &tmp_proptags)) {
 		return FALSE;	
 	}
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + 50)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 50);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -787,7 +781,7 @@ static void* store_object_get_oof_property(
 	
 	switch (proptag) {
 	case PROP_TAG_OOFSTATE:
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -823,7 +817,7 @@ static void* store_object_get_oof_property(
 		if (-1 == fd) {
 			return NULL;
 		}
-		pbuff = static_cast<char *>(common_util_alloc(buff_len + 1));
+		pbuff = cu_alloc<char>(buff_len + 1);
 		if (NULL == pbuff) {
 			close(fd);
 			return NULL;
@@ -850,7 +844,7 @@ static void* store_object_get_oof_property(
 		if (-1 == fd) {
 			return NULL;
 		}
-		pbuff = static_cast<char *>(common_util_alloc(buff_len));
+		pbuff = cu_alloc<char>(buff_len);
 		if (NULL == pbuff) {
 			close(fd);
 			return NULL;
@@ -883,7 +877,7 @@ static void* store_object_get_oof_property(
 		if (NULL == pconfig) {
 			return NULL;
 		}
-		pvalue = common_util_alloc(sizeof(uint64_t));
+		pvalue = cu_alloc<uint64_t>();
 		if (NULL == pvalue) {
 			config_file_free(pconfig);
 			return NULL;
@@ -947,7 +941,7 @@ static BOOL store_object_get_calculated_property(
 	
 	switch (proptag) {
 	case PROP_TAG_STOREPROVIDER:
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -992,7 +986,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_DEFAULTSTORE:
-		*ppvalue = common_util_alloc(sizeof(uint8_t));
+		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1003,7 +997,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ACCESS:
-		*ppvalue = common_util_alloc(sizeof(uint8_t));
+		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1043,7 +1037,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_RIGHTS:
-		*ppvalue = common_util_alloc(sizeof(uint8_t));
+		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1091,7 +1085,7 @@ static BOOL store_object_get_calculated_property(
 		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1131,7 +1125,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1139,7 +1133,7 @@ static BOOL store_object_get_calculated_property(
 							COMMON_UTIL_MAX_MAIL_LENGTH);
 		return TRUE;
 	case PROP_TAG_OBJECTTYPE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1149,7 +1143,7 @@ static BOOL store_object_get_calculated_property(
 		*ppvalue = deconst("Exchange Message Store");
 		return TRUE;
 	case PROP_TAG_RESOURCEFLAGS:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1161,14 +1155,14 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_RESOURCETYPE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		*(uint32_t*)(*ppvalue) = MAPI_STORE_PROVIDER;
 		return TRUE;
 	case PROP_TAG_STORESUPPORTMASK:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1379,14 +1373,12 @@ BOOL store_object_get_properties(STORE_OBJECT *pstore,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -1518,7 +1510,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		}
 		if (0 != stat(temp_path, &node_stat)) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
-			pbuff = static_cast<char *>(common_util_alloc(buff_len + 256));
+			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
 				return FALSE;
 			}
@@ -1531,8 +1523,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			if (-1 == fd) {
 				return FALSE;
 			}
-			pbuff = static_cast<char *>(common_util_alloc(buff_len +
-			        strlen(static_cast<const char *>(pvalue)) + 1));
+			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 1);
 			if (NULL == pbuff) {
 				close(fd);
 				return FALSE;
@@ -1572,7 +1563,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		}
 		if (0 != stat(temp_path, &node_stat)) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
-			pbuff = static_cast<char *>(common_util_alloc(buff_len + 256));
+			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
 				return FALSE;
 			}
@@ -1581,12 +1572,11 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			           static_cast<const char *>(pvalue));
 		} else {
 			buff_len = node_stat.st_size;
-			pbuff = static_cast<char *>(common_util_alloc(buff_len +
-			        strlen(static_cast<const char *>(pvalue)) + 16));
+			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 16);
 			if (NULL == pbuff) {
 				return FALSE;
 			}
-			ptoken = static_cast<char *>(common_util_alloc(buff_len + 1));
+			ptoken = cu_alloc<char>(buff_len + 1);
 			if (NULL == ptoken) {
 				return FALSE;
 			}
@@ -1893,8 +1883,7 @@ static BOOL store_object_get_folder_permissions(
 	for (i=0; i<permission_set.count; i++) {
 		if (max_count == pperm_set->count) {
 			max_count += 100;
-			pperm_row = static_cast<PERMISSION_ROW *>(common_util_alloc(
-			            sizeof(PERMISSION_ROW) * max_count));
+			pperm_row = cu_alloc<PERMISSION_ROW>(max_count);
 			if (NULL == pperm_row) {
 				return FALSE;
 			}

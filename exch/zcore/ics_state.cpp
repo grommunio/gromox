@@ -172,7 +172,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		return NULL;	
 	}
 	tpropval_array_free(pproplist);
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	pbin->cb = ext_push.offset;
 	pbin->pv = common_util_alloc(pbin->cb);
 	if (pbin->pv == nullptr) {

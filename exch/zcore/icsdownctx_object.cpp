@@ -347,7 +347,7 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 	} while (NULL == pvalue);
 	*pb_new = !eid_array_check(pctx->pupdated_eids, message_id) ? TRUE : false;
 	pproplist->count = 2;
-	pproplist->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(2 * sizeof(TAGGED_PROPVAL)));
+	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 	if (NULL == pproplist->ppropval) {
 		return FALSE;
 	}
@@ -400,7 +400,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	folder_id = pctx->pchg_eids->pids[pctx->eid_pos];
 	pctx->eid_pos ++;
 	pproplist->count = 0;
-	pproplist->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(8 * sizeof(TAGGED_PROPVAL)));
+	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (NULL == pproplist->ppropval) {
 		return FALSE;
 	}
@@ -527,8 +527,7 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 			pctx->pdeleted_eids = NULL;
 			return TRUE;
 		}
-		pbins->pbin = static_cast<BINARY *>(common_util_alloc(
-		              sizeof(BINARY) * pctx->pdeleted_eids->count));
+		pbins->pbin = cu_alloc<BINARY>(pctx->pdeleted_eids->count);
 		if (NULL == pbins->pbin) {
 			return FALSE;
 		}
@@ -564,8 +563,7 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 			pctx->pnolonger_messages = NULL;
 			return TRUE;
 		}
-		pbins->pbin = static_cast<BINARY *>(common_util_alloc(
-		              sizeof(BINARY) * pctx->pnolonger_messages->count));
+		pbins->pbin = cu_alloc<BINARY>(pctx->pnolonger_messages->count);
 		if (NULL == pbins->pbin) {
 			return FALSE;
 		}
@@ -607,8 +605,7 @@ BOOL icsdownctx_object_sync_readstates(
 		pstates->count = 0;
 		pstates->pstate = NULL;
 	} else {
-		pstates->pstate = static_cast<MESSAGE_STATE *>(common_util_alloc(
-		                  pstates->count * sizeof(MESSAGE_STATE)));
+		pstates->pstate = cu_alloc<MESSAGE_STATE>(pstates->count);
 		if (NULL == pstates->pstate) {
 			return FALSE;
 		}

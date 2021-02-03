@@ -796,7 +796,7 @@ char* common_util_dup(const char *pstr)
 	int len;
 	
 	len = strlen(pstr) + 1;
-	auto pstr1 = static_cast<char *>(common_util_alloc(len));
+	auto pstr1 = cu_alloc<char>(len);
 	if (NULL == pstr1) {
 		return NULL;
 	}
@@ -806,7 +806,7 @@ char* common_util_dup(const char *pstr)
 
 static BINARY* common_util_dup_binary(const BINARY *pbin)
 {
-	auto pbin1 = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin1 = cu_alloc<BINARY>();
 	if (NULL == pbin1) {
 		return NULL;
 	}
@@ -834,7 +834,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 	if (FALSE == b_temp) {
 		pnotification1 = static_cast<ZNOTIFICATION *>(malloc(sizeof(ZNOTIFICATION)));
 	} else {
-		pnotification1 = static_cast<ZNOTIFICATION *>(common_util_alloc(sizeof(ZNOTIFICATION)));
+		pnotification1 = cu_alloc<ZNOTIFICATION>();
 	}
 	if (NULL == pnotification) {
 		return NULL;
@@ -850,7 +850,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 				return NULL;
 			}
 		} else {
-			pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(common_util_alloc(sizeof(*pnew_notify)));
+			pnew_notify = cu_alloc<NEWMAIL_ZNOTIFICATION>();
 			if (NULL == pnew_notify) {
 				return NULL;
 			}
@@ -910,7 +910,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 				return NULL;
 			}
 		} else {
-			pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
+			pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 			if (NULL == pobj_notify) {
 				return NULL;
 			}
@@ -991,14 +991,13 @@ ZNOTIFICATION* common_util_dup_znotification(
 					return NULL;
 				}
 			} else {
-				pobj_notify1->pproptags = static_cast<PROPTAG_ARRAY *>(common_util_alloc(sizeof(PROPTAG_ARRAY)));
+				pobj_notify1->pproptags = cu_alloc<PROPTAG_ARRAY>();
 				if (NULL == pobj_notify1->pproptags) {
 					return NULL;
 				}
 				pobj_notify1->pproptags->count =
 					pobj_notify->pproptags->count;
-				pobj_notify1->pproptags->pproptag =
-					static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * pobj_notify->pproptags->count));
+				pobj_notify1->pproptags->pproptag = cu_alloc<uint32_t>(pobj_notify->pproptags->count);
 				if (NULL == pobj_notify1->pproptags->pproptag) {
 					return NULL;
 				}
@@ -1224,7 +1223,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1346,7 +1345,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1544,7 +1543,7 @@ BINARY* common_util_to_folder_entryid(
 	rop_util_get_gc_array(folder_id, tmp_entryid.global_counter);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1568,7 +1567,7 @@ BINARY* common_util_calculate_folder_sourcekey(
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1649,7 +1648,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1671,7 +1670,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1703,7 +1702,7 @@ BOOL common_util_recipients_to_list(
 	void *pvalue;
 	
 	for (i=0; i<prcpts->count; i++) {
-		auto pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -1749,7 +1748,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
 	EXT_PUSH ext_push;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1783,7 +1782,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 
 BINARY* common_util_guid_to_binary(GUID guid)
 {
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1829,7 +1828,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	SIZED_XID xid;
 	BINARY *ptmp_bin;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1875,7 +1874,7 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	PCL *ppcl2;
 	BINARY *ptmp_bin;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -2281,7 +2280,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
-		ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 1)));
+		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -2310,7 +2309,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	}
 	double_list_init(&temp_list);
 	for (i=0; i<prcpts->count; i++) {
-		auto pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -2500,11 +2499,11 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
 	
-	auto pmovecopy1 = static_cast<MOVECOPY_ACTION *>(common_util_alloc(sizeof(MOVECOPY_ACTION)));
+	auto pmovecopy1 = cu_alloc<MOVECOPY_ACTION>();
 	if (NULL == pmovecopy1) {
 		return NULL;
 	}
-	auto pstore_entryid = static_cast<STORE_ENTRYID *>(common_util_alloc(sizeof(STORE_ENTRYID)));
+	auto pstore_entryid = cu_alloc<STORE_ENTRYID>();
 	if (NULL == pstore_entryid) {
 		return NULL;
 	}
@@ -2528,7 +2527,7 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	} else {
 		pmovecopy1->same_store = 1;
 		pmovecopy1->pstore_eid = NULL;
-		psvreid = static_cast<SVREID *>(common_util_alloc(sizeof(SVREID)));
+		psvreid = cu_alloc<SVREID>();
 		if (NULL == psvreid) {
 			return NULL;
 		}
@@ -2550,7 +2549,7 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 	int db_id;
 	BOOL b_private;
 	
-	auto preply1 = static_cast<REPLY_ACTION *>(common_util_alloc(sizeof(REPLY_ACTION)));
+	auto preply1 = cu_alloc<REPLY_ACTION>();
 	if (NULL == preply1) {
 		return NULL;
 	}
@@ -2632,7 +2631,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 		}
 	}
 	store_entryid.pmailbox_dn = tmp_buff;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -2654,7 +2653,7 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 	BINARY *pbin;
 	EXT_PUSH ext_push;
 	
-	auto pmovecopy1 = static_cast<ZMOVECOPY_ACTION *>(common_util_alloc(sizeof(ZMOVECOPY_ACTION)));
+	auto pmovecopy1 = cu_alloc<ZMOVECOPY_ACTION>();
 	if (NULL == pmovecopy1) {
 		return NULL;
 	}
@@ -2689,7 +2688,7 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 static ZREPLY_ACTION* common_util_convert_to_zreply(
 	STORE_OBJECT *pstore, REPLY_ACTION *preply)
 {
-	auto preply1 = static_cast<ZREPLY_ACTION *>(common_util_alloc(sizeof(ZREPLY_ACTION)));
+	auto preply1 = cu_alloc<ZREPLY_ACTION>();
 	if (NULL == preply1) {
 		return NULL;
 	}
@@ -2983,12 +2982,12 @@ static EID_ARRAY* common_util_load_folder_messages(
 	}
 	exmdb_client_unload_table(
 		store_object_get_dir(pstore), table_id);
-	pmessage_ids = static_cast<EID_ARRAY *>(common_util_alloc(sizeof(EID_ARRAY)));
+	pmessage_ids = cu_alloc<EID_ARRAY>();
 	if (NULL == pmessage_ids) {
 		return NULL;
 	}
 	pmessage_ids->count = 0;
-	pmessage_ids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * tmp_set.count));
+	pmessage_ids->pids = cu_alloc<uint64_t>(tmp_set.count);
 	if (NULL == pmessage_ids->pids) {
 		return NULL;
 	}
@@ -3159,7 +3158,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
-		ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 1)));
+		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -3305,7 +3304,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 		pinfo->username, timezone) || '\0' == timezone[0]) {
 		strcpy(timezone, g_default_zone);
 	}
-	auto pbuff = static_cast<char *>(common_util_alloc(pical_bin->cb + 1));
+	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (NULL == pbuff) {
 		return nullptr;
 	}
@@ -3369,7 +3368,7 @@ MESSAGE_CONTENT* common_util_vcf_to_message(
 	VCARD vcard;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pbuff = static_cast<char *>(common_util_alloc(pvcf_bin->cb + 1));
+	auto pbuff = cu_alloc<char>(pvcf_bin->cb + 1);
 	if (NULL == pbuff) {
 		return nullptr;
 	}

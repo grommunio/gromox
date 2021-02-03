@@ -70,7 +70,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 		return FALSE;
 	}
 	propvals.count = 0;
-	propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 5));
+	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5);
 	if (NULL == propvals.ppropval) {
 		return FALSE;
 	}
@@ -83,8 +83,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_RENDERINGPOSITION;
-	propvals.ppropval[propvals.count].pvalue =
-			common_util_alloc(sizeof(uint32_t));
+	propvals.ppropval[propvals.count].pvalue = cu_alloc<uint32_t>();
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
@@ -92,7 +91,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 												0xFFFFFFFF;
 	propvals.count ++;
 	
-	pvalue = common_util_alloc(sizeof(uint64_t));
+	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -176,8 +175,7 @@ BOOL attachment_object_get_all_proptags(
 		return FALSE;	
 	}
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + 5)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 5);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -232,7 +230,7 @@ static BOOL attachment_object_get_calculated_property(
 		*ppvalue = &pattachment->pparent->tag_access;
 		return TRUE;
 	case PROP_TAG_ACCESSLEVEL:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -243,7 +241,7 @@ static BOOL attachment_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_OBJECTTYPE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -273,14 +271,12 @@ BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -327,8 +323,7 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
@@ -363,8 +358,7 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}

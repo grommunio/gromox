@@ -1563,20 +1563,20 @@ static int ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 
 	switch (PROP_TYPE(proptag)) {
 	case PT_BOOLEAN:
-		*prop = common_util_alloc(sizeof(int16_t));
+		*prop = cu_alloc<int16_t>();
 		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0) != 0;
 		return ecSuccess;
 	case PT_SHORT:
-		*prop = common_util_alloc(sizeof(int16_t));
+		*prop = cu_alloc<int16_t>();
 		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_LONG:
-		*prop = common_util_alloc(sizeof(int32_t));
+		*prop = cu_alloc<int32_t>();
 		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_I8:
 	case PT_SYSTIME:
-		*prop = common_util_alloc(sizeof(int64_t));
+		*prop = cu_alloc<int64_t>();
 		*static_cast<int16_t *>(*prop) = strtoll(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_STRING8:
@@ -1587,7 +1587,7 @@ static int ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 		strcpy(static_cast<char *>(*prop), it->second.c_str());
 		return ecSuccess;
 	case PT_BINARY: {
-		*prop = common_util_alloc(sizeof(BINARY));
+		*prop = cu_alloc<BINARY>();
 		if (*prop == nullptr)
 			return ecMAPIOOM;
 		auto bv = static_cast<BINARY *>(*prop);
@@ -1599,15 +1599,15 @@ static int ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 		return ecSuccess;
 	}
 	case PT_MV_UNICODE: {
-		*prop = common_util_alloc(sizeof(STRING_ARRAY));
+		*prop = cu_alloc<STRING_ARRAY>();
 		if (*prop == nullptr)
 			return ecMAPIOOM;
 		auto sa = static_cast<STRING_ARRAY *>(*prop);
 		sa->count = 1;
-		sa->ppstr = static_cast<char **>(common_util_alloc(sizeof(char *)));
+		sa->ppstr = cu_alloc<char *>();
 		if (sa->ppstr == nullptr)
 			return ecMAPIOOM;
-		sa->ppstr[0] = static_cast<char *>(common_util_alloc(it->second.size() + 1));
+		sa->ppstr[0] = cu_alloc<char>(it->second.size() + 1);
 		if (sa->ppstr[0] == nullptr)
 			return ecMAPIOOM;
 		strcpy(sa->ppstr[0], it->second.c_str());
@@ -1636,7 +1636,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	/* Properties that need to be force-generated */
 	switch (proptag) {
 	case PROP_TAG_ABPROVIDERID:
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1647,7 +1647,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type < 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1663,7 +1663,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type < 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1674,7 +1674,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type < 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(uint8_t));
+		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1702,7 +1702,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKCONTAINERID:
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1737,7 +1737,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_OBJECTTYPE:
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1756,7 +1756,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1771,7 +1771,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1786,7 +1786,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_MAPPINGSIGNATURE:
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1805,7 +1805,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_TEMPLATEID:
 	case PROP_TAG_ORIGINALENTRYID: {
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1840,7 +1840,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1857,7 +1857,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PROP_TAG_INSTANCEKEY: {
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1957,20 +1957,20 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			alias_list = ab_tree_get_object_aliases(pnode, node_type);
 		} catch (...) {
 		}
-		auto sa = static_cast<STRING_ARRAY *>(common_util_alloc(sizeof(STRING_ARRAY)));
+		auto sa = cu_alloc<STRING_ARRAY>();
 		if (sa == nullptr)
 			return FALSE;
 		sa->count = 1 + alias_list.size();
-		sa->ppstr = static_cast<char **>(common_util_alloc(sizeof(char *) * sa->count));
+		sa->ppstr = cu_alloc<char *>(sa->count);
 		if (sa->ppstr == nullptr)
 			return FALSE;
-		sa->ppstr[0] = static_cast<char *>(common_util_alloc(strlen(dn) + 6));
+		sa->ppstr[0] = cu_alloc<char>(strlen(dn) + 6);
 		if (sa->ppstr[0] == nullptr)
 			return FALSE;
 		sprintf(sa->ppstr[0], "SMTP:%s", dn);
 		size_t i = 1;
 		for (const auto &a : alias_list) {
-			sa->ppstr[i] = static_cast<char *>(common_util_alloc(a.size() + 6));
+			sa->ppstr[i] = cu_alloc<char>(a.size() + 6);
 			if (sa->ppstr[i] == nullptr)
 				return false;
 			strcpy(sa->ppstr[i], "SMTP:");
@@ -1983,7 +1983,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type != NODE_TYPE_PERSON) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -2013,7 +2013,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(uint8_t));
+		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -2031,7 +2031,7 @@ BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
 	void *pvalue;
 	USER_INFO *pinfo;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -2125,7 +2125,7 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 		if (!ab_tree_resolve_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
 		    codepage, pstr))
 			continue;
-		prnode = static_cast<decltype(prnode)>(common_util_alloc(sizeof(*prnode)));
+		prnode = cu_alloc<SINGLE_LIST_NODE>();
 		if (NULL == prnode) {
 			return FALSE;
 		}
@@ -2291,7 +2291,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 		for (psnode=single_list_get_head(pgal_list); NULL!=psnode;
 			psnode=single_list_get_after(pgal_list, psnode)) {
 			if (ab_tree_match_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata), codepage, pfilter)) {
-				psnode1 = static_cast<decltype(psnode1)>(common_util_alloc(sizeof(*psnode1)));
+				psnode1 = cu_alloc<SINGLE_LIST_NODE>();
 				if (NULL == psnode1) {
 					return FALSE;
 				}
@@ -2312,7 +2312,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 				continue;
 			}
 			if (TRUE == ab_tree_match_node(pnode, codepage, pfilter)) {
-				psnode1 = static_cast<decltype(psnode1)>(common_util_alloc(sizeof(*psnode1)));
+				psnode1 = cu_alloc<SINGLE_LIST_NODE>();
 				if (NULL == psnode1) {
 					return FALSE;
 				}
@@ -2325,7 +2325,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	if (0 == pminids->count) {
 		pminids->pl = NULL;
 	} else {
-		pminids->pl = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * pminids->count));
+		pminids->pl = cu_alloc<uint32_t>(pminids->count);
 		if (NULL == pminids->pl) {
 			return FALSE;
 		}
