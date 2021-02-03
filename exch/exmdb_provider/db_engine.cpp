@@ -123,7 +123,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 			SEARCH_FLAG_STOP)) {
 			continue;
 		}
-		pdynamic = static_cast<DYNAMIC_NODE *>(malloc(sizeof(*pdynamic)));
+		pdynamic = me_alloc<DYNAMIC_NODE>();
 		if (NULL == pdynamic) {
 			break;
 		}
@@ -151,7 +151,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 			continue;
 		}
 		pdynamic->folder_ids.count = tmp_fids.count;
-		pdynamic->folder_ids.pll = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * tmp_fids.count));
+		pdynamic->folder_ids.pll = me_alloc<uint64_t>(tmp_fids.count);
 		if (NULL == pdynamic->folder_ids.pll) {
 			restriction_free(pdynamic->prestriction);
 			free(pdynamic);
@@ -796,7 +796,7 @@ int db_engine_run()
 {
 	int i;
 	
-	g_thread_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * g_threads_num));
+	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
 	if (NULL == g_thread_ids) {
 		printf("[exmdb_provider]: Failed to allocate"
 			" populating thread id buffer\n");
@@ -888,7 +888,7 @@ BOOL db_engine_enqueue_populating_criteria(
 	BOOL b_recursive, const RESTRICTION *prestriction,
 	const LONGLONG_ARRAY *pfolder_ids)
 {
-	auto psearch = static_cast<POPULATING_NODE *>(malloc(sizeof(POPULATING_NODE)));
+	auto psearch = me_alloc<POPULATING_NODE>();
 	if (NULL == psearch) {
 		return FALSE;
 	}
@@ -904,7 +904,7 @@ BOOL db_engine_enqueue_populating_criteria(
 		free(psearch);
 		return FALSE;
 	}
-	psearch->folder_ids.pll = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * pfolder_ids->count));
+	psearch->folder_ids.pll = me_alloc<uint64_t>(pfolder_ids->count);
 	if (NULL == psearch->folder_ids.pll) {
 		restriction_free(psearch->prestriction);
 		free(psearch->dir);
@@ -972,14 +972,14 @@ void db_engine_update_dynamic(DB_ITEM *pdb, uint64_t folder_id,
 	if (NULL == prestriction1) {
 		return;
 	}
-	pll = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * pfolder_ids->count));
+	pll = me_alloc<uint64_t>(pfolder_ids->count);
 	if (NULL == pll) {
 		restriction_free(prestriction1);
 		return;
 	}
 	memcpy(pll, pfolder_ids->pll, sizeof(uint64_t)*pfolder_ids->count);
 	if (NULL == pnode) {
-		pdynamic = static_cast<DYNAMIC_NODE *>(malloc(sizeof(*pdynamic)));
+		pdynamic = me_alloc<DYNAMIC_NODE>();
 		if (NULL == pdynamic) {
 			free(pll);
 			restriction_free(prestriction1);

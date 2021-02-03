@@ -504,7 +504,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	} else {
 		last_id = ((NSUB_NODE*)pnode->pdata)->sub_id;
 	}
-	pnsub = static_cast<NSUB_NODE *>(malloc(sizeof(*pnsub)));
+	pnsub = me_alloc<NSUB_NODE>();
 	if (NULL == pnsub) {
 		db_engine_put_db(pdb);
 		return FALSE;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/exmdb_rpc.hpp>
+#include "common_util.h"
 #include "notification_agent.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
@@ -32,7 +33,7 @@ void notification_agent_backward_notify(
 	if (NULL == prouter) {
 		return;
 	}
-	pdnode = static_cast<DATAGRAM_NODE *>(malloc(sizeof(DATAGRAM_NODE)));
+	pdnode = me_alloc<DATAGRAM_NODE>();
 	if (NULL == pdnode) {
 		exmdb_parser_put_router(prouter);
 		return;

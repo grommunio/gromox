@@ -637,7 +637,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 {
 	char sql_string[256];
 	
-	auto popt_stmts = static_cast<OPTIMIZE_STMTS *>(malloc(sizeof(OPTIMIZE_STMTS)));
+	auto popt_stmts = me_alloc<OPTIMIZE_STMTS>();
 	if (NULL == popt_stmts) {
 		return FALSE;
 	}
@@ -6620,13 +6620,12 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 BOOL common_util_copy_file(const char *src_file, const char *dst_file)
 {
 	int fd;
-	char *pbuff;
 	struct stat node_stat;
 
 	if (0 != stat(src_file, &node_stat)) {
 		return FALSE;
 	}
-	pbuff = static_cast<char *>(malloc(node_stat.st_size));
+	auto pbuff = me_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return FALSE;
 	}

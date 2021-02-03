@@ -148,7 +148,7 @@ int exmdb_listener_run()
 		num = list_file_get_item_num(plist);
 		auto pitem = reinterpret_cast<struct ipitem *>(list_file_get_list(plist));
 		for (i=0; i<num; i++) {
-			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
+			pacl = me_alloc<ACL_ITEM>();
 			if (NULL == pacl) {
 				continue;
 			}

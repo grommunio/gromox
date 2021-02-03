@@ -397,7 +397,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	uint32_t instance_id;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
-	INSTANCE_NODE *pinstance;
 	
 	pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
@@ -414,7 +413,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		instance_id = ((INSTANCE_NODE*)pnode->pdata)->instance_id;
 	}
 	instance_id ++;
-	pinstance = static_cast<INSTANCE_NODE *>(malloc(sizeof(*pinstance)));
+	auto pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -568,7 +567,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 			return FALSE;
 		}
 		message_id = rop_util_make_eid_ex(1, mid_val);
-		pinstance = static_cast<INSTANCE_NODE *>(malloc(sizeof(*pinstance)));
+		pinstance = me_alloc<INSTANCE_NODE>();
 		if (NULL == pinstance) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -618,7 +617,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		db_engine_put_db(pdb);
 		return TRUE;
 	}
-	pinstance = static_cast<INSTANCE_NODE *>(malloc(sizeof(*pinstance)));
+	pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1482,7 +1481,7 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 		*pinstance_id = 0;
 		return TRUE;
 	}
-	pinstance = static_cast<INSTANCE_NODE *>(malloc(sizeof(*pinstance)));
+	pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1559,7 +1558,7 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 		*pattachment_num = ATTACHMENT_NUM_INVALID;
 		return TRUE;	
 	}
-	pinstance = static_cast<INSTANCE_NODE *>(malloc(sizeof(*pinstance)));
+	pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
 		db_engine_put_db(pdb);
 		return FALSE;

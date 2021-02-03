@@ -67,13 +67,11 @@ void exmdb_parser_free()
 
 EXMDB_CONNECTION* exmdb_parser_get_connection()
 {
-	EXMDB_CONNECTION *pconnection;
-
 	if (0 != g_max_threads && double_list_get_nodes_num(
 		&g_connection_list) >= g_max_threads) {
 		return NULL;
 	}
-	pconnection = (EXMDB_CONNECTION*)malloc(sizeof(EXMDB_CONNECTION));
+	auto pconnection = me_alloc<EXMDB_CONNECTION>();
 	if (NULL == pconnection) {
 		return NULL;
 	}
@@ -929,7 +927,7 @@ static void *thread_work_func(void *pparam)
 						}
 					}
 				} else if (request.call_id == exmdb_callid::LISTEN_NOTIFICATION) {
-					prouter = static_cast<ROUTER_CONNECTION *>(malloc(sizeof(ROUTER_CONNECTION)));
+					prouter = me_alloc<ROUTER_CONNECTION>();
 					if (NULL == prouter) {
 						tmp_byte = exmdb_response::LACK_MEMORY;
 					} else {
@@ -1098,7 +1096,7 @@ int exmdb_parser_run()
 		}
 		if (!gx_peer_is_local(pitem[i].ip_addr))
 			continue;
-		plocal = static_cast<LOCAL_SVR *>(malloc(sizeof(LOCAL_SVR)));
+		plocal = me_alloc<LOCAL_SVR>();
 		if (NULL == plocal) {
 			printf("[exmdb_provider]: Failed to allocate memory\n");
 			list_file_free(plist);
@@ -1129,7 +1127,7 @@ int exmdb_parser_stop()
 	pthread_mutex_lock(&g_connection_lock);
 	num = double_list_get_nodes_num(&g_connection_list);
 	if (num > 0) {
-		pthr_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * num));
+		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			pthread_mutex_unlock(&g_connection_lock);
 			return -1;
@@ -1154,7 +1152,7 @@ int exmdb_parser_stop()
 	pthread_mutex_lock(&g_router_lock);
 	num = double_list_get_nodes_num(&g_router_list);
 	if (num > 0) {
-		pthr_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * num));
+		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			pthread_mutex_unlock(&g_router_lock);
 			return -2;

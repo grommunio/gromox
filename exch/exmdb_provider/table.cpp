@@ -280,7 +280,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
+	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -842,7 +842,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			return FALSE;
 		}
 	}
-	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
+	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
@@ -1617,7 +1617,7 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
+	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -1892,7 +1892,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
+	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);

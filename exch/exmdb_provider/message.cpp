@@ -3849,7 +3849,7 @@ static BOOL message_forward_message(const char *from_address,
 		if (0 != stat(tmp_path, &node_stat)) {
 			return FALSE;
 		}
-		pbuff = static_cast<char *>(malloc(node_stat.st_size));
+		pbuff = me_alloc<char>(node_stat.st_size);
 		if (NULL == pbuff) {
 			return FALSE;
 		}
