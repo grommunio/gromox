@@ -52,7 +52,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	} else {
 		if (1 != replid) {
 			*phas_rules = 0;
-			*ppghost = static_cast<GHOST_SERVER *>(common_util_alloc(sizeof(GHOST_SERVER)));
+			*ppghost = cu_alloc<GHOST_SERVER>();
 			if (*ppghost == nullptr)
 				return ecMAPIOOM;
 			return rop_getowningservers(folder_id,
@@ -1143,7 +1143,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	}
 	b_partial = FALSE;
 	ids.count = 0;
-	ids.pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * pmessage_ids->count));
+	ids.pids = cu_alloc<uint64_t>(pmessage_ids->count);
 	if (NULL == ids.pids) {
 		return ecError;
 	}

@@ -58,8 +58,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 		pfolder->folder_id, &tmp_proptags)) {
 		return FALSE;		
 	}
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + 15)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -222,7 +221,7 @@ static BOOL folder_object_get_calculated_property(
 	switch (proptag) {
 	case PROP_TAG_CONTENTUNREADCOUNT:
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
-			*ppvalue = common_util_alloc(sizeof(uint32_t));
+			*ppvalue = cu_alloc<uint32_t>();
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
@@ -234,7 +233,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		return FALSE;
 	case PROP_TAG_MESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -251,7 +250,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -268,7 +267,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_NORMALMESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -288,14 +287,14 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = &pfolder->tag_access;
 		return TRUE;
 	case PROP_TAG_FOLDERID:
-		*ppvalue = common_util_alloc(sizeof(uint64_t));
+		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
 		return TRUE;
 	case PROP_TAG_RIGHTS:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -472,13 +471,13 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+		*ppvalue = cu_alloc<BINARY_ARRAY>();
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		ba->count = 5;
-		ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * ba->count));
+		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr)
 			return FALSE;
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
@@ -531,19 +530,17 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		*ppvalue = cu_alloc<BINARY>();
 		auto bv = static_cast<BINARY *>(*ppvalue);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		persistdatas.count = 3;
-		persistdatas.ppitems = static_cast<PERSISTDATA **>(common_util_alloc(
-		                       sizeof(PERSISTDATA *) * persistdatas.count));
+		persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 		if (NULL == persistdatas.ppitems) {
 			return FALSE;
 		}
-		ppersistdata = static_cast<PERSISTDATA *>(common_util_alloc(
-		               sizeof(PERSISTDATA) * persistdatas.count));
+		ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
 		if (NULL == ppersistdata) {
 			return FALSE;
 		}
@@ -595,13 +592,13 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+		*ppvalue = cu_alloc<BINARY_ARRAY>();
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		ba->count = 4;
-		ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * ba->count));
+		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr)
 			return FALSE;
 		ba->pbin[0].cb = 0;
@@ -636,14 +633,12 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -720,20 +715,17 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * ppropvals->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
 	count = ppropvals->count + 4;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        sizeof(TAGGED_PROPVAL) * count));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropvals->count));
+	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -835,14 +827,12 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	TAGGED_PROPVAL propval_buff[4];
 	
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * pproptags->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}

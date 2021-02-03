@@ -1552,8 +1552,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecError;
 		}
 		tmp_propvals.count = 0;
-		tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-		                        (8 + ppropvals->count) * sizeof(TAGGED_PROPVAL)));
+		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (NULL == tmp_propvals.ppropval) {
 			return ecMAPIOOM;
 		}
@@ -1667,8 +1666,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return ecError;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        (5 + ppropvals->count) * sizeof(TAGGED_PROPVAL)));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
 		return ecMAPIOOM;
 	}
@@ -1777,8 +1775,7 @@ uint32_t rop_syncimportdeletes(
 	auto pbins = static_cast<BINARY_ARRAY *>(ppropvals->ppropval[0].pvalue);
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
-		message_ids.pids = static_cast<uint64_t *>(common_util_alloc(
-		                   sizeof(uint64_t) * pbins->count));
+		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
 		if (NULL == message_ids.pids) {
 			return ecMAPIOOM;
 		}

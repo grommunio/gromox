@@ -438,7 +438,7 @@ static BOOL ftstream_producer_write_propvalue(
 					proptype = PT_UNICODE;
 					write_type = PT_UNICODE;
 					len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
-					pvalue = static_cast<char *>(common_util_alloc(len));
+					pvalue = cu_alloc<char>(len);
 					if (NULL == pvalue) {
 						return FALSE;
 					}
@@ -462,7 +462,7 @@ static BOOL ftstream_producer_write_propvalue(
 					proptype = PT_STRING8;
 					write_type = PT_STRING8;
 					len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
-					pvalue = static_cast<char *>(common_util_alloc(len));
+					pvalue = cu_alloc<char>(len);
 					if (NULL == pvalue) {
 						return FALSE;
 					}

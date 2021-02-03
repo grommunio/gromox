@@ -548,7 +548,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
-		pnode1 = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+		pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode1) {
 			return ecMAPIOOM;
 		}
@@ -567,8 +567,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			break;
 		case ecBufferTooSmall:
 			static_cast<ROP_RESPONSE *>(pnode1->pdata)->rop_id = ropBufferTooSmall;
-			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
-				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
+			static_cast<ROP_RESPONSE *>(pnode1->pdata)->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
 				return ecMAPIOOM;
 			}
@@ -608,8 +607,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				}
 			}
 			static_cast<ROP_RESPONSE *>(pnode1->pdata)->rop_id = ropBufferTooSmall;
-			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
-				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
+			static_cast<ROP_RESPONSE *>(pnode1->pdata)->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
 				return ecMAPIOOM;
 			}

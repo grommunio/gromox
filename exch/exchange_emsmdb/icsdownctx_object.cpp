@@ -538,8 +538,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		if (TRUE == logon_object_check_private(pctx->pstream->plogon) &&
 			(folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
 			folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))) {
-			ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-			           sizeof(TAGGED_PROPVAL) * (fldchgs.pfldchgs[i].count + 10)));
+			ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
 			if (NULL == ppropval) {
 				return FALSE;
 			}
@@ -598,14 +597,14 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				fldchgs.pfldchgs + i,
 				PROP_TAG_ADDITIONALRENENTRYIDS)) {
 				tmp_propval.proptag = PROP_TAG_ADDITIONALRENENTRYIDS;
-				pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+				pvalue = cu_alloc<BINARY_ARRAY>();
 				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
 				tmp_propval.pvalue = pvalue;
 				ba->count = 5;
-				ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * ba->count));
+				ba->pbin = cu_alloc<BINARY>(ba->count);
 				if (ba->pbin == nullptr)
 					return FALSE;
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
@@ -645,20 +644,18 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				fldchgs.pfldchgs + i,
 				PROP_TAG_ADDITIONALRENENTRYIDSEX)) {
 				tmp_propval.proptag = PROP_TAG_ADDITIONALRENENTRYIDSEX;
-				pvalue = common_util_alloc(sizeof(BINARY));
+				pvalue = cu_alloc<BINARY>();
 				auto bv = static_cast<BINARY *>(pvalue);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
 				tmp_propval.pvalue = pvalue;
 				persistdatas.count = 3;
-				persistdatas.ppitems = static_cast<PERSISTDATA **>(common_util_alloc(
-				                       sizeof(PERSISTDATA *) * persistdatas.count));
+				persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 				if (NULL == persistdatas.ppitems) {
 					return FALSE;
 				}
-				ppersistdata = static_cast<PERSISTDATA *>(common_util_alloc(
-				               sizeof(PERSISTDATA) * persistdatas.count));
+				ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
 				if (NULL == ppersistdata) {
 					return FALSE;
 				}
@@ -696,14 +693,14 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			if (NULL == common_util_get_propvals(
 				fldchgs.pfldchgs + i, PROP_TAG_FREEBUSYENTRYIDS)) {
 				tmp_propval.proptag = PROP_TAG_FREEBUSYENTRYIDS;
-				pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+				pvalue = cu_alloc<BINARY_ARRAY>();
 				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
 				tmp_propval.pvalue = pvalue;
 				ba->count = 4;
-				ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * ba->count));
+				ba->pbin = cu_alloc<BINARY>(ba->count);
 				if (ba->pbin == nullptr)
 					return FALSE;
 				ba->pbin[0].cb = 0;
@@ -822,8 +819,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 {
 	void *pvalue;
 	
-	pchgheader->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                       sizeof(TAGGED_PROPVAL) * 8));
+	pchgheader->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (NULL == pchgheader->ppropval) {
 		return FALSE;
 	}
@@ -1020,8 +1016,7 @@ static BOOL icsdownctx_object_get_changepartial(
 	} else {
 		pmsg->count = pindices->count + 1;
 	}
-	pmsg->pchanges = static_cast<CHANGE_PART *>(common_util_alloc(
-	                 sizeof(CHANGE_PART) * pmsg->count));
+	pmsg->pchanges = cu_alloc<CHANGE_PART>(pmsg->count);
 	if (NULL == pmsg->pchanges) {
 		return FALSE;
 	}
@@ -1029,8 +1024,7 @@ static BOOL icsdownctx_object_get_changepartial(
 		index = pindices->pproptag[i];
 		pmsg->pchanges[i].index = index;
 		pchangetags = pgpinfo->pgroups + index;
-		pmsg->pchanges[i].proplist.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-		                                      sizeof(TAGGED_PROPVAL) * pchangetags->count));
+		pmsg->pchanges[i].proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
 		count = 0;
 		for (j=0; j<pchangetags->count; j++) {
 			proptag = pchangetags->pproptag[j];
@@ -1069,8 +1063,7 @@ static BOOL icsdownctx_object_get_changepartial(
 		return TRUE;
 	}
 	pmsg->pchanges[i].index = 0xFFFFFFFF;
-	pmsg->pchanges[i].proplist.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	pmsg->pchanges[i].proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	count = 0;
 	for (j=0; j<pproptags->count; j++) {
 		proptag = pproptags->pproptag[j];
@@ -1253,8 +1246,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 				return FALSE;
 			}
 			icsdownctx_object_trim_embedded(pembedded);
-			ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-			           sizeof(TAGGED_PROPVAL) * (pembedded->proplist.count + 2)));
+			ppropval = cu_alloc<TAGGED_PROPVAL>(pembedded->proplist.count + 2);
 			if (NULL == ppropval) {
 				return FALSE;
 			}
@@ -1326,8 +1318,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		return TRUE;
 	}
 	icsdownctx_object_trim_embedded(pmsgctnt);
-	ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	           sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 10)));
+	ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 10);
 	if (NULL == ppropval) {
 		return FALSE;
 	}

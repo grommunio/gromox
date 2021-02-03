@@ -585,7 +585,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 		return ecError;
 	}
 	pbookmark->cb = sizeof(uint32_t);
-	pbookmark->pv = common_util_alloc(sizeof(uint32_t));
+	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pb == nullptr)
 		return ecMAPIOOM;
 	if (!table_object_create_bookmark(ptable, static_cast<uint32_t *>(pbookmark->pv)))
@@ -696,7 +696,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		return ecNotFound;
 	}
 	table_object_set_position(ptable, position);
-	*pprow = static_cast<PROPERTY_ROW *>(common_util_alloc(sizeof(PROPERTY_ROW)));
+	*pprow = cu_alloc<PROPERTY_ROW>();
 	if (NULL == *pprow) {
 		return ecMAPIOOM;
 	}
@@ -890,7 +890,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 		return ecError;
 	}
 	pcollapse_state->cb = sizeof(uint32_t);
-	pcollapse_state->pv = common_util_alloc(sizeof(uint32_t));
+	pcollapse_state->pv = cu_alloc<uint32_t>();
 	if (pcollapse_state->pv == nullptr)
 		return ecMAPIOOM;
 	if (!table_object_store_state(ptable, row_id, row_instance,
@@ -927,7 +927,7 @@ uint32_t rop_setcollapsestate(
 		return ecError;
 	}
 	pbookmark->cb = sizeof(uint32_t);
-	pbookmark->pv = common_util_alloc(sizeof(uint32_t));
+	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pv == nullptr)
 		return ecMAPIOOM;
 	if (!table_object_restore_state(ptable,

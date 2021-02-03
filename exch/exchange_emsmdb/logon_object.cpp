@@ -248,7 +248,7 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	if (propid < 0x8000) {
 		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
 		ppropname->kind = MNID_ID;
-		ppropname->plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+		ppropname->plid = cu_alloc<uint32_t>();
 		if (NULL == ppropname->plid) {
 			return FALSE;
 		}
@@ -282,19 +282,17 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 		ppropnames->count = 0;
 		return TRUE;
 	}
-	auto pindex_map = static_cast<int *>(common_util_alloc(ppropids->count * sizeof(int)));
+	auto pindex_map = cu_alloc<int>(ppropids->count);
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
-	ppropnames->ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
-	                        sizeof(PROPERTY_NAME) * ppropids->count));
+	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
 	if (NULL == ppropnames->ppropname) {
 		return FALSE;
 	}
 	ppropnames->count = ppropids->count;
 	tmp_propids.count = 0;
-	tmp_propids.ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                      sizeof(uint16_t) * ppropids->count));
+	tmp_propids.ppropid = cu_alloc<uint16_t>(ppropids->count);
 	if (NULL == tmp_propids.ppropid) {
 		return FALSE;
 	}
@@ -303,8 +301,7 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 			rop_util_get_common_pset(PS_MAPI,
 				&ppropnames->ppropname[i].guid);
 			ppropnames->ppropname[i].kind = MNID_ID;
-			ppropnames->ppropname[i].plid =
-				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+			ppropnames->ppropname[i].plid = cu_alloc<uint32_t>();
 			if (NULL == ppropnames->ppropname[i].plid) {
 				return FALSE;
 			}
@@ -412,19 +409,17 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 		return TRUE;
 	}
 	rop_util_get_common_pset(PS_MAPI, &guid);
-	auto pindex_map = static_cast<int *>(common_util_alloc(ppropnames->count * sizeof(int)));
+	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
 	ppropids->count = ppropnames->count;
-	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropnames->count));
+	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
 	if (NULL == ppropids->ppropid) {
 		return FALSE;
 	}
 	tmp_propnames.count = 0;
-	tmp_propnames.ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
-	                          sizeof(PROPERTY_NAME) * ppropnames->count));
+	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
 	if (NULL == tmp_propnames.ppropname) {
 		return FALSE;
 	}
@@ -537,8 +532,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		plogon->dir, &tmp_proptags)) {
 		return FALSE;	
 	}
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + 25)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 25);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -692,7 +686,7 @@ static BOOL logon_object_get_calculated_property(
 	
 	switch (proptag) {
 	case PROP_TAG_MESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -708,7 +702,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -724,7 +718,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_NORMALMESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -794,7 +788,7 @@ static BOOL logon_object_get_calculated_property(
 		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -869,7 +863,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -912,14 +906,12 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -974,19 +966,16 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * ppropvals->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropvals->count));
+	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -1035,14 +1024,12 @@ BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * pproptags->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}

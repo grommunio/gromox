@@ -73,7 +73,7 @@ BOOL attachment_object_init_attachment(
 		return FALSE;
 	}
 	propvals.count = 0;
-	propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 5));
+	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5);
 	if (NULL == propvals.ppropval) {
 		return FALSE;
 	}
@@ -83,15 +83,14 @@ BOOL attachment_object_init_attachment(
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_RENDERINGPOSITION;
-	propvals.ppropval[propvals.count].pvalue =
-										common_util_alloc(sizeof(uint32_t));
+	propvals.ppropval[propvals.count].pvalue = cu_alloc<uint32_t>();
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
 	*(uint32_t*)propvals.ppropval[propvals.count].pvalue = 0xFFFFFFFF;
 	propvals.count ++;
 	
-	pvalue = common_util_alloc(sizeof(uint64_t));
+	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -265,8 +264,7 @@ BOOL attachment_object_get_all_proptags(
 	nodes_num = double_list_get_nodes_num(&pattachment->stream_list);
 	nodes_num ++;
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                      sizeof(uint32_t) * (tmp_proptags.count + nodes_num)));
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -321,7 +319,7 @@ static BOOL attachment_object_get_calculated_property(
 		*ppvalue = &pattachment->pparent->tag_access;
 		return TRUE;
 	case PROP_TAG_ACCESSLEVEL:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -332,7 +330,7 @@ static BOOL attachment_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_OBJECTTYPE:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -371,14 +369,12 @@ BOOL attachment_object_get_properties(
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -451,19 +447,16 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 	uint16_t *poriginal_indices;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * ppropvals->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
+	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropvals->count));
+	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -529,19 +522,16 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 	uint16_t *poriginal_indices;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * pproptags->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                        sizeof(uint32_t) * pproptags->count));
+	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
-	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * pproptags->count));
+	poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}

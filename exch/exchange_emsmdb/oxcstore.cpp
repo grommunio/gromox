@@ -280,7 +280,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	if (FALSE == logon_object_check_private(plogon)) {
 		return ecNotSupported;
 	}
-	*ppstr_explicit = static_cast<char *>(common_util_alloc(256));
+	*ppstr_explicit = cu_alloc<char>(256);
 	if (NULL == *ppstr_explicit) {
 		return ecMAPIOOM;
 	}
@@ -378,7 +378,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 		return ecNoReceiveFolder;
 	}
 	prows->count = class_table.count;
-	prows->prows = static_cast<PROPERTY_ROW *>(common_util_alloc(sizeof(PROPERTY_ROW) * class_table.count));
+	prows->prows = cu_alloc<PROPERTY_ROW>(class_table.count);
 	if (NULL == prows->prows) {
 		return ecMAPIOOM;
 	}
@@ -421,7 +421,7 @@ uint32_t rop_getowningservers(
 	}
 	pghost->server_count = 1;
 	pghost->cheap_server_count = 1;
-	pghost->ppservers = static_cast<char **>(common_util_alloc(sizeof(char *)));
+	pghost->ppservers = cu_alloc<char *>();
 	if (NULL == pghost->ppservers) {
 		return ecMAPIOOM;
 	}
@@ -448,7 +448,7 @@ uint32_t rop_getowningservers(
 	} else {
 		domain_id = logon_object_get_account_id(plogon);
 	}
-	pghost->ppservers[0] = static_cast<char *>(common_util_alloc(256));
+	pghost->ppservers[0] = cu_alloc<char>(256);
 	if (NULL == pghost->ppservers[0]) {
 		return ecMAPIOOM;
 	}
@@ -481,7 +481,7 @@ uint32_t rop_publicfolderisghosted(
 		*ppghost = NULL;
 		return ecSuccess;
 	}
-	*ppghost = static_cast<GHOST_SERVER *>(common_util_alloc(sizeof(GHOST_SERVER)));
+	*ppghost = cu_alloc<GHOST_SERVER>();
 	if (NULL == *ppghost) {
 		return ecMAPIOOM;
 	}

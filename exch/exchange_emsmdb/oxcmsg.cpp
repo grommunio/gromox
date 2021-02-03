@@ -202,8 +202,7 @@ PERMISSION_CHECK:
 	}
 	*prow_count = rcpts.count;
 	if (rcpts.count > 0) {
-		*pprecipient_row = static_cast<OPENRECIPIENT_ROW *>(common_util_alloc(
-		                   sizeof(OPENRECIPIENT_ROW) * rcpts.count));
+		*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 		if (NULL == *pprecipient_row) {
 			message_object_free(pmessage);
 			return ecMAPIOOM;
@@ -330,7 +329,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		COMMON_UTIL_MAX_MESSAGE)) {
 		return ecQuotaExceeded;
 	}
-	*ppmessage_id = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t)));
+	*ppmessage_id = cu_alloc<uint64_t>();
 	if (NULL == *ppmessage_id) {
 		return ecMAPIOOM;
 	}
@@ -487,18 +486,18 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 		return ecError;
 	}
 	tmp_set.count = count;
-	tmp_set.pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
+	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == tmp_set.pparray) {
 		return ecMAPIOOM;
 	}
 	for (i=0; i<count; i++) {
-		ppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
 			return ecMAPIOOM;
 		}
 		if (NULL == prow[i].precipient_row) {
 			ppropvals->count = 1;
-			ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL)));
+			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>();
 			if (NULL == ppropvals->ppropval) {
 				return ecMAPIOOM;
 			}
@@ -633,8 +632,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		return ecError;
 	}
 	*prow_count = rcpts.count;
-	*pprecipient_row = static_cast<OPENRECIPIENT_ROW *>(common_util_alloc(
-	                   sizeof(OPENRECIPIENT_ROW) * rcpts.count));
+	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (NULL == *pprecipient_row) {
 		return ecMAPIOOM;
 	}
@@ -1269,8 +1267,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		return ecError;
 	}
 	*prow_count = rcpts.count;
-	*pprecipient_row = static_cast<OPENRECIPIENT_ROW *>(common_util_alloc(
-	                   sizeof(OPENRECIPIENT_ROW) * rcpts.count));
+	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (NULL == *pprecipient_row) {
 		message_object_free(pmessage);
 		return ecMAPIOOM;

@@ -179,8 +179,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 			propvals.ppropval[i].pvalue);
 		if (tmp_size > 0x8000) {
 			propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
-			propvals.ppropval[i].pvalue =
-				common_util_alloc(sizeof(uint32_t));
+			propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
 			if (NULL == propvals.ppropval[i].pvalue) {
 				return ecMAPIOOM;
 			}
@@ -200,8 +199,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 				if (0x1000 < propval_size(proptype,
 					propvals.ppropval[i].pvalue)) {
 					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
-					propvals.ppropval[i].pvalue =
-						common_util_alloc(sizeof(uint32_t));
+					propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
 					if (NULL == propvals.ppropval[i].pvalue) {
 						return ecMAPIOOM;
 					}
@@ -251,8 +249,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
 				ppropvals->ppropval[i].pvalue) > size_limit) {
 				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
-				ppropvals->ppropval[i].pvalue =
-					common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[i].pvalue) {
 					return ecMAPIOOM;
 				}
@@ -280,8 +277,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
 				ppropvals->ppropval[i].pvalue) > size_limit) {
 				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
-				ppropvals->ppropval[i].pvalue =
-								common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[i].pvalue) {
 					return ecMAPIOOM;
 				}
@@ -573,8 +569,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		return ecNotSupported;
 	}
 	propids.count = 0;
-	propids.ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                  sizeof(uint16_t) * proptags.count));
+	propids.ppropid = cu_alloc<uint16_t>(proptags.count);
 	if (NULL == propids.ppropid) {
 		return ecMAPIOOM;
 	}
@@ -592,13 +587,11 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		return ecSuccess;
 	}
 	ppropidnames->count = 0;
-	ppropidnames->ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                        sizeof(uint16_t) * propids.count));
+	ppropidnames->ppropid = cu_alloc<uint16_t>(propids.count);
 	if (NULL == ppropidnames->ppropid) {
 		return ecMAPIOOM;
 	}
-	ppropidnames->ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
-	                          sizeof(PROPERTY_NAME) * propids.count));
+	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.count);
 	if (NULL == ppropidnames->ppropid) {
 		return ecMAPIOOM;
 	}
@@ -677,19 +670,16 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		return ecNotSupported;
 	}
 	proptags.count = 0;
-	proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                    sizeof(uint32_t) * pproptags->count));
+	proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == proptags.pproptag) {
 		return ecMAPIOOM;
 	}
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
-	                      sizeof(PROPERTY_PROBLEM) * pproptags->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == pproblems->pproblem) {
 		return ecMAPIOOM;
 	}
-	auto poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
-	                         sizeof(uint16_t)*pproptags->count));
+	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (NULL == poriginal_indices) {
 		return ecError;
 	}
@@ -1024,8 +1014,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);
 		tmp_proptags.count = 0;
-		tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
-		                        sizeof(uint32_t) * proptags.count));
+		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
 		if (NULL == tmp_proptags.pproptag) {
 			return ecMAPIOOM;
 		}

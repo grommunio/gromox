@@ -734,7 +734,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	gxerr_t err = oxomsg_rectify_message(pmessage, username);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
-	*pppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+	*pppropvals = cu_alloc<TPROPVAL_ARRAY>();
 	if (NULL != *pppropvals) {
 		proptags.count = 7;
 		proptags.pproptag = proptag_buff;
@@ -752,7 +752,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		if (NULL == common_util_get_propvals(
 			*pppropvals, PROP_TAG_PROVIDERSUBMITTIME)) {
 			propval.proptag = PROP_TAG_PROVIDERSUBMITTIME;
-			propval.pvalue = common_util_alloc(sizeof(uint64_t));
+			propval.pvalue = cu_alloc<uint64_t>();
 			if (NULL != propval.pvalue) {
 				*(uint64_t*)propval.pvalue = rop_util_current_nttime();
 				common_util_set_propvals(*pppropvals, &propval);

@@ -108,7 +108,7 @@ static char* ftstream_parser_read_wstring(
 		pbuff[len + 1] = 0;
 		len += 2;
 	}
-	pbuff1 = static_cast<char *>(common_util_alloc(tmp_len));
+	pbuff1 = cu_alloc<char>(tmp_len);
 	if (NULL == pbuff1) {
 		free(pbuff);
 		return NULL;
@@ -144,7 +144,7 @@ static char* ftstream_parser_read_string(
 		*pb_continue = TRUE;
 		return NULL;
 	}
-	pbuff = static_cast<char *>(common_util_alloc(len + 1));
+	pbuff = cu_alloc<char>(len + 1);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -182,7 +182,7 @@ static char* ftstream_parser_read_naked_wstring(
 	}
 	len = offset + 2;
 	pstream->offset += len;
-	pbuff = static_cast<char *>(common_util_alloc(2 * len));
+	pbuff = cu_alloc<char>(2 * len);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -244,7 +244,7 @@ static BOOL ftstream_parser_read_svreid(
 	}
 	pstream->offset += sizeof(uint8_t);
 	if (0 == ours) {
-		psvreid->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+		psvreid->pbin = cu_alloc<BINARY>();
 		if (NULL == psvreid->pbin) {
 			return FALSE;
 		}
@@ -316,7 +316,7 @@ static BOOL ftstream_parser_read_binary(
 static PROPERTY_NAME* ftstream_parser_read_property_name(
 	FTSTREAM_PARSER *pstream)
 {
-	auto pname = static_cast<PROPERTY_NAME *>(common_util_alloc(sizeof(PROPERTY_NAME)));
+	auto pname = cu_alloc<PROPERTY_NAME>();
 	if (NULL == pname) {
 		return NULL;
 	}
@@ -333,7 +333,7 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 	pname->pname = NULL;
 	switch (pname->kind) {
 	case MNID_ID:
-		pname->plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+		pname->plid = cu_alloc<uint32_t>();
 		if (NULL == pname->plid) {
 			return NULL;
 		}
@@ -446,7 +446,7 @@ static int ftstream_parser_read_element(
 	}
 	switch (proptype) {
 	case PT_SHORT:
-		ppropval->pvalue = common_util_alloc(sizeof(uint16_t));
+		ppropval->pvalue = cu_alloc<uint16_t>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -455,7 +455,7 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_ERROR:
 	case PT_LONG:
-		ppropval->pvalue = common_util_alloc(sizeof(uint32_t));
+		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -463,7 +463,7 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;	
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_FLOAT:
-		ppropval->pvalue = common_util_alloc(sizeof(float));
+		ppropval->pvalue = cu_alloc<float>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -475,7 +475,7 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		ppropval->pvalue = common_util_alloc(sizeof(double));
+		ppropval->pvalue = cu_alloc<double>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -486,7 +486,7 @@ static int ftstream_parser_read_element(
 		pstream->offset += sizeof(double);
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_BOOLEAN:
-		ppropval->pvalue = common_util_alloc(sizeof(uint8_t));
+		ppropval->pvalue = cu_alloc<uint8_t>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -499,7 +499,7 @@ static int ftstream_parser_read_element(
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		ppropval->pvalue = common_util_alloc(sizeof(uint64_t));
+		ppropval->pvalue = cu_alloc<uint64_t>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -529,7 +529,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_CLSID:
-		ppropval->pvalue = common_util_alloc(sizeof(GUID));
+		ppropval->pvalue = cu_alloc<GUID>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -537,7 +537,7 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_SVREID:
-		ppropval->pvalue = common_util_alloc(sizeof(SVREID));
+		ppropval->pvalue = cu_alloc<SVREID>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -552,7 +552,7 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_OBJECT:
 	case PT_BINARY:
-		ppropval->pvalue = common_util_alloc(sizeof(BINARY));
+		ppropval->pvalue = cu_alloc<BINARY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -566,8 +566,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_SHORT:
-		ppropval->pvalue =
-			common_util_alloc(sizeof(SHORT_ARRAY));
+		ppropval->pvalue = cu_alloc<SHORT_ARRAY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -586,8 +585,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			((SHORT_ARRAY*)ppropval->pvalue)->ps = NULL;
 		} else {
-			((SHORT_ARRAY*)ppropval->pvalue)->ps =
-				static_cast<uint16_t *>(common_util_alloc(sizeof(uint16_t) * count));
+			static_cast<SHORT_ARRAY *>(ppropval->pvalue)->ps = cu_alloc<uint16_t>(count);
 			if (NULL == ((SHORT_ARRAY*)ppropval->pvalue)->ps) {
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
@@ -600,8 +598,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_LONG:
-		ppropval->pvalue =
-			common_util_alloc(sizeof(LONG_ARRAY));
+		ppropval->pvalue = cu_alloc<LONG_ARRAY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -620,8 +617,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			((LONG_ARRAY*)ppropval->pvalue)->pl = NULL;
 		} else {
-			((LONG_ARRAY*)ppropval->pvalue)->pl =
-				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * count));
+			static_cast<LONG_ARRAY *>(ppropval->pvalue)->pl = cu_alloc<uint32_t>(count);
 			if (NULL == ((LONG_ARRAY*)ppropval->pvalue)->pl) {
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
@@ -634,8 +630,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_I8:
-		ppropval->pvalue =
-			common_util_alloc(sizeof(LONGLONG_ARRAY));
+		ppropval->pvalue = cu_alloc<LONGLONG_ARRAY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -654,8 +649,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			((LONGLONG_ARRAY*)ppropval->pvalue)->pll = NULL;
 		} else {
-			((LONGLONG_ARRAY*)ppropval->pvalue)->pll =
-				static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
+			static_cast<LONGLONG_ARRAY *>(ppropval->pvalue)->pll = cu_alloc<uint64_t>(count);
 			if (NULL == ((LONGLONG_ARRAY*)ppropval->pvalue)->pll) {
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
@@ -668,8 +662,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_STRING8:
-		ppropval->pvalue =
-			common_util_alloc(sizeof(STRING_ARRAY));
+		ppropval->pvalue = cu_alloc<STRING_ARRAY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -684,8 +677,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			((STRING_ARRAY*)ppropval->pvalue)->ppstr = NULL;
 		} else {
-			((STRING_ARRAY*)ppropval->pvalue)->ppstr =
-				static_cast<char **>(common_util_alloc(sizeof(char *) * count));
+			static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr = cu_alloc<char *>(count);
 			if (NULL == ((STRING_ARRAY*)
 				ppropval->pvalue)->ppstr) {
 				return FTSTREAM_PARSER_READ_FAIL;
@@ -714,8 +706,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_UNICODE:
-		ppropval->pvalue =
-			common_util_alloc(sizeof(STRING_ARRAY));
+		ppropval->pvalue = cu_alloc<STRING_ARRAY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -730,8 +721,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			((STRING_ARRAY*)ppropval->pvalue)->ppstr = NULL;
 		} else {
-			((STRING_ARRAY*)ppropval->pvalue)->ppstr =
-				static_cast<char **>(common_util_alloc(sizeof(char *) * count));
+			static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr = cu_alloc<char *>(count);
 			if (NULL == ((STRING_ARRAY*)
 				ppropval->pvalue)->ppstr) {
 				return FTSTREAM_PARSER_READ_FAIL;
@@ -760,8 +750,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_CLSID:
-		ppropval->pvalue =
-			common_util_alloc(sizeof(GUID_ARRAY));
+		ppropval->pvalue = cu_alloc<GUID_ARRAY>();
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -779,8 +768,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			((GUID_ARRAY*)ppropval->pvalue)->pguid = NULL;
 		} else {
-			((GUID_ARRAY*)ppropval->pvalue)->pguid =
-				static_cast<GUID *>(common_util_alloc(sizeof(GUID *) * count));
+			static_cast<GUID_ARRAY *>(ppropval->pvalue)->pguid = cu_alloc<GUID>(count);
 			if (NULL == ((GUID_ARRAY*)ppropval->pvalue)->pguid) {
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
@@ -793,8 +781,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_MV_BINARY: {
-		ppropval->pvalue =
-			common_util_alloc(sizeof(BINARY_ARRAY));
+		ppropval->pvalue = cu_alloc<BINARY_ARRAY>();
 		auto ba = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -810,7 +797,7 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			ba->pbin = nullptr;
 		} else {
-			ba->pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY) * count));
+			ba->pbin = cu_alloc<BINARY>(count);
 			if (ba->pbin == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
 		}

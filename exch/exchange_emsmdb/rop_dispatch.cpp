@@ -31,7 +31,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		*ppresponse = NULL;
 		return ecSuccess;
 	}
-	*ppresponse = static_cast<ROP_RESPONSE *>(common_util_alloc(sizeof(ROP_RESPONSE)));
+	*ppresponse = cu_alloc<ROP_RESPONSE>();
 	if (NULL == *ppresponse) {
 		return ecMAPIOOM;
 	}
@@ -41,7 +41,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	switch (prequest->rop_id) {
 	case ropLogon: {
 		(*ppresponse)->hindex = prequest->hindex;
-		perr_response = common_util_alloc(sizeof(LOGON_REDIRECT_RESPONSE));
+		perr_response = cu_alloc<LOGON_REDIRECT_RESPONSE>();
 		if (NULL == perr_response) {
 			return ecMAPIOOM;
 		}
@@ -52,8 +52,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		else
 			rdr->pserver_name[0] = '\0';
 		if (rq->logon_flags & LOGON_FLAG_PRIVATE) {
-			(*ppresponse)->ppayload =
-				common_util_alloc(sizeof(LOGON_PMB_RESPONSE));
+			(*ppresponse)->ppayload = cu_alloc<LOGON_PMB_RESPONSE>();
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
@@ -68,7 +67,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				&pmb->store_stat,
 				pemsmdb_info->plogmap, prequest->logon_id, phandles + prequest->hindex);
 		} else {
-			(*ppresponse)->ppayload = common_util_alloc(sizeof(LOGON_PF_RESPONSE));
+			(*ppresponse)->ppayload = cu_alloc<LOGON_PF_RESPONSE>();
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
@@ -89,7 +88,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetReceiveFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETRECEIVEFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETRECEIVEFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -110,7 +109,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetReceiveFolderTable: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETRECEIVEFOLDERTABLE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETRECEIVEFOLDERTABLE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -121,7 +120,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetStoreState: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSTORESTAT_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETSTORESTAT_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -132,7 +131,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetOwningServers: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETOWNINGSERVERS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETOWNINGSERVERS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -145,7 +144,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropPublicFolderIsGhosted: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(PUBLICFOLDERISGHOSTED_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<PUBLICFOLDERISGHOSTED_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -158,7 +157,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropLongTermIdFromId: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(LONGTERMIDFROMID_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<LONGTERMIDFROMID_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -171,7 +170,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropIdFromLongTermId: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(IDFROMLONGTERMID_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<IDFROMLONGTERMID_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -184,7 +183,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPerUserLongTermIds: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPERUSERLONGTERMIDS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETPERUSERLONGTERMIDS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -197,7 +196,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPerUserGuid: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPERUSERGUID_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETPERUSERGUID_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -210,7 +209,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReadPerUserInformation: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(READPERUSERINFORMATION_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<READPERUSERINFORMATION_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -237,7 +236,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(OPENFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<OPENFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -254,7 +253,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(CREATEFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<CREATEFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -270,7 +269,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeleteFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<DELETEFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -291,7 +290,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetSearchCriteria: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSEARCHCRITERIA_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETSEARCHCRITERIA_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -309,7 +308,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(MOVECOPYMESSAGES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<MOVECOPYMESSAGES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -320,7 +319,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = common_util_alloc(sizeof(NULL_DST_RESPONSE));
+			perr_response = cu_alloc<NULL_DST_RESPONSE>();
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
 			}
@@ -336,7 +335,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(MOVEFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<MOVEFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -347,7 +346,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = common_util_alloc(sizeof(NULL_DST_RESPONSE));
+			perr_response = cu_alloc<NULL_DST_RESPONSE>();
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
 			}
@@ -363,7 +362,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(COPYFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<COPYFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -374,7 +373,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = common_util_alloc(sizeof(NULL_DST_RESPONSE));
+			perr_response = cu_alloc<NULL_DST_RESPONSE>();
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
 			}
@@ -387,7 +386,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropEmptyFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(EMPTYFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<EMPTYFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -400,7 +399,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropHardDeleteMessagesAndSubfolders: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(EMPTYFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<EMPTYFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -414,7 +413,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeleteMessages: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEMESSAGES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<DELETEMESSAGES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -428,7 +427,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropHardDeleteMessages: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(HARDDELETEMESSAGES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<HARDDELETEMESSAGES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -445,7 +444,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex > hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETHIERARCHYTABLE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETHIERARCHYTABLE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -461,7 +460,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETCONTENTSTABLE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETCONTENTSTABLE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -474,7 +473,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetColumns: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETCOLUMNS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETCOLUMNS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -487,7 +486,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSortTable: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SORTTABLE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SORTTABLE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -500,7 +499,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropRestrict: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(RESTRICT_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<RESTRICT_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -513,7 +512,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropQueryRows: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYROWS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<QUERYROWS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -542,7 +541,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropAbort: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(ABORT_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<ABORT_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -553,7 +552,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetStatus: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSTATUS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETSTATUS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -564,7 +563,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropQueryPosition: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYPOSITION_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<QUERYPOSITION_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -576,7 +575,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSeekRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYPOSITION_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<QUERYPOSITION_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -590,7 +589,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSeekRowBookmark: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SEEKROWBOOKMARK_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SEEKROWBOOKMARK_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -611,7 +610,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropCreateBookmark: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(CREATEBOOKMARK_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<CREATEBOOKMARK_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -622,7 +621,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropQueryColumnsAll: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYCOLUMNSALL_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<QUERYCOLUMNSALL_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -633,7 +632,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropFindRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(FINDROW_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<FINDROW_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -659,7 +658,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		break;
 	case ropExpandRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(EXPANDROW_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<EXPANDROW_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -687,7 +686,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropCollapseRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(COLLAPSEROW_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<COLLAPSEROW_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -700,7 +699,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetCollapseState: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETCOLLAPSESTATE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETCOLLAPSESTATE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -713,7 +712,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetCollapseState: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETCOLLAPSESTATE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETCOLLAPSESTATE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -729,7 +728,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(OPENMESSAGE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<OPENMESSAGE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -749,7 +748,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(CREATEMESSAGE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<CREATEMESSAGE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -762,7 +761,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSaveChangesMessage: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SAVECHANGESMESSAGE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SAVECHANGESMESSAGE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -792,7 +791,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReadRecipients: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(READRECIPIENTS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<READRECIPIENTS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -820,7 +819,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReloadCachedInformation: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(RELOADCACHEDINFORMATION_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<RELOADCACHEDINFORMATION_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -836,7 +835,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetMessageStatus: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETMESSAGESTATUS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETMESSAGESTATUS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -850,7 +849,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetMessageStatus: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETMESSAGESTATUS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETMESSAGESTATUS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -863,7 +862,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetReadFlags: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETREADFLAGS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETREADFLAGS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -881,7 +880,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETMESSAGEREADFLAG_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETMESSAGEREADFLAG_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -911,7 +910,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(CREATEATTACHMENT_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<CREATEATTACHMENT_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -945,7 +944,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(OPENEMBEDDEDMESSAGE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<OPENEMBEDDEDMESSAGE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -973,7 +972,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetValidAttachments: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETVALIDATTACHMENTS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETVALIDATTACHMENTS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -999,7 +998,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetAddressTypes: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETADDRESSTYPES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETADDRESSTYPES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1023,7 +1022,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropTransportSend: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(TRANSPORTSEND_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<TRANSPORTSEND_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1042,7 +1041,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetTransportFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETTRANSPORTFOLDER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETTRANSPORTFOLDER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1053,7 +1052,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropOptionsData: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(OPTIONSDATA_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<OPTIONSDATA_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1067,7 +1066,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertyIdsFromNames: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTYIDSFROMNAMES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETPROPERTYIDSFROMNAMES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1080,7 +1079,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetNamesFromPropertyIds: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETNAMESFROMPROPERTYIDS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETNAMESFROMPROPERTYIDS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1093,7 +1092,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertiesSpecific: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTIESSPECIFIC_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESSPECIFIC_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1107,7 +1106,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertiesAll: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTIESALL_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESALL_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1120,7 +1119,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertiesLIst: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTIESLIST_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESLIST_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1131,7 +1130,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetProperties: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETPROPERTIES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETPROPERTIES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1144,7 +1143,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetPropertiesNoReplicate: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETPROPERTIESNOREPLICATE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SETPROPERTIESNOREPLICATE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1157,7 +1156,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeleteProperties: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEPROPERTIES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<DELETEPROPERTIES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1170,7 +1169,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeletePropertiesNoReplicate: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEPROPERTIESNOREPLICATE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<DELETEPROPERTIESNOREPLICATE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1183,7 +1182,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropQueryNamedProperties: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYNAMEDPROPERTIES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<QUERYNAMEDPROPERTIES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1200,7 +1199,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(COPYPROPERTIES_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<COPYPROPERTIES_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1211,7 +1210,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			(*ppresponse)->ppayload = common_util_alloc(sizeof(uint32_t));
+			(*ppresponse)->ppayload = cu_alloc<uint32_t>();
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
@@ -1224,7 +1223,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(COPYTO_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<COPYTO_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1235,7 +1234,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			(*ppresponse)->ppayload = common_util_alloc(sizeof(uint32_t));
+			(*ppresponse)->ppayload = cu_alloc<uint32_t>();
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
@@ -1245,7 +1244,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropProgress: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(PROGRESS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<PROGRESS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1263,7 +1262,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(OPENSTREAM_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<OPENSTREAM_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1276,7 +1275,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReadStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(READSTREAM_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<READSTREAM_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1289,7 +1288,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropWriteStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(WRITESTREAM_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<WRITESTREAM_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1307,7 +1306,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		break;
 	case ropGetStreamSize: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSTREAMSIZE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETSTREAMSIZE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1325,7 +1324,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSeekStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SEEKSTREAM_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SEEKSTREAM_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1341,7 +1340,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum) {
 			return ecInvalidObject;
 		}
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(COPYTOSTREAM_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<COPYTOSTREAM_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1352,7 +1351,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = common_util_alloc(sizeof(COPYTOSTREAM_NULL_DEST_RESPONSE));
+			perr_response = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
 			}
@@ -1382,7 +1381,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropWriteAndCommitStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(WRITEANDCOMMITSTREAM_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<WRITEANDCOMMITSTREAM_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1460,7 +1459,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropFastTransferDestinationPutBuffer: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(FASTTRANSFERDESTPUTBUFFER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<FASTTRANSFERDESTPUTBUFFER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1475,7 +1474,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropFastTransferSourceGetBuffer: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(FASTTRANSFERSOURCEGETBUFFER_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<FASTTRANSFERSOURCEGETBUFFER_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1559,7 +1558,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex > hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SYNCIMPORTMESSAGECHANGE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SYNCIMPORTMESSAGECHANGE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1580,7 +1579,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSynchronizationImportHierarchyChange: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SYNCIMPORTHIERARCHYCHANGE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SYNCIMPORTHIERARCHYCHANGE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1601,7 +1600,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSynchronizationImportMessageMove: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(SYNCIMPORTMESSAGEMOVE_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<SYNCIMPORTMESSAGEMOVE_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -1665,7 +1664,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetLocalReplicaIds: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETLOCALREPLICAIDS_RESPONSE));
+		(*ppresponse)->ppayload = cu_alloc<GETLOCALREPLICAIDS_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}

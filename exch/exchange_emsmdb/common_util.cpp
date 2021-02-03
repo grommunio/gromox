@@ -186,7 +186,7 @@ static char* common_util_dup_mb_to_utf8(
 	char *pdst;
 	
 	len = 2*strlen(src) + 1;
-	pdst = static_cast<char *>(common_util_alloc(len));
+	pdst = cu_alloc<char>(len);
 	if (NULL == pdst) {
 		return NULL;
 	}
@@ -390,7 +390,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -421,7 +421,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -477,7 +477,7 @@ BINARY* common_util_to_folder_entryid(
 	rop_util_get_gc_array(folder_id, tmp_entryid.global_counter);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -501,7 +501,7 @@ BINARY* common_util_calculate_folder_sourcekey(
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -582,7 +582,7 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -604,7 +604,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -757,7 +757,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
 	EXT_PUSH ext_push;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -791,7 +791,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 
 BINARY* common_util_guid_to_binary(GUID guid)
 {
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -837,7 +837,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	SIZED_XID xid;
 	BINARY *ptmp_bin;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -883,7 +883,7 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	PCL *ppcl2;
 	BINARY *ptmp_bin;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -932,7 +932,7 @@ BINARY* common_util_to_folder_replica(
 {
 	EXT_PUSH ext_push;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1153,12 +1153,11 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	
-	auto ptmp_proptags = static_cast<PROPTAG_ARRAY *>(common_util_alloc(sizeof(PROPTAG_ARRAY)));
+	auto ptmp_proptags = cu_alloc<PROPTAG_ARRAY>();
 	if (NULL == ptmp_proptags) {
 		return NULL;
 	}
-	ptmp_proptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-	                          sizeof(uint32_t) * pproptags->count));
+	ptmp_proptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (ptmp_proptags->pproptag == nullptr)
 		return NULL;
 	ptmp_proptags->count = 0;
@@ -1198,7 +1197,7 @@ BOOL common_util_propvals_to_row(
 	} else {
 		prow->flag = PROPERTY_ROW_FLAG_NONE;
 	}
-	prow->pppropval = static_cast<void **>(common_util_alloc(sizeof(void *) * pcolumns->count));
+	prow->pppropval = cu_alloc<void *>(pcolumns->count);
 	if (NULL == prow->pppropval) {
 		return FALSE;
 	}
@@ -1206,7 +1205,7 @@ BOOL common_util_propvals_to_row(
 		prow->pppropval[i] = common_util_get_propvals(
 					ppropvals, pcolumns->pproptag[i]);
 		if (PROPERTY_ROW_FLAG_FLAGGED == prow->flag) {
-			pflagged_val = static_cast<FLAGGED_PROPVAL *>(common_util_alloc(sizeof(FLAGGED_PROPVAL)));
+			pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
 			if (NULL == pflagged_val) {
 				return FALSE;
 			}
@@ -1279,7 +1278,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 	} else {
 		prow->flag = PROPERTY_ROW_FLAG_NONE;
 	}
-	prow->pppropval = static_cast<void **>(common_util_alloc(sizeof(void *) * pcolumns->count));
+	prow->pppropval = cu_alloc<void *>(pcolumns->count);
 	if (NULL == prow->pppropval) {
 		return FALSE;
 	}
@@ -1293,7 +1292,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 				return FALSE;
 		}
 		if (PROPERTY_ROW_FLAG_FLAGGED == prow->flag) {
-			pflagged_val = static_cast<FLAGGED_PROPVAL *>(common_util_alloc(sizeof(FLAGGED_PROPVAL)));
+			pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
 			if (NULL == pflagged_val) {
 				return FALSE;
 			}
@@ -1614,8 +1613,7 @@ BOOL common_util_modifyrecipient_to_propvals(
 	TAGGED_PROPVAL propval;
 	
 	ppropvals->count = 0;
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * (16 + pcolumns->count)));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -1623,7 +1621,7 @@ BOOL common_util_modifyrecipient_to_propvals(
 	propval.pvalue = (void*)&prow->row_id;
 	common_util_set_propvals(ppropvals, &propval);
 	propval.proptag = PROP_TAG_RECIPIENTTYPE;
-	propval.pvalue = common_util_alloc(sizeof(uint32_t));
+	propval.pvalue = cu_alloc<uint32_t>();
 	if (NULL == propval.pvalue) {
 		return FALSE;
 	}
@@ -1663,7 +1661,7 @@ BOOL common_util_convert_tagged_propval(
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_STRING8:
 			len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
-			pstring = static_cast<char *>(common_util_alloc(len));
+			pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
 			}
@@ -1677,7 +1675,7 @@ BOOL common_util_convert_tagged_propval(
 		case PT_MV_STRING8:
 			for (i=0; i<((STRING_ARRAY*)ppropval->pvalue)->count; i++) {
 				len = 2*strlen(((STRING_ARRAY*)ppropval->pvalue)->ppstr[i]) + 1;
-				pstring = static_cast<char *>(common_util_alloc(len));
+				pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
 				}
@@ -1705,7 +1703,7 @@ BOOL common_util_convert_tagged_propval(
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_UNICODE:
 			len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
-			pstring = static_cast<char *>(common_util_alloc(len));
+			pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
 			}
@@ -1719,7 +1717,7 @@ BOOL common_util_convert_tagged_propval(
 			for (i=0; i<((STRING_ARRAY*)ppropval->pvalue)->count; i++) {
 				len = 2*strlen(((STRING_ARRAY*)
 						ppropval->pvalue)->ppstr[i]) + 1;
-				pstring = static_cast<char *>(common_util_alloc(len));
+				pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
 				}
@@ -2353,8 +2351,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
-		ppropval = static_cast<TAGGED_PROPVAL * >(common_util_alloc(
-		           sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 1)));
+		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -2387,7 +2384,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	}
 	double_list_init(&temp_list);
 	for (i=0; i<prcpts->count; i++) {
-		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
