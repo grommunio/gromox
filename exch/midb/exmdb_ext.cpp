@@ -3777,9 +3777,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_response(
 	if (0 == ppayload->get_hierarchy_sync.fldchgs.count) {
 		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = NULL;
 	} else {
-		ppayload->get_hierarchy_sync.fldchgs.pfldchgs =
-			static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY) *
-			ppayload->get_hierarchy_sync.fldchgs.count));
+		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = cu_alloc<TPROPVAL_ARRAY>(ppayload->get_hierarchy_sync.fldchgs.count);
 		if (NULL == ppayload->get_hierarchy_sync.fldchgs.pfldchgs) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4203,8 +4201,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	}
 	switch (pnotify->db_notify.type) {
 	case DB_NOTIFY_TYPE_NEW_MAIL:
-		pnotify->db_notify.pdata = common_util_alloc(
-						sizeof(DB_NOTIFY_NEW_MAIL));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4230,8 +4227,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			(char**)&((DB_NOTIFY_NEW_MAIL*)
 			pnotify->db_notify.pdata)->pmessage_class);
 	case DB_NOTIFY_TYPE_FOLDER_CREATED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_FOLDER_CREATED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4251,8 +4247,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_FOLDER_CREATED*)
 			pnotify->db_notify.pdata)->proptags);
 	case DB_NOTIFY_TYPE_MESSAGE_CREATED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_MESSAGE_CREATED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4272,8 +4267,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_MESSAGE_CREATED*)
 			pnotify->db_notify.pdata)->proptags);
 	case DB_NOTIFY_TYPE_LINK_CREATED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_LINK_CREATED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_LINK_CREATED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4299,8 +4293,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_LINK_CREATED*)
 			pnotify->db_notify.pdata)->proptags);
 	case DB_NOTIFY_TYPE_FOLDER_DELETED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_FOLDER_DELETED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4314,8 +4307,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_FOLDER_DELETED*)
 			pnotify->db_notify.pdata)->parent_id);
 	case DB_NOTIFY_TYPE_MESSAGE_DELETED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_MESSAGE_DELETED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4329,8 +4321,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_MESSAGE_DELETED*)
 			pnotify->db_notify.pdata)->message_id);
 	case DB_NOTIFY_TYPE_LINK_DELETED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_LINK_DELETED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_LINK_DELETED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4350,8 +4341,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_LINK_DELETED*)
 			pnotify->db_notify.pdata)->parent_id);
 	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_FOLDER_MODIFIED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4405,8 +4395,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_FOLDER_MODIFIED*)
 			pnotify->db_notify.pdata)->proptags);
 	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
-		pnotify->db_notify.pdata = common_util_alloc(
-				sizeof(DB_NOTIFY_MESSAGE_MODIFIED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4427,8 +4416,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			pnotify->db_notify.pdata)->proptags);
 	case DB_NOTIFY_TYPE_FOLDER_MOVED:
 	case DB_NOTIFY_TYPE_FOLDER_COPIED:
-		pnotify->db_notify.pdata = common_util_alloc(
-						sizeof(DB_NOTIFY_FOLDER_MVCP));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4455,8 +4443,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			pnotify->db_notify.pdata)->old_parent_id);
 	case DB_NOTIFY_TYPE_MESSAGE_MOVED:
 	case DB_NOTIFY_TYPE_MESSAGE_COPIED:
-		pnotify->db_notify.pdata = common_util_alloc(
-						sizeof(DB_NOTIFY_MESSAGE_MVCP));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4482,8 +4469,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_MESSAGE_MVCP*)
 			pnotify->db_notify.pdata)->old_message_id);
 	case DB_NOTIFY_TYPE_SEARCH_COMPLETED:
-		pnotify->db_notify.pdata = common_util_alloc(
-					sizeof(DB_NOTIFY_SEARCH_COMPLETED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4494,8 +4480,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED:
 		return EXT_ERR_SUCCESS;
 	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED:
-		pnotify->db_notify.pdata = common_util_alloc(
-			sizeof(DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4509,8 +4494,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED*)
 			pnotify->db_notify.pdata)->after_folder_id);
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED:
-		pnotify->db_notify.pdata = common_util_alloc(
-			sizeof(DB_NOTIFY_CONTENT_TABLE_ROW_ADDED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4548,8 +4532,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
 			pnotify->db_notify.pdata)->after_instance);
 	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED:
-		pnotify->db_notify.pdata = common_util_alloc(
-			sizeof(DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4557,8 +4540,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED*)
 			pnotify->db_notify.pdata)->row_folder_id);
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED:
-		pnotify->db_notify.pdata = common_util_alloc(
-			sizeof(DB_NOTIFY_CONTENT_TABLE_ROW_DELETED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4578,8 +4560,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)
 			pnotify->db_notify.pdata)->row_instance);
 	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED:
-		pnotify->db_notify.pdata = common_util_alloc(
-			sizeof(DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4593,8 +4574,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED*)
 			pnotify->db_notify.pdata)->after_folder_id);
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED:
-		pnotify->db_notify.pdata = common_util_alloc(
-			sizeof(DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED));
+		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 		if (NULL == pnotify->db_notify.pdata) {
 			return EXT_ERR_ALLOC;
 		}
