@@ -556,7 +556,7 @@ static ID_ARRAYS* db_engine_classify_id_array(DOUBLE_LIST *plist)
 			}
 		}
 		if (NULL == pnode1) {
-			psubnode = static_cast<SUBLIST_NODE *>(common_util_alloc(sizeof(*psubnode)));
+			psubnode = cu_alloc<SUBLIST_NODE>();
 			if (NULL == psubnode) {
 				return NULL;
 			}
@@ -567,16 +567,16 @@ static ID_ARRAYS* db_engine_classify_id_array(DOUBLE_LIST *plist)
 		}
 		double_list_append_as_tail(&psubnode->list, &pidnode->node);
 	}
-	parrays = static_cast<ID_ARRAYS *>(common_util_alloc(sizeof(*parrays)));
+	parrays = cu_alloc<ID_ARRAYS>();
 	if (NULL == parrays) {
 		return NULL;
 	}
 	parrays->count = double_list_get_nodes_num(&tmp_list);
-	parrays->remote_ids = static_cast<const char **>(common_util_alloc(sizeof(char *) * parrays->count));
+	parrays->remote_ids = cu_alloc<const char *>(parrays->count);
 	if (NULL == parrays->remote_ids) {
 		return NULL;
 	}
-	parrays->parray = static_cast<LONG_ARRAY *>(common_util_alloc(sizeof(LONG_ARRAY) * parrays->count));
+	parrays->parray = cu_alloc<LONG_ARRAY>(parrays->count);
 	if (NULL == parrays->parray) {
 		return NULL;
 	}
@@ -587,7 +587,7 @@ static ID_ARRAYS* db_engine_classify_id_array(DOUBLE_LIST *plist)
 		parrays->remote_ids[i] = psubnode->remote_id;
 		parrays->parray[i].count =
 			double_list_get_nodes_num(&psubnode->list);
-		parrays->parray[i].pl = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * parrays->parray[i].count));
+		parrays->parray[i].pl = cu_alloc<uint32_t>(parrays->parray[i].count);
 		if (NULL == parrays->parray[i].pl) {
 			return NULL;
 		}
@@ -628,7 +628,7 @@ static void db_engine_notify_search_completion(
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -644,7 +644,7 @@ static void db_engine_notify_search_completion(
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_SEARCH_COMPLETED;
-		psearch_completed = static_cast<DB_NOTIFY_SEARCH_COMPLETED *>(common_util_alloc(sizeof(*psearch_completed)));
+		psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
 		if (NULL == psearch_completed) {
 			return;
 		}
@@ -739,7 +739,7 @@ NEXT_SEARCH:
 					table_num = double_list_get_nodes_num(
 								&pdb->tables.table_list);
 					if (table_num > 0) {
-						ptable_ids = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * table_num));
+						ptable_ids = cu_alloc<uint32_t>(table_num);
 						if (NULL != ptable_ids) {
 							table_num = 0;
 							for (pnode=double_list_get_head(
@@ -1378,7 +1378,7 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 			return FALSE;
 		}
 		sqlite3_reset(pstmt_insert);
-		prnode = static_cast<ROWINFO_NODE *>(common_util_alloc(sizeof(*prnode)));
+		prnode = cu_alloc<ROWINFO_NODE>();
 		if (NULL == prnode) {
 			return FALSE;
 		}
@@ -1462,7 +1462,7 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 		sqlite3_reset(pstmt_update);
 	}
 	sqlite3_reset(pstmt_insert);
-	prnode = static_cast<ROWINFO_NODE *>(common_util_alloc(sizeof(*prnode)));
+	prnode = cu_alloc<ROWINFO_NODE>();
 	if (NULL == prnode) {
 		return FALSE;
 	}
@@ -1487,7 +1487,7 @@ static void db_engine_append_rowinfo_node(
 			return;
 		}
 	}
-	prnode = static_cast<ROWINFO_NODE *>(common_util_alloc(sizeof(*prnode)));
+	prnode = cu_alloc<ROWINFO_NODE>();
 	if (NULL != prnode) {
 		prnode->node.pdata = prnode;
 		prnode->b_added = FALSE;
@@ -1602,7 +1602,7 @@ static void db_engine_notify_content_table_add_row(
 			datagram.dir = (char*)exmdb_server_get_dir();
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
-			padded_row = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(common_util_alloc(2 * sizeof(DB_NOTIFY_CONTENT_TABLE_ROW_ADDED)));
+			padded_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>(2);
 			if (NULL == padded_row) {
 				return;
 			}
@@ -2531,7 +2531,7 @@ void db_engine_transport_new_mail(DB_ITEM *pdb, uint64_t folder_id,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -2547,7 +2547,7 @@ void db_engine_transport_new_mail(DB_ITEM *pdb, uint64_t folder_id,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_NEW_MAIL;
-		pnew_mail = static_cast<DB_NOTIFY_NEW_MAIL *>(common_util_alloc(sizeof(*pnew_mail)));
+		pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 		if (NULL == pnew_mail) {
 			return;
 		}
@@ -2595,7 +2595,7 @@ void db_engine_notify_new_mail(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -2611,7 +2611,7 @@ void db_engine_notify_new_mail(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_NEW_MAIL;
-		pnew_mail = static_cast<DB_NOTIFY_NEW_MAIL *>(common_util_alloc(sizeof(*pnew_mail)));
+		pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 		if (NULL == pnew_mail) {
 			return;
 		}
@@ -2674,7 +2674,7 @@ void db_engine_notify_message_creation(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -2690,7 +2690,7 @@ void db_engine_notify_message_creation(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_CREATED;
-		pcreated_mail = static_cast<DB_NOTIFY_MESSAGE_CREATED *>(common_util_alloc(sizeof(*pcreated_mail)));
+		pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
 		if (NULL == pcreated_mail) {
 			return;
 		}
@@ -2745,7 +2745,7 @@ void db_engine_notify_link_creation(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -2761,7 +2761,7 @@ void db_engine_notify_link_creation(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_LINK_CREATED;
-		plinked_mail = static_cast<DB_NOTIFY_LINK_CREATED *>(common_util_alloc(sizeof(*plinked_mail)));
+		plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
 		if (NULL == plinked_mail) {
 			return;
 		}
@@ -2833,7 +2833,7 @@ static void db_engine_notify_hierarchy_table_add_row(
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED;
-			padded_row = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(common_util_alloc(sizeof(*padded_row)));
+			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 			if (NULL == padded_row) {
 				if (NULL != pstmt) {
 					sqlite3_finalize(pstmt);
@@ -2999,7 +2999,7 @@ void db_engine_notify_folder_creation(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == parent_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -3015,7 +3015,7 @@ void db_engine_notify_folder_creation(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_CREATED;
-		pcreated_folder = static_cast<DB_NOTIFY_FOLDER_CREATED *>(common_util_alloc(sizeof(*pcreated_folder)));
+		pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
 		if (NULL == pcreated_folder) {
 			return;
 		}
@@ -3173,12 +3173,12 @@ static void db_engine_notify_content_table_delete_row(
 			datagram.dir = (char*)exmdb_server_get_dir();
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
-			pdeleted_row = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(common_util_alloc(sizeof(*pdeleted_row)));
+			pdeleted_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
 			if (NULL == pdeleted_row) {
 				return;
 			}
 			datagram.db_notify.pdata = pdeleted_row;
-			pmodified_row = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(common_util_alloc(sizeof(*pmodified_row)));
+			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 			if (NULL == pmodified_row) {
 				return;
 			}
@@ -3278,7 +3278,7 @@ static void db_engine_notify_content_table_delete_row(
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 			continue;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			pdelnode = static_cast<ROWDEL_NODE *>(common_util_alloc(sizeof(*pdelnode)));
+			pdelnode = cu_alloc<ROWDEL_NODE>();
 			if (NULL == pdelnode) {
 				sqlite3_finalize(pstmt);
 				return;
@@ -3375,7 +3375,7 @@ static void db_engine_notify_content_table_delete_row(
 				break;
 			}
 			if (1 == sqlite3_column_int64(pstmt, 8)) {
-				pdelnode = static_cast<ROWDEL_NODE *>(common_util_alloc(sizeof(*pdelnode)));
+				pdelnode = cu_alloc<ROWDEL_NODE>();
 				if (NULL == pdelnode) {
 					break;
 				}
@@ -3408,7 +3408,7 @@ static void db_engine_notify_content_table_delete_row(
 				sql_string, NULL, NULL, NULL)) {
 				break;
 			}
-			prnode = static_cast<ROWINFO_NODE *>(common_util_alloc(sizeof(*prnode)));
+			prnode = cu_alloc<ROWINFO_NODE>();
 			if (NULL == prnode) {
 				break;
 			}
@@ -3718,7 +3718,7 @@ void db_engine_notify_message_deletion(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id &&
 			message_id == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -3734,7 +3734,7 @@ void db_engine_notify_message_deletion(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_DELETED;
-		pdeleted_mail = static_cast<DB_NOTIFY_MESSAGE_DELETED *>(common_util_alloc(sizeof(*pdeleted_mail)));
+		pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
 		if (NULL == pdeleted_mail) {
 			return;
 		}
@@ -3788,7 +3788,7 @@ void db_engine_notify_link_deletion(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id &&
 			message_id == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -3804,7 +3804,7 @@ void db_engine_notify_link_deletion(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_LINK_DELETED;
-		punlinked_mail = static_cast<DB_NOTIFY_LINK_DELETED *>(common_util_alloc(sizeof(*punlinked_mail)));
+		punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
 		if (NULL == punlinked_mail) {
 			return;
 		}
@@ -3904,7 +3904,7 @@ static void db_engine_notify_hierarchy_table_delete_row(
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED;
-			pdeleted_row = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(common_util_alloc(sizeof(*pdeleted_row)));
+			pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 			if (NULL == pdeleted_row) {
 				return;
 			}
@@ -3942,7 +3942,7 @@ void db_engine_notify_folder_deletion(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == parent_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -3958,7 +3958,7 @@ void db_engine_notify_folder_deletion(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_DELETED;
-		pdeleted_folder = static_cast<DB_NOTIFY_FOLDER_DELETED *>(common_util_alloc(sizeof(*pdeleted_folder)));
+		pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
 		if (NULL == pdeleted_folder) {
 			return;
 		}
@@ -4048,7 +4048,7 @@ static void db_engine_notify_content_table_modify_row(
 			datagram.dir = (char*)exmdb_server_get_dir();
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
-			pmodified_row = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(common_util_alloc(sizeof(*pmodified_row)));
+			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 			if (NULL == pmodified_row) {
 				return;
 			}
@@ -4611,7 +4611,7 @@ static void db_engine_notify_content_table_modify_row(
 						b_error = TRUE;
 						break;
 					}
-					prnode = static_cast<ROWINFO_NODE *>(common_util_alloc(sizeof(*prnode)));
+					prnode = cu_alloc<ROWINFO_NODE>();
 					if (NULL == prnode) {
 						sqlite3_finalize(pstmt);
 						sqlite3_finalize(pstmt1);
@@ -4625,7 +4625,7 @@ static void db_engine_notify_content_table_modify_row(
 				if (TRUE == b_error) {
 					break;
 				}
-				prnode = static_cast<ROWINFO_NODE *>(common_util_alloc(sizeof(*prnode)));
+				prnode = cu_alloc<ROWINFO_NODE>();
 				if (NULL == prnode) {
 					sqlite3_finalize(pstmt);
 					sqlite3_finalize(pstmt1);
@@ -4722,7 +4722,7 @@ static void db_engine_notify_content_table_modify_row(
 		}
 		continue;
 REFRESH_TABLE:
-		ptnode = static_cast<TABLE_NODE *>(common_util_alloc(sizeof(*ptnode)));
+		ptnode = cu_alloc<TABLE_NODE>();
 		if (NULL == ptnode) {
 			return;
 		}
@@ -4797,7 +4797,7 @@ void db_engine_notify_message_modification(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id &&
 			message_id == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -4813,7 +4813,7 @@ void db_engine_notify_message_modification(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_MODIFIED;
-		pmodified_mail = static_cast<DB_NOTIFY_MESSAGE_MODIFIED *>(common_util_alloc(sizeof(*pmodified_mail)));
+		pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
 		if (NULL == pmodified_mail) {
 			return;
 		}
@@ -4891,7 +4891,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 					datagram2.id_array.count = 1;
 					datagram2.db_notify.type =
 						DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED;
-					padded_row = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(common_util_alloc(sizeof(*padded_row)));
+					padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 					if (NULL == padded_row) {
 						return;
 					}
@@ -4976,7 +4976,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 				datagram1.id_array.count = 1;
 				datagram1.db_notify.type =
 					DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED;
-				pdeleted_row = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(common_util_alloc(sizeof(*pdeleted_row)));
+				pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 				if (NULL == pdeleted_row) {
 					return;
 				}
@@ -5004,7 +5004,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED;
-			pmodified_row = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(common_util_alloc(sizeof(*pmodified_row)));
+			pmodified_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
 			if (NULL == pmodified_row) {
 				return;
 			}
@@ -5057,7 +5057,7 @@ void db_engine_notify_folder_modification(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole ||
 			(pnsub->folder_id == folder_id
 			&& 0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -5073,7 +5073,7 @@ void db_engine_notify_folder_modification(DB_ITEM *pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_MODIFIED;
-		pmodified_folder = static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(common_util_alloc(sizeof(*pmodified_folder)));
+		pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
 		if (NULL == pmodified_folder) {
 			return;
 		}
@@ -5128,7 +5128,7 @@ void db_engine_notify_message_movecopy(DB_ITEM *pdb,
 		}
 		if (TRUE == pnsub->b_whole || (pnsub->folder_id == old_fid
 			&& pnsub->message_id == old_mid)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -5149,7 +5149,7 @@ void db_engine_notify_message_movecopy(DB_ITEM *pdb,
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_MESSAGE_MOVED;
 		}
-		pmvcp_mail = static_cast<DB_NOTIFY_MESSAGE_MVCP *>(common_util_alloc(sizeof(*pmvcp_mail)));
+		pmvcp_mail = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
 		if (NULL == pmvcp_mail) {
 			return;
 		}
@@ -5215,7 +5215,7 @@ void db_engine_notify_folder_movecopy(DB_ITEM *pdb,
 		if (TRUE == pnsub->b_whole || (pnsub->folder_id == folder_id &&
 			0 == pnsub->message_id) || (pnsub->folder_id == old_fid &&
 			0 == pnsub->message_id)) {
-			pidnode = static_cast<ID_NODE *>(common_util_alloc(sizeof(*pidnode)));
+			pidnode = cu_alloc<ID_NODE>();
 			if (NULL == pidnode) {
 				return;
 			}
@@ -5236,7 +5236,7 @@ void db_engine_notify_folder_movecopy(DB_ITEM *pdb,
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_FOLDER_MOVED;
 		}
-		pmvcp_folder = static_cast<DB_NOTIFY_FOLDER_MVCP *>(common_util_alloc(sizeof(*pmvcp_folder)));
+		pmvcp_folder = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
 		if (NULL == pmvcp_folder) {
 			return;
 		}
@@ -5315,7 +5315,7 @@ void db_engine_commit_batch_mode(DB_ITEM *pdb)
 	
 	table_num = double_list_get_nodes_num(&pdb->tables.table_list);
 	if (table_num > 0) {
-		ptable_ids = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * table_num));
+		ptable_ids = cu_alloc<uint32_t>(table_num);
 	} else {
 		ptable_ids = NULL;
 	}

@@ -210,8 +210,7 @@ BOOL exmdb_server_get_folder_class_table(
 		ptable->pparray = NULL;
 		return TRUE;
 	}
-	ptable->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-	                  sizeof(TPROPVAL_ARRAY *) * total_count));
+	ptable->pparray = cu_alloc<TPROPVAL_ARRAY *>(total_count);
 	if (NULL == ptable->pparray) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -224,21 +223,21 @@ BOOL exmdb_server_get_folder_class_table(
 	}
 	ptable->count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		ppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(*ppropvals)));
+		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		ppropvals->count = 3;
-		ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(3 * sizeof(TAGGED_PROPVAL)));
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 		if (NULL == ppropvals->ppropval) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		ppropvals->ppropval[0].proptag = PROP_TAG_FOLDERID;
-		ppropvals->ppropval[0].pvalue = common_util_alloc(sizeof(uint64_t));
+		ppropvals->ppropval[0].pvalue = cu_alloc<uint64_t>();
 		if (NULL == ppropvals->ppropval[0].pvalue) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -255,7 +254,7 @@ BOOL exmdb_server_get_folder_class_table(
 			return FALSE;
 		}
 		ppropvals->ppropval[2].proptag = PROP_TAG_LASTMODIFICATIONTIME;
-		ppropvals->ppropval[2].pvalue = common_util_alloc(sizeof(uint64_t));
+		ppropvals->ppropval[2].pvalue = cu_alloc<uint64_t>();
 		if (NULL == ppropvals->ppropval[2].pvalue) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -334,8 +333,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	}
 	pset->count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
-	                sizeof(TPROPVAL_ARRAY *) * pset->count));
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(pset->count);
 	if (NULL == pset->pparray) {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -366,7 +364,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		ppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(*ppropvals)));
+		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -376,7 +374,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		pset->pparray[i] = ppropvals;
 		ppropvals->count = 0;
-		ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 5));
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(5);
 		if (NULL == ppropvals->ppropval) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -386,8 +384,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		message_id = sqlite3_column_int64(pstmt, 0);
 		ppropvals->ppropval[ppropvals->count].proptag = PROP_TAG_MID;
-		ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_alloc(sizeof(uint64_t));
+		ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 		if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -430,8 +427,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 									PROP_TAG_MESSAGEFLAGS;
-			ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_alloc(sizeof(uint32_t));
+			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -450,8 +446,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			ppropvals->ppropval[ppropvals->count].proptag =
 							PROP_TAG_LASTMODIFICATIONTIME;
-			ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_alloc(sizeof(uint64_t));
+			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -470,8 +465,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			ppropvals->ppropval[ppropvals->count].proptag =
 								PROP_TAG_MESSAGEDELIVERYTIME;
-			ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_alloc(sizeof(uint64_t));
+			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -926,8 +920,7 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 		*pproptags = tmp_proptags;
 	} else {
 		pproptags->count = tmp_proptags.count + 1;
-		pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-		                      sizeof(uint32_t) * pproptags->count));
+		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -2716,7 +2709,7 @@ BOOL exmdb_server_get_search_criteria(
 			sqlite3_column_blob(pstmt, 2),
 			sqlite3_column_bytes(pstmt, 2),
 			common_util_alloc, 0);
-		*pprestriction = static_cast<RESTRICTION *>(common_util_alloc(sizeof(**pprestriction)));
+		*pprestriction = cu_alloc<RESTRICTION>();
 		if (NULL == *pprestriction) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -2883,7 +2876,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		if (0 == original_flags) {
 			goto CRITERIA_FAILURE;
 		}
-		prestriction = static_cast<RESTRICTION *>(common_util_alloc(sizeof(*prestriction)));
+		prestriction = cu_alloc<RESTRICTION>();
 		if (NULL == prestriction) {
 			goto CRITERIA_FAILURE;
 		}
@@ -2908,8 +2901,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	}
 	if (pfolder_ids->count > 0) {
 		folder_ids.count = 0;
-		folder_ids.pll = static_cast<uint64_t *>(common_util_alloc(
-		                 sizeof(uint64_t) * pfolder_ids->count));
+		folder_ids.pll = cu_alloc<uint64_t>(pfolder_ids->count);
 		if (NULL == folder_ids.pll) {
 			goto CRITERIA_FAILURE;
 		}

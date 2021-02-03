@@ -885,7 +885,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		pset->pparray = NULL;
 		return TRUE;
 	}
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * rcpt_num));
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(rcpt_num);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
@@ -913,7 +913,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		tmp_proptags[proptags.count] = PROP_TAG_ROWID;
 		proptags.count ++;
 		sqlite3_reset(pstmt1);
-		pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count] ||
 			FALSE == common_util_get_properties(
 			RECIPIENT_PROPERTIES_TABLE,
@@ -930,7 +930,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		ppropval = pset->pparray[pset->count]->ppropval;
 		pset->pparray[pset->count]->count ++;
 		ppropval->proptag = PROP_TAG_ROWID;
-		ppropval->pvalue = common_util_alloc(sizeof(uint32_t));
+		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -978,7 +978,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		return TRUE;
 	}
 	sqlite3_finalize(pstmt);
-	*ppbrief = static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(**ppbrief)));
+	*ppbrief = cu_alloc<MESSAGE_CONTENT>();
 	if (NULL == *ppbrief) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1000,7 +1000,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	(*ppbrief)->children.prcpts = static_cast<TARRAY_SET *>(common_util_alloc(sizeof(TARRAY_SET)));
+	(*ppbrief)->children.prcpts = cu_alloc<TARRAY_SET>();
 	if (NULL == (*ppbrief)->children.prcpts) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1010,7 +1010,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	(*ppbrief)->children.pattachments = static_cast<ATTACHMENT_LIST *>(common_util_alloc(sizeof(ATTACHMENT_LIST)));
+	(*ppbrief)->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
 	if (NULL == (*ppbrief)->children.pattachments) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1029,8 +1029,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	(*ppbrief)->children.pattachments->count = 0;
-	(*ppbrief)->children.pattachments->pplist = static_cast<ATTACHMENT_CONTENT **>(
-		common_util_alloc(sizeof(ATTACHMENT_CONTENT *) * count));
+	(*ppbrief)->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(count);
 	if (NULL == (*ppbrief)->children.pattachments->pplist) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1045,7 +1044,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[0] = PROP_TAG_ATTACHLONGFILENAME;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
-		pattachment = static_cast<ATTACHMENT_CONTENT *>(common_util_alloc(sizeof(*pattachment)));
+		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -1473,7 +1472,7 @@ BOOL exmdb_server_get_message_group_id(const char *dir,
 		*ppgroup_id = NULL;
 		return TRUE;
 	}
-	*ppgroup_id = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+	*ppgroup_id = cu_alloc<uint32_t>();
 	if (NULL == *ppgroup_id) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
@@ -1692,8 +1691,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 	db_engine_put_db(pdb);
 	pindices->count = ptmp_indices->count;
 	if (ptmp_indices->count > 0) {
-		pindices->pproptag = static_cast<uint32_t *>(common_util_alloc(
-		                     sizeof(uint32_t) * ptmp_indices->count));
+		pindices->pproptag = cu_alloc<uint32_t>(ptmp_indices->count);
 		if (NULL == pindices->pproptag) {
 			proptag_array_free(ptmp_indices);
 			proptag_array_free(ptmp_proptags);
@@ -1705,8 +1703,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 	proptag_array_free(ptmp_indices);
 	if (ptmp_proptags->count > 0) {
 		pungroup_proptags->count = ptmp_proptags->count;
-		pungroup_proptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
-		                              sizeof(uint32_t) * ptmp_proptags->count));
+		pungroup_proptags->pproptag = cu_alloc<uint32_t>(ptmp_proptags->count);
 		if (NULL == pungroup_proptags->pproptag) {
 			proptag_array_free(ptmp_proptags);
 			return FALSE;
@@ -2039,7 +2036,7 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 		*pptimer_id = NULL;
 		return TRUE;
 	}
-	*pptimer_id = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+	*pptimer_id = cu_alloc<uint32_t>();
 	if (NULL == *pptimer_id) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
@@ -2077,7 +2074,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		return TRUE;
 	}
 	sqlite3_finalize(pstmt);
-	*ppmsgctnt = static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(**ppmsgctnt)));
+	*ppmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (NULL == *ppmsgctnt) {
 		return FALSE;
 	}
@@ -2107,7 +2104,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		psqlite, &proptags, &(*ppmsgctnt)->proplist)) {
 		return FALSE;
 	}
-	(*ppmsgctnt)->children.prcpts = static_cast<TARRAY_SET *>(common_util_alloc(sizeof(TARRAY_SET)));
+	(*ppmsgctnt)->children.prcpts = cu_alloc<TARRAY_SET>();
 	if (NULL == (*ppmsgctnt)->children.prcpts) {
 		return FALSE;
 	}
@@ -2115,8 +2112,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		message_id, (*ppmsgctnt)->children.prcpts)) {
 		return FALSE;
 	}
-	(*ppmsgctnt)->children.pattachments = static_cast<ATTACHMENT_LIST *>(
-		common_util_alloc(sizeof(ATTACHMENT_LIST)));
+	(*ppmsgctnt)->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
 	if (NULL == (*ppmsgctnt)->children.pattachments) {
 		return FALSE;
 	}
@@ -2131,8 +2127,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	(*ppmsgctnt)->children.pattachments->count = 0;
-	(*ppmsgctnt)->children.pattachments->pplist = static_cast<ATTACHMENT_CONTENT **>(
-		common_util_alloc(sizeof(ATTACHMENT_CONTENT *) * count));
+	(*ppmsgctnt)->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(count);
 	if (NULL == (*ppmsgctnt)->children.pattachments->pplist) {
 		return FALSE;
 	}
@@ -2156,7 +2151,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 			sqlite3_finalize(pstmt1);
 			return FALSE;
 		}
-		pattachment = static_cast<ATTACHMENT_CONTENT *>(common_util_alloc(sizeof(ATTACHMENT_CONTENT)));
+		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -2182,7 +2177,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		ppropval = pattachment->proplist.ppropval;
 		pattachment->proplist.count ++;
 		ppropval->proptag = PROP_TAG_ATTACHNUMBER;
-		ppropval->pvalue = common_util_alloc(sizeof(uint32_t));
+		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -2246,8 +2241,7 @@ static BOOL message_rectify_message(const char *account,
 	static uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED; /* modified by common_util_set_properties */
 	
 	pmsgctnt1->proplist.count = 0;
-	pmsgctnt1->proplist.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                               sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 20)));
+	pmsgctnt1->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);
 	if (NULL == pmsgctnt1->proplist.ppropval) {
 		return FALSE;
 	}
@@ -2289,7 +2283,7 @@ static BOOL message_rectify_message(const char *account,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_SEARCHKEY)) {
-		pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
+		pbin = cu_alloc<BINARY>();
 		if (NULL == pbin) {
 			return FALSE;
 		}
@@ -2411,7 +2405,7 @@ static BOOL message_rectify_message(const char *account,
 	}
 	pbin1 = static_cast<BINARY *>(common_util_get_propvals(
 	        &pmsgctnt->proplist, PROP_TAG_CONVERSATIONINDEX));
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return FALSE;
 	}
@@ -2445,7 +2439,7 @@ static BOOL message_rectify_message(const char *account,
 		deconst(&fake_true);
 	pmsgctnt1->proplist.count ++;
 	if (NULL == pbin1) {
-		pbin1 = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin1)));
+		pbin1 = cu_alloc<BINARY>();
 		if (NULL == pbin1) {
 			return FALSE;
 		}
@@ -2504,15 +2498,13 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->children.pattachments = NULL;
 		return TRUE;
 	}
-	pmsgctnt1->children.pattachments = static_cast<ATTACHMENT_LIST *>(common_util_alloc(sizeof(ATTACHMENT_LIST)));
+	pmsgctnt1->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
 	if (NULL == pmsgctnt1->children.pattachments) {
 		return FALSE;
 	}
 	pmsgctnt1->children.pattachments->count =
 		pmsgctnt->children.pattachments->count;
-	pmsgctnt1->children.pattachments->pplist = static_cast<ATTACHMENT_CONTENT **>(
-		common_util_alloc(sizeof(ATTACHMENT_CONTENT *) *
-		pmsgctnt->children.pattachments->count));
+	pmsgctnt1->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt->children.pattachments->count);
 	if (NULL == pmsgctnt1->children.pattachments->pplist) {
 		return FALSE;
 	}
@@ -2521,14 +2513,13 @@ static BOOL message_rectify_message(const char *account,
 			pmsgctnt1->children.pattachments->pplist[i] =
 				pmsgctnt->children.pattachments->pplist[i];
 		} else {
-			pmsgctnt1->children.pattachments->pplist[i] = static_cast<ATTACHMENT_CONTENT *>(
-				common_util_alloc(sizeof(ATTACHMENT_CONTENT)));
+			pmsgctnt1->children.pattachments->pplist[i] = cu_alloc<ATTACHMENT_CONTENT>();
 			if (NULL == pmsgctnt1->children.pattachments->pplist[i]) {
 				return FALSE;
 			}
 			pmsgctnt1->children.pattachments->pplist[i]->proplist =
 				pmsgctnt->children.pattachments->pplist[i]->proplist;
-			pembedded = static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(*pembedded)));
+			pembedded = cu_alloc<MESSAGE_CONTENT>();
 			if (NULL == pembedded) {
 				return FALSE;
 			}
@@ -2996,7 +2987,7 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 		} else {
 			continue;
 		}
-		prnode = static_cast<RULE_NODE *>(common_util_alloc(sizeof(*prnode)));
+		prnode = cu_alloc<RULE_NODE>();
 		if (NULL == prnode) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -3116,7 +3107,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		if (NULL == pvalue) {
 			continue;
 		}
-		prnode = static_cast<RULE_NODE *>(common_util_alloc(sizeof(*prnode)));
+		prnode = cu_alloc<RULE_NODE>();
 		if (NULL == prnode) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -3408,7 +3399,7 @@ static BOOL message_make_deferred_error_message(
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
 		&propval, &b_result);
-	pmnode = static_cast<MESSAGE_NODE *>(common_util_alloc(sizeof(*pmnode)));
+	pmnode = cu_alloc<MESSAGE_NODE>();
 	if (NULL == pmnode) {
 		return FALSE;
 	}
@@ -3587,20 +3578,20 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return TRUE;
 		}
 	} else {
-		prcpts = static_cast<TARRAY_SET *>(common_util_alloc(sizeof(*prcpts)));
+		prcpts = cu_alloc<TARRAY_SET>();
 		if (NULL == prcpts) {
 			return FALSE;
 		}
 		prcpts->count = 1;
-		prcpts->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *)));
+		prcpts->pparray = cu_alloc<TPROPVAL_ARRAY *>(1);
 		if (NULL == prcpts->pparray) {
 			return FALSE;
 		}
-		*prcpts->pparray = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		*prcpts->pparray = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == *prcpts->pparray) {
 			return FALSE;
 		}
-		(*prcpts->pparray)->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 3));
+		(*prcpts->pparray)->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 		if (NULL == (*prcpts->pparray)->ppropval) {
 			return FALSE;
 		}
@@ -3618,7 +3609,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		}
 		(*prcpts->pparray)->ppropval[1].proptag =
 							PROP_TAG_RECIPIENTTYPE;
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -3734,7 +3725,7 @@ static BOOL message_bounce_message(const char *from_address,
 		return TRUE;
 	}
 	double_list_init(&tmp_list);
-	pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
+	pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -3772,12 +3763,12 @@ static BOOL message_recipient_blocks_to_list(uint32_t count,
 	
 	double_list_init(prcpt_list);
 	rcpts.count = count;
-	rcpts.pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
+	rcpts.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == rcpts.pparray) {
 		return FALSE;
 	}
 	for (i=0; i<count; i++) {
-		rcpts.pparray[i] = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		rcpts.pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == rcpts.pparray[i]) {
 			return FALSE;
 		}
@@ -3795,12 +3786,12 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 	
 	double_list_init(prcpt_list);
 	rcpts.count = count;
-	rcpts.pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
+	rcpts.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == rcpts.pparray) {
 		return FALSE;
 	}
 	for (i=0; i<count; i++) {
-		rcpts.pparray[i] = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
+		rcpts.pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == rcpts.pparray[i]) {
 			return FALSE;
 		}
@@ -4173,7 +4164,7 @@ static BOOL message_make_deferred_action_message(
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
 		&propval, &b_result);
-	pmnode = static_cast<MESSAGE_NODE *>(common_util_alloc(sizeof(*pmnode)));
+	pmnode = cu_alloc<MESSAGE_NODE>();
 	if (NULL == pmnode) {
 		return FALSE;
 	}
@@ -4394,11 +4385,11 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, message_size, 0)) {
 						return FALSE;
 					}
-					pnode1 = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode1)));
+					pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 					if (NULL == pnode1) {
 						return FALSE;
 					}
-					pnode1->pdata = common_util_alloc(sizeof(uint64_t));
+					pnode1->pdata = cu_alloc<uint64_t>();
 					if (NULL == pnode1->pdata) {
 						return FALSE;
 					}
@@ -4438,7 +4429,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					if (FALSE == exmdb_server_check_private()) {
 						continue;
 					}
-					pdnode = static_cast<DAM_NODE *>(common_util_alloc(sizeof(*pdnode)));
+					pdnode = cu_alloc<DAM_NODE>();
 					if (NULL == pdnode) {
 						return FALSE;
 					}
@@ -4479,7 +4470,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}
-				pdnode = static_cast<DAM_NODE *>(common_util_alloc(sizeof(*pdnode)));
+				pdnode = cu_alloc<DAM_NODE>();
 				if (NULL == pdnode) {
 					return FALSE;
 				}
@@ -4859,11 +4850,11 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					psqlite, message_size, 0)) {
 					return FALSE;
 				}
-				pnode1 = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode1)));
+				pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 				if (NULL == pnode1) {
 					return FALSE;
 				}
-				pnode1->pdata = common_util_alloc(sizeof(uint64_t));
+				pnode1->pdata = cu_alloc<uint64_t>();
 				if (NULL == pnode1->pdata) {
 					return FALSE;
 				}
@@ -5156,7 +5147,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			remove(tmp_path1);
 		}
 	} else {
-		pmnode = static_cast<MESSAGE_NODE *>(common_util_alloc(sizeof(*pmnode)));
+		pmnode = cu_alloc<MESSAGE_NODE>();
 		if (NULL == pmnode) {
 			return FALSE;
 		}
@@ -5274,12 +5265,12 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	}
 	double_list_init(&msg_list);
 	double_list_init(&folder_list);
-	pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
+	pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	pnode->pdata = common_util_alloc(sizeof(uint64_t));
+	pnode->pdata = cu_alloc<uint64_t>();
 	if (NULL == pnode->pdata) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -5288,8 +5279,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	double_list_append_as_tail(&folder_list, pnode);
 	tmp_msg = *pmsg;
 	if (TRUE == exmdb_server_check_private()) {
-		tmp_msg.proplist.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-		                            sizeof(TAGGED_PROPVAL) * (pmsg->proplist.count + 15)));
+		tmp_msg.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsg->proplist.count + 15);
 		if (NULL == tmp_msg.proplist.ppropval) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -5607,12 +5597,12 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	}
 	double_list_init(&msg_list);
 	double_list_init(&folder_list);
-	pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
+	pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	pnode->pdata = common_util_alloc(sizeof(uint64_t));
+	pnode->pdata = cu_alloc<uint64_t>();
 	if (NULL == pnode->pdata) {
 		db_engine_put_db(pdb);
 		return FALSE;

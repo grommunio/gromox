@@ -101,7 +101,7 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 		if (prange_node->high_value -
 			prange_node->low_value >=
 			IDSET_CACHE_MIN_RANGE) {
-			prange_node1 = static_cast<RANGE_NODE *>(common_util_alloc(sizeof(*prange_node1)));
+			prange_node1 = cu_alloc<RANGE_NODE>();
 			if (NULL == prange_node1) {
 				sqlite3_finalize(pstmt);
 				ics_free_idset_cache(pcache);
@@ -531,8 +531,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	pchg_mids->count = 0;
 	pupdated_mids->count = 0;
 	if (0 != count) {
-		pupdated_mids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
-		pchg_mids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
+		pupdated_mids->pids = cu_alloc<uint64_t>(count);
+		pchg_mids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pupdated_mids->pids || NULL == pchg_mids->pids) {
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
@@ -628,8 +628,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	sqlite3_finalize(pstmt1);
 	pdeleted_mids->count = enum_param.pdeleted_eids->count;
 	if (0 != enum_param.pdeleted_eids->count) {
-		pdeleted_mids->pids = static_cast<uint64_t *>(common_util_alloc(
-		                      sizeof(uint64_t) * pdeleted_mids->count));
+		pdeleted_mids->pids = cu_alloc<uint64_t>(pdeleted_mids->count);
 		if (NULL == pdeleted_mids->pids) {
 			eid_array_free(enum_param.pdeleted_eids);
 			eid_array_free(enum_param.pnolonger_mids);
@@ -647,8 +646,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	eid_array_free(enum_param.pdeleted_eids);
 	pnolonger_mids->count = enum_param.pnolonger_mids->count;
 	if (0 != enum_param.pnolonger_mids->count) {
-		pnolonger_mids->pids = static_cast<uint64_t *>(common_util_alloc(
-		                       sizeof(uint64_t) * pnolonger_mids->count));
+		pnolonger_mids->pids = cu_alloc<uint64_t>(pnolonger_mids->count);
 		if (NULL == pnolonger_mids->pids) {
 			eid_array_free(enum_param.pnolonger_mids);
 			db_engine_put_db(pdb);
@@ -682,7 +680,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (0 == count) {
 		pgiven_mids->pids = NULL;
 	} else {
-		pgiven_mids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
+		pgiven_mids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pgiven_mids->pids) {
 			sqlite3_close(psqlite);
 			ics_free_idset_cache(&cache);
@@ -724,13 +722,13 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			pread_mids->pids = NULL;
 			punread_mids->pids = NULL;
 		} else {
-			pread_mids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
+			pread_mids->pids = cu_alloc<uint64_t>(count);
 			if (NULL == pread_mids->pids) {
 				sqlite3_close(psqlite);
 				ics_free_idset_cache(&cache);
 				return FALSE;
 			}
-			punread_mids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
+			punread_mids->pids = cu_alloc<uint64_t>(count);
 			if (NULL == punread_mids->pids) {
 				sqlite3_close(psqlite);
 				ics_free_idset_cache(&cache);
@@ -858,11 +856,11 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 				continue;
 			}
 		}
-		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
+		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		pnode->pdata = common_util_alloc(sizeof(uint64_t));
+		pnode->pdata = cu_alloc<uint64_t>();
 		if (NULL == pnode->pdata) {
 			return FALSE;
 		}
@@ -1013,8 +1011,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	pfldchgs->count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	if (0 != pfldchgs->count) {
-		pfldchgs->pfldchgs = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(
-		                     sizeof(TPROPVAL_ARRAY) * pfldchgs->count));
+		pfldchgs->pfldchgs = cu_alloc<TPROPVAL_ARRAY>(pfldchgs->count);
 		if (NULL == pfldchgs->pfldchgs) {
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
@@ -1097,7 +1094,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	if (0 == count) {
 		pgiven_fids->pids = NULL;
 	} else {
-		pgiven_fids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * count));
+		pgiven_fids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pgiven_fids->pids) {
 			sqlite3_close(psqlite);
 			return FALSE;
@@ -1152,8 +1149,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_finalize(pstmt);
 	sqlite3_close(psqlite);
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
-	pdeleted_fids->pids = static_cast<uint64_t *>(common_util_alloc(
-	                      sizeof(uint64_t) * pdeleted_fids->count));
+	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
 		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;

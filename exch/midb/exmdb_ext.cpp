@@ -3033,8 +3033,7 @@ static int exmdb_ext_pull_get_search_criteria_response(
 	if (0 == tmp_byte) {
 		ppayload->get_search_criteria.prestriction = NULL;
 	} else {
-		ppayload->get_search_criteria.prestriction =
-			static_cast<RESTRICTION *>(common_util_alloc(sizeof(RESTRICTION)));
+		ppayload->get_search_criteria.prestriction = cu_alloc<RESTRICTION>();
 		if (NULL == ppayload->get_search_criteria.prestriction) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3101,8 +3100,7 @@ static int exmdb_ext_pull_get_message_brief_response(
 		ppayload->get_message_brief.pbrief = NULL;
 		return EXT_ERR_SUCCESS;
 	} else {
-		ppayload->get_message_brief.pbrief =
-			static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(MESSAGE_CONTENT)));
+		ppayload->get_message_brief.pbrief = cu_alloc<MESSAGE_CONTENT>();
 		if (NULL == ppayload->get_message_brief.pbrief) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3350,7 +3348,7 @@ static int exmdb_ext_pull_get_embedded_cn_response(EXT_PULL *pext,
 		ppayload->get_embedded_cn.pcn = nullptr;
 		return EXT_ERR_SUCCESS;
 	} else {
-		ppayload->get_embedded_cn.pcn = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t)));
+		ppayload->get_embedded_cn.pcn = cu_alloc<uint64_t>();
 		if (ppayload->get_embedded_cn.pcn == nullptr)
 			return EXT_ERR_ALLOC;
 		return ext_buffer_pull_uint64(pext, ppayload->get_embedded_cn.pcn);
@@ -3422,8 +3420,7 @@ static int exmdb_ext_pull_read_attachment_instance_response(
 		return status;
 	}
 	if (0 != tmp_byte) {
-		ppayload->read_attachment_instance.attctnt.pembedded =
-			static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(MESSAGE_CONTENT)));
+		ppayload->read_attachment_instance.attctnt.pembedded = cu_alloc<MESSAGE_CONTENT>();
 		if (NULL == ppayload->read_attachment_instance.attctnt.pembedded) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3595,8 +3592,7 @@ static int exmdb_ext_pull_get_message_group_id_response(
 		ppayload->get_message_group_id.pgroup_id = NULL;
 		return EXT_ERR_SUCCESS;
 	} else {
-		ppayload->get_message_group_id.pgroup_id =
-			static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+		ppayload->get_message_group_id.pgroup_id = cu_alloc<uint32_t>();
 		if (NULL == ppayload->get_message_group_id.pgroup_id) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3647,8 +3643,7 @@ static int exmdb_ext_pull_get_message_timer_response(
 		ppayload->get_message_timer.ptimer_id = NULL;
 		return EXT_ERR_SUCCESS;
 	} else {
-		ppayload->get_message_timer.ptimer_id =
-			static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+		ppayload->get_message_timer.ptimer_id = cu_alloc<uint32_t>();
 		if (NULL == ppayload->get_message_timer.ptimer_id) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3691,8 +3686,7 @@ static int exmdb_ext_pull_read_message_response(
 		ppayload->read_message.pmsgctnt = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->read_message.pmsgctnt =
-		static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(MESSAGE_CONTENT)));
+	ppayload->read_message.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (NULL == ppayload->read_message.pmsgctnt) {
 		return EXT_ERR_ALLOC;
 	}
@@ -4375,9 +4369,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->ptotal = NULL;
 		} else {
-			((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->ptotal =
-				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+			static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pnotify->db_notify.pdata)->ptotal = cu_alloc<uint32_t>();
 			if (NULL == ((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->ptotal) {
 				return EXT_ERR_ALLOC;	
@@ -4397,9 +4389,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->punread = NULL;
 		} else {
-			((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->punread =
-				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+			static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pnotify->db_notify.pdata)->punread = cu_alloc<uint32_t>();
 			if (NULL == ((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->punread) {
 				return EXT_ERR_ALLOC;	

@@ -318,7 +318,7 @@ char* common_util_dup(const char *pstr)
 	int len;
 	
 	len = strlen(pstr) + 1;
-	auto pstr1 = static_cast<char *>(common_util_alloc(len));
+	auto pstr1 = cu_alloc<char>(len);
 	if (NULL == pstr1) {
 		return NULL;
 	}
@@ -342,7 +342,7 @@ char* common_util_convert_copy(BOOL to_utf8,
 	}
 	in_len = strlen(pstring) + 1;
 	out_len = 2*in_len;
-	auto pstr_out = static_cast<char *>(common_util_alloc(out_len));
+	auto pstr_out = cu_alloc<char>(out_len);
 	if (NULL == pstr_out) {
 		return NULL;
 	}
@@ -371,13 +371,13 @@ STRING_ARRAY *common_util_convert_copy_string_array(
 {
 	int i;
 	
-	auto parray1 = static_cast<STRING_ARRAY *>(common_util_alloc(sizeof(STRING_ARRAY)));
+	auto parray1 = cu_alloc<STRING_ARRAY>();
 	if (NULL == parray1) {
 		return NULL;
 	}
 	parray1->count = parray->count;
 	if (0 != parray->count) {
-		parray1->ppstr = static_cast<char **>(common_util_alloc(sizeof(char *) * parray->count));
+		parray1->ppstr = cu_alloc<char *>(parray->count);
 		if (NULL == parray1->ppstr) {
 			return NULL;
 		}
@@ -805,7 +805,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	}
 	sqlite3_finalize(pstmt);
 	pproptags->count = i;
-	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * i));
+	pproptags->pproptag = cu_alloc<uint32_t>(i);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -833,7 +833,7 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 		return NULL;
 	}
 	sqlite3_finalize(pstmt);
-	auto ptmp_bin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto ptmp_bin = cu_alloc<BINARY>();
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}
@@ -1501,7 +1501,7 @@ static BINARY* common_util_to_folder_entryid(
 	rop_util_value_to_gc(folder_id, tmp_entryid.global_counter);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1558,7 +1558,7 @@ static BINARY* common_util_to_message_entryid(
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1773,7 +1773,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	if (FALSE == b_optimize) {
 		sqlite3_finalize(pstmt);
 	}
-	*ppmessage_flags = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+	*ppmessage_flags = cu_alloc<uint32_t>();
 	if (NULL == *ppmessage_flags) {
 		return FALSE;
 	}
@@ -1876,7 +1876,7 @@ static BOOL common_util_get_message_subject(
 	if (NULL == psubject_prefix) {
 		psubject_prefix = "";
 	}
-	pvalue = static_cast<char *>(common_util_alloc(strlen(pnormalized_subject) + strlen(psubject_prefix) + 1));
+	pvalue = cu_alloc<char>(strlen(pnormalized_subject) + strlen(psubject_prefix) + 1);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -2024,7 +2024,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
-	auto pbuff = static_cast<char *>(common_util_alloc(node_stat.st_size));
+	auto pbuff = cu_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -2087,7 +2087,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
-	auto pbuff = static_cast<char *>(common_util_alloc(node_stat.st_size));
+	auto pbuff = cu_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -2160,7 +2160,7 @@ static void* common_util_get_message_cid_value(
 		return NULL;
 	}
 	close(fd);
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -2218,7 +2218,7 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 		return NULL;
 	}
 	close(fd);
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -2266,8 +2266,7 @@ BOOL common_util_get_properties(int table_type,
 	TYPED_PROPVAL *ptyped;
 	
 	ppropvals->count = 0;
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -2294,8 +2293,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_STORESTATE:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2306,8 +2304,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_CONTENTCOUNT:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2318,8 +2315,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2330,8 +2326,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_INTERNETARTICLENUMBER:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2356,8 +2351,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_FOLDERID:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2376,8 +2370,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_PARENTFOLDERID:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2407,8 +2400,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_CHANGENUMBER:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2419,8 +2411,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_FOLDERFLAGS:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2431,8 +2422,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_SUBFOLDERS:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint8_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2448,8 +2438,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_CONTENTCOUNT:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2460,8 +2449,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2472,8 +2460,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_FOLDERCHILDCOUNT:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2484,8 +2471,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_CONTENTUNREADCOUNT:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2496,8 +2482,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_FOLDERTYPE:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2509,8 +2494,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_HASRULES:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint8_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2536,8 +2520,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_MESSAGESIZEEXTENDED:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2549,8 +2532,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2562,8 +2544,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2608,8 +2589,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2625,8 +2605,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(SVREID));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<SVREID>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2669,8 +2648,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_MESSAGESIZE:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint32_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2681,8 +2659,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_ASSOCIATED:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint8_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2699,8 +2676,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_CHANGENUMBER:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2711,8 +2687,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_READ:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint8_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2729,8 +2704,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_HASNAMEDPROPERTIES:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint8_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2747,8 +2721,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_HASATTACHMENTS:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint8_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2765,8 +2738,7 @@ BOOL common_util_get_properties(int table_type,
 			case PROP_TAG_MID:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(uint64_t));
+				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 					return FALSE;
 				}
@@ -2865,7 +2837,7 @@ BOOL common_util_get_properties(int table_type,
 		case ATTACHMENT_PROPERTIES_TABLE:
 			switch (pproptags->pproptag[i]) {
 			case PROP_TAG_RECORDKEY:
-				ptmp_bin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+				ptmp_bin = cu_alloc<BINARY>();
 				if (NULL == ptmp_bin) {
 					return FALSE;
 				}
@@ -3090,7 +3062,7 @@ BOOL common_util_get_properties(int table_type,
 			continue;
 		}
 		if (proptype == PT_UNSPECIFIED) {
-			ptyped = static_cast<TYPED_PROPVAL *>(common_util_alloc(sizeof(TYPED_PROPVAL)));
+			ptyped = cu_alloc<TYPED_PROPVAL>();
 			if (NULL == ptyped) {
 				if (FALSE == b_optimize) {
 					sqlite3_finalize(pstmt);
@@ -3128,14 +3100,14 @@ BOOL common_util_get_properties(int table_type,
 		} else {
 			switch (proptype) {
 			case PT_FLOAT:
-				pvalue = common_util_alloc(sizeof(float));
+				pvalue = cu_alloc<float>();
 				if (NULL != pvalue) {
 					*(float*)pvalue = sqlite3_column_double(pstmt, 0);
 				}
 				break;
 			case PT_DOUBLE:
 			case PT_APPTIME:
-				pvalue = common_util_alloc(sizeof(double));
+				pvalue = cu_alloc<double>();
 				if (NULL != pvalue) {
 					*(double*)pvalue = sqlite3_column_double(pstmt, 0);
 				}
@@ -3143,31 +3115,31 @@ BOOL common_util_get_properties(int table_type,
 			case PT_CURRENCY:
 			case PT_I8:
 			case PT_SYSTIME:
-				pvalue = common_util_alloc(sizeof(uint64_t));
+				pvalue = cu_alloc<uint64_t>();
 				if (NULL != pvalue) {
 					*(uint64_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
 			case PT_SHORT:
-				pvalue = common_util_alloc(sizeof(uint16_t));
+				pvalue = cu_alloc<uint16_t>();
 				if (NULL != pvalue) {
 					*(uint16_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
 			case PT_LONG:
-				pvalue = common_util_alloc(sizeof(uint32_t));
+				pvalue = cu_alloc<uint32_t>();
 				if (NULL != pvalue) {
 					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
 			case PT_BOOLEAN:
-				pvalue = common_util_alloc(sizeof(uint8_t));
+				pvalue = cu_alloc<uint8_t>();
 				if (NULL != pvalue) {
 					*(uint8_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
 			case PT_CLSID:
-				pvalue = common_util_alloc(sizeof(GUID));
+				pvalue = cu_alloc<GUID>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3183,7 +3155,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_SVREID:
-				pvalue = common_util_alloc(sizeof(SVREID));
+				pvalue = cu_alloc<SVREID>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3199,7 +3171,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_SRESTRICT:
-				pvalue = common_util_alloc(sizeof(RESTRICTION));
+				pvalue = cu_alloc<RESTRICTION>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3215,7 +3187,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_ACTIONS:
-				pvalue = common_util_alloc(sizeof(RULE_ACTIONS));
+				pvalue = cu_alloc<RULE_ACTIONS>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3232,7 +3204,7 @@ BOOL common_util_get_properties(int table_type,
 				break;
 			case PT_OBJECT:
 			case PT_BINARY: {
-				pvalue = common_util_alloc(sizeof(BINARY));
+				pvalue = cu_alloc<BINARY>();
 				auto bv = static_cast<BINARY *>(pvalue);
 				if (NULL != pvalue) {
 					bv->cb = sqlite3_column_bytes(pstmt, 0);
@@ -3248,7 +3220,7 @@ BOOL common_util_get_properties(int table_type,
 				break;
 			}
 			case PT_MV_SHORT:
-				pvalue = common_util_alloc(sizeof(SHORT_ARRAY));
+				pvalue = cu_alloc<SHORT_ARRAY>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3264,7 +3236,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_MV_LONG:
-				pvalue = common_util_alloc(sizeof(LONG_ARRAY));
+				pvalue = cu_alloc<LONG_ARRAY>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3280,7 +3252,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_MV_I8:
-				pvalue = common_util_alloc(sizeof(LONGLONG_ARRAY));
+				pvalue = cu_alloc<LONGLONG_ARRAY>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3297,7 +3269,7 @@ BOOL common_util_get_properties(int table_type,
 				break;
 			case PT_MV_STRING8:
 			case PT_MV_UNICODE:
-				pvalue = common_util_alloc(sizeof(STRING_ARRAY));
+				pvalue = cu_alloc<STRING_ARRAY>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3326,7 +3298,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_MV_CLSID:
-				pvalue = common_util_alloc(sizeof(GUID_ARRAY));
+				pvalue = cu_alloc<GUID_ARRAY>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3342,7 +3314,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_MV_BINARY:
-				pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+				pvalue = cu_alloc<BINARY_ARRAY>();
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
@@ -3756,7 +3728,7 @@ BOOL common_util_set_properties(int table_type,
 	STRING_ARRAY tmp_strings;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(sizeof(PROPERTY_PROBLEM) * ppropvals->count));
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
@@ -4262,7 +4234,7 @@ BOOL common_util_set_properties(int table_type,
 			if (0 != cpid) {
 				tmp_strings.count = ((STRING_ARRAY*)
 					ppropvals->ppropval[i].pvalue)->count;
-				tmp_strings.ppstr = static_cast<char **>(common_util_alloc(sizeof(char *) * tmp_strings.count));
+				tmp_strings.ppstr = cu_alloc<char *>(tmp_strings.count);
 				if (NULL == tmp_strings.ppstr) {
 					sqlite3_finalize(pstmt);
 					return FALSE;
@@ -4489,7 +4461,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	
 	switch (proptag) {
 	case PROP_TAG_RULEID:
-		*ppvalue = common_util_alloc(sizeof(uint64_t));
+		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -4548,7 +4520,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	case PROP_TAG_RULESTATE:
 	case PROP_TAG_RULELEVEL:
 	case PROP_TAG_RULEUSERFLAGS:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -4564,7 +4536,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		}
 		break;
 	case PROP_TAG_RULEPROVIDERDATA: {
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -4580,7 +4552,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		break;
 	}
 	case PROP_TAG_RULECONDITION:
-		*ppvalue = common_util_alloc(sizeof(RESTRICTION));
+		*ppvalue = cu_alloc<RESTRICTION>();
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -4597,7 +4569,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		}
 		break;
 	case PROP_TAG_RULEACTIONS:
-		*ppvalue = common_util_alloc(sizeof(RULE_ACTIONS));
+		*ppvalue = cu_alloc<RULE_ACTIONS>();
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -4649,7 +4621,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		break;
 	case PROP_TAG_MEMBERID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
-			*ppvalue = common_util_alloc(sizeof(uint64_t));
+			*ppvalue = cu_alloc<uint64_t>();
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
@@ -4685,7 +4657,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		return TRUE;
 	}
 	if (PROP_TAG_MEMBERID == proptag) {
-		*ppvalue = common_util_alloc(sizeof(uint64_t));
+		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -4749,7 +4721,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		}
 		break;
 	case PROP_TAG_MEMBERRIGHTS:
-		*ppvalue = common_util_alloc(sizeof(uint32_t));
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
@@ -4924,7 +4896,7 @@ BINARY* common_util_to_private_folder_entryid(
 	rop_util_get_gc_array(folder_id, tmp_entryid.global_counter);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -4968,7 +4940,7 @@ BINARY* common_util_to_private_message_entryid(
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -5069,7 +5041,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -5154,7 +5126,7 @@ static BINARY* common_util_get_message_parent_svrid(
 		psqlite, message_id, &folder_id)) {
 		return NULL;	
 	}
-	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -5199,7 +5171,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	}
 	pfolder_ids->count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	pfolder_ids->pll = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t)));
+	pfolder_ids->pll = cu_alloc<uint64_t>();
 	if (NULL == pfolder_ids->pll) {
 		return FALSE;
 	}
@@ -6235,8 +6207,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	char guid_string[64];
 	char name_string[2560];
 	
-	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(
-	                    sizeof(uint16_t) * ppropnames->count));
+	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
 	if (NULL == ppropids->ppropid) {
 		return FALSE;
 	}
@@ -6324,8 +6295,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 	char sql_string[128];
 	char temp_name[1024];
 	
-	ppropnames->ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
-	                        sizeof(PROPERTY_NAME) * ppropids->count));
+	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
 	if (NULL == ppropnames->ppropname) {
 		return FALSE;
 	}
@@ -6357,7 +6327,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 		}
 		if (0 == strncasecmp(ptoken, "LID=", 4)) {
 			ppropnames->ppropname[i].kind = MNID_ID;
-			ppropnames->ppropname[i].plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
+			ppropnames->ppropname[i].plid = cu_alloc<uint32_t>();
 			if (NULL == ppropnames->ppropname[i].plid) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -6523,7 +6493,7 @@ BOOL common_util_recipients_to_list(
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (i=0; i<prcpts->count; i++) {
-		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -6569,7 +6539,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
 	EXT_PUSH ext_push;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -6608,7 +6578,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	SIZED_XID xid;
 	BINARY *ptmp_bin;
 	
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -6766,7 +6736,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		}
 		return common_util_dup(static_cast<char *>(pvalue));
 	case PT_FLOAT:
-		pvalue = common_util_alloc(sizeof(float));
+		pvalue = cu_alloc<float>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6775,7 +6745,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		return pvalue;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		pvalue = common_util_alloc(sizeof(double));
+		pvalue = cu_alloc<double>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6785,7 +6755,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		pvalue = common_util_alloc(sizeof(uint64_t));
+		pvalue = cu_alloc<uint64_t>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6793,7 +6763,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 							pstmt, column_index);
 		return pvalue;
 	case PT_SHORT:
-		pvalue = common_util_alloc(sizeof(uint16_t));
+		pvalue = cu_alloc<uint16_t>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6801,7 +6771,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 							pstmt, column_index);
 		return pvalue;
 	case PT_LONG:
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6809,7 +6779,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 							pstmt, column_index);
 		return pvalue;
 	case PT_BOOLEAN:
-		pvalue = common_util_alloc(sizeof(uint8_t));
+		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6824,7 +6794,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		ext_buffer_pull_init(&ext_pull, pvalue,
 			sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
-		pvalue = common_util_alloc(sizeof(GUID));
+		pvalue = cu_alloc<GUID>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6840,7 +6810,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		ext_buffer_pull_init(&ext_pull, pvalue,
 			sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
-		pvalue = common_util_alloc(sizeof(SVREID));
+		pvalue = cu_alloc<SVREID>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -6853,7 +6823,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		if (sqlite3_column_bytes(pstmt, column_index) > 512) {
 			return NULL;
 		}
-		pvalue = common_util_alloc(sizeof(BINARY));
+		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return NULL;
 		}

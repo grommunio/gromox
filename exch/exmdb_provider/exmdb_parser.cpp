@@ -149,7 +149,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.check_mailbox_permission.username,
 			&presponse->payload.check_mailbox_permission.permission);
 	case exmdb_callid::GET_FOLDER_BY_CLASS:
-		presponse->payload.get_folder_by_class.str_explicit = static_cast<char *>(common_util_alloc(256));
+		presponse->payload.get_folder_by_class.str_explicit = cu_alloc<char>(256);
 		if (NULL == presponse->payload.get_folder_by_class.str_explicit) {
 			return FALSE;
 		}

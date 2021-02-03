@@ -1327,6 +1327,8 @@ extern void common_util_free(void);
 BOOL common_util_build_environment(const char *maildir);
 extern void common_util_free_environment(void);
 void* common_util_alloc(size_t size);
+template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
+template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
 extern BOOL common_util_switch_allocator(void);
 void common_util_set_maildir(const char *maildir);
 extern const char* common_util_get_maildir(void);

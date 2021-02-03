@@ -38,7 +38,7 @@ static int instance_get_raw(MESSAGE_CONTENT *mc, BINARY *&bin, unsigned int tag)
 	auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length);
 	if (content == nullptr)
 		return -1;
-	bin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	bin = cu_alloc<BINARY>();
 	if (bin == nullptr)
 		return -1;
 	bin->cb = length;
@@ -170,7 +170,7 @@ static int instance_get_body_unspec(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
 		return ret;
 
 	/* Strictly required to respond with the same proptag as was requested */
-	auto tpv = static_cast<TYPED_PROPVAL *>(common_util_alloc(sizeof(TYPED_PROPVAL)));
+	auto tpv = cu_alloc<TYPED_PROPVAL>();
 	if (tpv == nullptr)
 		return -1;
 	tpv->type   = unicode_body ? PT_UNICODE : PT_STRING8;
@@ -266,7 +266,7 @@ static int instance_get_html_unspec(MESSAGE_CONTENT *mc, unsigned int cpid,
 	auto ret = instance_get_html(mc, cpid, pval);
 	if (ret <= 0)
 		return ret;
-	auto tpv = static_cast<TYPED_PROPVAL *>(common_util_alloc(sizeof(TYPED_PROPVAL)));
+	auto tpv = cu_alloc<TYPED_PROPVAL>();
 	if (tpv == nullptr)
 		return -1;
 	auto &pv = pval->ppropval[pval->count];

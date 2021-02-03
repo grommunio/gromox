@@ -2358,7 +2358,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+			pnode = cu_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -2445,7 +2445,7 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
-		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -2719,7 +2719,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
+			pnode = cu_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				goto SYNC_FAILURE;
 			}
@@ -3586,7 +3586,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	}
 	double_list_init(&tmp_list);
 	while (SQLITE_ROW == (result = sqlite3_step(pstmt))) {
-		pinode = static_cast<IDL_NODE *>(common_util_alloc(sizeof(IDL_NODE)));
+		pinode = cu_alloc<IDL_NODE>();
 		if (NULL == pinode) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
@@ -5395,7 +5395,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		auto psm_node = static_cast<SIMU_NODE *>(common_util_alloc(sizeof(SIMU_NODE)));
+		auto psm_node = cu_alloc<SIMU_NODE>();
 		if (NULL == psm_node) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);

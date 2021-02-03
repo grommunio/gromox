@@ -151,7 +151,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
 	EXT_PUSH ext_push;
 
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -190,7 +190,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	SIZED_XID xid;
 	BINARY *ptmp_bin;
 
-	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}

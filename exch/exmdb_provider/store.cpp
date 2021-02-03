@@ -70,7 +70,7 @@ BOOL exmdb_server_get_all_named_propids(
 		ppropids->ppropid = NULL;
 		return TRUE;
 	}
-	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(sizeof(uint16_t) * total_count));
+	ppropids->ppropid = cu_alloc<uint16_t>(total_count);
 	if (NULL == ppropids->ppropid) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -619,11 +619,11 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_reset(pstmt_subfolder);
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
 	while (SQLITE_ROW == sqlite3_step(pstmt_subfolder)) {
-		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
+		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		pnode->pdata = common_util_alloc(sizeof(uint64_t));
+		pnode->pdata = cu_alloc<uint64_t>();
 		if (NULL == pnode->pdata) {
 			return FALSE;
 		}
