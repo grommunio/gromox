@@ -109,7 +109,9 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 				*pbin->pb = resp_buff[0];
 				return TRUE;
 			} else if (5 == read_len) {
-				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
+				uint32_t cb;
+				memcpy(&cb, resp_buff + 1, sizeof(cb));
+				pbin->cb = cb + 5;
 				pbin->pb = cu_alloc<uint8_t>(pbin->cb);
 				if (pbin->pb == nullptr)
 					return FALSE;
@@ -192,7 +194,9 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	}
 	response_code = tmp_bin.pb[0];
 	if (response_code == exmdb_response::SUCCESS) {
-		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
+		uint32_t cb;
+		memcpy(&cb, tmp_bin.pb + 1, sizeof(cb));
+		if (tmp_bin.cb != 5 || cb != 0) {
 			common_util_free_environment();
 			printf("[exmdb_client]: response format error "
 				"when connect to %s:%d for prefix \"%s\"\n",
