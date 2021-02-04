@@ -118,7 +118,6 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 {
 	int i, num;
-	BOOL b_listen;
 	ACL_ITEM *pacl;
 	int listen_port;
 	LIST_FILE *plist;

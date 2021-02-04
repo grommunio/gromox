@@ -1412,13 +1412,6 @@ static void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
 		*plist_privilege = obj->list_priv;
 }
 
-static void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
-{
-	if (FALSE == system_services_get_lang(codepage, "mlist", str_title, 256)) {
-		strcpy(str_title, "Address List");
-	}
-}
-
 static void ab_tree_get_server_dn(
 	SIMPLE_TREE_NODE *pnode, char *dn, int length)
 {
@@ -1624,8 +1617,6 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	void *pvalue;
 	char dn[1280]{};
 	GUID temp_guid;
-	time_t tmp_time;
-	struct tm tmp_tm;
 	uint8_t node_type;
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID ab_entryid;
