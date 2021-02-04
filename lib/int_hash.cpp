@@ -288,8 +288,7 @@ int int_hash_remove(INT_HASH_TABLE* ptbl, int key)
 		return -2;
 	}
 
-DONE:
-
+ DONE:
 	double_list_remove(&(ptbl->hash_map[index]), next);
 	double_list_remove(&(ptbl->iter_list), 
 				&(((INT_HASH_ITEM*)next->pdata)->iter_node));

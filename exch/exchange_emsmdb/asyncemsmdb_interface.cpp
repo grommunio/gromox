@@ -287,7 +287,7 @@ static void *thread_work_func(void *param)
 		pthread_mutex_lock(&g_cond_mutex);
 		pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
 		pthread_mutex_unlock(&g_cond_mutex);
-NEXT_WAKEUP:
+ NEXT_WAKEUP:
 		if (TRUE == g_notify_stop) {
 			break;
 		}

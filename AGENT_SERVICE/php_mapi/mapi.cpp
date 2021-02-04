@@ -819,7 +819,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	ext_pack_push_free(&push_ctx);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -850,7 +850,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 	add_assoc_string(return_value, "address", oneoff_entry.pmail_address);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -910,7 +910,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -971,7 +971,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1033,7 +1033,7 @@ ZEND_FUNCTION(mapi_openentry)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1069,7 +1069,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_addressbook);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1137,7 +1137,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1189,7 +1189,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 	RETVAL_ZVAL(&pzrowset, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
  	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1224,7 +1224,7 @@ ZEND_FUNCTION(mapi_ab_getdefaultdir)
 	RETVAL_STRINGL(reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1267,7 +1267,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1316,7 +1316,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_msgstore);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1371,7 +1371,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_property);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1433,7 +1433,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1495,7 +1495,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1542,7 +1542,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1586,7 +1586,7 @@ ZEND_FUNCTION(mapi_folder_deletemessages)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1638,7 +1638,7 @@ ZEND_FUNCTION(mapi_folder_copymessages)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1682,7 +1682,7 @@ ZEND_FUNCTION(mapi_folder_setreadflags)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1743,7 +1743,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1784,7 +1784,7 @@ ZEND_FUNCTION(mapi_folder_deletefolder)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1821,7 +1821,7 @@ ZEND_FUNCTION(mapi_folder_emptyfolder)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1875,7 +1875,7 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1905,7 +1905,7 @@ ZEND_FUNCTION(mapi_msgstore_createentryid)
 	RETVAL_STRINGL(reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -1974,7 +1974,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2025,7 +2025,7 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	RETVAL_STRINGL(reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2084,7 +2084,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 	RETVAL_LONG(sub_id);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2120,7 +2120,7 @@ ZEND_FUNCTION(mapi_msgstore_unadvise)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2187,7 +2187,7 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 	RETVAL_ZVAL(&pznotifications, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 	return;
-RETURN_EXCEPTION:
+ RETURN_EXCEPTION:
 	sleep(1);
 }
 
@@ -2252,7 +2252,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	RETVAL_ZVAL(&pzrowset, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2311,7 +2311,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	RETVAL_ZVAL(&pzrowset, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2355,7 +2355,7 @@ ZEND_FUNCTION(mapi_table_setcolumns)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2395,7 +2395,7 @@ ZEND_FUNCTION(mapi_table_seekrow)
 	RETVAL_LONG(rows_sought);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2438,7 +2438,7 @@ ZEND_FUNCTION(mapi_table_sort)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2474,7 +2474,7 @@ ZEND_FUNCTION(mapi_table_getrowcount)
 	RETVAL_LONG(count);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2519,7 +2519,7 @@ ZEND_FUNCTION(mapi_table_restrict)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2567,7 +2567,7 @@ ZEND_FUNCTION(mapi_table_findrow)
 	RETVAL_LONG(row_idx);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2603,7 +2603,7 @@ ZEND_FUNCTION(mapi_table_createbookmark)
 	RETVAL_LONG(bookmark);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2639,7 +2639,7 @@ ZEND_FUNCTION(mapi_table_freebookmark)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2693,7 +2693,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2737,7 +2737,7 @@ ZEND_FUNCTION(mapi_message_modifyrecipients)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2771,7 +2771,7 @@ ZEND_FUNCTION(mapi_message_submitmessage)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2816,7 +2816,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2862,7 +2862,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2909,7 +2909,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2948,7 +2948,7 @@ ZEND_FUNCTION(mapi_message_deleteattach)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -2980,7 +2980,7 @@ ZEND_FUNCTION(mapi_stream_read)
 	RETVAL_STRINGL(static_cast<const char *>(pbuff), actual_bytes);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3011,7 +3011,7 @@ ZEND_FUNCTION(mapi_stream_seek)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3040,7 +3040,7 @@ ZEND_FUNCTION(mapi_stream_setsize)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3069,7 +3069,7 @@ ZEND_FUNCTION(mapi_stream_commit)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3099,7 +3099,7 @@ ZEND_FUNCTION(mapi_stream_write)
 	RETVAL_LONG(written_len);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3125,7 +3125,7 @@ ZEND_FUNCTION(mapi_stream_stat)
 	add_assoc_long(return_value, "cb", stream_size);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3145,7 +3145,7 @@ ZEND_FUNCTION(mapi_stream_create)
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3248,7 +3248,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3293,7 +3293,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3330,7 +3330,7 @@ ZEND_FUNCTION(mapi_message_setreadflag)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3378,7 +3378,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3427,7 +3427,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3504,7 +3504,7 @@ ZEND_FUNCTION(mapi_setprops)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3603,7 +3603,7 @@ ZEND_FUNCTION(mapi_copyto)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3680,7 +3680,7 @@ ZEND_FUNCTION(mapi_savechanges)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -3750,7 +3750,7 @@ ZEND_FUNCTION(mapi_deleteprops)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4005,7 +4005,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4135,7 +4135,7 @@ ZEND_FUNCTION(mapi_getprops)
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4208,7 +4208,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4301,7 +4301,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	RETVAL_STRINGL(pbuff, offset);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4347,7 +4347,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 				presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4403,7 +4403,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 	add_assoc_long(return_value, "searchstate", search_state);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4467,7 +4467,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4510,7 +4510,7 @@ ZEND_FUNCTION(mapi_folder_modifyrules)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4582,7 +4582,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4679,7 +4679,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	MAPI_G(hr) = ecSuccess;
 	RETVAL_TRUE;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4741,7 +4741,7 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	RETVAL_STRING(presult_string);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -4826,7 +4826,7 @@ ZEND_FUNCTION(mapi_exportchanges_config)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5095,7 +5095,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5133,7 +5133,7 @@ ZEND_FUNCTION(mapi_exportchanges_updatestate)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5160,7 +5160,7 @@ ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5198,7 +5198,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_config)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5236,7 +5236,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5289,7 +5289,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5336,7 +5336,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5374,7 +5374,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5421,7 +5421,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_config)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5461,7 +5461,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5501,7 +5501,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5541,7 +5541,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5572,7 +5572,7 @@ ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 		pctx, le_mapi_importcontentschanges);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5603,7 +5603,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 		pctx, le_mapi_importhierarchychanges);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5651,7 +5651,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5697,7 +5697,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5743,7 +5743,7 @@ ZEND_FUNCTION(mapi_icaltomapi)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5783,7 +5783,7 @@ ZEND_FUNCTION(mapi_mapitoical)
 	RETVAL_STRINGL(reinterpret_cast<const char *>(ical_bin.pb), ical_bin.cb);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5826,7 +5826,7 @@ ZEND_FUNCTION(mapi_vcftomapi)
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -5866,7 +5866,7 @@ ZEND_FUNCTION(mapi_mapitovcf)
 	RETVAL_STRINGL(reinterpret_cast<const char *>(vcf_bin.pb), vcf_bin.cb);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -6020,7 +6020,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	add_assoc_long(return_value, "privilege", privilege_bits);
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -6050,7 +6050,7 @@ ZEND_FUNCTION(nsp_setuserpasswd)
 	}
 	RETVAL_TRUE;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
@@ -6091,7 +6091,7 @@ ZEND_FUNCTION(mapi_linkmessage)
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;
-THROW_EXCEPTION:
+ THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));

@@ -764,7 +764,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	sqlite3_close(psqlite);
 	ics_free_idset_cache(&cache);
 	return TRUE;
-QUERY_FAILURE:
+ QUERY_FAILURE:
 	if (NULL != pstmt) {
 		sqlite3_finalize(pstmt);
 	}

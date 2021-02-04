@@ -1887,7 +1887,7 @@ uint32_t rop_syncimportdeletes(
 				&b_partial) || TRUE == b_partial) {
 				return ecError;
 			}
-DELETE_FOLDER:
+ DELETE_FOLDER:
 			if (FALSE == exmdb_client_delete_folder(
 				logon_object_get_dir(plogon), pinfo->cpid,
 				eid, b_hard, &b_result) || FALSE == b_result) {

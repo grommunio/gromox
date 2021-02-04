@@ -381,7 +381,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	pentity->pflusher->flush_ptr = NULL;
 	return TRUE;
 
-REMOVE_MESS:
+ REMOVE_MESS:
 	fclose(fp);
     pentity->pflusher->flush_ptr = NULL;
     sprintf(name, "%s/mess/%d", g_path, pentity->pflusher->flush_ID);

@@ -825,7 +825,7 @@ static int ftstream_parser_read_element(
 	}
 	return FTSTREAM_PARSER_READ_FAIL;
 	
-CONTINUE_WAITING:
+ CONTINUE_WAITING:
 	pstream->offset = origin_offset;
 	return FTSTREAM_PARSER_READ_CONTINUE;
 }

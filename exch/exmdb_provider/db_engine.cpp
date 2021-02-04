@@ -677,7 +677,7 @@ static void *thread_work_func(void *param)
 		pthread_mutex_lock(&g_cond_mutex);
 		pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
 		pthread_mutex_unlock(&g_cond_mutex);
-NEXT_SEARCH:
+ NEXT_SEARCH:
 		if (TRUE == g_notify_stop) {
 			break;
 		}
@@ -2055,7 +2055,7 @@ static void db_engine_notify_content_table_add_row(
 						b_break = TRUE;
 					}
 					break;
-MATCH_SUB_HEADER:
+ MATCH_SUB_HEADER:
 					parent_id = row_id1;
 				}
 				if (TRUE == b_break) {
@@ -2485,7 +2485,7 @@ MATCH_SUB_HEADER:
 			pstmt3 = NULL;
 		}
 	}
-ADD_CONTENT_ROW_FAIL:
+ ADD_CONTENT_ROW_FAIL:
 	if (NULL != padded_row) {
 		common_util_end_message_optimize();
 	}
@@ -2930,7 +2930,7 @@ static void db_engine_notify_hierarchy_table_add_row(
 			padded_row->after_folder_id = folder_id1;
 		} else {
 			depth = 1;
-APPEND_END_OF_TABLE:
+ APPEND_END_OF_TABLE:
 			sprintf(sql_string, "INSERT INTO t%u (folder_id,"
 				" depth) VALUES (%llu, %u)", ptable->table_id,
 				LLU(folder_id), depth);
@@ -4721,7 +4721,7 @@ static void db_engine_notify_content_table_modify_row(
 			sqlite3_finalize(pstmt1);
 		}
 		continue;
-REFRESH_TABLE:
+ REFRESH_TABLE:
 		ptnode = cu_alloc<TABLE_NODE>();
 		if (NULL == ptnode) {
 			return;

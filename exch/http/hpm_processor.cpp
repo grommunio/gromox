@@ -676,7 +676,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			size = STREAM_BLOCK_SIZE;
 		}
 	} else {
-CHUNK_BEGIN:
+ CHUNK_BEGIN:
 		if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
 			size = stream_peek_buffer(&phttp->stream_in, tmp_buff, 1024);
 			if (size < 5) {

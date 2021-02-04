@@ -128,7 +128,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 		tag_access |= TAG_ACCESS_DELETE;	
 	}
 	
-PERMISSION_CHECK:
+ PERMISSION_CHECK:
 	if (0 == (TAG_ACCESS_READ & tag_access)) {
 		return ecAccessDenied;
 	}

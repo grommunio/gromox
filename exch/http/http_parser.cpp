@@ -461,7 +461,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	VIRTUAL_CONNECTION *pvconnection;
 	
 
-CONTEXT_PROCESSING:
+ CONTEXT_PROCESSING:
 	if (SCHED_STAT_INITSSL == pcontext->sched_stat) {
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
@@ -1796,7 +1796,7 @@ CONTEXT_PROCESSING:
 		return PROCESS_POLLING_RDONLY;
 	}
 	
-BAD_HTTP_REQUEST:
+ BAD_HTTP_REQUEST:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
 		hpm_processor_put_context(pcontext);
 	} else if (NULL != pcontext->pfast_context) {
@@ -1819,7 +1819,7 @@ BAD_HTTP_REQUEST:
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	goto CONTEXT_PROCESSING;
 
-INTERNAL_SERVER_ERROR:
+ INTERNAL_SERVER_ERROR:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
 		hpm_processor_put_context(pcontext);
 	} else if (NULL != pcontext->pfast_context) {
@@ -1842,7 +1842,7 @@ INTERNAL_SERVER_ERROR:
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	goto CONTEXT_PROCESSING;
 	
-REQUEST_TIME_OUT:
+ REQUEST_TIME_OUT:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
 		hpm_processor_put_context(pcontext);
 	} else if (NULL != pcontext->pfast_context) {
@@ -1865,7 +1865,7 @@ REQUEST_TIME_OUT:
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	goto CONTEXT_PROCESSING;
 	
-END_PROCESSING:
+ END_PROCESSING:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
 		hpm_processor_put_context(pcontext);
 	} else if (NULL != pcontext->pfast_context) {
@@ -2207,7 +2207,7 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 	} else {
 		return FALSE;
 	}
-RETRY_QUERY:
+ RETRY_QUERY:
 	pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, conn_cookie);
 	if (NULL == pvconnection) {

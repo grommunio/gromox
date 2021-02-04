@@ -1181,7 +1181,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			}
 			folder_id = *(uint64_t*)pvalue;
 		}
-CHECK_LOC:
+ CHECK_LOC:
 		if (b_private != store_object_check_private(pstore) ||
 			account_id != store_object_get_account_id(pstore)) {
 			zarafa_server_put_user_info(pinfo);
@@ -1240,7 +1240,7 @@ CHECK_LOC:
 			(permission & PERMISSION_DELETEOWNED))) {
 			tag_access |= TAG_ACCESS_DELETE;	
 		}
-PERMISSION_CHECK:
+ PERMISSION_CHECK:
 		if (0 == (TAG_ACCESS_READ & tag_access)) {
 			zarafa_server_put_user_info(pinfo);
 			return ecAccessDenied;
@@ -3098,7 +3098,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 			return ecSuccess;
 		}
 	}
-DELETE_FOLDER:
+ DELETE_FOLDER:
 	if (FALSE == exmdb_client_delete_folder(
 		store_object_get_dir(pstore),
 		pinfo->cpid, folder_id, b_hard,
@@ -7090,7 +7090,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
 			}
-DELETE_FOLDER:
+ DELETE_FOLDER:
 			if (FALSE == exmdb_client_delete_folder(
 				store_object_get_dir(pstore), pinfo->cpid,
 				eid, b_hard, &b_result) || FALSE == b_result) {

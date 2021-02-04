@@ -414,7 +414,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	}
 	gettimeofday(&current_time, NULL);
 	if (0 == read_len) {
-LOST_READ:
+ LOST_READ:
 		if (NULL != pcontext->connection.ssl) {
 			SSL_shutdown(pcontext->connection.ssl);
 			SSL_free(pcontext->connection.ssl);
@@ -504,7 +504,7 @@ LOST_READ:
 	}
 	return PROCESS_CONTINUE;
 	
-ERROR_TRANSPROT:
+ ERROR_TRANSPROT:
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, "\r\n.\r\n", 5);
 	} else {
@@ -520,7 +520,7 @@ ERROR_TRANSPROT:
 	pcontext->data_stat = FALSE;
 	return PROCESS_CONTINUE;
 
-END_TRANSPORT:
+ END_TRANSPORT:
 	if (pcontext->message_fd != -1) {
 		close(pcontext->message_fd);
 		pcontext->message_fd = -1;

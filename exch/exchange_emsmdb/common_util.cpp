@@ -2417,7 +2417,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		pvalue = common_util_get_propvals(
 			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
-CONVERT_ENTRYID:
+ CONVERT_ENTRYID:
 			pvalue = common_util_get_propvals(
 				prcpts->pparray[i], PROP_TAG_ENTRYID);
 			if (NULL == pvalue) {

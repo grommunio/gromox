@@ -657,11 +657,11 @@ static void *thread_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 
 
-WAIT_CLIFD:
+ WAIT_CLIFD:
 	pthread_mutex_lock(&g_cond_mutex);
 	pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
 	pthread_mutex_unlock(&g_cond_mutex);
-NEXT_CLIFD:
+ NEXT_CLIFD:
 	pthread_mutex_lock(&g_conn_lock);
 	pnode = double_list_pop_front(&g_conn_list);
 	pthread_mutex_unlock(&g_conn_lock);

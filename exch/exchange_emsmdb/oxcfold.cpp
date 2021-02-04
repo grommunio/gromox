@@ -463,7 +463,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 			return ecSuccess;
 		}
 	}
-DELETE_FOLDER:
+ DELETE_FOLDER:
 	if (FALSE == exmdb_client_delete_folder(
 		logon_object_get_dir(plogon), pinfo->cpid,
 		folder_id, b_hard, &b_done)) {

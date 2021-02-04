@@ -637,7 +637,7 @@ void mem_file_clear(MEM_FILE *pfile)
 		lib_buffer_put(pfile->allocator, pnode);
 		pnode = double_list_get_tail(&pfile->list);
 	}
-CLEAR_RETRUN:
+ CLEAR_RETRUN:
 	pfile->wr_block_pos		   = 0;
 	pfile->wr_total_pos		   = 0;
 	pfile->rd_block_pos		   = 0;

@@ -361,7 +361,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	papprecurr->recurrencepattern.startdate =
 			rop_util_unix_to_nttime(tmp_time)/600000000;
 	if (ical_rrule_endless(&irrule)) {
-SET_INFINITIVE:
+ SET_INFINITIVE:
 		papprecurr->recurrencepattern.endtype = ENDTYPE_NEVER_END;
 		papprecurr->recurrencepattern.occurrencecount = 0x0000000A;
 		papprecurr->recurrencepattern.enddate = ENDDATE_MISSING;
@@ -1385,7 +1385,7 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(pvalue1, "DATE")) {
-PARSE_DATE_VALUE:
+ PARSE_DATE_VALUE:
 		memset(pitime, 0, sizeof(ICAL_TIME));
 		if (!ical_parse_date(pvalue, &pitime->year,
 		    &pitime->month, &pitime->day))
@@ -1450,7 +1450,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 		return FALSE;
 	memcpy(globalobjectid.data.pb, ThirdPartyGlobalId, 12);
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
-MAKE_GLOBALOBJID:
+ MAKE_GLOBALOBJID:
 	ext_buffer_push_init(&ext_push, tmp_buff, 1024, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 		&ext_push, &globalobjectid)) {
@@ -3559,7 +3559,7 @@ MESSAGE_CONTENT* oxcical_import(
 	    deconst(pical), events_list.front()->list, alloc, get_propids,
 	    username_to_entryid, pmsg, nullptr, nullptr, nullptr, nullptr))
 		return pmsg;
-IMPORT_FAILURE:
+ IMPORT_FAILURE:
 	message_content_free(pmsg);
 	return NULL;
 }
@@ -3908,7 +3908,7 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 		pvalue = tpropval_array_get_propval(
 				prcpt, PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
-FIND_ENTRYID:
+ FIND_ENTRYID:
 			pvalue = tpropval_array_get_propval(
 				prcpt, PROP_TAG_ENTRYID);
 			if (NULL == pvalue) {
@@ -5135,7 +5135,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 			}
 		} else {
-EXPORT_TZDEFINITION:
+ EXPORT_TZDEFINITION:
 			propname.kind = MNID_ID;
 			propname.plid = &lid;
 			rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
@@ -5202,7 +5202,7 @@ EXPORT_TZDEFINITION:
 		}
 	}
 	
-EXPORT_VEVENT:
+ EXPORT_VEVENT:
 	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);

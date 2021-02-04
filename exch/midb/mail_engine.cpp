@@ -636,10 +636,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 		{sp--;TREE=trees[sp];NODE=nodes[sp];CONJUNCTION=conjunctions[sp];RESULT=results[sp];}
 
 /* begine of rescursion procedure */
-
-while (TRUE) {
-
-PROC_BEGIN:
+	while (TRUE) {
+ PROC_BEGIN:
 	b_result = TRUE;
 	b_loaded = FALSE;
 	for (pnode=double_list_get_head(ptree);	NULL!=pnode;
@@ -1151,7 +1149,7 @@ PROC_BEGIN:
 			}
 		}
 		
-RECURSION_POINT:
+ RECURSION_POINT:
 		switch (conjunction) {
 		case CONJUNCTION_AND:
 			b_result = (b_result&&b_result1)?TRUE:FALSE;
@@ -2756,7 +2754,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	time(&pidb->load_time);
 	return TRUE;
 
-SYNC_FAILURE:
+ SYNC_FAILURE:
 	if (NULL != pstmt) {
 		sqlite3_finalize(pstmt);
 	}
@@ -6403,7 +6401,7 @@ static BOOL mail_engine_add_notification_folder(
 	tmp_proptags[2] = PROP_TAG_CONTAINERCLASS;
 	tmp_proptags[3] = PROP_TAG_ATTRIBUTEHIDDEN;
 	b_wait = FALSE;
-REQUERY_FOLDER:
+ REQUERY_FOLDER:
 	if (FALSE == exmdb_client_get_folder_properties(
 		common_util_get_maildir(), 0,
 		rop_util_make_eid_ex(1, folder_id),
@@ -6720,7 +6718,7 @@ static void mail_engine_modify_notification_message(
 	}
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MIDSTRING);
 	if (NULL != pvalue) {
-UPDATE_MESSAGE_FLAGS:
+ UPDATE_MESSAGE_FLAGS:
 		if (message_flags & MESSAGE_FLAG_UNSENT) {
 			b_unsent = 1;
 		} else {

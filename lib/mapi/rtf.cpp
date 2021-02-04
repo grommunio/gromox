@@ -3641,7 +3641,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	rtf_stack_list_free_node(preader);
 	return true;
 	
-CONVERT_FAILURE:
+ CONVERT_FAILURE:
 	if (b_picture_push)
 		ext_buffer_push_free(&picture_push);
 	return false;

@@ -363,7 +363,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 	single_list_append_as_tail(plist, &presource->node);
 	return;
 
-FREE_RESOURCE:
+ FREE_RESOURCE:
 	for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
 		if (NULL != presource->content[i]) {
 			free(presource->content[i]);

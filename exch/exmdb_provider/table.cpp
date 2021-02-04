@@ -197,7 +197,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 		}
 		(*prow_count) ++;
 		sqlite3_reset(pstmt);
-LOAD_SUBFOLDER:
+ LOAD_SUBFOLDER:
 		if (table_flags & TABLE_FLAG_DEPTH) {
 			if (FALSE == table_load_hierarchy(
 				psqlite, folder_id1, username, table_flags,
@@ -1184,7 +1184,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
 					goto LOAD_CONTENT_FAIL;
 				if (NULL == pvalue) {
-BIND_NULL_INSTANCE:
+ BIND_NULL_INSTANCE:
 					sqlite3_bind_null(pstmt1, multi_index);
 					sqlite3_bind_int64(pstmt1, tag_count + 3, 0);
 					if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1409,7 +1409,7 @@ BIND_NULL_INSTANCE:
 	table_sum_table_count(pdb, table_id, prow_count); 
 	return TRUE;
 	
-LOAD_CONTENT_FAIL:
+ LOAD_CONTENT_FAIL:
 	if (NULL != pstmt) {
 		sqlite3_finalize(pstmt);
 	}
@@ -4939,7 +4939,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	sqlite3_finalize(pstmt1);
 	sqlite3_exec(pdb->tables.psqlite,
 		"COMMIT TRANSACTION", NULL, NULL, NULL);
-RESTORE_POSITION:
+ RESTORE_POSITION:
 	if (0 != message_id) {
 		sprintf(sql_string, "SELECT idx FROM t%u WHERE "
 				"inst_id=%llu AND inst_num=%llu", ptnode->table_id,

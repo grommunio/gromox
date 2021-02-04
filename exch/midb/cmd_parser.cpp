@@ -122,8 +122,7 @@ int cmd_parser_run()
 
 	return 0;
 
-FAILURE_EXIT:
-
+ FAILURE_EXIT:
 	for (i-=1; i>=0; i--) {
 		pthread_cancel(g_thread_ids[i]);
 	}
@@ -200,7 +199,7 @@ static void *thread_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 	char buffer[CONN_BUFFLEN];
 
-NEXT_LOOP:
+ NEXT_LOOP:
 	if (TRUE == g_notify_stop) {
 		pthread_exit(0);
 	}

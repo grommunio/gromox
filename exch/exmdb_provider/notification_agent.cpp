@@ -114,7 +114,7 @@ void notification_agent_thread_work(ROUTER_CONNECTION *prouter)
 			}
 		}
 	}
-EXIT_THREAD:
+ EXIT_THREAD:
 	while (FALSE == exmdb_parser_remove_router(prouter)) {
 		sleep(1);
 	}

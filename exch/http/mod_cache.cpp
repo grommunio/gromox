@@ -872,7 +872,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		pcontext->pitem = pitem;
 		return TRUE;
 	}
-INVALIDATE_ITEM:
+ INVALIDATE_ITEM:
 	pitem->b_expired = TRUE;
 	pitem->node.pdata = pitem;
 	double_list_append_as_tail(&g_item_list, &pitem->node);

@@ -622,8 +622,7 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -718,8 +717,7 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 		}
 	}
 
-
-DELETE_ERROR:
+ DELETE_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -800,8 +798,7 @@ static int imap_search(char *path, char *folder, char *charset,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -883,8 +880,7 @@ static int imap_search_uid(char *path, char *folder, char *charset,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -933,8 +929,7 @@ static int get_mail_id(char *path, char *folder, char *mid_string,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -982,8 +977,7 @@ static int get_mail_uid(char *path, char *folder, char *mid_string,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1062,8 +1056,7 @@ static int summary_folder(char *path, char *folder, int *pexists,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1108,8 +1101,7 @@ static int make_folder(char *path, char *folder, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1154,8 +1146,7 @@ static int remove_folder(char *path, char *folder, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1200,8 +1191,7 @@ static int ping_mailbox(char *path, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1248,8 +1238,7 @@ static int rename_folder(char *path, char *src_name, char *dst_name,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1294,8 +1283,7 @@ static int subscribe_folder(char *path, char *folder, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1340,8 +1328,7 @@ static int unsubscribe_folder(char *path, char *folder, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1468,8 +1455,7 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1598,8 +1584,7 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1646,7 +1631,7 @@ static int insert_mail(char *path, char *folder, char *file_name,
 		}
 	}
 
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1742,8 +1727,7 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -1917,8 +1901,7 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -2075,8 +2058,7 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -2265,8 +2247,7 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -2488,8 +2469,7 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RESULT_OK;
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -2705,7 +2685,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RESULT_OK;
 
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -2909,8 +2889,7 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RESULT_OK;
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -3121,7 +3100,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RESULT_OK;
 
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -3212,8 +3191,7 @@ static int set_mail_flags(char *path, char *folder, char *mid_string,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -3296,8 +3274,7 @@ static int unset_mail_flags(char *path, char *folder, char *mid_string,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -3363,8 +3340,7 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -3414,8 +3390,7 @@ static int copy_mail(char *path, char *src_folder, char *mid_string,
 		}
 	}
 
-
-RDWR_ERROR:
+ RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);
@@ -3522,7 +3497,7 @@ static BOOL check_full(char *path)
 		}
 	}
 
-CHECK_ERROR:
+ CHECK_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
 	pthread_mutex_lock(&g_server_lock);

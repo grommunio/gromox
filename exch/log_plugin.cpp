@@ -254,7 +254,7 @@ static void* thread_work_func(void *arg)
 			}
 		}
 		closedir(dirp);
-WAIT_CLEAN:
+ WAIT_CLEAN:
 		for (i=0; i<24*3600; i++) {
 			if (TRUE == g_notify_stop) {
 				pthread_exit(0);

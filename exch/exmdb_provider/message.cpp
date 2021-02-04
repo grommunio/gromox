@@ -562,7 +562,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	}
 	return TRUE;
 
-MVCP_FAILURE:
+ MVCP_FAILURE:
 	sqlite3_finalize(pstmt);
 	if (FALSE == b_copy) {
 		sqlite3_finalize(pstmt1);

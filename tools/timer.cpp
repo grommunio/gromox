@@ -620,8 +620,7 @@ static void *thread_work_func(void *param)
 	CONNECTION_NODE *pconnection;	
 	char *pspace, temp_line[1024];
 	
-	
-NEXT_LOOP:
+ NEXT_LOOP:
 	pthread_mutex_lock(&g_cond_mutex);
 	pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
 	pthread_mutex_unlock(&g_cond_mutex);

@@ -139,7 +139,7 @@ static void* thread_work_func1(void *param)
 		}
 
 		data_source_collect_clear(pcollect);
-NEXT_LOOP:
+ NEXT_LOOP:
 		count = 0;
 	}
 	return NULL;

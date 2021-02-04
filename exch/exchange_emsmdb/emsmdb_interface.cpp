@@ -625,7 +625,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	}
 	return ecSuccess;
 	
-CONNECT_FAILURE:
+ CONNECT_FAILURE:
 	memset(pcxh, 0, sizeof(CXH));
 	*pmax_polls = 0;
 	*pmax_retry = 0;

@@ -4026,7 +4026,7 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 		return EXT_ERR_SUCCESS;
 	}
 
-PUSH_PAYLOAD:
+ PUSH_PAYLOAD:
 	switch (r->rop_id) {
 	case ropLogon:
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();

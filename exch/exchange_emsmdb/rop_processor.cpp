@@ -694,13 +694,13 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				break;
 			}
 		}
-NEXT_NOTIFY:
+ NEXT_NOTIFY:
 		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
 		free(pnode->pdata);
 		free(pnode);
 	}
 	
-MAKE_RPC_EXT:
+ MAKE_RPC_EXT:
 	if (EXT_ERR_SUCCESS != rop_ext_make_rpc_ext(ext_buff,
 		ext_push.offset, prop_buff, pbuff, pbuff_len)) {
 		return ecError;
@@ -865,7 +865,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		}
 	}
 	
-PROC_SUCCESS:
+ PROC_SUCCESS:
 	rop_ext_set_rhe_flag_last(pout, last_offset);
 	*pcb_out = offset;
 	return ecSuccess;

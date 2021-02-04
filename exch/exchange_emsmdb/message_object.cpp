@@ -843,7 +843,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	}
 	return GXERR_SUCCESS;
 	
-SAVE_FULL_CHANGE:
+ SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	tmp_indices.count = 0;

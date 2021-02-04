@@ -2025,7 +2025,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		}
 	}
-FETCH_PROPNAME:
+ FETCH_PROPNAME:
 	propids.count = 0;
 	propids.ppropid = static_cast<uint16_t *>(alloc(sizeof(uint16_t) * phash->item_num));
 	if (NULL == propids.ppropid) {

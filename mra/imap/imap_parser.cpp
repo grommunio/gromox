@@ -425,7 +425,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 	char *ptr, *pbuff;
     struct timeval current_time;
 	
-CONTEXT_PROCESSING:
+ CONTEXT_PROCESSING:
 	if (SCHED_STAT_AUTOLOGOUT == pcontext->sched_stat) {
 		imap_parser_log_info(pcontext, 8, "auto logout");
 		/* IMAP_CODE_2160004: BYE Disconnected by autologout */
@@ -554,7 +554,7 @@ CONTEXT_PROCESSING:
 			goto CMD_PROCESSING;
 		}
 		
-LITERAL_CHECKING:		
+ LITERAL_CHECKING:		
 		if (NULL != pcontext->literal_ptr) {
 			if (pcontext->read_buffer + pcontext->read_offset - pcontext->literal_ptr >= 
 				pcontext->literal_len) {
@@ -581,7 +581,7 @@ LITERAL_CHECKING:
 				return PROCESS_CONTINUE;
 			}
 		}
-LITERAL_PROCESSING:
+ LITERAL_PROCESSING:
 		for (i=0; i<pcontext->read_offset-3; i++) {
 			if (pcontext->read_buffer[i] == '{' &&
 			    (ptr = static_cast<char *>(memchr(pcontext->read_buffer + i, '}', pcontext->read_offset - 2 - i))) != nullptr &&
@@ -686,7 +686,7 @@ LITERAL_PROCESSING:
 				goto LITERAL_CHECKING;
 			}
 		}
-CMD_PROCESSING:
+ CMD_PROCESSING:
 		for (i=0; i<pcontext->read_offset-1; i++) {
 			if ('\r' == pcontext->read_buffer[i] &&
 				'\n' == pcontext->read_buffer[i + 1]) {
@@ -1054,9 +1054,7 @@ CMD_PROCESSING:
 		return PROCESS_CONTINUE;
 	}
 
-
-END_PROCESSING:
-	
+ END_PROCESSING:
 	if (NULL != imap_reply_str) {
 		len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 		if (NULL != pcontext->connection.ssl) {

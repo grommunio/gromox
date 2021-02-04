@@ -502,7 +502,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	}
 	gettimeofday(&current_time, NULL);
 	if (0 == actual_read) {
-LOST_READ:
+ LOST_READ:
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
@@ -554,7 +554,7 @@ LOST_READ:
 	}
 	/*========================================================================*/
 	/* envelop command is met */
-CMD_PROCESS:
+ CMD_PROCESS:
 	if (T_DATA_CMD != pcontext->last_cmd) {    
 		stream_try_mark_line(&pcontext->stream);
 		switch (stream_has_newline(&pcontext->stream)) {
@@ -635,7 +635,7 @@ CMD_PROCESS:
 	} else {
 	/*=======================================================================*/
 	/* data command is met */
-DATA_PROCESS:
+ DATA_PROCESS:
 		if (stream_get_total_length(&pcontext->stream) >= g_flushing_size) {
 			b_should_flush = TRUE;
 		}

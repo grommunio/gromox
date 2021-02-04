@@ -131,7 +131,7 @@ BOOL data_source_get_domain_list(DATA_COLLECT *pcollect)
 	
 	i = 0;
 	
-RETRYING:
+ RETRYING:
 	if (i > 3) {
 		return FALSE;
 	}
@@ -199,7 +199,7 @@ BOOL data_source_get_alias_list(DATA_COLLECT *pcollect)
 	
 	i = 0;
 	
-RETRYING:
+ RETRYING:
 	if (i > 3) {
 		return FALSE;
 	}

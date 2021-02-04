@@ -1358,7 +1358,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	
 	return TRUE;
 	
-AUTH3_FAIL:
+ AUTH3_FAIL:
 	double_list_remove(&pcall->pprocessor->auth_list, pnode);
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 	if (NULL != pauth_ctx->pntlmssp) {
@@ -1498,7 +1498,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		reason = 0;
 	}
 	
-ALTER_ACK:
+ ALTER_ACK:
 	extra_flags = 0;
 	if (0 == result) {
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN &&
@@ -1993,7 +1993,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 	ASYNC_NODE *pasync_node;
 	ASYNC_NODE **ppasync_node;
 	
-BUILD_BEGIN:
+ BUILD_BEGIN:
 	pthread_mutex_lock(&g_async_lock);
 	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node) {

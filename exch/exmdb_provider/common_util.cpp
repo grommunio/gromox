@@ -6356,7 +6356,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			ppropnames->ppropname[i].plid = NULL;
 			continue;
 		}
-NOT_FOUND_PROPNAME:
+ NOT_FOUND_PROPNAME:
 		ppropnames->ppropname[i].kind = KIND_NONE;
 		ppropnames->ppropname[i].plid = NULL;
 		ppropnames->ppropname[i].pname = NULL;
@@ -6508,7 +6508,7 @@ BOOL common_util_recipients_to_list(
 		pvalue = common_util_get_propvals(
 			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
-CONVERT_ENTRYID:
+ CONVERT_ENTRYID:
 			pvalue = common_util_get_propvals(
 				prcpts->pparray[i], PROP_TAG_ENTRYID);
 			if (NULL == pvalue) {

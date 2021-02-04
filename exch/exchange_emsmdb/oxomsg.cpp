@@ -461,7 +461,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	return ecSuccess;
 
-SUBMIT_FAIL:
+ SUBMIT_FAIL:
 	exmdb_client_clear_submit(logon_object_get_dir(plogon),
 				message_object_get_id(pmessage), b_unsent);
 	return ecError;

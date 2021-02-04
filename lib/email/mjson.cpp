@@ -1300,7 +1300,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	
 	offset = 0;
 	
-FETCH_STRUCTURE_LOOP:
+ FETCH_STRUCTURE_LOOP:
 	HX_strlcpy(ctype, pmime->ctype, GX_ARRAY_SIZE(ctype));
 	HX_strupper(ctype);
 	psubtype = strchr(ctype, '/');
@@ -1508,7 +1508,7 @@ FETCH_STRUCTURE_LOOP:
 			
 		}
 		
-RFC822_FAILURE:
+ RFC822_FAILURE:
 		if (TRUE == b_ext) {
 
 			/* body MD5 */
@@ -1542,7 +1542,7 @@ RFC822_FAILURE:
 			}
 		}
 		
-RFC822_SUCCESS:
+ RFC822_SUCCESS:
 		buff[offset] = ')';
 		offset ++;
 	} else if (MJSON_MIME_MULTIPLE == pmime->mime_type) {

@@ -499,7 +499,7 @@ static BOOL ab_tree_load_class(
 	}
 	free(parray);
 	return TRUE;
-LOAD_FAIL:
+ LOAD_FAIL:
 	for (i-=1; i>=0; i--) {
 		free(parray[i].string);
 		ab_tree_put_abnode((AB_NODE*)parray[i].pnode);
@@ -689,7 +689,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	free(parray);
 	return TRUE;
     }
-LOAD_FAIL:
+ LOAD_FAIL:
 	for (i-=1; i>=0; i--) {
 		free(parray[i].string);
 		ab_tree_put_abnode((AB_NODE*)parray[i].pnode);
@@ -819,7 +819,7 @@ AB_BASE* ab_tree_get_base(int base_id)
 	AB_BASE **ppbase;
 	
 	count = 0;
-RETRY_LOAD_BASE:
+ RETRY_LOAD_BASE:
 	pthread_mutex_lock(&g_base_lock);
 	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
 	if (NULL == ppbase) {

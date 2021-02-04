@@ -754,9 +754,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 		return 1;
 	}
 	
-
-PARSE_FAILURE:
-
+ PARSE_FAILURE:
 	tmp_len = mail_get_length(pmail);
 	if (-1 == tmp_len) {
 		return -1;

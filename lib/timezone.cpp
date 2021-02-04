@@ -487,7 +487,7 @@ static int tzload(const char *name, struct state *const sp, const int doextend)
 	(void) free((void *) up);
 #endif /* defined ALL_STATE */
 	return 0;
-oops:
+ oops:
 #ifdef ALL_STATE
 	(void) free((void *) up);
 #endif /* defined ALL_STATE */
@@ -1661,7 +1661,7 @@ static time_t time2sub(const struct state *const sp,
 		}
 		return WRONG;
 	}
-label:
+ label:
 	newt = t + saved_seconds;
 	if ((newt < t) != (saved_seconds < 0)) {
 		return WRONG;

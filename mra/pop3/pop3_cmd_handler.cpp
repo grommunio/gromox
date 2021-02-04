@@ -278,8 +278,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return DISPATCH_CONTINUE;
 	}
 
-
-NORMAL_LOGIN:
+ NORMAL_LOGIN:
 	if (TRUE == system_services_auth_login(pcontext->username, temp_password,
 		pcontext->maildir, NULL, reason, 256)) {
 		if (NULL != system_services_check_cdn_user && TRUE == b_cdn_create) {
@@ -948,8 +947,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				goto END_QUIT;
 			}
 
-NORMAL_DELETE:
-
+ NORMAL_DELETE:
 			switch (system_services_delete_mail(pcontext->maildir, "inbox",
 				&pcontext->list)) {
 			case MIDB_RESULT_OK:
@@ -1002,7 +1000,7 @@ NORMAL_DELETE:
 		}
 	}
 
-END_QUIT:
+ END_QUIT:
 	array_clear(&pcontext->array);
 	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(POP3_CODE_2170010, 1, 
 		&string_length), resource_get_string("HOST_ID"),

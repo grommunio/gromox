@@ -214,7 +214,7 @@ void stream_clear(STREAM *pstream)
 		pnode = double_list_get_tail(&pstream->list);
 	}
 
-CLEAR_RETRUN:
+ CLEAR_RETRUN:
 	pstream->wr_block_pos		  = 0;
 	pstream->wr_total_pos		  = 0;
 	pstream->rd_block_pos		  = 0;
@@ -1069,7 +1069,7 @@ void stream_try_mark_eom(STREAM *pstream)
 			goto NONE_EOM;
 		}
 	}
-NONE_EOM:
+ NONE_EOM:
 	if (pstream->wr_total_pos >= 2) {
 		pstream->last_eom_parse = pstream->wr_total_pos - 2;
 	} else {

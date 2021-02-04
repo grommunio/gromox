@@ -837,7 +837,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					goto FETCH_BODY_SIMPLE;
 				}
 			} else {
-FETCH_BODY_SIMPLE:
+ FETCH_BODY_SIMPLE:
 				len = mjson_fetch_structure(&mjson,
 					resource_get_default_charset(pcontext->lang),
 					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
@@ -868,7 +868,7 @@ FETCH_BODY_SIMPLE:
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
 				}
 			} else {
-FETCH_BODYSTRUCTURE_SIMPLE:
+ FETCH_BODYSTRUCTURE_SIMPLE:
 				len = mjson_fetch_structure(&mjson,
 					resource_get_default_charset(pcontext->lang),
 					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
@@ -4040,7 +4040,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 	}
 	return DISPATCH_BREAK;
-FETCH_PARAM_ERR:
+ FETCH_PARAM_ERR:
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2180000, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
@@ -4552,7 +4552,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	return DISPATCH_BREAK;
 	
-UID_FETCH_PARAM_ERR:
+ UID_FETCH_PARAM_ERR:
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2180000, 1, &string_length);
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);

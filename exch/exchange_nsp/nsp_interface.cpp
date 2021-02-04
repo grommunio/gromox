@@ -1093,7 +1093,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 	result = ecSuccess;
 	
-EXIT_QUERY_ROWS:
+ EXIT_QUERY_ROWS:
 	ab_tree_put_base(pbase);
 	if (result != ecSuccess)
 		*pprows = NULL;
@@ -1322,7 +1322,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	
 	result = ecSuccess;
 
-EXIT_SEEK_ENTRIES:
+ EXIT_SEEK_ENTRIES:
 	ab_tree_put_base(pbase);
 	if (result != ecSuccess)
 		*pprows = NULL;
@@ -1810,7 +1810,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 	}
 
-FETCH_ROWS:
+ FETCH_ROWS:
 	if (NULL != *pprows) {
 		for (i=0; i<(*ppoutmids)->cvalues; i++) {
 			prow = common_util_proprowset_enlarge(*pprows);
@@ -1833,7 +1833,7 @@ FETCH_ROWS:
 	
 	result = ecSuccess;
 	
-EXIT_GET_MATCHES:
+ EXIT_GET_MATCHES:
 	ab_tree_put_base(pbase);
 	if (result != ecSuccess) {
 		*ppoutmids = NULL;
@@ -2287,7 +2287,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		}
 	}
 	
-EXIT_GET_PROPS:
+ EXIT_GET_PROPS:
 	ab_tree_put_base(pbase);
 	if (result != ecSuccess && result != ecWarnWithErrors)
 		*pprows = NULL;
@@ -2371,7 +2371,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	
 	result = ecSuccess;
 	
-EXIT_COMPARE_MIDS:
+ EXIT_COMPARE_MIDS:
 	ab_tree_put_base(pbase);
 	return result;
 }
@@ -2801,7 +2801,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	}
 	result = ecSuccess;
 	
-EXIT_MOD_LINKATT:
+ EXIT_MOD_LINKATT:
 	ab_tree_put_base(pbase);
 	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		free(pnode->pdata);
@@ -3259,7 +3259,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	result = ecSuccess;
 	
-EXIT_RESOLVE_NAMESW:
+ EXIT_RESOLVE_NAMESW:
 	ab_tree_put_base(pbase);
 	if (result != ecSuccess) {
 		*ppmids = NULL;

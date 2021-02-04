@@ -2257,7 +2257,7 @@ static BOOL folder_copy_folder_internal(
 			}
 			sqlite3_finalize(pstmt);
 		}
-COPY_SUBFOLDER:
+ COPY_SUBFOLDER:
 		if (TRUE == b_sub) {
 			if (TRUE == b_guest) {
 				if (FALSE == common_util_check_folder_permission(
@@ -2987,7 +2987,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	}
 	*pb_result = TRUE;
 	return TRUE;
-CRITERIA_FAILURE:
+ CRITERIA_FAILURE:
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	db_engine_put_db(pdb);
 	return FALSE;
@@ -3297,7 +3297,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	db_engine_put_db(pdb);
 	return TRUE;
 	
-PERMISSION_FAILURE:
+ PERMISSION_FAILURE:
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	if (NULL != pstmt) {
 		sqlite3_finalize(pstmt);
@@ -3669,7 +3669,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	db_engine_put_db(pdb);
 	return TRUE;
 	
-RULE_FAILURE:
+ RULE_FAILURE:
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	if (NULL != pstmt) {
 		sqlite3_finalize(pstmt);

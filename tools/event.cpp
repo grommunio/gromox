@@ -633,8 +633,7 @@ static void* enqueue_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	
-NEXT_LOOP:
+ NEXT_LOOP:
 	pthread_mutex_lock(&g_enqueue_cond_mutex);
 	pthread_cond_wait(&g_enqueue_waken_cond, &g_enqueue_cond_mutex);
 	pthread_mutex_unlock(&g_enqueue_cond_mutex);
@@ -886,8 +885,7 @@ static void* dequeue_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 	char buff[MAX_CMD_LENGTH];
 	
-	
-NEXT_LOOP:
+ NEXT_LOOP:
 	pthread_mutex_lock(&g_dequeue_cond_mutex);
 	pthread_cond_wait(&g_dequeue_waken_cond, &g_dequeue_cond_mutex);
 	pthread_mutex_unlock(&g_dequeue_cond_mutex);

@@ -1003,7 +1003,7 @@ BOOL idset_convert(IDSET *pset)
 	pset->b_serialize = TRUE;
 	return TRUE;
 	
-CLEAN_TEMP_LIST:
+ CLEAN_TEMP_LIST:
 	while ((pnode = double_list_pop_front(&temp_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&temp_list);

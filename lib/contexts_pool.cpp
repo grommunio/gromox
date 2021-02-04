@@ -150,7 +150,7 @@ static void *scan_work_func(void *pparam)
 			}
 			double_list_append_as_tail(
 				&g_context_lists[CONTEXT_POLLING], pnode);
-CHECK_TAIL:
+ CHECK_TAIL:
 			if (pnode == ptail) {
 				break;
 			}

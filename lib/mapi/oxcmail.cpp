@@ -4957,7 +4957,7 @@ static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
 	if (NULL == pvalue) {
 		pvalue = tpropval_array_get_propval(pproplist, proptag2);
 		if (NULL == pvalue) {
-FIND_ENTRYID:
+ FIND_ENTRYID:
 			pvalue = tpropval_array_get_propval(pproplist, proptag4);
 			if (NULL == pvalue) {
 				return FALSE;
@@ -5147,7 +5147,7 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
 		offset ++;
 		field[offset] = '\0';
 	}
-EXPORT_ADDRESS:
+ EXPORT_ADDRESS:
 	if (TRUE == oxcmail_get_smtp_address(&pmsg->proplist, alloc,
 		proptag4, proptag2, proptag3, proptag5, address)) {
 		if (0 == offset) {
@@ -5293,7 +5293,7 @@ static BOOL oxcmail_load_mime_skeleton(
 		if (NULL != pvalue && NATIVE_BODY_RTF == *pvalue &&
 		    ((pvalue = static_cast<uint32_t *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RTFINSYNC))) == nullptr ||
 		    *pvalue == 0)) {
-FIND_RTF:
+ FIND_RTF:
 			prtf = static_cast<BINARY *>(tpropval_array_get_propval(
 			       &pmsg->proplist, PROP_TAG_RTFCOMPRESSED));
 			if (NULL != prtf) {
@@ -5581,7 +5581,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-EXPORT_CONTENT_CLASS:
+ EXPORT_CONTENT_CLASS:
 	if (TRUE == oxcmail_export_content_class(
 		pskeleton->pmessage_class, tmp_field)) {
 		if (FALSE == mime_set_field(phead,
@@ -6370,7 +6370,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-SERIALIZE_DSN:
+ SERIALIZE_DSN:
 	if (!dsn_serialize(&dsn, pdsn_content, max_length)) {
 		dsn_free(&dsn);
 		return FALSE;
@@ -6433,7 +6433,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-EXPORT_MDN_CONTENT:
+ EXPORT_MDN_CONTENT:
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	sprintf(tmp_buff, "rfc822;%s", tmp_address);
@@ -7025,7 +7025,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			}
 		} else if (OXCMAIL_BODY_PLAIN_ONLY == mime_skeleton.body_type
 			&& NULL != mime_skeleton.pplain) {
-PLAIN_ONLY:
+ PLAIN_ONLY:
 			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
 				if (FALSE ==  mime_set_content_type(
 					pmime, "text/plain")) {
@@ -7048,7 +7048,7 @@ PLAIN_ONLY:
 			}
 		} else if (OXCMAIL_BODY_HTML_ONLY == mime_skeleton.body_type
 			&& NULL != mime_skeleton.phtml) {
-HTML_ONLY:
+ HTML_ONLY:
 			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
 				if (FALSE ==  mime_set_content_type(
 					pmime, "text/html")) {
@@ -7371,7 +7371,7 @@ HTML_ONLY:
 	}
 	oxcmail_free_mime_skeleton(&mime_skeleton);
 	return TRUE;
-EXPORT_FAILURE:
+ EXPORT_FAILURE:
 	oxcmail_free_mime_skeleton(&mime_skeleton);
 	mail_free(pmail);
 	return FALSE;

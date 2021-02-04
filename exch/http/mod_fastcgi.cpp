@@ -1241,7 +1241,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			}
 		}
 	}
-END_OF_STDIN:
+ END_OF_STDIN:
 	ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
 				NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
 	if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
@@ -1335,7 +1335,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			size = STREAM_BLOCK_SIZE;
 		}
 	} else {
-CHUNK_BEGIN:
+ CHUNK_BEGIN:
 		if (phttp->pfast_context->chunk_size ==
 			phttp->pfast_context->chunk_offset) {
 			size = stream_peek_buffer(&phttp->stream_in,

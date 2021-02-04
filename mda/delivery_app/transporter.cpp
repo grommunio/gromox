@@ -514,7 +514,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 				break;
 			}
 		}
-NEXT_LOOP:
+ NEXT_LOOP:
 		if (pnode == ptail) {
 			break;
 		}

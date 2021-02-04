@@ -260,7 +260,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	mail_dup(pcontext->pmail, pcontext_expand->pmail);
 	throw_context(pcontext_expand);
 
-EXIT_EXPAND:
+ EXIT_EXPAND:
 	if (0 == mem_file_get_total_length(&pcontext->pcontrol->f_rcpt_to)) {
 		return TRUE;
 	} else {

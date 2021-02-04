@@ -1293,7 +1293,7 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	if (TRUE == b_negative) {
 		*pweekorder *= -1;
 	}
-PARSE_WEEKDAY:
+ PARSE_WEEKDAY:
 	if (0 == strcasecmp(pbegin, "SU")) {
 		*pdayofweek = 0;
 	} else if (0 == strcasecmp(pbegin, "MO")) {
@@ -1515,7 +1515,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (ical_cmp_time(itime, itime2) > 0) {
 			continue;
 		}
-FOUND_COMPONENT:
+ FOUND_COMPONENT:
 		piline = ical_get_line(pcomponent, "TZOFFSETTO");
 		if (NULL == piline) {
 			return NULL;

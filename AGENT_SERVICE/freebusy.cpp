@@ -2541,7 +2541,7 @@ int main(int argc, const char **argv)
 	}
 	ical_itime_to_utc(g_tz_component, itime_start, &g_start_time);
 	ical_itime_to_utc(g_tz_component, itime_end, &g_end_time);
-GET_FREEBUSY_DATA:
+ GET_FREEBUSY_DATA:
 	pdirs = cookie_parser_get(pparser, "dirs");
 	if (NULL == pdirs) {
 		fprintf(stderr, "fail to get \"dirs\" from stdin\n");

@@ -494,7 +494,7 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 			return FALSE;
 		}
 	}
-PARSE_ARGS:
+ PARSE_ARGS:
     while (p < uri_end) {
         if (*p ++ != '#') {
             continue;
@@ -504,7 +504,7 @@ PARSE_ARGS:
 		u += tmp_len;
         break;
     }
-PARSE_DONE:
+ PARSE_DONE:
 	*u = '\0';
     return TRUE;
 }
@@ -985,7 +985,7 @@ char* find_url(char *buf, size_t howmuch, int *count)
 			}
 		}
 		return s1;
-CONTINUE_LOOP:
+ CONTINUE_LOOP:
 		howmuch --;
 	}
 	*count = 0;
@@ -1943,7 +1943,7 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 			}
 			/* fall-through */
 		default:
-REG_CHAR:
+ REG_CHAR:
 			if (state == st::NONE && (!HX_isspace(c) || !linebegin)) {
 				*rp++ = c;
 				linebegin = false;

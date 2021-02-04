@@ -1568,7 +1568,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		free(pbuff);
 		return TRUE;
 	default:
-COPY_RAW_DATA:
+ COPY_RAW_DATA:
 		if (max_length >= size) {
 			memcpy(out_buff, pbuff, size);
 			*plength = size;
@@ -2277,7 +2277,7 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 	}
 	return FALSE;
 	
-FIND_FILENAME:
+ FIND_FILENAME:
 	HX_strrtrim(file_name);
 	HX_strltrim(file_name);
 	tmp_len = strlen(file_name);

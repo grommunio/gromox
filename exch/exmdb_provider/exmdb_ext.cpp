@@ -4302,7 +4302,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 	}
 	return EXT_ERR_SUCCESS;
 	
-PULL_CONTENT_SYNC_FAILURE:
+ PULL_CONTENT_SYNC_FAILURE:
 	idset_free(ppayload->get_content_sync.pgiven);
 	if (NULL != ppayload->get_content_sync.pseen) {
 		idset_free(ppayload->get_content_sync.pseen);
@@ -5648,7 +5648,7 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 		ext_buffer_push_free(&ext_push);
 		return EXT_ERR_BAD_SWITCH;
 	}
-END_PUSH_REQUEST:
+ END_PUSH_REQUEST:
 	if (EXT_ERR_SUCCESS != status) {
 		ext_buffer_push_free(&ext_push);
 		return status;
@@ -9342,7 +9342,7 @@ int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 		*(uint32_t*)pbin_out->pb = ext_push.offset - sizeof(uint32_t);
 		return EXT_ERR_SUCCESS;
 	}
-PUSH_NOTIFY_FAILURE:
+ PUSH_NOTIFY_FAILURE:
 	ext_buffer_push_free(&ext_push);
 	return status;
 }

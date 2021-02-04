@@ -869,7 +869,7 @@ MESSAGE_CONTENT* oxvcard_import(
 	}
 	return pmsg;
 	
-IMPORT_FAILURE:
+ IMPORT_FAILURE:
 	message_content_free(pmsg);
 	return NULL;
 }
@@ -1697,7 +1697,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	
 	return TRUE;
 	
-EXPORT_FAILURE:
+ EXPORT_FAILURE:
 	vcard_free(pvcard);
 	return FALSE;
 }

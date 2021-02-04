@@ -2806,7 +2806,7 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 		ext_buffer_push_free(&ext_push);
 		return EXT_ERR_BAD_SWITCH;
 	}
-END_PUSH_REQUEST:
+ END_PUSH_REQUEST:
 	if (EXT_ERR_SUCCESS != status) {
 		ext_buffer_push_free(&ext_push);
 		return status;
