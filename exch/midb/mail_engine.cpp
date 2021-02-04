@@ -635,7 +635,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 #define POP_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
 		{sp--;TREE=trees[sp];NODE=nodes[sp];CONJUNCTION=conjunctions[sp];RESULT=results[sp];}
 
-/* begine of rescursion procedure */
+/* begin of recursion procedure */
 	while (TRUE) {
  PROC_BEGIN:
 	b_result = TRUE;
@@ -1170,7 +1170,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 		return b_result;
 	}
 }
-/* end of rescursion procedure */
+/* end of recursion procedure */
 
 }
 
