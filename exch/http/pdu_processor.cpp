@@ -42,7 +42,7 @@
 
 
 /* structure for describing service reference */
-struct SERVICE_NODE {
+struct pdu_service_node {
 	DOUBLE_LIST_NODE node;
 	void *service_addr;
 	char *service_name;
@@ -3539,9 +3539,9 @@ static void pdu_processor_unload_library(const char* plugin_name)
 	
 	/* free the reference list */
 	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
-		service_release(((SERVICE_NODE*)(pnode->pdata))->service_name,
+		service_release(static_cast<pdu_service_node *>(pnode->pdata)->service_name,
 			pplugin->file_name);
-		free(((SERVICE_NODE*)(pnode->pdata))->service_name);
+		free(static_cast<pdu_service_node *>(pnode->pdata)->service_name);
 		free(pnode->pdata);
 	}
 	double_list_free(&pplugin->list_reference);
@@ -3683,7 +3683,6 @@ static uint64_t pdu_processor_get_binding_handle()
 static void* pdu_processor_queryservice(char *service)
 {
 	DOUBLE_LIST_NODE *pnode;
-	SERVICE_NODE *pservice;
 	void *ret_addr;
 
 	if (NULL == g_cur_plugin) {
@@ -3755,7 +3754,7 @@ static void* pdu_processor_queryservice(char *service)
 	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
 		NULL!=pnode;
 		pnode=double_list_get_after(&g_cur_plugin->list_reference, pnode)) {
-        pservice =  (SERVICE_NODE*)(pnode->pdata);
+		auto pservice = static_cast<pdu_service_node *>(pnode->pdata);
 		if (0 == strcmp(service, pservice->service_name)) {
 			return pservice->service_addr;
 		}
@@ -3764,7 +3763,7 @@ static void* pdu_processor_queryservice(char *service)
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	pservice = (SERVICE_NODE*)malloc(sizeof(SERVICE_NODE));
+	auto pservice = static_cast<pdu_service_node *>(malloc(sizeof(pdu_service_node)));
 	if (NULL == pservice) {
 		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service node\n");

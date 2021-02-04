@@ -26,7 +26,7 @@ enum {
 };
 
 /* structure for describing service reference */
-struct SERVICE_NODE {
+struct hpm_service_node {
 	DOUBLE_LIST_NODE node;
 	void *service_addr;
 	char *service_name;
@@ -261,7 +261,6 @@ static void hpm_processor_activate_context(int context_id)
 static void* hpm_processor_queryservice(char *service)
 {
 	void *ret_addr;
-	SERVICE_NODE *pservice;
 	DOUBLE_LIST_NODE *pnode;
 
 	if (NULL == g_cur_plugin) {
@@ -330,7 +329,7 @@ static void* hpm_processor_queryservice(char *service)
 	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
 		NULL!=pnode; pnode=double_list_get_after(
 		&g_cur_plugin->list_reference, pnode)) {
-        pservice = (SERVICE_NODE*)(pnode->pdata);
+		auto pservice = static_cast<hpm_service_node *>(pnode->pdata);
 		if (0 == strcmp(service, pservice->service_name)) {
 			return pservice->service_addr;
 		}
@@ -339,7 +338,7 @@ static void* hpm_processor_queryservice(char *service)
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	pservice = (SERVICE_NODE*)malloc(sizeof(SERVICE_NODE));
+	auto pservice = static_cast<hpm_service_node *>(malloc(sizeof(hpm_service_node)));
 	if (NULL == pservice) {
 		debug_info("[hpm_processor]: fail to "
 			"allocate memory for service node\n");
@@ -386,9 +385,9 @@ static void hpm_processor_unload_library(const char *plugin_name)
 
 	/* free the reference list */
 	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
-		service_release(((SERVICE_NODE*)(pnode->pdata))->service_name,
+		service_release(static_cast<hpm_service_node *>(pnode->pdata)->service_name,
 			pplugin->file_name);
-		free(((SERVICE_NODE*)(pnode->pdata))->service_name);
+		free(static_cast<hpm_service_node *>(pnode->pdata)->service_name);
 		free(pnode->pdata);
 	}
 	double_list_free(&pplugin->list_reference);
