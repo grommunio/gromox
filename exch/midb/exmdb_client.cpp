@@ -439,7 +439,7 @@ static void *thread_work_func(void *pparam)
 			}
 		}
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 static REMOTE_CONN *exmdb_client_get_connection(const char *dir)

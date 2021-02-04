@@ -271,7 +271,7 @@ static void* thread_work_func(void *pparam)
 			activate_context(pcontext - g_context_list);
 		}
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 static PROXY_NODE* find_proxy_node(

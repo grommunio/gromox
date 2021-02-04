@@ -2995,7 +2995,7 @@ static void *scan_work_func(void *param)
 	str_hash_iter_free(iter);
 	pthread_mutex_unlock(&g_hash_lock);
 	double_list_free(&temp_list);
-	pthread_exit(0);
+	return nullptr;
 }
 	
 static int mail_engine_mquta(int argc, char **argv, int sockd)

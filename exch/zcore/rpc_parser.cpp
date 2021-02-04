@@ -668,7 +668,7 @@ static void *thread_work_func(void *param)
 
 	if (NULL == pnode) {
 		if (TRUE == g_notify_stop) {
-			pthread_exit(0);
+			return nullptr;
 		}
 		goto WAIT_CLIFD;
 	}

@@ -260,13 +260,13 @@ static void* thread_work_func(void* arg)
 	pcontext = get_context();
 	if (NULL == pcontext) {
 		printf("[exmdb_local]: fail to get context in cache queue thread\n");
-		pthread_exit(0);
+		return nullptr;
 	}
 	dirp = opendir(g_path);
 	if (NULL == dirp) {
 		printf("[exmdb_local]: failed to open cache directory %s: %s\n",
 			g_path, strerror(errno));
-		pthread_exit(0);
+		return nullptr;
 	}
 	i = 0;
 	scan_interval = g_scan_interval;

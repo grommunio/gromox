@@ -257,7 +257,7 @@ static void* thread_work_func(void *arg)
  WAIT_CLEAN:
 		for (i=0; i<24*3600; i++) {
 			if (TRUE == g_notify_stop) {
-				pthread_exit(0);
+				return nullptr;
 			}
 			sleep(1);
 		}

@@ -102,7 +102,7 @@ static void *thread_work_func(void *param)
 		pconnection->sockd = sockd;
 		exmdb_parser_put_connection(pconnection);
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 void exmdb_listener_init(const char *ip,

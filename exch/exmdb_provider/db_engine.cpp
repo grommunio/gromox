@@ -381,7 +381,7 @@ static void *scan_work_func(void *param)
 	}
 	str_hash_iter_free(iter);
 	pthread_mutex_unlock(&g_hash_lock);
-	pthread_exit(0);
+	return nullptr;
 }
 
 static BOOL db_engine_search_folder(const char *dir,
@@ -771,7 +771,7 @@ static void *thread_work_func(void *param)
 		db_engine_free_populating_node(psearch);
 		goto NEXT_SEARCH;
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 void db_engine_init(int table_size, int cache_interval,

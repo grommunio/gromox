@@ -207,7 +207,7 @@ static void* thread_work_func(void* pparam)
 						g_threads_event_proc(THREAD_DESTROY);
 					}
 					pthread_detach(pthread_self());
-					pthread_exit(0);
+					return nullptr;
 				}
 				pthread_mutex_unlock(&g_threads_pool_data_lock);
 			} else {
@@ -263,7 +263,6 @@ static void* thread_work_func(void* pparam)
 	if (NULL != g_threads_event_proc) {
 		g_threads_event_proc(THREAD_DESTROY);
 	}
-	pthread_exit(0);
 	return NULL;
 }
 
@@ -329,7 +328,7 @@ static void* scan_work_func(void *pparam)
 		}
 		not_empty_times = 0;
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc)

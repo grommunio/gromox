@@ -1771,8 +1771,7 @@ static void* thread_work_func(void *argp)
 		} while (pnode != ptail);
 		usleep(100000);
 	}
-	pthread_exit(0);
-
+	return nullptr;
 }
 
 void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...)
@@ -1931,9 +1930,7 @@ static void* scan_work_func(void *argp)
 		}
 		mem_file_free(&temp_file);
 	}
-	
-	pthread_exit(0);
-	
+	return nullptr;
 }
 
 LIB_BUFFER* imap_parser_get_allocator()

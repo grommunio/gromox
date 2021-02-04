@@ -201,7 +201,7 @@ static void *thread_work_func(void *param)
 
  NEXT_LOOP:
 	if (TRUE == g_notify_stop) {
-		pthread_exit(0);
+		return nullptr;
 	}
 
 	pthread_mutex_lock(&g_cond_mutex);
@@ -209,7 +209,7 @@ static void *thread_work_func(void *param)
 	pthread_mutex_unlock(&g_cond_mutex);
 
 	if (TRUE == g_notify_stop) {
-		pthread_exit(0);
+		return nullptr;
 	}
 	
 	pthread_mutex_lock(&g_connection_lock);
@@ -311,9 +311,7 @@ static void *thread_work_func(void *param)
 			goto NEXT_LOOP;
 		}
 	}
-	
-	pthread_exit(0);
-
+	return nullptr;
 }
 
 static int cmd_parser_ping(int argc, char **argv, int sockd)

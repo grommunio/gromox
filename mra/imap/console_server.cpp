@@ -243,7 +243,6 @@ static void *thread_work_func(void *argp)
 		pthread_mutex_unlock(&g_list_lock);
 	}
 	close(sock);
-	pthread_exit(0);
 	return NULL;
 }
 
@@ -282,7 +281,7 @@ static void* console_work_func(void *argp)
 			double_list_append_as_tail(&g_free_list, &pconsole->node);
 			pthread_mutex_unlock(&g_list_lock);
 			close(client_fd);
-			pthread_exit(0);
+			return nullptr;
 		}
 		offset += read_len;
 		if (offset >= MAXLINE) {
@@ -322,7 +321,6 @@ static void* console_work_func(void *argp)
 	double_list_append_as_tail(&g_free_list, &pconsole->node);
 	pthread_mutex_unlock(&g_list_lock);
 	close(client_fd);
-	pthread_exit(0);
 	return NULL;
 }
 

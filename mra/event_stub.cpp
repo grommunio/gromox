@@ -260,7 +260,7 @@ static void* thread_work_func(void *param)
 		close(pback->sockd);
 		pback->sockd = -1;
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 

@@ -612,9 +612,7 @@ static void* accept_work_func(void *param)
 		write(sockd2, "OK\r\n", 4);
 		pthread_cond_signal(&g_enqueue_waken_cond);
 	}
-	
-	pthread_exit(0);
-
+	return nullptr;
 }
 
 static void* enqueue_work_func(void *param)

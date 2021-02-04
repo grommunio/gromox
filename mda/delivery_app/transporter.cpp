@@ -592,7 +592,7 @@ static void* thread_work_func(void* arg)
 							&pthr_data->node);
 						pthread_mutex_unlock(&g_free_threads_mutex);
 						pthread_detach(pthread_self());
-						pthread_exit(0);
+						return nullptr;
 					}
 					pthread_mutex_unlock(&g_threads_list_mutex);
 					pthread_mutex_lock(&g_cond_mutex);

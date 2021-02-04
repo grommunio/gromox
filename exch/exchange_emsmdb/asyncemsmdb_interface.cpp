@@ -300,7 +300,7 @@ static void *thread_work_func(void *param)
 		asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), TRUE);
 		goto NEXT_WAKEUP;
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 static void *scan_work_func(void *param)
@@ -335,5 +335,5 @@ static void *scan_work_func(void *param)
 			asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), FALSE);
 	}
 	double_list_free(&temp_list);
-	pthread_exit(0);
+	return nullptr;
 }

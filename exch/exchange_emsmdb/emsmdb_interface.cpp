@@ -1310,5 +1310,5 @@ static void* scan_work_func(void *pparam)
 		}
 		sleep(3);
 	}
-	pthread_exit(0);
+	return nullptr;
 }

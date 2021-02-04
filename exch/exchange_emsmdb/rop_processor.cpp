@@ -427,7 +427,7 @@ static void *scan_work_func(void *param)
 		}
 	}
 	double_list_free(&temp_list);
-	pthread_exit(0);
+	return nullptr;
 }
 
 void rop_processor_init(int average_handles, int scan_interval)

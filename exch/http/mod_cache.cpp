@@ -109,7 +109,7 @@ static void* scan_work_func(void *pparam)
 		pthread_mutex_unlock(&g_hash_lock);
 		count = 0;
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 static BOOL mod_cache_enlarge_hash()

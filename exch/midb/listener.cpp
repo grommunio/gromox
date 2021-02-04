@@ -169,8 +169,7 @@ static void *thread_work_func(void *param)
 		write(sockd, "OK\r\n", 4);
 		cmd_parser_put_connection(pconnection);
 	}
-	
-	pthread_exit(0);
+	return nullptr;
 }
 
 

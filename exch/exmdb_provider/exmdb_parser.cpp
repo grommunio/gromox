@@ -1001,7 +1001,7 @@ static void *thread_work_func(void *pparam)
 		pthread_detach(pthread_self());
 	}
 	free(pconnection);
-	pthread_exit(0);
+	return nullptr;
 }
 
 void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection)

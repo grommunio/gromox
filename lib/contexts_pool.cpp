@@ -109,7 +109,7 @@ static void* thread_work_func(void *pparam)
 			threads_pool_wakeup_all_threads();
 		}
 	}
-	pthread_exit(0);
+	return nullptr;
 }
 
 static void *scan_work_func(void *pparam)
@@ -180,7 +180,7 @@ static void *scan_work_func(void *pparam)
 		sleep(1);
 	}
 	double_list_free(&temp_list);
-	pthread_exit(0);
+	return nullptr;
 }
 
 void contexts_pool_init(void *pcontexts, int context_num,
