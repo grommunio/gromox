@@ -33,7 +33,7 @@ struct ICS_FLOW_NODE {
 	void *pparam;
 };
 
-struct GROUP_NODE {
+struct ics_group_node {
 	DOUBLE_LIST_NODE node;
 	uint32_t group_id;
 };
@@ -979,7 +979,7 @@ static BOOL icsdownctx_object_get_changepartial(
 	uint32_t index;
 	BOOL b_written;
 	uint32_t proptag;
-	GROUP_NODE *pgpnode;
+	ics_group_node *pgpnode = nullptr;
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY *pchangetags;
 	PROPERTY_GROUPINFO *pgpinfo;
@@ -993,7 +993,7 @@ static BOOL icsdownctx_object_get_changepartial(
 	b_written = FALSE;
 	for (pnode=double_list_get_head(&pctx->group_list); NULL!=pnode;
 		pnode=double_list_get_after(&pctx->group_list, pnode)) {
-		if (((GROUP_NODE*)pnode->pdata)->group_id == group_id) {
+		if (static_cast<ics_group_node *>(pnode->pdata)->group_id == group_id) {
 			b_written = TRUE;
 			break;
 		}
@@ -1003,7 +1003,7 @@ static BOOL icsdownctx_object_get_changepartial(
 		pmsg->pgpinfo= &pctx->fake_gpinfo;
 	} else {
 		pmsg->pgpinfo = pgpinfo;
-		pgpnode = me_alloc<GROUP_NODE>();
+		pgpnode = me_alloc<ics_group_node>();
 		if (NULL == pgpnode) {
 			return FALSE;
 		}
