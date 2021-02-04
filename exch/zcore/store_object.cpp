@@ -119,7 +119,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
-		tmp_name.plid = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
+		tmp_name.plid = me_alloc<uint32_t>();
 		if (NULL == tmp_name.plid) {
 			return FALSE;
 		}
@@ -192,7 +192,7 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	if (NULL == pvalue) {
 		return NULL;
 	}
-	auto pstore = static_cast<STORE_OBJECT *>(malloc(sizeof(STORE_OBJECT)));
+	auto pstore = me_alloc<STORE_OBJECT>();
 	if (NULL == pstore) {
 		return NULL;
 	}
@@ -522,7 +522,7 @@ PROPERTY_GROUPINFO* store_object_get_property_groupinfo(
 			return pgpinfo;
 		}
 	}
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return NULL;
 	}

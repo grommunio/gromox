@@ -55,7 +55,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 	struct stat node_stat;
 	TPROPVAL_ARRAY propvals;
 	
-	auto prootobj = static_cast<ROOT_OBJECT *>(malloc(sizeof(ROOT_OBJECT)));
+	auto prootobj = me_alloc<ROOT_OBJECT>();
 	if (NULL == prootobj) {
 		return NULL;
 	}
@@ -269,7 +269,7 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 			return INVALID_HANDLE;
 		}
 	}
-	auto pobjnode = static_cast<OBJECT_NODE *>(malloc(sizeof(OBJECT_NODE)));
+	auto pobjnode = me_alloc<OBJECT_NODE>();
 	if (NULL == pobjnode) {
 		return INVALID_HANDLE;
 	}
@@ -318,7 +318,7 @@ OBJECT_TREE* object_tree_create(const char *maildir)
 	int handle;
 	ROOT_OBJECT *prootobj;
 	
-	auto pobjtree = static_cast<OBJECT_TREE *>(malloc(sizeof(OBJECT_TREE)));
+	auto pobjtree = me_alloc<OBJECT_TREE>();
 	if (NULL == pobjtree) {
 		return NULL;
 	}

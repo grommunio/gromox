@@ -750,7 +750,7 @@ const char* common_util_get_freebusy_path()
 
 BOOL common_util_build_environment()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(malloc(sizeof(ENVIRONMENT_CONTEXT)));
+	auto pctx = me_alloc<ENVIRONMENT_CONTEXT>();
 	if (NULL == pctx) {
 		return FALSE;
 	}
@@ -832,7 +832,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 	NEWMAIL_ZNOTIFICATION *pnew_notify1;
 	
 	if (FALSE == b_temp) {
-		pnotification1 = static_cast<ZNOTIFICATION *>(malloc(sizeof(ZNOTIFICATION)));
+		pnotification1 = me_alloc<ZNOTIFICATION>();
 	} else {
 		pnotification1 = cu_alloc<ZNOTIFICATION>();
 	}
@@ -844,7 +844,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pnew_notify1 = (NEWMAIL_ZNOTIFICATION*)
 			pnotification->pnotification_data;
 		if (FALSE == b_temp) {
-			pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(malloc(sizeof(*pnew_notify)));
+			pnew_notify = me_alloc<NEWMAIL_ZNOTIFICATION>();
 			if (NULL == pnew_notify) {
 				free(pnotification1);
 				return NULL;
@@ -904,7 +904,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pobj_notify1 = (OBJECT_ZNOTIFICATION*)
 			pnotification->pnotification_data;
 		if (FALSE == b_temp) {
-			pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(malloc(sizeof(*pobj_notify)));
+			pobj_notify = me_alloc<OBJECT_ZNOTIFICATION>();
 			if (NULL == pobj_notify) {
 				free(pnotification1);
 				return NULL;

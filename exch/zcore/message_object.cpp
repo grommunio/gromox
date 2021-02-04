@@ -44,7 +44,7 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 	USER_INFO *pinfo;
 	uint64_t *pchange_num;
 	
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(malloc(sizeof(MESSAGE_OBJECT)));
+	auto pmessage = me_alloc<MESSAGE_OBJECT>();
 	if (NULL == pmessage) {
 		return NULL;
 	}

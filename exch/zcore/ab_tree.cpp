@@ -417,7 +417,6 @@ static BOOL ab_tree_load_class(
 	int i;
 	int rows;
 	AB_NODE *pabnode;
-	SORT_ITEM *parray;
 	char temp_buff[1024];
 	std::vector<sql_class> file_subclass;
 	SIMPLE_TREE_NODE *pclass;
@@ -454,7 +453,7 @@ static BOOL ab_tree_load_class(
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
+	auto parray = me_alloc<SORT_ITEM>(rows);
 	if (NULL == parray) {
 		return FALSE;
 	}
@@ -594,7 +593,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		} else if (0 == rows) {
 			continue;
 		}
-		parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
+		parray = me_alloc<SORT_ITEM>(rows);
 		if (NULL == parray) {
 			return FALSE;
 		}
@@ -642,7 +641,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
+	parray = me_alloc<SORT_ITEM>(rows);
 	if (NULL == parray) {
 		return FALSE;	
 	}
@@ -727,7 +726,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (!system_services_get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
-			pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
+			pdomain = me_alloc<DOMAIN_NODE>();
 			if (NULL == pdomain) {
 				ab_tree_unload_base(pbase);
 				return FALSE;
@@ -745,7 +744,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			single_list_append_as_tail(&pbase->list, &pdomain->node);
 		}
 	} else {
-		pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
+		pdomain = me_alloc<DOMAIN_NODE>();
 		if (NULL == pdomain) {
 			return FALSE;
 		}
@@ -776,7 +775,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	if (num <= 1) {
 		return TRUE;
 	}
-	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * num));
+	parray = me_alloc<SORT_ITEM>(num);
 	if (NULL == parray) {
 		return TRUE;
 	}
@@ -818,7 +817,7 @@ RETRY_LOAD_BASE:
 	pthread_mutex_lock(&g_base_lock);
 	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
 	if (NULL == ppbase) {
-		pbase = (AB_BASE*)malloc(sizeof(AB_BASE));
+		pbase = me_alloc<AB_BASE>();
 		if (NULL == pbase) {
 			pthread_mutex_unlock(&g_base_lock);
 			return NULL;

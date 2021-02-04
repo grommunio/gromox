@@ -13,7 +13,7 @@
 ATTACHMENT_OBJECT* attachment_object_create(
 	MESSAGE_OBJECT *pparent, uint32_t attachment_num)
 {
-	auto pattachment = static_cast<ATTACHMENT_OBJECT *>(malloc(sizeof(ATTACHMENT_OBJECT)));
+	auto pattachment = me_alloc<ATTACHMENT_OBJECT>();
 	if (NULL == pattachment) {
 		return NULL;
 	}

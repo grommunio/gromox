@@ -55,7 +55,7 @@ static BOOL ics_state_init(ICS_STATE *pstate)
 
 ICS_STATE* ics_state_create(uint8_t type)
 {
-	auto pstate = static_cast<ICS_STATE *>(malloc(sizeof(ICS_STATE)));
+	auto pstate = me_alloc<ICS_STATE>();
 	if (NULL == pstate) {
 		return NULL;
 	}

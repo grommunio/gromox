@@ -178,7 +178,7 @@ static void* scan_work_func(void *param)
 				if (0 != count) {
 					continue;
 				}
-				pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(*pnode)));
+				pnode = me_alloc<DOUBLE_LIST_NODE>();
 				if (NULL == pnode) {
 					continue;
 				}
@@ -674,7 +674,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			}
 		}
 	}
-	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(*pnode)));
+	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		zarafa_server_put_user_info(pinfo);
 		return;
@@ -3671,7 +3671,6 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	char tmp_buff[256];
 	NOTIFY_ITEM *pnitem;
 	STORE_OBJECT *pstore;
-	SINK_NODE *psink_node;
 	DOUBLE_LIST_NODE *pnode;
 	ZNOTIFICATION* ppnotifications[1024];
 	
@@ -3723,7 +3722,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			ppnotifications, sizeof(void*)*count);
 		return ecSuccess;
 	}
-	psink_node = static_cast<SINK_NODE *>(malloc(sizeof(*psink_node)));
+	auto psink_node = me_alloc<SINK_NODE>();
 	if (NULL == psink_node) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
@@ -3734,7 +3733,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	psink_node->until_time += timeval;
 	psink_node->sink.hsession = psink->hsession;
 	psink_node->sink.count = psink->count;
-	psink_node->sink.padvise = static_cast<ADVISE_INFO *>(malloc(sizeof(ADVISE_INFO) * psink->count));
+	psink_node->sink.padvise = me_alloc<ADVISE_INFO>(psink->count);
 	if (NULL == psink_node->sink.padvise) {
 		zarafa_server_put_user_info(pinfo);
 		free(psink_node);

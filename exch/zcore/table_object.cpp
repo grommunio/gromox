@@ -17,6 +17,7 @@
 #include <gromox/propval.hpp>
 #include <cstdlib>
 #include <cstring>
+#include "common_util.h"
 
 struct BOOKMARK_NODE {
 	DOUBLE_LIST_NODE node;
@@ -864,13 +865,13 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags)
 {
-	auto ptable = static_cast<TABLE_OBJECT *>(malloc(sizeof(TABLE_OBJECT)));
+	auto ptable = me_alloc<TABLE_OBJECT>();
 	if (NULL == ptable) {
 		return NULL;
 	}
 	ptable->pstore = pstore;
 	if (RULE_TABLE == table_type) {
-		ptable->pparent_obj = malloc(sizeof(uint64_t));
+		ptable->pparent_obj = me_alloc<uint64_t>();
 		if (NULL == ptable->pparent_obj) {
 			free(ptable);
 			return NULL;
@@ -916,7 +917,7 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 		&inst_id, &inst_num, &row_type)) {
 		return FALSE;
 	}
-	auto pbookmark = static_cast<BOOKMARK_NODE *>(malloc(sizeof(BOOKMARK_NODE)));
+	auto pbookmark = me_alloc<BOOKMARK_NODE>();
 	if (NULL == pbookmark) {
 		return FALSE;
 	}

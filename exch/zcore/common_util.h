@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstdlib>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include "store_object.h"
@@ -343,6 +344,8 @@ extern void common_util_free_environment(void);
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
 template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
+template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
+template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 void common_util_set_clifd(int clifd);
 extern int common_util_get_clifd(void);
 char* common_util_dup(const char *pstr);

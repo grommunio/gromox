@@ -13,11 +13,12 @@
 #include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
+#include "common_util.h"
 
 ICSDOWNCTX_OBJECT* icsdownctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type)
 {
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(malloc(sizeof(ICSDOWNCTX_OBJECT)));
+	auto pctx = me_alloc<ICSDOWNCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;
 	}

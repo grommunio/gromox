@@ -10,7 +10,7 @@
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 {
-	auto puser = static_cast<USER_OBJECT *>(malloc(sizeof(USER_OBJECT)));
+	auto puser = me_alloc<USER_OBJECT>();
 	if (NULL == puser) {
 		return NULL;
 	}

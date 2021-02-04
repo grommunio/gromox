@@ -19,7 +19,7 @@
 CONTAINER_OBJECT* container_object_create(
 	uint8_t type, CONTAINER_ID id)
 {
-	auto pcontainer = static_cast<CONTAINER_OBJECT *>(malloc(sizeof(CONTAINER_OBJECT)));
+	auto pcontainer = me_alloc<CONTAINER_OBJECT>();
 	if (NULL == pcontainer) {
 		return NULL;
 	}
@@ -404,7 +404,7 @@ BOOL container_object_load_user_table(
 			return FALSE;	
 		}
 		ab_tree_put_base(pbase);
-		pminid_array = static_cast<LONG_ARRAY *>(malloc(sizeof(*pminid_array)));
+		pminid_array = me_alloc<LONG_ARRAY>();
 		if (NULL == pminid_array) {
 			return FALSE;
 		}
@@ -414,7 +414,7 @@ BOOL container_object_load_user_table(
 			pminid_array->pl = NULL;
 			return TRUE;
 		}
-		pminid_array->pl = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * minid_array.count));
+		pminid_array->pl = me_alloc<uint32_t>(minid_array.count);
 		if (NULL == pminid_array->pl) {
 			free(pcontainer->contents.pminid_array);
 			pcontainer->contents.pminid_array = NULL;
