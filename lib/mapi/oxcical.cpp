@@ -361,7 +361,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	papprecurr->recurrencepattern.startdate =
 			rop_util_unix_to_nttime(tmp_time)/600000000;
 	if (ical_rrule_endless(&irrule)) {
- SET_INFINITIVE:
+ SET_INFINITE:
 		papprecurr->recurrencepattern.endtype = ENDTYPE_NEVER_END;
 		papprecurr->recurrencepattern.occurrencecount = 0x0000000A;
 		papprecurr->recurrencepattern.enddate = ENDDATE_MISSING;
@@ -370,7 +370,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		while (ical_rrule_iterate(&irrule)) {
 			itime1 = ical_rrule_instance_itime(&irrule);
 			if (itime1.year > 4500) {
-				goto SET_INFINITIVE;
+				goto SET_INFINITE;
 			}
 			/* instances can not be in same day */
 			if (itime1.year == itime.year &&
