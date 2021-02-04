@@ -3215,7 +3215,9 @@ BOOL common_util_get_properties(int table_type,
 						}
 						return FALSE;
 					}
-					memcpy(bv->pv, sqlite3_column_blob(pstmt, 0), bv->cb);
+					auto blob = sqlite3_column_blob(pstmt, 0);
+					if (bv->cb != 0 || blob != nullptr)
+						memcpy(bv->pv, blob, bv->cb);
 				}
 				break;
 			}
