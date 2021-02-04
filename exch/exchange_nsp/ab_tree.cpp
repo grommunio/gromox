@@ -75,7 +75,7 @@ struct AB_NODE {
 	int id;
 };
 
-struct SORT_ITEM {
+struct ab_sort_item {
 	SIMPLE_TREE_NODE *pnode;
 	char *string;
 };
@@ -412,7 +412,8 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 
 static int ab_tree_cmpstring(const void *p1, const void *p2)
 {
-	return strcasecmp(((SORT_ITEM*)p1)->string, ((SORT_ITEM*)p2)->string);
+	return strcasecmp(static_cast<const ab_sort_item *>(p1)->string,
+	       static_cast<const ab_sort_item *>(p2)->string);
 }
 
 static BOOL ab_tree_load_class(
@@ -422,7 +423,6 @@ static BOOL ab_tree_load_class(
 	int i;
 	int rows;
 	AB_NODE *pabnode;
-	SORT_ITEM *parray;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *pclass;
 	
@@ -460,7 +460,7 @@ static BOOL ab_tree_load_class(
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
+	auto parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
 	if (NULL == parray) {
 		return FALSE;
 	}
@@ -491,7 +491,7 @@ static BOOL ab_tree_load_class(
 		i ++;
 	}
 
-	qsort(parray, rows, sizeof(SORT_ITEM), ab_tree_cmpstring);
+	qsort(parray, rows, sizeof(*parray), ab_tree_cmpstring);
 	for (i=0; i<rows; i++) {
 		simple_tree_add_child(ptree, pnode,
 			parray[i].pnode, SIMPLE_TREE_ADD_LAST);
@@ -514,7 +514,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	int i;
 	int rows;
 	AB_NODE *pabnode;
-	SORT_ITEM *parray;
+	ab_sort_item *parray = nullptr;
 	sql_domain dinfo;
 	SIMPLE_TREE_NODE *pgroup;
 	SIMPLE_TREE_NODE *pclass;
@@ -600,7 +600,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		} else if (0 == rows) {
 			continue;
 		}
-		parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
+		parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
 		if (NULL == parray) {
 			return FALSE;
 		}
@@ -632,7 +632,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			i ++;
 		}
 		
-		qsort(parray, rows, sizeof(SORT_ITEM), ab_tree_cmpstring);
+		qsort(parray, rows, sizeof(ab_sort_item), ab_tree_cmpstring);
 		for (i=0; i<rows; i++) {
 			simple_tree_add_child(ptree, pgroup,
 				parray[i].pnode, SIMPLE_TREE_ADD_LAST);
@@ -648,7 +648,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
+	parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
 	if (NULL == parray) {
 		return FALSE;	
 	}
@@ -680,7 +680,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		i ++;
 	}
 	
-	qsort(parray, rows, sizeof(SORT_ITEM), ab_tree_cmpstring);
+	qsort(parray, rows, sizeof(*parray), ab_tree_cmpstring);
 	for (i=0; i<rows; i++) {
 		simple_tree_add_child(ptree, pdomain,
 			parray[i].pnode, SIMPLE_TREE_ADD_LAST);
@@ -722,7 +722,6 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
 	int i, num;
 	int domain_id;
-	SORT_ITEM *parray;
 	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
@@ -782,7 +781,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	if (num <= 1) {
 		return TRUE;
 	}
-	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * num));
+	auto parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * num));
 	if (NULL == parray) {
 		return TRUE;
 	}
@@ -801,7 +800,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		}
 		i ++;
 	}
-	qsort(parray, num, sizeof(SORT_ITEM), ab_tree_cmpstring);
+	qsort(parray, num, sizeof(ab_sort_item), ab_tree_cmpstring);
 	i = 0;
 	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->gal_list, pnode)) {

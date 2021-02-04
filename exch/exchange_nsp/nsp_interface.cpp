@@ -29,7 +29,7 @@
 #include <fcntl.h>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
-struct SORT_ITEM {
+struct nsp_sort_item {
 	uint32_t minid;
 	union {
 		char *string;
@@ -1847,7 +1847,8 @@ EXIT_GET_MATCHES:
 
 static int nsp_interface_cmpstring(const void *p1, const void *p2)
 {
-	return strcasecmp(((SORT_ITEM*)p1)->string, ((SORT_ITEM*)p2)->string);
+	return strcasecmp(static_cast<const nsp_sort_item *>(p1)->string,
+	       static_cast<const nsp_sort_item *>(p2)->string);
 }
 
 int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
@@ -1858,7 +1859,6 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	int base_id;
 	BOOL b_found;
 	AB_BASE *pbase;
-	SORT_ITEM *parray;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -1866,7 +1866,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		*ppoutmids = NULL;
 		return ecNotSupported;
 	}
-	parray = static_cast<decltype(parray)>(ndr_stack_alloc(NDR_STACK_IN, sizeof(SORT_ITEM) * pinmids->cvalues));
+	auto parray = static_cast<nsp_sort_item *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(nsp_sort_item) * pinmids->cvalues));
 	if (NULL == parray) {
 		*ppoutmids = NULL;
 		return ecMAPIOOM;
@@ -1917,7 +1917,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		strcpy(parray[count].string, temp_buff);
 		count ++;
 	}
-	qsort(parray, count, sizeof(SORT_ITEM), nsp_interface_cmpstring);
+	qsort(parray, count, sizeof(nsp_sort_item), nsp_interface_cmpstring);
 	(*ppoutmids)->cvalues = count;
 	for (i=0; i<count; i++) {
 		(*ppoutmids)->pproptag[i] = parray[i].minid;
