@@ -545,7 +545,7 @@ MESSAGE_CONTENT* oxvcard_import(
 						goto IMPORT_FAILURE;
 				}
 			}
-		} else if (0 == strcasecmp(pvline->name, "CATEGORIS")) {
+		} else if (strcasecmp(pvline->name, "CATEGORIES") == 0) {
 			pnode1 = double_list_get_head(&pvline->value_list);
 			if (NULL == pnode1) {
 				continue;
@@ -1306,7 +1306,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag));
 	if (NULL != pvalue) {
-		pvline = vcard_new_line("CATEGORIS");
+		pvline = vcard_new_line("CATEGORIES");
 		if (NULL == pvline) {
 			goto EXPORT_FAILURE;
 		}

@@ -1027,7 +1027,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	return TRUE;
 }
 
-static BOOL oxcical_parse_categoris(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_categories(std::shared_ptr<ICAL_LINE> piline,
 	INT_HASH_TABLE *phash, uint16_t *plast_propid,
 	MESSAGE_CONTENT *pmsg)
 {
@@ -2597,7 +2597,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	time_t end_time;
 	ICAL_TIME itime;
 	const char *ptzid;
-	std::shared_ptr<ICAL_LINE> piline;
 	time_t start_time;
 	uint32_t tmp_int32;
 	const char *pvalue;
@@ -2622,7 +2621,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	} else {
 		pmain_event = NULL;
 		for (auto event : pevent_list) {
-			piline = ical_get_line(event, "RECURRENCE-ID");
+			auto piline = ical_get_line(event, "RECURRENCE-ID");
 			if (NULL == piline) {
 				if (NULL != pmain_event) {
 					return FALSE;
@@ -2667,10 +2666,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
-	piline = ical_get_line(pmain_event, "CATEGORIS");
+	auto piline = ical_get_line(pmain_event, "CATEGORIES");
 	if (NULL != piline) {
-		if (FALSE == oxcical_parse_categoris(
-			piline, phash, &last_propid, pmsg)) {
+		if (!oxcical_parse_categories(piline, phash, &last_propid, pmsg)) {
 			int_hash_free(phash);
 			return FALSE;
 		}
@@ -5645,7 +5643,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
-		piline = ical_new_line("CATEGORIS");
+		piline = ical_new_line("CATEGORIES");
 		if (NULL == piline) {
 			return FALSE;
 		}
