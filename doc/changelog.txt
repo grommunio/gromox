@@ -1,0 +1,7 @@
+0.15
+====
+* ldap_adaptor: new "ldap_start_tls" config directive to control STARTTLS.
+* exchange_nsp: deliver PT_MV_UNICODE properties to clients
+* authmgr: new config directive "auth_backend_selection"
+* oxcical: escaped commas in values were misparsed, now fixed
+  ("TZID:Amsterdam\, Berlin\, etc.")
