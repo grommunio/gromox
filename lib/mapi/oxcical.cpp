@@ -2740,6 +2740,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	piline = ical_get_line(pmain_event, "DTSTART");
 	if (NULL == piline) {
+		printf("GW-2741: oxcical_import_internal: no DTSTART\n");
 		int_hash_free(phash);
 		return FALSE;
 	}
@@ -2792,6 +2793,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 		
 		if (end_time < start_time) {
+			fprintf(stderr, "GW-2795: ical not imported due to end_time < start_time\n");
 			int_hash_free(phash);
 			return FALSE;
 		}
