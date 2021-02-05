@@ -424,7 +424,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[%s]: failed to register console talk\n", file_name);
 			return false;
 		}
-		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		pfile = config_file_init2(NULL, tmp_path);
 		if (pfile == nullptr) {
 			printf("[%s]: config_file_init %s: %s\n", file_name,
@@ -465,7 +466,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				printf("[%s]: case-insensitive\n", file_name);
 			}
 		}
-		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.txt",
+		         get_data_path(), file_name);
 		str_table_init(file_name, case_sensitive, tmp_path, growing_num);
 		if (str_table_run() != 0) {
 			printf("[%s]: failed to run the module\n", file_name);

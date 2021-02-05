@@ -140,8 +140,8 @@ int main(int argc, const char **argv)
 	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	printf("[system]: state path is %s\n", state_dir);
 
-	sprintf(acl_path, "%s/midb_acl.txt", data_path);
-	sprintf(exmdb_path, "%s/exmdb_list.txt", data_path);
+	snprintf(acl_path, GX_ARRAY_SIZE(acl_path), "%s/midb_acl.txt", data_path);
+	snprintf(exmdb_path, GX_ARRAY_SIZE(exmdb_path), "%s/exmdb_list.txt", data_path);
 	printf("[system]: acl file path is %s\n", acl_path);
 	printf("[system]: exmdb file path is %s\n", exmdb_path);
 	

@@ -40,7 +40,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		
-		sprintf(g_list_path, "%s/%s.txt", get_data_path(), file_name);
+		snprintf(g_list_path, GX_ARRAY_SIZE(g_list_path), "%s/%s.txt",
+		         get_data_path(), file_name);
 		pthread_rwlock_init(&g_refresh_lock, NULL);
 		if (REFRESH_OK != table_refresh()) {
 			printf("[lang_charset]: Failed to load hash table\n");

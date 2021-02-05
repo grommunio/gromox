@@ -405,7 +405,7 @@ int main(int argc, const char **argv)
 						}
 					} 
 				}
-				sprintf(temp_path, "%s.tmp", g_list_path);	
+				snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_list_path);
 				temp_fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 				if (-1 != temp_fd) {
 					for (i=0; i<item_num; i++) {

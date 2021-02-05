@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
 #include "resource.h"
@@ -360,7 +361,8 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
                                  &string_length);
                 smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2175016, 2,
                                  &string_length);
-                string_length = sprintf(reason, "%s<%s>%s", smtp_reply_str, buff,
+                string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
+                                "%s<%s>%s", smtp_reply_str, buff,
                                 smtp_reply_str2);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, reason, string_length);
@@ -380,7 +382,8 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
                                  &string_length);
                 smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2175017, 2,
                                  &string_length);
-                string_length = sprintf(reason, "%s<%s>%s", smtp_reply_str, buff,
+                string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
+                                "%s<%s>%s", smtp_reply_str, buff,
                                 smtp_reply_str2);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, reason, string_length);

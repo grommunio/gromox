@@ -4635,13 +4635,14 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						continue;
 					snprintf(mid_string, 128, "%ld.%d.%s", time(NULL),
 							common_util_sequence_ID(), get_host_ID());
-					sprintf(tmp_path, "%s/eml/%s", maildir, mid_string);
+					snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path),
+					         "%s/eml/%s", maildir, mid_string);
 					if (FALSE == common_util_copy_file(
 						tmp_path1, tmp_path)) {
 						continue;
 					}
 					strcpy(tmp_buff, pdigest);
-					sprintf(mid_string1, "\"%s\"", mid_string);
+					snprintf(mid_string1, GX_ARRAY_SIZE(mid_string1), "\"%s\"", mid_string);
 					set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1);
 					pdigest1 = tmp_buff;
 					if (!exmdb_client_relay_delivery(maildir,
@@ -5079,13 +5080,14 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						continue;
 					snprintf(mid_string, 128, "%ld.%d.%s", time(NULL),
 							common_util_sequence_ID(), get_host_ID());
-					sprintf(tmp_path, "%s/eml/%s", maildir, mid_string);
+					snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path),
+					         "%s/eml/%s", maildir, mid_string);
 					if (FALSE == common_util_copy_file(
 						tmp_path1, tmp_path)) {
 						continue;
 					}
 					strcpy(tmp_buff, pdigest);
-					sprintf(mid_string1, "\"%s\"", mid_string);
+					snprintf(mid_string1, GX_ARRAY_SIZE(mid_string1), "\"%s\"", mid_string);
 					set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1);
 					pdigest1 = tmp_buff;
 					if (!exmdb_client_relay_delivery(maildir,

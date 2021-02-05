@@ -48,7 +48,8 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		pfile = config_file_init2(NULL, tmp_path);
 		if (NULL == pfile) {
 			printf("[exmdb_local]: config_file_init %s: %s\n", tmp_path, strerror(errno));

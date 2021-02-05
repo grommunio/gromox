@@ -1706,7 +1706,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			result = ecError;
 			goto EXIT_GET_MATCHES;
 		}
-		sprintf(temp_path, "%s/config/delegates.txt", maildir);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+		         "%s/config/delegates.txt", maildir);
 		pfile = list_file_init(temp_path, "%s:256");
 		if (NULL == pfile) {
 			result = ecSuccess;
@@ -2716,7 +2717,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		result = ecError;
 		goto EXIT_MOD_LINKATT;
 	}
-	sprintf(temp_path, "%s/config/delegates.txt", maildir);
+	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/config/delegates.txt", maildir);
 	pfile = list_file_init(temp_path, "%s:256");
 	if (NULL != pfile) {
 		item_num = list_file_get_item_num(pfile);

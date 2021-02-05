@@ -242,7 +242,8 @@ static void* thread_work_func(void *arg)
 				continue;
 			should_delete = TRUE;
 			for (i=0; i<g_files_num; i++) {
-				sprintf(temp_path, "%s/%s", g_log_dir, direntp->d_name);
+				snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+				         "%s/%s", g_log_dir, direntp->d_name);
 				if (0 == strcmp(temp_path, g_files_name + i * 256)) {
 					should_delete = FALSE;
 					break;
@@ -527,7 +528,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
-		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		pfile = config_file_init2(NULL, tmp_path);
 		if (pfile == nullptr) {
 			printf("[log_plugin]: config_file_init %s: %s\n", tmp_path, strerror(errno));

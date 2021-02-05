@@ -188,12 +188,12 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "STATE_PATH");
 	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	
-	sprintf(exmdb_path, "%s/exmdb_list.txt", data_path);
+	snprintf(exmdb_path, GX_ARRAY_SIZE(exmdb_path), "%s/exmdb_list.txt", data_path);
 	printf("[system]: exmdb file path is %s\n", exmdb_path);
-	sprintf(resource_path, "%s/notify_bounce", data_path);
-	sprintf(grouping_path, "%s/msgchg_grouping", data_path);
-	sprintf(langmap_path, "%s/langmap.txt", data_path);
-	sprintf(folderlang_path, "%s/folder_lang.txt", data_path);
+	snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", data_path);
+	snprintf(grouping_path, GX_ARRAY_SIZE(grouping_path), "%s/msgchg_grouping", data_path);
+	snprintf(langmap_path, GX_ARRAY_SIZE(langmap_path), "%s/langmap.txt", data_path);
+	snprintf(folderlang_path, GX_ARRAY_SIZE(folderlang_path), "%s/folder_lang.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
 	service_init({service_path, config_path, data_path, state_dir,

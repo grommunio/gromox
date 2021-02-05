@@ -3105,7 +3105,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		} else if (0 == strcasecmp(mode_buff, "image")) {
 			strcpy(mode_buff, ";type=i");
 		}
-		tmp_bin.cb = sprintf(tmp_buff, "[InternetShortcut]\r\n"
+		tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "[InternetShortcut]\r\n"
 					"URL=ftp://%s/%s/%s%s", site_buff, dir_buff,
 					file_name, mode_buff);
 		tmp_bin.pc = mode_buff;
@@ -3563,7 +3563,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return false;
 	} else {
-		tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
+		tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "EX:%s", essdn) + 1;
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
 		propval.pvalue  = deconst("EX");
 		if (!tpropval_array_set_propval(pproplist, &propval))

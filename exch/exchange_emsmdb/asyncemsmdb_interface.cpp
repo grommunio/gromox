@@ -188,7 +188,8 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	} else {
 		pwait->out_payload.pout = pout;
 	}
-	sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
+	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
+	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	pthread_mutex_lock(&g_async_lock);
 	if (0 != async_id) {
@@ -226,7 +227,8 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 		return;
 	}
 	pwait = *ppwait;
-	sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
+	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
+	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	str_hash_remove(g_tag_hash, tmp_tag);
 	int_hash_remove(g_async_hash, async_id);

@@ -67,7 +67,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.txt",
+		         get_data_path(), file_name);
 		struct srcitem { char ext[16], mimetype[64]; };
 		pfile = list_file_init(tmp_path, "%s:16%s:64");
 		if (NULL == pfile) {

@@ -38,7 +38,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[%s]: failed to register console talk\n", file_name);
 			return FALSE;
 		}
-		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		pfile = config_file_init2(NULL, config_path);
 		if (NULL == pfile) {
 			printf("[%s]: config_file_init %s: %s\n", file_name, config_path, strerror(errno));
@@ -128,7 +129,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		judge_name = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
 		add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
 		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
-		sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
+		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s/%s.txt",
+		         get_data_path(), file_name);
 		str_filter_init(file_name, config_path, case_sensitive, audit_max,
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {

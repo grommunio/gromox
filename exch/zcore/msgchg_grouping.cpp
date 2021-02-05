@@ -182,7 +182,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			" %s format error\n", file_name);
 		return NULL;
 	}
-	sprintf(file_path, "%s/%s", g_folder_path, file_name);
+	snprintf(file_path, GX_ARRAY_SIZE(file_path), "%s/%s", g_folder_path, file_name);
 	pfile = list_file_init(file_path, "%s:256");
 	if (NULL == pfile) {
 		printf("[exchange_emsmdb]: list_file_init %s: %s\n",

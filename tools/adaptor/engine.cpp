@@ -84,7 +84,7 @@ static void* thread_work_func1(void *param)
 			data_source_collect_free(pcollect);
 			goto NEXT_LOOP;
 		}
-		sprintf(temp_path, "%s.tmp", g_domainlist_path);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_domainlist_path);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			data_source_collect_free(pcollect);
@@ -114,7 +114,7 @@ static void* thread_work_func1(void *param)
 			goto NEXT_LOOP;
 		}
 		
-		sprintf(temp_path, "%s.tmp", g_aliasaddress_path);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_aliasaddress_path);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			data_source_collect_free(pcollect);

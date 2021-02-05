@@ -237,7 +237,7 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
 	char dir_buff[256], sub_buff[256];
 	int i, item_num;
 
-	sprintf(dir_buff, "%s/%s", g_path, dir_name);
+	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", g_path, dir_name);
 	if (0 != stat(dir_buff, &node_stat) ||
 		0 == S_ISDIR(node_stat.st_mode)) {
 		return FALSE;	
@@ -248,7 +248,8 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-        sprintf(sub_buff, "%s/%s", dir_buff, sub_direntp->d_name);
+		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
+		         dir_buff, sub_direntp->d_name);
         if (0 != stat(sub_buff, &node_stat) ||
             0 == S_ISREG(node_stat.st_mode)) {
             continue;
@@ -300,13 +301,14 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		}
 	}
 	presource->node.pdata = presource;
-    sprintf(dir_buff, "%s/%s", g_path, dir_name);
+	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", g_path, dir_name);
     sub_dirp = opendir(dir_buff);
     while ((sub_direntp = readdir(sub_dirp)) != NULL) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-        sprintf(sub_buff, "%s/%s", dir_buff, sub_direntp->d_name);
+		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
+		         dir_buff, sub_direntp->d_name);
         if (0 != stat(sub_buff, &node_stat) ||
             0 == S_ISREG(node_stat.st_mode)) {
             continue;

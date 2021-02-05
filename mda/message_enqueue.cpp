@@ -88,7 +88,7 @@ static int message_enqueue_run()
     if (FALSE == message_enqueue_check()) {
         return -1;
     }
-	sprintf(name, "%s/token.ipc", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
 	int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd >= 0)
 		close(fd);
@@ -128,8 +128,8 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity)
     
     fclose((FILE*)pentity->pflusher->flush_ptr);
     pentity->pflusher->flush_ptr = NULL;
-    sprintf(file_name, "%s/mess/%d", g_path, 
-            pentity->pflusher->flush_ID);
+	snprintf(file_name, GX_ARRAY_SIZE(file_name), "%s/mess/%d",
+	         g_path, pentity->pflusher->flush_ID);
 	remove(file_name);
     pentity->pflusher->flush_ID = 0;
 }
@@ -191,7 +191,7 @@ static BOOL message_enqueue_check()
         printf("[message_enqueue]: %s is not a directory\n", g_path);
         return FALSE;
     }
-    sprintf(name, "%s/mess", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess", g_path);
     if (0 != stat(name, &node_stat)) {
         printf("[message_enqueue]: cannot find directory %s\n", name);
         return FALSE;
@@ -200,7 +200,7 @@ static BOOL message_enqueue_check()
         printf("[message_enqueue]: %s is not a directory\n", name);
 		return FALSE;
     }
-    sprintf(name, "%s/save", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/save", g_path);
     if (0 != stat(name, &node_stat)) {
         printf("[message_enqueue]: cannot find directory %s\n", name);
         return FALSE;
@@ -209,7 +209,7 @@ static BOOL message_enqueue_check()
         printf("[message_enqueue]: %s is not a directory\n", name);
 		return FALSE;
     }
-    sprintf(name, "%s/token.ipc", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
     if (0 != stat(name, &node_stat)) {
         printf("[message_enqueue]: can not find ipc token file  %s\n", name);
         return FALSE;
@@ -266,7 +266,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	unsigned int size;
 
 	if (NULL == pentity->pflusher->flush_ptr) {
-		sprintf(name, "%s/mess/%d", g_path, pentity->pflusher->flush_ID);
+		snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d",
+		         g_path, pentity->pflusher->flush_ID);
         fp = fopen(name, "w");
         /* check if the file is created successfully */
         if (NULL == fp) {
@@ -384,7 +385,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
  REMOVE_MESS:
 	fclose(fp);
     pentity->pflusher->flush_ptr = NULL;
-    sprintf(name, "%s/mess/%d", g_path, pentity->pflusher->flush_ID);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path,
+	         pentity->pflusher->flush_ID);
 	remove(name);
 	return FALSE;
 }
@@ -403,7 +405,7 @@ static int message_enqueue_retrieve_max_ID()
 
 	max_ID = 0;
 	/* get maximum flushID in mess */
-   	sprintf(temp_path, "%s/mess", g_path);
+	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/mess", g_path);
     dirp = opendir(temp_path);
     while ((direntp = readdir(dirp)) != NULL) {
 		if (strcmp(direntp->d_name, ".") == 0 ||
@@ -411,7 +413,8 @@ static int message_enqueue_retrieve_max_ID()
 			continue;
     	temp_ID = atoi(direntp->d_name);
         if (temp_ID > max_ID) {
-			sprintf(temp_path, "%s/mess/%s", g_path, direntp->d_name);
+			snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/mess/%s",
+			         g_path, direntp->d_name);
 			fd = open(temp_path, O_RDONLY);
 			if (-1 == fd) {
 				continue;
@@ -446,7 +449,8 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
-		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		pfile = config_file_init2(nullptr, temp_path);
 		if (pfile == nullptr) {
 			printf("[message_enqueue]: config_file_init %s: %s\n",

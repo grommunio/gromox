@@ -1061,7 +1061,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 	sqlite3_stmt *pstmt;
 	uint64_t parent_fid;
 	uint32_t folder_type;
-	char sql_string[128];
+	char sql_string[256];
 	
 	*pb_partial = FALSE;
 	fid_val = folder_id;
@@ -2023,7 +2023,7 @@ static BOOL folder_copy_folder_internal(
 	uint64_t parent_fid;
 	uint64_t message_id1;
 	uint32_t folder_type;
-	char sql_string[128];
+	char sql_string[256];
 	uint32_t message_size;
 	
 	*pb_partial = FALSE;
@@ -2665,7 +2665,7 @@ BOOL exmdb_server_get_search_criteria(
 	uint64_t fid_val;
 	EXT_PULL ext_pull;
 	sqlite3_stmt *pstmt;
-	char sql_string[128];
+	char sql_string[256];
 	uint32_t search_flags;
 	
 	if (FALSE == exmdb_server_check_private()) {

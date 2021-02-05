@@ -320,7 +320,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
-		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.txt",
+		         get_data_path(), file_name);
 		codepage_lang_init(tmp_path);
 		if (codepage_lang_run() != 0) {
 			printf("[codepage_lang]: failed to run the module\n");

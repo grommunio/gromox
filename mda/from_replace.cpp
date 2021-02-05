@@ -44,8 +44,8 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		sprintf(g_list_path, "%s/%s.txt", get_data_path(), file_name);
-		
+		snprintf(g_list_path, GX_ARRAY_SIZE(g_list_path), "%s/%s.txt",
+		         get_data_path(), file_name);
 		pthread_rwlock_init(&g_refresh_lock, NULL);
 		
 		g_hash_table = NULL;

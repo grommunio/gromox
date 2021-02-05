@@ -104,7 +104,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		pconfig = config_file_init2(NULL, config_path);
 		if (NULL == pconfig) {
 			printf("[exmdb_provider]: config_file_init %s: %s\n", config_path, strerror(errno));

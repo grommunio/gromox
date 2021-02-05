@@ -33,7 +33,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
+		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
+		         get_config_path(), file_name);
 		HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_state_path());
 		pfile = config_file_init2(NULL, config_path);

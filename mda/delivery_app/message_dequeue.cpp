@@ -112,7 +112,7 @@ static BOOL message_dequeue_check()
 		return FALSE;
 	}
 	/* mess directory is used to save the message larger than BLOCK_SIZE */
-	sprintf(name, "%s/mess", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess", g_path);
 	if (0 != stat(name, &node_stat)) {
         printf("[message_dequeue]: cannot find directory %s\n", name);
         return FALSE;
@@ -122,7 +122,7 @@ static BOOL message_dequeue_check()
         return FALSE;
     }
 	/* save directory is used to save the message for debugging */
-    sprintf(name, "%s/save", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/save", g_path);
     if (0 != stat(name, &node_stat)) {
         printf("[message_dequeue]: cannot find directory %s\n", name);
         return FALSE;
@@ -131,7 +131,7 @@ static BOOL message_dequeue_check()
         printf("[message_dequeue]: %s is not a directory\n", name);
         return FALSE;
     }
-	sprintf(name, "%s/token.ipc", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
 	if (0 != stat(name, &node_stat)) {
 		printf("[message_dequeue]: can not find ipc token file  %s\n", name);
 		return FALSE;
@@ -176,7 +176,7 @@ int message_dequeue_run()
 	if (FALSE == message_dequeue_check()) {
 		return -1;
 	}
-    sprintf(name, "%s/token.ipc", g_path);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
 	int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd >= 0)
 		close(fd);
@@ -253,7 +253,7 @@ void message_dequeue_put(MESSAGE *pmessage)
 
 	free(pmessage->begin_address);
 	pmessage->begin_address = NULL;
-	sprintf(name, "%s/mess/%d", g_path, pmessage->message_data);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, pmessage->message_data);
 	remove(name);
 	pthread_mutex_lock(&g_hash_mutex);
 	int_hash_remove(g_mess_hash, pmessage->message_data);
@@ -418,7 +418,7 @@ static void message_dequeue_load_from_mess(int mess)
 	if (NULL != pmessage) {
 		return;
 	}
-	sprintf(name, "%s/mess/%d", g_path, mess);
+	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, mess);
 	if (0 != stat(name, &node_stat) || 0 == S_ISREG(node_stat.st_mode)) {
 		return;
 	}
@@ -471,7 +471,7 @@ static void* thread_work_func(void* arg)
     struct dirent *direntp;
 	int mess_fd, len, mess;
 
-    sprintf(dir_name, "%s/mess", g_path);
+	snprintf(dir_name, GX_ARRAY_SIZE(dir_name), "%s/mess", g_path);
     while (NULL == (dirp = opendir(dir_name))) {
 		printf("[message_dequeue]: failed to open directory %s: %s\n",
 			dir_name, strerror(errno));
@@ -504,7 +504,8 @@ static void* thread_work_func(void* arg)
 			if (g_current_mem == g_max_memory) {
 				break;
 			}
-            sprintf(file_name, "%s/mess/%s", g_path, direntp->d_name);
+			snprintf(file_name, GX_ARRAY_SIZE(file_name),
+			         "%s/mess/%s", g_path, direntp->d_name);
 			mess_fd = open(file_name, O_RDONLY);
 			if (-1 == mess_fd) {
 				continue;
@@ -569,9 +570,11 @@ void message_dequeue_save(MESSAGE *pmessage)
 	char *ptr;
 	int fd, len;
 	
-	sprintf(new_file, "%s/save/%d", g_path, pmessage->flush_ID);
+	snprintf(new_file, GX_ARRAY_SIZE(new_file), "%s/save/%d",
+	         g_path, pmessage->flush_ID);
 	if (MESSAGE_MESS == pmessage->message_option) {
-		sprintf(old_file, "%s/mess/%d", g_path, pmessage->message_data);
+		snprintf(old_file, GX_ARRAY_SIZE(old_file), "%s/mess/%d",
+		         g_path, pmessage->message_data);
 		link(old_file, new_file);		
 	} else {
 		fd = open(new_file, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);	

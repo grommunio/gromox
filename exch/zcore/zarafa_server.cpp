@@ -3607,7 +3607,7 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 	tmp_item.hsession = hsession;
 	tmp_item.hstore = hstore;
 	time(&tmp_item.last_time);
-	sprintf(tmp_buff, "%u|%s", *psub_id, dir);
+	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", *psub_id, dir);
 	pthread_mutex_lock(&g_notify_lock);
 	if (1 != str_hash_add(g_notify_table, tmp_buff, &tmp_item)) {
 		pthread_mutex_unlock(&g_notify_lock);
@@ -3646,7 +3646,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	HX_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
 	zarafa_server_put_user_info(pinfo);
 	exmdb_client_unsubscribe_notification(dir, sub_id);
-	sprintf(tmp_buff, "%u|%s", sub_id, dir);
+	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", sub_id, dir);
 	pthread_mutex_lock(&g_notify_lock);
 	pnitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
 	if (NULL != pnitem) {

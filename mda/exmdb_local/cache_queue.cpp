@@ -127,7 +127,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	int fd, times;
 
 	mess_id = cache_queue_increase_mess_ID();
-	sprintf(file_name, "%s/%d", g_path, mess_id);
+	snprintf(file_name, GX_ARRAY_SIZE(file_name), "%s/%d", g_path, mess_id);
 	fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
 		return -1;
@@ -285,7 +285,8 @@ static void* thread_work_func(void* arg)
 			if (strcmp(direntp->d_name, ".") == 0 ||
 			    strcmp(direntp->d_name, "..") == 0)
 				continue;
-			sprintf(temp_path, "%s/%s", g_path, direntp->d_name);
+			snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+			         "%s/%s", g_path, direntp->d_name);
 			if (0 != stat(temp_path, &node_stat) ||
                 0 == S_ISREG(node_stat.st_mode)) {
                 continue;
