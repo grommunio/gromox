@@ -40,7 +40,7 @@ enum {
 	USER_PRIVILEGE_SMTP = 1 << 1,
 };
 
-static std::string g_config_path, g_ldap_host, g_search_base, g_mail_attr;
+static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
 static bool g_use_tls;
 static resource_pool<twoconn> g_conn_pool;
@@ -188,7 +188,7 @@ static bool ldap_adaptor_load_base()
 static bool ldap_adaptor_load()
 {
 	/* get the plugin name from system api */
-	g_config_path = get_config_path() + "/ldap_adaptor.cfg"s;
+	auto g_config_path = get_config_path() + "/ldap_adaptor.cfg"s;
 	auto pfile = config_file_init2(nullptr, g_config_path.c_str());
 	if (pfile == nullptr) {
 		printf("[ldap_adaptor]: config_file_init %s: %s\n",

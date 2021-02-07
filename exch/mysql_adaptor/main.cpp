@@ -12,8 +12,6 @@
 
 DECLARE_API();
 
-static char g_config_path[256];
-
 BOOL SVC_LibMain(int reason, void** ppdata)
 {
 	char file_name[256];
@@ -34,7 +32,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_state_path());
 		auto pfile = config_file_init2(nullptr, config_path);
 		if (NULL == pfile) {
