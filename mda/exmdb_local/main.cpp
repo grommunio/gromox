@@ -213,8 +213,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client_init(conn_num, exmdb_list_path);
-		exmdb_local_init(tmp_path, org_name,
-			charset, timezone, propnames_path);
+		exmdb_local_init(org_name, charset, timezone, propnames_path);
 		
 		if (0 != net_failure_run()) {
 			printf("[exmdb_local]: failed to run net failure\n");

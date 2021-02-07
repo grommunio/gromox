@@ -37,7 +37,6 @@
 #define DEF_MODE				S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 static char g_org_name[256];
-static char g_config_path[256];
 static char g_propname_path[256];
 static pthread_key_t g_alloc_key;
 static STR_HASH_TABLE *g_str_hash;
@@ -86,11 +85,9 @@ static int exmdb_local_sequence_ID()
 }
 
 
-void exmdb_local_init(const char *config_path,
-	const char *org_name, const char *default_charset,
+void exmdb_local_init(const char *org_name, const char *default_charset,
 	const char *default_timezone, const char *propname_path)
 {
-	HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
 	HX_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
@@ -741,17 +738,6 @@ void exmdb_local_console_talk(int argc,
 				"than 0");
 			return;
 		}
-		auto pfile = config_file_init2(nullptr, g_config_path);
-		if (NULL == pfile) {
-			snprintf(result, length, "550 Failed to open config file");
-			return;
-		}
-		config_file_set_value(pfile, "FAILURE_TIMES_FOR_ALARM", argv[3]);
-		config_file_set_value(pfile, "INTERVAL_FOR_FAILURE_STATISTIC", ptr + 1);
-		if (FALSE == config_file_save(pfile)) {
-			snprintf(result, length, "550 fail to save config file");
-			return;
-		}
 		net_failure_set_param(NET_FAILURE_STATISTIC_TIMES, times);
 		net_failure_set_param(NET_FAILURE_STATISTIC_INTERVAL, interval);
 		snprintf(result, length, "250 frequency set OK");
@@ -762,16 +748,6 @@ void exmdb_local_console_talk(int argc,
 		alarm_interval = atoitvl(argv[3]);
 		if (alarm_interval <= 0) {
 			snprintf(result, length, "550 invalid alram-interval %s", argv[3]);
-			return;
-		}
-		auto pfile = config_file_init2(nullptr, g_config_path);
-		if (NULL == pfile) {
-			snprintf(result, length, "550 Failed to open config file");
-			return;
-		}
-		config_file_set_value(pfile, "ALARM_INTERVAL", argv[3]);
-		if (FALSE == config_file_save(pfile)) {
-			snprintf(result, length, "550 fail to save config file");
 			return;
 		}
 		net_failure_set_param(NET_FAILURE_ALARM_INTERVAL, alarm_interval);
@@ -785,16 +761,6 @@ void exmdb_local_console_talk(int argc,
 			snprintf(result, length, "550 invalid retrying-times %s", argv[3]);
 			return;
 		}
-		auto pfile = config_file_init2(nullptr, g_config_path);
-		if (NULL == pfile) {
-			snprintf(result, length, "550 Failed to open config file");
-			return;
-		}
-		config_file_set_value(pfile, "RETRYING_TIMES", argv[3]);
-		if (FALSE == config_file_save(pfile)) {
-			snprintf(result, length, "550 fail to save config file");
-			return;
-		}
 		cache_queue_set_param(CACHE_QUEUE_RETRYING_TIMES, retrying_times);
 		strncpy(result, "250 retrying-times set OK", length);
 		return;
@@ -804,16 +770,6 @@ void exmdb_local_console_talk(int argc,
 		scan_interval = atoitvl(argv[3]);
 		if (scan_interval <=0 ) {
 			snprintf(result, length, "550 invalid cache-scan %s", argv[3]);
-			return;
-		}
-		auto pfile = config_file_init2(nullptr, g_config_path);
-		if (NULL == pfile) {
-			snprintf(result, length, "550 Failed to open config file");
-			return;
-		}
-		config_file_set_value(pfile, "CACHE_SCAN_INTERVAL", argv[3]);
-		if (FALSE == config_file_save(pfile)) {
-			snprintf(result, length, "550 fail to save config file");
 			return;
 		}
 		cache_queue_set_param(CACHE_QUEUE_SCAN_INTERVAL, scan_interval);
@@ -826,16 +782,6 @@ void exmdb_local_console_talk(int argc,
 		if (response_interval <= 0) {
 			snprintf(result, length, "550 invalid response-interval %s",
 				argv[3]);
-			return;
-		}
-		auto pfile = config_file_init2(nullptr, g_config_path);
-		if (NULL == pfile) {
-			snprintf(result, length, "550 Failed to open config file");
-			return;
-		}
-		config_file_set_value(pfile, "RESPONSE_INTERVAL", argv[3]);
-		if (FALSE == config_file_save(pfile)) {
-			snprintf(result, length, "550 fail to save config file");
 			return;
 		}
 		bounce_audit_set_param(BOUNCE_AUDIT_INTERVAL, response_interval);
