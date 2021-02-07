@@ -24,8 +24,7 @@
 
 using namespace gromox;
 
-extern CONFIG_FILE *g_config_file;
-CONFIG_FILE *g_config_file;
+std::shared_ptr<CONFIG_FILE> g_config_file;
 static std::mutex g_svc_once;
 static const char *const g_dfl_svc_plugins[] = {
 	"libgxsvc_ldap_adaptor.so",
@@ -69,7 +68,6 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	auto cfg = config_file_init2(nullptr, PKGSYSCONFDIR "/pam.cfg");
 	if (cfg == nullptr)
 		return PAM_AUTH_ERR;
-	auto cleanup_0 = make_scope_exit([&]() { config_file_free(cfg); });
 
 	const char *username = nullptr;
 	auto ret = pam_get_user(pamh, &username, nullptr);

@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstring>
+#include <memory>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -40,7 +41,7 @@
 using namespace gromox;
 
 BOOL g_notify_stop = FALSE;
-CONFIG_FILE *g_config_file;
+std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 
 static struct HXoption g_options_table[] = {
@@ -120,8 +121,6 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
-
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 80; 
 		resource_set_integer("LISTEN_PORT", listen_port);

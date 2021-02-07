@@ -773,20 +773,19 @@ static void* store_object_get_oof_property(
 	int parsed_length;
 	char subject[1024];
 	char temp_path[256];
-	CONFIG_FILE *pconfig;
 	MIME_FIELD mime_field;
 	struct stat node_stat;
 	static constexpr uint8_t fake_true = true;
 	static constexpr uint8_t fake_false = false;
 	
 	switch (proptag) {
-	case PROP_TAG_OOFSTATE:
+	case PROP_TAG_OOFSTATE: {
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return NULL;
 		}
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		pconfig = config_file_init2(NULL, temp_path);
+		auto pconfig = config_file_init2(nullptr, temp_path);
 		if (NULL == pconfig) {
 			*(uint32_t*)pvalue = 0;
 		} else {
@@ -799,9 +798,9 @@ static void* store_object_get_oof_property(
 					*(uint32_t*)pvalue = 0;
 				}
 			}
-			config_file_free(pconfig);
 		}
 		return pvalue;
+	}
 	case PROP_TAG_OOFINTERNALREPLY:
 	case PROP_TAG_OOFEXTERNALREPLY:
 		if (PROP_TAG_OOFINTERNALREPLY == proptag) {
@@ -871,15 +870,14 @@ static void* store_object_get_oof_property(
 		}
 		return NULL;
 	case PROP_TAG_OOFBEGIN:
-	case PROP_TAG_OOFUNTIL:
+	case PROP_TAG_OOFUNTIL: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		pconfig = config_file_init2(NULL, temp_path);
+		auto pconfig = config_file_init2(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return NULL;
 		}
 		pvalue = cu_alloc<uint64_t>();
 		if (NULL == pvalue) {
-			config_file_free(pconfig);
 			return NULL;
 		}
 		if (PROP_TAG_OOFBEGIN == proptag) {
@@ -888,16 +886,15 @@ static void* store_object_get_oof_property(
 			str_value = config_file_get_value(pconfig, "END_TIME");
 		}
 		if (NULL == str_value) {
-			config_file_free(pconfig);
 			return NULL;
 		}
 		*(uint64_t*)pvalue = rop_util_unix_to_nttime(atoll(str_value));
-		config_file_free(pconfig);
 		return pvalue;
+	}
 	case PROP_TAG_OOFALLOWEXTERNAL:
-	case PROP_TAG_OOFEXTERNALAUDIENCE:
+	case PROP_TAG_OOFEXTERNALAUDIENCE: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		pconfig = config_file_init2(NULL, temp_path);
+		auto pconfig = config_file_init2(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
@@ -911,8 +908,8 @@ static void* store_object_get_oof_property(
 		} else {
 			pvalue = deconst(&fake_true);
 		}
-		config_file_free(pconfig);
 		return pvalue;
+	}
 	}
 	return NULL;
 }
@@ -1449,7 +1446,6 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	char *ptoken;
 	char temp_buff[64];
 	char temp_path[256];
-	CONFIG_FILE *pconfig;
 	struct stat node_stat;
 	
 	sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
@@ -1461,8 +1457,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		close(fd);
 	}
 	switch (proptag) {
-	case PROP_TAG_OOFSTATE:
-		pconfig = config_file_init2(NULL, temp_path);
+	case PROP_TAG_OOFSTATE: {
+		auto pconfig = config_file_init2(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1478,14 +1474,13 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			break;
 		}
 		if (FALSE == config_file_save(pconfig)) {
-			config_file_free(pconfig);
 			return FALSE;
 		}
-		config_file_free(pconfig);
 		return TRUE;
+	}
 	case PROP_TAG_OOFBEGIN:
-	case PROP_TAG_OOFUNTIL:
-		pconfig = config_file_init2(NULL, temp_path);
+	case PROP_TAG_OOFUNTIL: {
+		auto pconfig = config_file_init2(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1496,11 +1491,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			config_file_set_value(pconfig, "END_TIME", temp_buff);
 		}
 		if (FALSE == config_file_save(pconfig)) {
-			config_file_free(pconfig);
 			return FALSE;
 		}
-		config_file_free(pconfig);
 		return TRUE;
+	}
 	case PROP_TAG_OOFINTERNALREPLY:
 	case PROP_TAG_OOFEXTERNALREPLY:
 		if (PROP_TAG_OOFINTERNALREPLY == proptag) {
@@ -1612,8 +1606,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		close(fd);
 		return TRUE;
 	case PROP_TAG_OOFALLOWEXTERNAL:
-	case PROP_TAG_OOFEXTERNALAUDIENCE:
-		pconfig = config_file_init2(NULL, temp_path);
+	case PROP_TAG_OOFEXTERNALAUDIENCE: {
+		auto pconfig = config_file_init2(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1631,11 +1625,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			}
 		}
 		if (FALSE == config_file_save(pconfig)) {
-			config_file_free(pconfig);
 			return FALSE;
 		}
-		config_file_free(pconfig);
 		return TRUE;
+	}
 	}
 	return FALSE;
 }

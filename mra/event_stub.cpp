@@ -49,7 +49,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 {
 	int i, conn_num;
     BACK_CONN *pback;
-	CONFIG_FILE *pfile;
 	char file_name[256];
 	char config_path[256];
 	DOUBLE_LIST_NODE *pnode;
@@ -69,7 +68,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, config_path);
+		auto pfile = config_file_init2(nullptr, config_path);
 		if (NULL == pfile) {
 			printf("[event_proxy]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
@@ -104,7 +103,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[event_proxy]: event address is [%s]:%d\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
-		config_file_free(pfile);
 
 		g_notify_stop = FALSE;
 		int ret = 0;

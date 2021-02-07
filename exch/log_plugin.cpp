@@ -277,7 +277,6 @@ static void* thread_work_func(void *arg)
 static void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 {
 	BOOL flush_result;
-	CONFIG_FILE *pfile;
 	int log_level;
 	int valid_days;
 	char temp_buff[64];
@@ -347,7 +346,7 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 				strncpy(result, "550 level should between 0 and 8", length);
 				return;
 			}
-			pfile = config_file_init2(NULL, g_config_path);
+			auto pfile = config_file_init2(nullptr, g_config_path);
 			if (NULL == pfile) {
 				strncpy(result, "550 Failed to open config file", length);
 				return;
@@ -355,7 +354,6 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 			g_log_level = log_level;
 			config_file_set_value(pfile, "LOG_LEVEL", argv[3]);
 			config_file_save(pfile);
-			config_file_free(pfile);
 			strncpy(result, "250 set log level OK", length);
 			return;
 		} else if (0 == strcmp("valid-days", argv[2])) {
@@ -364,7 +362,7 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 				strncpy(result, "550 level should large than 0", length);
 				return;
 			}
-			pfile = config_file_init2(NULL, g_config_path);
+			auto pfile = config_file_init2(nullptr, g_config_path);
 			if (NULL == pfile) {
 				strncpy(result, "550 Failed to open config file", length);
 				return;
@@ -372,7 +370,6 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 			g_files_num = valid_days;
 			config_file_set_value(pfile, "FILES_NUM", argv[3]);
 			config_file_save(pfile);
-			config_file_free(pfile);
 			strncpy(result, "250 set valid days OK", length);
 			return;
 		}
@@ -512,13 +509,12 @@ static BOOL log_plugin_flush_log()
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	CONFIG_FILE *pfile;
 	char file_name[256], tmp_path[256], temp_buff[64], log_file_name[256];
 	char *str_value, *psearch;
 	int cache_size, log_level, files_num;
 
 	switch (reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		if (!register_talk(log_plugin_console_talk)) {
 			printf("[log_plugin]: failed to register console talk\n");
@@ -530,7 +526,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, tmp_path);
+		auto pfile = config_file_init2(nullptr, tmp_path);
 		if (pfile == nullptr) {
 			printf("[log_plugin]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return false;
@@ -583,7 +579,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			strcpy(log_file_name, str_value);
 		}
 		printf("[log_plugin]: log file name is %s\n", log_file_name);
-		config_file_free(pfile);
 		log_plugin_init(tmp_path, log_file_name, log_level, files_num,
 			cache_size);
 		if (log_plugin_run() != 0) {
@@ -595,6 +590,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return false;
 		}
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		log_plugin_stop();
 		log_plugin_free();

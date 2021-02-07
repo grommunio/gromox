@@ -39,7 +39,6 @@ void auto_response_reply(const char *user_home,
 	char temp_path[256];
 	uint8_t reply_state;
 	char audit_buff[256];
-	CONFIG_FILE *pconfig;
 	MIME_FIELD mime_field;
 	struct stat node_stat;
 	char content_type[256];
@@ -70,30 +69,26 @@ void auto_response_reply(const char *user_home,
 	}
 	
 	snprintf(temp_path, 256, "%s/config/autoreply.cfg", user_home);
-	pconfig = config_file_init2(NULL, temp_path);
+	auto pconfig = config_file_init2(nullptr, temp_path);
 	if (NULL == pconfig) {
 		return;
 	}
 	str_value = config_file_get_value(pconfig, "OOF_STATE");
 	if (NULL == str_value) {
-		config_file_free(pconfig);
 		return;
 	}
 	reply_state = atoi(str_value);
 	if (1 != reply_state && 2 != reply_state) {
-		config_file_free(pconfig);
 		return;
 	}
 	time(&cur_time);
 	if (2 == reply_state) {
 		str_value = config_file_get_value(pconfig, "START_TIME");
 		if (NULL != str_value && atoll(str_value) > cur_time) {
-			config_file_free(pconfig);
 			return;
 		}
 		str_value = config_file_get_value(pconfig, "END_TIME");
 		if (NULL != str_value && cur_time > atoll(str_value)) {
-			config_file_free(pconfig);
 			return;
 		}
 	}
@@ -102,20 +97,17 @@ void auto_response_reply(const char *user_home,
 	} else {
 		str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
 		if (NULL == str_value || 0 == atoi(str_value)) {
-			config_file_free(pconfig);
 			return;
 		}
 		str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
 		if (NULL != str_value && 0 != atoi(str_value)) {
 			if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
 				user_home, rcpt, &b_found) || FALSE == b_found) {
-				config_file_free(pconfig);
 				return;	
 			}
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);
 	}
-	config_file_free(pconfig);
 	snprintf(audit_buff, 256, "%s:%s", from, rcpt);
 	if (FALSE == bounce_audit_check(audit_buff)) {
 		return;

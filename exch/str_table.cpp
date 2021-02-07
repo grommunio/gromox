@@ -407,14 +407,13 @@ static void str_table_echo(const char *format, ...)
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	CONFIG_FILE *pfile;
 	char file_name[256], tmp_path[256], *str_value, *psearch;
 	char *query_name, *add_name, *remove_name;
 	BOOL case_sensitive;
 	int growing_num;
 
 	switch (reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -426,7 +425,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, tmp_path);
+		auto pfile = config_file_init2(nullptr, tmp_path);
 		if (pfile == nullptr) {
 			printf("[%s]: config_file_init %s: %s\n", file_name,
 			       tmp_path, strerror(errno));
@@ -471,32 +470,28 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_table_init(file_name, case_sensitive, tmp_path, growing_num);
 		if (str_table_run() != 0) {
 			printf("[%s]: failed to run the module\n", file_name);
-			config_file_free(pfile);
 			return FALSE;
 		}
 		if (query_name != nullptr && !register_service(query_name,
 		    reinterpret_cast<void *>(str_table_query))) {
 			printf("[%s]: failed to register \"%s\" service\n",
 			       file_name, query_name);
-			config_file_free(pfile);
 			return false;
 		}
 		if (add_name != nullptr && !register_service(add_name,
 		    reinterpret_cast<void *>(str_table_add))) {
 			printf("[%s]: failed to register \"%s\" service\n",
 			       file_name, add_name);
-			config_file_free(pfile);
 			return false;
 		}
 		if (remove_name != nullptr && !register_service(remove_name,
 		    reinterpret_cast<void *>(str_table_remove))) {
 			printf("[%s]: failed to register \"%s\" service\n",
 			       file_name, remove_name);
-			config_file_free(pfile);
 			return false;
 		}
-		config_file_free(pfile);
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		str_table_stop();
 		str_table_free();

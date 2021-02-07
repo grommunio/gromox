@@ -7,6 +7,7 @@
  *
  */
 #include <cerrno>
+#include <memory>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -24,7 +25,7 @@
 #define MAX_LINE_LEN		1024
 #define EXT_ENTRY_NUM		64
 
-static void config_file_parse_line(CONFIG_FILE *cfg, char* line);
+static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line);
 
 char *config_default_path(const char *filename)
 {
@@ -43,15 +44,17 @@ char *config_default_path(const char *filename)
 	return ret;
 }
 
-static CONFIG_FILE *config_file_alloc(size_t z)
+static std::shared_ptr<CONFIG_FILE> config_file_alloc(size_t z)
 {
-	auto cfg = static_cast<CONFIG_FILE *>(calloc(1, sizeof(CONFIG_FILE)));
-	if (cfg == NULL)
-		return NULL;
+	std::shared_ptr<CONFIG_FILE> cfg;
+	try {
+		cfg = std::make_shared<CONFIG_FILE>();
+	} catch (...) {
+		return nullptr;
+	}
 	cfg->total_entries = z;
 	cfg->config_table = static_cast<CONFIG_ENTRY *>(calloc(z, sizeof(CONFIG_ENTRY)));
 	if (cfg->config_table == NULL) {
-		free(cfg);
 		return NULL;
 	}
 	return cfg;
@@ -67,9 +70,8 @@ static CONFIG_FILE *config_file_alloc(size_t z)
  *		a pointer point to the config file object, NULL if
  *		some error occurs
  */
-CONFIG_FILE *config_file_init(const char *filename)
+std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
 {
-	CONFIG_FILE* cfg = NULL;	/* the config object pointer	*/
 	char line[MAX_LINE_LEN];	/* current line being processed */
 	size_t i, table_size;		   /* loop counter, table line num */
 	
@@ -84,7 +86,7 @@ CONFIG_FILE *config_file_init(const char *filename)
 			table_size--;
 		}
 	}
-	cfg = config_file_alloc(table_size + EXT_ENTRY_NUM);
+	auto cfg = config_file_alloc(table_size + EXT_ENTRY_NUM);
 	if (cfg == NULL) {
 		debug_info("[config_file]: config_file_init: %s, alloc fail", filename);
 		fclose(fin);
@@ -112,7 +114,7 @@ CONFIG_FILE *config_file_init(const char *filename)
  * Read a user-specified config file. If not, use system default
  * given by @fb and do not complain about errors with it.
  */
-CONFIG_FILE *config_file_init2(const char *ov, const char *fb)
+std::shared_ptr<CONFIG_FILE> config_file_init2(const char *ov, const char *fb)
 {
 	struct stat sb;
 	if (ov != NULL)
@@ -120,7 +122,7 @@ CONFIG_FILE *config_file_init2(const char *ov, const char *fb)
 	errno = 0;
 	if (stat(fb, &sb) == 0 || errno != ENOENT)
 		return config_file_init(fb);
-	CONFIG_FILE *cfg = config_file_alloc(EXT_ENTRY_NUM);
+	auto cfg = config_file_alloc(EXT_ENTRY_NUM);
 	if (cfg == NULL)
 		return NULL;
 	strcpy(cfg->file_name, fb);
@@ -133,13 +135,9 @@ CONFIG_FILE *config_file_init2(const char *ov, const char *fb)
  *	@param
  *		cfg_file [in]	the object to release
  */
-void config_file_free(CONFIG_FILE* cfg_file)
+CONFIG_FILE::~CONFIG_FILE()
 {
-	if (NULL == cfg_file) {
-		return;
-	}
-	free(cfg_file->config_table);
-	free(cfg_file);
+	free(config_table);
 }
 
 /*
@@ -153,7 +151,7 @@ void config_file_free(CONFIG_FILE* cfg_file)
  *	@return
  *		the value that mapped the specified key
  */
-char *config_file_get_value(CONFIG_FILE *cfg_file, const char *key)
+char *config_file_get_value(std::shared_ptr<CONFIG_FILE> cfg_file, const char *key)
 {
 	size_t i, len;
 
@@ -191,7 +189,7 @@ char *config_file_get_value(CONFIG_FILE *cfg_file, const char *key)
  *		cfg [in]		config file object
  *		line [int]		line read from file
  */
-static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
+static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line)
 {
 	char temp_buf[MAX_LINE_LEN];
 	char *equal_ptr = NULL;
@@ -243,8 +241,8 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	return;
 }
 
-BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
-    const char *value)
+BOOL config_file_set_value(std::shared_ptr<CONFIG_FILE> cfg_file,
+    const char *key, const char *value)
 {
 	size_t index, i, len;   
 
@@ -293,7 +291,7 @@ BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
 	return TRUE;
 }
 
-BOOL config_file_save(CONFIG_FILE* cfg_file)
+BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg_file)
 {
 	size_t i, fd, size, len, written;
 	struct stat node_stat;
@@ -403,7 +401,7 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 	}
 }
 
-BOOL config_file_get_int(CONFIG_FILE *cf, const char *key, int *value)
+BOOL config_file_get_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int *value)
 {
 	const char *v = config_file_get_value(cf, key);
 	if (v == nullptr)
@@ -412,7 +410,7 @@ BOOL config_file_get_int(CONFIG_FILE *cf, const char *key, int *value)
 	return TRUE;
 }
 
-BOOL config_file_set_int(CONFIG_FILE *cf, const char *key, int value)
+BOOL config_file_set_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int value)
 {
 	char buf[HXSIZEOF_Z32];
 	itoa(value, buf, sizeof(buf));

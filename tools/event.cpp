@@ -125,7 +125,6 @@ int main(int argc, const char **argv)
 	pthread_t *en_ids;
 	pthread_t *de_ids;
 	char listen_ip[32];
-	CONFIG_FILE *pconfig;
 	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
@@ -140,7 +139,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);
-	pconfig = config_file_init2(opt_config_file, config_default_path("event.cfg"));
+	auto pconfig = config_file_init2(opt_config_file, config_default_path("event.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
@@ -188,8 +187,6 @@ int main(int argc, const char **argv)
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 	
 	g_threads_num ++;
-	config_file_free(pconfig);
-	
 	g_fifo_alloc = fifo_allocator_init(sizeof(MEM_FILE),
 					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_fifo_alloc) {

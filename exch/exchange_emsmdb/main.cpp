@@ -59,7 +59,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	char size_buff[32];
 	char separator[16];
 	char org_name[256];
-	CONFIG_FILE *pfile;
 	int average_handles;
 	char temp_buff[256];
 	char file_name[256];
@@ -73,7 +72,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	
 	/* path contains the config files directory */
 	switch (reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -83,7 +82,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		snprintf(data_path, GX_ARRAY_SIZE(data_path), "%s/%s", get_data_path(), file_name);
 		snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", get_data_path());
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg", get_config_path(), file_name);
-		pfile = config_file_init2(NULL, temp_path);
+		auto pfile = config_file_init2(nullptr, temp_path);
 		if (NULL == pfile) {
 			printf("[exchange_emsmdb]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
@@ -224,7 +223,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
-		config_file_free(pfile);
 		
 		/* host can include wildcard */
 		pendpoint = register_endpoint("*", 6001);
@@ -293,6 +291,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		printf("[exchange_emsmdb]: plugin is loaded into system\n");
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		rop_processor_stop();
 		asyncemsmdb_interface_stop();

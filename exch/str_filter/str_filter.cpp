@@ -227,7 +227,6 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 	char first_time[64];
 	char last_time[64];
 	char *pslash;
-	CONFIG_FILE *pconfig;
 	char help_string[] = "250 string filter help information:\r\n"
 						 "\t%s search <string>\r\n"
 						 "\t    --search string in string filter\r\n"
@@ -330,7 +329,7 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			if (audit_interval <= 0) {
 				snprintf(result, length,"550 %s is illegal", pslash + 1);
 			}
-			pconfig = config_file_init2(NULL, g_config_path);
+			auto pconfig = config_file_init2(nullptr, g_config_path);
 			if (NULL == pconfig) {
 				strncpy(result, "550 Failed to open config file", length);
 				return;
@@ -339,10 +338,8 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			config_file_set_value(pconfig, "AUDIT_INTERVAL", pslash + 1);
 			if (FALSE == config_file_save(pconfig)) {
 				strncpy(result, "550 fail to save config file", length);
-				config_file_free(pconfig);
 				return;
 			}
-			config_file_free(pconfig);
 			audit_filter_set_param(AUDIT_TIMES, audit_times);
 			audit_filter_set_param(AUDIT_INTERVAL, audit_interval);
 			strncpy(result, "250 audit set OK", length);

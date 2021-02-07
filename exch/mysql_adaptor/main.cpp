@@ -16,7 +16,6 @@ static char g_config_path[256];
 
 BOOL SVC_LibMain(int reason, void** ppdata)
 {
-	CONFIG_FILE  *pfile;
 	char file_name[256];
 	char config_path[256];
 	char uncheck_path[256];
@@ -37,7 +36,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		         get_config_path(), file_name);
 		HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_state_path());
-		pfile = config_file_init2(NULL, config_path);
+		auto pfile = config_file_init2(nullptr, config_path);
 		if (NULL == pfile) {
 			printf("[mysql_adaptor]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
@@ -130,8 +129,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
 			db_name, mysql_port, conn_num, timeout, upg});
-		config_file_free(pfile);
-		
 		if (0 != mysql_adaptor_run()) {
 			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;

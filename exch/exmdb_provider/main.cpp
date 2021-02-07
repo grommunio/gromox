@@ -91,13 +91,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char org_name[256];
 	char file_name[256];
 	char list_path[256];
-	CONFIG_FILE *pconfig;
 	char config_path[256];
 	char resource_path[256];
 	
 
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -106,7 +105,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pconfig = config_file_init2(NULL, config_path);
+		auto pconfig = config_file_init2(nullptr, config_path);
 		if (NULL == pconfig) {
 			printf("[exmdb_provider]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
@@ -324,7 +323,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[exmdb_provider]: populating threads"
 				" number is %d\n", populating_num);
-		config_file_free(pconfig);
 		
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
 		bounce_producer_init(resource_path, separator);
@@ -504,6 +502,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		exmdb_client_stop();
 		exmdb_listener_stop();

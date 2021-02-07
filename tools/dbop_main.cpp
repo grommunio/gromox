@@ -41,7 +41,7 @@ int main(int argc, const char **argv)
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 
-	CONFIG_FILE *pconfig = nullptr;
+	std::shared_ptr<CONFIG_FILE> pconfig;
 	if (opt_config_file == nullptr) {
 		auto http_config = config_file_init2(nullptr, config_default_path("http.cfg"));
 		const char *http_cfgdir = http_config != nullptr ?

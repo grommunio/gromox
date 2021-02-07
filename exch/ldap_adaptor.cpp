@@ -237,10 +237,8 @@ static bool ldap_adaptor_load()
 	val = config_file_get_value(pfile, "ldap_search_base");
 	g_search_base = val != nullptr ? val : "";
 	if (g_search_base.size() == 0 && !ldap_adaptor_load_base()) {
-		config_file_free(pfile);
 		return false;
 	}
-	config_file_free(pfile);
 	return true;
 }
 

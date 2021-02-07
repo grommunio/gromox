@@ -55,7 +55,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	int i, conn_num;
     BACK_CONN *pback;
     DOUBLE_LIST_NODE *pnode;
-	CONFIG_FILE  *pfile;
 	char file_name[256];
 	char config_path[256];
 	char *str_value, *psearch;
@@ -77,7 +76,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, config_path);
+		auto pfile = config_file_init2(nullptr, config_path);
 		if (NULL == pfile) {
 			printf("[timer_agent]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
@@ -112,7 +111,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[timer_agent]: timer address is [%s]:%d\n",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
-		config_file_free(pfile);
 
 		for (i=0; i<conn_num; i++) {
 			pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));

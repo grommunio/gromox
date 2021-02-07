@@ -440,10 +440,9 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 	const char *queue_path;
 	char *psearch;
 	char file_name[256], temp_path[256];
-	CONFIG_FILE *pfile;
 
 	switch (reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -451,7 +450,7 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 			*psearch = '\0';
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(nullptr, temp_path);
+		auto pfile = config_file_init2(nullptr, temp_path);
 		if (pfile == nullptr) {
 			printf("[message_enqueue]: config_file_init %s: %s\n",
 				temp_path, strerror(errno));
@@ -467,16 +466,15 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 		message_enqueue_init(queue_path);
 		if (message_enqueue_run() != 0) {
 			printf("[message_enqueue]: failed to run the module\n");
-			config_file_free(pfile);
 			return false;
 		}
-		config_file_free(pfile);
 		if (!register_cancel(message_enqueue_cancel)) {
 			printf("[message_enqueue]: failed to register cancel flushing\n");
 			return false;
 		}
 		set_flush_ID(message_enqueue_retrieve_flush_ID());
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		if (message_enqueue_stop() != 0)
 			return false;

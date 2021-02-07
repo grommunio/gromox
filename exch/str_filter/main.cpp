@@ -17,7 +17,6 @@ DECLARE_API();
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	CONFIG_FILE  *pfile;
 	char file_name[256], list_path[256];
 	char config_path[256], temp_buff[128];
 	char *str_value, *psearch;
@@ -27,7 +26,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	BOOL case_sensitive;
 	
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -40,7 +39,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, config_path);
+		auto pfile = config_file_init2(nullptr, config_path);
 		if (NULL == pfile) {
 			printf("[%s]: config_file_init %s: %s\n", file_name, config_path, strerror(errno));
 			return FALSE;
@@ -135,32 +134,28 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {
 			printf("[%s]: failed to run the module\n", file_name);
-			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != judge_name &&
 		    !register_service(judge_name, reinterpret_cast<void *>(str_filter_judge))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					judge_name);
-			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != query_name &&
 		    !register_service(query_name, reinterpret_cast<void *>(str_filter_query))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					query_name);
-			config_file_free(pfile);
 			return FALSE;
 		}
 		if (add_name != nullptr && !register_service(add_name,
 		    reinterpret_cast<void *>(str_filter_add_string_into_temp_list))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					add_name);
-			config_file_free(pfile);
 			return FALSE;
 		}
-		config_file_free(pfile);
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		str_filter_stop();
 		str_filter_free();

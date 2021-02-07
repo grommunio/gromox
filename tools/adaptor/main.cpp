@@ -46,7 +46,6 @@ int main(int argc, const char **argv)
 	char mysql_user[256];
 	char *mysql_passwd;
 	char db_name[256];
-	CONFIG_FILE *pconfig;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -55,7 +54,7 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	pconfig = config_file_init2(opt_config_file, config_default_path("adaptor.cfg"));
+	auto pconfig = config_file_init2(opt_config_file, config_default_path("adaptor.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
@@ -137,7 +136,6 @@ int main(int argc, const char **argv)
 	
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
 	engine_init(domainlist_path, aliasaddress_path, unchkusr_path);
-	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {
 		printf("[system]: failed to run system log\n");

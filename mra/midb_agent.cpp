@@ -189,7 +189,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char config_path[256];
     BACK_CONN *pback;
 	BACK_SVR *pserver;
-	CONFIG_FILE *pconfig;
     DOUBLE_LIST_NODE *pnode;
 
 	switch(reason) {
@@ -208,7 +207,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pconfig = config_file_init2(NULL, config_path);
+		auto pconfig = config_file_init2(nullptr, config_path);
 		if (NULL == pconfig) {
 			printf("[midb_agent]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
@@ -235,7 +234,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		} else {
 			printf("[midb_agent]: memory pool is switched off\n");
 		}
-		config_file_free(pconfig);
 
 		LIST_FILE *plist = list_file_init(list_path, /* MIDB_ITEM */ "%s:256%s:32%d");
 		if (NULL == plist) {

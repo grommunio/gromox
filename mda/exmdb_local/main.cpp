@@ -28,7 +28,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	int cache_interval;
 	int retrying_times;
 	int alarm_interval;
-	CONFIG_FILE *pfile;
 	int times, interval;
 	char file_name[256];
 	char cache_path[256];
@@ -41,7 +40,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	 
 	/* path contains the config files directory */
     switch (reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
@@ -50,7 +49,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, tmp_path);
+		auto pfile = config_file_init2(nullptr, tmp_path);
 		if (NULL == pfile) {
 			printf("[exmdb_local]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
@@ -209,7 +208,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		itvltoa(response_interval, temp_buff);
 		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);
 
-		config_file_free(pfile);
 		net_failure_init(times, interval, alarm_interval);
 		bounce_producer_init(resource_path, separator);
 		bounce_audit_init(response_capacity, response_interval);
@@ -248,6 +246,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
             return FALSE;
         }
         return TRUE;
+	}
     case PLUGIN_FREE:
 		exmdb_local_stop();
 		exmdb_local_free();

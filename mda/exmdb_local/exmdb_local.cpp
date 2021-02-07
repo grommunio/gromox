@@ -639,7 +639,6 @@ void exmdb_local_console_talk(int argc,
 	int tmp_port;
 	int conn_num;
 	int alive_num;
-	CONFIG_FILE *pfile;
 	char str_cache[64];
 	char str_alarm[64];
 	int response_interval;
@@ -742,7 +741,7 @@ void exmdb_local_console_talk(int argc,
 				"than 0");
 			return;
 		}
-		pfile = config_file_init2(NULL, g_config_path);
+		auto pfile = config_file_init2(nullptr, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 Failed to open config file");
 			return;
@@ -751,10 +750,8 @@ void exmdb_local_console_talk(int argc,
 		config_file_set_value(pfile, "INTERVAL_FOR_FAILURE_STATISTIC", ptr + 1);
 		if (FALSE == config_file_save(pfile)) {
 			snprintf(result, length, "550 fail to save config file");
-			config_file_free(pfile);
 			return;
 		}
-		config_file_free(pfile);
 		net_failure_set_param(NET_FAILURE_STATISTIC_TIMES, times);
 		net_failure_set_param(NET_FAILURE_STATISTIC_INTERVAL, interval);
 		snprintf(result, length, "250 frequency set OK");
@@ -767,7 +764,7 @@ void exmdb_local_console_talk(int argc,
 			snprintf(result, length, "550 invalid alram-interval %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init2(NULL, g_config_path);
+		auto pfile = config_file_init2(nullptr, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 Failed to open config file");
 			return;
@@ -775,10 +772,8 @@ void exmdb_local_console_talk(int argc,
 		config_file_set_value(pfile, "ALARM_INTERVAL", argv[3]);
 		if (FALSE == config_file_save(pfile)) {
 			snprintf(result, length, "550 fail to save config file");
-			config_file_free(pfile);
 			return;
 		}
-		config_file_free(pfile);
 		net_failure_set_param(NET_FAILURE_ALARM_INTERVAL, alarm_interval);
 		strncpy(result, "250 alarm-interval set OK", length);
 		return;
@@ -790,7 +785,7 @@ void exmdb_local_console_talk(int argc,
 			snprintf(result, length, "550 invalid retrying-times %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init2(NULL, g_config_path);
+		auto pfile = config_file_init2(nullptr, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 Failed to open config file");
 			return;
@@ -798,10 +793,8 @@ void exmdb_local_console_talk(int argc,
 		config_file_set_value(pfile, "RETRYING_TIMES", argv[3]);
 		if (FALSE == config_file_save(pfile)) {
 			snprintf(result, length, "550 fail to save config file");
-			config_file_free(pfile);
 			return;
 		}
-		config_file_free(pfile);
 		cache_queue_set_param(CACHE_QUEUE_RETRYING_TIMES, retrying_times);
 		strncpy(result, "250 retrying-times set OK", length);
 		return;
@@ -813,7 +806,7 @@ void exmdb_local_console_talk(int argc,
 			snprintf(result, length, "550 invalid cache-scan %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init2(NULL, g_config_path);
+		auto pfile = config_file_init2(nullptr, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 Failed to open config file");
 			return;
@@ -821,10 +814,8 @@ void exmdb_local_console_talk(int argc,
 		config_file_set_value(pfile, "CACHE_SCAN_INTERVAL", argv[3]);
 		if (FALSE == config_file_save(pfile)) {
 			snprintf(result, length, "550 fail to save config file");
-			config_file_free(pfile);
 			return;
 		}
-		config_file_free(pfile);
 		cache_queue_set_param(CACHE_QUEUE_SCAN_INTERVAL, scan_interval);
 		strncpy(result, "250 cache-scan set OK", length);
 		return;
@@ -837,7 +828,7 @@ void exmdb_local_console_talk(int argc,
 				argv[3]);
 			return;
 		}
-		pfile = config_file_init2(NULL, g_config_path);
+		auto pfile = config_file_init2(nullptr, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 Failed to open config file");
 			return;
@@ -845,10 +836,8 @@ void exmdb_local_console_talk(int argc,
 		config_file_set_value(pfile, "RESPONSE_INTERVAL", argv[3]);
 		if (FALSE == config_file_save(pfile)) {
 			snprintf(result, length, "550 fail to save config file");
-			config_file_free(pfile);
 			return;
 		}
-		config_file_free(pfile);
 		bounce_audit_set_param(BOUNCE_AUDIT_INTERVAL, response_interval);
 		strncpy(result, "250 response-interval set OK", length);
 		return;

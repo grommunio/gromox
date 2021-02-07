@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <gromox/config_file.hpp>
 #include <gromox/common_types.hpp>
 #define resource_get_string(k) config_file_get_value(g_config_file, (k))
@@ -102,8 +103,6 @@ enum {
 	IMAP_CODE_2200010
 };
 
-extern CONFIG_FILE *g_config_file;
-
 extern void resource_init(void);
 extern void resource_free(void);
 extern int resource_run(void);
@@ -114,3 +113,5 @@ char** resource_get_folder_strings(const char*lang);
 
 const char* resource_get_default_charset(const char *lang);
 extern const char *resource_get_error_string(int);
+
+extern std::shared_ptr<CONFIG_FILE> g_config_file;

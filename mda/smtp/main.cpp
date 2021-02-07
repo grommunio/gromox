@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
@@ -32,7 +33,7 @@
 using namespace gromox;
 
 BOOL g_notify_stop = FALSE;
-CONFIG_FILE *g_config_file;
+std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 
 static struct HXoption g_options_table[] = {
@@ -96,7 +97,6 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	resource_init();
 	if (0 != resource_run()) { 

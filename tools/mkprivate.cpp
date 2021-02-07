@@ -449,7 +449,6 @@ int main(int argc, const char **argv)
 	sqlite3_stmt* pstmt;
 	char mysql_host[256];
 	char mysql_user[256];
-	CONFIG_FILE *pconfig;
 	struct stat node_stat;
 	static char folder_lang[RES_TOTAL_NUM][64];
 	
@@ -460,7 +459,7 @@ int main(int argc, const char **argv)
 		printf("usage: %s <username>\n", argv[0]);
 		return 1;
 	}
-	pconfig = config_file_init2(opt_config_file, config_default_path("sa.cfg"));
+	auto pconfig = config_file_init2(opt_config_file, config_default_path("sa.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
@@ -505,20 +504,16 @@ int main(int argc, const char **argv)
 	
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("Failed to init mysql object\n");
-		config_file_free(pconfig);
 		return 3;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
 		mysql_passwd, db_name, mysql_port, NULL, 0)) {
 		mysql_close(pmysql);
-		config_file_free(pconfig);
 		printf("Failed to connect to the database\n");
 		return 3;
 	}
 	
-	config_file_free(pconfig);
-
 	sprintf(tmp_sql, "SELECT max_size, maildir, lang,"
 		"address_type, address_status, id FROM users "
 		"WHERE username='%s'", argv[1]);

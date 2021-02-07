@@ -31,7 +31,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	void *pendpoint1;
 	void *pendpoint2;
 	int cache_interval;
-	CONFIG_FILE *pfile;
 	char temp_buff[45];
 	char file_name[256];
 	char temp_path[256];
@@ -40,7 +39,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	
 	/* path contains the config files directory */
 	switch (reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		/* get the plugin name from system api */
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
@@ -50,7 +49,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg",
 		         get_config_path(), file_name);
-		pfile = config_file_init2(NULL, temp_path);
+		auto pfile = config_file_init2(nullptr, temp_path);
 		if (NULL == pfile) {
 			printf("[exchange_nsp]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
@@ -107,7 +106,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 			b_check = FALSE;
 		}
 		ab_tree_init(org_name, table_size, cache_interval, max_item_num);
-		config_file_free(pfile);
 		pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
 			printf("[exchange_nsp]: failed to register endpoint with port 6001\n");
@@ -146,6 +144,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		printf("[exchange_nsp]: plugin is loaded into system\n");
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		ab_tree_stop();
 		ab_tree_free();

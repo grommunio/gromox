@@ -115,7 +115,6 @@ int main(int argc, const char **argv)
 	TIMER *ptimer;
 	LIST_FILE *pfile;
 	LIST_FILE *plist;
-	CONFIG_FILE *pconfig;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 
@@ -127,7 +126,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);
-	pconfig = config_file_init2(opt_config_file, config_default_path("timer.cfg"));
+	auto pconfig = config_file_init2(opt_config_file, config_default_path("timer.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
@@ -184,7 +183,6 @@ int main(int argc, const char **argv)
 	printf("[system]: processing threads number is %d\n", g_threads_num);
 
 	g_threads_num ++;
-	config_file_free(pconfig);
 
 	struct srcitem {
 		int tid;

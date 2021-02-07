@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <memory>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -37,7 +38,7 @@
 using namespace gromox;
 
 BOOL g_notify_stop = FALSE;
-CONFIG_FILE *g_config_file;
+std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
@@ -92,7 +93,7 @@ int main(int argc, const char **argv)
 	char console_ip[32];
 	char data_path[256], state_dir[256];
 	char exmdb_path[256];
-	CONFIG_FILE *pconfig;
+	std::shared_ptr<CONFIG_FILE> pconfig;
 	char config_path[256];
 	char langmap_path[256];
 	char service_path[256];
@@ -114,7 +115,6 @@ int main(int argc, const char **argv)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
-	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	str_value = config_file_get_value(pconfig, "HOST_ID");
 	if (NULL == str_value) {
