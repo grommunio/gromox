@@ -25,7 +25,7 @@ required pam_gromox.so" would do nothing. The PAM framework always starts out
 with an initial deny policy, so at least one module needs to be called to make
 the PAM request succeed. For this reason, if there are no other "account"
 modules listed, pam_permit.so should be used.)
-.SH Configuration directives in /etc/gromox/pam.conf
+.SH Configuration directives in /etc/gromox/pam.cfg
 .SS pam_prompt
 .PP
 If pam_gromox detects the absence of a password but presence of a PAM
