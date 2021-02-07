@@ -1264,7 +1264,7 @@ static const char* transporter_get_config_path()
 {
 	const char *ret_value  = resource_get_string("CONFIG_FILE_PATH");
     if (NULL == ret_value) {
-		ret_value = PKGSYSCONFDELIVERYDIR;
+		ret_value = PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
     }
     return ret_value;
 }

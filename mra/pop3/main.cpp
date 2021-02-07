@@ -337,7 +337,7 @@ int main(int argc, const char **argv)
 
 	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		config_dir = str_val = PKGSYSCONFPOP3DIR;
+		config_dir = str_val = PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);

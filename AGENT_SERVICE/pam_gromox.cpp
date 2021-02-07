@@ -107,7 +107,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	bool svcplug_ignerr = parse_bool(config_file_get_value(cfg, "service_plugin_ignore_errors"));
 	const char *config_dir = val = config_file_get_value(cfg, "config_file_path");
 	if (val == nullptr)
-		config_dir = PKGSYSCONFDIR "/pam";
+		config_dir = PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR;
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
 	service_init({svc_plugin_path, config_dir, "", "",

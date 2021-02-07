@@ -22,7 +22,7 @@ Default: (unspecified)
 .PP
 Directory where plugin instances will look for their configuration overrides.
 .PP
-Default: \fI/etc/gromox/delivery\fP
+Default: \fI/etc/gromox/delivery:/etc/gromox\fP
 .SS console_server_ip
 .PP
 An IPv6 address (or v4-mapped address) to expose the management console

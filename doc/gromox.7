@@ -23,6 +23,16 @@ mapi(4gx) \(em PHP module for Gromox services
 pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
 .IP \(bu 4
 rtf2html(1gx) \(em RTFCP to HTML converter
+.SH Configuration files
+.PP
+Program configuration files reside within /etc/gromox. Most of the programs
+have a \fBconfig_file_path\fP directive with which the search path for further
+config files can be specified. For example, http(8gx) defaults to
+config_file_path=/etc/gromox/http:/etc/gromox, so the mysql_adaptor(4gx) plugin
+as loaded by http will first try
+/etc/gromox/http/mysql_adaptor.cfg, then /etc/gromox/mysql_adaptor.cfg. This
+allows having one file that is shared between multiple programs as well as
+being able to override on a per program-basis.
 .SH Databases
 .IP \(bu 4
 User information is held in a MariaDB/MySQL database. This database can be

@@ -47,7 +47,7 @@ int main(int argc, const char **argv)
 		const char *http_cfgdir = http_config != nullptr ?
 			config_file_get_value(http_config, "CONFIG_FILE_PATH") : nullptr;
 		if (http_cfgdir == nullptr)
-			http_cfgdir = PKGSYSCONFDIR "/http";
+			http_cfgdir = PKGSYSCONFDIR "/http:" PKGSYSCONFDIR;
 		pconfig = config_file_initd("mysql_adaptor.cfg", http_cfgdir);
 		if (pconfig == nullptr) {
 			fprintf(stderr, "config_file_initd mysql_adaptor.cfg: %s\n", strerror(errno));

@@ -81,7 +81,7 @@ Default: \fI1 minute\fP
 .PP
 Directory where plugin instances will look for their configuration overrides.
 .PP
-Default: \fI/etc/gromox/http\fP
+Default: \fI/etc/gromox/http:/etc/gromox\fP
 .SS console_server_ip
 .PP
 An IPv6 address (or v4-mapped address) to expose the management console
