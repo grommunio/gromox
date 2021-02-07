@@ -37,7 +37,6 @@ static int g_files_num;
 static char *g_files_name;
 static FILE *g_redirect_fp;
 static char g_redirect_name[256];
-static char g_config_path[256];
 static char g_file_name[256];
 static char g_file_postfix[256];
 static char g_log_dir[256];
@@ -56,12 +55,10 @@ static void* thread_work_func(void *arg);
  *	@param
  *		cache_size		size of cache
  */
-static void log_plugin_init(const char *config_path, const char *log_file_name,
+static void log_plugin_init(const char *log_file_name,
 	int log_level, int files_num, int cache_size)
 {
 	const char *psearch;
-	
-	HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 	g_log_level = log_level;
 	g_files_num = files_num;
 	g_redirect_fp = NULL;
@@ -346,14 +343,7 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 				strncpy(result, "550 level should between 0 and 8", length);
 				return;
 			}
-			auto pfile = config_file_init2(nullptr, g_config_path);
-			if (NULL == pfile) {
-				strncpy(result, "550 Failed to open config file", length);
-				return;
-			}
 			g_log_level = log_level;
-			config_file_set_value(pfile, "LOG_LEVEL", argv[3]);
-			config_file_save(pfile);
 			strncpy(result, "250 set log level OK", length);
 			return;
 		} else if (0 == strcmp("valid-days", argv[2])) {
@@ -362,14 +352,7 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 				strncpy(result, "550 level should large than 0", length);
 				return;
 			}
-			auto pfile = config_file_init2(nullptr, g_config_path);
-			if (NULL == pfile) {
-				strncpy(result, "550 Failed to open config file", length);
-				return;
-			}
 			g_files_num = valid_days;
-			config_file_set_value(pfile, "FILES_NUM", argv[3]);
-			config_file_save(pfile);
 			strncpy(result, "250 set valid days OK", length);
 			return;
 		}
@@ -579,7 +562,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			strcpy(log_file_name, str_value);
 		}
 		printf("[log_plugin]: log file name is %s\n", log_file_name);
-		log_plugin_init(tmp_path, log_file_name, log_level, files_num,
+		log_plugin_init(log_file_name, log_level, files_num,
 			cache_size);
 		if (log_plugin_run() != 0) {
 			printf("[log_plugin]: failed to run log plugin\n");
