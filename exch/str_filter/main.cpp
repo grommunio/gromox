@@ -130,7 +130,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
 		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s/%s.txt",
 		         get_data_path(), file_name);
-		str_filter_init(file_name, config_path, case_sensitive, audit_max,
+		str_filter_init(file_name, case_sensitive, audit_max,
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {
 			printf("[%s]: failed to run the module\n", file_name);

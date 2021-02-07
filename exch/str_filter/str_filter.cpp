@@ -32,7 +32,6 @@ enum{
 static int str_filter_search(char* str); 
 
 static char g_module_name[256];
-static char g_config_path[256];
 
 /*
  *  string filter's construction function, it includes two parts 
@@ -46,12 +45,11 @@ static char g_config_path[256];
  *      temp_list_size		size of temp list
  *      list_path [in]		grey list file path
  */
-void str_filter_init(const char *module_name, const char *config_path,
+void str_filter_init(const char *module_name,
 	BOOL case_sensitive, int audit_num, int audit_interval, int audit_times,
 	int temp_list_size, const char *list_path, int growing_num) 
 {
 	HX_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
-	HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
     audit_filter_init(case_sensitive, audit_num, audit_interval, audit_times);
     grey_list_init(case_sensitive, list_path, growing_num);
     temp_list_init(case_sensitive, temp_list_size);
@@ -328,17 +326,6 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			audit_interval = atoitvl(pslash + 1);
 			if (audit_interval <= 0) {
 				snprintf(result, length,"550 %s is illegal", pslash + 1);
-			}
-			auto pconfig = config_file_init2(nullptr, g_config_path);
-			if (NULL == pconfig) {
-				strncpy(result, "550 Failed to open config file", length);
-				return;
-			}
-			config_file_set_value(pconfig, "AUDIT_TIMES", argv[3]);
-			config_file_set_value(pconfig, "AUDIT_INTERVAL", pslash + 1);
-			if (FALSE == config_file_save(pconfig)) {
-				strncpy(result, "550 fail to save config file", length);
-				return;
 			}
 			audit_filter_set_param(AUDIT_TIMES, audit_times);
 			audit_filter_set_param(AUDIT_INTERVAL, audit_interval);
