@@ -9,6 +9,9 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 #include <fcntl.h>
 #include <spawn.h>
 #include <unistd.h>
@@ -246,6 +249,18 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	return WIFEXITED(status) ? outbuf.size() : -1;
 } catch (...) {
 	return -1;
+}
+
+std::vector<std::string> gx_split(const std::string_view &sv, char sep)
+{
+	size_t start = 0, pos;
+	std::vector<std::string> out;
+	while ((pos = sv.find(sep, start)) != sv.npos) {
+		out.push_back(std::string(sv.substr(start, pos - start)));
+		start = pos + 1;
+	}
+	out.push_back(std::string(sv.substr(start)));
+	return out;
 }
 
 }

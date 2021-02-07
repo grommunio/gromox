@@ -80,7 +80,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, term_handler);
-	g_config_file = config_file_init2(opt_config_file, config_default_path("pop3.cfg"));
+	g_config_file = config_file_prg(opt_config_file, "pop3.cfg");
 	if (opt_config_file != nullptr && g_config_file == nullptr) {
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;

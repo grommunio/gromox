@@ -423,11 +423,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[%s]: failed to register console talk\n", file_name);
 			return false;
 		}
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
-		         get_config_path(), file_name);
-		auto pfile = config_file_init2(nullptr, tmp_path);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.cfg", file_name);
+		auto pfile = config_file_initd(tmp_path, get_config_path());
 		if (pfile == nullptr) {
-			printf("[%s]: config_file_init %s: %s\n", file_name,
+			printf("[%s]: config_file_initd %s: %s\n", file_name,
 			       tmp_path, strerror(errno));
 			return false;
 		}

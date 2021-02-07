@@ -17,9 +17,9 @@ struct GX_EXPORT CONFIG_FILE {
 	char file_name[256];
 };
 
-extern char *config_default_path(const char *filename);
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename);
-extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_init2(const char *ov, const char *fb);
+extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_initd(const char *basename, const char *searchdirs = nullptr);
+extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_prg(const char *priority_location, const char *fallback_location_basename);
 extern GX_EXPORT char *config_file_get_value(std::shared_ptr<CONFIG_FILE>, const char *key);
 extern GX_EXPORT BOOL config_file_set_value(std::shared_ptr<CONFIG_FILE>, const char *key, const char *value);
 extern GX_EXPORT BOOL config_file_save(std::shared_ptr<CONFIG_FILE>);

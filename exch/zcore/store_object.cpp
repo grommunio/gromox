@@ -785,7 +785,7 @@ static void* store_object_get_oof_property(
 			return NULL;
 		}
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_init2(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			*(uint32_t*)pvalue = 0;
 		} else {
@@ -872,7 +872,7 @@ static void* store_object_get_oof_property(
 	case PROP_TAG_OOFBEGIN:
 	case PROP_TAG_OOFUNTIL: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_init2(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return NULL;
 		}
@@ -894,7 +894,7 @@ static void* store_object_get_oof_property(
 	case PROP_TAG_OOFALLOWEXTERNAL:
 	case PROP_TAG_OOFEXTERNALAUDIENCE: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_init2(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
@@ -1458,7 +1458,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	switch (proptag) {
 	case PROP_TAG_OOFSTATE: {
-		auto pconfig = config_file_init2(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1480,7 +1480,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PROP_TAG_OOFBEGIN:
 	case PROP_TAG_OOFUNTIL: {
-		auto pconfig = config_file_init2(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1607,7 +1607,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return TRUE;
 	case PROP_TAG_OOFALLOWEXTERNAL:
 	case PROP_TAG_OOFEXTERNALAUDIENCE: {
-		auto pconfig = config_file_init2(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}

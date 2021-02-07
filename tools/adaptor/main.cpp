@@ -54,7 +54,7 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	auto pconfig = config_file_init2(opt_config_file, config_default_path("adaptor.cfg"));
+	auto pconfig = config_file_prg(opt_config_file, "adaptor.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;

@@ -448,11 +448,10 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg",
-		         get_config_path(), file_name);
-		auto pfile = config_file_init2(nullptr, temp_path);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
+		auto pfile = config_file_initd(temp_path, get_config_path());
 		if (pfile == nullptr) {
-			printf("[message_enqueue]: config_file_init %s: %s\n",
+			printf("[message_enqueue]: config_file_initd %s: %s\n",
 				temp_path, strerror(errno));
 			return false;
 		}

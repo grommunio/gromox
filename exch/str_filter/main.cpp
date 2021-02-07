@@ -37,11 +37,11 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[%s]: failed to register console talk\n", file_name);
 			return FALSE;
 		}
-		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s/%s.cfg",
-		         get_config_path(), file_name);
-		auto pfile = config_file_init2(nullptr, config_path);
+		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s.cfg", file_name);
+		auto pfile = config_file_initd(config_path, get_config_path());
 		if (NULL == pfile) {
-			printf("[%s]: config_file_init %s: %s\n", file_name, config_path, strerror(errno));
+			printf("[%s]: config_file_initd %s: %s\n",
+			       file_name, config_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");

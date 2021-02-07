@@ -187,12 +187,10 @@ static bool ldap_adaptor_load_base()
 
 static bool ldap_adaptor_load()
 {
-	/* get the plugin name from system api */
-	auto g_config_path = get_config_path() + "/ldap_adaptor.cfg"s;
-	auto pfile = config_file_init2(nullptr, g_config_path.c_str());
+	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path());
 	if (pfile == nullptr) {
-		printf("[ldap_adaptor]: config_file_init %s: %s\n",
-		       g_config_path.c_str(), strerror(errno));
+		printf("[ldap_adaptor]: config_file_initd ldap_adaptor.cfg: %s\n",
+		       strerror(errno));
 		return false;
 	}
 

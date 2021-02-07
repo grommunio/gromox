@@ -81,10 +81,11 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		snprintf(data_path, GX_ARRAY_SIZE(data_path), "%s/%s", get_data_path(), file_name);
 		snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", get_data_path());
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg", get_config_path(), file_name);
-		auto pfile = config_file_init2(nullptr, temp_path);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
+		auto pfile = config_file_initd(temp_path, get_config_path());
 		if (NULL == pfile) {
-			printf("[exchange_emsmdb]: config_file_init %s: %s\n", temp_path, strerror(errno));
+			printf("[exchange_emsmdb]: config_file_initd %s: %s\n",
+			       temp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");

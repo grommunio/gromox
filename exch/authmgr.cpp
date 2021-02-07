@@ -63,11 +63,9 @@ static BOOL login_smtp(const char *username, const char *password,
 
 static BOOL authmgr_init()
 {
-	auto cfgpath = get_config_path() + "/authmgr.cfg"s;
-	auto pfile   = config_file_init2(nullptr, cfgpath.c_str());
+	auto pfile = config_file_initd("authmgr.cfg", get_config_path());
 	if (pfile == nullptr) {
-		printf("[authmgr]: confing_file_init %s: %s\n",
-		       cfgpath.c_str(), strerror(errno));
+		printf("[authmgr]: confing_file_initd authmgr.cfg: %s\n", strerror(errno));
 		return false;
 	}
 

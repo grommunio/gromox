@@ -11,6 +11,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
@@ -25,23 +26,14 @@
 #define MAX_LINE_LEN		1024
 #define EXT_ENTRY_NUM		64
 
+using namespace gromox;
+
 static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line);
 
-char *config_default_path(const char *filename)
+static const char *default_searchpath()
 {
-	if (strchr(filename, '/') != NULL)
-		return strdup(filename);
 	const char *ed = getenv("GROMOX_CONFIG_PATH");
-	if (ed == NULL || *ed == '\0')
-		ed = PKGSYSCONFDIR;
-	size_t bs = strlen(ed) + strlen(filename) + 2;
-	auto ret = static_cast<char *>(malloc(bs));
-	if (ret == NULL)
-		return NULL;
-	HX_strlcpy(ret, ed, bs);
-	HX_strlcat(ret, "/", bs);
-	HX_strlcat(ret, filename, bs);
-	return ret;
+	return ed != nullptr ? ed : PKGSYSCONFDIR;
 }
 
 static std::shared_ptr<CONFIG_FILE> config_file_alloc(size_t z)
@@ -49,7 +41,8 @@ static std::shared_ptr<CONFIG_FILE> config_file_alloc(size_t z)
 	std::shared_ptr<CONFIG_FILE> cfg;
 	try {
 		cfg = std::make_shared<CONFIG_FILE>();
-	} catch (...) {
+	} catch (const std::bad_alloc &) {
+		errno = ENOMEM;
 		return nullptr;
 	}
 	cfg->total_entries = z;
@@ -77,8 +70,6 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
 	
 	FILE *fin = fopen(filename, "r");
 	if (fin == NULL) {
-		debug_info("[config_file]: config_file_init: open %s: %s",
-			filename, strerror(errno));
 		return NULL;
 	}
 	for (table_size = 0; fgets(line, MAX_LINE_LEN, fin); table_size++) {
@@ -110,22 +101,52 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
 	return cfg;
 }
 
-/**
- * Read a user-specified config file. If not, use system default
- * given by @fb and do not complain about errors with it.
+/***
+ * @fb:		filename (base) - "foo.cfg"
+ * @sdlist:	colon-separated path list
+ *
+ * Attempt to read config file @fb from various paths (@sdlist).
  */
-std::shared_ptr<CONFIG_FILE> config_file_init2(const char *ov, const char *fb)
+std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlist)
 {
-	struct stat sb;
-	if (ov != NULL)
-		return config_file_init(ov);
 	errno = 0;
-	if (stat(fb, &sb) == 0 || errno != ENOENT)
-		return config_file_init(fb);
+	try {
+		for (auto dir : gx_split(sdlist, ':')) {
+			errno = 0;
+			auto full = dir + "/" + fb;
+			auto cfg = config_file_init(full.c_str());
+			if (cfg != nullptr)
+				return cfg;
+			if (errno != ENOENT) {
+				fprintf(stderr, "config_file_initd %s: %s\n",
+				        full.c_str(), strerror(errno));
+				return nullptr;
+			}
+		}
+	} catch (const std::bad_alloc &) {
+		errno = ENOMEM;
+		return nullptr;
+	}
 	auto cfg = config_file_alloc(EXT_ENTRY_NUM);
 	if (cfg == NULL)
-		return NULL;
+		return nullptr;
 	strcpy(cfg->file_name, fb);
+	return cfg;
+}
+
+/**
+ * Routine intended for programs:
+ *
+ * Read user-specified config file (@uc) or, if that is unset, try the default file
+ * (@fb, located in default searchpaths) in silent mode.
+ */
+std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb)
+{
+	if (ov == nullptr)
+		return config_file_initd(fb, default_searchpath());
+	auto cfg = config_file_init(ov);
+	if (cfg == nullptr)
+		fprintf(stderr, "config_file_init %s: %s\n", ov, strerror(errno));
 	return cfg;
 }
 

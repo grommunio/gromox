@@ -145,14 +145,15 @@ BOOL SVC_LibMain(int reason, void **data)
 		auto pos = plugname.find('.');
 		if (pos != plugname.npos)
 			plugname.erase(pos);
-		filename = get_config_path() + "/"s + plugname + ".cfg";
+		filename = plugname + ".cfg";
 	} catch (...) {
 		return false;
 	}
 
-	auto pfile = config_file_init2(nullptr, filename.c_str());
+	auto pfile = config_file_initd(filename.c_str(), get_config_path());
 	if (pfile == nullptr) {
-		printf("[ip6_container]: config_file_init2 %s: %s\n", filename.c_str(), strerror(errno));
+		printf("[ip6_container]: config_file_initd %s: %s\n",
+		       filename.c_str(), strerror(errno));
 		return false;
 	}
 	auto strv = config_file_get_value(pfile, "audit_max_num");

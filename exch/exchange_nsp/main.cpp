@@ -47,11 +47,11 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/%s.cfg",
-		         get_config_path(), file_name);
-		auto pfile = config_file_init2(nullptr, temp_path);
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
+		auto pfile = config_file_initd(temp_path, get_config_path());
 		if (NULL == pfile) {
-			printf("[exchange_nsp]: config_file_init %s: %s\n", temp_path, strerror(errno));
+			printf("[exchange_nsp]: config_file_initd %s: %s\n",
+			       temp_path, strerror(errno));
 			return FALSE;
 		}
 		org_name = config_file_get_value(pfile, "X500_ORG_NAME");

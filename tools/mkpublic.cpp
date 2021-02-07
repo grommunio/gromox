@@ -265,7 +265,7 @@ int main(int argc, const char **argv)
 		printf("usage: %s <domainname>\n", argv[0]);
 		return 1;
 	}
-	auto pconfig = config_file_init2(opt_config_file, config_default_path("sa.cfg"));
+	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;

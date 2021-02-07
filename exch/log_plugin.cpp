@@ -507,11 +507,11 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.cfg",
-		         get_config_path(), file_name);
-		auto pfile = config_file_init2(nullptr, tmp_path);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.cfg", file_name);
+		auto pfile = config_file_initd(tmp_path, get_config_path());
 		if (pfile == nullptr) {
-			printf("[log_plugin]: config_file_init %s: %s\n", tmp_path, strerror(errno));
+			printf("[log_plugin]: config_file_initd %s: %s\n",
+			       tmp_path, strerror(errno));
 			return false;
 		}
 		str_value = config_file_get_value(pfile, "LOG_LEVEL");

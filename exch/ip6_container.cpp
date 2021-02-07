@@ -63,13 +63,14 @@ BOOL SVC_LibMain(int reason, void **data)
 		auto pos = filename.find('.');
 		if (pos != filename.npos)
 			filename.erase(pos);
-		filename = get_config_path() + "/"s + std::move(filename) + ".cfg";
+		filename += ".cfg";
 	} catch (...) {
 		return false;
 	}
-	auto pfile = config_file_init2(nullptr, filename.c_str());
+	auto pfile = config_file_initd(filename.c_str(), get_config_path());
 	if (pfile == nullptr) {
-		printf("[ip6_container]: config_file_init2 %s: %s\n", filename.c_str(), strerror(errno));
+		printf("[ip6_container]: config_file_initd %s: %s\n",
+		       filename.c_str(), strerror(errno));
 		return false;
 	}
 	auto strv = config_file_get_value(pfile, "CONNECTION_MAX_NUM");
