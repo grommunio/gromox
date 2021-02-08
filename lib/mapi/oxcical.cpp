@@ -315,17 +315,16 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	ICAL_TIME itime_first;
 	const ICAL_TIME *pitime;
 	
-	if (NULL != ical_get_subval_list(piline, "BYYEARDAY") ||
-		NULL != ical_get_subval_list(piline, "BYWEEKNO")) {
+	if (piline->get_subval_list("BYYEARDAY") != nullptr ||
+	    piline->get_subval_list("BYWEEKNO") != nullptr)
 		return FALSE;
-	}
-	auto psubval_list = ical_get_subval_list(piline, "BYMONTHDAY");
+	auto psubval_list = piline->get_subval_list("BYMONTHDAY");
 	if (psubval_list != nullptr && psubval_list->size() > 1)
 		return FALSE;
-	psubval_list = ical_get_subval_list(piline, "BYSETPOS");
+	psubval_list = piline->get_subval_list("BYSETPOS");
 	if (psubval_list != nullptr && psubval_list->size() > 1)
 		return FALSE;
-	psubval_list = ical_get_subval_list(piline, "BYSECOND");
+	psubval_list = piline->get_subval_list("BYSECOND");
 	if (NULL != psubval_list) {
 		if (psubval_list->size() > 1)
 			return FALSE;
@@ -411,11 +410,10 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	case ICAL_FREQUENCY_HOUR:
 		return FALSE;
 	case ICAL_FREQUENCY_DAY:
-		if (NULL != ical_get_subval_list(piline, "BYDAY") ||
-			NULL != ical_get_subval_list(piline, "BYMONTH") ||
-			NULL != ical_get_subval_list(piline, "BYSETPOS")) {
+		if (piline->get_subval_list("BYDAY") != nullptr ||
+		    piline->get_subval_list("BYMONTH") != nullptr ||
+		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
-		}
 		papprecurr->recurrencepattern.recurfrequency =
 									RECURFREQUENCY_DAILY;
 		if (ical_rrule_interval(&irrule) > 999) {
@@ -429,10 +427,9 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		patterntype = PATTERNTYPE_DAY;
 		break;
 	case ICAL_FREQUENCY_WEEK:
-		if (NULL != ical_get_subval_list(piline, "BYMONTH") ||
-			NULL != ical_get_subval_list(piline, "BYSETPOS")) {
+		if (piline->get_subval_list("BYMONTH") != nullptr ||
+		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
-		}
 		papprecurr->recurrencepattern.recurfrequency =
 								RECURFREQUENCY_WEEKLY;
 		if (ical_rrule_interval(&irrule) > 99) {
@@ -451,7 +448,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			(10080*ical_rrule_interval(&irrule));
 		patterntype = PATTERNTYPE_WEEK;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY)) {
-			psubval_list = ical_get_subval_list(piline, "BYDAY");
+			psubval_list = piline->get_subval_list("BYDAY");
 			papprecurr->recurrencepattern.
 				patterntypespecific.weekrecurrence = 0;
 			for (const auto &pnv2 : *psubval_list) {
@@ -487,9 +484,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		break;
 	case ICAL_FREQUENCY_MONTH:
-		if (NULL != ical_get_subval_list(piline, "BYMONTH")) {
+		if (piline->get_subval_list("BYMONTH") != nullptr)
 			return FALSE;
-		}
 		papprecurr->recurrencepattern.recurfrequency =
 								RECURFREQUENCY_MONTHLY;
 		if (ical_rrule_interval(&irrule) > 99) {
@@ -513,7 +509,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS)) {
 			patterntype = PATTERNTYPE_MONTHNTH;
-			psubval_list = ical_get_subval_list(piline, "BYDAY");
+			psubval_list = piline->get_subval_list("BYDAY");
 			papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence = 0;
 			for (const auto &pnv2 : *psubval_list) {
@@ -606,7 +602,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (ical_rrule_check_bymask(&irrule, RRULE_BY_MONTHDAY))
 				return FALSE;
 			patterntype = PATTERNTYPE_MONTHNTH;
-			psubval_list = ical_get_subval_list(piline, "BYDAY");
+			psubval_list = piline->get_subval_list("BYDAY");
 			papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence = 0;
 			for (const auto &pnv2 : *psubval_list) {

@@ -771,9 +771,9 @@ const char *ICAL_LINE::get_first_subvalue()
 	return pnv2.has_value() ? pnv2->c_str() : nullptr;
 }
 
-ical_svlist *ical_get_subval_list(ICAL_LINE *piline, const char *name)
+ical_svlist *ICAL_LINE::get_subval_list(const char *name)
 {
-	return ical_get_subval_list_internal(&piline->value_list, name);
+	return ical_get_subval_list_internal(&value_list, name);
 }
 
 std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value)
