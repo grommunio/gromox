@@ -55,10 +55,10 @@ std::shared_ptr<ICAL_VALUE> ical_new_value(const char *name)
 	return nullptr;
 }
 
-int ical_append_param(ICAL_LINE *l, std::shared_ptr<ICAL_PARAM> p)
+int ICAL_LINE::append_param(std::shared_ptr<ICAL_PARAM> p)
 {
 	try {
-		l->param_list.push_back(std::move(p));
+		param_list.push_back(std::move(p));
 		return 0;
 	} catch (...) {
 	}

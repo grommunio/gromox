@@ -310,7 +310,7 @@ static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag)
 		if (NULL == piparam) {
 			return nullptr;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return nullptr;
 	} while ((ptr = pnext) != NULL);
 	return piline;

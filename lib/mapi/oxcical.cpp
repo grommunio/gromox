@@ -3979,7 +3979,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (!ical_append_paramval(piparam, partstat))
 			return FALSE;
@@ -4026,7 +4026,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (NULL != pvalue && 0x00000002 == *(uint32_t*)pvalue) {
 			if (!ical_append_paramval(piparam, "OPT-PARTICIPANT"))
@@ -4043,7 +4043,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, partstat))
 				return FALSE;
@@ -4053,7 +4053,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, "TRUE"))
 				return FALSE;
@@ -4066,7 +4066,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
 				return FALSE;
@@ -4631,7 +4631,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (!ical_append_paramval(piparam, "DATE"))
 			return FALSE;
@@ -4641,7 +4641,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, tzid))
 				return FALSE;
@@ -4741,7 +4741,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (!ical_append_paramval(piparam, "DATE"))
 			return FALSE;
@@ -4751,7 +4751,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, tzid))
 				return FALSE;
@@ -5257,7 +5257,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				if (NULL == piparam) {
 					return FALSE;
 				}
-				if (ical_append_param(piline, piparam) < 0)
+				if (piline->append_param(piparam) < 0)
 					return false;
 				if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
 					return FALSE;
@@ -5291,7 +5291,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, planguage))
 				return FALSE;
@@ -5490,7 +5490,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				if (NULL == piparam) {
 					return FALSE;
 				}
-				if (ical_append_param(piline, piparam) < 0)
+				if (piline->append_param(piparam) < 0)
 					return false;
 				if (!ical_append_paramval(piparam, tzid))
 					return FALSE;
@@ -5525,7 +5525,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, planguage))
 				return FALSE;
@@ -5561,7 +5561,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (!ical_append_paramval(piparam, "DATE"))
 			return FALSE;
@@ -5571,7 +5571,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (!ical_append_paramval(piparam, tzid))
 			return FALSE;
@@ -5607,7 +5607,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, "DATE"))
 				return FALSE;
@@ -5617,7 +5617,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, tzid))
 				return FALSE;
@@ -5821,7 +5821,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
 				return FALSE;
@@ -5831,7 +5831,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piparam) {
 				return FALSE;
 			}
-			if (ical_append_param(piline, piparam) < 0)
+			if (piline->append_param(piparam) < 0)
 				return false;
 			if (!ical_append_paramval(piparam, planguage))
 				return FALSE;
@@ -6121,7 +6121,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piparam) {
 			return FALSE;
 		}
-		if (ical_append_param(piline, piparam) < 0)
+		if (piline->append_param(piparam) < 0)
 			return false;
 		if (!ical_append_paramval(piparam, "START"))
 			return FALSE;
