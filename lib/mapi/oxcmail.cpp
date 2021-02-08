@@ -7241,7 +7241,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		tmp_method[0] = '\0';
 		auto piline = ical.get_line("METHOD");
 		if (NULL != piline) {
-			pvalue = deconst(ical_get_first_subvalue(piline));
+			pvalue = deconst(piline->get_first_subvalue());
 			if (NULL != pvalue) {
 				strncpy(tmp_method, static_cast<char *>(pvalue), 32);
 			}

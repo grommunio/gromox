@@ -45,6 +45,7 @@ struct GX_EXPORT ICAL_LINE {
 	int append_param(std::shared_ptr<ICAL_PARAM>);
 	int append_value(std::shared_ptr<ICAL_VALUE>);
 	const char *get_first_paramval(const char *name);
+	const char *get_first_subvalue();
 
 	std::string name;
 	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
@@ -120,8 +121,6 @@ inline GX_EXPORT bool ical_append_subval(std::shared_ptr<ICAL_VALUE> &v, const c
 const char* ical_get_first_subvalue_by_name(
 	ICAL_LINE *piline, const char *name);
 inline GX_EXPORT const char *ical_get_first_subvalue_by_name(std::shared_ptr<ICAL_LINE> &l, const char *n) { return ical_get_first_subvalue_by_name(l.get(), n); }
-const char* ical_get_first_subvalue(ICAL_LINE *piline);
-inline GX_EXPORT const char *ical_get_first_subvalue(std::shared_ptr<ICAL_LINE> &l) { return ical_get_first_subvalue(l.get()); }
 extern GX_EXPORT ical_svlist *ical_get_subval_list(ICAL_LINE *, const char *name);
 inline GX_EXPORT ical_svlist *ical_get_subval_list(std::shared_ptr<ICAL_LINE> &l, const char *n) { return ical_get_subval_list(l.get(), n); }
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value);

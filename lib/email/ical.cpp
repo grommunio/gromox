@@ -759,11 +759,11 @@ const char* ical_get_first_subvalue_by_name(
 						&piline->value_list, name);
 }
 
-const char* ical_get_first_subvalue(ICAL_LINE *piline)
+const char *ICAL_LINE::get_first_subvalue()
 {
-	if (piline->value_list.size() == 0)
+	if (value_list.size() == 0)
 		return NULL;
-	const auto &pivalue = piline->value_list.front();
+	const auto &pivalue = value_list.front();
 	if ('\0' != pivalue->name[0]) {
 		return NULL;
 	}
@@ -1463,7 +1463,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		}
 		if (piline->get_first_paramval("TZID") != nullptr)
 			return NULL;
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -1495,7 +1495,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			if (NULL == piline) {
 				return NULL;
 			}
-			pvalue = ical_get_first_subvalue(piline);
+			pvalue = piline->get_first_subvalue();
 			if (NULL == pvalue) {
 				return NULL;
 			}
@@ -1519,7 +1519,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (NULL == piline) {
 			return NULL;
 		}
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL == pvalue) {
 			return NULL;
 		}
@@ -1755,7 +1755,7 @@ bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == piline) {
 			return false;
 		}
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL == pvalue) {
 			return false;
 		}

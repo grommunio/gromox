@@ -55,7 +55,7 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 	if (NULL == piline) {
 		return FALSE;
 	}
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -68,7 +68,7 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 	}
 	if (piline->get_first_paramval("TZID") != nullptr)
 		return FALSE;
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -154,7 +154,7 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 	if (NULL == piline) {
 		return FALSE;
 	}
-	ptz_definition->keyname = (char*)ical_get_first_subvalue(piline);
+	ptz_definition->keyname = deconst(piline->get_first_subvalue());
 	if (NULL == ptz_definition->keyname) {
 		return FALSE;
 	}
@@ -697,7 +697,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_find_vtimezone(ICAL *pical, const
 		if (NULL == piline) {
 			continue;
 		}
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -770,7 +770,7 @@ static BOOL oxcical_parse_recurring_timezone(std::shared_ptr<ICAL_COMPONENT> ptz
 	if (NULL == piline) {
 		return FALSE;
 	}
-	ptzid = ical_get_first_subvalue(piline);
+	ptzid = piline->get_first_subvalue();
 	if (NULL == ptzid) {
 		return FALSE;
 	}
@@ -892,7 +892,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	for (auto piline : pmain_event->line_list) {
 		if (strcasecmp(piline->name.c_str(), "ATTENDEE") != 0)
 			continue;
-		paddress = ical_get_first_subvalue(piline);
+		paddress = piline->get_first_subvalue();
 		if (NULL == paddress || 0 != strncasecmp(paddress, "MAILTO:", 7)) {
 			continue;
 		}
@@ -1073,7 +1073,7 @@ static BOOL oxcical_parse_class(std::shared_ptr<ICAL_LINE> piline,
 	const char *pvalue;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1102,7 +1102,7 @@ static BOOL oxcical_parse_body(std::shared_ptr<ICAL_LINE> piline,
 	const char *pvalue;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1121,7 +1121,7 @@ static BOOL oxcical_parse_html(std::shared_ptr<ICAL_LINE> piline,
 	uint32_t tmp_int32;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1151,7 +1151,7 @@ static BOOL oxcical_parse_dtstamp(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1364,7 +1364,7 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	const char *pvalue;
 	const char *pvalue1;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -1415,7 +1415,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	TAGGED_PROPVAL propval;
 	GLOBALOBJECTID globalobjectid;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1509,7 +1509,7 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1595,7 +1595,7 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	/* ignore ORGANIZER when METHOD is "REPLY" OR "COUNTER" */
 	if (strncasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.", 26) == 0)
 		return TRUE;
-	paddress = ical_get_first_subvalue(piline);
+	paddress = piline->get_first_subvalue();
 	if (NULL != paddress) {
 		if (0 == strncasecmp(paddress, "MAILTO:", 7)) {
 			paddress += 7;
@@ -1668,7 +1668,7 @@ static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1701,7 +1701,7 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1766,7 +1766,7 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1827,7 +1827,7 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1889,7 +1889,7 @@ static BOOL oxcical_parse_summary(
 	char tmp_buff[1024];
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1935,7 +1935,7 @@ static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ICAL_LINE> piline,
 	const char *pvalue;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1990,7 +1990,7 @@ static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ICAL_LINE> piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -2291,7 +2291,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 	
 	pvalue = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue) {
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue && 0 != strncasecmp(pvalue, "CID:", 4)) {
 			if (NULL == pmsg->children.pattachments) {
 				pattachments = attachment_list_init();
@@ -2409,7 +2409,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			tmp_int32 = strlen(pvalue);
 			tmp_bin.pv = malloc(tmp_int32);
@@ -2717,7 +2717,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		piline = pmain_event->get_line("X-MICROSOFT-CDO-ALLDAYEVENT");
 	}
 	if (NULL != piline) {
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue && 0 == strcasecmp(pvalue, "TRUE")) {
 			b_allday = TRUE;
 		}
@@ -2804,7 +2804,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 			ical_itime_to_utc(ptz_component, end_itime, &end_time);
 		} else {
-			pvalue = ical_get_first_subvalue(piline);
+			pvalue = piline->get_first_subvalue();
 			if (pvalue == nullptr ||
 			    !ical_parse_duration(pvalue, &duration) || duration < 0) {
 				int_hash_free(phash);
@@ -2925,7 +2925,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-IMPORTANCE");
 	}
 	if (NULL != piline) {
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			tmp_int32 = atoi(pvalue);
 			if (0 == tmp_int32 || 1 == tmp_int32 || 2 == tmp_int32) {
@@ -2940,7 +2940,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	} else {
 		piline = pmain_event->get_line("PRIORITY");
 		if (NULL != piline) {
-			pvalue = ical_get_first_subvalue(piline);
+			pvalue = piline->get_first_subvalue();
 			if (NULL != pvalue) {
 				propval.proptag = PROP_TAG_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
@@ -3263,8 +3263,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		if (strcasecmp(palarm_component->name.c_str(), "VALARM") == 0) {
 			b_alarm = TRUE;
 			piline = palarm_component->get_line("TRIGGER");
-			if (NULL == piline || NULL == (pvalue =
-				ical_get_first_subvalue(piline))) {
+			if (piline == nullptr ||
+			    (pvalue = piline->get_first_subvalue()) == nullptr) {
 				if (FALSE == b_allday) {
 					tmp_int32 = 15;
 				} else {
@@ -3377,7 +3377,7 @@ static BOOL oxcical_classify_calendar(ICAL *pical,
 			continue;
 		std::shared_ptr<UID_EVENTS> puid_events;
 		auto piline = pcomponent->get_line("UID");
-		auto puid = piline != nullptr ? ical_get_first_subvalue(piline) : nullptr;
+		auto puid = piline != nullptr ? piline->get_first_subvalue() : nullptr;
 		if (puid != nullptr) {
 			auto i = std::find_if(pevent_uid_list.cbegin(), pevent_uid_list.cend(),
 			         [=](const auto &e) { return e->puid != nullptr && strcmp(e->puid, puid) == 0; });
@@ -3420,7 +3420,7 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 	if (NULL == piline) {
 		return CALENDARTYPE_DEFAULT;
 	}
-	pvalue = ical_get_first_subvalue(piline);
+	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return CALENDARTYPE_DEFAULT;
 	}
@@ -3494,7 +3494,7 @@ MESSAGE_CONTENT* oxcical_import(
 	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
 	propval.pvalue = deconst("IPM.Appointment");
 	if (NULL != piline) {
-		pvalue = ical_get_first_subvalue(piline);
+		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			if (0 == strcasecmp(pvalue, "PUBLISH")) {
 				if (events_list.size() > 1) {
