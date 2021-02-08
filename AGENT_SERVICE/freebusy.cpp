@@ -768,7 +768,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			if (!ical_append_subval(pivalue, "YEARLY"))
+			if (!pivalue->append_subval("YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
@@ -805,7 +805,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			default:
 				return NULL;
 			}
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
@@ -814,7 +814,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 		} else if (1 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
@@ -829,7 +829,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			if (!ical_append_subval(pivalue, "YEARLY"))
+			if (!pivalue->append_subval("YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
@@ -845,7 +845,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 		}
 	}
@@ -924,7 +924,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		if (!ical_append_subval(pivalue, "YEARLY"))
+		if (!pivalue->append_subval("YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYDAY");
 		if (NULL == pivalue) {
@@ -961,7 +961,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		default:
 			return NULL;
 		}
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 		pivalue = ical_new_value("BYMONTH");
 		if (NULL == pivalue) {
@@ -970,7 +970,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	} else if (1 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
@@ -985,7 +985,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		if (!ical_append_subval(pivalue, "YEARLY"))
+		if (!pivalue->append_subval("YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYMONTHDAY");
 		if (NULL == pivalue) {
@@ -1001,7 +1001,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	}
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
@@ -1055,7 +1055,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (!ical_append_subval(pivalue, "DAILY"))
+		if (!pivalue->append_subval("DAILY"))
 			return FALSE;
 		sprintf(tmp_buff, "%u",
 			papprecurr->recurrencepattern.period/1440);
@@ -1065,7 +1065,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 		break;
 	case PATTERNTYPE_WEEK:
@@ -1075,7 +1075,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (!ical_append_subval(pivalue, "WEEKLY"))
+		if (!pivalue->append_subval("WEEKLY"))
 			return FALSE;
 		sprintf(tmp_buff, "%u",
 			papprecurr->recurrencepattern.period);
@@ -1085,7 +1085,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 		pivalue = ical_new_value("BYDAY");
 		if (NULL == pivalue) {
@@ -1096,43 +1096,43 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (WEEKRECURRENCEPATTERN_SU&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "SU"))
+			if (!pivalue->append_subval("SU"))
 				return FALSE;
 		}
 		if (WEEKRECURRENCEPATTERN_M&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "MO"))
+			if (!pivalue->append_subval("MO"))
 				return FALSE;
 		}
 		if (WEEKRECURRENCEPATTERN_TU&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "TU"))
+			if (!pivalue->append_subval("TU"))
 				return FALSE;
 		}
 		if (WEEKRECURRENCEPATTERN_W&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "WE"))
+			if (!pivalue->append_subval("WE"))
 				return FALSE;
 		}
 		if (WEEKRECURRENCEPATTERN_TH&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "TH"))
+			if (!pivalue->append_subval("TH"))
 				return FALSE;
 		}
 		if (WEEKRECURRENCEPATTERN_F&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "FR"))
+			if (!pivalue->append_subval("FR"))
 				return FALSE;
 		}
 		if (WEEKRECURRENCEPATTERN_SA&
 			papprecurr->recurrencepattern.
 			patterntypespecific.weekrecurrence) {
-			if (!ical_append_subval(pivalue, "SA"))
+			if (!pivalue->append_subval("SA"))
 				return FALSE;
 		}
 		break;
@@ -1145,7 +1145,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
-			if (!ical_append_subval(pivalue, "MONTHLY"))
+			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.period);
@@ -1155,7 +1155,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
@@ -1171,10 +1171,10 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 					papprecurr->recurrencepattern.
 					patterntypespecific.dayofmonth);
 			}
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		} else {
-			if (!ical_append_subval(pivalue, "YEARLY"))
+			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.period/12);
@@ -1184,7 +1184,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
 			if (NULL == pivalue) {
@@ -1200,7 +1200,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 					papprecurr->recurrencepattern.
 					patterntypespecific.dayofmonth);
 			}
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
@@ -1212,7 +1212,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				papprecurr->recurrencepattern.firstdatetime/
 				1440 + 1, &itime);
 			sprintf(tmp_buff, "%u", itime.month);
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		}
 		break;
@@ -1225,7 +1225,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
-			if (!ical_append_subval(pivalue, "MONTHLY"))
+			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.period);
@@ -1235,7 +1235,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
@@ -1245,37 +1245,37 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "SU"))
+				if (!pivalue->append_subval("SU"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_M&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "MO"))
+				if (!pivalue->append_subval("MO"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_TU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "TU"))
+				if (!pivalue->append_subval("TU"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_W&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "WE"))
+				if (!pivalue->append_subval("WE"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_TH&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "TH"))
+				if (!pivalue->append_subval("TH"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_F&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "FR"))
+				if (!pivalue->append_subval("FR"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_SA&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "SA"))
+				if (!pivalue->append_subval("SA"))
 					return FALSE;
 			}
 			pivalue = ical_new_value("BYSETPOS");
@@ -1292,10 +1292,10 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 					papprecurr->recurrencepattern.
 					patterntypespecific.monthnth.recurrencenum);
 			}
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		} else {
-			if (!ical_append_subval(pivalue, "YEARLY"))
+			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.period/12);
@@ -1305,7 +1305,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
 			if (NULL == pivalue) {
@@ -1315,37 +1315,37 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "SU"))
+				if (!pivalue->append_subval("SU"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_M&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "MO"))
+				if (!pivalue->append_subval("MO"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_TU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "TU"))
+				if (!pivalue->append_subval("TU"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_W&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "WE"))
+				if (!pivalue->append_subval("WE"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_TH&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "TH"))
+				if (!pivalue->append_subval("TH"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_F&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "FR"))
+				if (!pivalue->append_subval("FR"))
 					return FALSE;
 			}
 			if (WEEKRECURRENCEPATTERN_SA&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
-				if (!ical_append_subval(pivalue, "SA"))
+				if (!pivalue->append_subval("SA"))
 					return FALSE;
 			}
 			pivalue = ical_new_value("BYSETPOS");
@@ -1362,7 +1362,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 					papprecurr->recurrencepattern.
 					patterntypespecific.monthnth.recurrencenum);
 			}
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
@@ -1372,7 +1372,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return false;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.firstdatetime);
-			if (!ical_append_subval(pivalue, tmp_buff))
+			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		}
 		break;
@@ -1389,7 +1389,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 	} else if (ENDTYPE_AFTER_DATE ==
 		papprecurr->recurrencepattern.endtype) {
@@ -1407,7 +1407,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (!ical_append_subval(pivalue, tmp_buff))
+		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 	}
 	if (PATTERNTYPE_WEEK == papprecurr->recurrencepattern.patterntype) {
@@ -1419,31 +1419,31 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return false;
 		switch (papprecurr->recurrencepattern.firstdow) {
 		case 0:
-			if (!ical_append_subval(pivalue, "SU"))
+			if (!pivalue->append_subval("SU"))
 				return FALSE;
 			break;
 		case 1:
-			if (!ical_append_subval(pivalue, "MO"))
+			if (!pivalue->append_subval("MO"))
 				return FALSE;
 			break;
 		case 2:
-			if (!ical_append_subval(pivalue, "TU"))
+			if (!pivalue->append_subval("TU"))
 				return FALSE;
 			break;
 		case 3:
-			if (!ical_append_subval(pivalue, "WE"))
+			if (!pivalue->append_subval("WE"))
 				return FALSE;
 			break;
 		case 4:
-			if (!ical_append_subval(pivalue, "TH"))
+			if (!pivalue->append_subval("TH"))
 				return FALSE;
 			break;
 		case 5:
-			if (!ical_append_subval(pivalue, "FR"))
+			if (!pivalue->append_subval("FR"))
 				return FALSE;
 			break;
 		case 6:
-			if (!ical_append_subval(pivalue, "SA"))
+			if (!pivalue->append_subval("SA"))
 				return FALSE;
 			break;
 		default:

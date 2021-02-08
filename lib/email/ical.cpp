@@ -357,10 +357,10 @@ static BOOL ical_retrieve_value(std::shared_ptr<ICAL_LINE> piline, char *pvalue)
 		do {
 			pnext1 = ical_get_value_sep(ptr1, ',');
 			if ('\0' == *ptr1) {
-				if (!ical_append_subval(pivalue, nullptr))
+				if (!pivalue->append_subval(nullptr))
 					return FALSE;
 			} else {
-				if (!ical_append_subval(pivalue, ptr1))
+				if (!pivalue->append_subval(ptr1))
 					return FALSE;
 			}
 		} while ((ptr1 = pnext1) != NULL);
@@ -458,7 +458,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 				if (piline->append_value(pivalue) < 0)
 					break;
 				ical_unescape_string(tmp_item.pvalue);
-				if (!ical_append_subval(pivalue, tmp_item.pvalue))
+				if (!pivalue->append_subval(tmp_item.pvalue))
 					break;
 			} else {
 				if (FALSE == ical_retrieve_value(piline, tmp_item.pvalue)) {
@@ -788,9 +788,8 @@ std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *va
 	}
 	if (piline->append_value(pivalue) < 0)
 		return nullptr;
-	if (!ical_append_subval(pivalue, value)) {
+	if (!pivalue->append_subval(value))
 		return NULL;
-	}
 	return piline;
 }
 

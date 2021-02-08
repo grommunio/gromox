@@ -36,7 +36,10 @@ struct GX_EXPORT ICAL_PARAM {
 
 using ical_svlist = std::list<std::optional<std::string>>;
 
-struct ICAL_VALUE {
+struct GX_EXPORT ICAL_VALUE {
+	public:
+	bool append_subval(const char *subval);
+
 	std::string name;
 	ical_svlist subval_list;
 };
@@ -119,8 +122,6 @@ extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_VALUE> ical_new_value(const char *name);
-extern GX_EXPORT bool ical_append_subval(ICAL_VALUE *, const char *subval);
-inline GX_EXPORT bool ical_append_subval(std::shared_ptr<ICAL_VALUE> &v, const char *subval) { return ical_append_subval(v.get(), subval); }
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value);
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);
