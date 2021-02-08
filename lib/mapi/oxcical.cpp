@@ -3976,7 +3976,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (!ical_append_paramval(piparam, partstat))
+		if (!piparam->append_paramval(partstat))
 			return FALSE;
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", static_cast<const char *>(pvalue));
 		pivalue = ical_new_value(NULL);
@@ -4024,13 +4024,13 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (piline->append_param(piparam) < 0)
 			return false;
 		if (NULL != pvalue && 0x00000002 == *(uint32_t*)pvalue) {
-			if (!ical_append_paramval(piparam, "OPT-PARTICIPANT"))
+			if (!piparam->append_paramval("OPT-PARTICIPANT"))
 				return FALSE;
 		} else if (NULL != pvalue && 0x00000003 == *(uint32_t*)pvalue) {
-			if (!ical_append_paramval(piparam, "NON-PARTICIPANT"))
+			if (!piparam->append_paramval("NON-PARTICIPANT"))
 				return FALSE;
 		} else {
-			if (!ical_append_paramval(piparam, "REQ-PARTICIPANT"))
+			if (!piparam->append_paramval("REQ-PARTICIPANT"))
 				return FALSE;
 		}
 		if (NULL != partstat) {
@@ -4040,7 +4040,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, partstat))
+			if (!piparam->append_paramval(partstat))
 				return FALSE;
 		}
 		if (TRUE == b_rsvp) {
@@ -4050,7 +4050,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, "TRUE"))
+			if (!piparam->append_paramval("TRUE"))
 				return FALSE;
 		}
 		pvalue = tpropval_array_get_propval(
@@ -4063,7 +4063,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
+			if (!piparam->append_paramval(static_cast<char *>(pvalue)))
 				return FALSE;
 		}
 		if (FALSE == oxcical_get_smtp_address(
@@ -4628,7 +4628,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (!ical_append_paramval(piparam, "DATE"))
+		if (!piparam->append_paramval("DATE"))
 			return FALSE;
 	} else {
 		if (NULL != tzid) {
@@ -4638,7 +4638,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, tzid))
+			if (!piparam->append_paramval(tzid))
 				return FALSE;
 		}
 	}
@@ -4738,7 +4738,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (!ical_append_paramval(piparam, "DATE"))
+		if (!piparam->append_paramval("DATE"))
 			return FALSE;
 	} else {
 		if (NULL != tzid) {
@@ -4748,7 +4748,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, tzid))
+			if (!piparam->append_paramval(tzid))
 				return FALSE;
 		}
 	}
@@ -5254,7 +5254,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				}
 				if (piline->append_param(piparam) < 0)
 					return false;
-				if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
+				if (!piparam->append_paramval(static_cast<char *>(pvalue)))
 					return FALSE;
 			}
 		}
@@ -5288,7 +5288,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, planguage))
+			if (!piparam->append_paramval(planguage))
 				return FALSE;
 		}
 	}
@@ -5487,7 +5487,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				}
 				if (piline->append_param(piparam) < 0)
 					return false;
-				if (!ical_append_paramval(piparam, tzid))
+				if (!piparam->append_paramval(tzid))
 					return FALSE;
 			}
 		} else {
@@ -5522,7 +5522,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, planguage))
+			if (!piparam->append_paramval(planguage))
 				return FALSE;
 		}
 	}
@@ -5558,7 +5558,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (!ical_append_paramval(piparam, "DATE"))
+		if (!piparam->append_paramval("DATE"))
 			return FALSE;
 	}
 	if (NULL != ptz_component) {
@@ -5568,7 +5568,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (!ical_append_paramval(piparam, tzid))
+		if (!piparam->append_paramval(tzid))
 			return FALSE;
 	}
 	
@@ -5604,7 +5604,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, "DATE"))
+			if (!piparam->append_paramval("DATE"))
 				return FALSE;
 		}
 		if (NULL != ptz_component) {
@@ -5614,7 +5614,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, tzid))
+			if (!piparam->append_paramval(tzid))
 				return FALSE;
 		}
 	}
@@ -5818,7 +5818,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, static_cast<char *>(pvalue)))
+			if (!piparam->append_paramval(static_cast<char *>(pvalue)))
 				return FALSE;
 		}
 		if (NULL != planguage) {
@@ -5828,7 +5828,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!ical_append_paramval(piparam, planguage))
+			if (!piparam->append_paramval(planguage))
 				return FALSE;
 		}
 	}
@@ -6118,7 +6118,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (!ical_append_paramval(piparam, "START"))
+		if (!piparam->append_paramval("START"))
 			return FALSE;
 		piline = ical_new_simple_line("ACTION", "DISPLAY");
 		if (NULL == piline) {

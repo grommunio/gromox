@@ -26,7 +26,10 @@
 #define RRULE_BY_WEEKNO					7
 #define RRULE_BY_MONTH					8
 
-struct ICAL_PARAM {
+struct GX_EXPORT ICAL_PARAM {
+	public:
+	bool append_paramval(const char *paramval);
+
 	std::string name;
 	std::list<std::string> paramval_list;
 };
@@ -115,8 +118,6 @@ extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
 extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);
-extern GX_EXPORT bool ical_append_paramval(ICAL_PARAM *, const char *paramval);
-inline GX_EXPORT bool ical_append_paramval(std::shared_ptr<ICAL_PARAM> &p, const char *subval) { return ical_append_paramval(p.get(), subval); }
 extern GX_EXPORT std::shared_ptr<ICAL_VALUE> ical_new_value(const char *name);
 extern GX_EXPORT bool ical_append_subval(ICAL_VALUE *, const char *subval);
 inline GX_EXPORT bool ical_append_subval(std::shared_ptr<ICAL_VALUE> &v, const char *subval) { return ical_append_subval(v.get(), subval); }

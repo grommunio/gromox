@@ -281,7 +281,7 @@ static std::shared_ptr<ICAL_PARAM> ical_retrieve_param(char *ptag)
 	}
 	do {
 		pnext = ical_get_tag_comma(ptr);
-		if (!ical_append_paramval(piparam, ptr))
+		if (!piparam->append_paramval(ptr))
 			return NULL;
 	} while ((ptr = pnext) != NULL);
 	return piparam;
@@ -716,10 +716,10 @@ bool ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
 	return true;
 }
 
-bool ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
+bool ICAL_PARAM::append_paramval(const char *paramval)
 {
 	try {
-		piparam->paramval_list.push_back(paramval);
+		paramval_list.push_back(paramval);
 		return true;
 	} catch (...) {
 	}
