@@ -49,6 +49,7 @@ struct ICAL_LINE {
 struct GX_EXPORT ICAL_COMPONENT {
 	public:
 	int append_comp(std::shared_ptr<ICAL_COMPONENT>);
+	int append_line(std::shared_ptr<ICAL_LINE>);
 
 	std::string name;
 	std::list<std::shared_ptr<ICAL_LINE>> line_list;
@@ -104,8 +105,6 @@ extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
 extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
 extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
-extern GX_EXPORT int ical_append_line(ICAL_COMPONENT *pcomponent, std::shared_ptr<ICAL_LINE> piline);
-inline GX_EXPORT int ical_append_line(std::shared_ptr<ICAL_COMPONENT> &c, std::shared_ptr<ICAL_LINE> l) { return ical_append_line(c.get(), std::move(l)); }
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
 inline GX_EXPORT std::shared_ptr<ICAL_LINE> ical_get_line(std::shared_ptr<ICAL_COMPONENT> &c, const char *n) { return ical_get_line(c.get(), n); }
 extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);

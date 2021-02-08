@@ -3582,7 +3582,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (NULL == piline) {
 		return NULL;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return nullptr;
 	/* STANDARD component */
 	auto pcomponent1 = ical_new_component("STANDARD");
@@ -3618,7 +3618,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (NULL == piline) {
 		return NULL;
 	}
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
@@ -3626,7 +3626,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == piline) {
 				return NULL;
 			}
-			if (ical_append_line(pcomponent1, piline) < 0)
+			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
 			pivalue = ical_new_value("FREQ");
 			if (NULL == pivalue) {
@@ -3687,7 +3687,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == piline) {
 				return NULL;
 			}
-			if (ical_append_line(pcomponent1, piline) < 0)
+			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
 			pivalue = ical_new_value("FREQ");
 			if (NULL == pivalue) {
@@ -3726,7 +3726,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
 	if (utc_offset >= 0) {
@@ -3737,7 +3737,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.month) {
 		return pcomponent;
@@ -3772,14 +3772,14 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (NULL == piline) {
 		return NULL;
 	}
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
 		if (NULL == piline) {
 			return NULL;
 		}
-		if (ical_append_line(pcomponent1, piline) < 0)
+		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
@@ -3840,7 +3840,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (NULL == piline) {
 			return NULL;
 		}
-		if (ical_append_line(pcomponent1, piline) < 0)
+		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
@@ -3878,7 +3878,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
 	if (utc_offset >= 0) {
@@ -3891,7 +3891,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	return pcomponent;
 }
@@ -3981,7 +3981,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pevent_component, piline) < 0)
+		if (pevent_component->append_line(piline) < 0)
 			return false;
 		piparam = ical_new_param("PARTSTAT");
 		if (NULL == piparam) {
@@ -4028,7 +4028,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pevent_component, piline) < 0)
+		if (pevent_component->append_line(piline) < 0)
 			return false;
 		piparam = ical_new_param("ROLE");
 		if (NULL == piparam) {
@@ -4161,7 +4161,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	switch (papprecurr->recurrencepattern.patterntype) {
 	case PATTERNTYPE_DAY:
@@ -4626,7 +4626,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	auto pivalue = ical_new_value(nullptr);
 	if (NULL == pivalue) {
@@ -4736,7 +4736,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	auto pivalue = ical_new_value(nullptr);
 	if (NULL == pivalue) {
@@ -4970,20 +4970,20 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pical, piline) < 0)
+	if (pical->append_line(piline) < 0)
 		return false;
 	piline = ical_new_simple_line("PRODID", "gromox-oxical");
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pical, piline) < 0)
+	if (pical->append_line(piline) < 0)
 		return false;
 	
 	piline = ical_new_simple_line("VERSION", "2.0");
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pical, piline) < 0)
+	if (pical->append_line(piline) < 0)
 		return false;
 	
 	propname.kind = MNID_ID;
@@ -5086,7 +5086,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(const_cast<ICAL *>(pical), piline) < 0)
+			if (const_cast<ICAL *>(pical)->append_line(piline) < 0)
 				return false;
 		}
 	}
@@ -5256,7 +5256,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
 							PROP_TAG_SENTREPRESENTINGNAME);
@@ -5292,7 +5292,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (NULL != planguage) {
 			piparam = ical_new_param("LANGUAGE");
@@ -5375,7 +5375,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	} else {
 		time(&cur_time);
@@ -5401,7 +5401,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -5491,7 +5491,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			if (NULL != ptz_component) {
 				piparam = ical_new_param("TZID");
@@ -5510,7 +5510,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 		}
 	} else {
@@ -5526,7 +5526,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (NULL != planguage) {
 			piparam = ical_new_param("LANGUAGE");
@@ -5562,7 +5562,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	if (NULL == ptz_component && TRUE == b_allday) {
 		piparam = ical_new_param("VALUE");
@@ -5608,7 +5608,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (NULL == ptz_component && TRUE == b_allday) {
 			piparam = ical_new_param("VALUE");
@@ -5647,7 +5647,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pical, piline) < 0)
+		if (pical->append_line(piline) < 0)
 			return false;
 		pivalue = ical_new_value(NULL);
 		if (NULL == pivalue) {
@@ -5684,7 +5684,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
 	pvalue = tpropval_array_get_propval(
@@ -5704,7 +5704,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -5736,7 +5736,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -5759,7 +5759,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 1:
@@ -5769,7 +5769,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		}
@@ -5792,7 +5792,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -5812,7 +5812,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
 		/* PidNameLocationUrl */
@@ -5853,7 +5853,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -5866,7 +5866,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -5878,7 +5878,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 1:
@@ -5887,7 +5887,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 2:
@@ -5896,7 +5896,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 3:
@@ -5905,7 +5905,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		}
@@ -5930,7 +5930,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 1:
@@ -5939,7 +5939,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 2:
@@ -5948,7 +5948,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 3:
@@ -5957,7 +5957,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		}
@@ -5973,7 +5973,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
 	pvalue = tpropval_array_get_propval(
@@ -5986,7 +5986,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 1:
@@ -5995,7 +5995,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		case 2:
@@ -6004,7 +6004,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == piline) {
 				return FALSE;
 			}
-			if (ical_append_line(pcomponent, piline) < 0)
+			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
 		}
@@ -6022,7 +6022,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
 	propname.kind = MNID_ID;
@@ -6047,7 +6047,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	
@@ -6101,7 +6101,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 		propname.kind = MNID_ID;
 		propname.plid = &lid;
@@ -6123,7 +6123,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 		piparam = ical_new_param("RELATED");
 		if (NULL == piparam) {
@@ -6137,7 +6137,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == piline) {
 			return FALSE;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			return false;
 	}
 	return TRUE;

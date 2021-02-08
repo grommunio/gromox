@@ -75,10 +75,10 @@ int ical_append_value(ICAL_LINE *l, std::shared_ptr<ICAL_VALUE> v)
 	return -ENOMEM;
 }
 
-int ical_append_line(ICAL_COMPONENT *c, std::shared_ptr<ICAL_LINE> l)
+int ICAL_COMPONENT::append_line(std::shared_ptr<ICAL_LINE> l)
 {
 	try {
-		c->line_list.push_back(std::move(l));
+		line_list.push_back(std::move(l));
 		return 0;
 	} catch (...) {
 	}

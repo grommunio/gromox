@@ -446,7 +446,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 		if (NULL == piline) {
 			break;
 		}
-		if (ical_append_line(pcomponent, piline) < 0)
+		if (pcomponent->append_line(piline) < 0)
 			break;
 
 		if (NULL != tmp_item.pvalue) {

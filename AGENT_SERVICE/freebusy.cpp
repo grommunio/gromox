@@ -715,7 +715,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (NULL == piline) {
 		return NULL;
 	}
-	if (ical_append_line(pcomponent, piline) < 0)
+	if (pcomponent->append_line(piline) < 0)
 		return nullptr;
 	/* STANDARD component */
 	auto pcomponent1 = ical_new_component("STANDARD");
@@ -752,7 +752,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (NULL == piline) {
 		return NULL;
 	}
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
@@ -760,7 +760,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			if (NULL == piline) {
 				return NULL;
 			}
-			if (ical_append_line(pcomponent1, piline) < 0)
+			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
 			pivalue = ical_new_value("FREQ");
 			if (NULL == pivalue) {
@@ -821,7 +821,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			if (NULL == piline) {
 				return NULL;
 			}
-			if (ical_append_line(pcomponent1, piline) < 0)
+			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
 			pivalue = ical_new_value("FREQ");
 			if (NULL == pivalue) {
@@ -860,7 +860,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
 	if (utc_offset >= 0) {
@@ -873,7 +873,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.month) {
 		return pcomponent;
@@ -909,14 +909,14 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (NULL == piline) {
 		return NULL;
 	}
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
 		if (NULL == piline) {
 			return NULL;
 		}
-		if (ical_append_line(pcomponent1, piline) < 0)
+		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
@@ -977,7 +977,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		if (NULL == piline) {
 			return NULL;
 		}
-		if (ical_append_line(pcomponent1, piline) < 0)
+		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
@@ -1015,7 +1015,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
 	if (utc_offset >= 0) {
@@ -1028,7 +1028,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
 		return nullptr;
-	if (ical_append_line(pcomponent1, piline) < 0)
+	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	return pcomponent;
 }
