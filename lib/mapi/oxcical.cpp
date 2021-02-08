@@ -66,9 +66,8 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 	if (NULL == piline) {
 		return FALSE;
 	}
-	if (NULL != ical_get_first_paramval(piline, "TZID")) {
+	if (piline->get_first_paramval("TZID") != nullptr)
 		return FALSE;
-	}
 	pvalue = ical_get_first_subvalue(piline);
 	if (NULL == pvalue) {
 		return FALSE;
@@ -898,10 +897,10 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 			continue;
 		}
 		paddress += 7;
-		pdisplay_name = ical_get_first_paramval(piline, "CN");
-		pcutype = ical_get_first_paramval(piline, "CUTYPE");
-		prole = ical_get_first_paramval(piline, "ROLE");
-		prsvp = ical_get_first_paramval(piline, "RSVP");
+		pdisplay_name = piline->get_first_paramval("CN");
+		pcutype = piline->get_first_paramval("CUTYPE");
+		prole = piline->get_first_paramval("ROLE");
+		prsvp = piline->get_first_paramval("RSVP");
 		if (NULL != prsvp && 0 == strcasecmp(prsvp, "TRUE")) {
 			tmp_byte = 1;
 		}
@@ -1287,7 +1286,7 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		return TRUE;
 	*pcount = 0;
 	auto pivalue = piline->value_list.front();
-	pvalue = ical_get_first_paramval(piline, "VALUE");
+	pvalue = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue || 0 == strcasecmp(pvalue, "DATE-TIME")) {
 		for (const auto &pnv2 : pivalue->subval_list) {
 			if (!pnv2.has_value())
@@ -1369,7 +1368,7 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	pvalue1 = ical_get_first_paramval(piline, "VALUE");
+	pvalue1 = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue1 || 0 == strcasecmp(pvalue1, "DATE-TIME")) {
 		if (!ical_parse_datetime(pvalue, b_utc, pitime)) {
 			if (NULL == pvalue1) {
@@ -1542,7 +1541,7 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
-	pvalue = ical_get_first_paramval(piline, "ALTREP");
+	pvalue = piline->get_first_paramval("ALTREP");
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -1604,7 +1603,7 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 			paddress = NULL;
 		}
 	}
-	pdisplay_name = ical_get_first_paramval(piline, "CN");
+	pdisplay_name = piline->get_first_paramval("CN");
 	if (NULL != pdisplay_name) {
 		propval.proptag = PROP_TAG_SENTREPRESENTINGNAME;
 		propval.pvalue = deconst(pdisplay_name);
@@ -2290,7 +2289,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	pvalue = ical_get_first_paramval(piline, "VALUE");
+	pvalue = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue) {
 		pvalue = ical_get_first_subvalue(piline);
 		if (NULL != pvalue && 0 != strncasecmp(pvalue, "CID:", 4)) {
@@ -2345,7 +2344,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			propval.proptag = PROP_TAG_ATTACHMETHOD;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_METHOD_BY_VALUE;
-			pvalue1 = ical_get_first_paramval(piline, "FMTYPE");
+			pvalue1 = piline->get_first_paramval("FMTYPE");
 			if (NULL != pvalue1) {
 				propval.proptag = PROP_TAG_ATTACHMIMETAG;
 				propval.pvalue = deconst(pvalue1);
@@ -2387,7 +2386,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(pvalue, "BINARY")) {
-		pvalue = ical_get_first_paramval(piline, "ENCODING");
+		pvalue = piline->get_first_paramval("ENCODING");
 		if (NULL == pvalue || 0 != strcasecmp(pvalue, "BASE64")) {
 			return FALSE;
 		}
@@ -2438,9 +2437,9 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		tmp_bin.pb = NULL;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		pvalue = ical_get_first_paramval(piline, "X-FILENAME");
+		pvalue = piline->get_first_paramval("X-FILENAME");
 		if (NULL == pvalue) {
-			pvalue = ical_get_first_paramval(piline, "FILENAME");
+			pvalue = piline->get_first_paramval("FILENAME");
 		}
 		if (NULL == pvalue) {
 			sprintf(tmp_buff, "calendar_attachment%d.dat", count);
@@ -2464,7 +2463,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		propval.proptag = PROP_TAG_ATTACHMETHOD;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = ATTACH_METHOD_BY_VALUE;
-		pvalue1 = ical_get_first_paramval(piline, "FMTYPE");
+		pvalue1 = piline->get_first_paramval("FMTYPE");
 		if (NULL != pvalue1) {
 			propval.proptag = PROP_TAG_ATTACHMIMETAG;
 			propval.pvalue = deconst(pvalue1);
@@ -2703,7 +2702,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	piline = pmain_event->get_line("X-ALT-DESC");
 	if (NULL != piline) {
-		pvalue = ical_get_first_paramval(piline, "FMTTYPE");
+		pvalue = piline->get_first_paramval("FMTTYPE");
 		if (NULL != pvalue && 0 == strcasecmp(pvalue, "text/html")) {
 			if (FALSE == oxcical_parse_html(piline, pmsg)) {
 				int_hash_free(phash);
@@ -2739,8 +2738,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		int_hash_free(phash);
 		return FALSE;
 	}
-	pvalue1 = ical_get_first_paramval(piline, "VALUE");
-	ptzid = ical_get_first_paramval(piline, "TZID");
+	pvalue1 = piline->get_first_paramval("VALUE");
+	ptzid = piline->get_first_paramval("TZID");
 	if (NULL == ptzid) {
 		ptz_component = NULL;
 	} else {
@@ -2773,7 +2772,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	piline = pmain_event->get_line("DTEND");
 	if (NULL != piline) {
-		pvalue = ical_get_first_paramval(piline, "TZID");
+		pvalue = piline->get_first_paramval("TZID");
 		if ((NULL == pvalue && NULL == ptzid) ||
 			(NULL != pvalue && NULL != ptzid &&
 			0 == strcasecmp(pvalue, ptzid))) {
@@ -2868,7 +2867,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			}
 		}
-		pvalue = ical_get_first_paramval(piline, "TZID");
+		pvalue = piline->get_first_paramval("TZID");
 		if ((NULL != pvalue && NULL != ptzid &&
 			0 != strcasecmp(pvalue, ptzid))) {
 			int_hash_free(phash);
@@ -3272,9 +3271,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 					tmp_int32 = 1080;
 				}
 			} else {
-				pvalue1 = ical_get_first_paramval(piline, "RELATED");
+				pvalue1 = piline->get_first_paramval("RELATED");
 				if (NULL == pvalue1) {
-					pvalue1 = ical_get_first_paramval(piline, "VALUE");
+					pvalue1 = piline->get_first_paramval("VALUE");
 					if ((pvalue1 == nullptr ||
 					    strcasecmp(pvalue1, "DATE-TIME") == 0) &&
 					    ical_datetime_to_utc(ptz_component, pvalue, &tmp_time)) {
@@ -3408,7 +3407,7 @@ static const char *oxcical_get_partstat(const std::list<std::shared_ptr<UID_EVEN
 	for (auto event : pevents_list.front()->list) {
 		auto piline = event->get_line("ATTENDEE");
 		if (NULL != piline) {
-			return ical_get_first_paramval(piline, "PARTSTAT");
+			return piline->get_first_paramval("PARTSTAT");
 		}
 	}
 	return NULL;

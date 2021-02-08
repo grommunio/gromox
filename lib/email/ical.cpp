@@ -1461,9 +1461,8 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (NULL == piline) {
 			return NULL;
 		}
-		if (NULL != ical_get_first_paramval(piline, "TZID")) {
+		if (piline->get_first_paramval("TZID") != nullptr)
 			return NULL;
-		}
 		pvalue = ical_get_first_subvalue(piline);
 		if (NULL == pvalue) {
 			return NULL;

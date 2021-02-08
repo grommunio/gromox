@@ -20,11 +20,11 @@ bool ical_append_subval(ICAL_VALUE *pivalue, const char *subval)
 	}
 }
 
-const char *ical_get_first_paramval(ICAL_LINE *piline, const char *name)
+const char *ICAL_LINE::get_first_paramval(const char *name)
 {
-	auto it = std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
+	auto it = std::find_if(param_list.cbegin(), param_list.cend(),
 	          [=](const auto &e) { return strcasecmp(e->name.c_str(), name) == 0; });
-	if (it == piline->param_list.cend())
+	if (it == param_list.cend())
 		return nullptr;
 	auto piparam = (*it).get();
 	if (piparam->paramval_list.size() != 1)
