@@ -316,14 +316,14 @@ static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag)
 	return piline;
 }
 
-static bool ical_check_base64(std::shared_ptr<ICAL_LINE> piline)
+static bool ical_check_base64(ICAL_LINE *piline)
 {
 	return std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
 	       [](const auto &e) { return strcasecmp(e->name.c_str(), "ENCODING") == 0; }) !=
 	       piline->param_list.cend();
 }
 
-static BOOL ical_retrieve_value(std::shared_ptr<ICAL_LINE> piline, char *pvalue)
+static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 {
 	char *ptr;
 	char *ptr1;
@@ -460,10 +460,8 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 				ical_unescape_string(tmp_item.pvalue);
 				if (!pivalue->append_subval(tmp_item.pvalue))
 					break;
-			} else {
-				if (FALSE == ical_retrieve_value(piline, tmp_item.pvalue)) {
-					break;
-				}
+			} else if (!ical_retrieve_value(piline.get(), tmp_item.pvalue)) {
+				break;
 			}
 		}
 	} while ((pline = pnext) != NULL);
