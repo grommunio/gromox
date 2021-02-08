@@ -1457,7 +1457,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
-		piline = ical_get_line(pcomponent, "DTSTART");
+		piline = pcomponent->get_line("DTSTART");
 		if (NULL == piline) {
 			return NULL;
 		}
@@ -1473,7 +1473,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (ical_cmp_time(itime, itime1) < 0) {
 			continue;
 		}
-		piline = ical_get_line(pcomponent, "RRULE");
+		piline = pcomponent->get_line("RRULE");
 		if (NULL == piline) {
 			goto FOUND_COMPONENT;
 		}
@@ -1492,7 +1492,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		} else {
 			if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
 				return nullptr;
-			piline = ical_get_line(pcomponent, "TZOFFSETTO");
+			piline = pcomponent->get_line("TZOFFSETTO");
 			if (NULL == piline) {
 				return NULL;
 			}
@@ -1516,7 +1516,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			continue;
 		}
  FOUND_COMPONENT:
-		piline = ical_get_line(pcomponent, "TZOFFSETTO");
+		piline = pcomponent->get_line("TZOFFSETTO");
 		if (NULL == piline) {
 			return NULL;
 		}
@@ -1533,7 +1533,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			daylight_offset = pvalue;
 			itime_daylight = itime1;
 		}
-		piline = ical_get_line(pcomponent, "RRULE");
+		piline = pcomponent->get_line("RRULE");
 		if (NULL != piline) {
 			pvalue = ical_get_first_subvalue_by_name(piline, "FREQ");
 			if (NULL == pvalue || 0 != strcasecmp(pvalue, "YEARLY")) {
@@ -1752,7 +1752,7 @@ bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
 			return false;
-		piline = ical_get_line(pcomponent, "TZOFFSETTO");
+		piline = pcomponent->get_line("TZOFFSETTO");
 		if (NULL == piline) {
 			return false;
 		}

@@ -7239,7 +7239,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		    oxcmail_essdn_to_username, oxcmail_lcid_to_ltag))
 			goto EXPORT_FAILURE;
 		tmp_method[0] = '\0';
-		auto piline = ical_get_line(const_cast<ICAL *>(&ical), "METHOD");
+		auto piline = ical.get_line("METHOD");
 		if (NULL != piline) {
 			pvalue = deconst(ical_get_first_subvalue(piline));
 			if (NULL != pvalue) {

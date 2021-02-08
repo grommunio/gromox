@@ -97,9 +97,9 @@ std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
 	return nullptr;
 }
 
-std::shared_ptr<ICAL_LINE> ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
+std::shared_ptr<ICAL_LINE> ICAL_COMPONENT::get_line(const char *name)
 {
-	for (auto l : pcomponent->line_list)
+	for (auto l : line_list)
 		if (strcasecmp(l->name.c_str(), name) == 0)
 			return l;
 	return nullptr;
