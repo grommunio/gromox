@@ -3577,7 +3577,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (NULL == pcomponent) {
 		return NULL;
 	}
-	ical_append_component(pical, pcomponent);
+	pical->append_comp(pcomponent);
 	auto piline = ical_new_simple_line("TZID", tzid);
 	if (NULL == piline) {
 		return NULL;
@@ -3589,7 +3589,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
-	ical_append_component(pcomponent, pcomponent1);
+	pcomponent->append_comp(pcomponent1);
 	if (0 == ptzstruct->daylightdate.month) {
 		strcpy(tmp_buff, "16010101T000000");
 	} else {
@@ -3747,7 +3747,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
-	ical_append_component(pcomponent, pcomponent1);
+	pcomponent->append_comp(pcomponent1);
 	if (0 == ptzstruct->daylightdate.year) {
 		day = ical_get_dayofmonth(year,
 			ptzstruct->daylightdate.month,
@@ -5224,7 +5224,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL == pcomponent) {
 		return FALSE;
 	}
-	ical_append_component(pical, pcomponent);
+	pical->append_comp(pcomponent);
 	
 	if (0 == strcmp(method, "REQUEST") ||
 		0 == strcmp(method, "CANCEL")) {
@@ -6096,7 +6096,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == pcomponent) {
 			return FALSE;
 		}
-		ical_append_component(pical, pcomponent);
+		pical->append_comp(pcomponent);
 		piline = ical_new_simple_line("DESCRIPTION", "REMINDER");
 		if (NULL == piline) {
 			return FALSE;

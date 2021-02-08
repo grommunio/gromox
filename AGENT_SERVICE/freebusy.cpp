@@ -722,7 +722,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
-	if (ical_append_component(pcomponent, pcomponent1) < 0)
+	if (pcomponent->append_comp(pcomponent1) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.month) {
 		strcpy(tmp_buff, "16010101T000000");
@@ -883,7 +883,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (NULL == pcomponent1) {
 		return NULL;
 	}
-	if (ical_append_component(pcomponent, pcomponent1) < 0)
+	if (pcomponent->append_comp(pcomponent1) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
 		day = ical_get_dayofmonth(year,

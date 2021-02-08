@@ -105,10 +105,10 @@ std::shared_ptr<ICAL_LINE> ical_get_line(ICAL_COMPONENT *pcomponent, const char 
 	return nullptr;
 }
 
-int ical_append_component(ICAL_COMPONENT *p, std::shared_ptr<ICAL_COMPONENT> c)
+int ICAL_COMPONENT::append_comp(std::shared_ptr<ICAL_COMPONENT> c)
 {
 	try {
-		p->component_list.push_back(std::move(c));
+		component_list.push_back(std::move(c));
 		return 0;
 	} catch (...) {
 	}

@@ -429,7 +429,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			if (!ical_retrieve_component(pcomponent1.get(), pnext, &pnext)) {
 				break;
 			}
-			if (ical_append_component(pcomponent, pcomponent1) < 0)
+			if (pcomponent->append_comp(pcomponent1) < 0)
 				break;
 			continue;
 		}
