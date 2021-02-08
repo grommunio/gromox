@@ -51,7 +51,9 @@ struct GX_EXPORT ICAL_COMPONENT {
 	std::list<std::shared_ptr<ICAL_LINE>> line_list;
 	std::list<std::shared_ptr<ICAL_COMPONENT>> component_list;
 };
-using ICAL = ICAL_COMPONENT;
+
+struct GX_EXPORT ICAL : public ICAL_COMPONENT {
+};
 
 struct ICAL_TIME {
 	int year;
