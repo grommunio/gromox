@@ -3623,7 +3623,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			if (!ical_append_subval(pivalue, "YEARLY"))
 				return NULL;
@@ -3631,7 +3631,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			order = ptzstruct->standarddate.day;
 			if (5 == order) {
@@ -3668,7 +3668,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
 			if (!ical_append_subval(pivalue, tmp_buff))
@@ -3684,7 +3684,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			if (!ical_append_subval(pivalue, "YEARLY"))
 				return NULL;
@@ -3692,14 +3692,14 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.day);
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
 				return NULL;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
 			if (!ical_append_subval(pivalue, tmp_buff))
@@ -3776,7 +3776,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		if (!ical_append_subval(pivalue, "YEARLY"))
 			return NULL;
@@ -3784,7 +3784,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		order = ptzstruct->daylightdate.day;
 		if (5 == order) {
@@ -3821,7 +3821,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
 		if (!ical_append_subval(pivalue, tmp_buff))
@@ -3837,7 +3837,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		if (!ical_append_subval(pivalue, "YEARLY"))
 			return NULL;
@@ -3845,14 +3845,14 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.day);
 		pivalue = ical_new_value("BYMONTH");
 		if (NULL == pivalue) {
 			return NULL;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
 		if (!ical_append_subval(pivalue, tmp_buff))
@@ -3987,7 +3987,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		return ical_append_subval(pivalue, tmp_value) ? TRUE : false;
 	}	
@@ -4081,7 +4081,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, tmp_value))
 			return FALSE;
@@ -4160,7 +4160,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, "DAILY"))
 			return FALSE;
@@ -4170,7 +4170,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
@@ -4180,7 +4180,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, "WEEKLY"))
 			return FALSE;
@@ -4190,7 +4190,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
@@ -4198,7 +4198,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (WEEKRECURRENCEPATTERN_SU&
 			papprecurr->recurrencepattern.
@@ -4249,7 +4249,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!ical_append_subval(pivalue, "MONTHLY"))
@@ -4260,7 +4260,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
@@ -4268,7 +4268,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (31 == papprecurr->recurrencepattern.
 				patterntypespecific.dayofmonth) {
@@ -4289,7 +4289,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
@@ -4297,7 +4297,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (31 == papprecurr->recurrencepattern.
 				patterntypespecific.dayofmonth) {
@@ -4313,7 +4313,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			ical_get_itime_from_yearday(1601, 
 				papprecurr->recurrencepattern.firstdatetime/
@@ -4329,7 +4329,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!ical_append_subval(pivalue, "MONTHLY"))
@@ -4340,7 +4340,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
@@ -4348,7 +4348,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
@@ -4389,7 +4389,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (5 == papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.recurrencenum) {
@@ -4410,7 +4410,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!ical_append_subval(pivalue, tmp_buff))
 				return FALSE;
@@ -4418,7 +4418,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.weekrecurrence) {
@@ -4459,7 +4459,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (5 == papprecurr->recurrencepattern.
 				patterntypespecific.monthnth.recurrencenum) {
@@ -4475,7 +4475,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (NULL == pivalue) {
 				return FALSE;
 			}
-			if (ical_append_value(piline, pivalue) < 0)
+			if (piline->append_value(pivalue) < 0)
 				return false;
 			sprintf(tmp_buff, "%u",
 				papprecurr->recurrencepattern.firstdatetime);
@@ -4494,7 +4494,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
@@ -4515,7 +4515,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!ical_append_subval(pivalue, tmp_buff))
 			return FALSE;
@@ -4525,7 +4525,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		switch (papprecurr->recurrencepattern.firstdow) {
 		case 0:
@@ -4623,7 +4623,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	if (NULL == pivalue) {
 		return FALSE;
 	}
-	if (ical_append_value(piline, pivalue) < 0)
+	if (piline->append_value(pivalue) < 0)
 		return false;
 	if (TRUE == b_date) {
 		piparam = ical_new_param("VALUE");
@@ -4733,7 +4733,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	if (NULL == pivalue) {
 		return FALSE;
 	}
-	if (ical_append_value(piline, pivalue) < 0)
+	if (piline->append_value(pivalue) < 0)
 		return false;
 	if (TRUE == b_date) {
 		piparam = ical_new_param("VALUE");
@@ -5644,7 +5644,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == pivalue) {
 			return FALSE;
 		}
-		if (ical_append_value(piline, pivalue) < 0)
+		if (piline->append_value(pivalue) < 0)
 			return false;
 		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
 			if (!ical_append_subval(pivalue, static_cast<STRING_ARRAY *>(pvalue)->ppstr[i]))
