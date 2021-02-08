@@ -81,17 +81,17 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 	pdate->second = itime.second;
 	piline = psub_component->get_line("RRULE");
 	if (NULL != piline) {
-		pvalue = ical_get_first_subvalue_by_name(piline, "FREQ");
+		pvalue = piline->get_first_subvalue_by_name("FREQ");
 		if (NULL == pvalue || 0 != strcasecmp(pvalue, "YEARLY")) {
 			return FALSE;
 		}
-		pvalue = ical_get_first_subvalue_by_name(piline, "BYDAY");
-		pvalue1 = ical_get_first_subvalue_by_name(piline, "BYMONTHDAY");
+		pvalue = piline->get_first_subvalue_by_name("BYDAY");
+		pvalue1 = piline->get_first_subvalue_by_name("BYMONTHDAY");
 		if ((NULL == pvalue && NULL == pvalue1) ||
 			(NULL != pvalue && NULL != pvalue1)) {
 			return FALSE;
 		}
-		pvalue2 = ical_get_first_subvalue_by_name(piline, "BYMONTH");
+		pvalue2 = piline->get_first_subvalue_by_name("BYMONTH");
 		if (NULL == pvalue2) {
 			pdate->month = itime.month;
 		} else {
@@ -329,7 +329,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (NULL != psubval_list) {
 		if (psubval_list->size() > 1)
 			return FALSE;
-		pvalue = ical_get_first_subvalue_by_name(piline, "BYSECOND");
+		pvalue = piline->get_first_subvalue_by_name("BYSECOND");
 		if (NULL != pvalue && atoi(pvalue) != start_time%60) {
 			return FALSE;
 		}
@@ -548,7 +548,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 								weekrecurrence |= 0x00000040;
 				}
 			}
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYSETPOS");
+			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			tmp_int = atoi(pvalue);
 			if (tmp_int > 4 || tmp_int < -1) {
 				return FALSE;
@@ -562,7 +562,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
 				return FALSE;
 			patterntype = PATTERNTYPE_MONTH;
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYMONTHDAY");
+			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (NULL == pvalue) {
 				ical_utc_to_datetime(ptz_component, start_time, &itime);
 				tmp_int = itime.day;
@@ -641,7 +641,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 						weekrecurrence |= 0x00000040;
 				}
 			}
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYSETPOS");
+			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			tmp_int = atoi(pvalue);
 			if (tmp_int > 4 || tmp_int < -1) {
 				return FALSE;
@@ -655,7 +655,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
 				return FALSE;
 			patterntype = PATTERNTYPE_MONTH;
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYMONTHDAY");
+			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (NULL == pvalue) {
 				ical_utc_to_datetime(ptz_component, start_time, &itime);
 				tmp_int = itime.day;

@@ -752,11 +752,9 @@ static const char *ical_get_first_subvalue_by_name_internal(
 	return pnode.has_value() ? pnode->c_str() : nullptr;
 }
 
-const char* ical_get_first_subvalue_by_name(
-	ICAL_LINE *piline, const char *name)
+const char *ICAL_LINE::get_first_subvalue_by_name(const char *name)
 {
-	return ical_get_first_subvalue_by_name_internal(
-						&piline->value_list, name);
+	return ical_get_first_subvalue_by_name_internal(&value_list, name);
 }
 
 const char *ICAL_LINE::get_first_subvalue()
@@ -1476,7 +1474,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (NULL == piline) {
 			goto FOUND_COMPONENT;
 		}
-		pvalue = ical_get_first_subvalue_by_name(piline, "UNTIL");
+		pvalue = piline->get_first_subvalue_by_name("UNTIL");
 		if (NULL == pvalue) {
 			goto FOUND_COMPONENT;
 		}
@@ -1534,17 +1532,17 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		}
 		piline = pcomponent->get_line("RRULE");
 		if (NULL != piline) {
-			pvalue = ical_get_first_subvalue_by_name(piline, "FREQ");
+			pvalue = piline->get_first_subvalue_by_name("FREQ");
 			if (NULL == pvalue || 0 != strcasecmp(pvalue, "YEARLY")) {
 				return NULL;
 			}
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYDAY");
-			pvalue1 = ical_get_first_subvalue_by_name(piline, "BYMONTHDAY");
+			pvalue = piline->get_first_subvalue_by_name("BYDAY");
+			pvalue1 = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if ((NULL == pvalue && NULL == pvalue1) ||
 				(NULL != pvalue && NULL != pvalue1)) {
 				return NULL;
 			}
-			pvalue2 = ical_get_first_subvalue_by_name(piline, "BYMONTH");
+			pvalue2 = piline->get_first_subvalue_by_name("BYMONTH");
 			if (NULL == pvalue2) {
 				month = itime1.month;
 			} else {
@@ -1581,7 +1579,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 					return NULL;
 				}
 			}
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYHOUR");
+			pvalue = piline->get_first_subvalue_by_name("BYHOUR");
 			if (NULL == pvalue) {
 				hour = itime1.hour;
 			} else {
@@ -1590,7 +1588,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 					return NULL;
 				}
 			}
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYMINUTE");
+			pvalue = piline->get_first_subvalue_by_name("BYMINUTE");
 			if (NULL == pvalue) {
 				minute = itime1.minute;
 			} else {
@@ -1599,7 +1597,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 					return NULL;
 				}
 			}
-			pvalue = ical_get_first_subvalue_by_name(piline, "BYSECOND");
+			pvalue = piline->get_first_subvalue_by_name("BYSECOND");
 			if (NULL == pvalue) {
 				second = itime1.second;
 			} else {
