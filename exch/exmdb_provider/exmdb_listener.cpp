@@ -110,9 +110,7 @@ void exmdb_listener_init(const char *ip,
 {
 	if ('\0' != ip[0]) {
 		HX_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
-		g_list_path[0] = '\0';
 	} else {
-		g_listen_ip[0] = '\0';
 		HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	}
 	g_listen_port = port;
