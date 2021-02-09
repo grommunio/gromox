@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/paths.h>
 #include "bounce_producer.h"
 #include <gromox/svc_common.h>
 #include "exmdb_listener.h"
@@ -113,7 +114,11 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		
 		sprintf(resource_path, "%s/mail_bounce", get_data_path());
 		sprintf(list_path, "%s/exmdb_list.txt", get_data_path());
-		sprintf(acl_path, "%s/exmdb_acl.txt", get_data_path());
+
+		str_value = config_file_get_value(pconfig, "acl_path");
+		HX_strlcpy(acl_path, str_value != nullptr ? str_value :
+		           PKGSYSCONFDIR "/exmdb_acl.txt", GX_ARRAY_SIZE(acl_path));
+		printf("[exmdb_provider]: acl file path is %s\n", acl_path);
 		
 		str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
