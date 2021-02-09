@@ -137,25 +137,33 @@ int exmdb_listener_run()
 	if ('\0' != g_list_path[0]) {
 		struct ipitem { char ip_addr[32]; };
 		plist = list_file_init(g_list_path, "%s:32");
-		if (NULL == plist) {
+		if (plist == nullptr && errno == ENOENT) {
+			printf("[system]: Using implicit event_acl with ::1.\n");
+			pacl = static_cast<ACL_ITEM *>(malloc(sizeof(ACL_ITEM)));
+			if (pacl == nullptr)
+				abort();
+			pacl->node.pdata = pacl;
+			HX_strlcpy(pacl->ip_addr, "::1", GX_ARRAY_SIZE(pacl->ip_addr));
+			double_list_append_as_tail(&g_acl_list, &pacl->node);
+		} else if (plist == nullptr) {
 			printf("[exmdb_provider]: Failed to read ACLs from %s: %s\n",
 				g_list_path, strerror(errno));
 			close(g_listen_sockd);
 			return -5;
-		}
-		num = list_file_get_item_num(plist);
-		auto pitem = reinterpret_cast<struct ipitem *>(list_file_get_list(plist));
-		for (i=0; i<num; i++) {
-			pacl = me_alloc<ACL_ITEM>();
-			if (NULL == pacl) {
-				continue;
+		} else {
+			num = list_file_get_item_num(plist);
+			auto pitem = reinterpret_cast<struct ipitem *>(list_file_get_list(plist));
+			for (i = 0; i < num; i++) {
+				pacl = me_alloc<ACL_ITEM>();
+				if (NULL == pacl) {
+					continue;
+				}
+				pacl->node.pdata = pacl;
+				HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
+				double_list_append_as_tail(&g_acl_list, &pacl->node);
 			}
-			pacl->node.pdata = pacl;
-			HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
-			double_list_append_as_tail(&g_acl_list, &pacl->node);
+			list_file_free(plist);
 		}
-		list_file_free(plist);
-
 	}
 	return 0;
 }
