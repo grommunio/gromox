@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <memory>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/list_file.hpp>
@@ -15,13 +16,17 @@ static BOOL list_file_analyse_format(LIST_FILE* list_file, const char* format);
 static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line);
 static BOOL list_file_construct_list(LIST_FILE* list_file);
 
-static LIST_FILE *list_file_alloc(const char *format)
+static std::unique_ptr<LIST_FILE> list_file_alloc(const char *format)
 {
-	auto lf = static_cast<LIST_FILE *>(calloc(1, sizeof(LIST_FILE)));
-	if (lf == NULL)
-		return NULL;
-	if (!list_file_analyse_format(lf, format)) {
-		free(lf);
+	std::unique_ptr<LIST_FILE> lf;
+	try {
+		lf = std::make_unique<LIST_FILE>();
+	} catch (const std::bad_alloc &) {
+		errno = ENOMEM;
+		return nullptr;
+	}
+	if (!list_file_analyse_format(lf.get(), format)) {
+		errno = EINVAL;
 		return NULL;
 	}
 	return lf;
@@ -43,52 +48,28 @@ static LIST_FILE *list_file_alloc(const char *format)
  *		<>NULL					object pointer
  *
  */
-LIST_FILE *list_file_init3(const char *filename, const char *format, bool hard)
+std::unique_ptr<LIST_FILE> list_file_init(const char *filename,
+    const char *format, bool hard)
 {
-	LIST_FILE *list_file = list_file_alloc(format);
+	auto list_file = list_file_alloc(format);
 	if (list_file == NULL)
 		return NULL;
-	FILE *file_ptr = fopen(filename, "r");
-	if (file_ptr == NULL) {
+	list_file->file_ptr.reset(fopen(filename, "r"));
+	if (list_file->file_ptr == nullptr) {
 		if (errno == ENOENT && !hard)
 			return list_file;
 		debug_info("[list_file]: cannot open %s: %s", filename, strerror(errno));
-		free(list_file);
 		return NULL;
 	}
-	list_file->file_ptr = file_ptr;
-	if (FALSE == list_file_construct_list(list_file)) {
-		free(list_file);
-		fclose(file_ptr);
+	if (!list_file_construct_list(list_file.get()))
 		return NULL;
-	}
 	return list_file;
 }
 
-LIST_FILE *list_file_init(const char *filename, const char *format)
+LIST_FILE::~LIST_FILE()
 {
-	return list_file_init3(filename, format, true);
-}
-
-/*
- *	free list file object
- *	@param
- *		file [in]	object pointer
- */
-void list_file_free(LIST_FILE* list_file)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_free, param NULL");
-		return;
-	}
-#endif
-	if (list_file->file_ptr != NULL)
-		fclose(list_file->file_ptr);
-	if (NULL != list_file->pfile) {
-		free(list_file->pfile);
-	}
-	free(list_file);
+	if (pfile != nullptr)
+		free(pfile);
 }
 
 static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
@@ -170,24 +151,6 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 }
 
 /*
- *	get list file's list
- *	@param
- *		list_file [in]		object pointer
- *	@return
- *		pointer to list file
- */
-void* list_file_get_list(LIST_FILE* list_file)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_get_list, param NULL");
-		return NULL;
-	}
-#endif
-	return list_file->pfile;
-}
-
-/*
  *	read lines of file into object
  *	@param
  *		list_file [in]			object pointer
@@ -207,21 +170,20 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	}
 #endif
 	/* calculate the line number in file */
-	for (table_size=0;fgets(line, MAX_LINE, list_file->file_ptr);table_size++) {
+	for (table_size = 0; fgets(line, MAX_LINE, list_file->file_ptr.get()); ++table_size) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 			table_size --;
 		}
 	}
 	list_file->item_num = 0;
-
-	rewind(list_file->file_ptr);
+	rewind(list_file->file_ptr.get());
 	auto ptr = static_cast<char *>(malloc(table_size * list_file->item_size));
 	if (NULL == ptr) {
 		printf("[list_file]: allocate memory fail\n");
 		return FALSE;
 	}
 	list_file->pfile = ptr;
-	while (fgets(line, MAX_LINE, list_file->file_ptr)) {
+	while (fgets(line, MAX_LINE, list_file->file_ptr.get())) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 			/* skip empty line or comments */
 			continue;
@@ -338,15 +300,3 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 	}
 	return b_terminate;
 }
-
-int list_file_get_item_num(LIST_FILE* list_file)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_get_item_num, param NULL");
-		return 0;
-	}
-#endif
-	return list_file->item_num;
-}
-

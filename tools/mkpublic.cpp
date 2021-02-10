@@ -232,7 +232,6 @@ int main(int argc, const char **argv)
 {
 	int i;
 	int fd;
-	int line_num;
 	int domain_id;
 	char *err_msg;
 	MYSQL *pmysql;
@@ -243,7 +242,6 @@ int main(int argc, const char **argv)
 	uint16_t propid;
 	char *str_value;
 	MYSQL_ROW myrow;
-	LIST_FILE *pfile;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
 	char db_name[256];
@@ -443,19 +441,17 @@ int main(int argc, const char **argv)
 	}
 	free(sql_string);
 	
-	pfile = list_file_init(PKGDATASADIR "/propnames.txt", "%s:256");
+	auto pfile = list_file_init(PKGDATASADIR "/propnames.txt", "%s:256");
 	if (NULL == pfile) {
 		printf("Failed to read propnames.txt: %s\n", strerror(errno));
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 7;
 	}
-	line_num = list_file_get_item_num(pfile);
-	auto pline = static_cast<char *>(list_file_get_list(pfile));
-	
+	auto line_num = pfile->get_size();
+	auto pline = static_cast<char *>(pfile->get_list());
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		list_file_free(pfile);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -467,7 +463,6 @@ int main(int argc, const char **argv)
 		sqlite3_bind_text(pstmt, 2, pline + 256*i, -1, SQLITE_STATIC);
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
-			list_file_free(pfile);
 			sqlite3_finalize(pstmt);
 			sqlite3_close(psqlite);
 			sqlite3_shutdown();
@@ -475,7 +470,7 @@ int main(int argc, const char **argv)
 		}
 		sqlite3_reset(pstmt);
 	}
-	list_file_free(pfile);
+	pfile.reset();
 	sqlite3_finalize(pstmt);
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";

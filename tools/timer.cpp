@@ -97,11 +97,9 @@ static void put_timer(TIMER *ptimer);
 
 int main(int argc, const char **argv)
 {
-	int num;
 	int i, j;
 	int temp_fd;
 	int temp_len;
-	int item_num;
 	int listen_port;
 	time_t cur_time;
 	time_t last_cltime;
@@ -113,8 +111,6 @@ int main(int argc, const char **argv)
 	char *str_value;
 	ACL_ITEM *pacl;
 	TIMER *ptimer;
-	LIST_FILE *pfile;
-	LIST_FILE *plist;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 
@@ -189,7 +185,7 @@ int main(int argc, const char **argv)
 		long exectime;
 		char command[512];
 	} __attribute__((packed));
-	pfile = list_file_init3(g_list_path, "%d%l%s:512", false);
+	auto pfile = list_file_init(g_list_path, "%d%l%s:512", false);
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
 			g_list_path, strerror(errno));
@@ -197,9 +193,8 @@ int main(int argc, const char **argv)
 	}
 
 	double_list_init(&g_exec_list);
-
-	item_num = list_file_get_item_num(pfile);
-	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
+	auto item_num = pfile->get_size();
+	auto pitem = static_cast<srcitem *>(pfile->get_list());
 	for (i=0; i<item_num; i++) {
 		if (pitem[i].exectime == 0) {
 			for (j=0; j<item_num; j++) {
@@ -231,8 +226,7 @@ int main(int argc, const char **argv)
 		HX_strlcpy(ptimer->command, pitem[i].command, sizeof(ptimer->command));
 		put_timer(ptimer);
 	}
-
-	list_file_free(pfile);
+	pfile.reset();
 
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
 	if (sockd == -1) {
@@ -292,7 +286,7 @@ int main(int argc, const char **argv)
 
 	if ('\0' != g_acl_path[0]) {
 		struct ipitem { char ip_addr[32]; };
-		plist = list_file_init(g_acl_path, "%s:32");
+		auto plist = list_file_init(g_acl_path, "%s:32");
 		if (plist == nullptr && errno == ENOENT) {
 			printf("[system]: Using implicit event_acl with ::1.\n");
 			pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
@@ -321,8 +315,8 @@ int main(int argc, const char **argv)
 			printf("[system]: Failed to load ACL from %s\n", g_acl_path);
 			return 9;
 		} else {
-			auto parray = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
-			num = list_file_get_item_num(plist);
+			auto parray = static_cast<const ipitem *>(plist->get_list());
+			auto num = plist->get_size();
 			for (i = 0; i < num; i++) {
 				pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
 				if (NULL == pacl) {
@@ -332,7 +326,6 @@ int main(int argc, const char **argv)
 				HX_strlcpy(pacl->ip_addr, parray[i].ip_addr, sizeof(pacl->ip_addr));
 				double_list_append_as_tail(&g_acl_list, &pacl->node);
 			}
-			list_file_free(plist);
 		}
 	}
 	
@@ -385,11 +378,10 @@ int main(int argc, const char **argv)
 
 		if (cur_time - last_cltime > 7 * 86400) {
 			close(g_list_fd);
-			pfile = list_file_init3(g_list_path, "%d%l%s:512", false);
+			auto pfile = list_file_init(g_list_path, "%d%l%s:512", false);
 			if (NULL != pfile) {
-				item_num = list_file_get_item_num(pfile);
-				pitem = static_cast<srcitem *>(list_file_get_list(pfile));
-				
+				auto item_num = pfile->get_size();
+				auto pitem = static_cast<srcitem *>(pfile->get_list());
 				for (i=0; i<item_num; i++) {
 					if (pitem[i].exectime == 0) {
 						for (j=0; j<item_num; j++) {
@@ -418,11 +410,8 @@ int main(int argc, const char **argv)
 						write(temp_fd, temp_line, temp_len);
 					}
 					close(temp_fd);
-					list_file_free(pfile);
 					remove(g_list_path);
 					rename(temp_path, g_list_path);
-				} else {
-					list_file_free(pfile);
 				}
 				last_cltime = cur_time;
 			}

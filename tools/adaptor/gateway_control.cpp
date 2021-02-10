@@ -44,17 +44,16 @@ void gateway_control_init(const char *path)
 
 int gateway_control_run()
 {
-	int i, list_len;
-	LIST_FILE *plist_file = list_file_init3(g_list_path, /* CONSOLE_PORT */ "%s:32%d%s:32%d", false);
+	auto plist_file = list_file_init(g_list_path, /* CONSOLE_PORT */ "%s:32%d%s:32%d", false);
 	if (NULL == plist_file) {
 		printf("[gateway_control]: Failed to read console list from %s: %s\n",
 			g_list_path, strerror(errno));
 		return -1;
 	}
 	
-	auto pitem = reinterpret_cast<const CONSOLE_PORT *>(list_file_get_list(plist_file));
-	list_len = list_file_get_item_num(plist_file);
-	for (i=0; i<list_len; i++) {
+	auto pitem = static_cast<const CONSOLE_PORT *>(plist_file->get_list());
+	auto list_len = plist_file->get_size();
+	for (decltype(list_len) i = 0; i < list_len; ++i) {
 		auto pport = static_cast<CONSOLE_PNODE *>(malloc(sizeof(CONSOLE_PNODE)));
 		if (NULL== pport) {
 			continue;
@@ -63,7 +62,6 @@ int gateway_control_run()
 		memcpy(&pport->u, &pitem[i], sizeof(*pitem));
 		single_list_append_as_tail(&g_console_list, &pport->node);
 	}
-	list_file_free(plist_file);
 	return 0;
 }
 

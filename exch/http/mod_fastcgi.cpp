@@ -180,10 +180,7 @@ static void mod_fastcgi_load_extra_headers(
 
 int mod_fastcgi_run()
 {
-	int i;
 	int tmp_len;
-	int item_num;
-	LIST_FILE *pfile;
 	FASTCGI_NODE *pfnode;
 	char extra_headers[512];
 
@@ -191,16 +188,16 @@ int mod_fastcgi_run()
 		char domain[256], path[256], dir[256], suffix[16], index[256];
 		char extra_headers[304], sock_path[256];
 	};
-	pfile = list_file_init(g_list_path,
+	auto pfile = list_file_init(g_list_path,
 		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256");
 	if (NULL == pfile) {
 		printf("[mod_fastcgi]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));
 		return -1;
 	}
-	item_num = list_file_get_item_num(pfile);
-	auto pitem = reinterpret_cast<struct srcitem *>(list_file_get_list(pfile));
-	for (i=0; i<item_num; i++) {
+	auto item_num = pfile->get_size();
+	auto pitem = static_cast<srcitem *>(pfile->get_list());
+	for (decltype(item_num) i = 0; i < item_num; ++i) {
 		pfnode = static_cast<FASTCGI_NODE *>(malloc(sizeof(*pfnode)));
 		if (NULL == pfnode) {
 			continue;
@@ -226,7 +223,6 @@ int mod_fastcgi_run()
 		pfnode->sock_path = strdup(pitem[i].sock_path);
 		double_list_append_as_tail(&g_fastcgi_list, &pfnode->node);
 	}
-	list_file_free(pfile);
 	g_context_list = static_cast<FASTCGI_CONTEXT *>(malloc(sizeof(FASTCGI_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[mod_fastcgi]: Failed to allocate context list\n");

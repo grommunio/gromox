@@ -95,13 +95,8 @@ static const char* lcid_to_ltag(uint32_t lcid)
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	int i;
-	int item_num;
 	uint32_t lcid;
-	LIST_FILE *pfile;
 	char tmp_path[256];
-	CPID_ITEM *pcpid_item;
-	
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -113,27 +108,25 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pthread_mutex_init(&g_charset_lock, NULL);
 		
 		sprintf(tmp_path, "%s/cpid.txt", get_data_path());
-		pfile = list_file_init3(tmp_path, "%d%s:64", false);
+		auto pfile = list_file_init(tmp_path, "%d%s:64", false);
 		if (NULL == pfile) {
 			printf("[ms_locale]: list_file_init %s: %s\n",
 				tmp_path, strerror(errno));
 			return FALSE;
 		}
-		item_num = list_file_get_item_num(pfile);
-		pcpid_item = static_cast<CPID_ITEM *>(list_file_get_list(pfile));
+		auto item_num = pfile->get_size();
+		auto pcpid_item = static_cast<CPID_ITEM *>(pfile->get_list());
 		g_cpid_hash = int_hash_init(item_num + 1, 64);
 		if (NULL == g_cpid_hash) {
 			printf("[ms_locale]: Failed to init cpid hash table\n");
-			list_file_free(pfile);
 			return FALSE;
 		}
 		g_charset_hash = str_hash_init(item_num + 1, sizeof(uint32_t), NULL);
 		if (NULL == g_charset_hash) {
 			printf("[ms_locale]: Failed to init charset hash table\n");
-			list_file_free(pfile);
 			return FALSE;
 		}
-		for (i=0; i<item_num; i++) {
+		for (decltype(item_num) i = 0; i < item_num; ++i) {
 			HX_strlower(pcpid_item[i].charset);
 			if (1 != int_hash_add(g_cpid_hash,
 				pcpid_item[i].cpid, pcpid_item[i].charset)) {
@@ -144,7 +137,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				printf("[ms_locale]: fail to add item into charset hash\n");
 			}
 		}
-		list_file_free(pfile);
+		pfile.reset();
 		sprintf(tmp_path, "%s/lcid.txt", get_data_path());
 		struct srcitem { char lcid[16], locale[32]; };
 		pfile = list_file_init(tmp_path, "%s:16%s:32");
@@ -153,22 +146,20 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				tmp_path, strerror(errno));
 			return FALSE;
 		}
-		item_num = list_file_get_item_num(pfile);
+		item_num = pfile->get_size();
 		printf("[ms_locale]: lcid.txt contains %d items\n", item_num);
-		auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
+		auto pitem = static_cast<srcitem *>(pfile->get_list());
 		g_lcid_hash = int_hash_init(item_num + 1, 32);
 		if (NULL == g_lcid_hash) {
 			printf("[ms_locale]: Failed to init lcid hash table\n");
-			list_file_free(pfile);
 			return FALSE;
 		}
 		g_ltag_hash = str_hash_init(item_num + 1, sizeof(uint32_t), NULL);
 		if (NULL == g_ltag_hash) {
 			printf("[ms_locale]: Failed to init ltag hash table\n");
-			list_file_free(pfile);
 			return FALSE;
 		}
-		for (i=0; i<item_num; i++) {
+		for (decltype(item_num) i = 0; i < item_num; ++i) {
 			if (strncasecmp(pitem[i].lcid, "0x", 2) != 0) {
 				printf("[ms_locale]: lcid %s is not "
 					"in hex string\n", pitem[i].lcid);
@@ -184,7 +175,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			if (int_hash_add(g_lcid_hash, lcid, pitem[i].locale) != 1)
 				printf("[ms_locale]: fail to add item into lcid hash\n");
 		}
-		list_file_free(pfile);
+		pfile.reset();
 		printf("[ms_locale]: loaded %zu locale IDs\n", g_lcid_hash->item_num);
 		printf("[ms_locale]: loaded %zu locale names\n", g_ltag_hash->item_num);
 		if (!register_service("verify_cpid", reinterpret_cast<void *>(verify_cpid))) {

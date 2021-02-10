@@ -182,7 +182,6 @@ static int g_file_ratio;
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
 	int i, j;
-	int list_num;
 	char *psearch;
 	char *str_value;
 	char file_name[256];
@@ -235,25 +234,23 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[midb_agent]: memory pool is switched off\n");
 		}
 
-		LIST_FILE *plist = list_file_init(list_path, /* MIDB_ITEM */ "%s:256%s:32%d");
+		auto plist = list_file_init(list_path, /* MIDB_ITEM */ "%s:256%s:32%d");
 		if (NULL == plist) {
 			printf("[midb_agent]: Failed to read midb list from %s: %s\n",
 				list_path, strerror(errno));
 			return FALSE;
 		}
 
-
-		list_num = list_file_get_item_num(plist);
+		auto list_num = plist->get_size();
 		struct MIDB_ITEM {
 			char prefix[256], ip_addr[32];
 			int port;
 		};
-		auto pitem = reinterpret_cast<MIDB_ITEM *>(list_file_get_list(plist));
+		auto pitem = static_cast<MIDB_ITEM *>(plist->get_list());
 		for (i=0; i<list_num; i++) {
 			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));
 			if (NULL == pserver) {
 				printf("[midb_agent]: Failed to allocate memory for midb\n");
-				list_file_free(plist);
 				return FALSE;
 			}
 			pserver->node.pdata = pserver;
@@ -273,7 +270,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				}
 			}
 		}
-		list_file_free(plist);
 		
 		if (g_file_ratio > 0) {
 			g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE, 

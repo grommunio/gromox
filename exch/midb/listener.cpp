@@ -51,9 +51,7 @@ void listener_init(const char *ip, int port, const char *list_path)
 
 int listener_run()
 {
-	int i, num;
 	ACL_ITEM *pacl;
-	LIST_FILE *plist;
 
 	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd == -1) {
@@ -63,16 +61,16 @@ int listener_run()
 	
 	if ('\0' != g_list_path[0]) {
 		struct ipitem { char ip_addr[32]; };
-		plist = list_file_init(g_list_path, "%s:32");
+		auto plist = list_file_init(g_list_path, "%s:32");
 		if (NULL == plist) {
 			printf("[listener]: Failed to read ACLs from %s: %s\n",
 				g_list_path, strerror(errno));
 			close(g_listen_sockd);
 			return -5;
 		}
-		num = list_file_get_item_num(plist);
-		auto pitem = reinterpret_cast<ipitem *>(list_file_get_list(plist));
-		for (i=0; i<num; i++) {
+		auto num = plist->get_size();
+		auto pitem = static_cast<ipitem *>(plist->get_list());
+		for (decltype(num) i = 0; i < num; ++i) {
 			pacl = me_alloc<ACL_ITEM>();
 			if (NULL == pacl) {
 				continue;
@@ -81,8 +79,6 @@ int listener_run()
 			HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 			double_list_append_as_tail(&g_acl_list, &pacl->node);
 		}
-		list_file_free(plist);
-
 	}
 	return 0;
 }

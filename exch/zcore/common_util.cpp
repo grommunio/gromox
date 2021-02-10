@@ -76,13 +76,12 @@ static pthread_key_t g_env_key;
 static char g_default_zone[64];
 static char g_langmap_path[256];
 static char g_freebusy_path[256];
-static LIST_FILE *g_langmap_list;
 static char g_default_charset[32];
 static char g_folderlang_path[256];
 static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
-static LIST_FILE *g_folderlang_list;
+static std::unique_ptr<LIST_FILE> g_langmap_list, g_folderlang_list;
 
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
@@ -192,24 +191,20 @@ BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir)
 {
 	struct srcitem { char user[256]; };
-	int i, item_num;
-	LIST_FILE *pfile;
 	char temp_path[256];
 	
 	sprintf(temp_path, "%s/config/delegates.txt", maildir);
-	pfile = list_file_init(temp_path, "%s:256");
+	auto pfile = list_file_init(temp_path, "%s:256");
 	if (NULL == pfile) {
 		return FALSE;
 	}
-	item_num = list_file_get_item_num(pfile);
-	auto pitem = reinterpret_cast<const srcitem *>(list_file_get_list(pfile));
-	for (i=0; i<item_num; i++) {
+	auto item_num = pfile->get_size();
+	auto pitem = static_cast<const srcitem *>(pfile->get_list());
+	for (decltype(item_num) i = 0; i < item_num; ++i) {
 		if (strcasecmp(pitem[i].user, account) == 0) {
-			list_file_free(pfile);
 			return TRUE;
 		}
 	}
-	list_file_free(pfile);
 	return FALSE;
 }
 
@@ -668,8 +663,7 @@ int common_util_run()
 		return -2;
 	}
 	g_langmap_list = list_file_init(g_langmap_path, "%s:32%s:32");
-	if (NULL == g_langmap_list ||
-		0 == list_file_get_item_num(g_langmap_list)) {
+	if (g_langmap_list == nullptr || g_langmap_list->get_size() == 0) {
 		printf("[common_util]: Failed to read langmap from %s: %s\n",
 			g_langmap_path, strerror(errno));
 		return -3;
@@ -688,14 +682,8 @@ int common_util_run()
 
 int common_util_stop()
 {
-	if (NULL != g_langmap_list) {
-		list_file_free(g_langmap_list);
-		g_langmap_list = NULL;
-	}
-	if (NULL != g_folderlang_list) {
-		list_file_free(g_folderlang_list);
-		g_folderlang_list = NULL;
-	}
+	g_langmap_list.reset();
+	g_folderlang_list.reset();
 	return 0;
 }
 
@@ -3397,11 +3385,9 @@ uint64_t common_util_convert_notification_folder_id(uint64_t folder_id)
 
 const char* common_util_i18n_to_lang(const char *i18n)
 {
-	int i, num;
-	
-	auto pitem = static_cast<LANGMAP_ITEM *>(list_file_get_list(g_langmap_list));
-	num = list_file_get_item_num(g_langmap_list);
-	for (i=0; i<num; i++) {
+	auto pitem = static_cast<LANGMAP_ITEM *>(g_langmap_list->get_list());
+	auto num = g_langmap_list->get_size();
+	for (decltype(num) i = 0; i < num; ++i) {
 		if (0 == strcasecmp(pitem[i].i18n, i18n)) {
 			return pitem[i].lang;
 		}
@@ -3422,10 +3408,9 @@ const char* common_util_get_submit_command()
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 {
 	int i, j;
-	int line_num;
 	
-	line_num = list_file_get_item_num(g_folderlang_list);
-	auto pline = static_cast<char *>(list_file_get_list(g_folderlang_list));
+	auto line_num = g_folderlang_list->get_size();
+	auto pline = static_cast<char *>(g_folderlang_list->get_list());
 	for (i=0; i<line_num; i++) {
 		if (0 != strcasecmp(pline + 1088*i, lang)) {
 			continue;

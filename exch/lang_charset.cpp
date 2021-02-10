@@ -97,33 +97,28 @@ static BOOL table_query(const char* lang, char *charset)
 static int table_refresh()
 {
     STR_HASH_TABLE *phash = NULL;
-    int i, list_len, hash_cap;
-	LIST_FILE *plist_file;
 	
     /* initialize the list filter */
 	struct srcitem { char a[32], b[32]; };
-	plist_file = list_file_init(g_list_path, "%s:32%s:32");
+	auto plist_file = list_file_init(g_list_path, "%s:32%s:32");
 	if (NULL == plist_file) {
 		printf("[lang_charset]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(plist_file));
-	list_len = list_file_get_item_num(plist_file);
-	hash_cap = list_len + 1;
+	auto pitem = static_cast<srcitem *>(plist_file->get_list());
+	auto list_len = plist_file->get_size();
+	auto hash_cap = list_len + 1;
 	
     phash = str_hash_init(hash_cap, 32, NULL);
 	if (NULL == phash) {
 		printf("[lang_charset]: Failed to allocate hash map");
-		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}
-    for (i=0; i<list_len; i++) {
+	for (decltype(list_len) i = 0; i < list_len; ++i) {
 		HX_strlower(pitem[i].a);
 		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
-    list_file_free(plist_file);
-	
 	pthread_rwlock_wrlock(&g_refresh_lock);
 	if (NULL != g_hash_table) {
 		str_hash_free(g_hash_table);

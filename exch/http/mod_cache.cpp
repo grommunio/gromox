@@ -148,22 +148,19 @@ void mod_cache_init(int context_num, const char *list_path)
 
 int mod_cache_run()
 {
-	int i;
 	int tmp_len;
-	int item_num;
-	LIST_FILE *pfile;
 	DIRECTORY_NODE *pdnode;
 	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
-	pfile = list_file_init(g_list_path, "%s:256%s:256%s:256");
+	auto pfile = list_file_init(g_list_path, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
 		printf("[mod_cache]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));
 		return -1;
 	}
-	item_num = list_file_get_item_num(pfile);
-	auto pitem = reinterpret_cast<struct srcitem *>(list_file_get_list(pfile));
-	for (i=0; i<item_num; i++) {
+	auto item_num = pfile->get_size();
+	auto pitem = static_cast<srcitem *>(pfile->get_list());
+	for (decltype(item_num) i = 0; i < item_num; ++i) {
 		pdnode = static_cast<DIRECTORY_NODE *>(malloc(sizeof(*pdnode)));
 		if (NULL == pdnode) {
 			continue;
@@ -182,7 +179,7 @@ int mod_cache_run()
 		}
 		double_list_append_as_tail(&g_directory_list, &pdnode->node);
 	}
-	list_file_free(pfile);
+	pfile.reset();
 	g_context_list = static_cast<CACHE_CONTEXT *>(malloc(sizeof(CACHE_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[mod_cache]: Failed to allocate context list\n");

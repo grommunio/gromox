@@ -1066,24 +1066,21 @@ BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
 
 int exmdb_parser_run()
 {
-	int i;
-	int list_num;
 	BOOL b_private;
 	LOCAL_SVR *plocal;
-	EXMDB_ITEM *pitem;
 	
 	if ('\0' == g_list_path[0]) {
 		return 0;
 	}
-	auto plist = list_file_init3(g_list_path, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
+	auto plist = list_file_init(g_list_path, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		printf("[exmdb_provider]: Failed to read exmdb list from %s: %s\n",
 			g_list_path, strerror(errno));
 		return 1;
 	}
-	list_num = list_file_get_item_num(plist);
-	pitem = (EXMDB_ITEM*)list_file_get_list(plist);
-	for (i=0; i<list_num; i++) {
+	auto list_num = plist->get_size();
+	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
+	for (decltype(list_num) i = 0; i < list_num; ++i) {
 		if (0 == strcasecmp(pitem[i].type, "private")) {
 			b_private = TRUE;
 		} else if (0 == strcasecmp(pitem[i].type, "public")) {
@@ -1091,7 +1088,6 @@ int exmdb_parser_run()
 		} else {
 			printf("[exmdb_provider]: unknown type \"%s\", only"
 				"can be \"private\" or \"public\"!", pitem[i].type);
-			list_file_free(plist);
 			return 2;
 		}
 		if (!gx_peer_is_local(pitem[i].ip_addr))
@@ -1099,7 +1095,6 @@ int exmdb_parser_run()
 		plocal = me_alloc<LOCAL_SVR>();
 		if (NULL == plocal) {
 			printf("[exmdb_provider]: Failed to allocate memory\n");
-			list_file_free(plist);
 			return 3;
 		}
 		plocal->node.pdata = plocal;
@@ -1108,7 +1103,6 @@ int exmdb_parser_run()
 		plocal->b_private = b_private;
 		double_list_append_as_tail(&g_local_list, &plocal->node);
 	}
-	list_file_free(plist);
 	return 0;
 }
 

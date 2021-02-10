@@ -154,13 +154,9 @@ static BOOL msgchg_grouping_veryfy_group_list(INFO_NODE *pinfo_node)
 
 static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 {
-	int i;
 	int index;
-	char *pline;
-	int line_num;
 	char *ptoken;
 	char *ptoken1;
-	LIST_FILE *pfile;
 	uint32_t proptag;
 	uint32_t group_id;
 	char file_path[256];
@@ -179,7 +175,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 		return NULL;
 	}
 	snprintf(file_path, GX_ARRAY_SIZE(file_path), "%s/%s", g_folder_path, file_name);
-	pfile = list_file_init(file_path, "%s:256");
+	auto pfile = list_file_init(file_path, "%s:256");
 	if (NULL == pfile) {
 		printf("[exchange_emsmdb]: list_file_init %s: %s\n",
 			file_path, strerror(errno));
@@ -189,27 +185,24 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	if (NULL == pinfo_node) {
 		printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
-		list_file_free(pfile);
 		return NULL;
 	}
-	line_num = list_file_get_item_num(pfile);
-	pline = static_cast<char *>(list_file_get_list(pfile));
+	auto line_num = pfile->get_size();
+	auto pline = static_cast<char *>(pfile->get_list());
 	index = -1;
 	msg_group_node *pgp_node = nullptr;
-	for (i=0; i<line_num; i++) {
+	for (decltype(line_num) i = 0; i < line_num; ++i) {
 		if (0 == strncasecmp(pline, "index:", 6)) {
 			index = atoi(pline + 6);
 			if (index < 0) {
 				printf("[exchange_emsmdb]: index %d "
 					"error in %s\n", index, file_path);
-				list_file_free(pfile);
 				return NULL;
 			}
 			pgp_node = msgchg_grouping_create_group_node(index);
 			if (NULL == pgp_node) {
 				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
-				list_file_free(pfile);
 				return NULL;
 			}
 			if (FALSE == msgchg_grouping_append_group_list(
@@ -217,28 +210,24 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				msgchg_grouping_free_group_node(pgp_node);
 				printf("[exchange_emsmdb]: index %d "
 							"duplicated\n", index);
-				list_file_free(pfile);
 				return NULL;
 			}
 		} else if (0 == strncasecmp(pline, "0x", 2)) {
 			if (-1 == index) {
 				printf("[exchange_emsmdb]: file %s must "
 					"begin with \"index:\"\n", file_path);
-				list_file_free(pfile);
 				return NULL;
 			}
 			proptag = strtol(pline + 2, NULL, 16);
 			if (PROP_ID(proptag) == 0 || PROP_ID(proptag) >= 0x8000) {
 				printf("[exchange_emsmdb]: fail to parse line"
 					"\"%s\" in %s\n", pline, file_path);
-				list_file_free(pfile);
 				return NULL;
 			}
 			ptag_node = me_alloc<TAG_NODE>();
 			if (NULL == ptag_node) {
 				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
-				list_file_free(pfile);
 				return NULL;
 			}
 			ptag_node->node.pdata = ptag_node;
@@ -251,14 +240,12 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			if (-1 == index) {
 				printf("[exchange_emsmdb]: file %s must "
 					"begin with \"index:\"\n", file_path);
-				list_file_free(pfile);
 				return NULL;
 			}
 			ptoken = strchr(pline + 5, ',');
 			if (NULL == ptoken) {
 				printf("[exchange_emsmdb]: line "
 					"\"%s\" format error\n", pline);
-				list_file_free(pfile);
 				return NULL;
 			}
 			*ptoken = '\0';
@@ -267,7 +254,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			if (NULL == ptoken1) {
 				printf("[exchange_emsmdb]: format"
 					" error in \"%s\"\n", ptoken);
-				list_file_free(pfile);
 				return NULL;
 			}
 			*ptoken1 = '\0';
@@ -275,14 +261,12 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			if (0 != strncasecmp(ptoken1, "TYPE=0x", 7)) {
 				printf("[exchange_emsmdb]: format"
 					" error in \"%s\"\n", ptoken1);
-				list_file_free(pfile);
 				return NULL;
 			}
 			ptag_node = me_alloc<TAG_NODE>();
 			if (NULL == ptag_node) {
 				printf("[exchange_emsmdb]: out of memory "
 					"when loading property group info\n");
-				list_file_free(pfile);
 				return NULL;
 			}
 			ptag_node->node.pdata = ptag_node;
@@ -291,7 +275,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			if (0 == ptag_node->type) {
 				printf("[exchange_emsmdb]: format"
 					"error in \"%s\"\n", ptoken1);
-				list_file_free(pfile);
 				return NULL;
 			}
 			ptag_node->ppropname = me_alloc<PROPERTY_NAME>();
@@ -299,7 +282,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				free(ptag_node);
 				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
-				list_file_free(pfile);
 				return NULL;
 			}
 			if (FALSE == guid_from_string(
@@ -308,7 +290,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				free(ptag_node);
 				printf("[exchange_emsmdb]: guid string"
 					" \"%s\" format error\n", pline + 5);
-				list_file_free(pfile);
 				return NULL;
 			}
 			if (0 == strncasecmp(ptoken, "LID=", 4)) {
@@ -319,7 +300,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 					free(ptag_node);
 					printf("[exchange_emsmdb]: out of memory "
 						"when loading property group info\n");
-					list_file_free(pfile);
 					return NULL;
 				}
 				*ptag_node->ppropname->plid = atoi(ptoken + 4);
@@ -329,7 +309,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 					printf("[exchange_emsmdb]: lid \"%s\" error "
 						"with guid \"%s\"\n",
 						ptoken + 4, pline + 5);
-					list_file_free(pfile);
 					return NULL;
 				}
 				ptag_node->ppropname->pname = NULL;
@@ -344,7 +323,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 					free(ptag_node);
 					printf("[exchange_emsmdb]: name empty "
 						"with guid \"%s\"\n", pline + 5);
-					list_file_free(pfile);
 					return NULL;
 				}
 				ptag_node->ppropname->pname = strdup(ptoken + 5);
@@ -353,7 +331,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 					free(ptag_node);
 					printf("[exchange_emsmdb]: out of memory "
 						"when loading property group info\n");
-					list_file_free(pfile);
 					return NULL;
 				}
 				ptag_node->ppropname->plid = NULL;
@@ -363,13 +340,12 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				free(ptag_node->ppropname);
 				free(ptag_node);
 				printf("[exchange_emsmdb]: type %s unknown\n", ptoken);
-				list_file_free(pfile);
 				return NULL;
 			}
 		}
 		pline += 256;
 	}
-	list_file_free(pfile);
+	pfile.reset();
 	if (TRUE == msgchg_grouping_veryfy_group_list(pinfo_node)) {
 		if (TRUE == msgchg_grouping_append_info_list(pinfo_node)) {
 			return pinfo_node;

@@ -2297,16 +2297,13 @@ cookie_parser_get(const cookie_jar &jar, const char *name)
 
 int main(int argc, const char **argv)
 {
-	int i;
 	char *line;
 	size_t len;
 	int dir_num;
-	int list_num;
 	char *ptoken;
 	char *ptoken1;
 	const char *pdir;
 	const char *pdirs;
-	EXMDB_ITEM *pitem;
 	const char *pbias;
 	char tmp_buff[128];
 	ICAL_TIME itime_end;
@@ -2330,16 +2327,16 @@ int main(int argc, const char **argv)
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_init3(PKGDATAAGENTDIR "/exmdb_list.txt",
+	auto plist = list_file_init(PKGDATAAGENTDIR "/exmdb_list.txt",
 	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		fprintf(stderr, "Failed to read exmdb list from %s: %s\n",
 			PKGDATAAGENTDIR "/exmdb_list.txt", strerror(errno));
 		exit(1);
 	}
-	list_num = list_file_get_item_num(plist);
-	pitem = (EXMDB_ITEM*)list_file_get_list(plist);
-	for (i=0; i<list_num; i++) {
+	auto list_num = plist->get_size();
+	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
+	for (decltype(list_num) i = 0; i < list_num; ++i) {
 		if (0 != strcasecmp(pitem[i].type, "private")) {
 			continue;
 		}
@@ -2352,7 +2349,7 @@ int main(int argc, const char **argv)
 		memcpy(&pexnode->exmdb_info, pitem + i, sizeof(EXMDB_ITEM));
 		double_list_append_as_tail(&g_exmdb_list, &pexnode->node);
 	}
-	list_file_free(plist);
+	plist.reset();
 	
 	line = NULL;
 	if (-1 == getline(&line, &len, stdin)) {
@@ -2548,7 +2545,7 @@ int main(int argc, const char **argv)
 		exit(15);
 	}
 	dir_num = atoi(pdirs);
-	for (i=0; i<dir_num; i++) {
+	for (decltype(dir_num) i = 0; i < dir_num; ++i) {
 		sprintf(tmp_buff, "dir%d", i);
 		pdir = cookie_parser_get(pparser, tmp_buff);
 		if (NULL != pdir) {

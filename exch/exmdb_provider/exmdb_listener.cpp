@@ -121,9 +121,7 @@ void exmdb_listener_init(const char *ip,
 
 int exmdb_listener_run()
 {
-	int i, num;
 	ACL_ITEM *pacl;
-	LIST_FILE *plist;
 	
 	if (0 == g_listen_port) {
 		return 0;
@@ -136,7 +134,7 @@ int exmdb_listener_run()
 
 	if ('\0' != g_list_path[0]) {
 		struct ipitem { char ip_addr[32]; };
-		plist = list_file_init(g_list_path, "%s:32");
+		auto plist = list_file_init(g_list_path, "%s:32");
 		if (plist == nullptr && errno == ENOENT) {
 			printf("[system]: Using implicit event_acl with ::1.\n");
 			pacl = static_cast<ACL_ITEM *>(malloc(sizeof(ACL_ITEM)));
@@ -151,9 +149,9 @@ int exmdb_listener_run()
 			close(g_listen_sockd);
 			return -5;
 		} else {
-			num = list_file_get_item_num(plist);
-			auto pitem = reinterpret_cast<struct ipitem *>(list_file_get_list(plist));
-			for (i = 0; i < num; i++) {
+			auto num = plist->get_size();
+			auto pitem = static_cast<ipitem *>(plist->get_list());
+			for (decltype(num) i = 0; i < num; ++i) {
 				pacl = me_alloc<ACL_ITEM>();
 				if (NULL == pacl) {
 					continue;
@@ -162,7 +160,6 @@ int exmdb_listener_run()
 				HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 				double_list_append_as_tail(&g_acl_list, &pacl->node);
 			}
-			list_file_free(plist);
 		}
 	}
 	return 0;

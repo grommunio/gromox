@@ -1625,10 +1625,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 {
 	int base_id;
 	int user_id;
-	int item_num;
 	AB_BASE *pbase;
 	uint32_t i, result, start_pos, last_row, total;
-	LIST_FILE *pfile;
 	char maildir[256];
 	uint32_t *pproptag;
 	PROPERTY_ROW *prow;
@@ -1708,13 +1706,13 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
 		         "%s/config/delegates.txt", maildir);
-		pfile = list_file_init(temp_path, "%s:256");
+		auto pfile = list_file_init(temp_path, "%s:256");
 		if (NULL == pfile) {
 			result = ecSuccess;
 			goto EXIT_GET_MATCHES;
 		}
-		item_num = list_file_get_item_num(pfile);
-		const struct dlgitem *pitem = reinterpret_cast<struct dlgitem *>(list_file_get_list(pfile));
+		auto item_num = pfile->get_size();
+		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
 		for (i=0; i<item_num; i++) {
 			if ((*ppoutmids)->cvalues > requested) {
 				break;
@@ -1729,13 +1727,11 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
-				list_file_free(pfile);
 				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
-		list_file_free(pfile);
 		result = ecSuccess;
 		goto FETCH_ROWS;
 	}
@@ -2659,13 +2655,10 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t proptag, uint32_t mid, BINARY_ARRAY *pentry_ids)
 {
-	int i, fd;
-	int base_id;
-	int item_num;
+	int base_id, fd;
 	AB_BASE *pbase;
 	uint32_t result;
 	uint32_t tmp_mid;
-	LIST_FILE *pfile;
 	char maildir[256];
 	char username[324];
 	char temp_path[256];
@@ -2673,6 +2666,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	DOUBLE_LIST tmp_list;
 	DOUBLE_LIST_NODE *pnode;
 	SIMPLE_TREE_NODE *ptnode;
+	std::unique_ptr<LIST_FILE> pfile;
+	size_t item_num = 0;
 	
 	if (0 == mid) {
 		return ecInvalidObject;
@@ -2720,9 +2715,9 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/config/delegates.txt", maildir);
 	pfile = list_file_init(temp_path, "%s:256");
 	if (NULL != pfile) {
-		item_num = list_file_get_item_num(pfile);
-		const struct dlgitem *pitem = reinterpret_cast<struct dlgitem *>(list_file_get_list(pfile));
-		for (i=0; i<item_num; i++) {
+		item_num = pfile->get_size();
+		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
+		for (decltype(item_num) i = 0; i < item_num; ++i) {
 			pnode = static_cast<decltype(pnode)>(malloc(sizeof(*pnode)));
 			if (NULL == pnode) {
 				result = ecMAPIOOM;
@@ -2736,9 +2731,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			}
 			double_list_append_as_tail(&tmp_list, pnode);
 		}
-		list_file_free(pfile);
 	}
-	for (i=0; i<pentry_ids->cvalues; i++) {
+	for (int i = 0; i < pentry_ids->cvalues; ++i) {
 		if (pentry_ids->pbin[i].cb < 32) {
 			continue;
 		}

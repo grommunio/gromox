@@ -312,10 +312,7 @@ BOOL exmdb_server_remove_store_properties(
 BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	const char *username, uint32_t *ppermission)
 {
-	int i;
-	int item_num;
 	DB_ITEM *pdb;
-	LIST_FILE *pfile;
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
 	char sql_string[128];
@@ -356,18 +353,17 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
 	sprintf(temp_path, "%s/config/delegates.txt", dir);
-	pfile = list_file_init(temp_path, "%s:256");
+	auto pfile = list_file_init(temp_path, "%s:256");
 	if (NULL != pfile) {
-		item_num = list_file_get_item_num(pfile);
-		auto pitem = reinterpret_cast<struct dlgitem *>(list_file_get_list(pfile));
-		for (i=0; i<item_num; i++) {
+		auto item_num = pfile->get_size();
+		auto pitem = static_cast<dlgitem *>(pfile->get_list());
+		for (decltype(item_num) i = 0; i < item_num; ++i) {
 			if (strcasecmp(pitem[i].user, username) == 0 ||
 			    common_util_check_mlist_include(pitem[i].user, username)) {
 				*ppermission |= PERMISSION_SENDAS;
 				break;
 			}
 		}
-		list_file_free(pfile);
 	}
 	return TRUE;
 }

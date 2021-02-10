@@ -118,26 +118,23 @@ static BOOL table_query(const char* str, char *buff)
 static int table_refresh()
 {
     STR_HASH_TABLE *phash = NULL;
-    int i, list_len;
-	LIST_FILE *plist_file;
 	
     /* initialize the list filter */
 	struct srcitem { char a[256], b[256]; };
-	plist_file = list_file_init(g_list_path, "%s:256%s:256");
+	auto plist_file = list_file_init(g_list_path, "%s:256%s:256");
 	if (NULL == plist_file) {
 		printf("[from_replace]: list_file_init %s: %s\n", g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(plist_file));
-	list_len = list_file_get_item_num(plist_file);
+	auto pitem = static_cast<srcitem *>(plist_file->get_list());
+	auto list_len = plist_file->get_size();
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
 	if (NULL == phash) {
 		printf("[from_replace]: Failed to allocate hash map\n");
-		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}
-    for (i=0; i<list_len; i++) {
+	for (decltype(list_len) i = 0; i < list_len; ++i) {
 		if (strchr(pitem[i].b, '@') == nullptr ||
 		    strchr(pitem[i].b, ' ') != nullptr) {
 			printf("[from_replace]: address format error in line %d\n", i);
@@ -146,8 +143,6 @@ static int table_refresh()
 		HX_strlower(pitem[i].a);
 		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
-    list_file_free(plist_file);
-	
 	pthread_rwlock_wrlock(&g_refresh_lock);
 	if (NULL != g_hash_table) {
 		str_hash_free(g_hash_table);

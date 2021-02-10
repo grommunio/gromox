@@ -1,8 +1,15 @@
 #pragma once
 #include <cstdio>
+#include <memory>
+#include <gromox/defs.h>
+#include <gromox/fileio.h>
 
 struct LIST_FILE {
-    FILE*       file_ptr;
+	~LIST_FILE();
+	void *get_list() { return pfile; }
+	int get_size() { return item_num; }
+
+	std::unique_ptr<FILE, gromox::file_deleter> file_ptr;
     char        format[32];
     int         type_size[32];
     int         type_num;
@@ -11,10 +18,4 @@ struct LIST_FILE {
     void*       pfile;
 };
 
-extern LIST_FILE *list_file_init3(const char *filename, const char *format, bool require);
-extern LIST_FILE *list_file_init(const char *filename, const char *format);
-void list_file_free(LIST_FILE* list_file);
-
-void* list_file_get_list(LIST_FILE* list_file);
-
-int list_file_get_item_num(LIST_FILE* list_file);
+extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_init(const char *filename, const char *format, bool require = true);

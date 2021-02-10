@@ -134,33 +134,29 @@ static BOOL str_table_query(const char* str)
 static int str_table_refresh()
 {
     STR_HASH_TABLE *phash = NULL;
-    int i, list_len, hash_cap;
-	LIST_FILE *plist_file;
 	
     /* initialize the list filter */
 	struct srcitem { char s[256]; };
-	plist_file = list_file_init3(g_list_path, "%s:256", false);
+	auto plist_file = list_file_init(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
 		str_table_echo("list_file_init %s: %s", g_list_path, strerror(errno));
 		return STR_TABLE_REFRESH_FILE_ERROR;
 	}
-	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(plist_file));
-	list_len = list_file_get_item_num(plist_file);
-	hash_cap = list_len + g_growing_num;
+	auto pitem = static_cast<srcitem *>(plist_file->get_list());
+	auto list_len = plist_file->get_size();
+	auto hash_cap = list_len + g_growing_num;
 	
     phash = str_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
 		str_table_echo("Failed to allocate hash map");
-		list_file_free(plist_file);
 		return STR_TABLE_REFRESH_HASH_FAIL;
 	}
-    for (i=0; i<list_len; i++) {
+	for (decltype(list_len) i = 0 ; i < list_len; ++i) {
 		if (FALSE == g_case_sensitive) {
 			HX_strlower(pitem[i].s);
 		}
 		str_hash_add(phash, pitem[i].s, &i);
     }
-    list_file_free(plist_file);
 	
 	pthread_rwlock_wrlock(&g_refresh_lock);
 	if (NULL != g_string_list_table) {

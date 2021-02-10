@@ -335,10 +335,8 @@ static BOOL exmdb_client_unload_store(const char *dir)
 int main(int argc, const char **argv)
 {
 	int i, fd;
-	int list_num;
 	char *err_msg;
 	sqlite3 *psqlite;
-	EXMDB_ITEM *pitem;
 	char tmp_sql[1024];
 	EXMDB_NODE *pexnode;
 	const char *presult;
@@ -624,14 +622,14 @@ int main(int argc, const char **argv)
 	sqlite3_shutdown();
 	
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_init3(PKGDATASADIR "/exmdb_list.txt", /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
+	auto plist = list_file_init(PKGDATASADIR "/exmdb_list.txt", /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		printf("Failed to read exmdb list from %s: %s\n",
 			PKGDATASADIR "/exmdb_list.txt", strerror(errno));
 		return 11;
 	}
-	list_num = list_file_get_item_num(plist);
-	pitem = (EXMDB_ITEM*)list_file_get_list(plist);
+	auto list_num = plist->get_size();
+	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
 	for (i=0; i<list_num; i++) {
 		if (0 != strcasecmp(pitem[i].type, "private")) {
 			continue;
@@ -644,7 +642,6 @@ int main(int argc, const char **argv)
 		memcpy(&pexnode->exmdb_info, pitem + i, sizeof(EXMDB_ITEM));
 		double_list_append_as_tail(&g_exmdb_list, &pexnode->node);
 	}
-	list_file_free(plist);
 	if (FALSE == exmdb_client_unload_store(argv[1])) {
 		printf("fail to unload store\n");
 		return 12;

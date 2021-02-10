@@ -3,6 +3,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <memory>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/paths.h>
@@ -19,7 +20,7 @@ struct srcitem {
 	char s[64];
 };
 
-static LIST_FILE *g_list_file;
+static std::unique_ptr<LIST_FILE> g_list_file;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
@@ -30,11 +31,9 @@ static struct HXoption g_options_table[] = {
 
 static const char* cpid_to_charset_to(uint32_t cpid)
 {
-	int i, item_num;
-	
-	item_num = list_file_get_item_num(g_list_file);
-	auto pitem = reinterpret_cast<const srcitem *>(list_file_get_list(g_list_file));
-	for (i = 0; i < item_num; ++i)
+	auto item_num = g_list_file->get_size();
+	auto pitem = static_cast<const srcitem *>(g_list_file->get_list());
+	for (decltype(item_num) i = 0; i < item_num; ++i)
 		if (pitem[i].cpid == cpid)
 			return pitem[i].s;
 	return "us-ascii";
@@ -91,7 +90,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to uncompress rtf\n");
 		return 2;
 	}
-	g_list_file = list_file_init3(PKGDATADIR "/cpid.txt", "%d%s:64", false);
+	g_list_file = list_file_init(PKGDATADIR "/cpid.txt", "%d%s:64", false);
 	if (NULL == g_list_file) {
 		fprintf(stderr, "list_file_init %s: %s\n",
 			PKGDATADIR "/cpid.txt", strerror(errno));

@@ -538,21 +538,19 @@ void exmdb_client_init(int conn_num, const char *list_path)
 int exmdb_client_run()
 {
 	int i, j;
-	int list_num;
 	BOOL b_private;
-	EXMDB_ITEM *pitem;
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
 	
-	auto plist = list_file_init3(g_list_path, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
+	auto plist = list_file_init(g_list_path, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		printf("[exmdb_local]: Failed to read exmdb list from %s: %s\n",
 			g_list_path, strerror(errno));
 		return 1;
 	}
 	g_notify_stop = FALSE;
-	list_num = list_file_get_item_num(plist);
-	pitem = (EXMDB_ITEM*)list_file_get_list(plist);
+	auto list_num = plist->get_size();
+	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
 	for (i=0; i<list_num; i++) {
 		if (0 == strcasecmp(pitem[i].type, "private")) {
 			b_private = TRUE;
@@ -561,14 +559,12 @@ int exmdb_client_run()
 		} else {
 			printf("[exmdb_local]: unknown type \"%s\", "
 				"can only be \"private\" or \"public\"!", pitem[i].type);
-			list_file_free(plist);
 			g_notify_stop = TRUE;
 			return 2;
 		}
 		pserver = static_cast<REMOTE_SVR *>(malloc(sizeof(REMOTE_SVR)));
 		if (NULL == pserver) {
 			printf("[exmdb_local]: Failed to allocate memory for exmdb\n");
-			list_file_free(plist);
 			g_notify_stop = TRUE;
 			return 3;
 		}
@@ -585,7 +581,6 @@ int exmdb_client_run()
 			if (NULL == pconn) {
 				printf("[exmdb_local]: fail to "
 					"allocate memory for exmdb\n");
-				list_file_free(plist);
 				g_notify_stop = TRUE;
 				return 4;
 			}
@@ -595,7 +590,6 @@ int exmdb_client_run()
 			double_list_append_as_tail(&g_lost_list, &pconn->node);
 		}
 	}
-	list_file_free(plist);
 	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_local]: failed to create proxy scan thread: %s\n", strerror(ret));

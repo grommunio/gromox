@@ -117,10 +117,9 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 {
-	int i, num;
+	int i;
 	ACL_ITEM *pacl;
 	int listen_port;
-	LIST_FILE *plist;
 	pthread_t thr_id;
 	pthread_t *en_ids;
 	pthread_t *de_ids;
@@ -318,7 +317,7 @@ int main(int argc, const char **argv)
 
 	if ('\0' != g_list_path[0]) {
 		struct ipitem { char ip_addr[32]; };
-		plist = list_file_init(g_list_path, "%s:32");
+		auto plist = list_file_init(g_list_path, "%s:32");
 		if (plist == nullptr && errno == ENOENT) {
 			printf("[system]: Using implicit event_acl with ::1.\n");
 			pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
@@ -358,8 +357,8 @@ int main(int argc, const char **argv)
 			printf("[system]: Failed to load ACL from %s\n", g_list_path);
 			return 10;
 		} else {
-			num = list_file_get_item_num(plist);
-			auto pitem = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
+			auto num = plist->get_size();
+			auto pitem = static_cast<const ipitem *>(plist->get_list());
 			for (i = 0; i < num; i++) {
 				pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
 				if (NULL == pacl) {
@@ -369,7 +368,6 @@ int main(int argc, const char **argv)
 				HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 				double_list_append_as_tail(&g_acl_list, &pacl->node);
 			}
-			list_file_free(plist);
 		}
 	}
 

@@ -68,11 +68,9 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 {
 	int i;
 	int tmp_len;
-	int item_num;
 	char *ptoken;
 	char *ptoken1;
 	int context_num;
-	LIST_FILE *pfile;
 	PROXY_NODE *pxnode;
 	char list_path[256];
 	DOUBLE_LIST_NODE *pnode;
@@ -84,14 +82,14 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		double_list_init(&g_proxy_list);
 		sprintf(list_path, "%s/proxy.txt", get_data_path());
 		struct srcitem { char domain[256], uri_path[256], dest[256]; };
-		pfile = list_file_init(list_path, "%s:256%s:256%s:256");
+		auto pfile = list_file_init(list_path, "%s:256%s:256%s:256");
 		if (NULL == pfile) {
 			printf("[mod_proxy]: list_file_init %s: %s\n",
 				list_path, strerror(errno));
 			return FALSE;
 		}
-		item_num = list_file_get_item_num(pfile);
-		auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
+		auto item_num = pfile->get_size();
+		auto pitem = static_cast<srcitem *>(pfile->get_list());
 		for (i=0; i<item_num; i++) {
 			pxnode = static_cast<PROXY_NODE *>(malloc(sizeof(PROXY_NODE)));
 			if (NULL == pxnode) {
@@ -159,7 +157,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			}
 			double_list_append_as_tail(&g_proxy_list, &pxnode->node);
 		}
-		list_file_free(pfile);
+		pfile.reset();
 		if (i < item_num) {
 			if (NULL != pxnode->domain) {
 				free(pxnode->domain);

@@ -181,32 +181,26 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	
 static int address_table_refresh()
 {
-    int i, list_len;
-	LIST_FILE *plist_file;
     STR_HASH_TABLE *phash = NULL;
 	
     /* initialize the list filter */
-	plist_file = list_file_init3(g_address_path, "%s:256%s:256", false);
+	auto plist_file = list_file_init(g_address_path, "%s:256%s:256", false);
 	if (NULL == plist_file) {
 		printf("[alias_translator]: Failed to read address list from %s: %s\n",
 			g_address_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	auto pitem = static_cast<struct addritem *>(list_file_get_list(plist_file));
-	list_len = list_file_get_item_num(plist_file);
-	
+	auto pitem = static_cast<struct addritem *>(plist_file->get_list());
+	auto list_len = plist_file->get_size();
     phash = str_hash_init(list_len + 1, 256, NULL);
 	if (NULL == phash) {
 		printf("[alias_translator]: Failed to allocate address hash map\n");
-		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}
-    for (i=0; i<list_len; i++) {
+	for (decltype(list_len) i = 0; i < list_len; ++i) {
 		HX_strlower(pitem[i].a);
 		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
-    list_file_free(plist_file);
-	
 	pthread_rwlock_wrlock(&g_address_lock);
 	if (NULL != g_address_hash) {
 		str_hash_free(g_address_hash);

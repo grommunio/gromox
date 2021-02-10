@@ -97,9 +97,7 @@ void exmdb_local_init(const char *org_name, const char *default_charset,
 
 int exmdb_local_run()
 {
-	int i, num;
 	int last_propid;
-	LIST_FILE *plist;
 	char temp_line[256];
 	
 #define E(f, s) do { \
@@ -135,21 +133,21 @@ int exmdb_local_run()
 		return -2;
 	}
 	struct srcitem { char s[256]; };
-	plist = list_file_init(g_propname_path, "%s:256");
+	auto plist = list_file_init(g_propname_path, "%s:256");
 	if (NULL == plist) {
 		printf("[exmdb_local]: Failed to read property name list from %s: %s\n",
 			g_propname_path, strerror(errno));
 		return -3;
 	}
-	num = list_file_get_item_num(plist);
-	auto pitem = reinterpret_cast<struct srcitem *>(list_file_get_list(plist));
+	auto num = plist->get_size();
+	auto pitem = static_cast<srcitem *>(plist->get_list());
 	g_str_hash = str_hash_init(num + 1, sizeof(uint16_t), NULL);
 	if (NULL == g_str_hash) {
 		printf("[exmdb_local]: Failed to init hash table\n");
 		return -4;
 	}
 	last_propid = 0x8001;
-	for (i=0; i<num; i++) {
+	for (decltype(num) i = 0; i < num; ++i) {
 		HX_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
 		HX_strlower(temp_line);
 		str_hash_add(g_str_hash, temp_line, &last_propid);

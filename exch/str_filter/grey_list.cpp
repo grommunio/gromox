@@ -227,37 +227,32 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
  */
 int grey_list_refresh()
 {
-	LIST_FILE *plist_file;
     STR_HASH_TABLE *phash;
     GREY_LIST_ENTRY entry;
     struct timeval current_time;
-    int list_len, i, hash_cap;
-	LIST_ITEM *pitem;
 
 	if (0 == g_growing_num) {
 		return GREY_REFRESH_OK;
 	}
-	plist_file = list_file_init3(g_list_path, "%s:256%d%s:32", false);
+	auto plist_file = list_file_init(g_list_path, "%s:256%d%s:32", false);
 	if (NULL == plist_file) {
 		str_filter_echo("Failed to read graylist from %s: %s",
 			g_list_path, strerror(errno));
         return GREY_REFRESH_FILE_ERROR;
 	}
-	pitem = (LIST_ITEM*)list_file_get_list(plist_file);
-    list_len = list_file_get_item_num(plist_file);
-	hash_cap = list_len + g_growing_num;
-
+	auto pitem = static_cast<LIST_ITEM *>(plist_file->get_list());
+	auto list_len = plist_file->get_size();
+	auto hash_cap = list_len + g_growing_num;
     phash = str_hash_init(hash_cap, sizeof(GREY_LIST_ENTRY), NULL);
     if (NULL == phash) {
 		str_filter_echo("Failed to allocate hash map for grey list");
-		list_file_free(plist_file);	
         return GREY_REFRESH_HASH_FAIL;
     }
     memset(&entry, 0, sizeof(GREY_LIST_ENTRY));
     gettimeofday(&current_time, NULL);
     entry.last_access   = current_time;
     entry.current_times = 0;
-    for (i=0; i<list_len; i++, pitem++) {
+	for (decltype(list_len) i = 0; i < list_len; ++i, ++pitem) {
         entry.allowed_times = pitem->allow_times;
         entry.interval = atoitvl(pitem->interval);
 		if (FALSE == g_case_sensitive) {
@@ -265,8 +260,6 @@ int grey_list_refresh()
 		}
         str_hash_add(phash, pitem->string, &entry);
     }
-    list_file_free(plist_file);
-
     pthread_rwlock_wrlock(&g_refresh_lock);
     if (NULL != g_grey_table) {
         str_hash_free(g_grey_table);

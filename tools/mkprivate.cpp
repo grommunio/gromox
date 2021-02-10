@@ -426,7 +426,6 @@ int main(int argc, const char **argv)
 {
 	int user_id;
 	int i, j, fd;
-	int line_num;
 	char *err_msg;
 	char lang[32];
 	MYSQL *pmysql;
@@ -436,7 +435,6 @@ int main(int argc, const char **argv)
 	uint16_t propid;
 	char *str_value;
 	MYSQL_ROW myrow;
-	LIST_FILE *pfile;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
 	uint64_t max_size;
@@ -556,15 +554,15 @@ int main(int argc, const char **argv)
 	
 	char folderlang[256];
 	snprintf(folderlang, GX_ARRAY_SIZE(folderlang), "%s/folder_lang.txt", datadir);
-	pfile = list_file_init(folderlang,
+	auto pfile = list_file_init(folderlang,
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == pfile) {
 		printf("Failed to read %s: %s\n", folderlang, strerror(errno));
 		return 7;
 	}
-	line_num = list_file_get_item_num(pfile);
-	auto pline = static_cast<char *>(list_file_get_list(pfile));
+	auto line_num = pfile->get_size();
+	auto pline = static_cast<char *>(pfile->get_list());
 	for (i=0; i<line_num; i++) {
 		if (0 != strcasecmp(pline + 1088*i, lang)) {
 			continue;
@@ -574,7 +572,7 @@ int main(int argc, const char **argv)
 		}
 		break;
 	}
-	list_file_free(pfile);
+	pfile.reset();
 	if (i >= line_num) {
 		strcpy(folder_lang[RES_ID_IPM], "Top of Information Store");
 		strcpy(folder_lang[RES_ID_INBOX], "Inbox");
@@ -678,12 +676,11 @@ int main(int argc, const char **argv)
 		sqlite3_shutdown();
 		return 7;
 	}
-	line_num = list_file_get_item_num(pfile);
-	pline = static_cast<char *>(list_file_get_list(pfile));
+	line_num = pfile->get_size();
+	pline = static_cast<char *>(pfile->get_list());
 	
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		list_file_free(pfile);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -695,7 +692,6 @@ int main(int argc, const char **argv)
 		sqlite3_bind_text(pstmt, 2, pline + 256*i, -1, SQLITE_STATIC);
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
-			list_file_free(pfile);
 			sqlite3_finalize(pstmt);
 			sqlite3_close(psqlite);
 			sqlite3_shutdown();
@@ -703,7 +699,7 @@ int main(int argc, const char **argv)
 		}
 		sqlite3_reset(pstmt);
 	}
-	list_file_free(pfile);
+	pfile.reset();
 	sqlite3_finalize(pstmt);
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
