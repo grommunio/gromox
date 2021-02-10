@@ -22,11 +22,6 @@
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 
-class file_deleter {
-	public:
-	void operator()(FILE *fp) { fclose(fp); }
-};
-
 class hxmc_deleter {
 	public:
 	void operator()(hxmc_t *s) { HXmc_free(s); }

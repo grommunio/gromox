@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdarg>
 #include <cstddef>
+#include <cstdio>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -14,6 +15,10 @@ extern GX_EXPORT int gx_vsnprintf1(char *, size_t, const char *, unsigned int, c
 extern char **read_file_by_line(const char *file);
 
 namespace gromox {
+
+struct file_deleter {
+	void operator()(FILE *f) { fclose(f); }
+};
 
 extern std::string iconvtext(const char *, size_t, const char *from, const char *to);
 extern GX_EXPORT pid_t popenfd(const char *const *, int *, int *, int *, const char *const *);
