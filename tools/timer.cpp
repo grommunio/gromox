@@ -2,7 +2,10 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cerrno>
+#include <string>
+#include <vector>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -34,10 +37,7 @@
 
 #define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
-struct ACL_ITEM {
-	DOUBLE_LIST_NODE node;
-	char ip_addr[32];
-};
+using namespace gromox;
 
 struct CONNECTION_NODE {
 	DOUBLE_LIST_NODE node;
@@ -60,7 +60,7 @@ static int g_last_tid;
 static int g_list_fd;
 static char g_list_path[256];
 static char g_acl_path[256];
-static DOUBLE_LIST g_acl_list;
+static std::vector<std::string> g_acl_list;
 static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
 static DOUBLE_LIST g_exec_list;
@@ -109,7 +109,6 @@ int main(int argc, const char **argv)
 	char temp_path[256];
 	char temp_line[2048];
 	char *str_value;
-	ACL_ITEM *pacl;
 	TIMER *ptimer;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
@@ -245,8 +244,6 @@ int main(int argc, const char **argv)
 	pthread_mutex_init(&g_connection_lock, NULL);
 	pthread_mutex_init(&g_cond_mutex, NULL);
 	pthread_cond_init(&g_waken_cond, NULL);
-
-	double_list_init(&g_acl_list);
 	double_list_init(&g_connection_list);
 	double_list_init(&g_connection_list1);
 
@@ -270,8 +267,6 @@ int main(int argc, const char **argv)
 
 		close(sockd);
 		close(g_list_fd);
-
-		double_list_free(&g_acl_list);
 		double_list_free(&g_connection_list);
 		double_list_free(&g_connection_list1);
 
@@ -285,25 +280,17 @@ int main(int argc, const char **argv)
 
 
 	if ('\0' != g_acl_path[0]) {
-		struct ipitem { char ip_addr[32]; };
-		auto plist = list_file_init(g_acl_path, "%s:32");
-		if (plist == nullptr && errno == ENOENT) {
-			printf("[system]: Using implicit event_acl with ::1.\n");
-			pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
-			if (pacl == nullptr)
-				abort();
-			pacl->node.pdata = pacl;
-			HX_strlcpy(pacl->ip_addr, "::1", GX_ARRAY_SIZE(pacl->ip_addr));
-			double_list_append_as_tail(&g_acl_list, &pacl->node);
-		} else if (plist == nullptr) {
+		auto ret = list_file_read_fixedstrings(g_list_path, g_acl_list);
+		if (ret == -ENOENT) {
+			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+			g_acl_list = {"::1"};
+		} else if (ret < 0) {
 			for (i=g_threads_num-1; i>=0; i--) {
 				pthread_cancel(thr_ids[i]);
 			}
 
 			close(sockd);
 			close(g_list_fd);
-
-			double_list_free(&g_acl_list);
 			double_list_free(&g_connection_list);
 			double_list_free(&g_connection_list1);
 
@@ -314,18 +301,6 @@ int main(int argc, const char **argv)
 			pthread_cond_destroy(&g_waken_cond);
 			printf("[system]: Failed to load ACL from %s\n", g_acl_path);
 			return 9;
-		} else {
-			auto parray = static_cast<const ipitem *>(plist->get_list());
-			auto num = plist->get_size();
-			for (i = 0; i < num; i++) {
-				pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
-				if (NULL == pacl) {
-					continue;
-				}
-				pacl->node.pdata = pacl;
-				HX_strlcpy(pacl->ip_addr, parray[i].ip_addr, sizeof(pacl->ip_addr));
-				double_list_append_as_tail(&g_acl_list, &pacl->node);
-			}
 		}
 	}
 	
@@ -339,8 +314,6 @@ int main(int argc, const char **argv)
 
 		close(sockd);
 		close(g_list_fd);
-
-		double_list_free(&g_acl_list);
 		double_list_free(&g_connection_list);
 		double_list_free(&g_connection_list1);
 
@@ -432,10 +405,6 @@ int main(int argc, const char **argv)
 
 	close(sockd);
 	close(g_list_fd);
-	while ((pnode = double_list_pop_front(&g_acl_list)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&g_acl_list);
-
 	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
@@ -490,10 +459,8 @@ static void put_timer(TIMER *ptimer)
 static void *accept_work_func(void *param)
 {
 	int sockd, sockd2;
-	ACL_ITEM *pacl;
 	socklen_t addrlen;
 	char client_hostip[32];
-	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_storage peer_name;
 	CONNECTION_NODE *pconnection;	
 
@@ -514,15 +481,8 @@ static void *accept_work_func(void *param)
 			continue;
 		}
 		if ('\0' != g_acl_path[0]) {
-			for (pnode=double_list_get_head(&g_acl_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_acl_list, pnode)) {
-				pacl = (ACL_ITEM*)pnode->pdata;
-				if (0 == strcmp(client_hostip, pacl->ip_addr)) {
-					break;
-				}
-			}
-
-			if (NULL == pnode) {
+			if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+			    client_hostip) == g_acl_list.cend()) {
 				write(sockd2, "Access Deny\r\n", 13);
 				close(sockd2);
 				continue;

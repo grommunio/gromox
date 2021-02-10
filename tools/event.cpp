@@ -2,8 +2,11 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <string>
+#include <vector>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -40,10 +43,7 @@
 
 #define HASH_CAPABILITY			10000
 
-struct ACL_ITEM {
-	DOUBLE_LIST_NODE node;
-	char ip_addr[32];
-};
+using namespace gromox;
 
 struct ENQUEUE_NODE {
 	DOUBLE_LIST_NODE node;
@@ -78,7 +78,7 @@ static int g_threads_num;
 static char g_list_path[256];
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;
-static DOUBLE_LIST g_acl_list;
+static std::vector<std::string> g_acl_list;
 static DOUBLE_LIST g_enqueue_list;
 static DOUBLE_LIST g_enqueue_list1;
 static DOUBLE_LIST g_dequeue_list;
@@ -118,7 +118,6 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 {
 	int i;
-	ACL_ITEM *pacl;
 	int listen_port;
 	pthread_t thr_id;
 	pthread_t *en_ids;
@@ -215,8 +214,6 @@ int main(int argc, const char **argv)
 	pthread_cond_init(&g_enqueue_waken_cond, NULL);
 	pthread_mutex_init(&g_dequeue_cond_mutex, NULL);
 	pthread_cond_init(&g_dequeue_waken_cond, NULL);
-
-	double_list_init(&g_acl_list);
 	double_list_init(&g_enqueue_list);
 	double_list_init(&g_enqueue_list1);
 	double_list_init(&g_dequeue_list);
@@ -251,8 +248,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-
-		double_list_free(&g_acl_list);
 		double_list_free(&g_enqueue_list);
 		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
@@ -295,8 +290,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-
-		double_list_free(&g_acl_list);
 		double_list_free(&g_enqueue_list);
 		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
@@ -316,17 +309,11 @@ int main(int argc, const char **argv)
 	pthread_attr_destroy(&thr_attr);
 
 	if ('\0' != g_list_path[0]) {
-		struct ipitem { char ip_addr[32]; };
-		auto plist = list_file_init(g_list_path, "%s:32");
-		if (plist == nullptr && errno == ENOENT) {
-			printf("[system]: Using implicit event_acl with ::1.\n");
-			pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
-			if (pacl == nullptr)
-				abort();
-			pacl->node.pdata = pacl;
-			HX_strlcpy(pacl->ip_addr, "::1", GX_ARRAY_SIZE(pacl->ip_addr));
-			double_list_append_as_tail(&g_acl_list, &pacl->node);
-		} else if (plist == nullptr) {
+		auto ret = list_file_read_fixedstrings(g_list_path, g_acl_list);
+		if (ret == -ENOENT) {
+			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+			g_acl_list = {"::1"};
+		} else if (ret < 0) {
 			for (i=0; i<g_threads_num; i++) {
 				pthread_cancel(en_ids[i]);
 			}
@@ -339,8 +326,6 @@ int main(int argc, const char **argv)
 			close(sockd);
 			lib_buffer_free(g_file_alloc);
 			fifo_allocator_free(g_fifo_alloc);
-			
-			double_list_free(&g_acl_list);
 			double_list_free(&g_enqueue_list);
 			double_list_free(&g_enqueue_list1);
 			double_list_free(&g_dequeue_list);
@@ -354,20 +339,9 @@ int main(int argc, const char **argv)
 			pthread_cond_destroy(&g_enqueue_waken_cond);
 			pthread_mutex_destroy(&g_dequeue_cond_mutex);
 			pthread_cond_destroy(&g_dequeue_waken_cond);
-			printf("[system]: Failed to load ACL from %s\n", g_list_path);
+			printf("[system]: Failed to load ACL from %s: %s\n",
+			       g_list_path, strerror(-ret));
 			return 10;
-		} else {
-			auto num = plist->get_size();
-			auto pitem = static_cast<const ipitem *>(plist->get_list());
-			for (i = 0; i < num; i++) {
-				pacl = (ACL_ITEM *)malloc(sizeof(ACL_ITEM));
-				if (NULL == pacl) {
-					continue;
-				}
-				pacl->node.pdata = pacl;
-				HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
-				double_list_append_as_tail(&g_acl_list, &pacl->node);
-			}
 		}
 	}
 
@@ -389,10 +363,6 @@ int main(int argc, const char **argv)
 		
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		while ((pnode = double_list_pop_front(&g_acl_list)) != nullptr)
-			free(pnode->pdata);
-		double_list_free(&g_acl_list);
-
 		double_list_free(&g_enqueue_list);
 		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
@@ -430,10 +400,6 @@ int main(int argc, const char **argv)
 	
 	lib_buffer_free(g_file_alloc);
 	fifo_allocator_free(g_fifo_alloc);
-	while ((pnode = double_list_pop_front(&g_acl_list)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&g_acl_list);
-
 	while ((pnode = double_list_pop_front(&g_enqueue_list)) != nullptr) {
 		penqueue = (ENQUEUE_NODE*)pnode->pdata;
 		close(penqueue->sockd);
@@ -538,11 +504,9 @@ static void* scan_work_func(void *param)
 
 static void* accept_work_func(void *param)
 {
-	ACL_ITEM *pacl;
 	socklen_t addrlen;
 	int sockd, sockd2;
 	char client_hostip[32];
-	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_storage peer_name;
 	ENQUEUE_NODE *penqueue;
 
@@ -563,15 +527,8 @@ static void* accept_work_func(void *param)
 			continue;
 		}
 		if ('\0' != g_list_path[0]) {
-			for (pnode=double_list_get_head(&g_acl_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_acl_list, pnode)) {
-				pacl = (ACL_ITEM*)pnode->pdata;
-				if (0 == strcmp(client_hostip, pacl->ip_addr)) {
-					break;
-				}
-			}
-
-			if (NULL == pnode) {
+			if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+			    client_hostip) == g_acl_list.cend()) {
 				write(sockd2, "Access Deny\r\n", 13);
 				close(sockd2);
 				continue;

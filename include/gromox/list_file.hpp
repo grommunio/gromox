@@ -19,3 +19,4 @@ struct LIST_FILE {
 };
 
 extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_init(const char *filename, const char *format, bool require = true);
+extern GX_EXPORT int list_file_read_fixedstrings(const char *filename, std::vector<std::string> &out);

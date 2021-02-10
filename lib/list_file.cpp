@@ -300,3 +300,21 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 	}
 	return b_terminate;
 }
+
+int list_file_read_fixedstrings(const char *filename, std::vector<std::string> &out)
+{
+	struct item { char data[256]; };
+	auto plist = list_file_init(filename, "%s:256");
+	if (plist == nullptr)
+		return -errno;
+	auto num = plist->get_size();
+	auto pitem = static_cast<const item *>(plist->get_list());
+	for (decltype(num) i = 0; i < num; ++i) {
+		try {
+			out.emplace_back(pitem[i].data);
+		} catch (const std::bad_alloc &) {
+			return -ENOMEM;
+		}
+	}
+	return 0;
+}
