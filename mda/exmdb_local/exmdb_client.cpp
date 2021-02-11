@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/endian_macro.hpp>
@@ -75,8 +76,7 @@ static pthread_t g_scan_id;
 static char g_list_path[256];
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;
-static pthread_mutex_t g_server_lock;
-
+static std::mutex g_server_lock;
 
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
@@ -374,7 +374,7 @@ static void *scan_work_func(void *pparam)
 	double_list_init(&temp_list);
 
 	while (FALSE == g_notify_stop) {
-		pthread_mutex_lock(&g_server_lock);
+		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
 		for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
 			pnode=double_list_get_after(&g_server_list, pnode)) {
@@ -394,7 +394,7 @@ static void *scan_work_func(void *pparam)
 				}
 			}
 		}
-		pthread_mutex_unlock(&g_server_lock);
+		sv_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pconn = (REMOTE_CONN*)pnode->pdata;
@@ -407,9 +407,8 @@ static void *scan_work_func(void *pparam)
 				&ping_buff, sizeof(uint32_t))) {
 				close(pconn->sockd);
 				pconn->sockd = -1;
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pconn->node);
-				pthread_mutex_unlock(&g_server_lock);
 				continue;
 			}
 			tv.tv_usec = 0;
@@ -421,22 +420,22 @@ static void *scan_work_func(void *pparam)
 			    resp_buff != exmdb_response::SUCCESS) {
 				close(pconn->sockd);
 				pconn->sockd = -1;
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pconn->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			} else {
 				time(&pconn->last_time);
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&pconn->psvr->conn_list,
 					&pconn->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			}
 		}
 
-		pthread_mutex_lock(&g_server_lock);
+		sv_hold.lock();
 		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 			double_list_append_as_tail(&temp_list, pnode);
-		pthread_mutex_unlock(&g_server_lock);
+		sv_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pconn = (REMOTE_CONN*)pnode->pdata;
@@ -448,14 +447,14 @@ static void *scan_work_func(void *pparam)
 			pconn->sockd = exmdb_client_connect_exmdb(pconn->psvr);
 			if (-1 != pconn->sockd) {
 				time(&pconn->last_time);
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&pconn->psvr->conn_list,
 					&pconn->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			} else {
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pconn->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			}
 		}
 		sleep(1);
@@ -479,9 +478,9 @@ static REMOTE_CONN* exmdb_client_get_connection(const char *dir)
 		printf("[exmdb_local]: cannot find remote server for %s\n", dir);
 		return NULL;
 	}
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	pnode = double_list_pop_front(&pserver->conn_list);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	if (NULL == pnode) {
 		printf("[exmdb_local]: no alive connection for"
 			" remote server for %s\n", pserver->prefix);
@@ -517,15 +516,13 @@ BOOL exmdb_client_get_exmdb_information(
 static void exmdb_client_put_connection(REMOTE_CONN *pconn, BOOL b_lost)
 {
 	if (FALSE == b_lost) {
-		pthread_mutex_lock(&g_server_lock);
+		std::unique_lock sv_hold(g_server_lock);
 		double_list_append_as_tail(&pconn->psvr->conn_list, &pconn->node);
-		pthread_mutex_unlock(&g_server_lock);
 	} else {
 		close(pconn->sockd);
 		pconn->sockd = -1;
-		pthread_mutex_lock(&g_server_lock);
+		std::unique_lock sv_hold(g_server_lock);
 		double_list_append_as_tail(&g_lost_list, &pconn->node);
-		pthread_mutex_unlock(&g_server_lock);
 	}
 }
 
@@ -536,7 +533,6 @@ void exmdb_client_init(int conn_num, const char *list_path)
 	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
-	pthread_mutex_init(&g_server_lock, NULL);
 }
 
 int exmdb_client_run()
@@ -639,7 +635,6 @@ void exmdb_client_free()
 {
 	double_list_free(&g_lost_list);
 	double_list_free(&g_server_list);
-	pthread_mutex_destroy(&g_server_lock);
 }
 
 int exmdb_client_delivery_message(const char *dir,

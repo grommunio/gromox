@@ -254,10 +254,8 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		cache_queue_stop();
 		cache_queue_free();
 		bounce_audit_stop();
-		bounce_audit_free();
 		bounce_producer_stop();
 		bounce_producer_free();
-		net_failure_stop();
 		net_failure_free();
         return TRUE;
     }

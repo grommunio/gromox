@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <mutex>
 #include <libHX/string.h>
 #include "bounce_audit.h"
 #include <gromox/hook_common.h>
@@ -16,7 +17,7 @@
 /* private global variable */
 static int g_audit_num;
 static int g_audit_interval;
-static pthread_mutex_t g_audit_mutex_lock;
+static std::mutex g_audit_mutex_lock;
 static STR_HASH_TABLE *g_audit_hash;
 
 static int bounce_audit_collect_entry(time_t current_time);
@@ -25,7 +26,6 @@ void bounce_audit_init(int audit_num, int audit_interval)
 {
     g_audit_num             = audit_num;
     g_audit_interval        = audit_interval;
-	pthread_mutex_init(&g_audit_mutex_lock, NULL);
 }
 
 int bounce_audit_run()
@@ -75,11 +75,6 @@ int bounce_audit_stop()
     return 0;
 }
 
-void bounce_audit_free()
-{
-	pthread_mutex_destroy(&g_audit_mutex_lock);
-}
-
 BOOL bounce_audit_check(const char *audit_string) 
 {
     time_t *ptime;
@@ -92,28 +87,24 @@ BOOL bounce_audit_check(const char *audit_string)
 	strncpy(temp_string, audit_string, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	HX_strlower(temp_string);
-	pthread_mutex_lock(&g_audit_mutex_lock); 
+	std::unique_lock am_hold(g_audit_mutex_lock);
     ptime = (time_t*)str_hash_query(g_audit_hash, temp_string);
     time(&current_time);    
     if (NULL != ptime) {
 		if (current_time - *ptime > g_audit_interval) {
 			*ptime = current_time;
-			pthread_mutex_unlock(&g_audit_mutex_lock);
             return TRUE;  	
 		} else {
 			*ptime = current_time;
-			pthread_mutex_unlock(&g_audit_mutex_lock);
             return FALSE;  	
 		}
     }
     if (str_hash_add(g_audit_hash, temp_string, &current_time) != 1) {
         if (0 == bounce_audit_collect_entry(current_time)) {
-			pthread_mutex_unlock(&g_audit_mutex_lock);
             return TRUE;
         }
         str_hash_add(g_audit_hash, temp_string, &current_time);
     }
-	pthread_mutex_unlock(&g_audit_mutex_lock);
     return TRUE;
 }
 

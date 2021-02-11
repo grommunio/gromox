@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -25,7 +26,7 @@ static int g_mess_id;
 static int g_scan_interval;
 static int g_retrying_times;
 static pthread_t g_thread_id;
-static pthread_mutex_t g_id_lock;
+static std::mutex g_id_lock;
 static BOOL g_notify_stop = TRUE;
 
 static int cache_queue_retrieve_mess_ID(void);
@@ -45,7 +46,6 @@ void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
 	g_notify_stop = TRUE;
-	pthread_mutex_init(&g_id_lock, NULL);
 }
 
 /*
@@ -106,7 +106,6 @@ void cache_queue_free()
 	g_path[0] = '\0';
 	g_scan_interval = 0;
 	g_retrying_times = 0;
-	pthread_mutex_destroy(&g_id_lock);
 }
 
 /*
@@ -232,14 +231,13 @@ static int cache_queue_retrieve_mess_ID()
 static int cache_queue_increase_mess_ID()
 {
 	int current_id;
-    pthread_mutex_lock(&g_id_lock);
+	std::unique_lock hold(g_id_lock);
     if (MAX_CIRCLE_NUMBER == g_mess_id) {
         g_mess_id = 1;
     } else {
         g_mess_id ++;
     }
     current_id  = g_mess_id;
-    pthread_mutex_unlock(&g_id_lock);
     return current_id;
 }
 

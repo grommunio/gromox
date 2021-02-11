@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "net_failure.h"
@@ -48,7 +49,7 @@ static int g_temp_fail_num;
 static int g_permanent_fail_num;
 static int g_nouser_num;
 static BOOL g_turnoff_alarm;
-static pthread_mutex_t g_lock;
+static std::mutex g_lock;
 
 void net_failure_init(int times, int interval, int alarm_interval)
 {
@@ -68,13 +69,6 @@ void net_failure_init(int times, int interval, int alarm_interval)
 int net_failure_run()
 {
 	time(&g_last_check_point);
-	pthread_mutex_init(&g_lock, NULL);
-	return 0;
-}
-
-int net_failure_stop()
-{
-	pthread_mutex_destroy(&g_lock);
 	return 0;
 }
 
@@ -107,7 +101,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	need_alarm_one = FALSE;
 	need_alarm_two = FALSE;
     time(&current_time);
-	pthread_mutex_lock(&g_lock);
+	std::unique_lock hold(g_lock);
 	g_OK_num += OK_num;
 	g_temp_fail_num += temp_fail;
 	g_permanent_fail_num += permanent_fail;
@@ -133,7 +127,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		g_fail_accumulating = 0;
         g_last_check_point = current_time;
 	}
-	pthread_mutex_unlock(&g_lock);
+	hold.unlock();
 	
 	if (TRUE == need_alarm_one || TRUE == need_alarm_two) {
 		if (current_time - g_last_alarm_time < g_alarm_interval) {
@@ -219,30 +213,30 @@ int net_failure_get_param(int param)
 	int ret_val;
 
 	switch(param) {
-	case NET_FAILURE_OK:
-		pthread_mutex_lock(&g_lock);
+	case NET_FAILURE_OK: {
+		std::unique_lock hold(g_lock);
 		ret_val = g_OK_num;
 		g_OK_num = 0;		
-		pthread_mutex_unlock(&g_lock);
 		return ret_val;
-    case NET_FAILURE_TEMP:
-		pthread_mutex_lock(&g_lock);
+	}
+	case NET_FAILURE_TEMP: {
+		std::unique_lock hold(g_lock);
 		ret_val = g_temp_fail_num;
 		g_temp_fail_num = 0;
-		pthread_mutex_unlock(&g_lock);
 		return ret_val;
-    case NET_FAILURE_PERMANENT:
-		pthread_mutex_lock(&g_lock);
+	}
+	case NET_FAILURE_PERMANENT: {
+		std::unique_lock hold(g_lock);
 		ret_val = g_permanent_fail_num;
 		g_permanent_fail_num = 0;
-		pthread_mutex_unlock(&g_lock);
 		return ret_val;
-    case NET_FAILURE_NOUSER:
-		pthread_mutex_lock(&g_lock);
+	}
+	case NET_FAILURE_NOUSER: {
+		std::unique_lock hold(g_lock);
 		ret_val = g_nouser_num;
 		g_nouser_num = 0;
-		pthread_mutex_unlock(&g_lock);
 		return ret_val;
+	}
 	case NET_FAILURE_TURN_ALARM:
 		return g_turnoff_alarm;
 	case NET_FAILURE_STATISTIC_TIMES:
