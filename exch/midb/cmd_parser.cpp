@@ -21,7 +21,7 @@
 
 struct COMMAND_ENTRY {
 	char cmd[64];
-	COMMAND_HANDLER cmd_handler;
+	MIDB_CMD_HANDLER cmd_handler;
 };
 
 static int g_cmd_num;
@@ -175,7 +175,7 @@ int cmd_parser_stop()
 }
 
 
-void cmd_parser_register_command(const char *command, COMMAND_HANDLER handler)
+void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER handler)
 {
 	HX_strlcpy(g_cmd_entry[g_cmd_num].cmd, command, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
 	g_cmd_entry[g_cmd_num].cmd_handler = handler;
