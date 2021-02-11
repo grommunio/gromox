@@ -22,6 +22,7 @@
 #include <gromox/config_file.hpp>
 #include "exmdb_client.h"
 #include "zarafa_server.h"
+#include "console_cmd_handler.h"
 #include "console_server.h"
 #include "msgchg_grouping.h"
 #include "bounce_producer.h"
@@ -464,6 +465,10 @@ int main(int argc, const char **argv)
 	printf("[system]: console server address is [%s]:%d\n",
 	       *console_ip == '\0' ? "*" : console_ip, console_port);
 	console_server_init(console_ip, console_port);
+	console_server_register_command("zcore", cmd_handler_zcore_control);
+	console_server_register_command("system", cmd_handler_system_control);
+	console_server_register_command("help", cmd_handler_help);
+	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	char CS_PATH[256];
 	str_value = config_file_get_value(pconfig, "zcore_listen");

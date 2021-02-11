@@ -10,6 +10,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/config_file.hpp>
 #include "message_dequeue.h" 
+#include "console_cmd_handler.h"
 #include "console_server.h" 
 #include "system_services.h"
 #include "transporter.h" 
@@ -323,6 +324,10 @@ int main(int argc, const char **argv)
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
 
     console_server_init(console_server_ip, console_server_port);
+	console_server_register_command("system", cmd_handler_system_control);
+	console_server_register_command("help", cmd_handler_help);
+	console_server_register_command(nullptr, cmd_handler_mpc_plugins);
+	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
     if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");

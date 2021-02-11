@@ -16,6 +16,7 @@
 #include <gromox/files_allocator.hpp>
 #include "blocks_allocator.h" 
 #include <gromox/threads_pool.hpp>
+#include "console_cmd_handler.h"
 #include "console_server.h" 
 #include <gromox/contexts_pool.hpp>
 #include "service.h" 
@@ -588,6 +589,11 @@ int main(int argc, const char **argv)
 	auto cleanup_20 = make_scope_exit(flusher_stop);
 
 	console_server_init(console_server_ip, console_server_port);
+	console_server_register_command("return-code", cmd_handler_smtp_error_code_control);
+	console_server_register_command("smtp", cmd_handler_smtp_control);
+	console_server_register_command("system", cmd_handler_system_control);
+	console_server_register_command("help", cmd_handler_help);
+	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");

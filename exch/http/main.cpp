@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-
+#include "console_cmd_handler.h"
 #define PDU_PROCESSOR_RATIO			10
 
 using namespace gromox;
@@ -649,6 +649,13 @@ int main(int argc, const char **argv)
 	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
  
 	console_server_init(console_server_ip, console_server_port);
+	console_server_register_command("http", cmd_handler_http_control);
+	console_server_register_command("rpc", cmd_handler_rpc_control);
+	console_server_register_command("system", cmd_handler_system_control);
+	console_server_register_command("help", cmd_handler_help);
+	console_server_register_command(nullptr, cmd_handler_proc_plugins);
+	console_server_register_command(nullptr, cmd_handler_hpm_plugins);
+	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");

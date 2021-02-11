@@ -19,6 +19,7 @@
 #include <gromox/config_file.hpp>
 #include "mail_engine.h"
 #include "exmdb_client.h"
+#include "console_cmd_handler.h"
 #include "console_server.h"
 #include "system_services.h"
 #include <cstdio>
@@ -372,6 +373,10 @@ int main(int argc, const char **argv)
 	auto cleanup_2 = make_scope_exit(cmd_parser_free);
 
 	console_server_init(console_ip, console_port);
+	console_server_register_command("midb", cmd_handler_midb_control);
+	console_server_register_command("system", cmd_handler_system_control);
+	console_server_register_command("help", cmd_handler_help);
+	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");

@@ -9,7 +9,6 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include "console_server.h"
-#include "console_cmd_handler.h"
 #include <gromox/util.hpp>
 #include <gromox/double_list.hpp>
 #include <sys/socket.h>
@@ -39,8 +38,6 @@
 
 typedef struct sockaddr     SA;
 
-typedef BOOL (*COMMAND_HANDLER)(int argc, char** argv);
-
 struct COMMAND_ENTRY {
 	char    cmd[MAX_CMD_LENGTH];
 	COMMAND_HANDLER cmd_handler;
@@ -67,9 +64,7 @@ static pthread_mutex_t g_execute_lock;
 static pthread_key_t g_client_fd_key;
 static COMMAND_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
-static BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler);
 static void console_server_execve_command(char* cmdline);
-static void console_server_install_command(void);
 static int  console_server_parse_line(const char* cmdline, char** argv);
 static void* thread_work_func(void *argp);
 static void* console_work_func(void *argp);
@@ -84,7 +79,6 @@ void console_server_init(const char* bind_ip, int port)
 {
 	HX_strlcpy(g_listen_ip, bind_ip, GX_ARRAY_SIZE(g_listen_ip));
 	g_listen_port = port;
-	console_server_install_command();   /* need to be implements */
 	pthread_mutex_init(&g_list_lock, NULL);
 	pthread_mutex_init(&g_execute_lock, NULL);
 	double_list_init(&g_console_list);
@@ -334,7 +328,7 @@ static void* console_work_func(void *argp)
 *      TRUE        register successfully
 *      FALSE       fail
 */
-static BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
+BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
 {
 	if (g_cmd_num >= MAX_CMD_NUMBER + 1) {
 		return FALSE;
@@ -500,21 +494,5 @@ void console_server_notify_main_stop()
 	if (TRUE == b_console) {
 		pthread_exit(0);
 	}
-}
-
-
-static void console_server_install_command()
-{
-	/* register your cmd here, move to console server.c*/
-	console_server_register_command("return-code",
-									cmd_handler_pop3_error_code_control);
-	console_server_register_command("pop3",
-									cmd_handler_pop3_control);
-	console_server_register_command("system",
-									cmd_handler_system_control);
-	console_server_register_command("help",
-									cmd_handler_help);
-	console_server_register_command(NULL,
-									cmd_handler_service_plugins);
 }
 
