@@ -3,6 +3,7 @@
  *  the console server which communicate with the telnet clients
  */
 #include <cerrno>
+#include <mutex>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -59,8 +60,7 @@ static pthread_t g_listening_tid;
 static CONSOLE_NODE *g_console_buff;
 static DOUBLE_LIST g_free_list;
 static DOUBLE_LIST g_console_list;
-static pthread_mutex_t g_list_lock;
-static pthread_mutex_t g_execute_lock;
+static std::mutex g_list_lock, g_execute_lock;
 static pthread_key_t g_client_fd_key;
 static COMMAND_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
@@ -79,8 +79,6 @@ void console_server_init(const char* bind_ip, int port)
 {
 	HX_strlcpy(g_listen_ip, bind_ip, GX_ARRAY_SIZE(g_listen_ip));
     g_listen_port = port;
-	pthread_mutex_init(&g_list_lock, NULL);
-	pthread_mutex_init(&g_execute_lock, NULL);
 	double_list_init(&g_console_list);
 	double_list_init(&g_free_list);
 	pthread_key_create(&g_client_fd_key, NULL);
@@ -93,8 +91,6 @@ void console_server_free()
 {
 	g_listen_ip[0] = '\0';
 	g_listen_port = 0;
-	pthread_mutex_destroy(&g_list_lock);
-	pthread_mutex_destroy(&g_execute_lock);
 	double_list_free(&g_console_list);
 	double_list_free(&g_free_list);
 	pthread_key_delete(g_client_fd_key);
@@ -211,10 +207,10 @@ static void *thread_work_func(void *argp)
             continue;
         }
 		/* try to get a free node from free list */
-		pthread_mutex_lock(&g_list_lock);
+		std::unique_lock ll_hold(g_list_lock);
 		pnode = double_list_pop_front(&g_free_list);
 		if (NULL == pnode) {
-			pthread_mutex_unlock(&g_list_lock);
+			ll_hold.unlock();
 			write(client_fd, EXCEED_STRING, sizeof(EXCEED_STRING) - 1);
 			close(client_fd);
 			continue;
@@ -224,14 +220,13 @@ static void *thread_work_func(void *argp)
 		if (0 != pthread_create(&pconsole->tid, NULL,
 			console_work_func, pconsole)) {
 			double_list_append_as_tail(&g_free_list, pnode);
-			pthread_mutex_unlock(&g_list_lock);
+			ll_hold.unlock();
 			write(client_fd, ERROR_STRING, sizeof(ERROR_STRING) - 1);
 			close(client_fd);
 			continue;
 		}
 		pthread_setname_np(pconsole->tid, "console/client");
 		double_list_append_as_tail(&g_console_list, pnode);
-		pthread_mutex_unlock(&g_list_lock);
     }
     close(sock);
 	return nullptr;
@@ -267,10 +262,10 @@ static void* console_work_func(void *argp)
         read_len = read(client_fd, cmd + offset, MAXLINE - offset);
         if (read_len <= 0) {
 			write(client_fd, TIMEOUT_STRING, sizeof(TIMEOUT_STRING) - 1);
-			pthread_mutex_lock(&g_list_lock);
+			std::unique_lock ll_hold(g_list_lock);
 			double_list_remove(&g_console_list, &pconsole->node);
 			double_list_append_as_tail(&g_free_list, &pconsole->node);
-			pthread_mutex_unlock(&g_list_lock);
+			ll_hold.unlock();
 			close(client_fd);
 			return nullptr;
         }
@@ -307,10 +302,9 @@ static void* console_work_func(void *argp)
 		write(client_fd, PROMPT_SRING, sizeof(PROMPT_SRING) - 1);
     }
 	write(client_fd, GOODBYE_STRING, sizeof(GOODBYE_STRING) - 1);
-	pthread_mutex_lock(&g_list_lock);
+	std::unique_lock ll_hold(g_list_lock);
 	double_list_remove(&g_console_list, &pconsole->node);
 	double_list_append_as_tail(&g_free_list, &pconsole->node);
-	pthread_mutex_unlock(&g_list_lock);
 	close(client_fd);
 	return nullptr;
 }
@@ -429,11 +423,10 @@ static void console_server_execve_command(char* cmdline)
 
     memset(argv, 0, sizeof(argv));
     /* parse command line */
-	pthread_mutex_lock(&g_execute_lock);
+	std::unique_lock xc_hold(g_execute_lock);
     argc = console_server_parse_line(cmdline, argv);
     cmd = argv[0];
     if (0 == argc) {
-		pthread_mutex_unlock(&g_execute_lock);
         return; /* ignore empty lines */
     }
 	/* compare build-in command */
@@ -441,19 +434,16 @@ static void console_server_execve_command(char* cmdline)
         if ('\0' != *(g_cmd_entry[i].cmd) && 
 			0 == strcmp(g_cmd_entry[i].cmd, cmd)) {
             g_cmd_entry[i].cmd_handler(argc, argv);
-			pthread_mutex_unlock(&g_execute_lock);
             return;
         }
     }
     for (i = 0; i < g_cmd_num; i++) {
         if ('\0' == *(g_cmd_entry[i].cmd) &&
 			TRUE == g_cmd_entry[i].cmd_handler(argc, argv)) {
-			pthread_mutex_unlock(&g_execute_lock);
 			return;
         }
     }
-	pthread_mutex_unlock(&g_execute_lock);
-	
+	xc_hold.unlock();
     /* 
      *  unknown command, use the default unknown command handler, always at 
 	 *  the end of all cmd handler   
@@ -473,7 +463,7 @@ void console_server_notify_main_stop()
 	g_terminate = TRUE;
 	b_console = FALSE;
 	pthread_join(g_listening_tid, NULL);
-	pthread_mutex_lock(&g_list_lock);
+	std::unique_lock ll_hold(g_list_lock);
 	while ((pnode = double_list_pop_front(&g_console_list)) != nullptr) {
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
 		if (0 == pthread_equal(pthread_self(), pconsole->tid)) {
@@ -486,7 +476,7 @@ void console_server_notify_main_stop()
 	}
 	while ((pnode = double_list_pop_front(&g_free_list)) != nullptr)
 		/* do nothing */;
-	pthread_mutex_unlock(&g_list_lock);
+	ll_hold.unlock();
     g_notify_stop = TRUE;
 	if (TRUE == b_console) {
 		pthread_exit(0);
