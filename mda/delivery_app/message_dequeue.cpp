@@ -11,6 +11,7 @@
  */
 #include <cerrno>
 #include <cstring>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "message_dequeue.h"
@@ -47,10 +48,7 @@ static MESSAGE			*g_message_ptr;
 static SINGLE_LIST				g_used_list;
 static INT_HASH_TABLE	*g_mess_hash;
 static SINGLE_LIST				g_free_list;
-static pthread_mutex_t	g_hash_mutex;
-static pthread_mutex_t	g_used_mutex;
-static pthread_mutex_t	g_free_mutex;
-static pthread_mutex_t	g_mess_mutex;
+static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
 static BOOL g_notify_stop;
 static int				g_dequeued_num;
@@ -78,10 +76,6 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	g_max_memory = ((max_memory-1)/(BLOCK_SIZE/2) + 1) * (BLOCK_SIZE/2);
 	single_list_init(&g_used_list);
 	single_list_init(&g_free_list);
-	pthread_mutex_init(&g_hash_mutex, NULL);
-	pthread_mutex_init(&g_used_mutex, NULL);
-	pthread_mutex_init(&g_free_mutex, NULL);
-	pthread_mutex_init(&g_mess_mutex, NULL);
 	g_current_mem = 0;
 	g_msg_id = -1;
 	g_message_ptr = NULL;
@@ -233,9 +227,8 @@ MESSAGE* message_dequeue_get()
 {
 	SINGLE_LIST_NODE *pnode;
 
-	pthread_mutex_lock(&g_used_mutex);
+	std::unique_lock h(g_used_mutex);
 	pnode = single_list_pop_front(&g_used_list);
-	pthread_mutex_unlock(&g_used_mutex);
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -255,9 +248,9 @@ void message_dequeue_put(MESSAGE *pmessage)
 	pmessage->begin_address = NULL;
 	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, pmessage->message_data);
 	remove(name);
-	pthread_mutex_lock(&g_hash_mutex);
+	std::unique_lock h(g_hash_mutex);
 	int_hash_remove(g_mess_hash, pmessage->message_data);
-    pthread_mutex_unlock(&g_hash_mutex);
+	h.unlock();
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
 }
@@ -286,10 +279,6 @@ void message_dequeue_free()
     g_max_memory = 0;
     single_list_free(&g_used_list);
     single_list_free(&g_free_list);
-    pthread_mutex_destroy(&g_hash_mutex);
-    pthread_mutex_destroy(&g_used_mutex);
-    pthread_mutex_destroy(&g_free_mutex);
-    pthread_mutex_destroy(&g_mess_mutex);
 	g_current_mem  = 0;
     g_msg_id = -1;
 	g_message_ptr = NULL;
@@ -334,18 +323,16 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 
 	/* at a certain time, number of mess message node is limited */
 	if (MESSAGE_MESS == message_option) {
-		pthread_mutex_lock(&g_mess_mutex);
+		std::unique_lock h(g_mess_mutex);
 		if (g_current_mem + size > g_max_memory) {
-			pthread_mutex_unlock(&g_mess_mutex);
 			return NULL;
 		} else {
 			g_current_mem += size;
 		}
-		pthread_mutex_unlock(&g_mess_mutex);
 	}
-	pthread_mutex_lock(&g_free_mutex);
+	std::unique_lock fr_hold(g_free_mutex);
 	pnode = single_list_pop_front(&g_free_list);
-	pthread_mutex_unlock(&g_free_mutex);
+	fr_hold.unlock();
 	if (NULL == pnode) {
 		debug_info("[message_dequeue]: fatal error in "
 			"message_dequeue_get_from_free\n");
@@ -374,13 +361,11 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 static void message_dequeue_put_to_free(MESSAGE *pmessage)
 {
 	if (MESSAGE_MESS == pmessage->message_option) {
-		pthread_mutex_lock(&g_mess_mutex);
+		std::unique_lock h(g_mess_mutex);
 		g_current_mem -= pmessage->size;
-		pthread_mutex_unlock(&g_mess_mutex);
 	}
-	pthread_mutex_lock(&g_free_mutex);
+	std::unique_lock h(g_free_mutex);
 	single_list_append_as_tail(&g_free_list, &pmessage->node);
-	pthread_mutex_unlock(&g_free_mutex);
 }
 
 /*
@@ -390,9 +375,9 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage)
  */
 static void message_dequeue_put_to_used(MESSAGE *pmessage)
 {
-	pthread_mutex_lock(&g_used_mutex);
+	std::unique_lock h(g_used_mutex);
     single_list_append_as_tail(&g_used_list, &pmessage->node);
-    pthread_mutex_unlock(&g_used_mutex);
+	h.unlock();
 	/* send a signal to threads pool in transporter */
 	transporter_wakeup_one_thread();
 }
@@ -412,9 +397,9 @@ static void message_dequeue_load_from_mess(int mess)
 	char *ptr;
 	size_t size;
 
-	pthread_mutex_lock(&g_hash_mutex);
+	std::unique_lock h(g_hash_mutex);
     pmessage = (MESSAGE*)int_hash_query(g_mess_hash, mess);
-    pthread_mutex_unlock(&g_hash_mutex);
+	h.unlock();
 	if (NULL != pmessage) {
 		return;
 	}
@@ -455,10 +440,8 @@ static void message_dequeue_load_from_mess(int mess)
 	}
 	message_dequeue_retrieve_to_message(pmessage, ptr);
 	message_dequeue_put_to_used(pmessage);
-
-	pthread_mutex_lock(&g_hash_mutex);
+	h.lock();
 	int_hash_add(g_mess_hash, mess, pmessage);
-	pthread_mutex_unlock(&g_hash_mutex);
 }
 
 static void* thread_work_func(void* arg)
