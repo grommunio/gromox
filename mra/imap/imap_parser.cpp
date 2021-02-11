@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cerrno>
 #include <climits>
+#include <mutex>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -86,9 +87,8 @@ static LIB_BUFFER *g_alloc_xarray;
 static LIB_BUFFER *g_alloc_dir;
 static MIME_POOL *g_mime_pool;
 static STR_HASH_TABLE *g_select_hash;
-static pthread_mutex_t g_hash_lock;
+static std::mutex g_hash_lock, g_list_lock;
 static DOUBLE_LIST g_sleeping_list;
-static pthread_mutex_t g_list_lock;
 static BOOL g_support_starttls;
 static BOOL g_force_starttls;
 static char g_certificate_path[256];
@@ -123,9 +123,7 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_support_starttls      = support_starttls;
 	g_ssl_mutex_buf         = NULL;
 	g_notify_stop           = TRUE;
-	pthread_mutex_init(&g_hash_lock, NULL);
 	double_list_init(&g_sleeping_list);
-	pthread_mutex_init(&g_list_lock, NULL);
 	g_sequence_id = 0;
 	if (TRUE == support_starttls) {
 		g_force_starttls = force_starttls;
@@ -380,9 +378,7 @@ int imap_parser_stop()
  */
 void imap_parser_free()
 {
-    pthread_mutex_destroy(&g_hash_lock);
 	double_list_free(&g_sleeping_list);
-	pthread_mutex_destroy(&g_list_lock);
     g_context_num		= 0;
 	g_cache_size	    = 0;
 	g_autologout_time   = 0;
@@ -502,10 +498,9 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				write(pcontext->connection.sockd, temp_buff, len);
 			}
 		}
-		pthread_mutex_lock(&g_list_lock);
+		std::unique_lock ll_hold(g_list_lock);
 		double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
 		pcontext->sched_stat = SCHED_STAT_IDLING;
-		pthread_mutex_unlock(&g_list_lock);
 		return PROCESS_SLEEPING;
 	} else if (SCHED_STAT_RDCMD == pcontext->sched_stat ||
 		SCHED_STAT_APPENDED == pcontext->sched_stat ||
@@ -532,9 +527,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
 				if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
-					pthread_mutex_lock(&g_list_lock);
+					std::unique_lock ll_hold(g_list_lock);
 					double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
-					pthread_mutex_unlock(&g_list_lock);
 					return PROCESS_SLEEPING;
 				} else {
 					/* IMAP_CODE_2180011: BAD time out */
@@ -828,9 +822,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		}
 		
 		if (SCHED_STAT_IDLING == pcontext->sched_stat) {
-			pthread_mutex_lock(&g_list_lock);
+			std::unique_lock ll_hold(g_list_lock);
 			double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
-			pthread_mutex_unlock(&g_list_lock);
 			return PROCESS_SLEEPING;
 		}
 		return PROCESS_CONTINUE;
@@ -1220,10 +1213,9 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	
 	strncpy(buff, username, 256);
 	HX_strlower(buff);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
 	if (NULL == plist) {
-		pthread_mutex_unlock(&g_hash_lock);
 		return;
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
@@ -1233,8 +1225,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 			pcontext1->b_modify = TRUE;
 		}
 	}
-	pthread_mutex_unlock(&g_hash_lock);
-	
+	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
 	system_services_broadcast_event(buff);
 }
@@ -1247,10 +1238,9 @@ static void imap_parser_event_touch(char *username, char *folder)
 	
 	HX_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
 	if (NULL == plist) {
-		pthread_mutex_unlock(&g_hash_lock);
 		return;
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
@@ -1260,7 +1250,6 @@ static void imap_parser_event_touch(char *username, char *folder)
 			pcontext->b_modify = TRUE;
 		}
 	}
-	pthread_mutex_unlock(&g_hash_lock);
 }
 
 void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
@@ -1271,10 +1260,9 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 	
 	strncpy(buff, pcontext->username, 256);
 	HX_strlower(buff);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
 	if (NULL == plist) {
-		pthread_mutex_unlock(&g_hash_lock);
 		return;
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
@@ -1285,7 +1273,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 			mem_file_writeline(&pcontext1->f_flags, (char*)mid_string);
 		}
 	}
-	pthread_mutex_unlock(&g_hash_lock);
+	hl_hold.unlock();
 	snprintf(buff, 1024, "MESSAGE-FLAG %s %s %s",
 		pcontext->username, pcontext->selected_folder, mid_string);
 	system_services_broadcast_event(buff);
@@ -1300,10 +1288,9 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	
 	HX_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
 	if (NULL == plist) {
-		pthread_mutex_unlock(&g_hash_lock);
 		return;
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
@@ -1313,8 +1300,6 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 			mem_file_writeline(&pcontext->f_flags, (char*)mid_string);
 		}
 	}
-	pthread_mutex_unlock(&g_hash_lock);
-
 }
 
 void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
@@ -1332,13 +1317,12 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	MEM_FILE temp_file;
 	
 	mem_file_init(&temp_file, g_alloc_file);
-	
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	b_modify = pcontext->b_modify;
 	pcontext->b_modify = FALSE;
 	mem_file_copy(&pcontext->f_flags, &temp_file);
 	mem_file_clear(&pcontext->f_flags);
-	pthread_mutex_unlock(&g_hash_lock);
+	hl_hold.unlock();
 	
 	if (TRUE == b_modify && MIDB_RESULT_OK == system_services_summary_folder(
 		pcontext->maildir, pcontext->selected_folder, &exists, &recent, 
@@ -1717,24 +1701,24 @@ static void* thread_work_func(void *argp)
 	struct timeval current_time;
 	
 	while (FALSE == g_notify_stop) {
-		pthread_mutex_lock(&g_list_lock);
+		std::unique_lock ll_hold(g_list_lock);
 		ptail = double_list_get_tail(&g_sleeping_list);
-		pthread_mutex_unlock(&g_list_lock);
+		ll_hold.unlock();
 		if (NULL == ptail) {
 			usleep(100000);
 			continue;
 		}
 		
 		do {
-			pthread_mutex_lock(&g_list_lock);
+			ll_hold.lock();
 			pnode = double_list_pop_front(&g_sleeping_list);
-			pthread_mutex_unlock(&g_list_lock);
+			ll_hold.unlock();
 			pcontext = (IMAP_CONTEXT*)pnode->pdata;
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
-				pthread_mutex_lock(&g_hash_lock);
+				std::unique_lock hl_hold(g_hash_lock);
 				if (TRUE == pcontext->b_modify) {
 					pcontext->b_modify = FALSE;
-					pthread_mutex_unlock(&g_hash_lock);
+					hl_hold.unlock();
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
 					contexts_pool_wakeup_context(
 						(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
@@ -1743,8 +1727,6 @@ static void* thread_work_func(void *argp)
 					} else {
 						continue;
 					}
-				} else {
-					pthread_mutex_unlock(&g_hash_lock);
 				}
 			}
 			peek_len = recv(pcontext->connection.sockd, &tmp_buff, 1, MSG_PEEK);
@@ -1759,9 +1741,9 @@ static void* thread_work_func(void *argp)
 					contexts_pool_wakeup_context(
 						(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
 				} else {
-					pthread_mutex_lock(&g_list_lock);
+					ll_hold.lock();
 					double_list_append_as_tail(&g_sleeping_list, pnode);
-					pthread_mutex_unlock(&g_list_lock);
+					ll_hold.unlock();
 				}
 			} else {
 				pcontext->sched_stat = SCHED_STAT_DISCINNECTED;
@@ -1821,7 +1803,7 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	HX_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	time(&pcontext->selected_time);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);
 	if (NULL == plist) {
 		double_list_init(&temp_list);
@@ -1834,8 +1816,7 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	} else {
 		double_list_append_as_tail(plist, &pcontext->hash_node);
 	}
-	pthread_mutex_unlock(&g_hash_lock);
-	
+	hl_hold.unlock();
 	system_services_broadcast_select(pcontext->username, pcontext->selected_folder);
 }
 
@@ -1851,7 +1832,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	pcontext->selected_time = 0;
 	HX_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hl_hold(g_hash_lock);
 	plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);
 	if (NULL != plist) {
 		double_list_remove(plist, &pcontext->hash_node);
@@ -1869,8 +1850,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 			}
 		}
 	}
-	pthread_mutex_unlock(&g_hash_lock);
-	
+	hl_hold.unlock();
 	if (TRUE == should_remove) {
 		system_services_broadcast_unselect(pcontext->username, pcontext->selected_folder);
 	}
@@ -1902,7 +1882,7 @@ static void* scan_work_func(void *argp)
 		i = 0;
 		
 		mem_file_init(&temp_file, g_alloc_file);
-		pthread_mutex_lock(&g_hash_lock);
+		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
 		iter = str_hash_iter_init(g_select_hash);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
@@ -1920,7 +1900,7 @@ static void* scan_work_func(void *argp)
 			}
 		}
 		str_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_hash_lock);
+		hl_hold.unlock();
 		
 		while (MEM_END_OF_FILE != mem_file_readline(&temp_file, username, 256)) {
 			mem_file_readline(&temp_file, maildir, 256);
