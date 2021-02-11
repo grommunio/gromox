@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
+#include <mutex>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -174,7 +175,7 @@ static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;
-static pthread_mutex_t g_server_lock;
+static std::mutex g_server_lock;
 static LIB_BUFFER *g_file_allocator;
 static int g_file_ratio;
 
@@ -199,7 +200,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		double_list_init(&g_server_list);
 		double_list_init(&g_lost_list);
-		pthread_mutex_init(&g_server_lock, NULL);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
@@ -340,9 +340,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		double_list_free(&g_lost_list);
 		double_list_free(&g_server_list);
-
-		pthread_mutex_destroy(&g_server_lock);
-		
 		if (NULL != g_file_allocator) {
 			lib_buffer_free(g_file_allocator);
 			g_file_allocator = NULL;
@@ -370,7 +367,7 @@ static void *scan_work_func(void *param)
 	double_list_init(&temp_list);
 
 	while (FALSE == g_notify_stop) {
-		pthread_mutex_lock(&g_server_lock);
+		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
 		for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
 			pnode=double_list_get_after(&g_server_list, pnode)) {
@@ -390,7 +387,7 @@ static void *scan_work_func(void *param)
 				}
 			}
 		}
-		pthread_mutex_unlock(&g_server_lock);
+		sv_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
@@ -402,22 +399,22 @@ static void *scan_work_func(void *param)
 				read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pback->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			} else {
 				time(&pback->last_time);
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			}
 		}
 
-		pthread_mutex_lock(&g_server_lock);
+		sv_hold.lock();
 		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 			double_list_append_as_tail(&temp_list, pnode);
-		pthread_mutex_unlock(&g_server_lock);
+		sv_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
@@ -425,14 +422,14 @@ static void *scan_work_func(void *param)
 							pback->psvr->port);
 			if (-1 != pback->sockd) {
 				time(&pback->last_time);
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			} else {
-				pthread_mutex_lock(&g_server_lock);
+				sv_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pback->node);
-				pthread_mutex_unlock(&g_server_lock);
+				sv_hold.unlock();
 			}
 		}
 		sleep(1);
@@ -458,15 +455,15 @@ static BACK_CONN *get_connection(const char *prefix)
 		return NULL;
 	}
 
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	pnode = double_list_pop_front(&pserver->conn_list);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	if (NULL == pnode) {
 		for (i=0; i<SOCKET_TIMEOUT; i++) {
 			sleep(1);
-			pthread_mutex_lock(&g_server_lock);
+			sv_hold.lock();
 			pnode = double_list_pop_front(&pserver->conn_list);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			if (NULL != pnode) {
 				break;
 			}
@@ -542,10 +539,9 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 						line_pos = 0;
 						break;
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						pthread_mutex_lock(&g_server_lock);
+						std::unique_lock sv_hold(g_server_lock);
 						double_list_append_as_tail(&pback->psvr->conn_list,
 							&pback->node);
-						pthread_mutex_unlock(&g_server_lock);
 						return MIDB_RESULT_ERROR;
 					}
 				}
@@ -593,9 +589,9 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 		}
 
 		if (count >= lines) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			if (TRUE == b_fail) {
 				array_clear(parray);
 				return MIDB_RESULT_ERROR;
@@ -624,9 +620,9 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	array_clear(parray);
 	return MIDB_RDWR_ERROR;
 }
@@ -675,10 +671,9 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 				if (0 == strncmp(buff, "TRUE", 4)) {
 					length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
-					pthread_mutex_lock(&g_server_lock);
+					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list,
 						&pback->node);
-					pthread_mutex_unlock(&g_server_lock);
 					return MIDB_RESULT_ERROR;	
 				} else {
 					goto DELETE_ERROR;
@@ -699,16 +694,14 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 			goto DELETE_ERROR;
 		} else {
 			if (0 == strncmp(buff, "TRUE", 4)) {
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				return MIDB_RESULT_OK;
 			} else if (0 == strncmp(buff, "FALSE ", 6)) {
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				return MIDB_RESULT_ERROR;	
 			} else {
 				goto DELETE_ERROR;
@@ -719,9 +712,8 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
  DELETE_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -767,10 +759,10 @@ static int imap_search(char *path, char *folder, char *charset,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			length = strlen(buff + 4);
 			if (0 == length) {
 				*plen = 0;
@@ -787,9 +779,8 @@ static int imap_search(char *path, char *folder, char *charset,
 			memcpy(ret_buff, buff + 4 + 1, length);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -800,9 +791,8 @@ static int imap_search(char *path, char *folder, char *charset,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 }
@@ -849,10 +839,10 @@ static int imap_search_uid(char *path, char *folder, char *charset,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			length = strlen(buff + 4);
 			if (0 == length) {
 				*plen = 0;
@@ -869,9 +859,8 @@ static int imap_search_uid(char *path, char *folder, char *charset,
 			memcpy(ret_buff, buff + 4 + 1, length);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -882,9 +871,8 @@ static int imap_search_uid(char *path, char *folder, char *charset,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 }
@@ -913,15 +901,13 @@ static int get_mail_id(char *path, char *folder, char *mid_string,
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			*pid = atoi(buff + 5) + 1;
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_ERROR;
 		} else {
 			goto RDWR_ERROR;
@@ -931,9 +917,8 @@ static int get_mail_id(char *path, char *folder, char *mid_string,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 }
@@ -961,15 +946,13 @@ static int get_mail_uid(char *path, char *folder, char *mid_string,
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			*puid = atoi(buff + 5);
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_ERROR;
 		} else {
 			goto RDWR_ERROR;
@@ -979,9 +962,8 @@ static int get_mail_uid(char *path, char *folder, char *mid_string,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1014,10 +996,9 @@ static int summary_folder(char *path, char *folder, int *pexists,
 			if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
 				&recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
 				*perrno = -1;
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				return MIDB_RESULT_ERROR;
 			}
 			if (NULL != pexists) {
@@ -1039,15 +1020,13 @@ static int summary_folder(char *path, char *folder, int *pexists,
 				*pfirst_unseen = first_unseen + 1;
 			}
 			
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1058,9 +1037,8 @@ static int summary_folder(char *path, char *folder, int *pexists,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 	
@@ -1084,15 +1062,13 @@ static int make_folder(char *path, char *folder, int *perrno)
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1103,9 +1079,8 @@ static int make_folder(char *path, char *folder, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1129,15 +1104,13 @@ static int remove_folder(char *path, char *folder, int *perrno)
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1148,9 +1121,8 @@ static int remove_folder(char *path, char *folder, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1174,15 +1146,13 @@ static int ping_mailbox(char *path, int *perrno)
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1193,9 +1163,8 @@ static int ping_mailbox(char *path, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1221,15 +1190,13 @@ static int rename_folder(char *path, char *src_name, char *dst_name,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1240,9 +1207,8 @@ static int rename_folder(char *path, char *src_name, char *dst_name,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1266,15 +1232,13 @@ static int subscribe_folder(char *path, char *folder, int *perrno)
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1285,9 +1249,8 @@ static int subscribe_folder(char *path, char *folder, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1311,15 +1274,13 @@ static int unsubscribe_folder(char *path, char *folder, int *perrno)
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
 		} else {
@@ -1330,9 +1291,8 @@ static int unsubscribe_folder(char *path, char *folder, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1393,10 +1353,9 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
 						line_pos = 0;
 						break;
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						pthread_mutex_lock(&g_server_lock);
+						std::unique_lock sv_hold(g_server_lock);
 						double_list_append_as_tail(&pback->psvr->conn_list,
 							&pback->node);
-						pthread_mutex_unlock(&g_server_lock);
 						*perrno = atoi(buff + 6);
 						return MIDB_RESULT_ERROR;
 					} else {
@@ -1431,9 +1390,8 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
 		}
 
 		if (count >= lines) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		}
 
@@ -1457,9 +1415,8 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 }
@@ -1522,10 +1479,9 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
 						line_pos = 0;
 						break;
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						pthread_mutex_lock(&g_server_lock);
+						std::unique_lock sv_hold(g_server_lock);
 						double_list_append_as_tail(&pback->psvr->conn_list,
 							&pback->node);
-						pthread_mutex_unlock(&g_server_lock);
 						*perrno = atoi(buff + 6);
 						return MIDB_RESULT_ERROR;
 					} else {
@@ -1560,9 +1516,8 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
 		}
 
 		if (count >= lines) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		}
 
@@ -1586,9 +1541,8 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 }
@@ -1614,15 +1568,13 @@ static int insert_mail(char *path, char *folder, char *file_name,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;	
 		} else {
@@ -1633,9 +1585,8 @@ static int insert_mail(char *path, char *folder, char *file_name,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1683,10 +1634,9 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 				if (0 == strncmp(buff, "TRUE", 4)) {
 					length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
-					pthread_mutex_lock(&g_server_lock);
+					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list,
 						&pback->node);
-					pthread_mutex_unlock(&g_server_lock);
 					*perrno = atoi(buff + 6);
 					return MIDB_RESULT_ERROR;	
 				} else {
@@ -1708,16 +1658,14 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 			goto RDWR_ERROR;
 		} else {
 			if (0 == strncmp(buff, "TRUE", 4)) {
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				return MIDB_RESULT_OK;
 			} else if (0 == strncmp(buff, "FALSE ", 6)) {
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				*perrno = atoi(buff + 6);
 				return MIDB_RESULT_ERROR;	
 			} else {
@@ -1729,9 +1677,8 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1799,10 +1746,9 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 						line_pos = 0;
 						break;
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						pthread_mutex_lock(&g_server_lock);
+						std::unique_lock sv_hold(g_server_lock);
 						double_list_append_as_tail(&pback->psvr->conn_list,
 							&pback->node);
-						pthread_mutex_unlock(&g_server_lock);
 						*perrno = atoi(buff + 6);
 						return MIDB_RESULT_ERROR;
 					}
@@ -1871,9 +1817,9 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 		}
 
 		if (count >= lines) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			if (TRUE == b_format_error) {
 				*perrno = -1;
 				xarray_clear(pxarray);
@@ -1903,9 +1849,9 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	xarray_clear(pxarray);
 	return MIDB_RDWR_ERROR;
 }
@@ -1974,10 +1920,9 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 						line_pos = 0;
 						break;
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						pthread_mutex_lock(&g_server_lock);
+						std::unique_lock sv_hold(g_server_lock);
 						double_list_append_as_tail(&pback->psvr->conn_list,
 							&pback->node);
-						pthread_mutex_unlock(&g_server_lock);
 						*perrno = atoi(buff + 6);
 						return MIDB_RESULT_ERROR;
 					}
@@ -2028,9 +1973,9 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 		}
 
 		if (count >= lines) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			if (TRUE == b_format_error) {
 				*perrno = -1;
 				xarray_clear(pxarray);
@@ -2060,9 +2005,9 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	xarray_clear(pxarray);
 	return MIDB_RDWR_ERROR;
 }
@@ -2134,10 +2079,9 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 						line_pos = 0;
 						break;
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						pthread_mutex_lock(&g_server_lock);
+						std::unique_lock sv_hold(g_server_lock);
 						double_list_append_as_tail(&pback->psvr->conn_list,
 							&pback->node);
-						pthread_mutex_unlock(&g_server_lock);
 						*perrno = atoi(buff + 6);
 						return MIDB_RESULT_ERROR;
 					}
@@ -2209,9 +2153,9 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 		}
 
 		if (count >= lines) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			if (TRUE == b_format_error) {
 				num = xarray_get_capacity(pxarray);
 				for (i=0; i<num; i++) {
@@ -2249,9 +2193,9 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
@@ -2359,10 +2303,9 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 							line_pos = 0;
 							break;
 						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							pthread_mutex_lock(&g_server_lock);
+							std::unique_lock sv_hold(g_server_lock);
 							double_list_append_as_tail(&pback->psvr->conn_list,
 								&pback->node);
-							pthread_mutex_unlock(&g_server_lock);
 							*perrno = atoi(buff + 6);
 							return MIDB_RESULT_ERROR;
 						}
@@ -2436,9 +2379,8 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 
 			if (count >= lines) {
 				if (TRUE == b_format_error) {	
-					pthread_mutex_lock(&g_server_lock);
+					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					pthread_mutex_unlock(&g_server_lock);
 					*perrno = -1;
 					return MIDB_RESULT_ERROR;
 				}
@@ -2463,17 +2405,17 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 		}
 	}
 	
-	pthread_mutex_lock(&g_server_lock);
+	{
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	}
 	return MIDB_RESULT_OK;
 
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -2562,10 +2504,10 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 							line_pos = 0;
 							break;
 						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							pthread_mutex_lock(&g_server_lock);
+							std::unique_lock sv_hold(g_server_lock);
 							double_list_append_as_tail(&pback->psvr->conn_list,
 								&pback->node);
-							pthread_mutex_unlock(&g_server_lock);
+							sv_hold.unlock();
 							*perrno = atoi(buff + 6);
 							num = xarray_get_capacity(pxarray);
 							for (i=0; i<num; i++) {
@@ -2647,9 +2589,9 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 
 			if (count >= lines) {
 				if (TRUE == b_format_error) {
-					pthread_mutex_lock(&g_server_lock);
+					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					pthread_mutex_unlock(&g_server_lock);
+					sv_hold.unlock();
 					*perrno = -1;
 					num = xarray_get_capacity(pxarray);
 					for (i=0; i<num; i++) {
@@ -2678,18 +2620,19 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 			}
 		}
 	}
-	
-	pthread_mutex_lock(&g_server_lock);
+
+	{	
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	}
 	return MIDB_RESULT_OK;
 
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
@@ -2772,10 +2715,9 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 							line_pos = 0;
 							break;
 						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							pthread_mutex_lock(&g_server_lock);
+							std::unique_lock sv_hold(g_server_lock);
 							double_list_append_as_tail(&pback->psvr->conn_list,
 								&pback->node);
-							pthread_mutex_unlock(&g_server_lock);
 							*perrno = atoi(buff + 6);
 							return MIDB_RESULT_ERROR;
 						}
@@ -2856,9 +2798,8 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 
 			if (count >= lines) {
 				if (TRUE == b_format_error) {	
-					pthread_mutex_lock(&g_server_lock);
+					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					pthread_mutex_unlock(&g_server_lock);
 					*perrno = -1;
 					return MIDB_RESULT_ERROR;
 				}
@@ -2882,18 +2823,18 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 			}
 		}
 	}
-	
-	pthread_mutex_lock(&g_server_lock);
+
+	{	
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	}
 	return MIDB_RESULT_OK;
 
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 
@@ -2972,10 +2913,10 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 							line_pos = 0;
 							break;
 						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							pthread_mutex_lock(&g_server_lock);
+							std::unique_lock sv_hold(g_server_lock);
 							double_list_append_as_tail(&pback->psvr->conn_list,
 								&pback->node);
-							pthread_mutex_unlock(&g_server_lock);
+							sv_hold.unlock();
 							*perrno = atoi(buff + 6);
 							num = xarray_get_capacity(pxarray);
 							for (i=0; i<num; i++) {
@@ -3062,9 +3003,9 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 
 			if (count >= lines) {
 				if (TRUE == b_format_error) {
-					pthread_mutex_lock(&g_server_lock);
+					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					pthread_mutex_unlock(&g_server_lock);
+					sv_hold.unlock();
 					*perrno = -1;
 					num = xarray_get_capacity(pxarray);
 					for (i=0; i<num; i++) {
@@ -3094,17 +3035,18 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 		}
 	}
 	
-	pthread_mutex_lock(&g_server_lock);
+	{
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	}
 	return MIDB_RESULT_OK;
 
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
+	sv_hold.unlock();
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
@@ -3174,15 +3116,13 @@ static int set_mail_flags(char *path, char *folder, char *mid_string,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;	
 		} else {
@@ -3193,9 +3133,8 @@ static int set_mail_flags(char *path, char *folder, char *mid_string,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 	
@@ -3257,15 +3196,13 @@ static int unset_mail_flags(char *path, char *folder, char *mid_string,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;	
 		} else {
@@ -3276,9 +3213,8 @@ static int unset_mail_flags(char *path, char *folder, char *mid_string,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 }
 	
@@ -3304,10 +3240,10 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			*pflag_bits = 0;
 			if (NULL != strchr(buff + 5, 'A')) {
 				*pflag_bits |= FLAG_ANSWERED;
@@ -3329,9 +3265,9 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
 			}
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;	
 		} else {
@@ -3342,9 +3278,8 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 
@@ -3372,16 +3307,16 @@ static int copy_mail(char *path, char *src_folder, char *mid_string,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			strcpy(dst_mid, buff + 5);
 			return MIDB_RESULT_OK;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			pthread_mutex_lock(&g_server_lock);
+			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			pthread_mutex_unlock(&g_server_lock);
+			sv_hold.unlock();
 			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;	
 		} else {
@@ -3392,9 +3327,8 @@ static int copy_mail(char *path, char *src_folder, char *mid_string,
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return MIDB_RDWR_ERROR;
 
 }
@@ -3471,10 +3405,9 @@ static BOOL check_full(char *path)
 			'\n' == buff[offset - 1]) {
 			if (8 == offset && 0 == strncasecmp("TRUE ", buff, 5)) {
 				time(&pback->last_time);
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				if ('1' == buff[5]) {
 					return FALSE;
 				} else {
@@ -3482,10 +3415,9 @@ static BOOL check_full(char *path)
 				}
 			} else if (offset > 8 && 0 == strncasecmp("FALSE ", buff, 6)) {
 				time(&pback->last_time);
-				pthread_mutex_lock(&g_server_lock);
+				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
 					&pback->node);
-				pthread_mutex_unlock(&g_server_lock);
 				return TRUE;
 			} else {
 				goto CHECK_ERROR;
@@ -3499,9 +3431,8 @@ static BOOL check_full(char *path)
  CHECK_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
-	pthread_mutex_lock(&g_server_lock);
+	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
-	pthread_mutex_unlock(&g_server_lock);
 	return TRUE;
 }
 
