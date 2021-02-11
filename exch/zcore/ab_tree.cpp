@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#include <mutex>
 #include <new>
 #include <string>
 #include <utility>
@@ -96,7 +97,7 @@ static pthread_t g_scan_id;
 static int g_cache_interval;
 static char g_org_name[256];
 static INT_HASH_TABLE *g_base_hash;
-static pthread_mutex_t g_base_lock;
+static std::mutex g_base_lock;
 static LIB_BUFFER *g_file_allocator;
 static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
 									   0xC0, 0x42, 0x10, 0x1A,
@@ -219,7 +220,6 @@ void ab_tree_init(const char *org_name, int base_size,
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
-	pthread_mutex_init(&g_base_lock, NULL);
 	g_notify_stop = TRUE;
 }
 
@@ -320,11 +320,6 @@ int ab_tree_stop()
 		g_file_allocator = NULL;
 	}
 	return 0;
-}
-
-void ab_tree_free()
-{
-	pthread_mutex_destroy(&g_base_lock);
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
@@ -814,16 +809,14 @@ AB_BASE* ab_tree_get_base(int base_id)
 	
 	count = 0;
  RETRY_LOAD_BASE:
-	pthread_mutex_lock(&g_base_lock);
+	std::unique_lock bl_hold(g_base_lock);
 	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
 	if (NULL == ppbase) {
 		pbase = me_alloc<AB_BASE>();
 		if (NULL == pbase) {
-			pthread_mutex_unlock(&g_base_lock);
 			return NULL;
 		}
 		if (1 != int_hash_add(g_base_hash, base_id, &pbase)) {
-			pthread_mutex_unlock(&g_base_lock);
 			free(pbase);
 			return NULL;
 		}
@@ -834,20 +827,19 @@ AB_BASE* ab_tree_get_base(int base_id)
 		single_list_init(&pbase->list);
 		single_list_init(&pbase->gal_list);
 		pbase->phash = NULL;
-		pthread_mutex_unlock(&g_base_lock);
+		bl_hold.unlock();
 		if (FALSE == ab_tree_load_base(pbase)) {
-			pthread_mutex_lock(&g_base_lock);
+			bl_hold.lock();
 			int_hash_remove(g_base_hash, base_id);
-			pthread_mutex_unlock(&g_base_lock);
 			free(pbase);
 			return NULL;
 		}
 		time(&pbase->load_time);
-		pthread_mutex_lock(&g_base_lock);
+		bl_hold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
 		if (BASE_STATUS_LIVING != (*ppbase)->status) {
-			pthread_mutex_unlock(&g_base_lock);
+			bl_hold.unlock();
 			count ++;
 			if (count > 60) {
 				return NULL;
@@ -858,15 +850,13 @@ AB_BASE* ab_tree_get_base(int base_id)
 		pbase = *ppbase;
 	}
 	pbase->reference ++;
-	pthread_mutex_unlock(&g_base_lock);
 	return pbase;
 }
 
 void ab_tree_put_base(AB_BASE *pbase)
 {
-	pthread_mutex_lock(&g_base_lock);
+	std::unique_lock bl_hold(g_base_lock);
 	pbase->reference --;
-	pthread_mutex_unlock(&g_base_lock);
 }
 
 static void *scan_work_func(void *param)
@@ -878,7 +868,7 @@ static void *scan_work_func(void *param)
 	
 	while (FALSE == g_notify_stop) {
 		pbase = NULL;
-		pthread_mutex_lock(&g_base_lock);
+		std::unique_lock bl_hold(g_base_lock);
 		iter = int_hash_iter_init(g_base_hash);
 		for (int_hash_iter_begin(iter);
 			FALSE == int_hash_iter_done(iter);
@@ -894,7 +884,7 @@ static void *scan_work_func(void *param)
 			break;
 		}
 		int_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_base_lock);
+		bl_hold.unlock();
 		if (NULL == pbase) {
 			sleep(1);
 			continue;
@@ -910,15 +900,15 @@ static void *scan_work_func(void *param)
 			pbase->phash = NULL;
 		}
 		if (FALSE == ab_tree_load_base(pbase)) {
-			pthread_mutex_lock(&g_base_lock);
+			bl_hold.lock();
 			int_hash_remove(g_base_hash, pbase->base_id);
-			pthread_mutex_unlock(&g_base_lock);
+			bl_hold.unlock();
 			free(pbase);
 		} else {
-			pthread_mutex_lock(&g_base_lock);
+			bl_hold.lock();
 			time(&pbase->load_time);
 			pbase->status = BASE_STATUS_LIVING;
-			pthread_mutex_unlock(&g_base_lock);
+			bl_hold.unlock();
 		}
 	}
 	return NULL;

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <mutex>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <libHX/defs.h>
@@ -55,9 +56,8 @@ static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;
 static pthread_key_t g_info_key;
-static pthread_mutex_t g_table_lock;
+static std::mutex g_table_lock, g_notify_lock;
 static STR_HASH_TABLE *g_user_table;
-static pthread_mutex_t g_notify_lock;
 static STR_HASH_TABLE *g_notify_table;
 static INT_HASH_TABLE *g_session_table;
 
@@ -75,19 +75,17 @@ static USER_INFO* zarafa_server_query_session(GUID hsession)
 	USER_INFO *pinfo;
 	
 	user_id = zarafa_server_get_user_id(hsession);
-	pthread_mutex_lock(&g_table_lock);
+	std::unique_lock tl_hold(g_table_lock);
 	pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
 	if (NULL == pinfo) {
-		pthread_mutex_unlock(&g_table_lock);
 		return NULL;
 	}
 	if (0 != guid_compare(&hsession, &pinfo->hsession)) {
-		pthread_mutex_unlock(&g_table_lock);
 		return NULL;
 	}
 	pinfo->reference ++;
 	time(&pinfo->last_time);
-	pthread_mutex_unlock(&g_table_lock);
+	tl_hold.unlock();
 	pthread_mutex_lock(&pinfo->lock);
 	pthread_setspecific(g_info_key, pinfo);
 	return pinfo;
@@ -101,9 +99,9 @@ USER_INFO* zarafa_server_get_info()
 static void zarafa_server_put_user_info(USER_INFO *pinfo)
 {
 	pthread_mutex_unlock(&pinfo->lock);
-	pthread_mutex_lock(&g_table_lock);
+	std::unique_lock tl_hold(g_table_lock);
 	pinfo->reference --;
-	pthread_mutex_unlock(&g_table_lock);
+	tl_hold.unlock();
 	pthread_setspecific(g_info_key, NULL);
 }
 
@@ -140,7 +138,7 @@ static void* scan_work_func(void *param)
 		if (count >= g_ping_interval) {
 			count = 0;
 		}
-		pthread_mutex_lock(&g_table_lock);
+		std::unique_lock tl_hold(g_table_lock);
 		time(&cur_time);
 		iter = int_hash_iter_init(g_session_table);
 		for (int_hash_iter_begin(iter);
@@ -202,7 +200,7 @@ static void* scan_work_func(void *param)
 			}
 		}
 		int_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_table_lock);
+		tl_hold.unlock();
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			common_util_build_environment();
 			exmdb_client_ping_store(static_cast<char *>(pnode->pdata));
@@ -233,7 +231,7 @@ static void* scan_work_func(void *param)
 			continue;
 		}
 		time(&cur_time);
-		pthread_mutex_lock(&g_notify_lock);
+		std::unique_lock nl_hold(g_notify_lock);
 		iter1 = str_hash_iter_init(g_notify_table);
 		for (str_hash_iter_begin(iter1);
 			FALSE == str_hash_iter_done(iter1);
@@ -248,7 +246,6 @@ static void* scan_work_func(void *param)
 				str_hash_iter_remove(iter1);
 			}
 		}
-		pthread_mutex_unlock(&g_notify_lock);
 	}
 	return NULL;
 }
@@ -289,15 +286,14 @@ static void zarafa_server_notification_proc(const char *dir,
 		return;
 	}
 	sprintf(tmp_buff, "%u|%s", notify_id, dir);
-	pthread_mutex_lock(&g_notify_lock);
+	std::unique_lock nl_hold(g_notify_lock);
 	pitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
 	if (NULL == pitem) {
-		pthread_mutex_unlock(&g_notify_lock);
 		return;
 	}
 	hsession = pitem->hsession;
 	hstore = pitem->hstore;
-	pthread_mutex_unlock(&g_notify_lock);
+	nl_hold.unlock();
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
 		return;
@@ -685,12 +681,12 @@ static void zarafa_server_notification_proc(const char *dir,
 		free(pnode);
 		return;
 	}
-	pthread_mutex_lock(&g_notify_lock);
+	nl_hold.lock();
 	pitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
 	if (NULL != pitem) {
 		double_list_append_as_tail(&pitem->notify_list, pnode);
 	}
-	pthread_mutex_unlock(&g_notify_lock);
+	nl_hold.unlock();
 	zarafa_server_put_user_info(pinfo);
 	if (NULL == pitem) {
 		common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
@@ -704,8 +700,6 @@ void zarafa_server_init(int table_size,
 	g_table_size = table_size;
 	g_cache_interval = cache_interval;
 	g_ping_interval = ping_interval;
-	pthread_mutex_init(&g_table_lock, NULL);
-	pthread_mutex_init(&g_notify_lock, NULL);
 	pthread_key_create(&g_info_key, NULL);
 }
 
@@ -781,8 +775,6 @@ int zarafa_server_stop()
 
 void zarafa_server_free()
 {
-	pthread_mutex_destroy(&g_table_lock);
-	pthread_mutex_destroy(&g_notify_lock);
 	pthread_key_delete(g_info_key);
 }
 
@@ -828,7 +820,7 @@ uint32_t zarafa_server_logon(const char *username,
 	}
 	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
-	pthread_mutex_lock(&g_table_lock);
+	std::unique_lock tl_hold(g_table_lock);
 	puser_id = static_cast<int *>(str_hash_query(g_user_table, tmp_name));
 	if (NULL != puser_id) {
 		user_id = *puser_id;
@@ -836,12 +828,11 @@ uint32_t zarafa_server_logon(const char *username,
 		if (NULL != pinfo) {
 			time(&pinfo->last_time);
 			*phsession = pinfo->hsession;
-			pthread_mutex_unlock(&g_table_lock);
 			return ecSuccess;
 		}
 		str_hash_remove(g_user_table, tmp_name);
 	}
-	pthread_mutex_unlock(&g_table_lock);
+	tl_hold.unlock();
 	if (FALSE == system_services_get_id_from_username(
 		username, &user_id) ||
 		FALSE == system_services_get_homedir(
@@ -883,28 +874,27 @@ uint32_t zarafa_server_logon(const char *username,
 	if (NULL == tmp_info.ptree) {
 		return ecError;
 	}
-	pthread_mutex_lock(&g_table_lock);
+	tl_hold.lock();
 	pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
 	if (NULL != pinfo) {
 		*phsession = pinfo->hsession;
-		pthread_mutex_unlock(&g_table_lock);
+		tl_hold.unlock();
 		object_tree_free(tmp_info.ptree);
 		return ecSuccess;
 	}
 	if (1 != int_hash_add(g_session_table, user_id, &tmp_info)) {
-		pthread_mutex_unlock(&g_table_lock);
+		tl_hold.unlock();
 		object_tree_free(tmp_info.ptree);
 		return ecError;
 	}
 	if (1 != str_hash_add(g_user_table, tmp_name, &user_id)) {
 		int_hash_remove(g_session_table, user_id);
-		pthread_mutex_unlock(&g_table_lock);
+		tl_hold.unlock();
 		object_tree_free(tmp_info.ptree);
 		return ecError;
 	}
 	pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
 	pthread_mutex_init(&pinfo->lock, NULL);
-	pthread_mutex_unlock(&g_table_lock);
 	*phsession = tmp_info.hsession;
 	return ecSuccess;
 }
@@ -3608,13 +3598,12 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 	tmp_item.hstore = hstore;
 	time(&tmp_item.last_time);
 	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", *psub_id, dir);
-	pthread_mutex_lock(&g_notify_lock);
+	std::unique_lock nl_hold(g_notify_lock);
 	if (1 != str_hash_add(g_notify_table, tmp_buff, &tmp_item)) {
-		pthread_mutex_unlock(&g_notify_lock);
+		nl_hold.unlock();
 		exmdb_client_unsubscribe_notification(dir, *psub_id);
 		return ecError;
 	}
-	pthread_mutex_unlock(&g_notify_lock);
 	return ecSuccess;
 }
 
@@ -3647,7 +3636,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	zarafa_server_put_user_info(pinfo);
 	exmdb_client_unsubscribe_notification(dir, sub_id);
 	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", sub_id, dir);
-	pthread_mutex_lock(&g_notify_lock);
+	std::unique_lock nl_hold(g_notify_lock);
 	pnitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
 	if (NULL != pnitem) {
 		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
@@ -3657,7 +3646,6 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 		double_list_free(&pnitem->notify_list);
 	}
 	str_hash_remove(g_notify_table, tmp_buff);
-	pthread_mutex_unlock(&g_notify_lock);
 	return ecSuccess;
 }
 
@@ -3688,10 +3676,9 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 		sprintf(tmp_buff, "%u|%s",
 			psink->padvise[i].sub_id,
 			store_object_get_dir(pstore));
-		pthread_mutex_lock(&g_notify_lock);
+		std::unique_lock nl_hold(g_notify_lock);
 		pnitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
 		if (NULL == pnitem) {
-			pthread_mutex_unlock(&g_notify_lock);
 			continue;
 		}
 		time(&pnitem->last_time);
@@ -3706,7 +3693,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 				break;
 			}
 		}
-		pthread_mutex_unlock(&g_notify_lock);
+		nl_hold.unlock();
 		if (1024 == count) {
 			break;
 		}

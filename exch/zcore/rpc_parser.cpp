@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <mutex>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include <gromox/idset.hpp>
@@ -32,7 +33,7 @@ static BOOL g_notify_stop;
 static pthread_t *g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static pthread_cond_t g_waken_cond;
-static pthread_mutex_t g_conn_lock;
+static std::mutex g_conn_lock;
 static pthread_mutex_t g_cond_mutex;
 
 
@@ -40,14 +41,12 @@ void rpc_parser_init(int thread_num)
 {
 	g_notify_stop = TRUE;
 	g_thread_num = thread_num;
-	pthread_mutex_init(&g_conn_lock, NULL);
 	pthread_mutex_init(&g_cond_mutex, NULL);
 	pthread_cond_init(&g_waken_cond, NULL);
 }
 
 void rpc_parser_free()
 {
-	pthread_mutex_destroy(&g_conn_lock);
 	pthread_mutex_destroy(&g_cond_mutex);
 	pthread_cond_destroy(&g_waken_cond);
 }
@@ -60,9 +59,9 @@ BOOL rpc_parser_activate_connection(int clifd)
 	}
 	pclient->node.pdata = pclient;
 	pclient->clifd = clifd;
-	pthread_mutex_lock(&g_conn_lock);
+	std::unique_lock cl_hold(g_conn_lock);
 	double_list_append_as_tail(&g_conn_list, &pclient->node);
-	pthread_mutex_unlock(&g_conn_lock);
+	cl_hold.unlock();
 	pthread_cond_signal(&g_waken_cond);
 	return TRUE;
 }
@@ -662,10 +661,9 @@ static void *thread_work_func(void *param)
 	pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
 	pthread_mutex_unlock(&g_cond_mutex);
  NEXT_CLIFD:
-	pthread_mutex_lock(&g_conn_lock);
+	std::unique_lock cl_hold(g_conn_lock);
 	pnode = double_list_pop_front(&g_conn_list);
-	pthread_mutex_unlock(&g_conn_lock);
-
+	cl_hold.unlock();
 	if (NULL == pnode) {
 		if (TRUE == g_notify_stop) {
 			return nullptr;
