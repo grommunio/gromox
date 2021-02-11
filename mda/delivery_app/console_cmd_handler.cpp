@@ -3,7 +3,7 @@
 #	include "config.h"
 #endif
 #include "console_cmd_handler.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include <gromox/common_types.hpp>
 #include "message_dequeue.h"
 #include "transporter.h"

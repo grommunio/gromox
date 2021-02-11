@@ -8,20 +8,20 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
-#include "console_server.h"
 #include <gromox/util.hpp>
+#include <gromox/console_server.hpp>
 #include <gromox/double_list.hpp>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <netinet/in.h>
+#include <sys/types.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <cstdio>
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
+#include <cstdio>
 #define TIMEOUT             300    
 #define MAXLINE             65536  /* max line size */
 #define MAXARGS             128    /* max args on a command line */
@@ -34,13 +34,13 @@
 #define GOODBYE_STRING      "250 goodbye!\r\n"
 #define TIMEOUT_STRING		"time out!\r\n"
 #define EXCEED_STRING		"550 connection limit exceed!\r\n"
-#define STOP_STRING			"pop3 service is going to shut down...\r\n"
+#define STOP_STRING "service is going to shut down...\r\n"
 
 typedef struct sockaddr     SA;
 
 struct COMMAND_ENTRY {
-	char    cmd[MAX_CMD_LENGTH];
-	COMMAND_HANDLER cmd_handler;
+    char    cmd[MAX_CMD_LENGTH];
+    COMMAND_HANDLER cmd_handler;
 };
 
 struct CONSOLE_NODE {
@@ -78,7 +78,7 @@ static void* console_work_func(void *argp);
 void console_server_init(const char* bind_ip, int port)
 {
 	HX_strlcpy(g_listen_ip, bind_ip, GX_ARRAY_SIZE(g_listen_ip));
-	g_listen_port = port;
+    g_listen_port = port;
 	pthread_mutex_init(&g_list_lock, NULL);
 	pthread_mutex_init(&g_execute_lock, NULL);
 	double_list_init(&g_console_list);
@@ -110,14 +110,11 @@ int console_server_run()
 {
 	CONSOLE_NODE *pnodes;
 
-	/* create a socket descriptor */
 	auto sock = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (sock < 0) {
 		printf("[console_server]: failed to create socket: %s\n", strerror(errno));
-		return -1;
+        return -1;
 	}
-	/* set server socket to nonblock mode */
-	fcntl(sock, F_SETFL, O_NONBLOCK);
 	pnodes = (CONSOLE_NODE*)malloc(MAX_CONSOLE_NUMBER*sizeof(CONSOLE_NODE));
 	if (NULL == pnodes) {
 		printf("[console_server]: Failed to allocate console nodes buffer\n");
@@ -139,7 +136,7 @@ int console_server_run()
 	}
 	pthread_setname_np(g_listening_tid, "console/accept");
 	g_console_buff = pnodes;
-	return 0;
+    return 0;
 }
 
 /*
@@ -154,7 +151,7 @@ int console_server_stop(void)
 		free(g_console_buff);
 		g_console_buff = NULL;
 	}
-	return 0;
+    return 0;
 }
 
 /*
@@ -167,20 +164,20 @@ int console_server_stop(void)
  */
 int console_server_reply_to_client(const char* format, ...)
 {
-	va_list ap;
-	int bytes, client_fd;
-	char message[MAXLINE];
+    va_list ap;
+    int bytes, client_fd;
+    char message[MAXLINE];
 	
-	client_fd = (int)(long)pthread_getspecific(g_client_fd_key);	
+	client_fd = (int)(long)pthread_getspecific(g_client_fd_key);
 	if (client_fd <= 0) {
 		return 0;
 	}
-	memset(message, 0, sizeof(message));
-	va_start(ap, format);
+    memset(message, 0, sizeof(message));
+    va_start(ap, format);
 	bytes = gx_vsnprintf(message, GX_ARRAY_SIZE(message), format, ap);
 	bytes += gx_snprintf(message + bytes, GX_ARRAY_SIZE(message) - bytes, "\r\n");
 	va_end(ap);
-	return write(client_fd, message, bytes);
+    return write(client_fd, message, bytes);
 }
 
 /*
@@ -198,8 +195,8 @@ static void *thread_work_func(void *argp)
 	int sock, client_fd;
 	struct sockaddr_storage client_peer;
 
-	sock = (int)(long)argp;
-	while (FALSE == g_terminate) {
+    sock = (int)(long)argp;
+    while (FALSE == g_terminate) {
 		tv.tv_usec = 0;
 		tv.tv_sec = 1;
 		FD_ZERO(&myset);
@@ -208,11 +205,11 @@ static void *thread_work_func(void *argp)
 			continue;
 		}
 		socklen_t client_len = sizeof(client_peer);
-		memset(&client_peer, 0, client_len);
-		client_fd = accept(sock, (SA*)&client_peer, &client_len);
-		if (client_fd <= 0) {
-			continue;
-		}
+        memset(&client_peer, 0, client_len);
+        client_fd = accept(sock, (SA*)&client_peer, &client_len);
+        if (client_fd <= 0) {
+            continue;
+        }
 		/* try to get a free node from free list */
 		pthread_mutex_lock(&g_list_lock);
 		pnode = double_list_pop_front(&g_free_list);
@@ -235,9 +232,9 @@ static void *thread_work_func(void *argp)
 		pthread_setname_np(pconsole->tid, "console/client");
 		double_list_append_as_tail(&g_console_list, pnode);
 		pthread_mutex_unlock(&g_list_lock);
-	}
-	close(sock);
-	return NULL;
+    }
+    close(sock);
+	return nullptr;
 }
 
 /*
@@ -247,8 +244,8 @@ static void *thread_work_func(void *argp)
  */
 static void* console_work_func(void *argp)
 {
-	int offset;
-	int read_len;
+    int offset;
+    int read_len;
 	int client_fd;
 	int reply_len;
 	char reply_buff[1024];
@@ -261,14 +258,14 @@ static void* console_work_func(void *argp)
 	pconsole = (CONSOLE_NODE*)argp;
 	client_fd = pconsole->client_fd;
 	pthread_setspecific(g_client_fd_key, (const void*)(long)client_fd);
-	memset(cmd, 0, MAXLINE);
+    memset(cmd, 0, MAXLINE);
 	memset(last_command, 0, MAXLINE);
-	pthread_detach(pthread_self()); /* detach itself */
+    pthread_detach(pthread_self()); /* detach itself */
 	reply_len = sprintf(reply_buff, "%s%s", WELCOME_STRING, PROMPT_SRING);
 	write(client_fd, reply_buff, reply_len);
-	while (TRUE) {
-		read_len = read(client_fd, cmd + offset, MAXLINE - offset);
-		if (read_len <= 0) {
+    while (TRUE) {
+        read_len = read(client_fd, cmd + offset, MAXLINE - offset);
+        if (read_len <= 0) {
 			write(client_fd, TIMEOUT_STRING, sizeof(TIMEOUT_STRING) - 1);
 			pthread_mutex_lock(&g_list_lock);
 			double_list_remove(&g_console_list, &pconsole->node);
@@ -276,46 +273,46 @@ static void* console_work_func(void *argp)
 			pthread_mutex_unlock(&g_list_lock);
 			close(client_fd);
 			return nullptr;
-		}
-		offset += read_len;
-		if (offset >= MAXLINE) {
+        }
+        offset += read_len;
+        if (offset >= MAXLINE) {
 			console_server_reply_to_client("550 command line too long");
-			memset(cmd, 0, MAXLINE);
-			offset = 0;
-			continue;
-		}
-		if (NULL == (pcrlf = strstr(cmd, "\r\n"))) {
-			continue;
-		}
-		/*  replace \r\n at the end of the cmd line with '\0' */
+            memset(cmd, 0, MAXLINE);
+            offset = 0;
+            continue;
+        }
+        if (NULL == (pcrlf = strstr(cmd, "\r\n"))) {
+            continue;
+        }
+        /*  replace \r\n at the end of the cmd line with '\0' */
 		*pcrlf = '\0';
 		if (0 == strcmp(cmd, "quit")) {
 			break;
 		}
-		if ('\0' == cmd[0]) {    
+        if ('\0' == cmd[0]) {    
 			if ('\0' == last_command[0]) {
 				console_server_reply_to_client("550 command not found");
 			} else {
 				/* type 'enter' to execute the last command */
-				console_server_execve_command(last_command);
+                console_server_execve_command(last_command);
 			}
 			memset(cmd, 0, MAXLINE);
 			offset = 0;
 		} else {
 			strcpy(last_command, cmd);
-			console_server_execve_command(cmd);
+            console_server_execve_command(cmd);
 			memset(cmd, 0, MAXLINE);
 	        offset = 0;
-		}
+        }
 		write(client_fd, PROMPT_SRING, sizeof(PROMPT_SRING) - 1);
-	}
+    }
 	write(client_fd, GOODBYE_STRING, sizeof(GOODBYE_STRING) - 1);
 	pthread_mutex_lock(&g_list_lock);
 	double_list_remove(&g_console_list, &pconsole->node);
 	double_list_append_as_tail(&g_free_list, &pconsole->node);
 	pthread_mutex_unlock(&g_list_lock);
 	close(client_fd);
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -330,17 +327,17 @@ static void* console_work_func(void *argp)
 */
 BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
 {
-	if (g_cmd_num >= MAX_CMD_NUMBER + 1) {
-		return FALSE;
-	}
+    if (g_cmd_num >= MAX_CMD_NUMBER + 1) {
+        return FALSE;
+    }
 	if (NULL != cmd) {
 		HX_strlcpy(g_cmd_entry[g_cmd_num].cmd, cmd, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
 	} else {
 		*(g_cmd_entry[g_cmd_num].cmd) = '\0';
 	}
-	g_cmd_entry[g_cmd_num].cmd_handler = handler;
+    g_cmd_entry[g_cmd_num].cmd_handler = handler;
 	g_cmd_num ++;
-	return TRUE;
+    return TRUE;
 }
 
 
@@ -355,25 +352,25 @@ BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
 */
 static int console_server_parse_line(const char* cmdline, char** argv)
 {
-	static char array[MAXLINE];  /* holds local copy of command line */
+    static char array[MAXLINE];  /* holds local copy of command line */
 	int string_len;
-	char *ptr;                   /* ptr that traverses command line  */
-	int argc;                    /* number of args */
+    char *ptr;                   /* ptr that traverses command line  */
+    int argc;                    /* number of args */
 	char *last_space;
 	char *last_quota;
 
-	memset(array, 0, sizeof(array));
+    memset(array, 0, sizeof(array));
 	string_len = strlen(cmdline);
 	memcpy(array, cmdline, string_len);
 	array[string_len] = ' ';
 	string_len ++;
 	array[string_len] = '\0';
 	ptr = array;
-	/* Build the argv list */
-	argc = 0;
+    /* Build the argv list */
+    argc = 0;
 	last_quota = NULL;
 	last_space = array;
-	while (*ptr != '\0') {
+    while (*ptr != '\0') {
 		/* back slash should be treated as transferred meaning */
 		if (('\\' == *ptr && '\"' == *(ptr + 1)) ||
 			('\\' == *ptr && '\\' == *(ptr + 1))) {
@@ -409,13 +406,13 @@ static int console_server_parse_line(const char* cmdline, char** argv)
 			}
 		}
 		ptr ++;
-	}
+    }
 	/* only one quota is found, error */
 	if (NULL != last_quota) {
 		argc = 0;
 	}
-	argv[argc] = NULL;
-	return argc;
+    argv[argc] = NULL;
+    return argc;
 }
 
 /*
@@ -426,42 +423,42 @@ static int console_server_parse_line(const char* cmdline, char** argv)
 */
 static void console_server_execve_command(char* cmdline)
 {
-	char *cmd = NULL;
-	char *argv[MAXARGS]; /* cmd argv to do */
-	int  i = 0, argc = 0;
+    char *cmd = NULL;
+    char *argv[MAXARGS]; /* cmd argv to do */
+    int  i = 0, argc = 0;
 
-	memset(argv, 0, sizeof(argv));
-	/* parse command line */
+    memset(argv, 0, sizeof(argv));
+    /* parse command line */
 	pthread_mutex_lock(&g_execute_lock);
-	argc = console_server_parse_line(cmdline, argv);
-	cmd = argv[0];
-	if (0 == argc) {
+    argc = console_server_parse_line(cmdline, argv);
+    cmd = argv[0];
+    if (0 == argc) {
 		pthread_mutex_unlock(&g_execute_lock);
-		return; /* ignore empty lines */
-	}
+        return; /* ignore empty lines */
+    }
 	/* compare build-in command */
-	for (i = 0; i < g_cmd_num; i++) {
-		if ('\0' != *(g_cmd_entry[i].cmd) && 
+    for (i = 0; i < g_cmd_num; i++) {
+        if ('\0' != *(g_cmd_entry[i].cmd) && 
 			0 == strcmp(g_cmd_entry[i].cmd, cmd)) {
-			g_cmd_entry[i].cmd_handler(argc, argv);
+            g_cmd_entry[i].cmd_handler(argc, argv);
 			pthread_mutex_unlock(&g_execute_lock);
-			return;
-		}
-	}
-	for (i = 0; i < g_cmd_num; i++) {
-		if ('\0' == *(g_cmd_entry[i].cmd) &&
+            return;
+        }
+    }
+    for (i = 0; i < g_cmd_num; i++) {
+        if ('\0' == *(g_cmd_entry[i].cmd) &&
 			TRUE == g_cmd_entry[i].cmd_handler(argc, argv)) {
 			pthread_mutex_unlock(&g_execute_lock);
 			return;
-		}
-	}
+        }
+    }
 	pthread_mutex_unlock(&g_execute_lock);
 	
-	/* 
-	 *  unknown command, use the default unknown command handler, always at 
+    /* 
+     *  unknown command, use the default unknown command handler, always at 
 	 *  the end of all cmd handler   
-	*/
-	console_server_reply_to_client("550 command not found");
+    */
+    console_server_reply_to_client("550 command not found");
 }
 
 /*
@@ -490,9 +487,10 @@ void console_server_notify_main_stop()
 	while ((pnode = double_list_pop_front(&g_free_list)) != nullptr)
 		/* do nothing */;
 	pthread_mutex_unlock(&g_list_lock);
-	g_notify_stop = TRUE;
+    g_notify_stop = TRUE;
 	if (TRUE == b_console) {
 		pthread_exit(0);
 	}
 }
+
 

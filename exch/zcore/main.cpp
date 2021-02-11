@@ -23,7 +23,7 @@
 #include "exmdb_client.h"
 #include "zarafa_server.h"
 #include "console_cmd_handler.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include "msgchg_grouping.h"
 #include "bounce_producer.h"
 #include "system_services.h"

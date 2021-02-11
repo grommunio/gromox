@@ -25,7 +25,7 @@
 #include "hpm_processor.h"
 #include "pdu_processor.h"
 #include <gromox/contexts_pool.hpp>
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include "system_services.h"
 #include "blocks_allocator.h"
 #include <pwd.h>

@@ -11,7 +11,7 @@
 #include <gromox/config_file.hpp>
 #include "message_dequeue.h" 
 #include "console_cmd_handler.h"
-#include "console_server.h" 
+#include <gromox/console_server.hpp>
 #include "system_services.h"
 #include "transporter.h" 
 #include <gromox/lib_buffer.hpp>

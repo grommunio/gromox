@@ -16,7 +16,7 @@
 #include "blocks_allocator.h" 
 #include <gromox/threads_pool.hpp>
 #include "console_cmd_handler.h"
-#include "console_server.h" 
+#include <gromox/console_server.hpp>
 #include <gromox/contexts_pool.hpp>
 #include "service.h" 
 #include "system_services.h"

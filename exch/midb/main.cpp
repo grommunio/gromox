@@ -20,7 +20,7 @@
 #include "mail_engine.h"
 #include "exmdb_client.h"
 #include "console_cmd_handler.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include "system_services.h"
 #include <cstdio>
 #include <unistd.h>

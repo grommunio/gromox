@@ -5,7 +5,7 @@
 #include <gromox/fileio.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
 #include <gromox/contexts_pool.hpp>

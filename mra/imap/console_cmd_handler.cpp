@@ -4,7 +4,7 @@
 #endif
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/threads_pool.hpp>
 #include "imap_parser.h"

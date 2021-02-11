@@ -3,7 +3,7 @@
 #	include "config.h"
 #endif
 #include "console_cmd_handler.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include "zarafa_server.h"
 #include "exmdb_client.h"
 #include "common_util.h"

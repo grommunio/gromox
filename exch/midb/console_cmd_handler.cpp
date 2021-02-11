@@ -3,7 +3,7 @@
 #	include "config.h"
 #endif
 #include "console_cmd_handler.h"
-#include "console_server.h"
+#include <gromox/console_server.hpp>
 #include "exmdb_client.h"
 #include "mail_engine.h"
 #include <gromox/lib_buffer.hpp>
