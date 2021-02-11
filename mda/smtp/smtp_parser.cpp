@@ -3,6 +3,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <cerrno>
+#include <mutex>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -77,7 +78,6 @@ static unsigned int g_timeout;
 static size_t g_auth_times;
 static size_t g_blktime_auths;
 static SMTP_CONTEXT *g_context_list;
-static pthread_mutex_t g_block_ID_mutex;
 static int g_block_ID;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
@@ -214,7 +214,6 @@ int smtp_parser_run()
 	}
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
-	pthread_mutex_init(&g_block_ID_mutex, NULL);
 	return 0;
 }
 
@@ -228,8 +227,6 @@ int smtp_parser_stop()
 {
 	int i;
 
-	if (g_context_list != nullptr)
-		pthread_mutex_destroy(&g_block_ID_mutex);
 	if (NULL != g_context_list) {
 		for (i=0; i<g_context_num; i++) {
 			smtp_parser_context_free(g_context_list + i);

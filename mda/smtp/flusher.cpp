@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
@@ -72,8 +73,7 @@ static PLUG_ENTITY *g_flusher_plug;
 static LIB_BUFFER *g_allocator;
 static BOOL g_can_register;
 static size_t g_max_queue_len;
-static pthread_mutex_t g_flush_mutex;
-static pthread_mutex_t g_flush_id_mutex;
+static std::mutex g_flush_mutex, g_flush_id_mutex;
 static SINGLE_LIST            g_flush_queue;
 static unsigned int    g_current_ID;
 
@@ -135,8 +135,6 @@ int flusher_run()
 		printf("[flusher]: flush ID error, should be larger than 0\n");
 		return -4;
 	}
-	pthread_mutex_init(&g_flush_mutex, NULL);
-	pthread_mutex_init(&g_flush_id_mutex, NULL);
 	return 0;
 }
 
@@ -148,9 +146,6 @@ int flusher_run()
  */
 int flusher_stop()
 {
-
-	pthread_mutex_destroy(&g_flush_mutex);
-	pthread_mutex_destroy(&g_flush_id_mutex);
 	single_list_free(&g_flush_queue);
 	lib_buffer_free(g_allocator);
 	if (TRUE == flusher_unload_plugin())
@@ -186,18 +181,15 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext)
 	pentity->pcontext       = pcontext;
 	pentity->node.pdata     = pentity;
 
-	pthread_mutex_lock(&g_flush_mutex);
-	ret_val = single_list_append_as_tail(&g_flush_queue, &pentity->node);
-	pthread_mutex_unlock(&g_flush_mutex);
-	return ret_val;
+	std::unique_lock fl_hold(g_flush_mutex);
+	return single_list_append_as_tail(&g_flush_queue, &pentity->node);
 }
 
 static FLUSH_ENTITY* flusher_get_from_queue()
 {
 	SINGLE_LIST_NODE*   pnode;
-	pthread_mutex_lock(&g_flush_mutex);
+	std::unique_lock fl_hold(g_flush_mutex);
 	pnode = single_list_pop_front(&g_flush_queue);
-	pthread_mutex_unlock(&g_flush_mutex);
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -310,14 +302,13 @@ static BOOL flusher_unload_plugin()
 static int flusher_increase_max_ID()
 {
 	int     current_id;
-	pthread_mutex_lock(&g_flush_id_mutex);
+	std::unique_lock fl_hold(g_flush_id_mutex);
 	if (MAX_CIRCLE_NUMBER == g_current_ID) {
 		g_current_ID = 1;
 	} else {
 		g_current_ID ++;
 	}
 	current_id  = g_current_ID;
-	pthread_mutex_unlock(&g_flush_id_mutex);
 	return current_id;
 }
 
