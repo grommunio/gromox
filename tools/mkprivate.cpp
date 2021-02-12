@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <string>
+#include <vector>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -26,6 +28,8 @@
 #include <sys/types.h>
 #include <mysql.h>
 #define LLU(x) static_cast<unsigned long long>(x)
+
+using namespace gromox;
 
 enum {
 	RES_ID_IPM,
@@ -669,16 +673,14 @@ int main(int argc, const char **argv)
 	
 	char proppath[256];
 	snprintf(proppath, GX_ARRAY_SIZE(proppath), "%s/propnames.txt", datadir);
-	pfile = list_file_init(proppath, "%s:256");
-	if (NULL == pfile) {
-		printf("fail to read \"%s\": %s\n", proppath, strerror(errno));
+	std::vector<std::string> namedprop_list;
+	auto ret = list_file_read_fixedstrings(proppath, namedprop_list);
+	if (ret < 0) {
+		printf("Failed to read \"%s\": %s\n", proppath, strerror(-ret));
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 7;
 	}
-	line_num = pfile->get_size();
-	pline = static_cast<char *>(pfile->get_list());
-	
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		sqlite3_close(psqlite);
@@ -686,10 +688,11 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	
-	for (i=0; i<line_num; i++) {
+	i = 0;
+	for (const auto &name : namedprop_list) {
 		propid = 0x8001 + i;
 		sqlite3_bind_int64(pstmt, 1, propid);
-		sqlite3_bind_text(pstmt, 2, pline + 256*i, -1, SQLITE_STATIC);
+		sqlite3_bind_text(pstmt, 2, name.c_str(), -1, SQLITE_STATIC);
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
 			sqlite3_finalize(pstmt);
@@ -699,7 +702,6 @@ int main(int argc, const char **argv)
 		}
 		sqlite3_reset(pstmt);
 	}
-	pfile.reset();
 	sqlite3_finalize(pstmt);
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
