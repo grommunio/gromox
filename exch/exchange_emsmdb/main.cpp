@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
@@ -49,7 +50,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	int max_mail;
 	int max_rcpt;
 	int async_num;
-	int smtp_port;
+	uint16_t smtp_port;
 	int max_length;
 	void *pendpoint;
 	int max_rule_len;
@@ -206,7 +207,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "SMTP_SERVER_PORT", "25");
 			}
 		}
-		printf("[exchange_emsmdb]: smtp server is %s:%d\n", smtp_ip, smtp_port);
+		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
 		if (str_value == nullptr)
 			strcpy(submit_command, "/usr/bin/php " PKGDATADIR "/sa/submit.php");
