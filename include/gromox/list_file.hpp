@@ -18,5 +18,5 @@ struct LIST_FILE {
     void*       pfile;
 };
 
-extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_init(const char *filename, const char *format, bool require = true);
-extern GX_EXPORT int list_file_read_fixedstrings(const char *filename, std::vector<std::string> &out);
+extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_initd(const char *filename, const char *sdlist, const char *format);
+extern GX_EXPORT int list_file_read_fixedstrings(const char *filename, const char *sdlist, std::vector<std::string> &out);

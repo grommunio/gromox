@@ -107,8 +107,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pthread_mutex_init(&g_ltag_lock, NULL);
 		pthread_mutex_init(&g_charset_lock, NULL);
 		
-		sprintf(tmp_path, "%s/cpid.txt", get_data_path());
-		auto pfile = list_file_init(tmp_path, "%d%s:64", false);
+		auto pfile = list_file_initd("cpid.txt", get_data_path(), "%d%s:64");
 		if (NULL == pfile) {
 			printf("[ms_locale]: list_file_init %s: %s\n",
 				tmp_path, strerror(errno));
@@ -140,7 +139,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pfile.reset();
 		sprintf(tmp_path, "%s/lcid.txt", get_data_path());
 		struct srcitem { char lcid[16], locale[32]; };
-		pfile = list_file_init(tmp_path, "%s:16%s:32");
+		pfile = list_file_initd(tmp_path, nullptr, "%s:16%s:32");
 		if (NULL == pfile) {
 			printf("[ms_locale]: list_file_init %s: %s\n",
 				tmp_path, strerror(errno));

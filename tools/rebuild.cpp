@@ -622,7 +622,7 @@ int main(int argc, const char **argv)
 	sqlite3_shutdown();
 	
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_init(PKGDATASADIR "/exmdb_list.txt", /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
+	auto plist = list_file_initd("exmdb_list.txt", PKGDATASADIR, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
 		printf("Failed to read exmdb list from %s: %s\n",
 			PKGDATASADIR "/exmdb_list.txt", strerror(errno));

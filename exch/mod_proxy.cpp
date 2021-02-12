@@ -82,7 +82,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		double_list_init(&g_proxy_list);
 		sprintf(list_path, "%s/proxy.txt", get_data_path());
 		struct srcitem { char domain[256], uri_path[256], dest[256]; };
-		auto pfile = list_file_init(list_path, "%s:256%s:256%s:256");
+		auto pfile = list_file_initd(list_path, nullptr, "%s:256%s:256%s:256");
 		if (NULL == pfile) {
 			printf("[mod_proxy]: list_file_init %s: %s\n",
 				list_path, strerror(errno));

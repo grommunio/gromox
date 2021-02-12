@@ -448,7 +448,7 @@ int main(int argc, const char **argv)
 	char proppath[256];
 	snprintf(proppath, GX_ARRAY_SIZE(proppath), "%s/propnames.txt", datadir);
 	std::vector<std::string> namedprop_list;
-	auto ret = list_file_read_fixedstrings(proppath, namedprop_list);
+	auto ret = list_file_read_fixedstrings(proppath, nullptr, namedprop_list);
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
 		printf("Failed to read \"%s\": %s\n", proppath, strerror(-ret));

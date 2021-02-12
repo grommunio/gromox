@@ -44,7 +44,7 @@ void gateway_control_init(const char *path)
 
 int gateway_control_run()
 {
-	auto plist_file = list_file_init(g_list_path, /* CONSOLE_PORT */ "%s:32%d%s:32%d", false);
+	auto plist_file = list_file_initd(g_list_path, "/", /* CONSOLE_PORT */ "%s:32%d%s:32%d");
 	if (NULL == plist_file) {
 		printf("[gateway_control]: Failed to read console list from %s: %s\n",
 			g_list_path, strerror(errno));

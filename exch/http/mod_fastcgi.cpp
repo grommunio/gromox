@@ -188,7 +188,7 @@ int mod_fastcgi_run()
 		char domain[256], path[256], dir[256], suffix[16], index[256];
 		char extra_headers[304], sock_path[256];
 	};
-	auto pfile = list_file_init(g_list_path,
+	auto pfile = list_file_initd(g_list_path, nullptr,
 		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256");
 	if (NULL == pfile) {
 		printf("[mod_fastcgi]: list_file_init %s: %s\n",

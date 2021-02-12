@@ -175,7 +175,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 		return NULL;
 	}
 	snprintf(file_path, GX_ARRAY_SIZE(file_path), "%s/%s", g_folder_path, file_name);
-	auto pfile = list_file_init(file_path, "%s:256");
+	auto pfile = list_file_initd(file_path, nullptr, "%s:256");
 	if (NULL == pfile) {
 		printf("[exchange_emsmdb]: list_file_init %s: %s\n",
 			file_path, strerror(errno));

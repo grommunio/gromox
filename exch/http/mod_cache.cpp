@@ -152,7 +152,7 @@ int mod_cache_run()
 	DIRECTORY_NODE *pdnode;
 	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
-	auto pfile = list_file_init(g_list_path, "%s:256%s:256%s:256");
+	auto pfile = list_file_initd(g_list_path, nullptr, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
 		printf("[mod_cache]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));

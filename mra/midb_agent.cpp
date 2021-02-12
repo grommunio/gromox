@@ -234,7 +234,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[midb_agent]: memory pool is switched off\n");
 		}
 
-		auto plist = list_file_init(list_path, /* MIDB_ITEM */ "%s:256%s:32%d");
+		auto plist = list_file_initd(list_path, nullptr, /* MIDB_ITEM */ "%s:256%s:32%d");
 		if (NULL == plist) {
 			printf("[midb_agent]: Failed to read midb list from %s: %s\n",
 				list_path, strerror(errno));

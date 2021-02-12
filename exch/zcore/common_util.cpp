@@ -194,7 +194,7 @@ BOOL common_util_check_delegate_permission(
 	char temp_path[256];
 	
 	sprintf(temp_path, "%s/config/delegates.txt", maildir);
-	auto pfile = list_file_init(temp_path, "%s:256");
+	auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
 	if (NULL == pfile) {
 		return FALSE;
 	}
@@ -662,14 +662,14 @@ int common_util_run()
 		printf("[common_util]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_langmap_list = list_file_init(g_langmap_path, "%s:32%s:32");
+	g_langmap_list = list_file_initd(g_langmap_path, nullptr, "%s:32%s:32");
 	if (g_langmap_list == nullptr || g_langmap_list->get_size() == 0) {
 		printf("[common_util]: Failed to read langmap from %s: %s\n",
 			g_langmap_path, strerror(errno));
 		return -3;
 	}
 	
-	g_folderlang_list = list_file_init(g_folderlang_path,
+	g_folderlang_list = list_file_initd(g_folderlang_path, nullptr,
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == g_folderlang_list) {

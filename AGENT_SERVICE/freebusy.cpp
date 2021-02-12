@@ -2327,8 +2327,8 @@ int main(int argc, const char **argv)
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_init(PKGDATAAGENTDIR "/exmdb_list.txt",
-	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
+	auto plist = list_file_initd("exmdb_list.txt", PKGDATAAGENTDIR,
+	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
 		fprintf(stderr, "Failed to read exmdb list from %s: %s\n",
 			PKGDATAAGENTDIR "/exmdb_list.txt", strerror(errno));

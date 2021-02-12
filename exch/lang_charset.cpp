@@ -100,7 +100,7 @@ static int table_refresh()
 	
     /* initialize the list filter */
 	struct srcitem { char a[32], b[32]; };
-	auto plist_file = list_file_init(g_list_path, "%s:32%s:32");
+	auto plist_file = list_file_initd(g_list_path, nullptr, "%s:32%s:32");
 	if (NULL == plist_file) {
 		printf("[lang_charset]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));

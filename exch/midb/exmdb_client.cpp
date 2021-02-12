@@ -503,7 +503,7 @@ int exmdb_client_run()
 	REMOTE_SVR *pserver;
 	AGENT_THREAD *pagent;
 	
-	auto plist = list_file_init(g_list_path, /* EXMIDB_ITEM */ "%s:256%s:16%s:32%d", false);
+	auto plist = list_file_initd(g_list_path, "/", /* EXMIDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
 		printf("[exmdb_client]: Failed to read exmdb list from %s: %s\n",
 			g_list_path, strerror(errno));

@@ -558,7 +558,7 @@ int main(int argc, const char **argv)
 	
 	char folderlang[256];
 	snprintf(folderlang, GX_ARRAY_SIZE(folderlang), "%s/folder_lang.txt", datadir);
-	auto pfile = list_file_init(folderlang,
+	auto pfile = list_file_initd(folderlang, nullptr,
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == pfile) {
@@ -674,7 +674,7 @@ int main(int argc, const char **argv)
 	char proppath[256];
 	snprintf(proppath, GX_ARRAY_SIZE(proppath), "%s/propnames.txt", datadir);
 	std::vector<std::string> namedprop_list;
-	auto ret = list_file_read_fixedstrings(proppath, namedprop_list);
+	auto ret = list_file_read_fixedstrings(proppath, nullptr, namedprop_list);
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
 		printf("Failed to read \"%s\": %s\n", proppath, strerror(-ret));

@@ -234,7 +234,7 @@ int grey_list_refresh()
 	if (0 == g_growing_num) {
 		return GREY_REFRESH_OK;
 	}
-	auto plist_file = list_file_init(g_list_path, "%s:256%d%s:32", false);
+	auto plist_file = list_file_initd(g_list_path, "/", "%s:256%d%s:32");
 	if (NULL == plist_file) {
 		str_filter_echo("Failed to read graylist from %s: %s",
 			g_list_path, strerror(errno));

@@ -12,6 +12,8 @@
 #include <cstdlib>
 #define MAX_LINE			1024
 
+using namespace gromox;
+
 static BOOL list_file_analyse_format(LIST_FILE* list_file, const char* format);
 static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line);
 static BOOL list_file_construct_list(LIST_FILE* list_file);
@@ -48,22 +50,44 @@ static std::unique_ptr<LIST_FILE> list_file_alloc(const char *format)
  *		<>NULL					object pointer
  *
  */
-std::unique_ptr<LIST_FILE> list_file_init(const char *filename,
-    const char *format, bool hard)
+static std::unique_ptr<LIST_FILE> list_file_init(const char *filename, const char *format)
 {
 	auto list_file = list_file_alloc(format);
 	if (list_file == NULL)
 		return NULL;
 	list_file->file_ptr.reset(fopen(filename, "r"));
 	if (list_file->file_ptr == nullptr) {
-		if (errno == ENOENT && !hard)
-			return list_file;
-		debug_info("[list_file]: cannot open %s: %s", filename, strerror(errno));
 		return NULL;
 	}
 	if (!list_file_construct_list(list_file.get()))
 		return NULL;
 	return list_file;
+}
+
+std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
+    const char *format)
+{
+	if (sdlist == nullptr)
+		return list_file_init(fb, format);
+	errno = 0;
+	try {
+		for (auto dir : gx_split(sdlist, ':')) {
+			errno = 0;
+			auto full = dir + "/" + fb;
+			auto cfg = list_file_init(full.c_str(), format);
+			if (cfg != nullptr)
+				return cfg;
+			if (errno != ENOENT) {
+				fprintf(stderr, "list_file_initd %s: %s\n",
+				        full.c_str(), strerror(errno));
+				return nullptr;
+			}
+		}
+	} catch (const std::bad_alloc &) {
+		errno = ENOMEM;
+		return nullptr;
+	}
+	return list_file_alloc(format);
 }
 
 LIST_FILE::~LIST_FILE()
@@ -301,10 +325,11 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 	return b_terminate;
 }
 
-int list_file_read_fixedstrings(const char *filename, std::vector<std::string> &out)
+int list_file_read_fixedstrings(const char *filename, const char *sdlist,
+    std::vector<std::string> &out)
 {
 	struct item { char data[256]; };
-	auto plist = list_file_init(filename, "%s:256");
+	auto plist = list_file_initd(filename, sdlist, "%s:256");
 	if (plist == nullptr)
 		return -errno;
 	auto num = plist->get_size();

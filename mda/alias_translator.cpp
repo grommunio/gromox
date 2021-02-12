@@ -184,7 +184,7 @@ static int address_table_refresh()
     STR_HASH_TABLE *phash = NULL;
 	
     /* initialize the list filter */
-	auto plist_file = list_file_init(g_address_path, "%s:256%s:256", false);
+	auto plist_file = list_file_initd(g_address_path, "/", "%s:256%s:256");
 	if (NULL == plist_file) {
 		printf("[alias_translator]: Failed to read address list from %s: %s\n",
 			g_address_path, strerror(errno));

@@ -122,7 +122,7 @@ int exmdb_listener_run()
 	}
 
 	if ('\0' != g_list_path[0]) {
-		auto ret = list_file_read_fixedstrings(g_list_path, g_acl_list);
+		auto ret = list_file_read_fixedstrings(g_list_path, nullptr, g_acl_list);
 		if (ret == -ENOENT) {
 			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
 			g_acl_list = {"::1"};

@@ -137,7 +137,7 @@ static int str_table_refresh()
 	
     /* initialize the list filter */
 	struct srcitem { char s[256]; };
-	auto plist_file = list_file_init(g_list_path, "%s:256", false);
+	auto plist_file = list_file_initd(g_list_path, "/", "%s:256");
 	if (NULL == plist_file) {
 		str_table_echo("list_file_init %s: %s", g_list_path, strerror(errno));
 		return STR_TABLE_REFRESH_FILE_ERROR;

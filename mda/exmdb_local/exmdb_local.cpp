@@ -133,7 +133,7 @@ int exmdb_local_run()
 		return -2;
 	}
 	struct srcitem { char s[256]; };
-	auto plist = list_file_init(g_propname_path, "%s:256");
+	auto plist = list_file_initd(g_propname_path, nullptr, "%s:256");
 	if (NULL == plist) {
 		printf("[exmdb_local]: Failed to read property name list from %s: %s\n",
 			g_propname_path, strerror(errno));

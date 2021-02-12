@@ -121,7 +121,7 @@ static int table_refresh()
 	
     /* initialize the list filter */
 	struct srcitem { char a[256], b[256]; };
-	auto plist_file = list_file_init(g_list_path, "%s:256%s:256");
+	auto plist_file = list_file_initd(g_list_path, nullptr, "%s:256%s:256");
 	if (NULL == plist_file) {
 		printf("[from_replace]: list_file_init %s: %s\n", g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;

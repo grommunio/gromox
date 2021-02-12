@@ -184,7 +184,7 @@ int main(int argc, const char **argv)
 		long exectime;
 		char command[512];
 	} __attribute__((packed));
-	auto pfile = list_file_init(g_list_path, "%d%l%s:512", false);
+	auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
 			g_list_path, strerror(errno));
@@ -280,7 +280,7 @@ int main(int argc, const char **argv)
 
 
 	if ('\0' != g_acl_path[0]) {
-		auto ret = list_file_read_fixedstrings(g_list_path, g_acl_list);
+		auto ret = list_file_read_fixedstrings(g_list_path, nullptr, g_acl_list);
 		if (ret == -ENOENT) {
 			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
 			g_acl_list = {"::1"};
@@ -351,7 +351,7 @@ int main(int argc, const char **argv)
 
 		if (cur_time - last_cltime > 7 * 86400) {
 			close(g_list_fd);
-			auto pfile = list_file_init(g_list_path, "%d%l%s:512", false);
+			auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
 			if (NULL != pfile) {
 				auto item_num = pfile->get_size();
 				auto pitem = static_cast<srcitem *>(pfile->get_list());
