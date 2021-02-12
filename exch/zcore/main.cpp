@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <cstdint>
 #include <memory>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -74,7 +75,7 @@ int main(int argc, const char **argv)
 	int stub_num;
 	int mime_num;
 	int max_rcpt;
-	int smtp_port;
+	uint16_t smtp_port;
 	int proxy_num;
 	int max_length;
 	int table_size, threads_num = 0;
@@ -335,7 +336,7 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "SMTP_SERVER_PORT", "25");
 		}
 	}
-	printf("[system]: smtp server is %s:%d\n", smtp_ip, smtp_port);
+	printf("[system]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 	
 	str_value = config_file_get_value(pconfig, "SUBMIT_COMMAND");
 	if (str_value == nullptr)
