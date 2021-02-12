@@ -1127,6 +1127,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	*pmessage_id = message_id;
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+		rpc_info = get_rpc_info();
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
