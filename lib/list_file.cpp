@@ -67,7 +67,7 @@ static std::unique_ptr<LIST_FILE> list_file_init(const char *filename, const cha
 std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
     const char *format)
 {
-	if (sdlist == nullptr)
+	if (sdlist == nullptr || strchr(fb, '/') != nullptr)
 		return list_file_init(fb, format);
 	errno = 0;
 	try {

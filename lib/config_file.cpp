@@ -109,6 +109,8 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
  */
 std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlist)
 {
+	if (sdlist == nullptr || strchr(fb, '/') != nullptr)
+		return config_file_init(fb);
 	errno = 0;
 	try {
 		for (auto dir : gx_split(sdlist, ':')) {
