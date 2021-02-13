@@ -179,15 +179,53 @@ static std::mutex g_server_lock;
 static LIB_BUFFER *g_file_allocator;
 static int g_file_ratio;
 
+static bool list_file_read_midb(const char *filename)
+{
+	struct MIDB_ITEM {
+		char prefix[256], ip_addr[32];
+		int port;
+	};
+	auto plist = list_file_initd(filename, get_config_path(),
+	             /* MIDB_ITEM */ "%s:256%s:32%d");
+	if (plist == nullptr) {
+		printf("[midb_agent]: list_file_initd %s: %s\n",
+		       filename, strerror(errno));
+		return false;
+	}
+	auto list_num = plist->get_size();
+	auto pitem = static_cast<MIDB_ITEM *>(plist->get_list());
+	for (decltype(list_num) i = 0; i < list_num; ++i) {
+		auto pserver = static_cast<BACK_SVR *>(malloc(sizeof(BACK_SVR)));
+		if (pserver == nullptr) {
+			printf("[midb_agent]: Failed to allocate memory for midb\n");
+			return false;
+		}
+		pserver->node.pdata = pserver;
+		strcpy(pserver->prefix, pitem[i].prefix);
+		pserver->prefix_len = strlen(pserver->prefix);
+		HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
+		pserver->port = pitem[i].port;
+		double_list_init(&pserver->conn_list);
+		double_list_append_as_tail(&g_server_list, &pserver->node);
+		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
+			auto pback = static_cast<BACK_CONN *>(malloc(sizeof(BACK_CONN)));
+			if (pback == nullptr)
+				continue;
+			pback->node.pdata = pback;
+			pback->sockd = -1;
+			pback->psvr = pserver;
+			double_list_append_as_tail(&g_lost_list, &pback->node);
+		}
+	}
+	return true;
+}
+
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	int i, j;
 	char *psearch;
 	char *str_value;
 	char file_name[256];
 	char config_path[256];
-    BACK_CONN *pback;
-	BACK_SVR *pserver;
     DOUBLE_LIST_NODE *pnode;
 
 	switch(reason) {
@@ -232,43 +270,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[midb_agent]: memory pool is switched off\n");
 		}
 
-		auto plist = list_file_initd("midb_list.txt", get_config_path(),
-		             /* MIDB_ITEM */ "%s:256%s:32%d");
-		if (NULL == plist) {
-			printf("[midb_agent]: list_file_initd midb_list.txt: %s\n", strerror(errno));
-			return FALSE;
-		}
-
-		auto list_num = plist->get_size();
-		struct MIDB_ITEM {
-			char prefix[256], ip_addr[32];
-			int port;
-		};
-		auto pitem = static_cast<MIDB_ITEM *>(plist->get_list());
-		for (i=0; i<list_num; i++) {
-			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));
-			if (NULL == pserver) {
-				printf("[midb_agent]: Failed to allocate memory for midb\n");
-				return FALSE;
-			}
-			pserver->node.pdata = pserver;
-			strcpy(pserver->prefix, pitem[i].prefix);
-			pserver->prefix_len = strlen(pserver->prefix);
-			HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
-			pserver->port = pitem[i].port;
-			double_list_init(&pserver->conn_list);
-			double_list_append_as_tail(&g_server_list, &pserver->node);
-			for (j=0; j<g_conn_num; j++) {
-			   pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));
-				if (NULL != pback) {
-					pback->node.pdata = pback;
-					pback->sockd = -1;
-					pback->psvr = pserver;
-			        double_list_append_as_tail(&g_lost_list, &pback->node);
-				}
-			}
-		}
-		
+		if (!list_file_read_midb("midb_list.txt"))
+			return false;
 		if (g_file_ratio > 0) {
 			g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE, 
 								get_context_num()*g_file_ratio, TRUE);
@@ -322,9 +325,9 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			free(pnode->pdata);
 
 		while ((pnode = double_list_pop_front(&g_server_list)) != nullptr) {
-			pserver = (BACK_SVR*)pnode->pdata;
+			auto pserver = static_cast<BACK_SVR *>(pnode->pdata);
 			while ((pnode = double_list_pop_front(&pserver->conn_list)) != nullptr) {
-				pback = (BACK_CONN*)pnode->pdata;
+				auto pback = static_cast<BACK_CONN *>(pnode->pdata);
 				write(pback->sockd, "QUIT\r\n", 6);
 				close(pback->sockd);
 				free(pback);
