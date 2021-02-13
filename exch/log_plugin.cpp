@@ -28,6 +28,7 @@ enum{
 	REDIRECT_CLOSE_OK
 };
 
+static constexpr char g_time_format[] = "%F", g_filecomp_pattern[] = "%s-%s.%s";
 static BOOL g_notify_stop = TRUE;
 static char *g_log_buf_ptr;
 static int g_current_size;
@@ -214,9 +215,9 @@ static void* thread_work_func(void *arg)
 		for (i=0; i<g_files_num; i++) {
 			tmp_time = current_time - i * 24 * 3600;
 			tm_time = localtime_r(&tmp_time, &time_buff);
-			strftime(time_str, 32, "%m%d", tm_time);
-			snprintf(g_files_name + i * 256, 256, "%s%s.%s", g_file_name,
-				time_str, g_file_postfix);
+			strftime(time_str, GX_ARRAY_SIZE(time_str), g_time_format, tm_time);
+			snprintf(g_files_name + i * 256, 256, g_filecomp_pattern,
+			         g_file_name, time_str, g_file_postfix);
 		}
 		dirp = opendir(g_log_dir);
 		if (NULL == dirp) {
@@ -468,9 +469,9 @@ static BOOL log_plugin_flush_log()
 	/* get the proper file name */
 	time(&time_now);
 	tm_time_now = localtime_r(&time_now, &time_buff);
-	strftime(time_str, 32, "%m%d", tm_time_now);
-	snprintf(filename, 256, "%s%s.%s", g_file_name, time_str, g_file_postfix);
-	filename[sizeof(filename) - 1] = '\0';	
+	strftime(time_str, GX_ARRAY_SIZE(time_str), g_time_format, tm_time_now);
+	snprintf(filename, GX_ARRAY_SIZE(filename), g_filecomp_pattern,
+	         g_file_name, time_str, g_file_postfix);
 	if (NULL == (file_ptr = fopen(filename, "a+"))) {
 		printf("[log_plugin]: failed to create log file %s: %s\n",
 		       filename, strerror(errno));
