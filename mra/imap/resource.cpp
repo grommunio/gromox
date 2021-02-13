@@ -6,6 +6,7 @@
  */
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include "resource.h"
 #include <gromox/single_list.hpp>
@@ -15,6 +16,8 @@
 #include <cstdio>
 #include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
+
+using namespace gromox;
 
 struct LANG_FOLDER {
 	SINGLE_LIST_NODE node;
@@ -459,11 +462,9 @@ static int resource_find_imap_code_index(int native_code)
 
 static int resource_construct_lang_list(SINGLE_LIST *plist)
 {
-	int total;
 	char *ptr;
 	size_t temp_len;
 	SINGLE_LIST temp_list;
-	FILE *file_ptr;
 	SINGLE_LIST_NODE *pnode;
 	LANG_FOLDER *plang;
 	char temp_buff[256];
@@ -472,16 +473,15 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	single_list_init(&temp_list);
 	const char *filename = resource_get_string("IMAP_LANG_PATH");
 	if (NULL == filename) {
-		filename = PKGDATADIR "/imap/imap_lang.txt";
+		filename = "imap_lang.txt";
 	}
-    if (NULL == (file_ptr = fopen(filename, "r"))) {
-        printf("[resource]: can not open imap lang table file  %s\n",
-                filename);
+	auto file_ptr = fopen_sd(filename, resource_get_string("data_file_path"));
+	if (file_ptr == nullptr) {
+		printf("[resource]: fopen_sd %s: %s\n", filename, strerror(errno));
         return -1;
     }
 	
-    for (total=0; fgets(line, MAX_FILE_LINE_LEN, file_ptr); total++) {
-
+	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 		   /* skip empty line or comments */
 		   continue;
@@ -491,7 +491,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		if (NULL == ptr) {
 			printf("[resource]: line %d format error in %s\n", total + 1,
                 filename);
-			fclose(file_ptr);
 			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
 			single_list_free(&temp_list);
@@ -503,7 +502,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		if (NULL == plang) {
 			printf("[resource]: out of memory while loading file %s\n",
                 filename);
-			fclose(file_ptr);
 			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
 			single_list_free(&temp_list);
@@ -535,7 +533,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			0 != decode64(temp_buff, strlen(temp_buff), plang->junk, &temp_len)) {
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);
 			free(plang);
-			fclose(file_ptr);
 			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
 			single_list_free(&temp_list);
@@ -543,7 +540,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		}
 		single_list_append_as_tail(&temp_list, &plang->node);
 	}
-	fclose(file_ptr);
 
 	const char *dfl_lang = resource_get_string("DEFAULT_LANG");
 	if (dfl_lang == NULL) {

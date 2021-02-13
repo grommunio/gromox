@@ -258,4 +258,28 @@ std::vector<std::string> gx_split(const std::string_view &sv, char sep)
 	return out;
 }
 
+std::unique_ptr<FILE, file_deleter> fopen_sd(const char *filename, const char *sdlist)
+{
+	if (sdlist == nullptr || strchr(filename, '/') != nullptr)
+		return std::unique_ptr<FILE, file_deleter>(fopen(filename, "r"));
+	try {
+		for (auto dir : gx_split(sdlist, ':')) {
+			errno = 0;
+			auto full = dir + "/" + filename;
+			std::unique_ptr<FILE, file_deleter> fp(fopen(full.c_str(), "r"));
+			if (fp != nullptr)
+				return fp;
+			if (errno != ENOENT) {
+				fprintf(stderr, "fopen_sd %s: %s\n",
+				        full.c_str(), strerror(errno));
+				return nullptr;
+			}
+		}
+	} catch (const std::bad_alloc &) {
+		errno = ENOMEM;
+		return nullptr;
+	}
+	return nullptr;
+}
+
 }

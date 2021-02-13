@@ -113,9 +113,11 @@ TLS (cf. \fBlisten_ssl_port\fP), or through the STARTTLS command.
 Default: \fIfalse\fP
 .SS imap_lang_path
 .PP
-Path to the folder name translation file.
+Path to the file for IMAP folder name translations. If only a
+basename is specified, the file will be searched in
+\fIdata_file_path\fP.
 .PP
-Default: \fI/usr/share/gromox/imap/imap_lang.txt\fP
+Default: \fIimap_lang.txt\fP
 .SS imap_private_key_path
 .PP
 Filesystem path to the key file needed to unlock the TLS certificate.
