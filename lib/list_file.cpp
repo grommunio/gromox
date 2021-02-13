@@ -72,6 +72,8 @@ std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
 	errno = 0;
 	try {
 		for (auto dir : gx_split(sdlist, ':')) {
+			if (dir.size() == 0)
+				continue;
 			errno = 0;
 			auto full = dir + "/" + fb;
 			auto cfg = list_file_init(full.c_str(), format);
