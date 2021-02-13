@@ -194,6 +194,30 @@ static bool list_file_read_midb(const char *filename)
 	}
 	auto list_num = plist->get_size();
 	auto pitem = static_cast<MIDB_ITEM *>(plist->get_list());
+	if (list_num == 0) {
+		auto pserver = static_cast<BACK_SVR *>(malloc(sizeof(BACK_SVR)));
+		if (pserver == nullptr) {
+			printf("[midb_agent]: Failed to allocate memory for midb\n");
+			return false;
+		}
+		pserver->node.pdata = pserver;
+		strcpy(pserver->prefix, "/");
+		pserver->prefix_len = 1;
+		strcpy(pserver->ip_addr, "::1");
+		pserver->port = 5555;
+		double_list_init(&pserver->conn_list);
+		double_list_append_as_tail(&g_server_list, &pserver->node);
+		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
+			auto pback = static_cast<BACK_CONN *>(malloc(sizeof(BACK_CONN)));
+			if (pback == nullptr)
+				continue;
+			pback->node.pdata = pback;
+			pback->sockd = -1;
+			pback->psvr = pserver;
+			double_list_append_as_tail(&g_lost_list, &pback->node);
+		}
+		return true;
+	}
 	for (decltype(list_num) i = 0; i < list_num; ++i) {
 		auto pserver = static_cast<BACK_SVR *>(malloc(sizeof(BACK_SVR)));
 		if (pserver == nullptr) {

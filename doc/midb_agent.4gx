@@ -30,6 +30,8 @@ String used for prefix-matching a home directory location.
 The IPv6 (or v4-mapped) address of the midb server to use for this prefix.
 .IP \(bu 4
 The port number.
+.PP
+In the absence of midb_list.txt, an implicit default entry "/ ::1 5555" is used.
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
