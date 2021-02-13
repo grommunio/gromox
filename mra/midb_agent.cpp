@@ -244,7 +244,7 @@ static bool list_file_read_midb(const char *filename)
 	return true;
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_midb_agent(int reason, void **ppdata)
 {
 	char *psearch;
 	char *str_value;
@@ -370,7 +370,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
-
+SVC_ENTRY(svc_midb_agent);
 
 static void *scan_work_func(void *param)
 {

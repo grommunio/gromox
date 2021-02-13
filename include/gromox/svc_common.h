@@ -42,6 +42,7 @@ DECLARE_API(extern);
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc")
+#define SVC_ENTRY(s) BOOL SVC_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
 extern GX_EXPORT BOOL SVC_LibMain(int reason, void **ptrs);

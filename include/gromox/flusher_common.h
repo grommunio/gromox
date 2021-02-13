@@ -111,6 +111,7 @@ DECLARE_API(extern);
     get_extra_value = (GET_EXTRA_TAGVAL)query_service("get_extra_value"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
+#define FLH_ENTRY(s) BOOL FLH_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
 extern GX_EXPORT BOOL FLH_LibMain(int reason, void **ptrs);

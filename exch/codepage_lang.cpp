@@ -309,7 +309,7 @@ static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	return FALSE;
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_codepage_lang(int reason, void **ppdata)
 {
 	char *psearch, tmp_path[256], file_name[256];
 
@@ -339,3 +339,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_codepage_lang);

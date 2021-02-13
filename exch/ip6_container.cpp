@@ -50,7 +50,7 @@ static BOOL ip6co_remove(const char *addr)
 	return TRUE;
 }
 
-BOOL SVC_LibMain(int reason, void **data)
+static BOOL svc_ip6_container(int reason, void **data)
 {
 	if (reason == PLUGIN_FREE) {
 		g_cont_tbl.clear();
@@ -84,3 +84,4 @@ BOOL SVC_LibMain(int reason, void **data)
 	}
 	return TRUE;
 }
+SVC_ENTRY(svc_ip6_container);

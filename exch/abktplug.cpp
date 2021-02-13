@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/svc_common.h>
-BOOL SVC_LibMain(int reason, void **apidata)
+static BOOL svc_abktplug(int reason, void **apidata)
 {
 	if (reason == PLUGIN_FREE)
 		return TRUE;
@@ -18,3 +18,4 @@ BOOL SVC_LibMain(int reason, void **apidata)
 	}
 	return TRUE;
 }
+SVC_ENTRY(svc_abktplug);

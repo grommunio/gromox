@@ -50,7 +50,7 @@ static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_timer_agent(int reason, void **ppdata)
 {
 	int i, conn_num;
     BACK_CONN *pback;
@@ -163,6 +163,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_timer_agent);
 
 static void *scan_work_func(void *param)
 {
@@ -376,6 +377,3 @@ static int connect_timer()
 
 	return sockd;
 }
-
-
-

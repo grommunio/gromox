@@ -491,7 +491,7 @@ static BOOL log_plugin_flush_log()
 
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_log_plugin(int reason, void **ppdata)
 {
 	char file_name[256], tmp_path[256], temp_buff[64], log_file_name[256];
 	char *str_value, *psearch;
@@ -582,3 +582,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_log_plugin);

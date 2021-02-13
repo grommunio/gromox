@@ -15,7 +15,7 @@
 
 DECLARE_API();
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_str_filter(int reason, void **ppdata)
 {
 	char file_name[256], list_path[256];
 	char config_path[256], temp_buff[128];
@@ -163,5 +163,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
-
-
+SVC_ENTRY(svc_str_filter);

@@ -7,7 +7,7 @@
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 
-BOOL SVC_LibMain(int reason, void **apidata)
+static BOOL svc_localeplug(int reason, void **apidata)
 {
 	if (reason == PLUGIN_FREE)
 		return TRUE;
@@ -26,3 +26,4 @@ BOOL SVC_LibMain(int reason, void **apidata)
 	}
 	return TRUE;
 }
+SVC_ENTRY(svc_localeplug);

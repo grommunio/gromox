@@ -18,7 +18,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext);
 
 static void console_talk(int argc, char **argv, char *result, int length);
 
-BOOL HOOK_LibMain(int reason, void **ppdata)
+static BOOL hook_mlist_expand(int reason, void **ppdata)
 {
 	char resource_path[256];
 	
@@ -58,6 +58,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     }
 	return false;
 }
+HOOK_ENTRY(hook_mlist_expand);
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 {

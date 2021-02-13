@@ -240,7 +240,7 @@ static bool ldap_adaptor_load()
 	return true;
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata) try
+static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 {
 	if (reason == PLUGIN_FREE) {
 		g_conn_pool.clear();
@@ -262,3 +262,4 @@ BOOL SVC_LibMain(int reason, void **ppdata) try
 } catch (...) {
 	return false;
 }
+SVC_ENTRY(svc_ldap_adaptor);

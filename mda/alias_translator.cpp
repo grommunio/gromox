@@ -39,7 +39,7 @@ static void console_talk(int argc, char **argv, char *result, int length);
 static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext);
 
-BOOL HOOK_LibMain(int reason, void **ppdata)
+static BOOL hook_alias_translator(int reason, void **ppdata)
 {
 	
 	/* path contains the config files directory */
@@ -71,6 +71,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     }
 	return false;
 }
+HOOK_ENTRY(hook_alias_translator);
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 {

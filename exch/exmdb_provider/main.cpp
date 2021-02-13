@@ -67,7 +67,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
     return;
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_exmdb_provider(int reason, void **ppdata)
 {
 	BOOL b_wal;
 	BOOL b_async;
@@ -526,3 +526,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_exmdb_provider);

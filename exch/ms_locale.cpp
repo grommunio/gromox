@@ -93,7 +93,7 @@ static const char* lcid_to_ltag(uint32_t lcid)
 }
 
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_ms_locale(int reason, void **ppdata)
 {
 	uint32_t lcid;
 	char tmp_path[256];
@@ -225,3 +225,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_ms_locale);

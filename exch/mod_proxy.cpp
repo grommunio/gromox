@@ -63,8 +63,7 @@ static void proxy_term(int context_id);
 
 static void* thread_work_func(void *pparam);
 
-
-BOOL HPM_LibMain(int reason, void **ppdata)
+static BOOL hpm_mod_proxy(int reason, void **ppdata)
 {
 	int i;
 	int tmp_len;
@@ -251,6 +250,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+HPM_ENTRY(hpm_mod_proxy);
 
 static void* thread_work_func(void *pparam)
 {

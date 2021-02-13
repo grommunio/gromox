@@ -45,7 +45,7 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 DECLARE_API();
 
-BOOL PROC_LibMain(int reason, void **ppdata)
+static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 {
 	int max_mail;
 	int max_rcpt;
@@ -311,6 +311,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+PROC_ENTRY(proc_exchange_emsmdb);
 
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 {

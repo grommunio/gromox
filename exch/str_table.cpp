@@ -401,7 +401,7 @@ static void str_table_echo(const char *format, ...)
 
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_str_table(int reason, void **ppdata)
 {
 	char file_name[256], tmp_path[256], *str_value, *psearch;
 	char *query_name, *add_name, *remove_name;
@@ -494,3 +494,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_str_table);

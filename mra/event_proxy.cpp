@@ -52,7 +52,7 @@ static void broadcast_select(const char *username, const char *folder);
 
 static void broadcast_unselect(const char *username, const char *folder);
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_event_proxy(int reason, void **ppdata)
 {
 	int i, conn_num;
     BACK_CONN *pback;
@@ -162,6 +162,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_event_proxy);
 
 static void *scan_work_func(void *param)
 {
@@ -343,6 +344,3 @@ static int connect_event()
 
 	return sockd;
 }
-
-
-

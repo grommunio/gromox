@@ -132,7 +132,7 @@ static BOOL ip6flt_judge(const char *addr)
 	return TRUE;
 }
 
-BOOL SVC_LibMain(int reason, void **data)
+static BOOL svc_ip6_filter(int reason, void **data)
 {
 	if (reason == PLUGIN_FREE) {
 		g_templist.clear();
@@ -186,3 +186,4 @@ BOOL SVC_LibMain(int reason, void **data)
 	}
 	return TRUE;
 }
+SVC_ENTRY(svc_ip6_filter);

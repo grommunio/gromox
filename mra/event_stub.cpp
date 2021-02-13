@@ -45,7 +45,7 @@ static int read_line(int sockd, char *buff, int length);
 static int connect_event(void);
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_event_stub(int reason, void **ppdata)
 {
 	int i, conn_num;
     BACK_CONN *pback;
@@ -158,7 +158,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
-
+SVC_ENTRY(svc_event_stub);
 
 static int read_line(int sockd, char *buff, int length)
 {

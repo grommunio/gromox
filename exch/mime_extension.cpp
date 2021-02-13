@@ -46,7 +46,7 @@ static const char* extension_to_mime(const char *pextension)
 	return ptype;
 }
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_mime_extension(int reason, void **ppdata)
 {
 	char *psearch;
 	char tmp_path[256];
@@ -119,3 +119,4 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+SVC_ENTRY(svc_mime_extension);

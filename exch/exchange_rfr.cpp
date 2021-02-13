@@ -43,7 +43,7 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
 
-BOOL PROC_LibMain(int reason, void **ppdata)
+static BOOL proc_exchange_rfr(int reason, void **ppdata)
 {
 	void *pendpoint1;
 	void *pendpoint2;
@@ -88,6 +88,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+PROC_ENTRY(proc_exchange_rfr);
 
 static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	char *punused, char *pserver)

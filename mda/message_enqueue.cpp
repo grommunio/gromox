@@ -435,7 +435,7 @@ static int message_enqueue_retrieve_max_ID()
     return max_ID;
 }
 
-BOOL FLH_LibMain(int reason, void** ppdata)
+static BOOL flh_message_enqueue(int reason, void** ppdata)
 {
 	const char *queue_path;
 	char *psearch;
@@ -482,3 +482,4 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 	}
 	return false;
 }
+FLH_ENTRY(flh_message_enqueue);

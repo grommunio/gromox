@@ -30,7 +30,7 @@ static void console_talk(int argc, char **argv, char *result, int length);
 	
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext);
 
-BOOL HOOK_LibMain(int reason, void **ppdata)
+static BOOL hook_from_replace(int reason, void **ppdata)
 {
 	char *psearch;
 	char file_name[256];
@@ -71,6 +71,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     }
 	return false;
 }
+HOOK_ENTRY(hook_from_replace);
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 {
@@ -193,5 +194,3 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	snprintf(result, length, "550 invalid argument %s", argv[1]);
 	return;
 }
-
-

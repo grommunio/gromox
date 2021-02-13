@@ -16,7 +16,7 @@
 
 DECLARE_API();
 
-BOOL HOOK_LibMain(int reason, void **ppdata)
+static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
 	int conn_num;
 	char charset[32];
@@ -261,3 +261,4 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     }
 	return false;
 }
+HOOK_ENTRY(hook_exmdb_local);

@@ -93,6 +93,7 @@ DECLARE_API(extern);
 	throw_context = (THROW_CONTEXT)query_service("throw_context"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
+#define HOOK_ENTRY(s) BOOL HOOK_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
 extern GX_EXPORT BOOL HOOK_LibMain(int reason, void **ptrs);

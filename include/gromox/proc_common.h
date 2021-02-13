@@ -120,6 +120,7 @@ DECLARE_API(extern);
 	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment"); \
 	async_reply = (ASYNC_REPLY)query_service("async_reply")
+#define PROC_ENTRY(s) BOOL PROC_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
 extern GX_EXPORT BOOL PROC_LibMain(int reason, void **ptrs);

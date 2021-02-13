@@ -130,6 +130,7 @@ DECLARE_API(extern);
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc"); \
 	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment")
+#define HPM_ENTRY(s) BOOL HPM_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
 extern GX_EXPORT BOOL HPM_LibMain(int reason, void **ptrs);

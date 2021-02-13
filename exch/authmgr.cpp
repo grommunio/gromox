@@ -108,7 +108,7 @@ static BOOL authmgr_init()
 	return TRUE;
 }
 
-BOOL SVC_LibMain(int reason, void **datap) try
+static BOOL svc_authmgr(int reason, void **datap) try
 {
 	if (reason == PLUGIN_FREE)
 		return TRUE;
@@ -119,3 +119,4 @@ BOOL SVC_LibMain(int reason, void **datap) try
 } catch (...) {
 	return false;
 }
+SVC_ENTRY(svc_authmgr);

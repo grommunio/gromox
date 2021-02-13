@@ -22,7 +22,7 @@ static void exchange_nsp_unbind(uint64_t handle);
 
 DECLARE_API();
 
-BOOL PROC_LibMain(int reason, void **ppdata)
+static BOOL proc_exchange_nsp(int reason, void **ppdata)
 {
 	BOOL b_check;
 	const char *org_name;
@@ -152,6 +152,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
+PROC_ENTRY(proc_exchange_nsp);
 
 static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 {

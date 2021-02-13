@@ -25,7 +25,7 @@ static STR_HASH_TABLE *g_hash_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
 
-BOOL SVC_LibMain(int reason, void **ppdata)
+static BOOL svc_lang_charset(int reason, void **ppdata)
 {
 	char *psearch;
 	char file_name[256];
@@ -63,8 +63,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	}
 	return false;
 }
-
-
+SVC_ENTRY(svc_lang_charset);
 
 static BOOL table_query(const char* lang, char *charset)
 {

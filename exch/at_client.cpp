@@ -48,7 +48,7 @@ static BOOL at_del_timer(int id)
 	return HXproc_run_sync(cmd, HXPROC_NULL_STDIN | HXPROC_NULL_STDOUT | HXPROC_NULL_STDERR) == 0;
 }
 
-BOOL SVC_LibMain(int reason, void **data)
+static BOOL svc_atclient(int reason, void **data)
 {
 	if (reason == PLUGIN_FREE)
 		return TRUE;
@@ -62,3 +62,4 @@ BOOL SVC_LibMain(int reason, void **data)
 	}
 	return TRUE;
 }
+SVC_ENTRY(svc_atclient);

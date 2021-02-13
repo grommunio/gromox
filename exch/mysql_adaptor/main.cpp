@@ -12,7 +12,7 @@
 
 DECLARE_API();
 
-BOOL SVC_LibMain(int reason, void** ppdata)
+static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 {
 	char file_name[256];
 	char config_path[256];
@@ -183,3 +183,4 @@ BOOL SVC_LibMain(int reason, void** ppdata)
     }
     return FALSE;
 }
+SVC_ENTRY(svc_mysql_adaptor);
