@@ -179,4 +179,5 @@ The minimum number of client processing threads to keep around.
 Default: \fI1\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmessage_enqueue(4gx)\fP
+\fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmessage_enqueue\fP(4gx),
+\fBmidb_agent\fP(4gx)

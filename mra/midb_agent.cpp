@@ -185,7 +185,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char *psearch;
 	char *str_value;
 	char file_name[256];
-	char list_path[256];
 	char config_path[256];
     BACK_CONN *pback;
 	BACK_SVR *pserver;
@@ -212,7 +211,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		
-		sprintf(list_path, "%s/midb_list.txt", get_data_path());
 		str_value = config_file_get_value(pconfig, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			g_conn_num = 5;
@@ -234,10 +232,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[midb_agent]: memory pool is switched off\n");
 		}
 
-		auto plist = list_file_initd(list_path, nullptr, /* MIDB_ITEM */ "%s:256%s:32%d");
+		auto plist = list_file_initd("midb_list.txt", get_config_path(),
+		             /* MIDB_ITEM */ "%s:256%s:32%d");
 		if (NULL == plist) {
-			printf("[midb_agent]: Failed to read midb list from %s: %s\n",
-				list_path, strerror(errno));
+			printf("[midb_agent]: list_file_initd midb_list.txt: %s\n", strerror(errno));
 			return FALSE;
 		}
 

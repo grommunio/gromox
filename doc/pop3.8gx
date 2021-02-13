@@ -172,4 +172,4 @@ The minimum number of client processing threads to keep around.
 Default: \fI1\fP
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBmidb_agent\fP(4gx)

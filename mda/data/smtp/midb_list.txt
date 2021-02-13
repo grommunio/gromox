@@ -1,1 +1,0 @@
-../../../MRA_SYSTEM/data/imap/midb_list.txt

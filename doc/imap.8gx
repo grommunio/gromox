@@ -16,9 +16,6 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Files
-.IP \(bu 4
-\fIdata_file_path\fP/midb_list.txt
 .SH Configuration file directives
 .SS block_interval_auths
 .PP
@@ -187,4 +184,4 @@ The minimum number of client processing threads to keep around.
 Default: \fI1\fP
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBmidb_agent\fP(4gx)
