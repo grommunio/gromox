@@ -39,7 +39,7 @@ static char *g_files_name;
 static FILE *g_redirect_fp;
 static char g_redirect_name[256];
 static char g_file_name[256];
-static char g_file_postfix[256];
+static char g_file_suffix[256];
 static char g_log_dir[256];
 static pthread_t g_thread_id;
 static pthread_mutex_t g_buffer_lock;
@@ -70,11 +70,11 @@ static void log_plugin_init(const char *log_file_name,
 	psearch = strrchr(log_file_name, '.');
 	if (NULL == psearch) {
 		HX_strlcpy(g_file_name, log_file_name, GX_ARRAY_SIZE(g_file_name));
-		strcpy(g_file_postfix, "txt");
+		strcpy(g_file_suffix, "txt");
 	} else {
 		memcpy(g_file_name, log_file_name, psearch - log_file_name);
 		g_file_name[psearch - log_file_name] = '\0';
-		HX_strlcpy(g_file_postfix, psearch + 1, GX_ARRAY_SIZE(g_file_postfix));
+		HX_strlcpy(g_file_suffix, psearch + 1, GX_ARRAY_SIZE(g_file_suffix));
 	}
 	psearch = strrchr(log_file_name, '/');
 	if (NULL == psearch) {
@@ -217,7 +217,7 @@ static void* thread_work_func(void *arg)
 			tm_time = localtime_r(&tmp_time, &time_buff);
 			strftime(time_str, GX_ARRAY_SIZE(time_str), g_time_format, tm_time);
 			snprintf(g_files_name + i * 256, 256, g_filecomp_pattern,
-			         g_file_name, time_str, g_file_postfix);
+			         g_file_name, time_str, g_file_suffix);
 		}
 		dirp = opendir(g_log_dir);
 		if (NULL == dirp) {
@@ -231,12 +231,12 @@ static void* thread_work_func(void *arg)
 			snprintf(temp_path, sizeof(temp_path), "%s/%s", g_log_dir, direntp->d_name);
 			if (strncmp(g_file_name, temp_path, strlen(g_file_name)) != 0)
 				continue;
-			if (strlen(direntp->d_name) <= strlen(g_file_postfix) + 1)
+			if (strlen(direntp->d_name) <= strlen(g_file_suffix) + 1)
 				continue;
-			const char *p = direntp->d_name + strlen(direntp->d_name) - strlen(g_file_postfix) - 1;
+			const char *p = direntp->d_name + strlen(direntp->d_name) - strlen(g_file_suffix) - 1;
 			if (*p != '.')
 				continue;
-			if (strcmp(p + 1, g_file_postfix) != 0)
+			if (strcmp(p + 1, g_file_suffix) != 0)
 				continue;
 			should_delete = TRUE;
 			for (i=0; i<g_files_num; i++) {
@@ -471,7 +471,7 @@ static BOOL log_plugin_flush_log()
 	tm_time_now = localtime_r(&time_now, &time_buff);
 	strftime(time_str, GX_ARRAY_SIZE(time_str), g_time_format, tm_time_now);
 	snprintf(filename, GX_ARRAY_SIZE(filename), g_filecomp_pattern,
-	         g_file_name, time_str, g_file_postfix);
+	         g_file_name, time_str, g_file_suffix);
 	if (NULL == (file_ptr = fopen(filename, "a+"))) {
 		printf("[log_plugin]: failed to create log file %s: %s\n",
 		       filename, strerror(errno));
