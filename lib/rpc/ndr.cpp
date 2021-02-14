@@ -495,7 +495,10 @@ static int ndr_push_bytes(NDR_PUSH *pndr, const void *pdata, uint32_t n)
 		return NDR_ERR_SUCCESS;
 	if (!ndr_push_check_overflow(pndr, n))
 		return NDR_ERR_BUFSIZE;
-	memcpy(pndr->data + pndr->offset, pdata, n);
+	if (pdata == nullptr)
+		memset(pndr->data + pndr->offset, 0, n);
+	else
+		memcpy(pndr->data + pndr->offset, pdata, n);
 	pndr->offset += n;
 	return NDR_ERR_SUCCESS;
 }
