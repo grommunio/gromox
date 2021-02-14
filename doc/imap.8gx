@@ -125,9 +125,10 @@ Filesystem path to the key file needed to unlock the TLS certificate.
 Default: (unset)
 .SS imap_return_code_path
 .PP
-Path to the protocol error string translation file.
+Path to the file for IMAP protocol error string translations. If only a
+basename is specified, the file will be searched in \fIdata_file_path\fP.
 .PP
-Default: \fI/usr/share/gromox/imap/imap_code.txt\fP
+Default: \fIimap_code.txt\fP
 .SS imap_support_starttls
 .PP
 This flag controls the offering of the STARTTLS extension (RFC 2595) to

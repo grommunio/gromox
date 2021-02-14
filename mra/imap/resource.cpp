@@ -215,16 +215,14 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
 	char *pbackup, *ptr, code[32];
-    FILE *file_ptr = NULL;
-
-    int total, index, native_code, len;
+	int index, native_code, len;
 	const char *filename = resource_get_string("IMAP_RETURN_CODE_PATH");
 	if (NULL == filename) {
-		filename = PKGDATADIR "/imap/imap_code.txt";
+		filename = "imap_code.txt";
 	}
-    if (NULL == (file_ptr = fopen(filename, "r"))) {
-        printf("[resource]: can not open imap return table file  %s\n",
-                filename);
+	auto file_ptr = fopen_sd(filename, resource_get_string("data_file_path"));
+	if (file_ptr == nullptr) {
+		printf("[resource]: fopen_sd %s: %s\n", filename, strerror(errno));
         return -1;
     }
 
@@ -233,17 +231,15 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
     if (NULL == code_table) {
 		printf("[resource]: Failed to allocate memory for IMAP return code"
                 " table\n");
-        fclose(file_ptr);
         return -1;
     }
 
-    for (total=0; total<sizeof(g_default_code_table)/sizeof(IMAP_RETURN_CODE); total++) {
+	for (int total = 0; total < GX_ARRAY_SIZE(g_default_code_table); ++total) {
         code_table[total].code              = -1;
         memset(code_table[total].comment, 0, 512);
     }
 
-    for (total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr); total++) {
-
+	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) {
         if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
             /* skip empty line or comments */
             continue;
@@ -322,7 +318,6 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
     }
 
     *pptable = code_table;
-    fclose(file_ptr);
     return 0;
 }
 
