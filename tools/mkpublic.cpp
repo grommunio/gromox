@@ -236,7 +236,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 int main(int argc, const char **argv)
 {
 	int i;
-	int fd;
 	int domain_id;
 	char *err_msg;
 	MYSQL *pmysql;

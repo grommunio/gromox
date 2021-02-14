@@ -163,8 +163,6 @@ int flusher_stop()
  */
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext)
 {
-	BOOL ret_val;
-
 	auto pentity = static_cast<FLUSH_ENTITY *>(lib_buffer_get(g_allocator));
 	if (pentity == nullptr)
 		return FALSE;

@@ -1276,7 +1276,6 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	time_t tmp_time;
 	uint32_t tmp_date;
 	const char *pvalue;
-	DOUBLE_LIST_NODE *pnode1;
 	
 	if (piline->value_list.size() == 0)
 		return TRUE;
