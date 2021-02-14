@@ -1558,11 +1558,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_REQUESTRES:
-			if (0 == (uint16_t*)attribute.pvalue) {
-				tmp_byte = 0;
-			} else {
-				tmp_byte = 1;
-			}
+			tmp_byte = !!*static_cast<uint16_t *>(attribute.pvalue);
 			propval.proptag = PROP_TAG_RESPONSEREQUESTED;
 			propval.pvalue = &tmp_byte;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {

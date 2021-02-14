@@ -4869,9 +4869,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			pvalue = tpropval_array_get_propval(
 				&pattachments->pplist[i]->proplist,
 				PROP_TAG_ATTACHMENTHIDDEN);
-			if (NULL != pvalue && 0 != (uint8_t*)pvalue) {
+			if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 				continue;
-			}
 			break;
 		}
 		if (i >= pattachments->count) {

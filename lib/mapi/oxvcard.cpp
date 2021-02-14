@@ -1009,7 +1009,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_ATTACHMENTCONTACTPHOTO));
-	if (NULL != pvalue && 0 != (uint8_t*)pvalue &&
+	if (pvalue != nullptr && *reinterpret_cast<const uint8_t *>(pvalue) != 0 &&
 		NULL != pmsg->children.pattachments) {
 		for (i=0; i<pmsg->children.pattachments->count; i++) {
 			pattachment = pmsg->children.pattachments->pplist[i];
