@@ -5,9 +5,10 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
-#include <gromox/proptag_array.hpp>
 #include <gromox/double_list.hpp>
+#include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
+#include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
@@ -15,6 +16,8 @@
 #include <dirent.h>
 #include <cstdio>
 #include "common_util.h"
+
+using namespace gromox;
 
 struct TAG_NODE {
 	DOUBLE_LIST_NODE node;
@@ -35,12 +38,12 @@ struct INFO_NODE {
 	DOUBLE_LIST group_list;
 };
 
-static char g_folder_path[256];
+static std::string g_folder_path;
 static DOUBLE_LIST g_info_list;
 
-void msgchg_grouping_init(const char *path)
+void msgchg_grouping_init(const char *sdlist)
 {
-	HX_strlcpy(g_folder_path, path, GX_ARRAY_SIZE(g_folder_path));
+	g_folder_path = sdlist;
 	double_list_init(&g_info_list);
 }
 
@@ -152,7 +155,7 @@ static BOOL msgchg_grouping_veryfy_group_list(INFO_NODE *pinfo_node)
 	return TRUE;
 }
 
-static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
+static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_name)
 {
 	int index;
 	char *ptoken;
@@ -174,7 +177,8 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			" %s format error\n", file_name);
 		return NULL;
 	}
-	snprintf(file_path, GX_ARRAY_SIZE(file_path), "%s/%s", g_folder_path, file_name);
+	snprintf(file_path, GX_ARRAY_SIZE(file_path), "%s/%s",
+	         dir, file_name);
 	auto pfile = list_file_initd(file_path, nullptr, "%s:256");
 	if (NULL == pfile) {
 		printf("[exchange_emsmdb]: list_file_init %s: %s\n",
@@ -361,31 +365,28 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 
 int msgchg_grouping_run()
 {
-	DIR *dirp;
 	struct dirent *direntp;
-	
-	dirp = opendir(g_folder_path);
-	if (NULL == dirp) {
-		printf("[exchange_emsmdb]: failed to open directory %s for "
-			"loading \"property group info\": %s\n", g_folder_path, strerror(errno));
+	auto dinfo = opendir_sd("msgchg_grouping", g_folder_path.c_str());
+	if (dinfo.m_dir == nullptr) {
+		printf("[exchange_emsmdb]: opendir \"%s\": %s\n",
+		       dinfo.m_path.c_str(), strerror(errno));
 		return -1;
 	}
-	while ((direntp = readdir(dirp)) != NULL) {
+	while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {
 		if (0 != strncasecmp(direntp->d_name, "0x", 2)) {
 			continue;	
 		}
-		if (msgchg_grouping_load_gpinfo(direntp->d_name) == nullptr) {
+		if (msgchg_grouping_load_gpinfo(dinfo.m_path.c_str(), direntp->d_name) == nullptr) {
 			printf("[exchange_emsmdb]: Failed to load property group "
-				"info definition file %s under directory %s\n",
-				direntp->d_name, g_folder_path);
-			closedir(dirp);
+				"info definition file %s/%s: %s\n",
+				dinfo.m_path.c_str(), direntp->d_name, strerror(errno));
 			return -2;
 		}
 	}
-	closedir(dirp);
 	if (0 == double_list_get_nodes_num(&g_info_list)) {
-		printf("[exchange_emsmdb]: there's no \"property"
-			" group info\" under directory %s\n", g_folder_path);
+		printf("[exchange_emsmdb]: no \"property"
+			" group info\" found within directory \"%s\"\n",
+			dinfo.m_path.c_str());
 		return -3;
 	}
 	return 0;

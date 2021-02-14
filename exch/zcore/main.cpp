@@ -100,7 +100,6 @@ int main(int argc, const char **argv)
 	char langmap_path[256];
 	char service_path[256];
 	char resource_path[256];
-	char grouping_path[256];
 	char folderlang_path[256];
 	char submit_command[1024];
 	
@@ -193,11 +192,9 @@ int main(int argc, const char **argv)
 	snprintf(exmdb_path, GX_ARRAY_SIZE(exmdb_path), "%s/exmdb_list.txt", data_path);
 	printf("[system]: exmdb file path is %s\n", exmdb_path);
 	snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", data_path);
-	snprintf(grouping_path, GX_ARRAY_SIZE(grouping_path), "%s/msgchg_grouping", data_path);
 	snprintf(langmap_path, GX_ARRAY_SIZE(langmap_path), "%s/langmap.txt", data_path);
 	snprintf(folderlang_path, GX_ARRAY_SIZE(folderlang_path), "%s/folder_lang.txt", data_path);
-	
-	msgchg_grouping_init(grouping_path);
+	msgchg_grouping_init(data_path);
 	service_init({service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),

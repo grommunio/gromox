@@ -64,7 +64,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	char temp_buff[256];
 	char file_name[256];
 	char temp_path[256];
-	char data_path[256];
 	char resource_path[256];
 	char submit_command[1024];
 	char *str_value, *psearch;
@@ -80,7 +79,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		snprintf(data_path, GX_ARRAY_SIZE(data_path), "%s/%s", get_data_path(), file_name);
 		snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", get_data_path());
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
 		auto pfile = config_file_initd(temp_path, get_config_path());
@@ -259,7 +257,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		bounce_producer_init(resource_path, separator);
 		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
-		msgchg_grouping_init(data_path);
+		msgchg_grouping_init(get_data_path());
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
 		rop_processor_init(average_handles, ping_interval);

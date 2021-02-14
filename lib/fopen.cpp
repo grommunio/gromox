@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <dirent.h>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -22,6 +23,30 @@ std::vector<std::string> gx_split(const std::string_view &sv, char sep)
 	}
 	out.push_back(std::string(sv.substr(start)));
 	return out;
+}
+
+DIR_mp opendir_sd(const char *dirname, const char *sdlist)
+{
+	DIR_mp dn;
+	if (sdlist == nullptr || strchr(dirname, '/') != nullptr) {
+		dn.m_path = dirname;
+		dn.m_dir.reset(opendir(dirname));
+		return dn;
+	}
+	for (auto dir : gx_split(sdlist, ':')) {
+		errno = 0;
+		dn.m_path = dir + "/" + dirname;
+		dn.m_dir.reset(opendir(dn.m_path.c_str()));
+		if (dn.m_dir != nullptr)
+			return dn;
+		if (errno != ENOENT) {
+			fprintf(stderr, "opendir_sd %s: %s\n",
+			        dn.m_path.c_str(), strerror(errno));
+			return dn;
+		}
+	}
+	dn.m_path.clear();
+	return dn;
 }
 
 std::unique_ptr<FILE, file_deleter> fopen_sd(const char *filename, const char *sdlist)
