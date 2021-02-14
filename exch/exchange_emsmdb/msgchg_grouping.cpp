@@ -306,9 +306,9 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				if (0 == *ptag_node->ppropname->plid) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					printf("[exchange_emsmdb]: lid \"%s\" error "
-						"with guid \"%s\"\n",
-						ptoken + 4, pline + 5);
+					printf("[exchange_emsmdb]: lid \"%s\"/%u error "
+						"with guid \"%s\"\n", ptoken + 4,
+						*ptag_node->ppropname->plid, pline + 5);
 					return NULL;
 				}
 				ptag_node->ppropname->pname = NULL;
@@ -345,7 +345,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 		}
 		pline += 256;
 	}
-	pfile.reset();
 	if (TRUE == msgchg_grouping_veryfy_group_list(pinfo_node)) {
 		if (TRUE == msgchg_grouping_append_info_list(pinfo_node)) {
 			return pinfo_node;
@@ -375,7 +374,7 @@ int msgchg_grouping_run()
 		if (0 != strncasecmp(direntp->d_name, "0x", 2)) {
 			continue;	
 		}
-		if (FALSE == msgchg_grouping_load_gpinfo(direntp->d_name)) {
+		if (msgchg_grouping_load_gpinfo(direntp->d_name) == nullptr) {
 			printf("[exchange_emsmdb]: Failed to load property group "
 				"info definition file %s under directory %s\n",
 				direntp->d_name, g_folder_path);

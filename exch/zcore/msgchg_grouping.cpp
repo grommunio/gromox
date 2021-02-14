@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -24,7 +23,7 @@ struct TAG_NODE {
 	PROPERTY_NAME *ppropname;
 };
 
-struct GROUP_NODE {
+struct msg_group_node {
 	DOUBLE_LIST_NODE node;
 	uint32_t index;
 	DOUBLE_LIST tag_list;
@@ -45,9 +44,9 @@ void msgchg_grouping_init(const char *path)
 	double_list_init(&g_info_list);
 }
 
-static GROUP_NODE* msgchg_grouping_create_group_node(uint32_t index)
+static msg_group_node *msgchg_grouping_create_group_node(uint32_t index)
 {
-	auto pgp_node = me_alloc<GROUP_NODE>();
+	auto pgp_node = me_alloc<msg_group_node>();
 	if (NULL == pgp_node) {
 		return NULL;
 	}
@@ -57,7 +56,7 @@ static GROUP_NODE* msgchg_grouping_create_group_node(uint32_t index)
 	return pgp_node;
 }
 
-static void msgchg_grouping_free_group_node(GROUP_NODE *pgp_node)
+static void msgchg_grouping_free_group_node(msg_group_node *pgp_node)
 {
 	TAG_NODE *ptag_node;
 	DOUBLE_LIST_NODE *pnode;
@@ -98,21 +97,20 @@ static void msgchg_grouping_free_info_node(INFO_NODE *pinfo_node)
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&pinfo_node->group_list)) != nullptr)
-		msgchg_grouping_free_group_node(static_cast<GROUP_NODE *>(pnode->pdata));
+		msgchg_grouping_free_group_node(static_cast<msg_group_node *>(pnode->pdata));
 	double_list_free(&pinfo_node->group_list);
 	free(pinfo_node);
 }
 
-static BOOL msgchg_grouping_append_group_list(
-	INFO_NODE *pinfo_node, GROUP_NODE *pgp_node)
+static BOOL msgchg_grouping_append_group_list(INFO_NODE *pinfo_node, msg_group_node *pgp_node)
 {
 	DOUBLE_LIST_NODE *pnode;
 
 	for (pnode=double_list_get_head(&pinfo_node->group_list); NULL!=pnode;
 		pnode=double_list_get_after(&pinfo_node->group_list, pnode)) {
-		if (((GROUP_NODE*)pnode->pdata)->index == pgp_node->index) {
+		if (static_cast<msg_group_node *>(pnode->pdata)->index == pgp_node->index) {
 			return FALSE;
-		} else if (pgp_node->index < ((GROUP_NODE*)pnode->pdata)->index) {
+		} else if (pgp_node->index < static_cast<msg_group_node *>(pnode->pdata)->index) {
 			double_list_insert_before(&pinfo_node->group_list,
 									pnode, &pgp_node->node);
 			return TRUE;
@@ -148,9 +146,8 @@ static BOOL msgchg_grouping_veryfy_group_list(INFO_NODE *pinfo_node)
 	
 	for (i=0,pnode=double_list_get_head(&pinfo_node->group_list); NULL!=pnode;
 		pnode=double_list_get_after(&pinfo_node->group_list, pnode),i++) {
-		if (i != ((GROUP_NODE*)pnode->pdata)->index) {
+		if (i != static_cast<msg_group_node *>(pnode->pdata)->index)
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -164,10 +161,9 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	uint32_t group_id;
 	char file_path[256];
 	TAG_NODE *ptag_node;
-	GROUP_NODE *pgp_node;
 	INFO_NODE *pinfo_node;
 	
-	strcpy(file_path, file_name + 2);
+	HX_strlcpy(file_path, file_name + 2, GX_ARRAY_SIZE(file_path));
 	ptoken = strchr(file_path, '.');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
@@ -194,7 +190,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	auto line_num = pfile->get_size();
 	auto pline = static_cast<char *>(pfile->get_list());
 	index = -1;
-	pgp_node = NULL;
+	msg_group_node *pgp_node = nullptr;
 	for (decltype(line_num) i = 0; i < line_num; ++i) {
 		if (0 == strncasecmp(pline, "index:", 6)) {
 			index = atoi(pline + 6);
@@ -310,8 +306,8 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				if (0 == *ptag_node->ppropname->plid) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					printf("[exchange_emsmdb]: lid %u error "
-						"with guid \"%s\"\n",
+					printf("[exchange_emsmdb]: lid \"%s\"/%u error "
+						"with guid \"%s\"\n", ptoken + 4,
 						*ptag_node->ppropname->plid, pline + 5);
 					return NULL;
 				}
@@ -409,7 +405,7 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 	uint16_t propid;
 	uint32_t proptag;
 	TAG_NODE *ptag_node;
-	GROUP_NODE *pgp_node;
+	msg_group_node *pgp_node;
 	INFO_NODE *pinfo_node;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
@@ -432,7 +428,7 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 	}
 	for (pnode=double_list_get_head(&pinfo_node->group_list); NULL!=pnode;
 		pnode=double_list_get_after(&pinfo_node->group_list, pnode)) {
-		pgp_node = (GROUP_NODE*)pnode->pdata;
+		pgp_node = static_cast<msg_group_node *>(pnode->pdata);
 		pproptags = proptag_array_init();
 		for (pnode1=double_list_get_head(&pgp_node->tag_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&pgp_node->tag_list, pnode1)) {
