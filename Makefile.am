@@ -30,7 +30,6 @@ mta_plugins = \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
 	libmtahook_mlist_expand.la \
-	libmtasvc_boundary_list.la \
 	libmtasvc_domain_list.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
@@ -38,7 +37,6 @@ noinst_DATA += \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
 	libmtahook_mlist_expand.ldd \
-	libmtasvc_boundary_list.ldd \
 	libmtasvc_domain_list.ldd
 mra_system = pop3 imap
 mra_plugins = \
@@ -145,13 +143,9 @@ libmtahook_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/ml
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_mlist_expand_la_DEPENDENCIES = ${default_sym}
-libmtasvc_boundary_list_la_SOURCES = exch/str_table.cpp
-libmtasvc_boundary_list_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_boundary_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_boundary_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
-libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
-libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
+libmtasvc_domain_list_la_SOURCES = exch/str_table.cpp
+libmtasvc_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
+libmtasvc_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
@@ -312,7 +306,7 @@ tests_icalparse_LDADD = libgromox_email.la libgromox_mapi.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
-	doc/authmgr.4gx doc/boundary_list.4gx doc/delivery.8gx \
+	doc/authmgr.4gx doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
