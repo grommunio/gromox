@@ -399,8 +399,9 @@ uint32_t msgchg_grouping_get_last_group_id()
 	return ((INFO_NODE*)pnode->pdata)->group_id;
 }
 
-PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
-	LOGON_OBJECT *plogon, uint32_t group_id)
+PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
+    BOOL (*get_named_propid)(void *, BOOL, const PROPERTY_NAME *, uint16_t *),
+    void *stororlogin, uint32_t group_id)
 {
 	uint16_t propid;
 	uint32_t proptag;
@@ -436,8 +437,8 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 			if (0 != ptag_node->propid) {
 				proptag = PROP_TAG(ptag_node->type, ptag_node->propid);
 			} else {
-				if (FALSE == logon_object_get_named_propid(plogon, TRUE,
-					ptag_node->ppropname, &propid) || 0 == propid) {
+				if (!get_named_propid(stororlogin, TRUE,
+				    ptag_node->ppropname, &propid) || propid == 0) {
 					property_groupinfo_free(pinfo);
 					proptag_array_free(pproptags);
 					return NULL;

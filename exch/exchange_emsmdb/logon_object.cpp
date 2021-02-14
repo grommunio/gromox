@@ -483,12 +483,17 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
+static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
+{
+	return logon_object_get_named_propid(static_cast<LOGON_OBJECT *>(obj), create, pn, pid);
+}
+
 PROPERTY_GROUPINFO* logon_object_get_last_property_groupinfo(
 	LOGON_OBJECT *plogon)
 {
 	if (NULL == plogon->pgpinfo) {
-		plogon->pgpinfo = msgchg_grouping_get_groupinfo(
-			plogon, msgchg_grouping_get_last_group_id());
+		plogon->pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
+		                  plogon, msgchg_grouping_get_last_group_id());
 	}
 	return plogon->pgpinfo;
 }
@@ -513,7 +518,7 @@ PROPERTY_GROUPINFO* logon_object_get_property_groupinfo(
 	if (NULL == pnode) {
 		return NULL;
 	}
-	pgpinfo = msgchg_grouping_get_groupinfo(plogon, group_id);
+	pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, group_id);
 	if (NULL == pgpinfo) {
 		free(pnode);
 		return NULL;

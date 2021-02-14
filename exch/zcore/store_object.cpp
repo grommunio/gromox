@@ -497,12 +497,17 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
+static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
+{
+	return store_object_get_named_propid(static_cast<STORE_OBJECT *>(store), create, pn, pid);
+}
+
 PROPERTY_GROUPINFO* store_object_get_last_property_groupinfo(
 	STORE_OBJECT *pstore)
 {
 	if (NULL == pstore->pgpinfo) {
-		pstore->pgpinfo = msgchg_grouping_get_groupinfo(
-			pstore, msgchg_grouping_get_last_group_id());
+		pstore->pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
+		                  pstore, msgchg_grouping_get_last_group_id());
 	}
 	return pstore->pgpinfo;
 }
@@ -526,7 +531,7 @@ PROPERTY_GROUPINFO* store_object_get_property_groupinfo(
 	if (NULL == pnode) {
 		return NULL;
 	}
-	pgpinfo = msgchg_grouping_get_groupinfo(pstore, group_id);
+	pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, group_id);
 	if (NULL == pgpinfo) {
 		free(pnode);
 		return NULL;
