@@ -40,8 +40,7 @@ static BOOL svc_lang_charset(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		
-		snprintf(g_list_path, GX_ARRAY_SIZE(g_list_path), "%s/%s.txt",
-		         get_data_path(), file_name);
+		snprintf(g_list_path, GX_ARRAY_SIZE(g_list_path), "%s.txt", file_name);
 		pthread_rwlock_init(&g_refresh_lock, NULL);
 		if (REFRESH_OK != table_refresh()) {
 			printf("[lang_charset]: Failed to load hash table\n");
@@ -99,7 +98,7 @@ static int table_refresh()
 	
     /* initialize the list filter */
 	struct srcitem { char a[32], b[32]; };
-	auto plist_file = list_file_initd(g_list_path, nullptr, "%s:32%s:32");
+	auto plist_file = list_file_initd(g_list_path, get_data_path(), "%s:32%s:32");
 	if (NULL == plist_file) {
 		printf("[lang_charset]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));
