@@ -5,6 +5,7 @@
 #include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
@@ -32,6 +33,8 @@
 
 #define PROP_TAG_PROPFILESECLSID		0x00480048
 
+using namespace gromox;
+
 struct ROOT_OBJECT {
 	BOOL b_touched;
 	char *maildir;
@@ -48,7 +51,6 @@ struct OBJECT_NODE {
 
 static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 {
-	int fd;
 	EXT_PULL ext_pull;
 	char tmp_path[256];
 	TARRAY_SET prof_set;
@@ -66,8 +68,9 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 	}
 	prootobj->b_touched = FALSE;
 	sprintf(tmp_path, "%s/config/zarafa.dat", maildir);
-	if (0 != stat(tmp_path, &node_stat) ||
-		-1 == (fd = open(tmp_path, O_RDONLY))) {
+	auto fd = open(tmp_path, O_RDONLY);
+	auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
+	if (fd < 0 || fstat(fd, &node_stat) != 0) {
 		prootobj->pprivate_proplist = tpropval_array_init();
 		if (NULL == prootobj->pprivate_proplist) {
 			free(prootobj->maildir);
@@ -85,19 +88,16 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 	}
 	auto pbuff = malloc(node_stat.st_size);
 	if (NULL == pbuff) {
-		close(fd);
 		free(prootobj->maildir);
 		free(prootobj);
 		return NULL;
 	}
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		close(fd);
 		free(pbuff);
 		free(prootobj->maildir);
 		free(prootobj);
 		return NULL;
 	}
-	close(fd);
 	ext_buffer_pull_init(
 		&ext_pull, pbuff, node_stat.st_size,
 		common_util_alloc, EXT_FLAG_WCOUNT);

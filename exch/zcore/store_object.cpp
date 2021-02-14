@@ -18,6 +18,7 @@
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <cstdio>
@@ -46,6 +47,8 @@
 
 #define PROP_TAG_ECUSERLANGUAGE							0x6770001F
 #define PROP_TAG_ECUSERTIMEZONE							0x6771001F
+
+using namespace gromox;
 
 static BOOL store_object_enlarge_propid_hash(STORE_OBJECT *pstore)
 {
@@ -1501,13 +1504,15 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return TRUE;
 	}
 	case PROP_TAG_OOFINTERNALREPLY:
-	case PROP_TAG_OOFEXTERNALREPLY:
+	case PROP_TAG_OOFEXTERNALREPLY: {
 		if (PROP_TAG_OOFINTERNALREPLY == proptag) {
 			sprintf(temp_path, "%s/config/internal-reply", maildir);
 		} else {
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
-		if (0 != stat(temp_path, &node_stat)) {
+		auto fd = open(temp_path, O_RDONLY);
+		auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
+		if (fd < 0 || fstat(fd, &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
@@ -1518,20 +1523,13 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			           static_cast<const char *>(pvalue));
 		} else {
 			buff_len = node_stat.st_size;
-			fd = open(temp_path, O_RDONLY);
-			if (-1 == fd) {
-				return FALSE;
-			}
 			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 1);
 			if (NULL == pbuff) {
-				close(fd);
 				return FALSE;
 			}
 			if (buff_len != read(fd, pbuff, buff_len)) {
-				close(fd);
 				return FALSE;
 			}
-			close(fd);
 			pbuff[buff_len] = '\0';
 			ptoken = strstr(pbuff, "\r\n\r\n");
 			if (NULL != ptoken) {
@@ -1543,16 +1541,16 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue));
 			}
 		}
+		close(fd);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
 			return FALSE;
 		}
 		if (buff_len != write(fd, pbuff, buff_len)) {
-			close(fd);
 			return FALSE;
 		}
-		close(fd);
 		return TRUE;
+	}
 	case PROP_TAG_OOFINTERNALSUBJECT:
 	case PROP_TAG_OOFEXTERNALSUBJECT:
 		if (PROP_TAG_OOFINTERNALSUBJECT == proptag) {
