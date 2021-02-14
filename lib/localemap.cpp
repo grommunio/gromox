@@ -13,9 +13,11 @@
 #include <unordered_map>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
-#include <gromox/paths.h>
-#include <gromox/localemap.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/fileio.h>
+#include <gromox/localemap.hpp>
+#include <gromox/paths.h>
+#include <gromox/scope.hpp>
 
 namespace gromox {
 
@@ -39,17 +41,19 @@ static fwd_map_t g_cpid_map, g_lcid_map;
 static back_map_t g_charset_map, g_ltag_map;
 static std::once_flag g_cpid_done;
 
-static void xmap_read2(const std::string &file, fwd_map_t &fm, back_map_t &bm)
+static void xmap_read2(const char *file, const char *dirs,
+    fwd_map_t &fm, back_map_t &bm)
 {
-	std::ifstream input(file);
-	if (!input.is_open()) {
-		fprintf(stderr, "[localemap]: error reading %s: %s\n",
-		        file.c_str(), strerror(errno));
+	auto filp = fopen_sd(file, dirs);
+	if (filp == nullptr) {
+		fprintf(stderr, "[localemap]: fopen_sd %s: %s\n", file, strerror(errno));
 		return;
 	}
-	for (std::string line; std::getline(input, line); ) {
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	while (HX_getl(&line, filp.get()) != nullptr) {
 		char *e = nullptr;
-		auto a = strtoul(line.c_str(), &e, 0);
+		auto a = strtoul(line, &e, 0);
 		if (e == nullptr)
 			continue;
 		while (HX_isspace(*e))
@@ -62,11 +66,12 @@ static void xmap_read2(const std::string &file, fwd_map_t &fm, back_map_t &bm)
 	}
 }
 
-static void xmap_read(const std::string &file, fwd_map_t &fm, back_map_t &bm)
+static void xmap_read(const char *file, const char *sdlist,
+    fwd_map_t &fm, back_map_t &bm)
 {
-	xmap_read2(file, fm, bm);
-	fprintf(stderr, "[localemap]: %s: loaded %zu IDs\n", file.c_str(), fm.size());
-	fprintf(stderr, "[localemap]: %s: loaded %zu names\n", file.c_str(), bm.size());
+	xmap_read2(file, sdlist, fm, bm);
+	fprintf(stderr, "[localemap]: %s: loaded %zu IDs\n", file, fm.size());
+	fprintf(stderr, "[localemap]: %s: loaded %zu names\n", file, bm.size());
 }
 
 bool verify_cpid(uint32_t id)
@@ -103,8 +108,8 @@ uint32_t ltag_to_lcid(const char *s)
 void localemap_init(const char *datapath)
 {
 	std::call_once(g_cpid_done, [=]() {
-		xmap_read(datapath + "/cpid.txt"s, g_cpid_map, g_charset_map);
-		xmap_read(datapath + "/lcid.txt"s, g_lcid_map, g_ltag_map);
+		xmap_read("cpid.txt", datapath, g_cpid_map, g_charset_map);
+		xmap_read("lcid.txt", datapath, g_lcid_map, g_ltag_map);
 	});
 }
 
