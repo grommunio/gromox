@@ -1,1 +1,0 @@
-../../codepage_lang/codepage_lang.txt
