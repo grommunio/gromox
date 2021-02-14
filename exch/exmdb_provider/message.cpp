@@ -9,6 +9,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
@@ -33,6 +34,8 @@
 #define LLU(x) static_cast<unsigned long long>(x)
 
 #define MIN_BATCH_MESSAGE_NUM						20
+
+using namespace gromox;
 
 struct RULE_NODE {
 	DOUBLE_LIST_NODE node;
@@ -3807,7 +3810,6 @@ static BOOL message_forward_message(const char *from_address,
 	BOOL b_extended, uint32_t count, void *pblock)
 {
 	int i;
-	int fd;
 	int num;
 	int offset;
 	MAIL imail;
@@ -3846,24 +3848,20 @@ static BOOL message_forward_message(const char *from_address,
 		get_digest(pdigest, "file", mid_string, 128);
 		sprintf(tmp_path, "%s/eml/%s",
 			exmdb_server_get_dir(), mid_string);
-		if (0 != stat(tmp_path, &node_stat)) {
+		auto fd = open(tmp_path, O_RDONLY);
+		if (fd < 0)
+			return false;
+		auto cl_0 = make_scope_exit([&]() { close(fd); });
+		if (fstat(fd, &node_stat) != 0)
 			return FALSE;
-		}
 		pbuff = me_alloc<char>(node_stat.st_size);
 		if (NULL == pbuff) {
 			return FALSE;
 		}
-		fd = open(tmp_path, O_RDONLY);
-		if (-1 == fd) {
-			free(pbuff);
-			return FALSE;
-		}
 		if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-			close(fd);
 			free(pbuff);
 			return FALSE;
 		}
-		close(fd);
 		mail_init(&imail, common_util_get_mime_pool());
 		if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
 			free(pbuff);

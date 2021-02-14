@@ -13,6 +13,7 @@
 #include <gromox/guid.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
@@ -50,6 +51,8 @@
 #define SERVICE_ID_GET_MIME_POOL							15
 #define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
+
+using namespace gromox;
 
 struct OPTIMIZE_STMTS {
 	sqlite3_stmt *pstmt_msg1;		/* normal message property */
@@ -1990,7 +1993,6 @@ static BOOL common_util_get_message_display_recipients(
 static void *common_util_get_message_body(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	int fd;
 	uint64_t cid;
 	char path[256];
 	const char *dir;
@@ -2021,22 +2023,19 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	cid = sqlite3_column_int64(pstmt, 1);
 	sqlite3_finalize(pstmt);
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	if (0 != stat(path, &node_stat)) {
-		return NULL;
-	}
+	auto fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return nullptr;
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0)
+		return nullptr;
 	auto pbuff = cu_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
-		return NULL;
-	}
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		close(fd);
 		return NULL;
 	}
-	close(fd);
 	if (PROP_TAG_BODY == proptag1) {
 		pbuff += sizeof(int);
 	}
@@ -2052,7 +2051,6 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 static void *common_util_get_message_header(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	int fd;
 	uint64_t cid;
 	char path[256];
 	const char *dir;
@@ -2084,22 +2082,19 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	cid = sqlite3_column_int64(pstmt, 1);
 	sqlite3_finalize(pstmt);
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	if (0 != stat(path, &node_stat)) {
-		return NULL;
-	}
+	auto fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return nullptr;
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0)
+		return nullptr;
 	auto pbuff = cu_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
-		return NULL;
-	}
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		close(fd);
 		return NULL;
 	}
-	close(fd);
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag1) {
 		pbuff += sizeof(int);
 	}
@@ -2115,7 +2110,6 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 static void* common_util_get_message_cid_value(
 	sqlite3 *psqlite, uint64_t message_id, uint32_t proptag)
 {
-	int fd;
 	void *pbuff;
 	uint64_t cid;
 	BINARY *pbin;
@@ -2144,22 +2138,19 @@ static void* common_util_get_message_cid_value(
 	cid = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	if (0 != stat(path, &node_stat)) {
-		return NULL;
-	}
+	auto fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return nullptr;
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0)
+		return nullptr;
 	pbuff = common_util_alloc(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
-		return NULL;
-	}
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		close(fd);
 		return NULL;
 	}
-	close(fd);
 	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
@@ -2172,7 +2163,6 @@ static void* common_util_get_message_cid_value(
 static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	uint64_t attachment_id, uint32_t proptag)
 {
-	int fd;
 	void *pbuff;
 	uint64_t cid;
 	BINARY *pbin;
@@ -2202,22 +2192,19 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	cid = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	if (0 != stat(path, &node_stat)) {
-		return NULL;
-	}
+	auto fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return nullptr;
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0)
+		return nullptr;
 	pbuff = common_util_alloc(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
-		return NULL;
-	}
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		close(fd);
 		return NULL;
 	}
-	close(fd);
 	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
@@ -6621,24 +6608,20 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 
 BOOL common_util_copy_file(const char *src_file, const char *dst_file)
 {
-	int fd;
 	struct stat node_stat;
 
-	if (0 != stat(src_file, &node_stat)) {
-		return FALSE;
-	}
+	auto fd = open(src_file, O_RDONLY);
+	if (fd < 0)
+		return false;
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0)
+		return false;
 	auto pbuff = me_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return FALSE;
 	}
-	fd = open(src_file, O_RDONLY);
-	if (-1 == fd) {
-		free(pbuff);
-		return FALSE;
-	}
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
 		free(pbuff);
-		close(fd);
 		return FALSE;
 	}
 	close(fd);
@@ -6649,7 +6632,6 @@ BOOL common_util_copy_file(const char *src_file, const char *dst_file)
 	}
 	write(fd, pbuff, node_stat.st_size);
 	free(pbuff);
-	close(fd);
 	return TRUE;
 }
 
@@ -6879,7 +6861,6 @@ BOOL common_util_indexing_sub_contents(
 
 static uint32_t common_util_get_cid_string_length(uint32_t cid)
 {
-	int fd;
 	int length;
 	char path[256];
 	const char *dir;
@@ -6887,18 +6868,15 @@ static uint32_t common_util_get_cid_string_length(uint32_t cid)
 	
 	dir = exmdb_server_get_dir();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	if (0 != stat(path, &node_stat)) {
+	auto fd = open(path, O_RDONLY);
+	if (fd < 0)
 		return 0;
-	}
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0)
 		return 0;
-	}
 	if (sizeof(int) != read(fd, &length, sizeof(int))) {
-		close(fd);
 		return 0;
 	}
-	close(fd);
 	return 2*length;
 }
 
