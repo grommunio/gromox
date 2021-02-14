@@ -6,6 +6,7 @@
  */
 #include <cerrno>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include "resource.h"
 #include <gromox/util.hpp>
@@ -14,6 +15,8 @@
 #include <cstdio>
 #include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
+
+using namespace gromox;
 
 static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
     { 2170000, "+OK" },
@@ -118,16 +121,14 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
 	char *pbackup, *ptr, code[32];
-    FILE *file_ptr = NULL;
-
-    int total, index, native_code, len;
+	int index, native_code, len;
 	const char *filename = resource_get_string("POP3_RETURN_CODE_PATH");
 	if (NULL == filename) {
-		filename = PKGDATADIR "/pop3/pop3_code.txt";
+		filename = "pop3_code.txt";
 	}
-    if (NULL == (file_ptr = fopen(filename, "r"))) {
-        printf("[resource]: can not open pop3 error table file  %s\n",
-                filename);
+	auto file_ptr = fopen_sd(filename, resource_get_string("data_file_path"));
+	if (file_ptr == nullptr) {
+		printf("[resource]: fopen_sd %s: %s\n", filename, strerror(errno));
         return -1;
     }
 
@@ -135,16 +136,15 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
     if (NULL == code_table) {
 		printf("[resource]: Failed to allocate memory for POP3 return code"
                 " table\n");
-        fclose(file_ptr);
         return -1;
     }
 
-    for (total = 0; total < POP3_CODE_COUNT; total++) {
+	for (int total = 0; total < POP3_CODE_COUNT; ++total) {
         code_table[total].code              = -1;
         memset(code_table[total].comment, 0, 512);
     }
 
-    for (total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr); total++) {
+	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) {
 
         if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
             /* skip empty line or comments */
@@ -224,7 +224,6 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
     }
 
     *pptable = code_table;
-    fclose(file_ptr);
     return 0;
 }
 

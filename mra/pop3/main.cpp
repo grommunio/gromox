@@ -87,14 +87,6 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	resource_init();
-	if (0 != resource_run()) { 
-		printf("[system]: Failed to load resource\n");
-		return EXIT_FAILURE;
-	}
-	auto cleanup_1 = make_scope_exit(resource_free);
-	auto cleanup_2 = make_scope_exit(resource_stop);
-	
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 110; 
 		resource_set_integer("LISTEN_PORT", listen_port);
@@ -368,6 +360,14 @@ int main(int argc, const char **argv)
 	}
 	printf("[console_server]: console server address is [%s]:%d\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
+
+	resource_init();
+	if (resource_run() != 0) {
+		printf("[system]: Failed to load resource\n");
+		return EXIT_FAILURE;
+	}
+	auto cleanup_1 = make_scope_exit(resource_free);
+	auto cleanup_2 = make_scope_exit(resource_stop);
 	listener_init(listen_port, listen_ssl_port);
 																			
 	if (0 != listener_run()) {
