@@ -479,7 +479,7 @@ void console_server_notify_main_stop()
 	ll_hold.unlock();
     g_notify_stop = TRUE;
 	if (TRUE == b_console) {
-		pthread_exit(0);
+		pthread_exit(nullptr);
 	}
 }
 

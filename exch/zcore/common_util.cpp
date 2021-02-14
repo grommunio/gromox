@@ -2673,11 +2673,9 @@ static ZREPLY_ACTION* common_util_convert_to_zreply(
 	if (NULL == preply1) {
 		return NULL;
 	}
-	if (FALSE == common_util_to_message_entryid(
-		pstore, preply->template_folder_id,
-		preply->template_message_id)) {
+	if (common_util_to_message_entryid(pstore, preply->template_folder_id,
+	    preply->template_message_id) == nullptr)
 		return NULL;	
-	}
 	preply1->template_guid = preply->template_guid;
 	return preply1;
 }

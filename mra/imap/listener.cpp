@@ -256,7 +256,7 @@ static void* thread_work_func(void* arg)
 		((SCHEDULE_CONTEXT*)pcontext)->polling_mask = POLLING_READ;
 		contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext, CONTEXT_POLLING);
 	}
-	return 0;
+	return nullptr;
 }
 
 /*
@@ -384,7 +384,7 @@ static void* thread_work_ssl_func(void* arg)
 		((SCHEDULE_CONTEXT*)pcontext)->polling_mask = POLLING_READ;
 		contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext, CONTEXT_POLLING); 
 	}
-	return 0;
+	return nullptr;
 }
 
 /*

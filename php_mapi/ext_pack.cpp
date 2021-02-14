@@ -216,9 +216,8 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 		return 0;
 	}
 	auto pbuff = static_cast<char *>(malloc(len));
-	if (0 == pbuff) {
+	if (pbuff == nullptr)
 		return 0;
-	}
 	memcpy(pbuff, static_cast<const char *>(pctx->data) + pctx->offset, len);
 	if (0 == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
 		free(pbuff);
@@ -1479,9 +1478,8 @@ zend_bool ext_pack_push_wstring(PUSH_CTX *pctx, const char *pstr)
 	
 	len = 2*strlen(pstr) + 2;
 	auto pbuff = static_cast<char *>(malloc(len));
-	if (0 == pbuff) {
+	if (pbuff == nullptr)
 		return 0;
-	}
 	len = utf8_to_utf16le(pstr, pbuff, len);
 	if (len < 2) {
 		pbuff[0] = '\0';

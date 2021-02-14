@@ -30,9 +30,6 @@
 #define TYPE_SIGNED(type) (((type) -1) < 0)
 
 #define TYPE_INTEGRAL(type) (((type) 0.5) != 0.5)
-
-#define INITIALIZE(x)	((x) = 0)
-
 #define TZ_DOMAIN "tz"
 
 #define YEARSPERREPEAT		400	/* years before a Gregorian repeat */
@@ -714,11 +711,10 @@ static time_t transtime(const time_t janfirst, const int year,
     const struct rule *const rulep, const long offset)
 {
 	int leapyear;
-	time_t value;
+	time_t value = 0;
 	int i;
 	int d, m1, yy0, yy1, yy2, dow;
 
-	INITIALIZE(value);
 	leapyear = isleap(year);
 	switch (rulep->r_type) {
 	case JULIAN_DAY:
@@ -801,7 +797,7 @@ static time_t transtime(const time_t janfirst, const int year,
 static int tzparse(const char *name, struct state *const sp, const int lastditch)
 {
 	const char *stdname;
-	const char *dstname;
+	const char *dstname = nullptr;
 	size_t stdlen;
 	size_t dstlen;
 	long stdoffset;
@@ -812,7 +808,6 @@ static int tzparse(const char *name, struct state *const sp, const int lastditch
 	int load_result;
 	static constexpr struct ttinfo zttinfo{};
 
-	INITIALIZE(dstname);
 	stdname = name;
 	if (lastditch) {
 		stdlen = strlen(name);	/* length of standard zone name */

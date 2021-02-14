@@ -152,35 +152,35 @@ const char *extract_ip(const char *buff_in, char *buff_out)
 		memcpy(temp_buff, buff_in + begin_pos, len);
 		temp_buff[len] = '\0';
 		if (atoi(temp_buff) > 255) {
-			return 0;
+			return nullptr;
 		}
 
 		len = pos[1] - (pos[0] + 1);
 		memcpy(temp_buff, buff_in + pos[0] + 1, len);
 		temp_buff[len] = '\0';
 		if (atoi(temp_buff) > 255) {
-			return 0;
+			return nullptr;
 		}
 
 		len = pos[2] - (pos[1] + 1);
 		memcpy(temp_buff, buff_in + pos[1] + 1, len);
 		temp_buff[len] = '\0';
 		if (atoi(temp_buff) > 255) {
-			return 0;
+			return nullptr;
 		}
 
 		len = end_pos - pos[2];
 		memcpy(temp_buff, buff_in + pos[2] + 1, len);
 		temp_buff[len] = '\0';
 		if (atoi(temp_buff) > 255) {
-			return 0;
+			return nullptr;
 		}
 
 		strncpy(buff_out, buff_in + begin_pos, end_pos - begin_pos + 1);
 		buff_out[end_pos - begin_pos + 1] = '\0';
 		return buff_in + begin_pos;
 	}
-	return 0;
+	return nullptr;
 }
 
 /*

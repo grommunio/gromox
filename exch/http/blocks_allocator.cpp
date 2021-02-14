@@ -46,7 +46,7 @@ int blocks_allocator_stop()
         return 0;
     }
     lib_buffer_free(g_allocator);
-    g_allocator = 0;
+	g_allocator = nullptr;
     return 0;
 }
 

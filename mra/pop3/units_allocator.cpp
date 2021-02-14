@@ -46,7 +46,7 @@ int units_allocator_stop()
         return 0;
     }
     array_allocator_free(g_allocator);
-    g_allocator = 0;
+	g_allocator = nullptr;
     return 0;
 }
 

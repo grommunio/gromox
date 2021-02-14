@@ -374,11 +374,11 @@ LOGON_OBJECT* rop_processor_get_logon_object(void *plogmap, uint8_t logon_id)
 	
 	plogitem = ((LOGON_ITEM**)plogmap)[logon_id];
 	if (NULL == plogitem) {
-		return 0;
+		return nullptr;
 	}
 	proot = simple_tree_get_root(&plogitem->tree);
 	if (NULL == proot) {
-		return 0;
+		return nullptr;
 	}
 	return static_cast<LOGON_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 }

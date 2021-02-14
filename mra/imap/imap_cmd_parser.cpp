@@ -1182,7 +1182,7 @@ static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 	BOOL icase;
 	const char *ma = mask;
 	const char *na = data;
-	const char *lsm = 0, *lsn = 0;
+	const char *lsm = nullptr, *lsn = nullptr;
 	
 	if (0 == strncasecmp(data, "inbox", 5)) {
 		icase = TRUE;
@@ -1190,9 +1190,8 @@ static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 		icase = FALSE;
 	}
 	/* null strings should never match */
-	if ((ma == 0) || (na == 0) || (!*ma) || (!*na)) {
+	if (ma == nullptr || na == nullptr || *ma == '\0' || *na == '\0')
 		return FALSE;
-	}
 	/* find the end of each string */
 	while (*(++mask)) {
 		/* do nothing */
@@ -1210,10 +1209,10 @@ static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 				data = --lsn;
 				mask = lsm;
 				if ('/' == *data && TYPE_WILDP == type) {
-					lsm = 0;
+					lsm = nullptr;
 				}
 				if (data < na) {
-					lsm = 0;
+					lsm = nullptr;
 				}
 			} else {
 				return FALSE;
@@ -1250,10 +1249,10 @@ static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 			data = --lsn;
 			mask = lsm;
 			if ('/' == *data && TYPE_WILDP == type) {
-				lsm = 0;
+				lsm = nullptr;
 			}
 			if (data < na) {
-				lsm = 0;                /* Rewind to saved pos */
+				lsm = nullptr; /* Rewind to saved pos */
 			}
 			continue;                 /* Next char, please */
 		}

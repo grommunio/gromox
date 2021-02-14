@@ -46,7 +46,7 @@ void files_allocator_stop()
 		return;
     }
     lib_buffer_free(g_allocator);
-    g_allocator = 0;
+	g_allocator = nullptr;
 }
 
 /*

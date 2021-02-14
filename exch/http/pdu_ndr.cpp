@@ -1777,7 +1777,7 @@ static int pdu_ndr_push_rts_padding(NDR_PUSH *pndr, uint32_t v)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_array_uint8(pndr, 0, v);
+	status = ndr_push_array_uint8(pndr, nullptr, v);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -1847,8 +1847,7 @@ static int pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 	default:
 		return NDR_ERR_BAD_SWITCH;
 	}
-	
-	status = ndr_push_array_uint8(pndr, 0, 12);
+	status = ndr_push_array_uint8(pndr, nullptr, 12);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}

@@ -1000,12 +1000,12 @@ char *md5_crypt_wrapper(const char *pw)
 
 int wildcard_match(const char *data, const char *mask, BOOL icase)
 {
-  const char *ma = mask, *na = data, *lsm = 0, *lsn = 0;
+  const char *ma = mask, *na = data, *lsm = nullptr, *lsn = nullptr;
   int match = 1;
   int sofar = 0;
 
   /* null strings should never match */
-  if ((ma == 0) || (na == 0) || (!*ma) || (!*na))
+	if (ma == nullptr || na == nullptr || *ma == '\0' || *na == '\0')
 	return NOMATCH;
   /* find the end of each string */
   while (*(++mask));
@@ -1021,7 +1021,7 @@ int wildcard_match(const char *data, const char *mask, BOOL icase)
 		data = --lsn;
 		mask = lsm;
 		if (data < na)
-		  lsm = 0;
+					lsm = nullptr;
 		sofar = 0;
 	  }
 	  else
@@ -1056,7 +1056,7 @@ int wildcard_match(const char *data, const char *mask, BOOL icase)
 	  data = --lsn;
 	  mask = lsm;
 	  if (data < na)
-		lsm = 0;				/* Rewind to saved pos */
+				lsm = nullptr; /* Rewind to saved pos */
 	  sofar = 0;
 	  continue;					/* Next char, please */
 	}

@@ -132,5 +132,5 @@ void notification_agent_thread_work(ROUTER_CONNECTION *prouter)
 		pthread_detach(pthread_self());
 	}
 	free(prouter);
-	pthread_exit(0);
+	pthread_exit(nullptr);
 }
