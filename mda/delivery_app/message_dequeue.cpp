@@ -18,6 +18,7 @@
 #include "system_services.h"
 #include <gromox/util.hpp>
 #include <gromox/int_hash.hpp>
+#include <gromox/scope.hpp>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -33,6 +34,8 @@
 #define TOKEN_MESSAGE_QUEUE		1
 #define BLOCK_SIZE				64*1024*2
 #define SLEEP_INTERVAL			50000
+
+using namespace gromox;
 
 struct MSG_BUFF {
 	long msg_type;
@@ -392,7 +395,6 @@ static void message_dequeue_load_from_mess(int mess)
 {
 	char name[256];
 	struct stat node_stat;
-	int fd;
 	MESSAGE *pmessage;
 	char *ptr;
 	size_t size;
@@ -404,9 +406,12 @@ static void message_dequeue_load_from_mess(int mess)
 		return;
 	}
 	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, mess);
-	if (0 != stat(name, &node_stat) || 0 == S_ISREG(node_stat.st_mode)) {
+	auto fd = open(name, O_RDONLY);
+	if (fd < 0)
 		return;
-	}
+	auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
+	if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+		return;
 	size = ((node_stat.st_size - 1)/(64 * 1024) + 1) * 64 * 1024;
 	pmessage = message_dequeue_get_from_free(MESSAGE_MESS, size);
 	if (NULL == pmessage) {
@@ -418,20 +423,11 @@ static void message_dequeue_load_from_mess(int mess)
 		message_dequeue_put_to_free(pmessage);
         return;
 	}
-
-	fd = open(name, O_RDONLY);
-	if (-1 == fd) {
-		message_dequeue_put_to_free(pmessage);
-		free(ptr);
-		return;
-	}
 	if (node_stat.st_size != read(fd, ptr, node_stat.st_size)) {
 		message_dequeue_put_to_free(pmessage);
 		free(ptr);
-		close(fd);
         return;
 	}
-	close(fd);
 	/* check if it is an incomplete message */
 	if (0 == *(int*)ptr) {
 		message_dequeue_put_to_free(pmessage);
