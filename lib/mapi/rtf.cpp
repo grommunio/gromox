@@ -3748,6 +3748,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	size_t out_len = *plength;
 	*pbuff_out = static_cast<char *>(malloc(out_len + 1));
 	if (*pbuff_out == nullptr) {
+		iconv_close(conv_id);
 		rtf_free_reader(&reader);
 		return false;
 	}
