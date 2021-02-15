@@ -8,6 +8,7 @@
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <gromox/dsn.hpp>
@@ -20,6 +21,8 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <ctime>
+
+using namespace gromox;
 
 enum{
 	TAG_BEGIN,
@@ -259,11 +262,9 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
 	int i, item_num;
 
 	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", g_path, dir_name);
-	if (0 != stat(dir_buff, &node_stat) ||
-		0 == S_ISDIR(node_stat.st_mode)) {
-		return FALSE;	
-    }
 	sub_dirp = opendir(dir_buff);
+	if (sub_dirp == nullptr)
+		return false;
     item_num = 0;
     while ((sub_direntp = readdir(sub_dirp)) != NULL) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
@@ -303,8 +304,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
     struct dirent *sub_direntp;
 	struct stat node_stat;
     char dir_buff[256], sub_buff[256];
-    int fd, i, j, k;
-	int parsed_length, until_tag;
+	int i, j, k, parsed_length, until_tag;
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
 
@@ -330,10 +330,12 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 			continue;
 		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
 		         dir_buff, sub_direntp->d_name);
-        if (0 != stat(sub_buff, &node_stat) ||
-            0 == S_ISREG(node_stat.st_mode)) {
-            continue;
-        }
+		auto fd = open(sub_buff, O_RDONLY);
+		if (fd < 0)
+			continue;
+		auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
+		if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+			continue;
 		/* compare file name with the resource table and get the index */
         for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
             if (0 == strcmp(g_resource_table[i], sub_direntp->d_name)) {
@@ -348,14 +350,8 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
     		closedir(sub_dirp);
 			goto FREE_RESOURCE;
 		}
-		fd = open(sub_buff, O_RDONLY);
-		if (-1 == fd) {
-    		closedir(sub_dirp);
-			goto FREE_RESOURCE;
-		}
 		if (node_stat.st_size != read(fd, presource->content[i],
 			node_stat.st_size)) {
-			close(fd);
     		closedir(sub_dirp);
 			goto FREE_RESOURCE;
 		}
