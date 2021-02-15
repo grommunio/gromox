@@ -42,7 +42,7 @@ Makefile.in
 /zcore
 
 /include/gromox/paths.h
-/AGENT_SERVICE/php_mapi/zarafa_rpc.cpp
+/php_mapi/zarafa_rpc.cpp
 /exch/midb/exmdb_rpc.cpp
 /exch/zcore/exmdb_rpc.cpp
 /exch/exmdb_provider/exmdb_rpc.cpp
