@@ -5,6 +5,7 @@
 #include <libHX/option.h>
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
+#include <gromox/scope.hpp>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -12,6 +13,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+using namespace gromox;
 
 static unsigned int opt_show_version;
 
@@ -25,7 +28,7 @@ int main(int argc, const char **argv)
 {
 	MAIL imail;
 	size_t offset;
-	int fd, tmp_len;
+	int tmp_len;
 	MIME_POOL *ppool;
 	struct stat node_stat;
 	
@@ -40,13 +43,13 @@ int main(int argc, const char **argv)
 		printf("%s msg-path\n", argv[0]);
 		return 1;
 	}
-    
-	if (0 != stat(argv[1], &node_stat)) {
-		printf("fail to find %s\n", argv[1]);
+	auto fd = open(argv[1], O_RDONLY);
+	if (fd < 0) {
+		printf("open %s: %s\n", argv[1], strerror(errno));
 		return 1;
 	}
-	
-	if (0 == S_ISREG(node_stat.st_mode)) {
+	auto cl_0 = make_scope_exit([&]() { close(fd); });
+	if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
 		printf("%s is not regular file\n", argv[1]);
 		return 2;
 	}
@@ -56,22 +59,11 @@ int main(int argc, const char **argv)
 		printf("Failed to allocate memory\n");
 		return 3;
 	}
-	
-	fd = open(argv[1], O_RDONLY);
-	if (-1 == fd) {
-		printf("Failed to open %s: %s\n", argv[1], strerror(errno));
-		free(pbuff);
-		return 4;
-	}
-
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
 		printf("Failed to read file %s: %s\n", argv[1], strerror(errno));
 		free(pbuff);
-		close(fd);
 		return 5;
 	}
-
-	close(fd);
 
 	ppool = mime_pool_init(1024, 32, FALSE);
 
