@@ -145,10 +145,8 @@ int main(int argc, const char **argv)
 	mysql_close(pmysql);
 	
 	snprintf(temp_path, 256, "%s/exmdb", dir);
-	if (0 != stat(temp_path, &node_stat)) {
-		mkdir(temp_path, 0777);
-	}
-	
+	if (mkdir(temp_path, 0777) != 0)
+		/* cov-ignore */;
 	snprintf(temp_path, 256, "%s/exmdb/midb.sqlite3", dir);
 	if (0 == stat(temp_path, &node_stat)) {
 		printf("can not create sotre database,"
