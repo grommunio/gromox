@@ -13,6 +13,9 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
+
+using namespace gromox;
 
 namespace {
 
@@ -43,33 +46,30 @@ int main()
 		struct stat sb;
 		char timebuf[64];
 
-		if (stat(filename.c_str(), &sb) < 0 || !S_ISREG(sb.st_mode))
+		auto fd = open(filename.c_str(), O_RDONLY);
+		if (fd < 0)
+			continue;
+		auto cl_0 = make_scope_exit([&]() { close(fd); });
+		if (fstat(fd, &sb) < 0 || !S_ISREG(sb.st_mode))
 			continue;
 		strftime(timebuf, sizeof(timebuf), "%FT%T", localtime(&sb.st_mtime));
 		printf("%-6s  %-19s", de->d_name, timebuf);
-		int fd = open(filename.c_str(), O_RDONLY);
-		if (fd < 0) {
-			printf("\n");
-			fprintf(stderr, "%s: %s\n", filename.c_str(), strerror(errno));
-			continue;
-		}
 		size_t clump_size = sizeof(size_t) + 3 * sizeof(int) + 2;
 		if (static_cast<size_t>(sb.st_size) < clump_size) {
 			printf("\n");
 			continue;
 		}
 		auto fcontent = reinterpret_cast<char *>(mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
-		close(fd);
 		if (fcontent == reinterpret_cast<void *>(MAP_FAILED)) {
 			printf("\n");
 			continue;
 		}
+		auto cl_1 = make_scope_exit([&]() { munmap(fcontent, sb.st_size); });
 		size_t mail_len = 0;
 		unsigned int flush_id = 0, bound_type = 0, is_spam = 0;
 		memcpy(&mail_len, fcontent, sizeof(mail_len));
 		if (static_cast<size_t>(sb.st_size) < clump_size + mail_len) {
 			printf("\n");
-			munmap(fcontent, sb.st_size);
 			continue;
 		}
 		const char *ptr = fcontent + sizeof(size_t) + mail_len;
@@ -85,6 +85,5 @@ int main()
 		printf("  %9zu  %9u  %s<%s%s%s> %s► %s<%s%s%s>%s\n",
 			mail_len, flush_id,
 			c_dark, c_reset, from, c_dark, c_ptr, c_dark, c_reset, rcpt, c_dark, c_reset);
-		munmap(fcontent, sb.st_size);
 	}
 }
