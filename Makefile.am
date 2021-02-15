@@ -254,19 +254,16 @@ libgxsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
-# AGENT_SERVICE
-digest_SOURCES = AGENT_SERVICE/digest.cpp
+digest_SOURCES = tools/digest.cpp
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
-freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp
+freebusy_SOURCES = tools/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
-pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp exch/http/service.cpp
+pam_gromox_la_SOURCES = tools/pam_gromox.cpp exch/http/service.cpp
 pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
-rtf2html_SOURCES = AGENT_SERVICE/rtf2html.cpp
+rtf2html_SOURCES = tools/rtf2html.cpp
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-
-# tools
 saphpdir = ${pkgdatadir}/sa
 saphp_DATA = tools/php/conf.php tools/php/db.php tools/php/submit.php
 adaptor_SOURCES = lib/system_log.cpp tools/adaptor/data_source.cpp tools/adaptor/engine.cpp tools/adaptor/file_operation.cpp tools/adaptor/gateway_control.cpp tools/adaptor/main.cpp
