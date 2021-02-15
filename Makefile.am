@@ -63,7 +63,6 @@ exchange_plugins = \
 	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_log_plugin.la \
-	libgxsvc_mime_extension.la \
 	libgxsvc_ms_locale.la \
 	libgxsvc_mysql_adaptor.la \
 	libgxsvc_textmaps.la \
@@ -83,7 +82,6 @@ noinst_DATA += \
 	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_log_plugin.ldd \
-	libgxsvc_mime_extension.ldd \
 	libgxsvc_ms_locale.ldd \
 	libgxsvc_mysql_adaptor.ldd \
 	libgxsvc_textmaps.ldd \
@@ -233,10 +231,6 @@ libgxsvc_log_plugin_la_SOURCES = exch/log_plugin.cpp
 libgxsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_log_plugin_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_log_plugin_la_DEPENDENCIES = ${default_sym}
-libgxsvc_mime_extension_la_SOURCES = exch/mime_extension.cpp
-libgxsvc_mime_extension_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_mime_extension_la_LIBADD = ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_mime_extension_la_DEPENDENCIES = ${default_sym}
 libgxsvc_ms_locale_la_SOURCES = exch/ms_locale.cpp
 libgxsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
