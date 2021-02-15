@@ -11,8 +11,8 @@
 #include <json/writer.h>
 #include <gromox/binrdwr.hpp>
 #include <gromox/fileio.h>
-#include <gromox/localemap.hpp>
 #include <gromox/oxoabkt.hpp>
+#include <gromox/textmaps.hpp>
 
 namespace gromox {
 

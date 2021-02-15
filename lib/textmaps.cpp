@@ -15,9 +15,9 @@
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
-#include <gromox/localemap.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 
 namespace gromox {
 
@@ -35,18 +35,18 @@ struct icasecmp {
 };
 
 using namespace std::string_literals;
-using fwd_map_t  = std::unordered_map<unsigned int, std::string>;
-using back_map_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
-static fwd_map_t g_cpid_map, g_lcid_map;
-static back_map_t g_charset_map, g_ltag_map;
-static std::once_flag g_cpid_done;
+using int_to_str_t = std::unordered_map<unsigned int, std::string>;
+using str_to_int_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
+static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
+static str_to_int_t g_cpname2id_map, g_lctag2id_map;
+static std::once_flag g_textmaps_done;
 
-static void xmap_read2(const char *file, const char *dirs,
-    fwd_map_t &fm, back_map_t &bm)
+static void xmap_read(const char *file, const char *dirs,
+    int_to_str_t &fm, str_to_int_t &bm)
 {
 	auto filp = fopen_sd(file, dirs);
 	if (filp == nullptr) {
-		fprintf(stderr, "[localemap]: fopen_sd %s: %s\n", file, strerror(errno));
+		fprintf(stderr, "[textmaps]: fopen_sd %s: %s\n", file, strerror(errno));
 		return;
 	}
 	hxmc_t *line = nullptr;
@@ -66,50 +66,46 @@ static void xmap_read2(const char *file, const char *dirs,
 	}
 }
 
-static void xmap_read(const char *file, const char *sdlist,
-    fwd_map_t &fm, back_map_t &bm)
-{
-	xmap_read2(file, sdlist, fm, bm);
-	fprintf(stderr, "[localemap]: %s: loaded %zu IDs\n", file, fm.size());
-	fprintf(stderr, "[localemap]: %s: loaded %zu names\n", file, bm.size());
-}
-
 bool verify_cpid(uint32_t id)
 {
-	return g_cpid_map.find(id) != g_cpid_map.cend() &&
+	return g_cpid2name_map.find(id) != g_cpid2name_map.cend() &&
 	       id != 1200 && id != 1201 && id != 12000 && id != 12001 &&
 	       id != 65000 && id != 65001;
 }
 
 const char *cpid_to_cset(uint32_t id)
 {
-	auto i = g_cpid_map.find(id);
-	return i != g_cpid_map.cend() ? i->second.c_str() : nullptr;
+	auto i = g_cpid2name_map.find(id);
+	return i != g_cpid2name_map.cend() ? i->second.c_str() : nullptr;
 }
 
 uint32_t cset_to_cpid(const char *s)
 {
-	auto i = g_charset_map.find(s);
-	return i != g_charset_map.cend() ? i->second : 0;
+	auto i = g_cpname2id_map.find(s);
+	return i != g_cpname2id_map.cend() ? i->second : 0;
 }
 
 const char *lcid_to_ltag(uint32_t id)
 {
-	auto i = g_lcid_map.find(id);
-	return i != g_lcid_map.cend() ? i->second.c_str() : nullptr;
+	auto i = g_lcid2tag_map.find(id);
+	return i != g_lcid2tag_map.cend() ? i->second.c_str() : nullptr;
 }
 
 uint32_t ltag_to_lcid(const char *s)
 {
-	auto i = g_ltag_map.find(s);
-	return i != g_ltag_map.cend() ? i->second : 0;
+	auto i = g_lctag2id_map.find(s);
+	return i != g_lctag2id_map.cend() ? i->second : 0;
 }
 
-void localemap_init(const char *datapath)
+void textmaps_init(const char *datapath)
 {
-	std::call_once(g_cpid_done, [=]() {
-		xmap_read("cpid.txt", datapath, g_cpid_map, g_charset_map);
-		xmap_read("lcid.txt", datapath, g_lcid_map, g_ltag_map);
+	std::call_once(g_textmaps_done, [=]() {
+		xmap_read("cpid.txt", datapath, g_cpid2name_map, g_cpname2id_map);
+		fprintf(stderr, "[textmaps]: cpid: %zu IDs, %zu names\n",
+		        g_cpid2name_map.size(), g_cpname2id_map.size());
+		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
+		fprintf(stderr, "[textmaps]: lcid: %zu IDs, %zu names\n",
+		        g_lcid2tag_map.size(), g_lctag2id_map.size());
 	});
 }
 

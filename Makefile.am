@@ -62,11 +62,11 @@ exchange_plugins = \
 	libgxsvc_ip6_container.la libgxsvc_ip6_filter.la \
 	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
-	libgxsvc_localemap.la \
 	libgxsvc_log_plugin.la \
 	libgxsvc_mime_extension.la \
 	libgxsvc_ms_locale.la \
 	libgxsvc_mysql_adaptor.la \
+	libgxsvc_textmaps.la \
 	libgxsvc_user_filter.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
@@ -82,11 +82,11 @@ noinst_DATA += \
 	libgxsvc_ip6_container.ldd libgxsvc_ip6_filter.ldd \
 	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
-	libgxsvc_localemap.ldd \
 	libgxsvc_log_plugin.ldd \
 	libgxsvc_mime_extension.ldd \
 	libgxsvc_ms_locale.ldd \
 	libgxsvc_mysql_adaptor.ldd \
+	libgxsvc_textmaps.ldd \
 	libgxsvc_user_filter.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor event timer
@@ -100,7 +100,7 @@ CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/array.cpp lib/config_file.cpp lib/dir_tree.cpp lib/double_list.cpp lib/errno.cpp lib/files_allocator.cpp lib/fopen.cpp lib/guid.cpp lib/int_hash.cpp lib/lib_buffer.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
-libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/fopen.cpp lib/localemap.cpp lib/oxoabkt.cpp
+libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS}
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp
@@ -229,10 +229,6 @@ libgxsvc_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp
 libgxsvc_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
 EXTRA_libgxsvc_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxsvc_localemap_la_SOURCES = exch/localeplug.cpp
-libgxsvc_localemap_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_localemap_la_LIBADD = libgromox_cplus.la
-EXTRA_libgxsvc_localemap_la_DEPENDENCIES = ${default_sym}
 libgxsvc_log_plugin_la_SOURCES = exch/log_plugin.cpp
 libgxsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_log_plugin_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -249,6 +245,10 @@ libgxsvc_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/main.cpp exch/mysql_adapt
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
+libgxsvc_textmaps_la_SOURCES = exch/textmapplug.cpp
+libgxsvc_textmaps_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_textmaps_la_LIBADD = libgromox_cplus.la
+EXTRA_libgxsvc_textmaps_la_DEPENDENCIES = ${default_sym}
 libgxsvc_user_filter_la_SOURCES = exch/str_filter/audit_filter.cpp exch/str_filter/grey_list.cpp exch/str_filter/main.cpp exch/str_filter/str_filter.cpp exch/str_filter/temp_list.cpp
 libgxsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -313,14 +313,13 @@ man_MANS = \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
-	doc/imap.8gx doc/ip6_container.4gx \
-	doc/ldap_adaptor.4gx doc/localemap.4gx \
+	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx doc/mod_proxy.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
-	doc/str_table.4gx \
+	doc/str_table.4gx doc/textmaps.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
