@@ -11,4 +11,5 @@ extern GX_EXPORT const char *lcid_to_ltag(uint32_t);
 extern GX_EXPORT uint32_t ltag_to_lcid(const char *);
 extern GX_EXPORT const char *mime_to_extension(const char *);
 extern GX_EXPORT const char *extension_to_mime(const char *);
+extern GX_EXPORT const char *lang_to_charset(const char *);
 }

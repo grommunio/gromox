@@ -12,6 +12,9 @@ character set IDs or locale IDs.
 .IP \(bu 4
 \fIdata_file_path\fP/cpid.txt: mapping between character set IDs and names
 .IP \(bu 4
+\fIdata_file_path\fP/lang_charset.txt: mapping from language code to character
+set
+.IP \(bu 4
 \fIdata_file_path\fP/lcid.txt: mapping between locale IDs and names
 .IP \(bu 4
 \fIdata_file_path\fP/mime_extension.txt: mapping between file extensiosn and

@@ -40,7 +40,7 @@ using str_to_int_t = std::unordered_map<std::string, unsigned int, icasehash, ic
 using str_to_str_t = std::unordered_map<std::string, std::string, icasehash, icasecmp>;
 static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
 static str_to_int_t g_cpname2id_map, g_lctag2id_map;
-static str_to_str_t g_ext2mime_map, g_mime2ext_map;
+static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
 static std::once_flag g_textmaps_done;
 
 static void xmap_read(const char *file, const char *dirs,
@@ -91,7 +91,8 @@ static void smap_read(const char *file, const char *dirs,
 			continue;
 		HX_strlower(value);
 		fm.emplace(line, value);
-		bm.emplace(value, line);
+		if (&bm != &g_ignore_map)
+			bm.emplace(value, line);
 	}
 }
 
@@ -138,6 +139,12 @@ const char *extension_to_mime(const char *s)
 	return i != g_ext2mime_map.cend() ? i->second.c_str() : nullptr;
 }
 
+const char *lang_to_charset(const char *s)
+{
+	auto i = g_lang2cset_map.find(s);
+	return i != g_lang2cset_map.cend() ? i->second.c_str() : nullptr;
+}
+
 void textmaps_init(const char *datapath)
 {
 	std::call_once(g_textmaps_done, [=]() {
@@ -147,6 +154,9 @@ void textmaps_init(const char *datapath)
 		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
 		fprintf(stderr, "[textmaps]: lcid: %zu IDs, %zu names\n",
 		        g_lcid2tag_map.size(), g_lctag2id_map.size());
+		smap_read("lang_charset.txt", datapath, g_lang2cset_map, g_ignore_map);
+		fprintf(stderr, "[textmaps]: lang_charset: %zu mappings\n",
+		        g_lang2cset_map.size());
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
 		fprintf(stderr, "[textmaps]: mime_extension: %zu exts, %zu mimetypes\n",
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
