@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/gateway_control.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/list_file.hpp>
 #include <cstdio>
 #include <cstdlib>
@@ -21,13 +21,8 @@ struct CONSOLE_PORT {
 	int delivery_port;
 };
 
-struct CONSOLE_PNODE {
-	SINGLE_LIST_NODE node;
-	CONSOLE_PORT u;
-};
-
 static char g_list_path[256];
-static SINGLE_LIST g_console_list;
+static std::vector<CONSOLE_PORT> g_console_list;
 
 static BOOL gateway_control_send(const char *ip, int port, const char *command);
 
@@ -38,7 +33,6 @@ void gateway_control_init(const char *path)
 	} else {
 		g_list_path[0] = '\0';
 	}
-	single_list_init(&g_console_list);
 }
 
 int gateway_control_run()
@@ -53,48 +47,24 @@ int gateway_control_run()
 	auto pitem = static_cast<const CONSOLE_PORT *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
 	for (decltype(list_len) i = 0; i < list_len; ++i) {
-		auto pport = static_cast<CONSOLE_PNODE *>(malloc(sizeof(CONSOLE_PNODE)));
-		if (NULL== pport) {
-			continue;
+		try {
+			g_console_list.push_back(pitem[i]);
+		} catch (const std::bad_alloc &) {
 		}
-		pport->node.pdata = pport;
-		memcpy(&pport->u, &pitem[i], sizeof(*pitem));
-		single_list_append_as_tail(&g_console_list, &pport->node);
 	}
 	return 0;
 }
 
 void gateway_control_notify(const char *command, int control_mask)
 {
-	SINGLE_LIST_NODE *pnode;
-	
-	for (pnode=single_list_get_head(&g_console_list); NULL!=pnode;
-		pnode=single_list_get_after(&g_console_list, pnode)) {
-		auto pconsole = &static_cast<const CONSOLE_PNODE *>(pnode->pdata)->u;
+	for (const auto &c : g_console_list) {
 		if (NOTIFY_SMTP&control_mask) {
-			gateway_control_send(pconsole->smtp_ip,
-				pconsole->smtp_port, command);
+			gateway_control_send(c.smtp_ip, c.smtp_port, command);
 		}
 		if (NOTIFY_DELIVERY&control_mask) {
-			gateway_control_send(pconsole->delivery_ip,
-				pconsole->delivery_port, command);
+			gateway_control_send(c.delivery_ip, c.delivery_port, command);
 		}
 	}
-}
-
-int gateway_control_stop()
-{
-	SINGLE_LIST_NODE *pnode;
-
-	while ((pnode = single_list_pop_front(&g_console_list)) != nullptr)
-		free(pnode->pdata);
-	return 0;
-}
-
-void gateway_control_free()
-{
-	single_list_free(&g_console_list);
-
 }
 
 static BOOL gateway_control_send(const char *ip, int port, const char *command)

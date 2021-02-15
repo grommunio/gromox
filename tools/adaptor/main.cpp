@@ -139,8 +139,6 @@ int main(int argc, const char **argv)
 	}
 
 	engine_stop();
-	gateway_control_stop();
-	gateway_control_free();
 	system_log_stop();
 	system_log_free();
 	return 0;
