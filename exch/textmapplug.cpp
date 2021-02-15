@@ -21,7 +21,9 @@ static BOOL svc_textmaps(int reason, void **apidata)
 	    !E("cpid_to_charset", cpid_to_cset) ||
 	    !E("charset_to_cpid", cset_to_cpid) ||
 	    !E("ltag_to_lcid", ltag_to_lcid) ||
-	    !E("lcid_to_ltag", lcid_to_ltag)) {
+	    !E("lcid_to_ltag", lcid_to_ltag) ||
+	    !E("mime_to_extension", mime_to_extension) ||
+	    !E("extension_to_mime", extension_to_mime)) {
 		fprintf(stderr, "[textmaps]: failed to register services\n");
 		return FALSE;
 	}

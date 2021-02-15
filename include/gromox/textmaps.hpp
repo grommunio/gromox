@@ -9,4 +9,6 @@ extern GX_EXPORT const char *cpid_to_cset(uint32_t);
 extern GX_EXPORT uint32_t cset_to_cpid(const char *);
 extern GX_EXPORT const char *lcid_to_ltag(uint32_t);
 extern GX_EXPORT uint32_t ltag_to_lcid(const char *);
+extern GX_EXPORT const char *mime_to_extension(const char *);
+extern GX_EXPORT const char *extension_to_mime(const char *);
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -37,8 +37,10 @@ struct icasecmp {
 using namespace std::string_literals;
 using int_to_str_t = std::unordered_map<unsigned int, std::string>;
 using str_to_int_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
+using str_to_str_t = std::unordered_map<std::string, std::string, icasehash, icasecmp>;
 static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
 static str_to_int_t g_cpname2id_map, g_lctag2id_map;
+static str_to_str_t g_ext2mime_map, g_mime2ext_map;
 static std::once_flag g_textmaps_done;
 
 static void xmap_read(const char *file, const char *dirs,
@@ -63,6 +65,33 @@ static void xmap_read(const char *file, const char *dirs,
 		HX_strlower(e);
 		fm.emplace(a, e);
 		bm.emplace(e, a);
+	}
+}
+
+static void smap_read(const char *file, const char *dirs,
+    str_to_str_t &fm, str_to_str_t &bm)
+{
+	auto filp = fopen_sd(file, dirs);
+	if (filp == nullptr) {
+		fprintf(stderr, "[textmaps]: fopen_sd %s: %s\n", file, strerror(errno));
+		return;
+	}
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	while (HX_getl(&line, filp.get()) != nullptr) {
+		char *value = line;
+		while (!HX_isspace(*value))
+			++value;
+		if (*value == '\0')
+			continue;
+		*value++ = '\0';
+		while (HX_isspace(*value))
+			++value;
+		if (*value == '\0')
+			continue;
+		HX_strlower(value);
+		fm.emplace(line, value);
+		bm.emplace(value, line);
 	}
 }
 
@@ -97,6 +126,18 @@ uint32_t ltag_to_lcid(const char *s)
 	return i != g_lctag2id_map.cend() ? i->second : 0;
 }
 
+const char *mime_to_extension(const char *s)
+{
+	auto i = g_mime2ext_map.find(s);
+	return i != g_mime2ext_map.cend() ? i->second.c_str() : nullptr;
+}
+
+const char *extension_to_mime(const char *s)
+{
+	auto i = g_ext2mime_map.find(s);
+	return i != g_ext2mime_map.cend() ? i->second.c_str() : nullptr;
+}
+
 void textmaps_init(const char *datapath)
 {
 	std::call_once(g_textmaps_done, [=]() {
@@ -106,6 +147,9 @@ void textmaps_init(const char *datapath)
 		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
 		fprintf(stderr, "[textmaps]: lcid: %zu IDs, %zu names\n",
 		        g_lcid2tag_map.size(), g_lctag2id_map.size());
+		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
+		fprintf(stderr, "[textmaps]: mime_extension: %zu exts, %zu mimetypes\n",
+		        g_ext2mime_map.size(), g_mime2ext_map.size());
 	});
 }
 

@@ -55,7 +55,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libexsvc_codepage_lang.so",
 	"libgxsvc_lang_charset.so",
 	"libgxsvc_log_plugin.so",
-	"libgxsvc_mime_extension.so",
 	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
 	"libgxsvc_authmgr.so",

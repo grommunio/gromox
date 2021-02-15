@@ -13,6 +13,9 @@ character set IDs or locale IDs.
 \fIdata_file_path\fP/cpid.txt: mapping between character set IDs and names
 .IP \(bu 4
 \fIdata_file_path\fP/lcid.txt: mapping between locale IDs and names
+.IP \(bu 4
+\fIdata_file_path\fP/mime_extension.txt: mapping between file extensiosn and
+MIME types
 .PP
 \fIdata_file_path\fP is determined by the configuration of the program that
 loaded the textmapplug plugin.
