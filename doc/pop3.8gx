@@ -171,6 +171,10 @@ Default: \fI40\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI1\fP
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/pop3_code.txt: Mapping from internal POP3 error codes to
+textual descriptions.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)

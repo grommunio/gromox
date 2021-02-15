@@ -10,19 +10,6 @@ system.
 .SH Synopsis
 .PP
 gromox \(em overview of the Gromox groupware server
-.SH Agent subsystem
-.IP \(bu 4
-freebusy(8gx)
-.IP \(bu 4
-digest(8gx)
-.IP \(bu 4
-gromox\-agent.target(8gx) \(em agent service group unit for systemd
-.IP \(bu 4
-mapi(4gx) \(em PHP module for Gromox services
-.IP \(bu 4
-pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
-.IP \(bu 4
-rtf2html(1gx) \(em RTFCP to HTML converter
 .SH Configuration files
 .PP
 Program configuration files reside within /etc/gromox. Most of the programs
@@ -64,6 +51,8 @@ http(8gx)
 .IP \(bu 4
 midb(8gx)
 .IP \(bu 4
+mod_proxy(4gx) \(em http(8gx) processing plugin for proxying HTTP requests
+.IP \(bu 4
 zcore(8gx)
 .SH Mail retrieval agent subsystem
 .IP \(bu 4
@@ -71,14 +60,14 @@ gromox\-mra.target(8gx) \(em MRA service group unit for systemd
 .IP \(bu 4
 imap(8gx) \(em IMAP server
 .IP \(bu 4
-midb_agent(4gx) \(em plugin that offers a midb(8gx) client with a C API
+midb_agent(4gx) \(em Service plugin for conversing with midb(8gx)
 .IP \(bu 4
 pop3(8gx) \(em POP3 server
-.SH Mail transport agent subsystem
+.SH Local delivery agent
 .IP \(bu 4
 alias_translator(4gx) \(em Alias resolution plugin for delivery(8gx)
 .IP \(bu 4
-delivery(8gx)
+delivery(8gx) \(em Backend for local delivery
 .IP \(bu 4
 domain_list(4gx) \(em instance of str_table(4gx)
 .IP \(bu 4
@@ -86,14 +75,23 @@ gromox\-mta.target(8gx) \(em MTA service group unit for systemd
 .IP \(bu 4
 message_enqueue(4gx) \(em Message enqueueing flusher plugin for smtp(8gx)
 .IP \(bu 4
-smtp(8gx) \(em SMTP server
+smtp(8gx) \(em SMTP frontend for local delivery
 .IP \(bu 4
 str_table(4gx) \(em string table match plugin
-.SH System administration subsystem
+.SH System administration
+.IP \(bu 4
+pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
+.IP \(bu 4
+rtf2html(1gx) \(em C++ helper for php_mapi's mapi_decompressrtf function
+
 .IP \(bu 4
 adaptor(8gx)
 .IP \(bu 4
+digest(8gx)
+.IP \(bu 4
 event(8gx)
+.IP \(bu 4
+freebusy(8gx) \(em C++ helper for the EWS Freebusy mechanism
 .IP \(bu 4
 gromox\-dbop(8gx) \(em Database maintenance utility
 .IP \(bu 4
@@ -115,9 +113,9 @@ sa.cfg(5gx) \(em configuration file for system administration CGI programs
 timer(8gx) \(em deferred command executor
 .SH Service plugins
 .IP \(bu 4
-at_client(4gx) \(em timer client service plugin
+at_client(4gx) \(em Service plugin for deferred command execution with at(1)
 .IP \(bu 4
-authmgr(4gx) \(em demultiplexer for authentication requests
+authmgr(4gx) \(em Demultiplexer for authentication requests
 .IP \(bu 4
 ip6_container(4gx) \(em trivial source connection counter
 .IP \(bu 4
@@ -128,7 +126,11 @@ localemap(4gx) \(em Character set and locale maps
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
 .IP \(bu 4
-timer_agent(4gx) \(em timer client service plugin
+timer_agent(4gx) \(em Service plugin for deferred command execution with
+timer(8gx)
+.SH Language bindings
+.IP \(bu 4
+mapi(4gx) \(em PHP module for Gromox services
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/zcore.sock \(em zcore(8gx)

@@ -196,6 +196,9 @@ Default: \fI4096\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI100\fP
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH Notes
 .PP
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that

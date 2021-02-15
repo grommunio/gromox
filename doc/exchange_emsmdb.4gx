@@ -50,6 +50,11 @@ Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
 .SS x500_org_name
 .PP
 Default: (unspecified)
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/notify_bounce/
+.IP \(bu 4
+\fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

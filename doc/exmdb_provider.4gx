@@ -34,6 +34,9 @@ pdu := {
 		...
 	}
 }
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/mail_bounce/
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

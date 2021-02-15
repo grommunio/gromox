@@ -1,4 +1,7 @@
 .TH delivery 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+delivery(8gx) \(em Backend for local delivery
 .SH Synopsis
 .PP
 \fBdelivery\fP [\fB\-c\fP \fIconfig\fP]

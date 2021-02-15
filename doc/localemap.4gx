@@ -10,9 +10,9 @@ exchange_nsp(4gx) responds with failure to RPCs made by Outlook that involve
 character set IDs or locale IDs.
 .SH Files
 .IP \(bu 4
-\fI/usr/share/gromox/cpid.txt\fP: character set map
+\fIdata_file_path\fP/cpid.txt: mapping between character set IDs and names
 .IP \(bu 4
-\fI/usr/share/gromox/lcid.txt\fP: locale map
+\fIdata_file_path\fP/lcid.txt: mapping between locale IDs and names
 .SH See also
 .PP
 \fBgromox\fP(7)

@@ -20,7 +20,7 @@ Display option summary.
 If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA,
 the data stream is fed to the exchange_emsmdb(4gx) plugin.
 .IP \(bu 4
-Otherwise, HPM plugins such as proxy(4gx) are consulted whether any of them
+Otherwise, HPM plugins such as mod_proxy(4gx) are consulted whether any of them
 will handle the request. The order depends on the HPM plugin list (cf.
 http.cfg(5gx):\fBhpm_plugin_list\fP).
 .IP \(bu 4

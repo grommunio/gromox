@@ -1,7 +1,11 @@
 .TH freebusy 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
-\fBfreebusy\fP \(em helper utility for freebusy actions
+\fBfreebusy\fP \(em helper utility for EWS Freebusy actions
+.SH Description
+.PP
+The freebusy program is used by the EWS handler (a PHP script)
+to implement the GetUserAvailabilityRequest request.
 .SH Files
 .IP \(bu 4
 /usr/share/gromox/agent/exmdb_list.txt: exmdb multiserver map

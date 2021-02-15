@@ -185,6 +185,12 @@ Default: \fI40\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI1\fP
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/imap_code.txt: Mapping from internal IMAP error codes to
+textual descriptions.
+.IP \(bu 4
+\fIdata_file_path\fP/imap_lang.txt: Translations for IMAP folder names.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)

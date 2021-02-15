@@ -1,4 +1,7 @@
 .TH authmgr 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+authmgr(4gx) \(em Demultiplexer for authentication requests
 .SH Description
 .PP
 authmgr is a service plugin that, for mail account authentication, dynamically

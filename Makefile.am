@@ -306,7 +306,8 @@ man_MANS = \
 	doc/digest.8gx doc/domain_list.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
-	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
+	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
+	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-dbop.8gx \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
@@ -315,7 +316,7 @@ man_MANS = \
 	doc/imap.8gx doc/ip6_container.4gx \
 	doc/ldap_adaptor.4gx doc/localemap.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
-	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
+	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx doc/mod_proxy.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
