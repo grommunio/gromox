@@ -179,11 +179,9 @@ static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_na
 	int i, item_num;
 
 	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir, dir_name);
-	if (0 != stat(dir_buff, &node_stat) ||
-		0 == S_ISDIR(node_stat.st_mode)) {
-		return FALSE;
-	}
 	sub_dirp = opendir(dir_buff);
+	if (sub_dirp == nullptr)
+		return FALSE;
 	item_num = 0;
 	while ((sub_direntp = readdir(sub_dirp)) != NULL) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
@@ -216,8 +214,7 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 	struct dirent *sub_direntp;
 	struct stat node_stat;
 	char dir_buff[256], sub_buff[256];
-	int fd, i, j, k;
-	int parsed_length, until_tag;
+	int i, j, k, parsed_length, until_tag;
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
 
@@ -243,10 +240,6 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 			continue;
 		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
 		         dir_buff, sub_direntp->d_name);
-		if (0 != stat(sub_buff, &node_stat) ||
-			0 == S_ISREG(node_stat.st_mode)) {
-			continue;
-		}
 		/* compare file name with the resource table and get the index */
 		for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
 			if (0 == strcmp(g_resource_table[i], sub_direntp->d_name)) {
@@ -256,24 +249,17 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
+		wrapfd fd = open(sub_buff, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+		    !S_ISREG(node_stat.st_mode))
+			continue;
 		presource->content[i] = me_alloc<char>(node_stat.st_size);
-		if (NULL == presource->content[i]) {
+		if (presource->content[i] == nullptr ||
+		    read(fd.get(), presource->content[i], node_stat.st_size) != node_stat.st_size) {
 			closedir(sub_dirp);
 			goto FREE_RESOURCE;
 		}
-		fd = open(sub_buff, O_RDONLY);
-		if (-1 == fd) {
-			closedir(sub_dirp);
-			goto FREE_RESOURCE;
-		}
-		if (node_stat.st_size != read(fd, presource->content[i],
-			node_stat.st_size)) {
-			close(fd);
-			closedir(sub_dirp);
-			goto FREE_RESOURCE;
-		}
-		close(fd);
-		fd = -1;
+		fd.close();
 		
 		j = 0;
 		while (j < node_stat.st_size) {
