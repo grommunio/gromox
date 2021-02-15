@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <libHX/defs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
@@ -272,7 +271,7 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 		guid_from_string(&guids[PSETID_GROMOX], "1de937e2-85c6-40a1-bd9d-a6e2b7b787b1");
 		b_parsed = TRUE;
 	}
-	if (pset_type >= ARRAY_SIZE(guids))
+	if (pset_type >= GX_ARRAY_SIZE(guids))
 		return FALSE;
 	*pguid = guids[pset_type];
 	return TRUE;

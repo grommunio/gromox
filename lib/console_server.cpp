@@ -4,7 +4,6 @@
  */
 #include <cerrno>
 #include <mutex>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>

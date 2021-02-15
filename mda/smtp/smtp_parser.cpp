@@ -5,7 +5,6 @@
 #include <cerrno>
 #include <mutex>
 #include <unistd.h>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "smtp_parser.h"

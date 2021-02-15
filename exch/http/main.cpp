@@ -4,7 +4,6 @@
 #include <cerrno>
 #include <cstring>
 #include <memory>
-#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>

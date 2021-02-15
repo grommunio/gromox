@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
 #include <mutex>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>

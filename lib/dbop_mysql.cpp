@@ -7,7 +7,6 @@
 #include <mysql.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
-#include <libHX/defs.h>
 
 using namespace gromox;
 
@@ -565,7 +564,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 
 int dbop_mysql_recentversion()
 {
-	return tbl_upgrade_list[ARRAY_SIZE(tbl_upgrade_list)-2].v;
+	return tbl_upgrade_list[GX_ARRAY_SIZE(tbl_upgrade_list)-2].v;
 }
 
 int dbop_mysql_upgrade(MYSQL *conn)

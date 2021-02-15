@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>

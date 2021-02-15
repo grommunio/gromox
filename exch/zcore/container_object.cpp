@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
-#include <libHX/defs.h>
 #include <gromox/mapidefs.h>
 #include "container_object.h"
 #include "zarafa_server.h"

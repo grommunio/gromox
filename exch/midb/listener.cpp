@@ -3,7 +3,6 @@
 #include <cerrno>
 #include <string>
 #include <vector>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>

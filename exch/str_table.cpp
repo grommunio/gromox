@@ -7,7 +7,6 @@
 #include <string>
 #include <fcntl.h>
 #include <unistd.h>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>

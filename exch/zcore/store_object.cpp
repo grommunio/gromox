@@ -4,7 +4,6 @@
 #endif
 #include <cctype>
 #include <cstdint>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"

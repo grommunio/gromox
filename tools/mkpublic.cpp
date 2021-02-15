@@ -2,7 +2,6 @@
 #include <cerrno>
 #include <string>
 #include <vector>
-#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/database.h>

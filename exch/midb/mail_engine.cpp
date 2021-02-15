@@ -4,7 +4,6 @@
 #include <atomic>
 #include <climits>
 #include <libHX/ctype_helper.h>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>

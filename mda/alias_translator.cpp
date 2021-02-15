@@ -3,7 +3,6 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/hook_common.h>

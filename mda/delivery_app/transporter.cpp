@@ -3,7 +3,6 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>

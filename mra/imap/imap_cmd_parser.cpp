@@ -8,7 +8,6 @@
 #	include "config.h"
 #endif
 #include <libHX/ctype_helper.h>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>

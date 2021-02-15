@@ -7,7 +7,6 @@
 #include <utility>
 #include <vector>
 #include <cstdint>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>

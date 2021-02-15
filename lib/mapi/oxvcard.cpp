@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
-#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>

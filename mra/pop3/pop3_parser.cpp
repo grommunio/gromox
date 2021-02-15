@@ -4,7 +4,6 @@
  */ 
 #include <cerrno>
 #include <unistd.h>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "pop3_parser.h"

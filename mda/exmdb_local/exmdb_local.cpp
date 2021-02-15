@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <cstring>
 #include <unistd.h>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/util.hpp>

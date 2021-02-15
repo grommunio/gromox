@@ -6,7 +6,6 @@
  *    throw it into contexts pool, or close the connection
  */
 #include <cerrno>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/socket.h>

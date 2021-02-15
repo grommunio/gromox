@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/database.h>

@@ -3,7 +3,6 @@
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/double_list.hpp>
 #include <gromox/defs.h>

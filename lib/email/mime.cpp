@@ -5,7 +5,6 @@
  * point. if user uses mime_write_content function, the mime will then maintain
  * its own buffer
  */
-#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
