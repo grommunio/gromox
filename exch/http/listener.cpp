@@ -156,6 +156,8 @@ static void* thread_work_func(void* arg)
 		sockd2 = accept(g_listener_sock, (struct sockaddr*)&client_peer, 
 			&addrlen);
 		if (TRUE == g_stop_accept) {
+			if (sockd2 >= 0)
+				close(sockd2);
 			return nullptr;
 		}
 		if (-1 == sockd2) {
@@ -283,6 +285,8 @@ static void* thread_work_ssl_func(void* arg)
 		sockd2 = accept(g_listener_ssl_sock, (struct sockaddr*)&client_peer, 
 			&addrlen);
 		if (TRUE == g_stop_accept) {
+			if (sockd2 >= 0)
+				close(sockd2);
 			return nullptr;
 		}
 		if (-1 == sockd2) {
