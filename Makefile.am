@@ -63,7 +63,6 @@ exchange_plugins = \
 	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_log_plugin.la \
-	libgxsvc_ms_locale.la \
 	libgxsvc_mysql_adaptor.la \
 	libgxsvc_textmaps.la \
 	libgxsvc_user_filter.la
@@ -82,7 +81,6 @@ noinst_DATA += \
 	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_log_plugin.ldd \
-	libgxsvc_ms_locale.ldd \
 	libgxsvc_mysql_adaptor.ldd \
 	libgxsvc_textmaps.ldd \
 	libgxsvc_user_filter.ldd
@@ -231,10 +229,6 @@ libgxsvc_log_plugin_la_SOURCES = exch/log_plugin.cpp
 libgxsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_log_plugin_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_log_plugin_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ms_locale_la_SOURCES = exch/ms_locale.cpp
-libgxsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_ms_locale_la_DEPENDENCIES = ${default_sym}
 libgxsvc_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/main.cpp exch/mysql_adaptor/mysql_adaptor.cpp exch/mysql_adaptor/sql2.cpp
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
