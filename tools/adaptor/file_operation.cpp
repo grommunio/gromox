@@ -18,15 +18,13 @@ int file_operation_compare(const char *file1, const char *file2)
 {
 	struct stat node_stat1, node_stat2;
 
-	auto fd1 = open(file1, O_RDONLY);
-	if (fd1 < 0)
+	wrapfd fd1 = open(file1, O_RDONLY);
+	if (fd1.get() < 0)
 		return errno == ENOENT ? FILE_COMPARE_DIFFERENT : FILE_COMPARE_FAIL;
-	auto cl_1 = make_scope_exit([&]() { close(fd1); });
-	auto fd2 = open(file2, O_RDONLY);
-	if (fd2 < 0)
+	wrapfd fd2 = open(file2, O_RDONLY);
+	if (fd2.get() < 0)
 		return errno == ENOENT ? FILE_COMPARE_DIFFERENT : FILE_COMPARE_FAIL;
-	auto cl_2 = make_scope_exit([&]() { close(fd2); });
-	if (fstat(fd1, &node_stat1) != 0 || fstat(fd2, &node_stat2) != 0)
+	if (fstat(fd1.get(), &node_stat1) != 0 || fstat(fd2.get(), &node_stat2) != 0)
 		return FILE_COMPARE_FAIL;
 	if (node_stat1.st_size != node_stat2.st_size) {
 		return FILE_COMPARE_DIFFERENT;
@@ -35,9 +33,8 @@ int file_operation_compare(const char *file1, const char *file2)
 	if (NULL == ptr) {
 		return FILE_COMPARE_FAIL;
 	}
-	if (node_stat1.st_size != read(fd1, ptr, node_stat1.st_size) ||
-		node_stat2.st_size != read(fd2, ptr + node_stat1.st_size,
-		node_stat2.st_size)) {
+	if (read(fd1.get(), ptr, node_stat1.st_size) != node_stat1.st_size ||
+	    read(fd2.get(), ptr + node_stat1.st_size, node_stat2.st_size) != node_stat2.st_size) {
 		free(ptr);
 		return FILE_COMPARE_FAIL;
 	}

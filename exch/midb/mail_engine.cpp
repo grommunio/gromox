@@ -258,24 +258,23 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	
 	snprintf(temp_path, 256, "%s/ext/%s",
 		common_util_get_maildir(), mid_string);
-	auto fd = open(temp_path, O_RDONLY);
-	auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
-	if (fd < 0) {
+	wrapfd fd = open(temp_path, O_RDONLY);
+	if (fd.get() < 0) {
 		snprintf(temp_path, 256, "%s/eml/%s",
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_RDONLY);
-		if (fd < 0 || fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+		    !S_ISREG(node_stat.st_mode))
 			return 0;
 		pbuff = me_alloc<char>(node_stat.st_size);
 		if (NULL == pbuff) {
 			return 0;
 		}
-		if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+		if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
 			free(pbuff);
 			return 0;
 		}
-		close(fd);
-		fd = -1;
+		fd.close();
 		mail_init(&imail, g_mime_pool);
 		if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
 			mail_free(&imail);
@@ -297,26 +296,19 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		snprintf(temp_path, 256, "%s/ext/%s",
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 != fd) {
-			write(fd, digest_buff, tmp_len);
-			close(fd);
-			fd = -1;
+		if (fd.get() >= 0) {
+			write(fd.get(), digest_buff, tmp_len);
+			fd.close();
 		}
 	} else {
-		if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode) ||
+		if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode) ||
 		    node_stat.st_size >= MAX_DIGLEN)
 			return 0;
 		fd = open(temp_path, O_RDONLY);
-		if (-1 == fd) {
+		if (fd.get() < 0 || read(fd.get(), digest_buff, node_stat.st_size) != node_stat.st_size)
 			return 0;
-		}
-		if (node_stat.st_size != read(fd,
-			digest_buff, node_stat.st_size)) {
-			return 0;
-		}
 		digest_buff[node_stat.st_size] = '\0';
-		close(fd);
-		fd = -1;
+		fd.close();
 	}
 	sprintf(sql_string, "SELECT uid, recent, read,"
 		" unsent, flagged, replied, forwarded, deleted, ext,"
@@ -2015,15 +2007,11 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	dir = common_util_get_maildir();
 	if (NULL != mid_string) {
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string);
-		auto fd = open(temp_path, O_RDONLY);
-		if (fd < 0)
+		wrapfd fd = open(temp_path, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+		    node_stat.st_size >= MAX_DIGLEN ||
+		    read(fd.get(), temp_buff, node_stat.st_size) != node_stat.st_size)
 			return;
-		auto cl_0 = make_scope_exit([&]() { close(fd); });
-		if (fstat(fd, &node_stat) != 0 || node_stat.st_size >= MAX_DIGLEN)
-			return;
-		if (node_stat.st_size != read(fd, temp_buff, node_stat.st_size)) {
-			return;
-		}
 		temp_buff[node_stat.st_size] = '\0';
 	} else {
 		if (FALSE == common_util_switch_allocator()) {
@@ -2059,29 +2047,26 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			mail_engine_get_sequence_id());
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
-		auto fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 == fd) {
+		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		if (fd.get() < 0) {
 			mail_free(&imail);
 			return;
 		}
-		if (tmp_len != write(fd, temp_buff, tmp_len)) {
-			close(fd);
+		if (write(fd.get(), temp_buff, tmp_len) != tmp_len) {
 			mail_free(&imail);
 			return;
 		}
-		close(fd);
+		fd.close();
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
 		fd = open(temp_path1, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 == fd) {
+		if (fd.get() < 0) {
 			mail_free(&imail);
 			return;
 		}
-		if (FALSE == mail_to_file(&imail, fd)) {
-			close(fd);
+		if (!mail_to_file(&imail, fd.get())) {
 			mail_free(&imail);
 			return;
 		}
-		close(fd);
 		mail_free(&imail);
 	}
 	(*puidnext) ++;
@@ -3693,22 +3678,20 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		b_unsent = 1;
 	}
 	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
-	auto fd = open(temp_path, O_RDONLY);
-	if (fd < 0)
+	wrapfd fd = open(temp_path, O_RDONLY);
+	if (fd.get() < 0)
 		return 4;
-	auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
-	if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
 		return 1;
 	auto pbuff = me_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return 4;
 	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
 		free(pbuff);
 		return 4;
 	}
-	close(fd);
-	fd = -1;
+	fd.close();
 	mail_init(&imail, g_mime_pool);
 	if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
 		mail_free(&imail);
@@ -3728,14 +3711,13 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	temp_buff[tmp_len] = '\0';
 	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-	if (-1 == fd) {
+	if (fd.get() < 0) {
 		mail_free(&imail);
 		free(pbuff);
 		return 4;
 	}
-	write(fd, temp_buff, tmp_len);
-	close(fd);
-	fd = -1;
+	write(fd.get(), temp_buff, tmp_len);
+	fd.close();
 	pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		mail_free(&imail);
@@ -4186,22 +4168,20 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return 1;		
 	}
 	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
-	auto fd = open(temp_path, O_RDONLY);
-	if (fd < 0)
+	wrapfd fd = open(temp_path, O_RDONLY);
+	if (fd.get() < 0)
 		return 4;
-	auto cl_0 = make_scope_exit([&]() { close(fd); });
-	if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
 		return 1;
 	auto pbuff = me_alloc<char>(node_stat.st_size);
 	if (NULL == pbuff) {
 		return 4;
 	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
 		free(pbuff);
 		return 4;
 	}
-	close(fd);
-	fd = -1;
+	fd.close();
 	mail_init(&imail, g_mime_pool);
 	if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
 		mail_free(&imail);

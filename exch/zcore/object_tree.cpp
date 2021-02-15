@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/scope.hpp>
@@ -67,9 +68,8 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 	}
 	prootobj->b_touched = FALSE;
 	sprintf(tmp_path, "%s/config/zarafa.dat", maildir);
-	auto fd = open(tmp_path, O_RDONLY);
-	auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
-	if (fd < 0 || fstat(fd, &node_stat) != 0) {
+	wrapfd fd = open(tmp_path, O_RDONLY);
+	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 		prootobj->pprivate_proplist = tpropval_array_init();
 		if (NULL == prootobj->pprivate_proplist) {
 			free(prootobj->maildir);
@@ -91,7 +91,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 		free(prootobj);
 		return NULL;
 	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
 		free(pbuff);
 		free(prootobj->maildir);
 		free(prootobj);

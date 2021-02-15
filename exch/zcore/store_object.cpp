@@ -5,7 +5,6 @@
 #include <cctype>
 #include <cstdint>
 #include <libHX/string.h>
-#include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include "system_services.h"
 #include "zarafa_server.h"
@@ -15,7 +14,9 @@
 #include "object_tree.h"
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -1509,9 +1510,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		} else {
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
-		auto fd = open(temp_path, O_RDONLY);
-		auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
-		if (fd < 0 || fstat(fd, &node_stat) != 0) {
+		wrapfd fd = open(temp_path, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
@@ -1523,12 +1523,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		} else {
 			buff_len = node_stat.st_size;
 			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 1);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
 				return FALSE;
-			}
-			if (buff_len != read(fd, pbuff, buff_len)) {
-				return FALSE;
-			}
 			pbuff[buff_len] = '\0';
 			ptoken = strstr(pbuff, "\r\n\r\n");
 			if (NULL != ptoken) {
@@ -1540,14 +1536,9 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue));
 			}
 		}
-		close(fd);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 == fd) {
+		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
 			return FALSE;
-		}
-		if (buff_len != write(fd, pbuff, buff_len)) {
-			return FALSE;
-		}
 		return TRUE;
 	}
 	case PROP_TAG_OOFINTERNALSUBJECT:

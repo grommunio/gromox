@@ -4,6 +4,7 @@
 #endif
 #include <libHX/option.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mail.hpp>
 #include <gromox/scope.hpp>
 #include <cerrno>
@@ -43,13 +44,12 @@ int main(int argc, const char **argv)
 		printf("%s msg-path\n", argv[0]);
 		return 1;
 	}
-	auto fd = open(argv[1], O_RDONLY);
-	if (fd < 0) {
+	wrapfd fd = open(argv[1], O_RDONLY);
+	if (fd.get() < 0) {
 		printf("open %s: %s\n", argv[1], strerror(errno));
 		return 1;
 	}
-	auto cl_0 = make_scope_exit([&]() { close(fd); });
-	if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
+	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
 		printf("%s is not regular file\n", argv[1]);
 		return 2;
 	}
@@ -59,7 +59,7 @@ int main(int argc, const char **argv)
 		printf("Failed to allocate memory\n");
 		return 3;
 	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
 		printf("Failed to read file %s: %s\n", argv[1], strerror(errno));
 		free(pbuff);
 		return 5;

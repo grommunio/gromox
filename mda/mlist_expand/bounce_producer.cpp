@@ -330,11 +330,9 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 			continue;
 		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
 		         dir_buff, sub_direntp->d_name);
-		auto fd = open(sub_buff, O_RDONLY);
-		if (fd < 0)
-			continue;
-		auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
-		if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+		wrapfd fd = open(sub_buff, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+		    !S_ISREG(node_stat.st_mode))
 			continue;
 		/* compare file name with the resource table and get the index */
         for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
@@ -350,13 +348,11 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
     		closedir(sub_dirp);
 			goto FREE_RESOURCE;
 		}
-		if (node_stat.st_size != read(fd, presource->content[i],
-			node_stat.st_size)) {
+		if (read(fd.get(), presource->content[i], node_stat.st_size) != node_stat.st_size) {
     		closedir(sub_dirp);
 			goto FREE_RESOURCE;
 		}
-		close(fd);
-		fd = -1;
+		fd.close();
 		
 		j = 0;
 		while (j < node_stat.st_size) {

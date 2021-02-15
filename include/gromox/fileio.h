@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 #include <vector>
 #include <sys/types.h>
 #include <gromox/defs.h>
@@ -26,6 +27,23 @@ struct file_deleter {
 struct DIR_mp {
 	std::string m_path;
 	std::unique_ptr<DIR, file_deleter> m_dir;
+};
+
+class wrapfd {
+	public:
+	wrapfd(int z) : m_fd{z} {}
+	wrapfd(wrapfd &&) = delete;
+	~wrapfd() { if (m_fd >= 0) ::close(m_fd); }
+	int get() const { return m_fd; }
+	void close() { if (m_fd >= 0) ::close(m_fd); m_fd = -1; }
+	void operator=(wrapfd &&o) {
+		if (m_fd >= 0)
+			::close(m_fd);
+		m_fd = o.m_fd;
+		o.m_fd = -1;
+	}
+	private:
+	int m_fd = -1;
 };
 
 extern std::string iconvtext(const char *, size_t, const char *from, const char *to);

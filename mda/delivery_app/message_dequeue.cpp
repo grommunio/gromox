@@ -14,6 +14,7 @@
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "message_dequeue.h"
 #include "system_services.h"
 #include <gromox/util.hpp>
@@ -406,11 +407,9 @@ static void message_dequeue_load_from_mess(int mess)
 		return;
 	}
 	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, mess);
-	auto fd = open(name, O_RDONLY);
-	if (fd < 0)
-		return;
-	auto cl_0 = make_scope_exit([&]() { if (fd >= 0) close(fd); });
-	if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
+	wrapfd fd = open(name, O_RDONLY);
+	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+	    !S_ISREG(node_stat.st_mode))
 		return;
 	size = ((node_stat.st_size - 1)/(64 * 1024) + 1) * 64 * 1024;
 	pmessage = message_dequeue_get_from_free(MESSAGE_MESS, size);
@@ -423,7 +422,7 @@ static void message_dequeue_load_from_mess(int mess)
 		message_dequeue_put_to_free(pmessage);
         return;
 	}
-	if (node_stat.st_size != read(fd, ptr, node_stat.st_size)) {
+	if (read(fd.get(), ptr, node_stat.st_size) != node_stat.st_size) {
 		message_dequeue_put_to_free(pmessage);
 		free(ptr);
         return;

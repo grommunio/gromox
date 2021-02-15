@@ -3847,17 +3847,14 @@ static BOOL message_forward_message(const char *from_address,
 		get_digest(pdigest, "file", mid_string, 128);
 		sprintf(tmp_path, "%s/eml/%s",
 			exmdb_server_get_dir(), mid_string);
-		auto fd = open(tmp_path, O_RDONLY);
-		if (fd < 0)
+		wrapfd fd = open(tmp_path, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return false;
-		auto cl_0 = make_scope_exit([&]() { close(fd); });
-		if (fstat(fd, &node_stat) != 0)
-			return FALSE;
 		pbuff = me_alloc<char>(node_stat.st_size);
 		if (NULL == pbuff) {
 			return FALSE;
 		}
-		if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+		if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
 			free(pbuff);
 			return FALSE;
 		}

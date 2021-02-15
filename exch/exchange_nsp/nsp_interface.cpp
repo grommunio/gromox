@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
@@ -27,6 +28,8 @@
 #include <cstdio>
 #include <fcntl.h>
 #include "../mysql_adaptor/mysql_adaptor.h"
+
+using namespace gromox;
 
 struct nsp_sort_item {
 	uint32_t minid;
@@ -3283,17 +3286,14 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 
 	char buf[4096];
 	snprintf(buf, sizeof(buf), PKGDATADIR "/displayTable-%X-%X.abkt", locale_id, type);
-	int fd = open(buf, O_RDONLY);
-	if (fd < 0)
+	wrapfd fd = open(buf, O_RDONLY);
+	if (fd.get() < 0)
 		return MAPI_E_UNKNOWN_LCID;
-
-	auto cleanup_fd = gromox::make_scope_exit([&]() { if (fd >= 0) close(fd); });
 	std::string tpldata;
 	ssize_t have_read;
-	while ((have_read = read(fd, buf, sizeof(buf))) > 0)
+	while ((have_read = read(fd.get(), buf, sizeof(buf))) > 0)
 		tpldata += std::string_view(buf, have_read);
-	close(fd);
-	fd = -1;
+	fd.close();
 	try {
 		tpldata = nsp_abktobinary(nsp_abktojson(tpldata, 0), codepage, false);
 	} catch (const std::runtime_error &e) {

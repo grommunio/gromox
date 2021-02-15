@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 
@@ -46,11 +47,9 @@ int main()
 		struct stat sb;
 		char timebuf[64];
 
-		auto fd = open(filename.c_str(), O_RDONLY);
-		if (fd < 0)
-			continue;
-		auto cl_0 = make_scope_exit([&]() { close(fd); });
-		if (fstat(fd, &sb) < 0 || !S_ISREG(sb.st_mode))
+		wrapfd fd = open(filename.c_str(), O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &sb) < 0 ||
+		    !S_ISREG(sb.st_mode))
 			continue;
 		strftime(timebuf, sizeof(timebuf), "%FT%T", localtime(&sb.st_mtime));
 		printf("%-6s  %-19s", de->d_name, timebuf);
@@ -59,7 +58,7 @@ int main()
 			printf("\n");
 			continue;
 		}
-		auto fcontent = reinterpret_cast<char *>(mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
+		auto fcontent = reinterpret_cast<char *>(mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE, fd.get(), 0));
 		if (fcontent == reinterpret_cast<void *>(MAP_FAILED)) {
 			printf("\n");
 			continue;
