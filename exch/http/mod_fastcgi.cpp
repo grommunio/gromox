@@ -86,7 +86,6 @@ static int g_context_num;
 static int g_exec_timeout;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
-static char g_list_path[256];
 static DOUBLE_LIST g_fastcgi_list;
 static FASTCGI_CONTEXT *g_context_list;
 static volatile int g_unavailable_times;
@@ -126,12 +125,11 @@ static FASTCGI_NODE* mod_fastcgi_find_backend(
 	return NULL;
 }
 
-void mod_fastcgi_init(int context_num, const char *list_path,
-	uint64_t cache_size, uint64_t max_size, int exec_timeout)
+void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
+    int exec_timeout)
 {
 	g_context_num = context_num;
 	g_unavailable_times = 0;
-	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	g_cache_size = cache_size;
 	g_max_size = max_size;
 	g_exec_timeout = exec_timeout;
@@ -188,11 +186,10 @@ int mod_fastcgi_run()
 		char domain[256], path[256], dir[256], suffix[16], index[256];
 		char extra_headers[304], sock_path[256];
 	};
-	auto pfile = list_file_initd(g_list_path, nullptr,
+	auto pfile = list_file_initd("fastcgi.txt", resource_get_string("config_file_path"),
 		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256");
 	if (NULL == pfile) {
-		printf("[mod_fastcgi]: list_file_init %s: %s\n",
-			g_list_path, strerror(errno));
+		printf("[mod_fastcgi]: list_file_initd fastcgi.txt: %s\n", strerror(errno));
 		return -1;
 	}
 	auto item_num = pfile->get_size();

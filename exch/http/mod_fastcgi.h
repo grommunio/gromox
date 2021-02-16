@@ -35,8 +35,7 @@ struct FASTCGI_CONTEXT {
 
 struct HTTP_CONTEXT;
 
-void mod_fastcgi_init(int context_num, const char *list_path,
-	uint64_t cache_size, uint64_t max_size, int exec_timeout);
+extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, int exec_timeout);
 extern int mod_fastcgi_run(void);
 extern void mod_fastcgi_stop(void);
 extern void mod_fastcgi_free(void);

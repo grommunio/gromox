@@ -93,9 +93,6 @@ int main(int argc, const char **argv)
 	int fastcgi_exec_timeout;
 	uint64_t fastcgi_max_size;
 	struct passwd *puser_pass;
-	char cache_list_path[256];
-	char rewrite_list_path[256];
-	char fastcgi_list_path[256];
 	uint64_t fastcgi_cache_size;
 	const char *hpm_plugin_path;
 	char host_name[256], *ptoken;
@@ -424,9 +421,6 @@ int main(int argc, const char **argv)
 		resource_set_string("STATE_PATH", state_dir);
 	}
 
-	snprintf(fastcgi_list_path, sizeof(fastcgi_list_path), "%s/fastcgi.txt", data_dir);
-	snprintf(cache_list_path, sizeof(cache_list_path), "%s/cache.txt", data_dir);
-	snprintf(rewrite_list_path, sizeof(rewrite_list_path), "%s/rewrite.txt", data_dir);
 	printf("[system]: data files path is %s\n", data_dir);
 	printf("[system]: state path is %s\n", state_dir);
 	
@@ -593,17 +587,15 @@ int main(int argc, const char **argv)
 	auto cleanup_13 = make_scope_exit(hpm_processor_free);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 
-	mod_rewrite_init(rewrite_list_path);
-	
-	if (0 != mod_rewrite_run()) {
+	mod_rewrite_init();
+	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {
 		printf("[system]: failed to run mod rewrite\n");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_15 = make_scope_exit(mod_rewrite_free);
 	auto cleanup_16 = make_scope_exit(mod_rewrite_stop);
 
-	mod_fastcgi_init(context_num,
-		fastcgi_list_path, fastcgi_cache_size,
+	mod_fastcgi_init(context_num, fastcgi_cache_size,
 		fastcgi_max_size, fastcgi_exec_timeout); 
  
 	if (0 != mod_fastcgi_run()) { 
@@ -613,8 +605,7 @@ int main(int argc, const char **argv)
 	auto cleanup_17 = make_scope_exit(mod_fastcgi_free);
 	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 
-	mod_cache_init(context_num, cache_list_path);
-	
+	mod_cache_init(context_num);
 	if (0 != mod_cache_run()) {
 		printf("[system]: failed to run mod cache\n");
 		return EXIT_FAILURE;

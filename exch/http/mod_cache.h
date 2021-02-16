@@ -2,8 +2,7 @@
 #include <gromox/common_types.hpp>
 
 struct HTTP_CONTEXT;
-
-void mod_cache_init(int context_num, const char *list_path);
+extern void mod_cache_init(int context_num);
 extern int mod_cache_run(void);
 extern int mod_cache_stop(void);
 extern void mod_cache_free(void);

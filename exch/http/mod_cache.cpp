@@ -61,7 +61,6 @@ struct DIRECTORY_NODE {
 static int g_context_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_tid;
-static char g_list_path[256];
 static DOUBLE_LIST g_item_list;
 static pthread_mutex_t g_hash_lock;
 static DOUBLE_LIST g_directory_list;
@@ -136,11 +135,10 @@ static BOOL mod_cache_enlarge_hash()
 	return TRUE;
 }
 
-void mod_cache_init(int context_num, const char *list_path)
+void mod_cache_init(int context_num)
 {
 	g_notify_stop = TRUE;
 	g_context_num = context_num;
-	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	pthread_mutex_init(&g_hash_lock, NULL);
 	double_list_init(&g_item_list);
 	double_list_init(&g_directory_list);
@@ -152,10 +150,10 @@ int mod_cache_run()
 	DIRECTORY_NODE *pdnode;
 	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
-	auto pfile = list_file_initd(g_list_path, nullptr, "%s:256%s:256%s:256");
+	auto pfile = list_file_initd("cache.txt", resource_get_string("config_file_path"),
+	             "%s:256%s:256%s:256");
 	if (NULL == pfile) {
-		printf("[mod_cache]: list_file_init %s: %s\n",
-			g_list_path, strerror(errno));
+		printf("[mod_cache]: list_file_initd cache.txt: %s\n", strerror(errno));
 		return -1;
 	}
 	auto item_num = pfile->get_size();

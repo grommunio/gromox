@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "mod_rewrite.h"
 #include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
@@ -11,13 +12,14 @@
 
 #define MAX_LINE					16*1024
 
+using namespace gromox;
+
 struct REWRITE_NODE {
 	DOUBLE_LIST_NODE node;
 	regex_t search_pattern;
 	char *replace_string;
 };
 
-static char g_list_path[256];
 static DOUBLE_LIST g_rewite_list;
 
 static BOOL mod_rewrite_rreplace(char *buf,
@@ -84,26 +86,24 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	return FALSE;
 }
 
-void mod_rewrite_init(const char *list_path)
+void mod_rewrite_init()
 {
-	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_rewite_list);
 }
 
-int mod_rewrite_run()
+int mod_rewrite_run(const char *sdlist)
 {
 	int tmp_len;
 	int line_no;
 	char *ptoken;
-	FILE *file_ptr;
 	char line[MAX_LINE];
 	REWRITE_NODE *prnode;
 	
 	line_no = 0;
-	file_ptr = fopen(g_list_path, "r");
+	auto file_ptr = fopen_sd("rewrite.txt", sdlist);
 	if (file_ptr == nullptr)
 		return 0;
-	while (NULL != fgets(line, MAX_LINE, file_ptr)) {
+	while (fgets(line, GX_ARRAY_SIZE(line), file_ptr.get())) {
 		line_no ++;
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 			/* skip empty line or comments */
@@ -157,7 +157,6 @@ int mod_rewrite_run()
 		}
 		double_list_append_as_tail(&g_rewite_list, &prnode->node);
 	}
-	fclose(file_ptr);
 	return 0;
 }
 

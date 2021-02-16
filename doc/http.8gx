@@ -79,7 +79,8 @@ many failed logins.
 Default: \fI1 minute\fP
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by plugin instances.
 .PP
 Default: \fI/etc/gromox/http:/etc/gromox\fP
 .SS console_server_ip
@@ -101,7 +102,8 @@ Default: \fI256K\fP
 Default: \fI400\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories which will be scanned when locating data
+files.
 .PP
 Default: \fI/usr/share/gromox/http\fP
 .SS default_domain
