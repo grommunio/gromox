@@ -2023,9 +2023,8 @@ static int exmdb_ext_push_get_content_sync_request(
 	
 	status = ext_buffer_push_uint64(pext,
 		ppayload->get_content_sync.folder_id);
-	if (EXT_ERR_SUCCESS) {
+	if (status != EXT_ERR_SUCCESS)
 		return status;
-	}
 	if (NULL == ppayload->get_content_sync.username) {
 		status = ext_buffer_push_uint8(pext, 0);
 		if (EXT_ERR_SUCCESS != status) {
@@ -2152,9 +2151,8 @@ static int exmdb_ext_push_get_hierarchy_sync_request(
 	
 	status = ext_buffer_push_uint64(pext,
 		ppayload->get_hierarchy_sync.folder_id);
-	if (EXT_ERR_SUCCESS) {
+	if (status != EXT_ERR_SUCCESS)
 		return status;
-	}
 	if (NULL == ppayload->get_hierarchy_sync.username) {
 		status = ext_buffer_push_uint8(pext, 0);
 		if (EXT_ERR_SUCCESS != status) {
