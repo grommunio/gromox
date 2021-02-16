@@ -2,8 +2,10 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/socket.h>
 #include <gromox/list_file.hpp>
@@ -23,6 +25,8 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #define SOCKET_TIMEOUT								60
+
+using namespace gromox;
 
 struct EXMDB_ITEM {
 	char prefix[256];
@@ -47,8 +51,9 @@ struct UNLOAD_STORE_REQUEST {
 };
 
 static DOUBLE_LIST g_exmdb_list;
-static char *opt_datadir;
+static char *opt_config_file, *opt_datadir;
 static const struct HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
 	HXOPT_TABLEEND,
 };
@@ -334,7 +339,7 @@ static BOOL exmdb_client_unload_store(const char *dir)
 
 int main(int argc, const char **argv)
 {
-	int i, fd;
+	int i;
 	char *err_msg;
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
@@ -350,6 +355,11 @@ int main(int argc, const char **argv)
 		printf("usage: %s <maildir>\n", argv[0]);
 		return 1;
 	}
+	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
+	if (opt_config_file != nullptr && pconfig == nullptr) {
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return 2;
+	}
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", argv[1]);
 	if (0 != stat(temp_path, &node_stat)) {
 		printf("can not find sotre database,"
@@ -357,47 +367,29 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
-	char common_tpl[256], priv_tpl[256];
-	snprintf(common_tpl, GX_ARRAY_SIZE(common_tpl), "%s/sqlite3_common.txt", datadir);
-	snprintf(priv_tpl, GX_ARRAY_SIZE(priv_tpl), "%s/sqlite3_private.txt", datadir);
-	fd = open(common_tpl, O_RDONLY);
-	if (fd < 0) {
-		printf("Failed to open \"%s\": %s\n", common_tpl, strerror(errno));
+	const char *configdir = config_file_get_value(pconfig, "config_file_path");
+	if (configdir == nullptr)
+		configdir = PKGSYSCONFDIR;
+	const char *datadir = opt_datadir != nullptr ? opt_datadir :
+	                      config_file_get_value(pconfig, "data_file_path");
+	if (datadir == nullptr)
+		datadir = PKGDATADIR;
+
+	auto filp = fopen_sd("sqlite3_common.txt", datadir);
+	if (filp == nullptr) {
+		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	size_t str_size = fstat(fd, &node_stat) ? node_stat.st_size : 0;
-	auto sql_string = static_cast<char *>(malloc(str_size));
-	if (read(fd, sql_string, str_size) != str_size) {
-		printf("read %s: %s\n", common_tpl, strerror(errno));
-		close(fd);
-		free(sql_string);
+	auto sql_string = slurp_file(filp.get());
+	filp = fopen_sd("sqlite3_private.txt", datadir);
+	if (filp == nullptr) {
+		fprintf(stderr, "fopen_sd sqlite3_private.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	close(fd);
-	fd = open(priv_tpl, O_RDONLY);
-	if (fd < 0) {
-		printf("Failed to open \"%s\": %s\n", priv_tpl, strerror(errno));
-		return 7;
-	}
-	size_t str_size1 = fstat(fd, &node_stat) ? node_stat.st_size : 0;
-	auto sql_string1 = static_cast<char *>(realloc(sql_string, str_size + str_size1 + 1));
-	if (sql_string1 == nullptr) {
-		printf("%s\n", strerror(errno));
-		close(fd);
-		return 7;
-	}
-	sql_string = sql_string1;
-	if (read(fd, sql_string + str_size, str_size1) != str_size1) {
-		printf("read %s: %s\n", priv_tpl, strerror(errno));
-		close(fd);
-		free(sql_string);
-		return 7;
-	}
-	sql_string[str_size + str_size1] = '\0';
+	sql_string += slurp_file(filp.get());
+	filp.reset();
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
-		free(sql_string);
 		return 8;
 	}
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
@@ -405,21 +397,18 @@ int main(int argc, const char **argv)
 	if (SQLITE_OK != sqlite3_open_v2(temp_path1, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
-		free(sql_string);
 		sqlite3_shutdown();
 		return 9;
 	}
 	chmod(temp_path1, 0666);
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
+	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
-		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	free(sql_string);
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	snprintf(tmp_sql, 1024, "ATTACH DATABASE "
@@ -622,10 +611,10 @@ int main(int argc, const char **argv)
 	sqlite3_shutdown();
 	
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_initd("exmdb_list.txt", PKGDATASADIR, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
+	auto plist = list_file_initd("exmdb_list.txt", configdir,
+	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
-		printf("Failed to read exmdb list from %s: %s\n",
-			PKGDATASADIR "/exmdb_list.txt", strerror(errno));
+		fprintf(stderr, "list_file_initd exmdb_list.txt: %s\n", strerror(errno));
 		return 11;
 	}
 	auto list_num = plist->get_size();

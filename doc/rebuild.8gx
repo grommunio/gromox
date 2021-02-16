@@ -1,12 +1,28 @@
 .TH rebuild 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
-\fBrebuild\fP [\fB\-d\fP \fIdatadir\fP \fImaildir\fP
+\fBrebuild\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP] \fImaildir\fP
 .SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/sa.cfg will be read if it exists.
 .TP
 \fB\-d\fP \fIdatapath\fP
 This option can be used to point to sqlite3_common.txt and sqlite3_private.txt.
 config file.
+.SH Files
+.IP \(bu 4
+\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
+.IP \(bu 4
+\fIdata_file_path\fP/sqlite3_common.txt: SQLite instructions to generate part
+of a private store.
+.IP \(bu 4
+\fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
+of a private store.
+.SH Config file directives
+.PP
+The config file is shared with other pgorams. See \fBsa.cfg\fP(5gx).
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBsa.cfg\fP(5gx)
