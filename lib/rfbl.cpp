@@ -246,4 +246,30 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	return -1;
 }
 
+std::string slurp_file(FILE *f)
+{
+	std::string outstr;
+	char buf[4096];
+	while (!feof(f)) {
+		auto rd = fread(buf, 1, sizeof(buf), f);
+		if (ferror(f))
+			return outstr;
+		outstr.append(buf, rd);
+	}
+	return outstr;
+}
+
+std::string slurp_file(const char *file)
+{
+	std::string data;
+	if (file == nullptr)
+		return slurp_file(stdin);
+	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
+	if (fp == nullptr) {
+		fprintf(stderr, "open %s: %s", file, strerror(errno));
+		return data;
+	}
+	return slurp_file(fp.get());
+}
+
 }

@@ -279,7 +279,7 @@ tests_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 tests_icalparse_SOURCES = tests/icalparse.cpp
-tests_icalparse_LDADD = libgromox_email.la libgromox_mapi.la
+tests_icalparse_LDADD = libgromox_common.la libgromox_email.la libgromox_mapi.la
 
 # doc
 man_MANS = \
