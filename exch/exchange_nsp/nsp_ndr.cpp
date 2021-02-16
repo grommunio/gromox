@@ -918,7 +918,6 @@ static int nsp_ndr_push_filetime_array(NDR_PUSH *pndr, int flag, const FILETIME_
 
 static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PROP_VAL_UNION *r)
 {
-	int status;
 	uint32_t ptr;
 	uint32_t size;
 	uint32_t offset;
@@ -930,20 +929,18 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		TRY(ndr_pull_union_align(pndr, 5));
 		switch (*ptype) {
 		case PT_SHORT:
-			status = ndr_pull_uint16(pndr, &r->s);
+			TRY(ndr_pull_uint16(pndr, &r->s));
 			break;
 		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
-			status = ndr_pull_uint32(pndr, &r->l);
+			TRY(ndr_pull_uint32(pndr, &r->l));
 			break;
 		case PT_BOOLEAN:
-			status = ndr_pull_uint8(pndr, &r->b);
+			TRY(ndr_pull_uint8(pndr, &r->b));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
-			status = ndr_pull_generic_ptr(pndr, &ptr);
-			if (status != NDR_ERR_SUCCESS)
-				return status;
+			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
 				r->pstr = (char*)(long)ptr;
 			} else {
@@ -951,12 +948,10 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			}
 			break;
 		case PT_BINARY:
-			status = nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->bin);
+			TRY(nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->bin));
 			break;
 		case PROPVAL_TYPE_FLATUID:
-			status = ndr_pull_generic_ptr(pndr, &ptr);
-			if (status != NDR_ERR_SUCCESS)
-				return status;
+			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
 				r->pguid = (FLATUID*)(long)ptr;
 			} else {
@@ -964,40 +959,37 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			}
 			break;
 		case PT_SYSTIME:
-			status = nsp_ndr_pull_filetime(pndr, &r->ftime);
+			TRY(nsp_ndr_pull_filetime(pndr, &r->ftime));
 			break;
 		case PT_ERROR:
-			status = ndr_pull_uint32(pndr, &r->err);
+			TRY(ndr_pull_uint32(pndr, &r->err));
 			break;
 		case PT_MV_SHORT:
-			status = nsp_ndr_pull_short_array(pndr, FLAG_HEADER, &r->short_array);
+			TRY(nsp_ndr_pull_short_array(pndr, FLAG_HEADER, &r->short_array));
 			break;
 		case PT_MV_LONG:
-			status = nsp_ndr_pull_long_array(pndr, FLAG_HEADER, &r->long_array);
+			TRY(nsp_ndr_pull_long_array(pndr, FLAG_HEADER, &r->long_array));
 			break;
 		case PT_MV_STRING8:
-			status = nsp_ndr_pull_string_array(pndr, FLAG_HEADER, &r->string_array);
+			TRY(nsp_ndr_pull_string_array(pndr, FLAG_HEADER, &r->string_array));
 			break;
 		case PT_MV_BINARY:
-			status = nsp_ndr_pull_binary_array(pndr, FLAG_HEADER, &r->bin_array);
+			TRY(nsp_ndr_pull_binary_array(pndr, FLAG_HEADER, &r->bin_array));
 			break;
 		case PROPVAL_TYPE_FLATUID_ARRAY:
-			status = nsp_ndr_pull_flatuid_array(pndr, FLAG_HEADER, &r->guid_array);
+			TRY(nsp_ndr_pull_flatuid_array(pndr, FLAG_HEADER, &r->guid_array));
 			break;
 		case PT_MV_UNICODE:
-			status = nsp_ndr_pull_wstring_array(pndr, FLAG_HEADER, &r->string_array);
+			TRY(nsp_ndr_pull_wstring_array(pndr, FLAG_HEADER, &r->string_array));
 			break;
 		case PT_MV_SYSTIME:
-			status = nsp_ndr_pull_filetime_array(pndr, FLAG_HEADER, &r->ftime_array);
+			TRY(nsp_ndr_pull_filetime_array(pndr, FLAG_HEADER, &r->ftime_array));
 			break;
 		case PT_NULL:
-			status = ndr_pull_uint32(pndr, &r->reserved);
+			TRY(ndr_pull_uint32(pndr, &r->reserved));
 			break;
 		default:
 			return NDR_ERR_BAD_SWITCH;
-		}
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
 		}
 	}
 	
@@ -1053,7 +1045,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			}
 			break;
 		case PT_BINARY:
-			status = nsp_ndr_pull_binary(pndr, FLAG_CONTENT, &r->bin);
+			TRY(nsp_ndr_pull_binary(pndr, FLAG_CONTENT, &r->bin));
 			break;
 		case PROPVAL_TYPE_FLATUID:
 			if (NULL != r->pguid) {
@@ -1096,7 +1088,6 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 
 static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const PROP_VAL_UNION *r)
 {
-	int status;
 	int length;
 	
 	if (flag & FLAG_HEADER) {
@@ -1105,61 +1096,57 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		TRY(ndr_push_union_align(pndr, 5));
 		switch (type) {
 		case PT_SHORT:
-			status = ndr_push_uint16(pndr, r->s);
+			TRY(ndr_push_uint16(pndr, r->s));
 			break;
 		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
-			status = ndr_push_uint32(pndr, r->l);
+			TRY(ndr_push_uint32(pndr, r->l));
 			break;
 		case PT_BOOLEAN:
-			status = ndr_push_uint8(pndr, r->b);
+			TRY(ndr_push_uint8(pndr, r->b));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
-			status = ndr_push_unique_ptr(pndr, r->pstr);
+			TRY(ndr_push_unique_ptr(pndr, r->pstr));
 			break;
 		case PT_BINARY:
-			status = nsp_ndr_push_binary(pndr, FLAG_HEADER, &r->bin);
+			TRY(nsp_ndr_push_binary(pndr, FLAG_HEADER, &r->bin));
 			break;
 		case PROPVAL_TYPE_FLATUID:
-			status = ndr_push_unique_ptr(pndr, r->pguid);
+			TRY(ndr_push_unique_ptr(pndr, r->pguid));
 			break;
 		case PT_SYSTIME:
-			status = nsp_ndr_push_filetime(pndr, &r->ftime);
+			TRY(nsp_ndr_push_filetime(pndr, &r->ftime));
 			break;
 		case PT_ERROR:
-			status = ndr_push_uint32(pndr, r->err);
+			TRY(ndr_push_uint32(pndr, r->err));
 			break;
 		case PT_MV_SHORT:
-			status = nsp_ndr_push_short_array(pndr, FLAG_HEADER, &r->short_array);
+			TRY(nsp_ndr_push_short_array(pndr, FLAG_HEADER, &r->short_array));
 			break;
 		case PT_MV_LONG:
-			status = nsp_ndr_push_long_array(pndr, FLAG_HEADER, &r->long_array);
+			TRY(nsp_ndr_push_long_array(pndr, FLAG_HEADER, &r->long_array));
 			break;
 		case PT_MV_STRING8:
-			status = nsp_ndr_push_string_array(pndr, FLAG_HEADER, &r->string_array);
+			TRY(nsp_ndr_push_string_array(pndr, FLAG_HEADER, &r->string_array));
 			break;
 		case PT_MV_BINARY:
-			status = nsp_ndr_push_binary_array(pndr, FLAG_HEADER, &r->bin_array);
+			TRY(nsp_ndr_push_binary_array(pndr, FLAG_HEADER, &r->bin_array));
 			break;
 		case PROPVAL_TYPE_FLATUID_ARRAY:
-			status = nsp_ndr_push_flatuid_array(pndr, FLAG_HEADER, &r->guid_array);
+			TRY(nsp_ndr_push_flatuid_array(pndr, FLAG_HEADER, &r->guid_array));
 			break;
 		case PT_MV_UNICODE:
-			status = nsp_ndr_push_wstring_array(pndr, FLAG_HEADER, &r->string_array);
+			TRY(nsp_ndr_push_wstring_array(pndr, FLAG_HEADER, &r->string_array));
 			break;
 		case PT_MV_SYSTIME:
-			status = nsp_ndr_push_filetime_array(pndr, FLAG_HEADER, &r->ftime_array);
+			TRY(nsp_ndr_push_filetime_array(pndr, FLAG_HEADER, &r->ftime_array));
 			break;
 		case PT_NULL:
-			status = ndr_push_uint32(pndr, r->reserved);
+			TRY(ndr_push_uint32(pndr, r->reserved));
 			break;
 		default:
 			return NDR_ERR_BAD_SWITCH;
-		}
-		
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
 		}
 	}
 	
@@ -1700,49 +1687,43 @@ static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, int flag, const RESTRICT
 
 static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag, int *ptype, RESTRICTION_UNION *r)
 {
-	int status;
-	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_union_align(pndr, 5));
 		TRY(ndr_pull_uint32(pndr, reinterpret_cast<uint32_t *>(ptype)));
 		TRY(ndr_pull_union_align(pndr, 5));
 		switch (*ptype) {
 		case RES_AND:
-			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_and);
+			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_and));
 			break;
 		case RES_OR:
-			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_or);
+			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_or));
 			break;
 		case RES_NOT:
-			status = nsp_ndr_pull_restriction_not(pndr, FLAG_HEADER, &r->res_not);
+			TRY(nsp_ndr_pull_restriction_not(pndr, FLAG_HEADER, &r->res_not));
 			break;
 		case RES_CONTENT:
-			status = nsp_ndr_pull_restriction_content(pndr, FLAG_HEADER, &r->res_content);
+			TRY(nsp_ndr_pull_restriction_content(pndr, FLAG_HEADER, &r->res_content));
 			break;
 		case RES_PROPERTY:
-			status = nsp_ndr_pull_restriction_property(pndr, FLAG_HEADER, &r->res_property);
+			TRY(nsp_ndr_pull_restriction_property(pndr, FLAG_HEADER, &r->res_property));
 			break;
 		case RES_PROPCOMPARE:
-			status = nsp_ndr_pull_restriction_propcompare(pndr, &r->res_propcompare);
+			TRY(nsp_ndr_pull_restriction_propcompare(pndr, &r->res_propcompare));
 			break;
 		case RES_BITMASK:
-			status = nsp_ndr_pull_restriction_bitmask(pndr, &r->res_bitmask);
+			TRY(nsp_ndr_pull_restriction_bitmask(pndr, &r->res_bitmask));
 			break;
 		case RES_SIZE:
-			status = nsp_ndr_pull_restriction_size(pndr, &r->res_size);
+			TRY(nsp_ndr_pull_restriction_size(pndr, &r->res_size));
 			break;
 		case RES_EXIST:
-			status = nsp_ndr_pull_restriction_exist(pndr, &r->res_exist);
+			TRY(nsp_ndr_pull_restriction_exist(pndr, &r->res_exist));
 			break;
 		case RES_SUBRESTRICTION:
-			status = nsp_ndr_pull_restriction_sub(pndr, FLAG_HEADER, &r->res_sub);
+			TRY(nsp_ndr_pull_restriction_sub(pndr, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
 			return NDR_ERR_BAD_SWITCH;
-		}
-		
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
 		}
 	}
 	
@@ -1783,48 +1764,43 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag, int *ptype, 
 
 static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag, int type, const RESTRICTION_UNION *r)
 {
-	int status;
-
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_union_align(pndr, 5));
 		TRY(ndr_push_uint32(pndr, type));
 		TRY(ndr_push_union_align(pndr, 5));
 		switch (type) {
 		case RES_AND:
-			status = nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_and);
+			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_and));
 			break;
 		case RES_OR:
-			status = nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_or);
+			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_or));
 			break;
 		case RES_NOT:
-			status = nsp_ndr_push_restriction_not(pndr, FLAG_HEADER, &r->res_not);
+			TRY(nsp_ndr_push_restriction_not(pndr, FLAG_HEADER, &r->res_not));
 			break;
 		case RES_CONTENT:
-			status = nsp_ndr_push_restriction_content(pndr, FLAG_HEADER, &r->res_content);
+			TRY(nsp_ndr_push_restriction_content(pndr, FLAG_HEADER, &r->res_content));
 			break;
 		case RES_PROPERTY:
-			status = nsp_ndr_push_restriction_property(pndr, FLAG_HEADER, &r->res_property);
+			TRY(nsp_ndr_push_restriction_property(pndr, FLAG_HEADER, &r->res_property));
 			break;
 		case RES_PROPCOMPARE:
-			status = nsp_ndr_push_restriction_propcompare(pndr, &r->res_propcompare);
+			TRY(nsp_ndr_push_restriction_propcompare(pndr, &r->res_propcompare));
 			break;
 		case RES_BITMASK:
-			status = nsp_ndr_push_restriction_bitmask(pndr, &r->res_bitmask);
+			TRY(nsp_ndr_push_restriction_bitmask(pndr, &r->res_bitmask));
 			break;
 		case RES_SIZE:
-			status = nsp_ndr_push_restriction_size(pndr, &r->res_size);
+			TRY(nsp_ndr_push_restriction_size(pndr, &r->res_size));
 			break;
 		case RES_EXIST:
-			status = nsp_ndr_push_restriction_exist(pndr, &r->res_exist);
+			TRY(nsp_ndr_push_restriction_exist(pndr, &r->res_exist));
 			break;
 		case RES_SUBRESTRICTION:
-			status = nsp_ndr_push_restriction_sub(pndr, FLAG_HEADER, &r->res_sub);
+			TRY(nsp_ndr_push_restriction_sub(pndr, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
 			return NDR_ERR_BAD_SWITCH;
-		}
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
 		}
 	}
 	
