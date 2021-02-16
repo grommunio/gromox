@@ -92,13 +92,9 @@ int main(int argc, const char **argv)
 	char host_name[256];
 	char console_ip[32];
 	char data_path[256], state_dir[256];
-	char exmdb_path[256];
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	char config_path[256];
-	char langmap_path[256];
 	char service_path[256];
-	char resource_path[256];
-	char folderlang_path[256];
 	char submit_command[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -171,6 +167,7 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "CONFIG_FILE_PATH");
 	if (NULL == str_value) {
 		strcpy(config_path, PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR);
+		config_file_set_value(pconfig, "config_file_path", config_path);
 	} else {
 		strcpy(config_path, str_value);
 	}
@@ -187,11 +184,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "STATE_PATH");
 	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	
-	snprintf(exmdb_path, GX_ARRAY_SIZE(exmdb_path), "%s/exmdb_list.txt", data_path);
-	printf("[system]: exmdb file path is %s\n", exmdb_path);
-	snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", data_path);
-	snprintf(langmap_path, GX_ARRAY_SIZE(langmap_path), "%s/langmap.txt", data_path);
-	snprintf(folderlang_path, GX_ARRAY_SIZE(folderlang_path), "%s/folder_lang.txt", data_path);
 	msgchg_grouping_init(data_path);
 	service_init({service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
@@ -248,8 +240,7 @@ int main(int argc, const char **argv)
 		strcpy(separator, str_value);
 	}
 	
-	bounce_producer_init(resource_path, separator);
-	
+	bounce_producer_init(separator);
 	str_value = config_file_get_value(pconfig, "ZARAFA_MIME_NUMBER");
 	if (NULL == str_value) {
 		mime_num = 4096;
@@ -345,7 +336,7 @@ int main(int argc, const char **argv)
 	}
 	common_util_init(org_name, host_name, charset, timezone, mime_num,
 		max_rcpt, max_mail, max_length, max_rule_len, smtp_ip, smtp_port,
-		str_value, langmap_path, folderlang_path, submit_command);
+		str_value, submit_command);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {
@@ -373,8 +364,7 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
-	exmdb_client_init(proxy_num, stub_num, exmdb_path);
-
+	exmdb_client_init(proxy_num, stub_num);
 	str_value = config_file_get_value(pconfig, "ZARAFA_THREADS_NUM");
 	if (NULL == str_value) {
 		threads_num = 100;
@@ -485,15 +475,13 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run system services\n");
 		return 4;
 	}
-	
-	if (0 != common_util_run()) {
+	if (common_util_run(data_path) != 0) {
 		system_services_stop();
 		service_stop();
 		printf("[system]: failed to run common util\n");
 		return 5;
 	}
-	
-	if (0 != bounce_producer_run()) {
+	if (bounce_producer_run(data_path) != 0) {
 		common_util_stop();
 		system_services_stop();
 		service_stop();
@@ -542,8 +530,7 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run zarafa server\n");
 		return 10;
 	}
-	
-	if (0 != exmdb_client_run()) {
+	if (exmdb_client_run(config_path) != 0) {
 		zarafa_server_stop();
 		rpc_parser_stop();
 		ab_tree_stop();

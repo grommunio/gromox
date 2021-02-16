@@ -86,7 +86,8 @@ Default: \fI100000\fP
 Default: \fI3000\fP
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by plugin instances.
 .PP
 Default: \fI/etc/gromox/zcore:/etc/gromox\fP
 .SS console_server_ip
@@ -102,7 +103,8 @@ The TCP port number to expose the management console frontend on.
 Default: \fI3344\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories which will be scanned when locating data
+files.
 .PP
 Default: \fI/usr/share/gromox/zcore\fP
 .SS default_charset
@@ -198,7 +200,16 @@ The minimum number of client processing threads to keep around.
 Default: \fI100\fP
 .SH Files
 .IP \(bu 4
+\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
+exmdb_provider(4gx) for details.
+.IP \(bu 4
+\fIdata_file_path\fP/langmap.txt: mapping between language code and its
+corresponding libc locale name.
+.IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
+.IP \(bu 4
+\fIdata_file_path\fP/notify_bounce/: response templates for when mail cannot be
+delivered
 .SH Notes
 .PP
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that

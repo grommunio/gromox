@@ -74,10 +74,8 @@ static MIME_POOL *g_mime_pool;
 static pthread_key_t g_dir_key;
 static pthread_key_t g_env_key;
 static char g_default_zone[64];
-static char g_langmap_path[256];
 static char g_freebusy_path[256];
 static char g_default_charset[32];
-static char g_folderlang_path[256];
 static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
@@ -621,8 +619,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
-	const char *freebusy_path, const char *langmap_path,
-	const char *folderlang_path, const char *submit_command)
+	const char *freebusy_path, const char *submit_command)
 {
 	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	strcpy(g_hostname, hostname);
@@ -636,14 +633,12 @@ void common_util_init(const char *org_name, const char *hostname,
 	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
 	strcpy(g_freebusy_path, freebusy_path);
-	strcpy(g_langmap_path, langmap_path);
-	strcpy(g_folderlang_path, folderlang_path);
 	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }
 
-int common_util_run()
+int common_util_run(const char *data_path)
 {
 	g_mime_pool = mime_pool_init(g_mime_num, 16, TRUE);
 	if (NULL == g_mime_pool) {
@@ -662,19 +657,17 @@ int common_util_run()
 		printf("[common_util]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_langmap_list = list_file_initd(g_langmap_path, nullptr, "%s:32%s:32");
+	g_langmap_list = list_file_initd("langmap.txt", data_path, "%s:32%s:32");
 	if (g_langmap_list == nullptr || g_langmap_list->get_size() == 0) {
-		printf("[common_util]: Failed to read langmap from %s: %s\n",
-			g_langmap_path, strerror(errno));
+		printf("[common_util]: list_file_initd langmap.txt: %s\n", strerror(errno));
 		return -3;
 	}
 	
-	g_folderlang_list = list_file_initd(g_folderlang_path, nullptr,
+	g_folderlang_list = list_file_initd("folder_lang.txt", data_path,
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == g_folderlang_list) {
-		printf("[common_util]: Failed to init "
-			"folderlang %s\n", g_folderlang_path);
+		printf("[common_util]: list_file_initd folder_lang.txt: %s\n", strerror(errno));
 		return -4;
 	}
 	return 0;
