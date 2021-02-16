@@ -23,7 +23,8 @@ filenames begin with libmtahook_.
 Default: (unspecified)
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories in which further configuration files,
+especially those used by plugin instances, will be searched.
 .PP
 Default: \fI/etc/gromox/delivery:/etc/gromox\fP
 .SS console_server_ip
@@ -39,7 +40,8 @@ The TCP port number to expose the management console frontend on.
 Default: \fI6677\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories in which static data files will be
+searched.
 .PP
 Default: \fI/usr/share/gromox/delivery\fP
 .SS default_domain

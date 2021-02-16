@@ -25,7 +25,8 @@ many failed logins.
 Default: \fI1 minute\fP
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories in which further configuration files,
+especially those used by plugin instances, will be searched.
 .PP
 Default: \fI/etc/gromox/imap:/etc/gromox\fP
 .SS console_server_ip
@@ -57,7 +58,8 @@ Maximum number of concurrently active sessions.
 Default: \fI200\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories in which static data files will be
+searched.
 .PP
 Default: \fI/usr/share/gromox/imap\fP
 .SS default_domain

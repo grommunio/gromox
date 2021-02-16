@@ -28,7 +28,8 @@ Default: \fI1 minute\fP
 Default: \fI/var/lib/gromox/cdn\fP
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories in which further configuration files,
+especially those used by plugin instances, will be searched.
 .PP
 Default: \fI/etc/gromox/pop3:/etc/gromox\fP
 .SS console_server_ip
@@ -58,7 +59,8 @@ Default: \fI2M\fP
 Default: \fI200\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories in which static data files will be
+searched.
 .PP
 Default: \fI/usr/share/gromox/pop3\fP
 .SS default_domain

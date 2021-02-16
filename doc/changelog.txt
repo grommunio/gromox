@@ -1,3 +1,10 @@
+0.16
+====
+* Configuration that lived in ${datadir} was moved to /etc/gromox:
+  cache.txt, exmdb_list.txt, event_acl.txt, fastcgi.txt, midb_acl.txt,
+  proxy.txt, rewrite.txt, timer_acl.txt
+
+
 0.15
 ====
 * ldap_adaptor: new "ldap_start_tls" config directive to control STARTTLS.

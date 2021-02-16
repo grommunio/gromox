@@ -112,7 +112,7 @@ Default: \fI/usr/share/gromox/zcore\fP
 Default: \fIwindows-1252\fP
 .SS default_timezone
 .PP
-Default: \fIAsia/Shanghai\fP
+Default: (unspecified)
 .SS freebusy_tool_path
 .PP
 Default: \fI/usr/libexec/gromox/freebusy\fP
@@ -144,7 +144,7 @@ Default: \fI10\fP
 Default: \fI10\fP
 .SS separator_for_bounce
 .PP
-Default: \fI;\fP (semicolon)
+Default: \fI;\fP
 .SS service_plugin_ignore_errors
 .PP
 If set to yes, service plugins that fail to load on startup are ignored. If set
@@ -198,6 +198,11 @@ Default: \fI4096\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI100\fP
+.SS zcore_listen
+.PP
+The named path for the AF_LOCAL socket that zcore will listen on.
+.PP
+Default: \fI/run/gromox/zcore.sock\fP
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see

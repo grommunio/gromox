@@ -33,7 +33,7 @@ The maximum number of recipients that an e-mail is allowed to have.
 Default: \fI256\fP
 .SS separator_for_bounce
 .PP
-Default: \fI;\fP (semicolon)
+Default: \fI;\fP
 .SS smtp_server_ip
 .PP
 SMTP server hostname or address to contact for outgoing mail.

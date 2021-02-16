@@ -158,7 +158,7 @@ Default: (unset)
 This flag controls the offering of the PIPELINING extension (RFC 2920) to
 clients.
 .PP
-Default: \fIfalse\fP
+Default: \fItrue\fP
 .SS smtp_support_starttls
 .PP
 This flag controls the offering of the STARTTLS extension (RFC 3027) to

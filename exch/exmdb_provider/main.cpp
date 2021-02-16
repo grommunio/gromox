@@ -110,7 +110,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
-			strcpy(separator, " ");
+			strcpy(separator, ";");
 		} else {
 			strcpy(separator, str_value);
 		}
@@ -139,7 +139,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 		if (NULL == str_value) {
-			connection_num = 0;
+			connection_num = 10;
 		} else {
 			connection_num = atoi(str_value);
 			if (connection_num < 0) {
@@ -151,7 +151,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			
 		str_value = config_file_get_value(pconfig, "NOTIFY_STUB_THREADS_NUM");
 		if (NULL == str_value) {
-			threads_num = 0;
+			threads_num = 4;
 		} else {
 			threads_num = atoi(str_value);
 			if (threads_num < 0) {
@@ -163,7 +163,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "MAX_RPC_STUB_THREADS");
 		if (NULL == str_value) {
-			max_threads = 0;
+			max_threads = 50;
 		} else {
 			max_threads = atoi(str_value);
 			if (max_threads < 0) {
@@ -177,7 +177,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "MAX_ROUTER_CONNECTIONS");
 		if (NULL == str_value) {
-			max_routers = 0;
+			max_routers = 50;
 		} else {
 			max_routers = atoi(str_value);
 			if (max_routers < 0) {
@@ -191,8 +191,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "TABLE_SIZE");
 		if (NULL == str_value) {
-			table_size = 3000;
-			config_file_set_value(pconfig, "TABLE_SIZE", "3000");
+			table_size = 5000;
+			config_file_set_value(pconfig, "TABLE_SIZE", "5000");
 		} else {
 			table_size = atoi(str_value);
 			if (table_size < 100) {
@@ -204,8 +204,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "CACHE_INTERVAL");
 		if (NULL == str_value) {
-			cache_interval = 1800;
-			config_file_set_value(pconfig, "CACHE_INTERVAL", "30minutes");
+			cache_interval = 7200;
+			config_file_set_value(pconfig, "CACHE_INTERVAL", "2 hours");
 		} else {
 			cache_interval = atoitvl(str_value);
 			if (cache_interval < 600) {
@@ -219,7 +219,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "MAX_STORE_MESSAGE_COUNT");
 		if (NULL == str_value) {
-			max_msg_count = 0;
+			max_msg_count = 200000;
 		} else {
 			max_msg_count = atoi(str_value);
 		}
@@ -305,8 +305,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "POPULATING_THREADS_NUM");
 		if (NULL == str_value) {
-			populating_num = 10;
-			config_file_set_value(pconfig, "POPULATING_THREADS_NUM", "10");
+			populating_num = 4;
+			config_file_set_value(pconfig, "POPULATING_THREADS_NUM", "4");
 		} else {
 			populating_num = atoi(str_value);
 			if (populating_num <= 0 || populating_num > 50) {
