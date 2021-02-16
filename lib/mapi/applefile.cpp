@@ -3,6 +3,7 @@
 #include <gromox/applefile.hpp>
 #include <gromox/endian_macro.hpp>
 #include <cstring>
+#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080
@@ -53,20 +54,12 @@ static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 
 static int applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
 {
-	int status;
-	
-	status = applefile_pull_uint32(pext, &r->magic_num);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_uint32(pext, &r->magic_num));
 	if (APPLESINGLE_MAGIC != r->magic_num &&
 		APPLEDOUBLE_MAGIC != r->magic_num) {
 		return EXT_ERR_FORMAT;
 	}
-	status = applefile_pull_uint32(pext, &r->version_num);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_uint32(pext, &r->version_num));
 	if (APPLEFILE_VERSION != r->version_num) {
 		return EXT_ERR_FORMAT;
 	}
@@ -77,16 +70,12 @@ static int applefile_pull_asiconbw(EXT_PULL *pext,
 	uint32_t entry_length, ASICONBW *r)
 {
 	int i;
-	int status;
 	uint32_t offset;
 	
 	memset(r, 0, sizeof(ASICONBW));
 	offset = pext->offset;
 	for (i=0; i<32; i++) {
-		status = applefile_pull_uint32(pext, &r->bitrow[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_pull_uint32(pext, &r->bitrow[i]));
 		if (pext->offset - offset == entry_length) {
 			return EXT_ERR_SUCCESS;
 		}
@@ -97,40 +86,27 @@ static int applefile_pull_asiconbw(EXT_PULL *pext,
 static int applefile_pull_asfiledates(EXT_PULL *pext,
 	uint32_t entry_length, ASFILEDATES *r)
 {
-	int status;
 	uint32_t offset;
 	int32_t tmp_time;
 	
 	memset(r, 0, sizeof(ASFILEDATES));
 	offset = pext->offset;
-	status = applefile_pull_int32(pext, &tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->create = TIMEDIFF + tmp_time;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_int32(pext, &tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->modify = TIMEDIFF + tmp_time;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_int32(pext, &tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->backup = TIMEDIFF + tmp_time;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_int32(pext, &tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->access = TIMEDIFF + tmp_time;
 	return EXT_ERR_SUCCESS;
 }
@@ -160,52 +136,34 @@ static int applefile_pull_asfinderinfo(EXT_PULL *pext,
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_uint16(pext, &r->finfo.fd_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_uint16(pext, &r->finfo.fd_flags));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_int16(pext, &r->finfo.fd_location.v);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int16(pext, &r->finfo.fd_location.v));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_int16(pext, &r->finfo.fd_location.h);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int16(pext, &r->finfo.fd_location.h));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_int16(pext, &r->finfo.fd_folder);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int16(pext, &r->finfo.fd_folder));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
 	
-	status = applefile_pull_int16(pext, &r->fxinfo.fd_iconid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_int16(pext, &r->fxinfo.fd_iconid));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
 	for (i=0; i<3; i++) {
-		status = applefile_pull_int16(pext, &r->fxinfo.fd_unused[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_pull_int16(pext, &r->fxinfo.fd_unused[i]));
 		if (pext->offset - offset == entry_length) {
 			return EXT_ERR_SUCCESS;
 		}
@@ -264,22 +222,15 @@ static int applefile_pull_asmacinfo(EXT_PULL *pext,
 static int applefile_pull_asprodosinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASPRODOSINFO *r)
 {
-	int status;
 	uint32_t offset;
 	
 	memset(r, 0, sizeof(ASPRODOSINFO));
 	offset = pext->offset;
-	status = applefile_pull_uint16(pext, &r->access);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_uint16(pext, &r->access));
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_pull_uint16(pext, &r->filetype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_uint16(pext, &r->filetype));
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -441,60 +392,38 @@ static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 
 static int applefile_push_asheader(EXT_PUSH *pext, const ASHEADER *r)
 {
-	int status;
-	
 	if (APPLESINGLE_MAGIC != r->magic_num &&
 		APPLEDOUBLE_MAGIC != r->magic_num) {
 		return EXT_ERR_FORMAT;
 	}
-	status = applefile_push_uint32(pext, r->magic_num);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_uint32(pext, r->magic_num));
 	if (APPLEFILE_VERSION != r->version_num) {
 		return EXT_ERR_FORMAT;
 	}
-	status = applefile_push_uint32(pext, r->version_num);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_uint32(pext, r->version_num));
 	return ext_buffer_push_bytes(pext, r->filler, 16);
 }
 
 static int applefile_push_asiconbw(EXT_PUSH *pext, const ASICONBW *r)
 {
 	int i;
-	int status;
 	
 	for (i=0; i<32; i++) {
-		status = applefile_push_uint32(pext, r->bitrow[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_push_uint32(pext, r->bitrow[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int applefile_push_asfiledates(EXT_PUSH *pext, const ASFILEDATES *r)
 {
-	int status;
 	int32_t tmp_time;
 	
 	tmp_time = r->create - TIMEDIFF;
-	status = applefile_push_int32(pext, tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int32(pext, tmp_time));
 	tmp_time = r->modify - TIMEDIFF;
-	status = applefile_push_int32(pext, tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int32(pext, tmp_time));
 	tmp_time = r->backup - TIMEDIFF;
-	status = applefile_push_int32(pext, tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int32(pext, tmp_time));
 	tmp_time = r->access - TIMEDIFF;
 	return applefile_push_int32(pext, tmp_time);
 }
@@ -524,47 +453,29 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_push_uint16(pext, r->finfo.fd_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_uint16(pext, r->finfo.fd_flags));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_push_int16(pext, r->finfo.fd_location.v);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int16(pext, r->finfo.fd_location.v));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_push_int16(pext, r->finfo.fd_location.h);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int16(pext, r->finfo.fd_location.h));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	status = applefile_push_int16(pext, r->finfo.fd_folder);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int16(pext, r->finfo.fd_folder));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
 	
-	status = applefile_push_int16(pext, r->fxinfo.fd_iconid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_int16(pext, r->fxinfo.fd_iconid));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
 	for (i=0; i<3; i++) {
-		status = applefile_push_int16(pext, r->fxinfo.fd_unused[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_push_int16(pext, r->fxinfo.fd_unused[i]));
 	}
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
@@ -607,16 +518,8 @@ static int applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
 
 static int applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
 {
-	int status;
-	
-	status = applefile_push_uint16(pext, r->access);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = applefile_push_uint16(pext, r->filetype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_uint16(pext, r->access));
+	TRY(applefile_push_uint16(pext, r->filetype));
 	return applefile_push_uint32(pext, r->auxtype);
 }
 
@@ -678,43 +581,23 @@ static int applefile_push_entry(EXT_PUSH *pext,
 int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 {
 	int i;
-	int status;
 	uint32_t offset;
 	uint32_t entry_offset;
 	uint32_t entry_length;
 	
-	status = applefile_pull_asheader(pext, &r->header);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = applefile_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_pull_asheader(pext, &r->header));
+	TRY(applefile_pull_uint16(pext, &r->count));
 	r->pentries = static_cast<ENTRY_DATA *>(pext->alloc(sizeof(ENTRY_DATA) * r->count));
 	if (NULL == r->pentries) {
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
-		status = applefile_pull_uint32(pext, &r->pentries[i].entry_id);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = applefile_pull_uint32(pext, &entry_offset);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = applefile_pull_uint32(pext, &entry_length);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_pull_uint32(pext, &r->pentries[i].entry_id));
+		TRY(applefile_pull_uint32(pext, &entry_offset));
+		TRY(applefile_pull_uint32(pext, &entry_length));
 		offset = pext->offset;
 		pext->offset = entry_offset;
-		status = applefile_pull_entry(pext, r->pentries[i].entry_id,
-							entry_length, &r->pentries[i].pentry);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_pull_entry(pext, r->pentries[i].entry_id, entry_length, &r->pentries[i].pentry));
 		if (pext->offset > entry_offset + entry_length) {
 			return EXT_ERR_FORMAT;
 		}
@@ -732,14 +615,8 @@ int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
 	uint32_t entry_offset;
 	uint32_t entry_length;
 	
-	status = applefile_push_asheader(pext, &r->header);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = applefile_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(applefile_push_asheader(pext, &r->header));
+	TRY(applefile_push_uint16(pext, r->count));
 	des_offset = pext->offset;
 	status = ext_buffer_push_advance(pext, r->count*3*sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
@@ -747,27 +624,13 @@ int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
 	}
 	entry_offset = pext->offset;
 	for (i=0; i<r->count; i++) {
-		status = applefile_push_entry(pext,
-					r->pentries[i].entry_id,
-					r->pentries[i].pentry);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_push_entry(pext, r->pentries[i].entry_id, r->pentries[i].pentry));
 		entry_length = pext->offset - entry_offset;
 		offset = pext->offset;
 		pext->offset = des_offset;
-		status = applefile_push_uint32(pext, r->pentries[i].entry_id);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = applefile_push_uint32(pext, entry_offset);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = applefile_push_uint32(pext, entry_length);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(applefile_push_uint32(pext, r->pentries[i].entry_id));
+		TRY(applefile_push_uint32(pext, entry_offset));
+		TRY(applefile_push_uint32(pext, entry_length));
 		des_offset = pext->offset;
 		pext->offset = offset;
 		entry_offset = offset;
