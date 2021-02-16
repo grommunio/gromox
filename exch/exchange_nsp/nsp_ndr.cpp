@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "nsp_ndr.h"
@@ -556,7 +557,6 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 	uint32_t ptr;
 	uint32_t cnt;
 	uint32_t size;
-	char *pwstring;
 	uint32_t size1;
 	uint32_t offset;
 	uint32_t length1;
@@ -636,26 +636,24 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
-				pwstring = static_cast<char *>(malloc(sizeof(uint16_t) * length1 + 1));
-				if (NULL == pwstring) {
+				std::unique_ptr<char[]> pwstring;
+				try {
+					pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
+				} catch (const std::bad_alloc &) {
 					return NDR_ERR_ALLOC;
 				}
-				status = ndr_pull_string(pndr, pwstring, sizeof(uint16_t)*length1);
+				status = ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1);
 				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
 					return status;
 				}
 				r->ppstr[cnt] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1));
 				if (NULL == r->ppstr[cnt]) {
-					free(pwstring);
 					return NDR_ERR_ALLOC;
 				}
-				if (FALSE == nsp_ndr_to_utf8(pndr->flags, pwstring, sizeof(uint16_t)*length1,
-					r->ppstr[cnt], 2*sizeof(uint16_t)*length1)) {
-					free(pwstring);
+				if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
+				    sizeof(uint16_t) * length1, r->ppstr[cnt],
+				    2 * sizeof(uint16_t) * length1))
 					return NDR_ERR_CHARCNV;
-				}
-				free(pwstring);
 			}
 		}
 	}
@@ -667,7 +665,6 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, int flag, const STRING_ARR
 	int status;
 	int length;
 	uint32_t cnt;
-	char *pwstring;
 	
 	if (flag & FLAG_HEADER) {
 		status = ndr_push_align(pndr, 5);
@@ -702,32 +699,30 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, int flag, const STRING_ARR
 			for (cnt=0; cnt<r->cvalues; cnt++) {
 				if (NULL != r->ppstr[cnt]) {
 					length = 2*strlen(r->ppstr[cnt]) + 2;
-					pwstring = static_cast<char *>(malloc(length));
-					if (NULL == pwstring) {
+					std::unique_ptr<char[]> pwstring;
+					try {
+						pwstring = std::make_unique<char[]>(length);
+					} catch (const std::bad_alloc &) {
 						return NDR_ERR_ALLOC;
 					}
-					length = nsp_ndr_to_utf16(pndr->flags, r->ppstr[cnt], pwstring, length);
+					length = nsp_ndr_to_utf16(pndr->flags,
+					         r->ppstr[cnt], pwstring.get(), length);
 					if (-1 == length) {
-						free(pwstring);
 						return NDR_ERR_CHARCNV;
 					}
 					status = ndr_push_ulong(pndr, length/sizeof(uint16_t));
 					if (NDR_ERR_SUCCESS != status) {
-						free(pwstring);
 						return status;
 					}
 					status = ndr_push_ulong(pndr, 0);
 					if (NDR_ERR_SUCCESS != status) {
-						free(pwstring);
 						return status;
 					}
 					status = ndr_push_ulong(pndr, length/sizeof(uint16_t));
 					if (NDR_ERR_SUCCESS != status) {
-						free(pwstring);
 						return status;
 					}
-					status = ndr_push_string(pndr, pwstring, length);
-					free(pwstring);
+					status = ndr_push_string(pndr, pwstring.get(), length);
 					if (NDR_ERR_SUCCESS != status) {
 						return status;
 					}
@@ -744,7 +739,6 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 	uint32_t cnt;
 	uint32_t ptr;
 	uint32_t size;
-	char *pwstring;
 	uint32_t size1;
 	uint32_t offset;
 	uint32_t length1;
@@ -811,26 +805,24 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
-				pwstring = static_cast<char *>(malloc(sizeof(uint16_t) * length1 + 1));
-				if (NULL == pwstring) {
+				std::unique_ptr<char[]> pwstring;
+				try {
+					pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
+				} catch (const std::bad_alloc &) {
 					return NDR_ERR_ALLOC;
 				}
-				status = ndr_pull_string(pndr, pwstring, sizeof(uint16_t)*length1);
+				status = ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1);
 				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
 					return status;
 				}
 				r->ppstrings[cnt] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1));
 				if (NULL == r->ppstrings[cnt]) {
-					free(pwstring);
 					return NDR_ERR_ALLOC;
 				}
-				if (FALSE == nsp_ndr_to_utf8(pndr->flags, pwstring, sizeof(uint16_t)*length1,
-					r->ppstrings[cnt], 2*sizeof(uint16_t)*length1)) {
-					free(pwstring);
+				if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
+				    sizeof(uint16_t) * length1, r->ppstrings[cnt],
+				    2 * sizeof(uint16_t) * length1))
 					return NDR_ERR_CHARCNV;
-				}
-				free(pwstring);
 			}
 		}
 	}
@@ -1498,7 +1490,6 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 	int status;
 	uint32_t ptr;
 	uint32_t size;
-	char *pwstring;
 	uint32_t offset;
 	uint32_t length;
 	
@@ -1649,27 +1640,24 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
-				pwstring = static_cast<char *>(malloc(sizeof(uint16_t) * length + 1));
-				if (NULL == pwstring) {
+				std::unique_ptr<char[]> pwstring;
+				try {
+					pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length + 1);
+				} catch (const std::bad_alloc &) {
 					return NDR_ERR_ALLOC;
 				}
-				status = ndr_pull_string(pndr, pwstring, sizeof(uint16_t)*length);
+				status = ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length);
 				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
 					return status;
 				}
 				r->pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, 2 * sizeof(uint16_t) * length));
 				if (NULL == r->pstr) {
-					free(pwstring);
 					return NDR_ERR_ALLOC;
 				}
-				if (FALSE == nsp_ndr_to_utf8(pndr->flags,
-					pwstring, sizeof(uint16_t)*length,
-					r->pstr, 2*sizeof(uint16_t)*length)) {
-					free(pwstring);
+				if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
+				    sizeof(uint16_t) * length, r->pstr,
+				    2 * sizeof(uint16_t) * length))
 					return NDR_ERR_CHARCNV;
-				}
-				free(pwstring);
 			}
 			break;
 		case PT_BINARY:
@@ -1742,7 +1730,6 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 {
 	int status;
 	int length;
-	char *pwstring;
 	
 	if (flag & FLAG_HEADER) {
 		status = ndr_push_union_align(pndr, 5);
@@ -1850,32 +1837,29 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_UNICODE:
 			if (NULL != r->pstr) {
 				length = strlen(r->pstr) + 1;
-				pwstring = static_cast<char *>(malloc(2 * length));
-				if (NULL == pwstring) {
+				std::unique_ptr<char[]> pwstring;
+				try {
+					pwstring = std::make_unique<char[]>(2 * length);
+				} catch (const std::bad_alloc &) {
 					return NDR_ERR_ALLOC;
 				}
-				length = nsp_ndr_to_utf16(pndr->flags, r->pstr, pwstring, 2*length);
+				length = nsp_ndr_to_utf16(pndr->flags, r->pstr, pwstring.get(), 2 * length);
 				if (-1 == length) {
-					free(pwstring);
 					return NDR_ERR_CHARCNV;
 				}
 				status = ndr_push_ulong(pndr, length/sizeof(uint16_t));
 				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
 					return status;
 				}
 				status= ndr_push_ulong(pndr, 0);
 				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
 					return status;
 				}
 				status = ndr_push_ulong(pndr, length/sizeof(uint16_t));
 				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
 					return status;
 				}
-				status = ndr_push_string(pndr, pwstring, length);
-				free(pwstring);
+				status = ndr_push_string(pndr, pwstring.get(), length);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
