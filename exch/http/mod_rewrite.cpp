@@ -20,7 +20,7 @@ struct REWRITE_NODE {
 	char *replace_string;
 };
 
-static DOUBLE_LIST g_rewite_list;
+static DOUBLE_LIST g_rewrite_list;
 
 static BOOL mod_rewrite_rreplace(char *buf,
 	int size, regex_t *re, const char *rp)
@@ -88,7 +88,7 @@ static BOOL mod_rewrite_rreplace(char *buf,
 
 void mod_rewrite_init()
 {
-	double_list_init(&g_rewite_list);
+	double_list_init(&g_rewrite_list);
 }
 
 int mod_rewrite_run(const char *sdlist)
@@ -155,7 +155,7 @@ int mod_rewrite_run(const char *sdlist)
 						" pattern regex error\n", line_no);
 			continue;
 		}
-		double_list_append_as_tail(&g_rewite_list, &prnode->node);
+		double_list_append_as_tail(&g_rewrite_list, &prnode->node);
 	}
 	return 0;
 }
@@ -165,7 +165,7 @@ void mod_rewrite_stop(void)
 	REWRITE_NODE *prnode;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(&g_rewite_list)) != nullptr) {
+	while ((pnode = double_list_pop_front(&g_rewrite_list)) != nullptr) {
 		prnode = (REWRITE_NODE*)pnode->pdata;
 		regfree(&prnode->search_pattern);
 		free(prnode->replace_string);
@@ -175,7 +175,7 @@ void mod_rewrite_stop(void)
 
 void mod_rewrite_free()
 {
-	double_list_free(&g_rewite_list);
+	double_list_free(&g_rewrite_list);
 }
 
 BOOL mod_rewrite_process(const char *uri_buff,
@@ -188,8 +188,8 @@ BOOL mod_rewrite_process(const char *uri_buff,
 	if (uri_len >= sizeof(tmp_buff)) {
 		return FALSE;
 	}
-	for (pnode=double_list_get_head(&g_rewite_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_rewite_list, pnode)) {
+	for (pnode = double_list_get_head(&g_rewrite_list); pnode != nullptr;
+	     pnode = double_list_get_after(&g_rewrite_list, pnode)) {
 		prnode = (REWRITE_NODE*)pnode->pdata;
 		memcpy(tmp_buff, uri_buff, uri_len);
 		tmp_buff[uri_len] = '\0';

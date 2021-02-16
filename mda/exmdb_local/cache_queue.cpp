@@ -388,7 +388,7 @@ static void* thread_work_func(void* arg)
 				break;
 			}
 			if (FALSE == need_remove) {
-				/* rewite type and until time */
+				/* rewrite type and until time */
 				lseek(fd, 0, SEEK_SET);
 				times ++;
 				if (sizeof(int) != write(fd, &times, sizeof(int))) {
