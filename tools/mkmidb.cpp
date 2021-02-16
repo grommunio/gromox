@@ -4,6 +4,7 @@
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/config_file.hpp>
 #include <ctime>
@@ -19,6 +20,8 @@
 #include <mysql.h>
 #define CONFIG_ID_USERNAME				1
 
+using namespace gromox;
+
 static char *opt_config_file, *opt_datadir;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -28,7 +31,6 @@ static const struct HXoption g_options_table[] = {
 
 int main(int argc, const char **argv)
 {
-	int fd;
 	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
@@ -154,38 +156,19 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 
-	char midb_tpl[256];
-	snprintf(midb_tpl, GX_ARRAY_SIZE(midb_tpl), "%s/sqlite3_midb.txt", datadir);
-	fd = open(midb_tpl, O_RDONLY);
-	if (-1 == fd) {
-		printf("Failed to open \"%s\": %s\n", midb_tpl, strerror(errno));
+	auto filp = fopen_sd("sqlite3_midb.txt", datadir);
+	if (filp == nullptr) {
+		fprintf(stderr, "fopen_sd sqlite3_midb.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	size_t str_size = fstat(fd, &node_stat) == 0 ? node_stat.st_size : 0;
-	auto sql_string = static_cast<char *>(malloc(str_size + 1));
-	if (sql_string == nullptr) {
-		printf("Failed to allocate memory\n");
-		close(fd);
-		return 8;
-	}
-	if (str_size != read(fd, sql_string, str_size)) {
-		printf("fail to read content from store"
-			" template file \"sqlite3_midb.txt\"\n");
-		close(fd);
-		free(sql_string);
-		return 7;
-	}
-	close(fd);
-	sql_string[str_size] = '\0';
+	auto sql_string = slurp_file(filp.get());
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
-		free(sql_string);
 		return 9;
 	}
 	if (SQLITE_OK != sqlite3_open_v2(temp_path, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
-		free(sql_string);
 		sqlite3_shutdown();
 		return 9;
 	}
@@ -193,15 +176,13 @@ int main(int argc, const char **argv)
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
+	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
-		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	free(sql_string);
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
