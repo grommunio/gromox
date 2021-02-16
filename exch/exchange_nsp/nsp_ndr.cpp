@@ -441,9 +441,9 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, int flag, const STRING_ARR
 					if (-1 == length) {
 						return NDR_ERR_CHARCNV;
 					}
-					TRY(ndr_push_ulong(pndr, length/sizeof(uint16_t)));
+					TRY(ndr_push_ulong(pndr, length / sizeof(uint16_t)));
 					TRY(ndr_push_ulong(pndr, 0));
-					TRY(ndr_push_ulong(pndr, length/sizeof(uint16_t)));
+					TRY(ndr_push_ulong(pndr, length / sizeof(uint16_t)));
 					TRY(ndr_push_string(pndr, pwstring.get(), length));
 				}
 			}
