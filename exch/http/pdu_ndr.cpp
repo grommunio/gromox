@@ -142,10 +142,7 @@ static int pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
 	TRY(ndr_pull_uint32(pndr, &r->alloc_hint));
 	TRY(ndr_pull_uint16(pndr, &r->context_id));
 	TRY(ndr_pull_uint16(pndr, &r->opnum));
-	status = pdu_ndr_pull_dcerpc_object(pndr, &r->object);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(pdu_ndr_pull_dcerpc_object(pndr, &r->object));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
 	status = ndr_pull_data_blob(pndr, &r->pad);
@@ -631,7 +628,6 @@ static int pdu_ndr_pull_ipv6address(NDR_PULL *pndr, char *address, size_t asz)
 static int pdu_ndr_pull_rts_clientaddress(NDR_PULL *pndr,
 	RTS_CLIENTADDRESS *r)
 {
-	int status;
 	uint32_t size_padding;
 	
 	TRY(ndr_pull_align(pndr, 4));
@@ -639,16 +635,10 @@ static int pdu_ndr_pull_rts_clientaddress(NDR_PULL *pndr,
 	TRY(ndr_pull_union_align(pndr, 4));
 	switch (r->address_type) {
 	case RTS_IPV4:
-		status = pdu_ndr_pull_ipv4address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address));
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_pull_ipv4address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address)));
 		break;
 	case RTS_IPV6:
-		status = pdu_ndr_pull_ipv6address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address));
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_pull_ipv6address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address)));
 		break;
 	default:
 		return NDR_ERR_BAD_SWITCH;
@@ -664,19 +654,14 @@ static int pdu_ndr_pull_rts_clientaddress(NDR_PULL *pndr,
 static int pdu_ndr_pull_rts_cmds(NDR_PULL *pndr,
 	uint32_t command_type, RTS_CMDS *r)
 {
-	int status;
-	
 	TRY(ndr_pull_union_align(pndr, 4));
 	switch (command_type) {
 	case RTS_CMD_RECEIVE_WINDOW_SIZE:
 		TRY(ndr_pull_uint32(pndr, &r->receivewindowsize));
 		break;
 	case RTS_CMD_FLOW_CONTROL_ACK:
-		status = pdu_ndr_pull_rts_flowcontrolack(pndr,
-					&r->flowcontrolack);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_pull_rts_flowcontrolack(pndr,
+					&r->flowcontrolack));
 		break;
 	case RTS_CMD_CONNECTION_TIMEOUT:
 		TRY(ndr_pull_uint32(pndr, &r->connectiontimeout));
@@ -697,10 +682,7 @@ static int pdu_ndr_pull_rts_cmds(NDR_PULL *pndr,
 		/* do nothing */
 		break;
 	case RTS_CMD_PADDING:
-		status = pdu_ndr_pull_rts_padding(pndr, &r->padding);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_pull_rts_padding(pndr, &r->padding));
 		break;
 	case RTS_CMD_NEGATIVE_ANCE:
 		/* do nothing */
@@ -709,10 +691,7 @@ static int pdu_ndr_pull_rts_cmds(NDR_PULL *pndr,
 		/* do nothing */
 		break;
 	case RTS_CMD_CLIENT_ADDRESS:
-		status = pdu_ndr_pull_rts_clientaddress(pndr, &r->clientaddress);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_pull_rts_clientaddress(pndr, &r->clientaddress));
 		break;
 	case RTS_CMD_ASSOCIATION_GROUP_ID:
 		TRY(ndr_pull_guid(pndr, &r->associationgroupid));
@@ -732,14 +711,9 @@ static int pdu_ndr_pull_rts_cmds(NDR_PULL *pndr,
 
 static int pdu_ndr_pull_rts_cmd(NDR_PULL *pndr, RTS_CMD *r)
 {
-	int status;
-	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint32(pndr, &r->command_type));
-	status = pdu_ndr_pull_rts_cmds(pndr, r->command_type, &r->command);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(pdu_ndr_pull_rts_cmds(pndr, r->command_type, &r->command));
 	return ndr_pull_trailer_align(pndr, 4);
 		
 }
@@ -918,8 +892,6 @@ static void pdu_ndr_free_dcerpc_payload(uint8_t pkt_type,
 
 int pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
 {
-	int status;
-	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint8(pndr, &pkt->rpc_vers));
 	TRY(ndr_pull_uint8(pndr, &pkt->rpc_vers_minor));
@@ -929,10 +901,7 @@ int pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(ndr_pull_uint16(pndr, &pkt->frag_length));
 	TRY(ndr_pull_uint16(pndr, &pkt->auth_length));
 	TRY(ndr_pull_uint32(pndr, &pkt->call_id));
-	status = pdu_ndr_pull_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(pdu_ndr_pull_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload));
 	TRY(ndr_pull_trailer_align(pndr, 4));
 	
 	return NDR_ERR_SUCCESS;
@@ -968,10 +937,7 @@ static int pdu_ndr_push_dcerpc_request(NDR_PUSH *pndr,
 	TRY(ndr_push_uint32(pndr, r->alloc_hint));
 	TRY(ndr_push_uint16(pndr, r->context_id));
 	TRY(ndr_push_uint16(pndr, r->opnum));
-	status = pdu_ndr_push_dcerpc_object(pndr, &r->object);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(pdu_ndr_push_dcerpc_object(pndr, &r->object));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
 	status = ndr_push_data_blob(pndr, r->pad);
@@ -1091,10 +1057,7 @@ static int pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r)
 	TRY(ndr_push_uint32(pndr, r->assoc_group_id));
 	TRY(ndr_push_uint8(pndr, r->num_contexts));
 	for (i=0; i<r->num_contexts; i++) {
-		status = pdu_ndr_push_dcerpc_ctx_list(pndr, &r->ctx_list[i]);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_dcerpc_ctx_list(pndr, &r->ctx_list[i]));
 	}
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
@@ -1144,10 +1107,7 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 	}
 	TRY(ndr_push_uint8(pndr, r->num_contexts));
 	for (i=0; i<r->num_contexts; i++) {
-		status = pdu_ndr_push_dcerpc_ack_ctx(pndr, &r->ctx_list[i]);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_dcerpc_ack_ctx(pndr, &r->ctx_list[i]));
 	}
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_push_data_blob(pndr, r->auth_info);
@@ -1276,23 +1236,15 @@ static int pdu_ndr_push_ipv6address(NDR_PUSH *pndr, const char *address)
 static int pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 	const RTS_CLIENTADDRESS *r)
 {
-	int status;
-	
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint32(pndr, r->address_type));
 	TRY(ndr_push_union_align(pndr, 4));
 	switch (r->address_type) {
 	case RTS_IPV4:
-		status = pdu_ndr_push_ipv4address(pndr, r->client_address);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_ipv4address(pndr, r->client_address));
 		break;
 	case RTS_IPV6:
-		status = pdu_ndr_push_ipv6address(pndr, r->client_address);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_ipv6address(pndr, r->client_address));
 		break;
 	default:
 		return NDR_ERR_BAD_SWITCH;
@@ -1304,18 +1256,13 @@ static int pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 	uint32_t command_type, const RTS_CMDS *r)
 {
-	int status;
-	
 	TRY(ndr_push_union_align(pndr, 4));
 	switch (command_type) {
 	case RTS_CMD_RECEIVE_WINDOW_SIZE:
 		TRY(ndr_push_uint32(pndr, r->receivewindowsize));
 		break;
 	case RTS_CMD_FLOW_CONTROL_ACK:
-		status = pdu_ndr_push_rts_flowcontrolack(pndr, &r->flowcontrolack);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_rts_flowcontrolack(pndr, &r->flowcontrolack));
 		break;
 	case RTS_CMD_CONNECTION_TIMEOUT:
 		TRY(ndr_push_uint32(pndr, r->connectiontimeout));
@@ -1336,10 +1283,7 @@ static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 		/* do nothing */
 		break;
 	case RTS_CMD_PADDING:
-		status = pdu_ndr_push_rts_padding(pndr, r->padding);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_rts_padding(pndr, r->padding));
 		break;
 	case RTS_CMD_NEGATIVE_ANCE:
 		/* do nothing */
@@ -1348,10 +1292,7 @@ static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 		/* do nothing */
 		break;
 	case RTS_CMD_CLIENT_ADDRESS:
-		status = pdu_ndr_push_rts_clientaddress(pndr, &r->clientaddress);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_rts_clientaddress(pndr, &r->clientaddress));
 		break;
 	case RTS_CMD_ASSOCIATION_GROUP_ID:
 		TRY(ndr_push_guid(pndr, &r->associationgroupid));
@@ -1371,14 +1312,9 @@ static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 
 static int pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const RTS_CMD *r)
 {
-	int status;
-	
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint32(pndr, r->command_type));
-	status = pdu_ndr_push_rts_cmds(pndr, r->command_type, &r->command);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(pdu_ndr_push_rts_cmds(pndr, r->command_type, &r->command));
 	return ndr_push_trailer_align(pndr, 4);
 	
 }
@@ -1386,16 +1322,12 @@ static int pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const RTS_CMD *r)
 static int pdu_ndr_push_dcerpc_rts(NDR_PUSH *pndr, const DCERPC_RTS *r)
 {
 	int i;
-	int status;
 	
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint16(pndr, r->flags));
 	TRY(ndr_push_uint16(pndr, r->num));
 	for (i=0; i<r->num; i++) {
-		status = pdu_ndr_push_rts_cmd(pndr, &r->commands[i]);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(pdu_ndr_push_rts_cmd(pndr, &r->commands[i]));
 	}
 	return ndr_push_trailer_align(pndr, 4);
 }
@@ -1456,8 +1388,6 @@ static int pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
 
 int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)
 {
-	int status;
-	
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint8(pndr, pkt->rpc_vers));
 	TRY(ndr_push_uint8(pndr, pkt->rpc_vers_minor));
@@ -1467,10 +1397,7 @@ int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(ndr_push_uint16(pndr, pkt->frag_length));
 	TRY(ndr_push_uint16(pndr, pkt->auth_length));
 	TRY(ndr_push_uint32(pndr, pkt->call_id));
-	status = pdu_ndr_push_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(pdu_ndr_push_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload));
 	return ndr_push_trailer_align(pndr, 4);
 }
 
