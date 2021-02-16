@@ -195,6 +195,8 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		}
 		if (0 != ptr) {
 			status = ndr_pull_generic_ptr(pndr, &ptr);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			if (0 != ptr) {
 				status = ndr_pull_ulong(pndr, &size);
 				if (NDR_ERR_SUCCESS != status) {
@@ -226,8 +228,12 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 			prfr->punused[0] = '\0';
 		}
 		status = ndr_pull_generic_ptr(pndr, &ptr);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		if (0 != ptr) {
 			status = ndr_pull_generic_ptr(pndr, &ptr);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			if (0 != ptr) {
 				status = ndr_pull_ulong(pndr, &size);
 				if (NDR_ERR_SUCCESS != status) {
@@ -237,7 +243,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
-				size = ndr_pull_ulong(pndr, &length);
+				status = ndr_pull_ulong(pndr, &length);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
@@ -299,6 +305,8 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 			return status;
 		}
 		status = ndr_pull_string(pndr, prfr_dn->mbserverdn, length);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		*ppin = prfr_dn;
 		return NDR_ERR_SUCCESS;
 	default:
