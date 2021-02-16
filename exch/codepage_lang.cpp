@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/single_list.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
@@ -10,6 +11,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <pthread.h>
+
+using namespace gromox;
 
 enum {
 	RETRIEVE_NONE,
@@ -34,7 +37,6 @@ struct LANG_NODE {
 	char *value;
 };
 
-static char g_file_path[256];
 static SINGLE_LIST g_cp_list;
 static pthread_rwlock_t g_list_lock;
 
@@ -171,21 +173,19 @@ static BOOL codepage_lang_load_langlist(SINGLE_LIST *plist,
 	return TRUE;
 }
 
-static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
+static BOOL codepage_lang_load_cplist(const char *filename, const char *sdlist, SINGLE_LIST *plist)
 {
-	int i;
-	FILE *fp;
 	char *ptr;
 	size_t temp_len;
 	char temp_line[64*1024];
 	
-    fp = fopen(g_file_path, "r");
+	auto fp = fopen_sd(filename, sdlist);
 	if (NULL == fp) {
-		printf("[codepage_lang]: failed to open %s: %s\n", g_file_path, strerror(errno));
+		printf("[codepage_lang]: fopen_sd %s: %s\n", filename, strerror(errno));
        return FALSE;
     }
 	
-    for (i=0; fgets(temp_line, sizeof(temp_line), fp); i++) {
+	for (int i = 0; fgets(temp_line, sizeof(temp_line), fp.get()); ++i) {
 		if ('\r' == temp_line[0] || '\n' == temp_line[0] ||
 			'#' == temp_line[0]) {
 		   /* skip empty line or comments */
@@ -194,9 +194,7 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 
 		ptr = strchr(temp_line, ':');
 		if (NULL == ptr) {
-			printf("[codepage_lang]: line %d format error in %s\n",
-				i + 1, g_file_path);
-			fclose(fp);
+			printf("[codepage_lang]: line %d format error in %s\n", i + 1, filename);
 			return FALSE;
 		}
 		
@@ -205,9 +203,7 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 		temp_len = strlen(ptr);
 		auto pcodepage = static_cast<CODEPAGE_NODE *>(malloc(sizeof(CODEPAGE_NODE)));
 		if (NULL == pcodepage) {
-			printf("[codepage_lang]: out of memory while loading file %s\n",
-				g_file_path);
-			fclose(fp);
+			printf("[codepage_lang]: out of memory while loading file %s\n", filename);
 			return FALSE;
 		}
 		
@@ -219,14 +215,11 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 			codepage_lang_unload_langlist(&pcodepage->lang_list);
 			single_list_free(&pcodepage->lang_list);
 			free(pcodepage);
-			fclose(fp);
-			printf("[codepage_lang]: fail to parse line %d in %s\n",
-				i  + 1, g_file_path);
+			printf("[codepage_lang]: fail to parse line %d in %s\n", i + 1, filename);
 			return FALSE;
 		}
 		single_list_append_as_tail(plist, &pcodepage->node);
 	}
-	fclose(fp);
 	
 	if (0 == single_list_get_nodes_num(plist)) {
 		return FALSE;
@@ -246,18 +239,12 @@ static void codepage_lang_unload_cplist(SINGLE_LIST *plist)
 	}
 }
 
-static void codepage_lang_init(const char *path)
+static int codepage_lang_run(const char *filename, const char *sdlist)
 {
-	HX_strlcpy(g_file_path, path, GX_ARRAY_SIZE(g_file_path));
 	single_list_init(&g_cp_list);
 	pthread_rwlock_init(&g_list_lock, NULL);
-}
-
-static int codepage_lang_run()
-{
-    if (FALSE == codepage_lang_load_cplist(&g_cp_list)) {
+	if (!codepage_lang_load_cplist(filename, sdlist, &g_cp_list))
 		return -1;
-	}
 	return 0;
 }
 
@@ -320,10 +307,8 @@ static BOOL svc_codepage_lang(int reason, void **ppdata)
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.txt",
-		         get_data_path(), file_name);
-		codepage_lang_init(tmp_path);
-		if (codepage_lang_run() != 0) {
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.txt", file_name);
+		if (codepage_lang_run(tmp_path, get_data_path()) != 0) {
 			printf("[codepage_lang]: failed to run the module\n");
 			return false;
 		}
