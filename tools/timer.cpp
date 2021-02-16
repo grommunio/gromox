@@ -59,7 +59,6 @@ static int g_threads_num;
 static int g_last_tid;
 static int g_list_fd;
 static char g_list_path[256];
-static char g_acl_path[256];
 static std::vector<std::string> g_acl_list;
 static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
@@ -127,15 +126,13 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 
-	str_value = config_file_get_value(pconfig, "acl_path");
-	HX_strlcpy(g_acl_path, str_value != nullptr ? str_value :
-	           PKGSYSCONFDIR "/timer_acl.txt", sizeof(g_acl_path));
+	char config_dir[256];
+	str_value = config_file_get_value(pconfig, "config_file_path");
+	HX_strlcpy(config_dir, str_value != nullptr ? str_value :
+	           PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
 	str_value = config_file_get_value(pconfig, "timer_state_path");
 	HX_strlcpy(g_list_path, str_value != nullptr ? str_value :
 	           PKGSTATEDIR "/timer.txt", sizeof(g_list_path));
-
-	printf("[system]: acl file path is %s\n", g_acl_path);
-
 	printf("[system]: list path is %s\n", g_list_path);
 
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_IP");
@@ -278,33 +275,28 @@ int main(int argc, const char **argv)
 		return 8;
 	}
 
-
-	if ('\0' != g_acl_path[0]) {
-		auto ret = list_file_read_fixedstrings(g_list_path, nullptr, g_acl_list);
-		if (ret == -ENOENT) {
-			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
-			g_acl_list = {"::1"};
-		} else if (ret < 0) {
-			for (i=g_threads_num-1; i>=0; i--) {
-				pthread_cancel(thr_ids[i]);
-			}
-
-			close(sockd);
-			close(g_list_fd);
-			double_list_free(&g_connection_list);
-			double_list_free(&g_connection_list1);
-
-			pthread_mutex_destroy(&g_connection_lock);
-			pthread_mutex_destroy(&g_list_lock);
-			pthread_mutex_destroy(&g_tid_lock);
-			pthread_mutex_destroy(&g_cond_mutex);
-			pthread_cond_destroy(&g_waken_cond);
-			printf("[system]: Failed to load ACL from %s\n", g_acl_path);
-			return 9;
+	auto ret = list_file_read_fixedstrings("timer_acl.txt", config_dir, g_acl_list);
+	if (ret == -ENOENT) {
+		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+		g_acl_list = {"::1"};
+	} else if (ret < 0) {
+		printf("[system]: list_file_initd timer_acl.txt: %s\n", strerror(-ret));
+		for (i = g_threads_num - 1; i >= 0; i--) {
+			pthread_cancel(thr_ids[i]);
 		}
+		close(sockd);
+		close(g_list_fd);
+		double_list_free(&g_connection_list);
+		double_list_free(&g_connection_list1);
+		pthread_mutex_destroy(&g_connection_lock);
+		pthread_mutex_destroy(&g_list_lock);
+		pthread_mutex_destroy(&g_tid_lock);
+		pthread_mutex_destroy(&g_cond_mutex);
+		pthread_cond_destroy(&g_waken_cond);
+		return 9;
 	}
 	
-	int ret = pthread_create(&thr_accept_id, nullptr, accept_work_func,
+	ret = pthread_create(&thr_accept_id, nullptr, accept_work_func,
 	          reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
@@ -480,13 +472,11 @@ static void *accept_work_func(void *param)
 			close(sockd2);
 			continue;
 		}
-		if ('\0' != g_acl_path[0]) {
-			if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-			    client_hostip) == g_acl_list.cend()) {
-				write(sockd2, "Access Deny\r\n", 13);
-				close(sockd2);
-				continue;
-			}
+		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+		    client_hostip) == g_acl_list.cend()) {
+			write(sockd2, "Access Deny\r\n", 13);
+			close(sockd2);
+			continue;
 		}
 
 		pconnection = (CONNECTION_NODE*)malloc(sizeof(CONNECTION_NODE));

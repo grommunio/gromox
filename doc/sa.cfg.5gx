@@ -9,9 +9,16 @@ Default: \fI10\fP
 .SS backup_valid_days
 .PP
 Default: \fI30\fP
+.SS config_file_path
+.PP
+Colon-separated list of directories in which further configuration files
+will be searched.
+.PP
+Default: \fI/etc/gromox\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories in which static data files will be
+searched.
 .PP
 Default: \fI/usr/share/gromox\fP
 .SS extpasswd_type

@@ -25,16 +25,19 @@ Output version information and exit.
 Display option summary.
 .SH Files
 .IP \(bu 4
-/etc/gromox/timer_acl.txt: This file may contain a trivial list of IP
-addresses, and that list will be evaluted when timer_listen_ip is explicitly
-set.
+\fIconfig_file_path\fP/timer_acl.txt: A file with one address (IPv6 or
+v4-mapped) per line of allowed clients. In its absence, ::1 is
+default-whitelisted.
 .IP \(bu 4
 /var/lib/gromox/timer.txt: This file is used to save the state of timer(8gx)
 and persist them across restarts.
 .SH Configuration file directives
-.SS acl_path
+.SS config_file_path
 .PP
-Default: \fI/etc/gromox/timer_acl.txt\fP
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by plugin instances.
+.PP
+Default: \fI/etc/gromox/timer:/etc/gromox\fP
 .SS timer_listen_ip
 .PP
 An IPv6 address (or v4-mapped address) for exposing the timer service on.
