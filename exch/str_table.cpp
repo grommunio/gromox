@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <fcntl.h>
 #include <unistd.h>
 #include <libHX/defs.h>
@@ -19,6 +20,8 @@
 #include <cstdarg>
 #include <unistd.h>
 #define DEF_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+
+using namespace std::string_literals;
 
 enum{
 	STR_TABLE_REFRESH_OK,
@@ -137,7 +140,7 @@ static int str_table_refresh()
 	
     /* initialize the list filter */
 	struct srcitem { char s[256]; };
-	auto plist_file = list_file_initd(g_list_path, "/", "%s:256");
+	auto plist_file = list_file_initd(g_list_path, std::string(get_state_path() + ":"s + get_config_path()).c_str(), "%s:256");
 	if (NULL == plist_file) {
 		str_table_echo("list_file_init %s: %s", g_list_path, strerror(errno));
 		return STR_TABLE_REFRESH_FILE_ERROR;
@@ -460,8 +463,7 @@ static BOOL svc_str_table(int reason, void **ppdata)
 				printf("[%s]: case-insensitive\n", file_name);
 			}
 		}
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s/%s.txt",
-		         get_data_path(), file_name);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.txt", file_name);
 		str_table_init(file_name, case_sensitive, tmp_path, growing_num);
 		if (str_table_run() != 0) {
 			printf("[%s]: failed to run the module\n", file_name);

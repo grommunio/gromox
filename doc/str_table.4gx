@@ -48,8 +48,9 @@ Default: varies per instance
 of str_table (e.g. /etc/gromox/delivery/domain_list.cfg when delivery(8gx) was
 made to load libmtasvc_domain_list.so.)
 .IP \(bu 4
-\fIstate_path\fP/\fIinstance\fP.txt: string table on which matches are
-carried out (e.g. /var/lib/gromox/domain_list.txt)
+\fIstate_path\fP/\fIinstance\fP.txt, \fIconfig_file_path\fP/\fIinstance\fP.txt:
+string table on which matches are carried out (e.g.
+/var/lib/gromox/domain_list.txt)
 .SH See also
 .PP
 \fBgromox\fP(7)
