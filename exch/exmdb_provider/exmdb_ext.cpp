@@ -8535,154 +8535,117 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		return status;
 	}
 	switch (pnotify->db_notify.type) {
-	case DB_NOTIFY_TYPE_NEW_MAIL:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-		if (NULL == pnotify->db_notify.pdata) {
+	case DB_NOTIFY_TYPE_NEW_MAIL: {
+		auto n = cu_alloc<DB_NOTIFY_NEW_MAIL>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_NEW_MAIL*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_NEW_MAIL*)
-			pnotify->db_notify.pdata)->message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint32(&ext_pull,
-			&((DB_NOTIFY_NEW_MAIL*)
-			pnotify->db_notify.pdata)->message_flags);
+		status = ext_buffer_pull_uint32(&ext_pull, &n->message_flags);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_string(&ext_pull,
-			(char**)&((DB_NOTIFY_NEW_MAIL*)
-			pnotify->db_notify.pdata)->pmessage_class);
-	case DB_NOTIFY_TYPE_FOLDER_CREATED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_string(&ext_pull, const_cast<char **>(&n->pmessage_class));
+	}
+	case DB_NOTIFY_TYPE_FOLDER_CREATED: {
+		auto n = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_CREATED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_CREATED*)
-			pnotify->db_notify.pdata)->parent_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->parent_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_proptag_array(&ext_pull,
-			&((DB_NOTIFY_FOLDER_CREATED*)
-			pnotify->db_notify.pdata)->proptags);
-	case DB_NOTIFY_TYPE_MESSAGE_CREATED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_proptag_array(&ext_pull, &n->proptags);
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_CREATED: {
+		auto n = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_CREATED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_CREATED*)
-			pnotify->db_notify.pdata)->message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_proptag_array(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_CREATED*)
-			pnotify->db_notify.pdata)->proptags);
-	case DB_NOTIFY_TYPE_LINK_CREATED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_LINK_CREATED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_proptag_array(&ext_pull, &n->proptags);
+	}
+	case DB_NOTIFY_TYPE_LINK_CREATED: {
+		auto n = cu_alloc<DB_NOTIFY_LINK_CREATED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_LINK_CREATED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_LINK_CREATED*)
-			pnotify->db_notify.pdata)->message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_LINK_CREATED*)
-			pnotify->db_notify.pdata)->parent_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->parent_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_proptag_array(&ext_pull,
-			&((DB_NOTIFY_LINK_CREATED*)
-			pnotify->db_notify.pdata)->proptags);
-	case DB_NOTIFY_TYPE_FOLDER_DELETED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_proptag_array(&ext_pull, &n->proptags);
+	}
+	case DB_NOTIFY_TYPE_FOLDER_DELETED: {
+		auto n = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_DELETED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_DELETED*)
-			pnotify->db_notify.pdata)->parent_id);
-	case DB_NOTIFY_TYPE_MESSAGE_DELETED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->parent_id);
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_DELETED: {
+		auto n = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_DELETED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_DELETED*)
-			pnotify->db_notify.pdata)->message_id);
-	case DB_NOTIFY_TYPE_LINK_DELETED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_LINK_DELETED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->message_id);
+	}
+	case DB_NOTIFY_TYPE_LINK_DELETED: {
+		auto n = cu_alloc<DB_NOTIFY_LINK_DELETED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_LINK_DELETED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_LINK_DELETED*)
-			pnotify->db_notify.pdata)->message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_LINK_DELETED*)
-			pnotify->db_notify.pdata)->parent_id);
-	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->parent_id);
+	}
+	case DB_NOTIFY_TYPE_FOLDER_MODIFIED: {
+		auto n = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_MODIFIED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
@@ -8691,17 +8654,12 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			return status;
 		}
 		if (0 == tmp_byte) {
-			((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->ptotal = NULL;
+			n->ptotal = nullptr;
 		} else {
-			static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pnotify->db_notify.pdata)->ptotal = cu_alloc<uint32_t>();
-			if (NULL == ((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->ptotal) {
+			n->ptotal = cu_alloc<uint32_t>();
+			if (n->ptotal == nullptr)
 				return EXT_ERR_ALLOC;	
-			}
-			status = ext_buffer_pull_uint32(&ext_pull,
-				((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->ptotal);
+			status = ext_buffer_pull_uint32(&ext_pull, n->ptotal);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -8711,241 +8669,181 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			return status;
 		}
 		if (0 == tmp_byte) {
-			((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->punread = NULL;
+			n->punread = nullptr;
 		} else {
-			static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pnotify->db_notify.pdata)->punread = cu_alloc<uint32_t>();
-			if (NULL == ((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->punread) {
+			n->punread = cu_alloc<uint32_t>();
+			if (n->punread == nullptr)
 				return EXT_ERR_ALLOC;	
-			}
-			status = ext_buffer_pull_uint32(&ext_pull,
-				((DB_NOTIFY_FOLDER_MODIFIED*)
-				pnotify->db_notify.pdata)->punread);
+			status = ext_buffer_pull_uint32(&ext_pull, n->punread);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
-		return ext_buffer_pull_proptag_array(&ext_pull,
-			&((DB_NOTIFY_FOLDER_MODIFIED*)
-			pnotify->db_notify.pdata)->proptags);
-	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_proptag_array(&ext_pull, &n->proptags);
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED: {
+		auto n = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MODIFIED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MODIFIED*)
-			pnotify->db_notify.pdata)->message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_proptag_array(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MODIFIED*)
-			pnotify->db_notify.pdata)->proptags);
+		return ext_buffer_pull_proptag_array(&ext_pull, &n->proptags);
+	}
 	case DB_NOTIFY_TYPE_FOLDER_MOVED:
-	case DB_NOTIFY_TYPE_FOLDER_COPIED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
-		if (NULL == pnotify->db_notify.pdata) {
+	case DB_NOTIFY_TYPE_FOLDER_COPIED: {
+		auto n = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_MVCP*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_MVCP*)
-			pnotify->db_notify.pdata)->parent_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->parent_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_MVCP*)
-			pnotify->db_notify.pdata)->old_folder_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->old_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_FOLDER_MVCP*)
-			pnotify->db_notify.pdata)->old_parent_id);
+		return ext_buffer_pull_uint64(&ext_pull, &n->old_parent_id);
+	}
 	case DB_NOTIFY_TYPE_MESSAGE_MOVED:
-	case DB_NOTIFY_TYPE_MESSAGE_COPIED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
-		if (NULL == pnotify->db_notify.pdata) {
+	case DB_NOTIFY_TYPE_MESSAGE_COPIED: {
+		auto n = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MVCP*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MVCP*)
-			pnotify->db_notify.pdata)->message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MVCP*)
-			pnotify->db_notify.pdata)->old_folder_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->old_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_MESSAGE_MVCP*)
-			pnotify->db_notify.pdata)->old_message_id);
-	case DB_NOTIFY_TYPE_SEARCH_COMPLETED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->old_message_id);
+	}
+	case DB_NOTIFY_TYPE_SEARCH_COMPLETED: {
+		auto n = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_SEARCH_COMPLETED*)
-			pnotify->db_notify.pdata)->folder_id);
+		pnotify->db_notify.pdata = n;
+		return ext_buffer_pull_uint64(&ext_pull, &n->folder_id);
+	}
 	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_CHANGED:
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED:
 		return EXT_ERR_SUCCESS;
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
-		if (NULL == pnotify->db_notify.pdata) {
+	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED: {
+		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->row_folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->after_folder_id);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->after_folder_id);
+	}
+	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED: {
+		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->row_folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->row_message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->row_instance);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_instance);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->after_folder_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->after_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->after_row_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->after_row_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)
-			pnotify->db_notify.pdata)->after_instance);
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->after_instance);
+	}
+	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED: {
+		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		return status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED*)
-			pnotify->db_notify.pdata)->row_folder_id);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		pnotify->db_notify.pdata = n;
+		return status = ext_buffer_pull_uint64(&ext_pull, &n->row_folder_id);
+	}
+	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED: {
+		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)
-			pnotify->db_notify.pdata)->row_folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)
-			pnotify->db_notify.pdata)->row_message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)
-			pnotify->db_notify.pdata)->row_instance);
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->row_instance);
+	}
+	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED: {
+		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->row_folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->after_folder_id);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED:
-		pnotify->db_notify.pdata = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
-		if (NULL == pnotify->db_notify.pdata) {
+		return ext_buffer_pull_uint64(&ext_pull, &n->after_folder_id);
+	}
+	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED: {
+		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
+		if (n == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->row_folder_id);
+		pnotify->db_notify.pdata = n;
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->row_message_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_message_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->row_instance);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->row_instance);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->after_folder_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->after_folder_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->after_row_id);
+		status = ext_buffer_pull_uint64(&ext_pull, &n->after_row_id);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_pull_uint64(&ext_pull,
-			&((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)
-			pnotify->db_notify.pdata)->after_instance);
+		return ext_buffer_pull_uint64(&ext_pull, &n->after_instance);
+	}
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
