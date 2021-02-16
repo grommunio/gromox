@@ -26,6 +26,7 @@
 #include <cerrno>
 #include <poll.h>
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
+#define QRF(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return FALSE; } while (false)
 #define SOCKET_TIMEOUT							180
 
 #define SERVER_SOFTWARE							"medusa/1.0"
@@ -615,36 +616,13 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	
 	ndr_push_init(&ndr_push, pbuff, *plength,
 		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
-	status = mod_fastcgi_push_params_begin(&ndr_push);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-					"GATEWAY_INTERFACE", "CGI/1.1");
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-				"SERVER_SOFTWARE", SERVER_SOFTWARE);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_params_begin(&ndr_push));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "GATEWAY_INTERFACE", "CGI/1.1"));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_SOFTWARE", SERVER_SOFTWARE));
 	if (TRUE == phttp->b_authed) {
-		status = mod_fastcgi_push_name_value(&ndr_push,
-					"REMOTE_USER", phttp->username);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "USER_HOME", phttp->maildir);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "USER_LANG", phttp->lang);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_USER", phttp->username));
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));
 	}
 	tmp_len = mem_file_get_total_length(&phttp->request.f_host);
 	if (tmp_len >= sizeof(domain)) {
@@ -660,53 +638,21 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		mem_file_read(&phttp->request.f_host, domain, tmp_len);
 		domain[tmp_len] = '\0';
 	}
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "HTTP_HOST", domain);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", domain));
 	ptoken = strchr(domain, ':');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
 	}
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "SERVER_NAME", domain);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-		"SERVER_ADDR", phttp->connection.server_ip);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", domain));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
 	sprintf(tmp_buff, "%d", phttp->connection.server_port);
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "SERVER_PORT", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-		"REMOTE_ADDR", phttp->connection.client_ip);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", tmp_buff));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_ip));
 	sprintf(tmp_buff, "%d", phttp->connection.client_port);
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "REMOTE_PORT", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", tmp_buff));
 	sprintf(tmp_buff, "HTTP/%s", phttp->request.version);
-	status = mod_fastcgi_push_name_value(&ndr_push,
-					"SERVER_PROTOCOL", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-		"REQUEST_METHOD", phttp->request.method);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
 	tmp_len = mem_file_get_total_length(
 		&phttp->request.f_request_uri);
 	if (0 == tmp_len) {
@@ -722,17 +668,9 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	mem_file_read(&phttp->request.f_request_uri, tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "REQUEST_URI", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", tmp_buff));
 	ptoken = strchr(tmp_buff, '?');
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "QUERY_STRING", ptoken == NULL ? "" : ++ptoken);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "QUERY_STRING", ptoken == nullptr ? "" : ++ptoken));
 	if (FALSE == parse_uri(tmp_buff, uri_path)) {
 		http_parser_log_info(phttp, 8, "request"
 			" uri format error for mod_fastcgi");
@@ -750,53 +688,28 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		if (NULL == ptoken1) {
 			ptoken1 = uri_path + tmp_len;
 		} else {
-			status = mod_fastcgi_push_name_value(
-				&ndr_push, "PATH_INFO", ptoken1);
-			if (NDR_ERR_SUCCESS != status) {
-				return FALSE;
-			}
+			QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_INFO", ptoken1));
 			*ptoken1 = '\0';
 			path_info = ptoken1 + 1;
 		}
 	}
 	pfnode = phttp->pfast_context->pfnode;
-	status = mod_fastcgi_push_name_value(&ndr_push,
-				"DOCUMENT_ROOT", pfnode->directory);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->directory));
 	if (NULL != path_info) {
 		sprintf(tmp_buff, "%s/%s", pfnode->directory, path_info);
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "PATH_TRANSLATED", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", tmp_buff));
 	}
 	tmp_len = strlen(pfnode->path);
 	if (TRUE == phttp->pfast_context->b_index) {
 		sprintf(tmp_buff, "%s%s", uri_path, pfnode->index);
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "SCRIPT_NAME", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", tmp_buff));
 		sprintf(tmp_buff, "%s%s%s", pfnode->directory,
 			uri_path + tmp_len, pfnode->index);
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "SCRIPT_FILENAME", tmp_buff);
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	} else {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "SCRIPT_NAME", uri_path);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", uri_path));
 		sprintf(tmp_buff, "%s%s", pfnode->directory, uri_path + tmp_len);
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "SCRIPT_FILENAME", tmp_buff);
-	}
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	}
 	tmp_len = mem_file_get_total_length(&phttp->request.f_accept);
 	if (tmp_len > 1024) {
@@ -812,11 +725,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		mem_file_read(&phttp->request.f_accept, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "HTTP_ACCEPT", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT", tmp_buff));
 	tmp_len = mem_file_get_total_length(&phttp->request.f_user_agent);
 	if (tmp_len > 1024) {
 		http_parser_log_info(phttp, 8, "length of "
@@ -831,11 +740,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		mem_file_read(&phttp->request.f_user_agent, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "HTTP_USER_AGENT", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_USER_AGENT", tmp_buff));
 	tmp_len = mem_file_get_total_length(&phttp->request.f_accept_language);
 	if (tmp_len > 1024) {
 		http_parser_log_info(phttp, 8, "length of "
@@ -850,11 +755,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		mem_file_read(&phttp->request.f_accept_language, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-				"HTTP_ACCEPT_LANGUAGE", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_LANGUAGE", tmp_buff));
 	tmp_len = mem_file_get_total_length(&phttp->request.f_accept_encoding);
 	if (tmp_len > 1024) {
 		http_parser_log_info(phttp, 8, "length of "
@@ -869,11 +770,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		mem_file_read(&phttp->request.f_accept_encoding, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
-	status = mod_fastcgi_push_name_value(&ndr_push,
-				"HTTP_ACCEPT_ENCODING", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_ENCODING", tmp_buff));
 	tmp_len = mem_file_get_total_length(&phttp->request.f_cookie);
 	if (tmp_len > 1024) {
 		http_parser_log_info(phttp, 8, "length of "
@@ -885,11 +782,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		mem_file_read(&phttp->request.f_cookie, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "HTTP_COOKIE", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_COOKIE", tmp_buff));
 	}
 	tmp_len = mem_file_get_total_length(&phttp->request.f_content_type);
 	if (tmp_len > 128) {
@@ -905,89 +798,49 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		mem_file_read(&phttp->request.f_content_type, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
-	status = mod_fastcgi_push_name_value(
-		&ndr_push, "CONTENT_TYPE", tmp_buff);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_TYPE", tmp_buff));
 	if (NULL != phttp->connection.ssl) {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "REQUEST_SCHEME", "https");
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
-		status = mod_fastcgi_push_name_value(
-					&ndr_push, "HTTPS", "on");
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_SCHEME", "https"));
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTPS", "on"));
 	} else {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "REQUEST_SCHEME", "http");
-	}
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_SCHEME", "http"));
 	}
 	if (TRUE == phttp->b_close) {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "HTTP_CONNECTION", "close");
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "close"));
 	} else {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "HTTP_CONNECTION", "keep-alive");
-	}
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "keep-alive"));
 	}
 	if (TRUE == mod_fastcgi_get_others_field(
 		&phttp->request.f_others, "Referer",
 		tmp_buff, sizeof(tmp_buff))) {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "HTTP_REFERER", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_REFERER", tmp_buff));
 	}
 	if (TRUE == mod_fastcgi_get_others_field(
 		&phttp->request.f_others, "Cache-Control",
 		tmp_buff, 128)) {
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "HTTP_CACHE_CONTROL", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", tmp_buff));
 	}
 	for (pnode=double_list_get_head(&pfnode->header_list); NULL!=pnode;
 		pnode=double_list_get_after(&pfnode->header_list, pnode)) {
 		if (mod_fastcgi_get_others_field(&phttp->request.f_others,
 		    static_cast<char *>(pnode->pdata), tmp_buff, 1024)) {
-			status = mod_fastcgi_push_name_value(&ndr_push, 
-			         static_cast<char *>(pnode->pdata), tmp_buff);
-			if (NDR_ERR_SUCCESS != status) {
-				return FALSE;
-			}
+			QRF(mod_fastcgi_push_name_value(&ndr_push,
+			         static_cast<char *>(pnode->pdata), tmp_buff));
 		}
 	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(phttp->pfast_context->content_length));
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "CONTENT_LENGTH", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
 	} else {
 		if (0 != fstat(phttp->pfast_context->cache_fd, &node_stat)) {
 			return FALSE;
 		}
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(node_stat.st_size));
-		status = mod_fastcgi_push_name_value(
-			&ndr_push, "CONTENT_LENGTH", tmp_buff);
-		if (NDR_ERR_SUCCESS != status) {
-			return FALSE;
-		}
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
 	}
-	status = mod_fastcgi_push_params_end(&ndr_push);
-	if (NDR_ERR_SUCCESS != status) {
-		return FALSE;
-	}
+	QRF(mod_fastcgi_push_params_end(&ndr_push));
 	*plength = ndr_push.offset;
 	return TRUE;
 }
