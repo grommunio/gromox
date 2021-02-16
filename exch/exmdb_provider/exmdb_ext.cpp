@@ -7,7 +7,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/idset.hpp>
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
-#define QYY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return EXT_ERR_SUCCESS; } while (false) /* legit? */
 
 using namespace gromox;
 
@@ -2112,15 +2111,15 @@ static int exmdb_ext_pull_rule_new_message_request(
 {
 	uint8_t tmp_byte;
 	
-	QYY(ext_buffer_pull_uint8(pext, &tmp_byte ));
+	TRY(ext_buffer_pull_uint8(pext, &tmp_byte ));
 	if (0 == tmp_byte) {
 		ppayload->rule_new_message.username = NULL;
 	} else {
-		QYY(ext_buffer_pull_string(pext, &ppayload->rule_new_message.username));
+		TRY(ext_buffer_pull_string(pext, &ppayload->rule_new_message.username));
 	}
-	QYY(ext_buffer_pull_string(pext, &ppayload->rule_new_message.account));
-	QYY(ext_buffer_pull_uint32(pext, &ppayload->rule_new_message.cpid));
-	QYY(ext_buffer_pull_uint64(pext, &ppayload->rule_new_message.folder_id));
+	TRY(ext_buffer_pull_string(pext, &ppayload->rule_new_message.account));
+	TRY(ext_buffer_pull_uint32(pext, &ppayload->rule_new_message.cpid));
+	TRY(ext_buffer_pull_uint64(pext, &ppayload->rule_new_message.folder_id));
 	return ext_buffer_pull_uint64(pext,
 		&ppayload->rule_new_message.message_id);
 }
@@ -2129,14 +2128,14 @@ static int exmdb_ext_push_rule_new_message_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	if (NULL == ppayload->rule_new_message.username) {
-		QYY(ext_buffer_push_uint8(pext, 0 ));
+		TRY(ext_buffer_push_uint8(pext, 0 ));
 	} else {
-		QYY(ext_buffer_push_uint8(pext, 1 ));
-		QYY(ext_buffer_push_string(pext, ppayload->rule_new_message.username));
+		TRY(ext_buffer_push_uint8(pext, 1 ));
+		TRY(ext_buffer_push_string(pext, ppayload->rule_new_message.username));
 	}
-	QYY(ext_buffer_push_string(pext, ppayload->rule_new_message.account));
-	QYY(ext_buffer_push_uint32(pext, ppayload->rule_new_message.cpid));
-	QYY(ext_buffer_push_uint64(pext, ppayload->rule_new_message.folder_id));
+	TRY(ext_buffer_push_string(pext, ppayload->rule_new_message.account));
+	TRY(ext_buffer_push_uint32(pext, ppayload->rule_new_message.cpid));
+	TRY(ext_buffer_push_uint64(pext, ppayload->rule_new_message.folder_id));
 	return ext_buffer_push_uint64(pext,
 		ppayload->rule_new_message.message_id);
 }
@@ -2144,7 +2143,7 @@ static int exmdb_ext_push_rule_new_message_request(
 static int exmdb_ext_pull_set_message_timer_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	QYY(ext_buffer_pull_uint64(pext, &ppayload->set_message_timer.message_id));
+	TRY(ext_buffer_pull_uint64(pext, &ppayload->set_message_timer.message_id));
 	return ext_buffer_pull_uint32(pext,
 		&ppayload->set_message_timer.timer_id);
 }
@@ -2152,7 +2151,7 @@ static int exmdb_ext_pull_set_message_timer_request(
 static int exmdb_ext_push_set_message_timer_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
-	QYY(ext_buffer_push_uint64(pext, ppayload->set_message_timer.message_id));
+	TRY(ext_buffer_push_uint64(pext, ppayload->set_message_timer.message_id));
 	return ext_buffer_push_uint32(pext,
 		ppayload->set_message_timer.timer_id);
 }
