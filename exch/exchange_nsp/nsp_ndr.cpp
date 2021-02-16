@@ -696,6 +696,8 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, int flag, const STRING_ARR
 			}
 			for (cnt=0; cnt<r->cvalues; cnt++) {
 				status = ndr_push_unique_ptr(pndr, r->ppstr[cnt]);
+				if (status != NDR_ERR_SUCCESS)
+					return status;
 			}
 			for (cnt=0; cnt<r->cvalues; cnt++) {
 				if (NULL != r->ppstr[cnt]) {
@@ -847,10 +849,14 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, int flag, BINARY *r)
 			return status;
 		}
 		status = ndr_pull_uint32(pndr, &r->cb);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		if (r->cb > 2097152) {
 			return NDR_ERR_RANGE;
 		}
 		status = ndr_pull_generic_ptr(pndr, &ptr);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		if (0 != ptr) {
 			r->pb = (uint8_t*)(long)ptr;
 		} else {
@@ -1015,7 +1021,7 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, int flag, SHORT_ARRAY *r)
 			}
 		}
 	}
-	return status;
+	return NDR_ERR_SUCCESS;
 }
 
 static int nsp_ndr_push_short_array(NDR_PUSH *pndr, int flag, const SHORT_ARRAY *r)
@@ -1045,6 +1051,8 @@ static int nsp_ndr_push_short_array(NDR_PUSH *pndr, int flag, const SHORT_ARRAY 
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->ps) {
 			status = ndr_push_ulong(pndr, r->cvalues);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			for (cnt=0; cnt<r->cvalues; cnt++) {
 				status = ndr_push_uint16(pndr, r->ps[cnt]);
 				if (NDR_ERR_SUCCESS != status) {
@@ -1076,6 +1084,8 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, int flag, LONG_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		status = ndr_pull_generic_ptr(pndr, &ptr);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		if (0 != ptr) {
 			r->pl = (uint32_t*)(long)ptr;
 		} else {
@@ -1173,6 +1183,8 @@ static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, int flag, BINARY_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		status = ndr_pull_generic_ptr(pndr, &ptr);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		if (0 != ptr) {
 			r->pbin = (BINARY*)(long)ptr;
 		} else {
@@ -1241,6 +1253,8 @@ static int nsp_ndr_push_binary_array(NDR_PUSH *pndr, int flag, const BINARY_ARRA
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->pbin) {
 			status = ndr_push_ulong(pndr, r->cvalues);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			for (cnt=0; cnt<r->cvalues; cnt++) {
 				status = nsp_ndr_push_binary(pndr, FLAG_HEADER, &r->pbin[cnt]);
 				if (NDR_ERR_SUCCESS != status) {
@@ -1515,6 +1529,8 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_STRING8:
 		case PT_UNICODE:
 			status = ndr_pull_generic_ptr(pndr, &ptr);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			if (0 != ptr) {
 				r->pstr = (char*)(long)ptr;
 			} else {
@@ -1526,6 +1542,8 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			break;
 		case PROPVAL_TYPE_FLATUID:
 			status = ndr_pull_generic_ptr(pndr, &ptr);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			if (0 != ptr) {
 				r->pguid = (FLATUID*)(long)ptr;
 			} else {
@@ -2109,6 +2127,8 @@ static int nsp_ndr_push_property_row(NDR_PUSH *pndr, int flag, const PROPERTY_RO
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->pprops) {
 			status = ndr_push_ulong(pndr, r->cvalues);
+			if (status != NDR_ERR_SUCCESS)
+				return status;
 			for (cnt=0; cnt<r->cvalues; cnt++) {
 				status = nsp_ndr_push_property_value(pndr, FLAG_HEADER, &r->pprops[cnt]);
 				if (NDR_ERR_SUCCESS != status) {
@@ -2367,6 +2387,8 @@ static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, int flag, RESTRICTIO
 			return status;
 		}
 		status = ndr_pull_generic_ptr(pndr, &ptr);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		if (0 != ptr) {
 			r->pprop = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPERTY_VALUE)));
 			if (NULL == r->pprop) {
@@ -2459,9 +2481,6 @@ static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, int flag, RESTRICTI
 			}
 		} else {
 			r->pprop = NULL;
-		}
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
 		}
 		status = ndr_pull_trailer_align(pndr, 5);
 		if (NDR_ERR_SUCCESS != status) {
@@ -2827,6 +2846,8 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag, int *ptype, 
 		}
 		
 		status = ndr_pull_union_align(pndr, 5);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 		switch (*ptype) {
 		case RES_AND:
 			status = nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_and);
@@ -3397,6 +3418,8 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 			return NDR_ERR_ALLOC;
 		}
 		status = nsp_ndr_pull_proptag_array(pndr, r->pproptags);
+		if (status != NDR_ERR_SUCCESS)
+			return status;
 	} else {
 		r->pproptags = NULL;
 	}
@@ -3442,6 +3465,8 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 		return status;
 	}
 	status = ndr_pull_generic_ptr(pndr, &ptr);
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	if (0 != ptr) {
 		r->preserved = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
 		if (NULL == r->preserved) {
@@ -4001,6 +4026,8 @@ int nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
 		return status;
 	}
 	status = ndr_pull_generic_ptr(pndr, &ptr);
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	if (0 != ptr) {
 		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
 		if (NULL == r->pproptags) {
@@ -4063,6 +4090,8 @@ int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r)
 		return status;
 	}
 	status = ndr_pull_generic_ptr(pndr, &ptr);
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	if (0 != ptr) {
 		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
 		if (NULL == r->pproptags) {
@@ -4094,6 +4123,8 @@ int nsp_ndr_push_nspiresolvenamesw(NDR_PUSH *pndr, const NSPIRESOLVENAMESW_OUT *
 		}
 	}
 	status = ndr_push_unique_ptr(pndr, r->prows);
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	if (NULL != r->prows) {
 		status = nsp_ndr_push_proprow_set(pndr, FLAG_HEADER|FLAG_CONTENT, r->prows);
 		if (NDR_ERR_SUCCESS != status) {
