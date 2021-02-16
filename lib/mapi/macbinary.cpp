@@ -5,6 +5,7 @@
 #include <gromox/macbinary.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
+#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080
@@ -103,42 +104,18 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	uint8_t tmp_byte;
 	
 	offset = pext->offset;
-	status = ext_buffer_pull_uint8(pext, &r->old_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->old_version));
+	TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
 	if (tmp_byte > 63) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_pull_bytes(pext, r->file_name, tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_bytes(pext, r->file_name, tmp_byte));
 	r->file_name[tmp_byte] = '\0';
-	status = ext_buffer_pull_advance(pext, 63 - tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, (uint8_t*)&r->type, 4);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, (uint8_t*)&r->creator, 4);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->original_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->pad1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_advance(pext, 63 - tmp_byte));
+	TRY(ext_buffer_pull_bytes(pext, &r->type, 4));
+	TRY(ext_buffer_pull_bytes(pext, &r->creator, 4));
+	TRY(ext_buffer_pull_uint8(pext, &r->original_flags));
+	TRY(ext_buffer_pull_uint8(pext, &r->pad1));
 	status = macbinary_pull_uint16(pext, &r->point_v);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -151,14 +128,8 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_pull_uint8(pext, &r->protected_flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->pad2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->protected_flag));
+	TRY(ext_buffer_pull_uint8(pext, &r->pad2));
 	status = macbinary_pull_uint32(pext, &r->data_len);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -181,26 +152,11 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_pull_uint8(pext, &r->finder_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, (uint8_t*)&r->signature, 4);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int8(pext, &r->fd_script);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int8(pext, &r->fd_xflags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->pads1, 8);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->finder_flags));
+	TRY(ext_buffer_pull_bytes(pext, (uint8_t*)&r->signature, 4));
+	TRY(ext_buffer_pull_int8(pext, &r->fd_script));
+	TRY(ext_buffer_pull_int8(pext, &r->fd_xflags));
+	TRY(ext_buffer_pull_bytes(pext, r->pads1, 8));
 	status = macbinary_pull_uint32(pext, &r->total_unpacked);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -209,10 +165,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_pull_uint8(pext, &r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->version));
 	if (129 != r->version && 130 != r->version) {
 		return EXT_ERR_FORMAT;
 	}
@@ -220,10 +173,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 		(char*)&r->signature, "mBIN", 4)) {
 		debug_info("[macbinary]: signature of MacBinaryIII error");
 	}
-	status = ext_buffer_pull_uint8(pext, &r->mini_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->mini_version));
 	if (129 != r->mini_version) {
 		return EXT_ERR_FORMAT;
 	}
@@ -276,40 +226,19 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	uint8_t tmp_byte;
 	
 	offset = pext->offset;
-	status = ext_buffer_push_uint8(pext, r->old_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->old_version));
 	tmp_byte = strlen(r->file_name);
 	if (tmp_byte > 63) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint8(pext, tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, tmp_byte));
 	char newfile[64]{};
 	HX_strlcpy(newfile, r->file_name, sizeof(newfile));
-	status = ext_buffer_push_bytes(pext, newfile, 63);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, (uint8_t*)&r->type, 4);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, (uint8_t*)&r->creator, 4);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->original_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->pad1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_bytes(pext, newfile, 63));
+	TRY(ext_buffer_push_bytes(pext, &r->type, 4));
+	TRY(ext_buffer_push_bytes(pext, &r->creator, 4));
+	TRY(ext_buffer_push_uint8(pext, r->original_flags));
+	TRY(ext_buffer_push_uint8(pext, r->pad1));
 	status = macbinary_push_uint16(pext, r->point_v);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -322,14 +251,8 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_uint8(pext, r->protected_flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->pad2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->protected_flag));
+	TRY(ext_buffer_push_uint8(pext, r->pad2));
 	status = macbinary_push_uint32(pext, r->data_len);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -352,29 +275,14 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_uint8(pext, r->finder_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->finder_flags));
 	if (0 != strncmp((char*)&r->signature, "mBIN", 4)) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_bytes(pext, (uint8_t*)&r->signature, 4);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int8(pext, r->fd_script);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int8(pext, r->fd_xflags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->pads1, 8);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_bytes(pext, (uint8_t*)&r->signature, 4));
+	TRY(ext_buffer_push_int8(pext, r->fd_script));
+	TRY(ext_buffer_push_int8(pext, r->fd_xflags));
+	TRY(ext_buffer_push_bytes(pext, r->pads1, 8));
 	status = macbinary_push_uint32(pext, r->total_unpacked);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -386,17 +294,11 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	if (130 != r->version) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint8(pext, r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->version));
 	if (129 != r->mini_version) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint8(pext, r->mini_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->mini_version));
 	crc = macbinary_crc(pext->data + offset, 124, 0);
 	status = macbinary_push_uint16(pext, crc);
 	if (EXT_ERR_SUCCESS != status) {
@@ -472,58 +374,32 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		status = ext_buffer_push_bytes(pext, pad_buff, pad_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext,
-			r->pxheader, r->header.xheader_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
+		TRY(ext_buffer_push_bytes(pext,r->pxheader, r->header.xheader_len));
 	}
 	if (0 != r->header.data_len) {
 		if (NULL == r->pdata) {
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		status = ext_buffer_push_bytes(pext, pad_buff, pad_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, r->pdata, r->header.data_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
+		TRY(ext_buffer_push_bytes(pext, r->pdata, r->header.data_len));
 	}
 	if (0 != r->header.res_len) {
 		if (NULL == r->presource) {
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		status = ext_buffer_push_bytes(pext, pad_buff, pad_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, r->presource, r->header.res_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
+		TRY(ext_buffer_push_bytes(pext, r->presource, r->header.res_len));
 	}
 	if (0 != r->header.comment_len) {
 		if (NULL == r->pcomment) {
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		status = ext_buffer_push_bytes(pext, pad_buff, pad_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext,
-			r->pcomment, r->header.comment_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
+		TRY(ext_buffer_push_bytes(pext,r->pcomment, r->header.comment_len));
 	}
 	return EXT_ERR_SUCCESS;
 }
