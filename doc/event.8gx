@@ -21,13 +21,18 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIconfig_file_path\fP/event_acl.txt: A file with one address (IPv6 or
+v4-mapped) per line of allowed clients. In its absence, ::1 is
+default-whitelisted.
 .SH Configuration file directives
-.SS acl_path
+.SS config_file_path
 .PP
-Path to a file with one address (IPv6 or v4-mapped) per line of allowed
-clients. In its absence, ::1 is default-whitelisted.
+Colon-separated list of directories which will be scanned when locating further
+configuration files.
 .PP
-Default: \fI/etc/gromox/event_acl.txt\fP
+Default: \fI/etc/gromox/event:/etc/gromox\fP
 .SS event_listen_ip
 .PP
 An IPv6 address (or v4-mapped address) for exposing the event service on.

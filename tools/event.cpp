@@ -75,7 +75,6 @@ struct HOST_NODE {
 
 static BOOL g_notify_stop = FALSE;
 static int g_threads_num;
-static char g_list_path[256];
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;
 static std::vector<std::string> g_acl_list;
@@ -143,11 +142,10 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 
-	str_value = config_file_get_value(pconfig, "acl_path");
-	HX_strlcpy(g_list_path, str_value != nullptr ? str_value :
-	           PKGSYSCONFDIR "/event_acl.txt", GX_ARRAY_SIZE(g_list_path));
-	printf("[system]: acl file path is %s\n", g_list_path);
-
+	char config_dir[256];
+	str_value = config_file_get_value(pconfig, "config_file_path");
+	HX_strlcpy(config_dir, str_value != nullptr ? str_value :
+	           PKGSYSCONFDIR "/event:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
 	HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(listen_ip));
@@ -308,44 +306,38 @@ int main(int argc, const char **argv)
 	
 	pthread_attr_destroy(&thr_attr);
 
-	if ('\0' != g_list_path[0]) {
-		auto ret = list_file_read_fixedstrings(g_list_path, nullptr, g_acl_list);
-		if (ret == -ENOENT) {
-			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
-			g_acl_list = {"::1"};
-		} else if (ret < 0) {
-			for (i=0; i<g_threads_num; i++) {
-				pthread_cancel(en_ids[i]);
-			}
-			free(en_ids);
-			for (i=0; i<g_threads_num; i++) {
-				pthread_cancel(de_ids[i]);
-			}
-			free(de_ids);
-			
-			close(sockd);
-			lib_buffer_free(g_file_alloc);
-			fifo_allocator_free(g_fifo_alloc);
-			double_list_free(&g_enqueue_list);
-			double_list_free(&g_enqueue_list1);
-			double_list_free(&g_dequeue_list);
-			double_list_free(&g_dequeue_list1);
-			double_list_free(&g_host_list);
-
-			pthread_mutex_destroy(&g_enqueue_lock);
-			pthread_mutex_destroy(&g_dequeue_lock);
-			pthread_mutex_destroy(&g_host_lock);
-			pthread_mutex_destroy(&g_enqueue_cond_mutex);
-			pthread_cond_destroy(&g_enqueue_waken_cond);
-			pthread_mutex_destroy(&g_dequeue_cond_mutex);
-			pthread_cond_destroy(&g_dequeue_waken_cond);
-			printf("[system]: Failed to load ACL from %s: %s\n",
-			       g_list_path, strerror(-ret));
-			return 10;
+	auto ret = list_file_read_fixedstrings("event_acl.txt", config_dir, g_acl_list);
+	if (ret == -ENOENT) {
+		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+		g_acl_list = {"::1"};
+	} else if (ret < 0) {
+		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(-ret));
+		for (i=0; i<g_threads_num; i++) {
+			pthread_cancel(en_ids[i]);
 		}
+		free(en_ids);
+		for (i=0; i<g_threads_num; i++) {
+			pthread_cancel(de_ids[i]);
+		}
+		free(de_ids);
+		close(sockd);
+		lib_buffer_free(g_file_alloc);
+		fifo_allocator_free(g_fifo_alloc);
+		double_list_free(&g_enqueue_list);
+		double_list_free(&g_enqueue_list1);
+		double_list_free(&g_dequeue_list);
+		double_list_free(&g_dequeue_list1);
+		double_list_free(&g_host_list);
+		pthread_mutex_destroy(&g_enqueue_lock);
+		pthread_mutex_destroy(&g_dequeue_lock);
+		pthread_mutex_destroy(&g_host_lock);
+		pthread_mutex_destroy(&g_enqueue_cond_mutex);
+		pthread_cond_destroy(&g_enqueue_waken_cond);
+		pthread_mutex_destroy(&g_dequeue_cond_mutex);
+		pthread_cond_destroy(&g_dequeue_waken_cond);
+		return 10;
 	}
 
-	int ret = 0;
 	if ((ret = pthread_create(&thr_id, nullptr, accept_work_func,
 	    reinterpret_cast<void *>(static_cast<intptr_t>(sockd))) != 0) ||
 	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
@@ -526,13 +518,11 @@ static void* accept_work_func(void *param)
 			close(sockd2);
 			continue;
 		}
-		if ('\0' != g_list_path[0]) {
-			if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-			    client_hostip) == g_acl_list.cend()) {
-				write(sockd2, "Access Deny\r\n", 13);
-				close(sockd2);
-				continue;
-			}
+		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+		    client_hostip) == g_acl_list.cend()) {
+			write(sockd2, "Access Deny\r\n", 13);
+			close(sockd2);
+			continue;
 		}
 
 		penqueue = (ENQUEUE_NODE*)malloc(sizeof(ENQUEUE_NODE));
