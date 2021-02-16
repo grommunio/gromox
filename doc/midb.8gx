@@ -16,9 +16,16 @@ Display option summary.
 .SH Configuration file directives
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by plugin instances.
 .PP
 Default: \fI/etc/gromox/midb:/etc/gromox\fP
+.SS data_file_path
+.PP
+Colon-separated list of directories which will be scanned when locating data
+files.
+.PP
+Default: \fI/usr/share/gromox/midb\fP
 .SS state_path
 .PP
 Directory for runtime variadic data.
@@ -26,9 +33,11 @@ Directory for runtime variadic data.
 Default: \fI/var/lib/gromox\fP
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/exmdb_list.txt
+\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
 .IP \(bu 4
-\fIdata_file_path\fP/midb_acl.txt
+\fIconfig_file_path\fP/midb_acl.txt: A file with one address (IPv6 or
+v4-mapped) per line of allowed clients. In its absence, ::1 is
+default-whitelisted.
 .SH See also
 .PP
 \fBgromox\fP(7)

@@ -5,6 +5,7 @@
 #include <gromox/socket.h>
 #include <libHX/string.h>
 #include "exmdb_client.h"
+#include <gromox/config_file.hpp>
 #include <gromox/double_list.hpp>
 #include "common_util.h"
 #include <gromox/list_file.hpp>
@@ -50,7 +51,6 @@ static int g_conn_num;
 static int g_threads_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_id;
-static char g_list_path[256];
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_agent_list;
 static DOUBLE_LIST g_server_list;
@@ -484,29 +484,27 @@ static void exmdb_client_put_connection(REMOTE_CONN *pconn, BOOL b_lost)
 	}
 }
 
-void exmdb_client_init(int conn_num,
-	int threads_num, const char *list_path)
+void exmdb_client_init(int conn_num, int threads_num)
 {
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
 	g_threads_num = threads_num;
-	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
 	double_list_init(&g_agent_list);
 	pthread_mutex_init(&g_server_lock, NULL);
 }
 
-int exmdb_client_run()
+int exmdb_client_run(const char *configdir)
 {
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
 	AGENT_THREAD *pagent;
 	
-	auto plist = list_file_initd(g_list_path, "/", /* EXMIDB_ITEM */ "%s:256%s:16%s:32%d");
+	auto plist = list_file_initd("exmdb_list.txt", configdir,
+	             /* EXMIDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
-		printf("[exmdb_client]: Failed to read exmdb list from %s: %s\n",
-			g_list_path, strerror(errno));
+		printf("[exmdb_client]: list_file_initd exmdb_list.txt: %s\n", strerror(errno));
 		return 1;
 	}
 	g_notify_stop = FALSE;

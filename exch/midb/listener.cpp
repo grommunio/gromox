@@ -5,6 +5,7 @@
 #include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include <gromox/common_types.hpp>
@@ -27,28 +28,25 @@ using namespace gromox;
 
 static int g_listen_port;
 static char g_listen_ip[32];
-static char g_list_path[256];
 static int g_listen_sockd;
 static BOOL g_notify_stop;
 static std::vector<std::string> g_acl_list;
 
 static void *thread_work_func(void *param);
 
-void listener_init(const char *ip, int port, const char *list_path)
+void listener_init(const char *ip, int port)
 {
 	if ('\0' != ip[0]) {
 		HX_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
-		g_list_path[0] = '\0';
 	} else {
 		g_listen_ip[0] = '\0';
-		HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	}
 	g_listen_port = port;
 	g_listen_sockd = -1;
 	g_notify_stop = TRUE;
 }
 
-int listener_run()
+int listener_run(const char *configdir)
 {
 	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd == -1) {
@@ -56,17 +54,15 @@ int listener_run()
 		return -1;
 	}
 	
-	if ('\0' != g_list_path[0]) {
-		auto ret = list_file_read_fixedstrings(g_list_path, nullptr, g_acl_list);
-		if (ret == -ENOENT) {
-			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
-			g_acl_list = {"::1"};
-		} else if (ret < 0) {
-			printf("[listener]: Failed to read ACLs from %s: %s\n",
-				g_list_path, strerror(errno));
-			close(g_listen_sockd);
-			return -5;
-		}
+	auto ret = list_file_read_fixedstrings("midb_acl.txt",
+	           configdir, g_acl_list);
+	if (ret == -ENOENT) {
+		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+		g_acl_list = {"::1"};
+	} else if (ret < 0) {
+		printf("[listener]: list_file_initd \"midb_acl.txt\": %s\n", strerror(errno));
+		close(g_listen_sockd);
+		return -5;
 	}
 	return 0;
 }
@@ -122,14 +118,11 @@ static void *thread_work_func(void *param)
 			close(sockd);
 			continue;
 		}
-		if ('\0' != g_list_path[0]) {
-			if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-			    client_hostip) == g_acl_list.cend()) {
-				write(sockd, "Access Deny\r\n", 13);
-				close(sockd);
-				continue;
-			}
-
+		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+		    client_hostip) == g_acl_list.cend()) {
+			write(sockd, "Access Deny\r\n", 13);
+			close(sockd);
+			continue;
 		}
 
 		pconnection = cmd_parser_get_connection();

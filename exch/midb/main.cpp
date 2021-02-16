@@ -78,11 +78,9 @@ int main(int argc, const char **argv)
 	int cache_interval;
 	char temp_buff[45];
 	char listen_ip[32];
-	char acl_path[256];
 	uint64_t mmap_size;
 	char console_ip[32];
 	char data_path[256], state_dir[256];
-	char exmdb_path[256];
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	char config_path[256];
 	char service_path[256];
@@ -121,7 +119,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "CONFIG_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(config_path, PKGSYSCONFDIR "/midb: " PKGSYSCONFDIR);
+		strcpy(config_path, PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR);
+		config_file_set_value(pconfig, "config_file_path", config_path);
 	} else {
 		strcpy(config_path, str_value);
 	}
@@ -138,11 +137,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "STATE_PATH");
 	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	printf("[system]: state path is %s\n", state_dir);
-
-	snprintf(acl_path, GX_ARRAY_SIZE(acl_path), "%s/midb_acl.txt", data_path);
-	snprintf(exmdb_path, GX_ARRAY_SIZE(exmdb_path), "%s/exmdb_list.txt", data_path);
-	printf("[system]: acl file path is %s\n", acl_path);
-	printf("[system]: exmdb file path is %s\n", exmdb_path);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {
@@ -359,10 +353,8 @@ int main(int argc, const char **argv)
 		threads_num});
 	common_util_init();
 	
-	exmdb_client_init(proxy_num, stub_num, exmdb_path);
-	
-	listener_init(listen_ip, listen_port, acl_path);
-	
+	exmdb_client_init(proxy_num, stub_num);
+	listener_init(listen_ip, listen_port);
 	mail_engine_init(charset, timezone, org_name, table_size,
 		b_async, b_wal, mmap_size, cache_interval, mime_num);
 	auto cleanup_1 = make_scope_exit(mail_engine_free);
@@ -392,8 +384,7 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run common util\n");
 		return 5;
 	}
-	
-	if (0 != listener_run()) {
+	if (listener_run(config_path) != 0) {
 		common_util_stop();
 		system_services_stop();
 		service_stop();
@@ -419,8 +410,7 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run mail engine\n");
 		return 8;
 	}
-	
-	if (0 != exmdb_client_run()) {
+	if (exmdb_client_run(config_path) != 0) {
 		mail_engine_stop();
 		cmd_parser_stop();
 		listener_stop();
