@@ -6,107 +6,59 @@
 #include "aux_ext.h"
 #include <cstring>
 #define AUX_ALIGN_SIZE									4
+#define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 static int aux_ext_pull_aux_perf_requestid(
 	EXT_PULL *pext, AUX_PERF_REQUESTID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
 	return ext_buffer_pull_uint16(pext, &r->request_id);
 }
 
 static int aux_ext_push_aux_perf_requestid(
 	EXT_PUSH *pext, const AUX_PERF_REQUESTID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
 	return ext_buffer_push_uint16(pext, r->request_id);
 }
 
 static int aux_ext_pull_aux_perf_sessioninfo(
 	EXT_PULL *pext, AUX_PERF_SESSIONINFO *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
 	return ext_buffer_pull_guid(pext, &r->session_guid);
 }
 
 static int aux_ext_push_aux_perf_sessioninfo(
 	EXT_PUSH *pext, const AUX_PERF_SESSIONINFO *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
 	return ext_buffer_push_guid(pext, &r->session_guid);
 }
 
 static int aux_ext_pull_aux_perf_sessioninfo_v2(
 	EXT_PULL *pext, AUX_PERF_SESSIONINFO_V2 *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_guid(pext, &r->session_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
+	TRY(ext_buffer_pull_guid(pext, &r->session_guid));
 	return ext_buffer_pull_uint32(pext, &r->connection_id);
 }
 
 static int aux_ext_push_aux_perf_sessioninfo_v2(
 	EXT_PUSH *pext, const AUX_PERF_SESSIONINFO_V2 *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_guid(pext, &r->session_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
+	TRY(ext_buffer_push_guid(pext, &r->session_guid));
 	return ext_buffer_push_uint32(pext, r->connection_id);
 }
 
 static int aux_ext_pull_aux_perf_clientinfo(
 	EXT_PULL *pext, AUX_PERF_CLIENTINFO *r)
 {
-	int status;
 	uint32_t payload_offset;
 	uint16_t machine_name_offset;
 	uint16_t user_name_offset;
@@ -116,73 +68,28 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	uint16_t mac_address_offset;
 	
 	payload_offset = pext->offset;
-	status = ext_buffer_pull_uint32(pext, &r->adapter_speed);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &machine_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &user_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_ip_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &client_ip_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_ip_mask_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &client_ip_mask_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &adapter_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->mac_address_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &mac_address_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_mode);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->adapter_speed));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &machine_name_offset));
+	TRY(ext_buffer_pull_uint16(pext, &user_name_offset));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_ip_size));
+	TRY(ext_buffer_pull_uint16(pext, &client_ip_offset));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_ip_mask_size));
+	TRY(ext_buffer_pull_uint16(pext, &client_ip_mask_offset));
+	TRY(ext_buffer_pull_uint16(pext, &adapter_name_offset));
+	TRY(ext_buffer_pull_uint16(pext, &r->mac_address_size));
+	TRY(ext_buffer_pull_uint16(pext, &mac_address_offset));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_mode));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
 	if (0 != machine_name_offset) {
 		pext->offset = payload_offset + machine_name_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->machine_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->machine_name));
 	} else {
 		r->machine_name = NULL;
 	}
 	if (0 != user_name_offset) {
 		pext->offset = payload_offset + user_name_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->user_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->user_name));
 	} else {
 		r->user_name = NULL;
 	}
@@ -192,10 +99,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + client_ip_offset - 4;
-		status = ext_buffer_pull_bytes(pext, r->client_ip, r->client_ip_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->client_ip, r->client_ip_size));
 	} else {
 		r->client_ip = NULL;
 	}
@@ -205,20 +109,13 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + client_ip_mask_offset - 4;
-		status = ext_buffer_pull_bytes(pext, r->client_ip_mask,
-										r->client_ip_mask_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->client_ip_mask, r->client_ip_mask_size));
 	} else {
 		r->client_ip_mask = NULL;
 	}
 	if (0 != adapter_name_offset) {
 		pext->offset = payload_offset + adapter_name_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->adapter_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->adapter_name));
 	} else {
 		r->adapter_name = NULL;
 	}
@@ -228,11 +125,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + mac_address_offset - 4;
-		status = ext_buffer_pull_bytes(pext, r->mac_address,
-										r->mac_address_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->mac_address, r->mac_address_size));
 	} else {
 		r->mac_address = NULL;
 	}
@@ -242,7 +135,6 @@ static int aux_ext_pull_aux_perf_clientinfo(
 static int aux_ext_push_aux_perf_clientinfo(
 	EXT_PUSH *pext, AUX_PERF_CLIENTINFO *r)
 {
-	int status;
 	uint16_t machine_name_offset;
 	uint16_t machine_name_size;
 	uint16_t user_name_offset;
@@ -253,14 +145,8 @@ static int aux_ext_push_aux_perf_clientinfo(
 	uint16_t adapter_name_size;
 	uint16_t mac_address_offset;
 	
-	status = ext_buffer_push_uint32(pext, r->adapter_speed);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->adapter_speed));
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
 	if (NULL == r->machine_name) {
 		machine_name_offset = 0;
 		machine_name_size = 0;
@@ -268,10 +154,7 @@ static int aux_ext_push_aux_perf_clientinfo(
 		machine_name_offset = 32;
 		machine_name_size =  strlen(r->machine_name) + 1;
 	}
-	status = ext_buffer_push_uint16(pext, machine_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, machine_name_offset));
 	
 	if (NULL == r->user_name) {
 		user_name_offset = 0;
@@ -280,37 +163,22 @@ static int aux_ext_push_aux_perf_clientinfo(
 		user_name_offset = 32 + machine_name_size;
 		user_name_size = strlen(r->user_name) + 1;
 	}
-	status = ext_buffer_push_uint16(pext, user_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_ip_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, user_name_offset));
+	TRY(ext_buffer_push_uint16(pext, r->client_ip_size));
 	if (NULL == r->client_ip) {
 		client_ip_offset = 0;
 	} else {
 		client_ip_offset = 32 + machine_name_size + user_name_size;
 	}
-	status = ext_buffer_push_uint16(pext, client_ip_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_ip_mask_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, client_ip_offset));
+	TRY(ext_buffer_push_uint16(pext, r->client_ip_mask_size));
 	if (NULL == r->client_ip_mask) {
 		client_ip_mask_offset = 0;
 	} else {
 		client_ip_mask_offset = 32 + machine_name_size + user_name_size +
 								r->client_ip_size;
 	}
-	status = ext_buffer_push_uint16(pext, client_ip_mask_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, client_ip_mask_offset));
 	if (NULL == r->adapter_name) {
 		adapter_name_offset = 0;
 		adapter_name_size = 0;
@@ -319,14 +187,8 @@ static int aux_ext_push_aux_perf_clientinfo(
 								r->client_ip_size + r->client_ip_mask_size;
 		adapter_name_size = strlen(r->adapter_name) + 1;
 	}
-	status = ext_buffer_push_uint16(pext, adapter_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->mac_address_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, adapter_name_offset));
+	TRY(ext_buffer_push_uint16(pext, r->mac_address_size));
 	if (NULL == r->mac_address) {
 		mac_address_offset = 0;
 	} else {
@@ -334,56 +196,26 @@ static int aux_ext_push_aux_perf_clientinfo(
 								r->client_ip_size + r->client_ip_mask_size +
 								adapter_name_size;
 	}
-	status = ext_buffer_push_uint16(pext, mac_address_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_mode);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, mac_address_offset));
+	TRY(ext_buffer_push_uint16(pext, r->client_mode));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
 	if (NULL != r->machine_name) {
-		status = ext_buffer_push_string(pext, r->machine_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->machine_name));
 	}
 	if (NULL != r->user_name) {
-		status = ext_buffer_push_string(pext, r->user_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->user_name));
 	}
 	if (NULL != r->client_ip) {
-		status = ext_buffer_push_bytes(pext,
-					r->client_ip, r->client_ip_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, r->client_ip, r->client_ip_size));
 	}
 	if (NULL != r->client_ip_mask) {
-		status = ext_buffer_push_bytes(pext, r->client_ip_mask,
-					r->client_ip_mask_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, r->client_ip_mask, r->client_ip_mask_size));
 	}
 	if (NULL != r->adapter_name) {
-		status = ext_buffer_push_string(pext, r->adapter_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->adapter_name));
 	}
 	if (NULL != r->mac_address) {
-		status = ext_buffer_push_bytes(pext,
-					r->mac_address, r->mac_address_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, r->mac_address, r->mac_address_size));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -391,41 +223,22 @@ static int aux_ext_push_aux_perf_clientinfo(
 static int aux_ext_pull_aux_perf_serverinfo(
 	EXT_PULL *pext, AUX_PERF_SERVERINFO *r)
 {
-	int status;
 	uint32_t payload_offset;
 	uint16_t server_dn_offset;
 	uint16_t server_name_offset;
 	
 	payload_offset = pext->offset;
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &server_dn_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &server_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_type));
+	TRY(ext_buffer_pull_uint16(pext, &server_dn_offset));
+	TRY(ext_buffer_pull_uint16(pext, &server_name_offset));
 	if (0 != server_dn_offset) {
 		pext->offset = payload_offset + server_dn_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->server_dn);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->server_dn));
 	}
 	if (0 != server_name_offset) {
 		pext->offset = payload_offset + server_name_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->server_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->server_name));
 	} else {
 		r->server_name = NULL;
 	}
@@ -435,19 +248,12 @@ static int aux_ext_pull_aux_perf_serverinfo(
 static int aux_ext_push_aux_perf_serverinfo(
 	EXT_PUSH *pext, AUX_PERF_SERVERINFO *r)
 {
-	int status;
 	uint16_t server_dn_offset;
 	uint16_t server_dn_size;
 	uint16_t server_name_offset;
 	
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_type));
 	if (NULL == r->server_dn) {
 		server_dn_offset = 0;
 		server_dn_size = 0;
@@ -455,67 +261,36 @@ static int aux_ext_push_aux_perf_serverinfo(
 		server_dn_offset = 12;
 		server_dn_size = strlen(r->server_dn) + 1;
 	}
-	status = ext_buffer_push_uint16(pext, server_dn_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, server_dn_offset));
 	if (NULL == r->server_name) {
 		server_name_offset = 0;
 	} else {
 		server_name_offset = 12 + server_dn_size;
 	}
-	status = ext_buffer_push_uint16(pext, server_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, server_name_offset));
 	if (NULL != r->server_dn) {
-		status = ext_buffer_push_string(pext, r->server_dn);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->server_dn));
 	}
 	if (NULL != r->server_name) {
-		status = ext_buffer_push_string(pext, r->server_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->server_name));
 	}
 	return EXT_ERR_SUCCESS;
 }
 static int aux_ext_pull_aux_perf_processinfo(
 	EXT_PULL *pext, AUX_PERF_PROCESSINFO *r)
 {
-	int status;
 	uint32_t payload_offset;
 	uint16_t process_name_offset;
 	
 	payload_offset = pext->offset;
-	status = ext_buffer_pull_uint16(pext, &r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_guid(pext, &r->process_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &process_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->process_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved1));
+	TRY(ext_buffer_pull_guid(pext, &r->process_guid));
+	TRY(ext_buffer_pull_uint16(pext, &process_name_offset));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved2));
 	if (0 != process_name_offset) {
 		pext->offset = payload_offset + process_name_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->process_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->process_name));
 	} else {
 		r->process_name = NULL;
 	}
@@ -525,39 +300,20 @@ static int aux_ext_pull_aux_perf_processinfo(
 static int aux_ext_push_aux_perf_processinfo(
 	EXT_PUSH *pext, AUX_PERF_PROCESSINFO *r)
 {
-	int status;
 	uint16_t process_name_offset;
 	
-	status = ext_buffer_push_uint16(pext, r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_guid(pext, &r->process_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->process_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved1));
+	TRY(ext_buffer_push_guid(pext, &r->process_guid));
 	if (NULL == r->process_name) {
 		process_name_offset = 0;
 	} else {
 		process_name_offset = 28;
 	}
-	status = ext_buffer_push_uint16(pext, process_name_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, process_name_offset));
+	TRY(ext_buffer_push_uint16(pext, r->reserved2));
 	if (NULL != r->process_name) {
-		status = ext_buffer_push_string(pext, r->process_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->process_name));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -565,639 +321,239 @@ static int aux_ext_push_aux_perf_processinfo(
 static int aux_ext_pull_aux_perf_defmdb_success(
 	EXT_PULL *pext, AUX_PERF_DEFMDB_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_to_complete_request));
+	TRY(ext_buffer_pull_uint16(pext, &r->request_id));
 	return ext_buffer_pull_uint16(pext, &r->reserved);
 }
 
 static int aux_ext_push_aux_perf_defmdb_success(
 	EXT_PUSH *pext, const AUX_PERF_DEFMDB_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
+	TRY(ext_buffer_push_uint32(pext, r->time_to_complete_request));
+	TRY(ext_buffer_push_uint16(pext, r->request_id));
 	return ext_buffer_push_uint16(pext, r->reserved);
 }
 
 static int aux_ext_pull_aux_perf_defgc_success(
 	EXT_PULL *pext, AUX_PERF_DEFGC_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_to_complete_request));
+	TRY(ext_buffer_pull_uint8(pext, &r->request_operation));
 	return ext_buffer_pull_bytes(pext, r->reserved, 3);
 }
 
 static int aux_ext_push_aux_perf_defgc_success(
 	EXT_PUSH *pext, const AUX_PERF_DEFGC_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
+	TRY(ext_buffer_push_uint32(pext, r->time_to_complete_request));
+	TRY(ext_buffer_push_uint8(pext, r->request_operation));
 	return ext_buffer_push_bytes(pext, r->reserved, 3);
 }
 
 static int aux_ext_pull_aux_perf_mdb_success(
 	EXT_PULL *pext, AUX_PERF_MDB_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->request_id));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
 	return ext_buffer_pull_uint32(pext, &r->time_to_complete_request);
 }
 
 static int aux_ext_push_aux_perf_mdb_success(
 	EXT_PUSH *pext, const AUX_PERF_MDB_SUCCESS *r)
 {
-	int status;
-		
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->request_id));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
 	return ext_buffer_push_uint32(pext, r->time_to_complete_request);
 }
 
 static int aux_ext_pull_aux_perf_mdb_success_v2(
 	EXT_PULL *pext, AUX_PERF_MDB_SUCCESS_V2 *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->process_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->request_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
 	return ext_buffer_pull_uint32(pext, &r->time_to_complete_request);
 }
 
 static int aux_ext_push_aux_perf_mdb_success_v2(
 	EXT_PUSH *pext, AUX_PERF_MDB_SUCCESS_V2 *r)
 {
-	int status;
-		
-	status = ext_buffer_push_uint16(pext, r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->process_id));
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->request_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
 	return ext_buffer_push_uint32(pext, r->time_to_complete_request);
 }
 
 static int aux_ext_pull_aux_perf_gc_success(
 	EXT_PULL *pext, AUX_PERF_GC_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved1));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_to_complete_request));
+	TRY(ext_buffer_pull_uint8(pext, &r->request_operation));
 	return ext_buffer_pull_bytes(pext, r->reserved2, 3);
 }
 
 static int aux_ext_push_aux_perf_gc_success(
 	EXT_PUSH *pext, const AUX_PERF_GC_SUCCESS *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved1));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
+	TRY(ext_buffer_push_uint32(pext, r->time_to_complete_request));
+	TRY(ext_buffer_push_uint8(pext, r->request_operation));
 	return ext_buffer_push_bytes(pext, r->reserved2, 3);
 }
 
 static int aux_ext_pull_aux_perf_gc_success_v2(
 	EXT_PULL *pext, AUX_PERF_GC_SUCCESS_V2 *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->process_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_to_complete_request));
+	TRY(ext_buffer_pull_uint8(pext, &r->request_operation));
 	return ext_buffer_pull_bytes(pext, r->reserved, 3);
 }
 
 static int aux_ext_push_aux_perf_gc_success_v2(
 	EXT_PUSH *pext, const AUX_PERF_GC_SUCCESS_V2 *r)
 {
-	int status;
-		
-	status = ext_buffer_push_uint16(pext, r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_to_complete_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->process_id));
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
+	TRY(ext_buffer_push_uint32(pext, r->time_to_complete_request));
+	TRY(ext_buffer_push_uint8(pext, r->request_operation));
 	return ext_buffer_push_bytes(pext, r->reserved, 3);
 }
 
 static int aux_ext_pull_aux_perf_failure(EXT_PULL *pext, AUX_PERF_FAILURE *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_to_fail_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->result_code);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->request_id));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_to_fail_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->result_code));
+	TRY(ext_buffer_pull_uint8(pext, &r->request_operation));
 	return ext_buffer_pull_bytes(pext, r->reserved, 3);
 }
 
 static int aux_ext_push_aux_perf_failure(
 	EXT_PUSH *pext, const AUX_PERF_FAILURE *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_to_fail_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->result_code);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->request_id));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
+	TRY(ext_buffer_push_uint32(pext, r->time_to_fail_request));
+	TRY(ext_buffer_push_uint32(pext, r->result_code));
+	TRY(ext_buffer_push_uint8(pext, r->request_operation));
 	return ext_buffer_push_bytes(pext, r->reserved, 3);
 }
 
 static int aux_ext_pull_aux_perf_failure_v2(
 	EXT_PULL *pext, AUX_PERF_FAILURE_V2 *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->time_to_fail_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->result_code);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->process_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->server_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->session_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->request_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved1));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_since_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->time_to_fail_request));
+	TRY(ext_buffer_pull_uint32(pext, &r->result_code));
+	TRY(ext_buffer_pull_uint8(pext, &r->request_operation));
 	return ext_buffer_pull_bytes(pext,r->reserved2, 3);
 }
 
 static int aux_ext_push_aux_perf_failure_v2(
 	EXT_PUSH *pext, const AUX_PERF_FAILURE_V2 *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->process_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->server_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->session_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->request_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_since_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->time_to_fail_request);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->result_code);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->request_operation);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->process_id));
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->server_id));
+	TRY(ext_buffer_push_uint16(pext, r->session_id));
+	TRY(ext_buffer_push_uint16(pext, r->request_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved1));
+	TRY(ext_buffer_push_uint32(pext, r->time_since_request));
+	TRY(ext_buffer_push_uint32(pext, r->time_to_fail_request));
+	TRY(ext_buffer_push_uint32(pext, r->result_code));
+	TRY(ext_buffer_push_uint8(pext, r->request_operation));
 	return ext_buffer_push_bytes(pext, r->reserved2, 3);
 }
 
 static int aux_ext_pull_aux_client_control(
 	EXT_PULL *pext, AUX_CLIENT_CONTROL *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->enable_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->enable_flags));
 	return ext_buffer_pull_uint32(pext, &r->expiry_time);
 }
 
 static int aux_ext_push_aux_client_control(
 	EXT_PUSH *pext, const AUX_CLIENT_CONTROL *r)
 {
-	int status;
-		
-	status = ext_buffer_push_uint32(pext, r->enable_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->enable_flags));
 	return ext_buffer_push_uint32(pext, r->expiry_time);
 }
 
 static int aux_ext_pull_aux_osversioninfo(
 	EXT_PULL *pext, AUX_OSVERSIONINFO *r)
 {
-	int status;
-		
-	status = ext_buffer_pull_uint32(pext, &r->os_version_info_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->major_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->minor_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->build_number);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->reserved1, 132);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->service_pack_major);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->service_pack_minor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->os_version_info_size));
+	TRY(ext_buffer_pull_uint32(pext, &r->major_version));
+	TRY(ext_buffer_pull_uint32(pext, &r->minor_version));
+	TRY(ext_buffer_pull_uint32(pext, &r->build_number));
+	TRY(ext_buffer_pull_bytes(pext, r->reserved1, 132));
+	TRY(ext_buffer_pull_uint16(pext, &r->service_pack_major));
+	TRY(ext_buffer_pull_uint16(pext, &r->service_pack_minor));
 	return ext_buffer_pull_uint32(pext, &r->reserved2);
 }
 
 static int aux_ext_push_aux_osversioninfo(
 	EXT_PUSH *pext, const AUX_OSVERSIONINFO *r)
 {
-	int status;
-		
-	status = ext_buffer_push_uint32(pext, r->os_version_info_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->major_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->minor_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->build_number);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->reserved1, 132);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->service_pack_major);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->service_pack_minor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->os_version_info_size));
+	TRY(ext_buffer_push_uint32(pext, r->major_version));
+	TRY(ext_buffer_push_uint32(pext, r->minor_version));
+	TRY(ext_buffer_push_uint32(pext, r->build_number));
+	TRY(ext_buffer_push_bytes(pext, r->reserved1, 132));
+	TRY(ext_buffer_push_uint16(pext, r->service_pack_major));
+	TRY(ext_buffer_push_uint16(pext, r->service_pack_minor));
 	return ext_buffer_push_uint32(pext, r->reserved2);
 }
 
@@ -1215,32 +571,16 @@ static int aux_ext_push_aux_exorginfo(
 static int aux_ext_pull_aux_perf_accountinfo(
 	EXT_PULL *pext, AUX_PERF_ACCOUNTINFO *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->client_id));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
 	return ext_buffer_pull_guid(pext, &r->account);
 }
 
 static int aux_ext_push_aux_perf_accountinfo(
 	EXT_PUSH *pext, const AUX_PERF_ACCOUNTINFO *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->client_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->client_id));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
 	return ext_buffer_push_guid(pext, &r->account);
 }
 
@@ -1259,37 +599,18 @@ static int aux_ext_push_aux_endpoint_capabilities(
 static int aux_ext_pull_aux_client_connection_info(
 	EXT_PULL *pext, AUX_CLIENT_CONNECTION_INFO *r)
 {
-	int status;
 	uint32_t payload_offset;
 	uint16_t offset_connection_context_info;
 	
 	payload_offset = pext->offset;
-	status = ext_buffer_pull_guid(pext, &r->connection_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &offset_connection_context_info);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->connection_attempts);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->connection_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_guid(pext, &r->connection_guid));
+	TRY(ext_buffer_pull_uint16(pext, &offset_connection_context_info));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
+	TRY(ext_buffer_pull_uint32(pext, &r->connection_attempts));
+	TRY(ext_buffer_pull_uint32(pext, &r->connection_flags));
 	if (0 != offset_connection_context_info) {
 		pext->offset = payload_offset + offset_connection_context_info - 4;
-		status = ext_buffer_pull_string(pext, &r->connection_context_info);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->connection_context_info));
 	} else {
 		r->connection_context_info = NULL;
 	}
@@ -1299,39 +620,20 @@ static int aux_ext_pull_aux_client_connection_info(
 static int aux_ext_push_aux_client_connection_info(
 	EXT_PUSH *pext, AUX_CLIENT_CONNECTION_INFO *r)
 {
-	int status;
 	uint16_t offset_connection_context_info;
 	
-	status = ext_buffer_push_guid(pext, &r->connection_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_guid(pext, &r->connection_guid));
 	if (NULL != r->connection_context_info) {
 		offset_connection_context_info = 0;
 	} else {
 		offset_connection_context_info = 32;
 	}
-	status = ext_buffer_push_uint16(pext, offset_connection_context_info);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->connection_attempts);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->connection_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, offset_connection_context_info));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
+	TRY(ext_buffer_push_uint32(pext, r->connection_attempts));
+	TRY(ext_buffer_push_uint32(pext, r->connection_flags));
 	if (NULL != r->connection_context_info) {
-		status = ext_buffer_push_string(pext, r->connection_context_info);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->connection_context_info));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1339,21 +641,14 @@ static int aux_ext_push_aux_client_connection_info(
 static int aux_ext_pull_aux_server_session_info(
 	EXT_PULL *pext, AUX_SERVER_SESSION_INFO *r)
 {
-	int status;
 	uint32_t payload_offset;
 	uint16_t offset_server_session_context_info;
 	
 	payload_offset = pext->offset;
-	status = ext_buffer_pull_uint16(pext, &offset_server_session_context_info);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &offset_server_session_context_info));
 	if (0 != offset_server_session_context_info) {
 		pext->offset = payload_offset + offset_server_session_context_info - 4;
-		status = ext_buffer_pull_string(pext, &r->server_session_context_info);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->server_session_context_info));
 	} else {
 		r->server_session_context_info = NULL;
 	}
@@ -1363,7 +658,6 @@ static int aux_ext_pull_aux_server_session_info(
 static int aux_ext_push_aux_server_session_info(
 	EXT_PUSH *pext, AUX_SERVER_SESSION_INFO *r)
 {
-	int status;
 	uint16_t offset_server_session_context_info;
 	
 	if (NULL == r->server_session_context_info) {
@@ -1371,15 +665,9 @@ static int aux_ext_push_aux_server_session_info(
 	} else {
 		offset_server_session_context_info = 6;
 	}
-	status = ext_buffer_push_uint16(pext, offset_server_session_context_info);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, offset_server_session_context_info));
 	if (NULL != r->server_session_context_info) {
-		status = ext_buffer_push_string(pext, r->server_session_context_info);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->server_session_context_info));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1387,7 +675,6 @@ static int aux_ext_push_aux_server_session_info(
 static int aux_ext_pull_aux_protocol_device_identification(
 	EXT_PULL *pext, AUX_PROTOCOL_DEVICE_IDENTIFICATION *r)
 {
-	int status;
 	uint32_t payload_offset;
 	uint16_t device_manufacturer_offset;
 	uint16_t device_model_offset;
@@ -1396,68 +683,38 @@ static int aux_ext_pull_aux_protocol_device_identification(
 	uint16_t device_firmware_version_offset;
 	
 	payload_offset = pext->offset;
-	status = ext_buffer_pull_uint16(pext, &device_manufacturer_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &device_model_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &device_serial_number_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &device_version_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &device_firmware_version_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &device_manufacturer_offset));
+	TRY(ext_buffer_pull_uint16(pext, &device_model_offset));
+	TRY(ext_buffer_pull_uint16(pext, &device_serial_number_offset));
+	TRY(ext_buffer_pull_uint16(pext, &device_version_offset));
+	TRY(ext_buffer_pull_uint16(pext, &device_firmware_version_offset));
 	if (0 != device_manufacturer_offset) {
 		pext->offset = payload_offset + device_manufacturer_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->device_manufacturer);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->device_manufacturer));
 	} else {
 		r->device_manufacturer = NULL;
 	}
 	if (0 != device_model_offset) {
 		pext->offset = payload_offset + device_model_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->device_model);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->device_model));
 	} else {
 		r->device_model = NULL;
 	}
 	if (0 != device_serial_number_offset) {
 		pext->offset = payload_offset + device_serial_number_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->device_serial_number);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->device_serial_number));
 	} else {
 		r->device_serial_number = NULL;
 	}
 	if (0 != device_version_offset) {
 		pext->offset = payload_offset + device_version_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->device_version);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->device_version));
 	} else {
 		r->device_version = NULL;
 	}
 	if (0 != device_firmware_version_offset) {
 		pext->offset = payload_offset + device_firmware_version_offset - 4;
-		status = ext_buffer_pull_string(pext, &r->device_firmware_version);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->device_firmware_version));
 	} else {
 		r->device_firmware_version = NULL;
 	}
@@ -1467,7 +724,6 @@ static int aux_ext_pull_aux_protocol_device_identification(
 static int aux_ext_push_aux_protocol_device_identification(
 	EXT_PUSH *pext, AUX_PROTOCOL_DEVICE_IDENTIFICATION *r)
 {
-	int status;
 	uint16_t device_manufacturer_offset;
 	uint16_t device_manufacturer_size;
 	uint16_t device_model_offset;
@@ -1485,10 +741,7 @@ static int aux_ext_push_aux_protocol_device_identification(
 		device_manufacturer_offset = 0;
 		device_manufacturer_size = 0;
 	}
-	status = ext_buffer_push_uint16(pext, device_manufacturer_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, device_manufacturer_offset));
 	if (NULL != r->device_model) {
 		device_model_offset = 14 + device_manufacturer_size;
 		device_model_size = strlen(r->device_model) + 1;
@@ -1496,10 +749,7 @@ static int aux_ext_push_aux_protocol_device_identification(
 		device_model_offset = 0;
 		device_model_size = 0;
 	}						
-	status = ext_buffer_push_uint16(pext, device_model_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, device_model_offset));
 	if (NULL != r->device_serial_number) {
 		device_serial_number_offset = 14 + device_manufacturer_size +
 										device_model_size;
@@ -1508,10 +758,7 @@ static int aux_ext_push_aux_protocol_device_identification(
 		device_serial_number_offset = 0;
 		device_serial_number_size = 0;
 	}
-	status = ext_buffer_push_uint16(pext, device_serial_number_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, device_serial_number_offset));
 	if (NULL != r->device_version) {
 		device_version_offset = 14 + device_manufacturer_size +
 								device_model_size + device_serial_number_size;
@@ -1520,10 +767,7 @@ static int aux_ext_push_aux_protocol_device_identification(
 		device_version_offset = 0;
 		device_version_size = 0;
 	}	
-	status = ext_buffer_push_uint16(pext, device_version_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, device_version_offset));
 	if (NULL != r->device_firmware_version) {
 		device_firmware_version_offset = 14 + device_manufacturer_size +
 							device_model_size + device_serial_number_size +
@@ -1531,39 +775,21 @@ static int aux_ext_push_aux_protocol_device_identification(
 	} else {
 		device_firmware_version_offset = 0;
 	}
-	status = ext_buffer_push_uint16(pext, device_firmware_version_offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, device_firmware_version_offset));
 	if (NULL != r->device_manufacturer) {
-		status = ext_buffer_push_string(pext, r->device_manufacturer);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->device_manufacturer));
 	}
 	if (NULL != r->device_model) {
-		status = ext_buffer_push_string(pext, r->device_model);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->device_model));
 	}
 	if (NULL != r->device_serial_number) {
-		status = ext_buffer_push_string(pext, r->device_serial_number);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->device_serial_number));
 	}
 	if (NULL != r->device_version) {
-		status = ext_buffer_push_string(pext, r->device_version);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->device_version));
 	}
 	if (NULL != r->device_firmware_version) {
-		status = ext_buffer_push_string(pext, r->device_firmware_version);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->device_firmware_version));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1826,38 +1052,23 @@ static int aux_ext_push_aux_header_type_union2(
 
 static int aux_ext_pull_aux_header(EXT_PULL *pext, AUX_HEADER *r)
 {
-	int status;
 	uint16_t size;
 	uint32_t offset;
 	
 	offset = pext->offset;
-	status = ext_buffer_pull_uint16(pext, &size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &size));
 	offset += size;
-	status = ext_buffer_pull_uint8(pext, &r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->version));
+	TRY(ext_buffer_pull_uint8(pext, &r->type));
 	switch (r->version) {
 	case AUX_VERSION_1:
-		status = aux_ext_pull_aux_header_type_union1(
-					pext, r->type, &r->ppayload);
+		TRY(aux_ext_pull_aux_header_type_union1(pext, r->type, &r->ppayload));
 		break;
 	case AUX_VERSION_2:
-		status = aux_ext_pull_aux_header_type_union2(
-					pext, r->type, &r->ppayload);
+		TRY(aux_ext_pull_aux_header_type_union2(pext, r->type, &r->ppayload));
 		break;
 	default:
 		return EXT_ERR_BAD_SWITCH;
-	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
 	}
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
@@ -1869,7 +1080,6 @@ static int aux_ext_pull_aux_header(EXT_PULL *pext, AUX_HEADER *r)
 
 static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 {
-	int status;
 	uint16_t size;
 	EXT_PUSH subext;
 	uint16_t actual_size;
@@ -1881,43 +1091,25 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 		sizeof(tmp_buff), EXT_FLAG_UTF16);
 	switch (r->version) {
 	case AUX_VERSION_1:
-		status = aux_ext_push_aux_header_type_union1(&subext,
-					r->type, r->ppayload);
+		TRY(aux_ext_push_aux_header_type_union1(&subext, r->type, r->ppayload));
 		break;
 	case AUX_VERSION_2:
-		status = aux_ext_push_aux_header_type_union2(&subext,
-					r->type, r->ppayload);
+		TRY(aux_ext_push_aux_header_type_union2(&subext, r->type, r->ppayload));
 		break;
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
 	actual_size = subext.offset + sizeof(uint16_t) + 2*sizeof(uint8_t);
 	size = (actual_size + (AUX_ALIGN_SIZE - 1)) & ~(AUX_ALIGN_SIZE - 1);
-	status = ext_buffer_push_uint16(pext, size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, subext.data, subext.offset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, size));
+	TRY(ext_buffer_push_uint8(pext, r->version));
+	TRY(ext_buffer_push_uint8(pext, r->type));
+	TRY(ext_buffer_push_bytes(pext, subext.data, subext.offset));
 	return ext_buffer_push_bytes(pext, paddings, size - actual_size);
 }
 
 int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 {
-	int status;
 	uint8_t *pdata;
 	EXT_PULL subext;
 	uint8_t buff[0x1008];
@@ -1926,10 +1118,7 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	
-	status = ext_buffer_pull_rpc_header_ext(pext, &rpc_header_ext);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_rpc_header_ext(pext, &rpc_header_ext));
 	if (0 == (rpc_header_ext.flags & RHE_FLAG_LAST)) {
 		return EXT_ERR_HEADER_FLAGS;
 	}
@@ -1962,11 +1151,7 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 			if (NULL == pnode->pdata) {
 				return EXT_ERR_ALLOC;
 			}
-			status = aux_ext_pull_aux_header(&subext,
-						(AUX_HEADER*)pnode->pdata);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(aux_ext_pull_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
 			double_list_append_as_tail(&r->aux_list, pnode);
 		}
 	}
@@ -1975,7 +1160,6 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 
 int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 {
-	int status;
 	EXT_PUSH subext;
 	uint32_t compressed_len;
 	DOUBLE_LIST_NODE *pnode;
@@ -1992,10 +1176,7 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 		sizeof(ext_buff), EXT_FLAG_UTF16);
 	for (pnode=double_list_get_head(&r->aux_list); NULL!=pnode;
 		pnode=double_list_get_after(&r->aux_list, pnode)) {
-		status = aux_ext_push_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(aux_ext_push_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
 	}
 	rpc_header_ext.version = r->rhe_version;
 	rpc_header_ext.flags = r->rhe_flags;
@@ -2021,9 +1202,6 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	}
-	status = ext_buffer_push_rpc_header_ext(pext, &rpc_header_ext);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_rpc_header_ext(pext, &rpc_header_ext));
 	return ext_buffer_push_bytes(pext, ext_buff, rpc_header_ext.size);
 }
