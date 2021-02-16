@@ -6,6 +6,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/idset.hpp>
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
+#define QYY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return EXT_ERR_SUCCESS; } while (false) /* legit? */
 
 static int exmdb_ext_push_connect_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
@@ -969,36 +970,14 @@ static int exmdb_ext_push_rule_new_message_request(
 	int status;
 	
 	if (NULL == ppayload->rule_new_message.username) {
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return EXT_ERR_SUCCESS;
-		}
+		QYY(ext_buffer_push_uint8(pext, 0));
 	} else {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return EXT_ERR_SUCCESS;
-		}
-		status = ext_buffer_push_string(pext,
-			ppayload->rule_new_message.username);
-		if (EXT_ERR_SUCCESS != status) {
-			return EXT_ERR_SUCCESS;
-		}
+		QYY(ext_buffer_push_uint8(pext, 1));
+		QYY(ext_buffer_push_string(pext, ppayload->rule_new_message.username));
 	}
-	status = ext_buffer_push_string(pext,
-		ppayload->rule_new_message.account);
-	if (EXT_ERR_SUCCESS != status) {
-		return EXT_ERR_SUCCESS;
-	}
-	status = ext_buffer_push_uint32(pext,
-		ppayload->rule_new_message.cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return EXT_ERR_SUCCESS;
-	}
-	status = ext_buffer_push_uint64(pext,
-		ppayload->rule_new_message.folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return EXT_ERR_SUCCESS;
-	}
+	QYY(ext_buffer_push_string(pext, ppayload->rule_new_message.account));
+	QYY(ext_buffer_push_uint32(pext, ppayload->rule_new_message.cpid));
+	QYY(ext_buffer_push_uint64(pext, ppayload->rule_new_message.folder_id));
 	return ext_buffer_push_uint64(pext,
 		ppayload->rule_new_message.message_id);
 }
@@ -1008,11 +987,7 @@ static int exmdb_ext_push_set_message_timer_request(
 {
 	int status;
 	
-	status = ext_buffer_push_uint64(pext,
-		ppayload->set_message_timer.message_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return EXT_ERR_SUCCESS;
-	}
+	QYY(ext_buffer_push_uint64(pext, ppayload->set_message_timer.message_id));
 	return ext_buffer_push_uint32(pext,
 		ppayload->set_message_timer.timer_id);
 }
