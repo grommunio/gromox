@@ -1,7 +1,8 @@
 .TH mkprivate 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
-\fBmkprivate\fP [\fB\-c\fP \fIconfig\fP] \fIusername\fP
+\fBmkprivate\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
+\fIusername\fP
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -14,6 +15,22 @@ config file.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
+message store.
+.IP \(bu 4
+\fIdata_file_path\fP/propnames.txt: Initial set of named properties to add to
+the new private store.
+.IP \(bu 4
+\fIdata_file_path\fP/sqlite3_common.txt: SQLite instructions to generate part
+of a private store.
+.IP \(bu 4
+\fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
+of a private store.
+.SH Config file directives
+.PP
+The config file is shared with other pgorams. See \fBsa.cfg\fP(5gx).
 .SH See also
 .PP
 \fBgromox\fP(7), \fBsa.cfg\fP(5gx)
