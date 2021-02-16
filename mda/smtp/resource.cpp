@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include "resource.h"
 #include <gromox/util.hpp>
@@ -15,6 +16,8 @@
 #include <cstdio>
 #include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
+
+using namespace gromox;
 
 static SMTP_ERROR_CODE g_default_smtp_error_code_table[] = {
 	{2172001, "214 Help availble on " DFL_LOGOLINK},
@@ -162,16 +165,11 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
 	char *pbackup, *ptr, code[32];
-    FILE *file_ptr = NULL;
 
-    int total, index, native_code, len;
-	const char *filename = resource_get_string("SMTP_RETURN_CODE_PATH");
-	if (NULL == filename) {
-		return -1;
-	}
-    if (NULL == (file_ptr = fopen(filename, "r"))) {
-        printf("[resource]: can not open smtp error table file  %s\n",
-                filename);
+	int index, native_code, len;
+	auto file_ptr = fopen_sd("smtp_code.txt", resource_get_string("data_file_path"));
+	if (file_ptr == nullptr) {
+		printf("[resource]: fopen_sd smtp_code.txt: %s\n", strerror(errno));
         return -1;
     }
 
@@ -179,16 +177,15 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
     if (NULL == code_table) {
 		printf("[resource]: Failed to allocate memory for SMTP return code"
                 " table\n");
-        fclose(file_ptr);
         return -1;
     }
 
-    for (total = 0; total < SMTP_CODE_COUNT; total++) {
+	for (int total = 0; total < SMTP_CODE_COUNT; ++total) {
         code_table[total].code              = -1;
         memset(code_table[total].comment, 0, 512);
     }
 
-    for (total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr); total++) {
+	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) {
 
         if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
             /* skip empty line or comments */
@@ -207,9 +204,7 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
         }
 
         if (len <= 0 || len > sizeof(code) - 1) {
-            printf("[resource]: invalid native code format, file: %s line: "
-                    "%d, %s\n", filename, total + 1, line);
-
+			printf("[resource]: invalid native code format, file smtp_code.txt line: %d, %s\n", total + 1, line);
             continue;
         }
 
@@ -217,8 +212,7 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
         code[len]   = '\0';
 
         if ((native_code = atoi(code)) <= 0) {
-            printf("[resource]: invalid native code, file: %s line: %d, %s\n", 
-                filename, total + 1, line);
+			printf("[resource]: invalid native code, file smtp_code.txt line: %d, %s\n", total + 1, line);
             continue;
         }
 
@@ -239,36 +233,31 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
         }
 
         if (len <= 0 || len > MAX_FILE_LINE_LEN - 1) {
-            printf("[resource]: invalid native comment, file: %s line: %d, "
-                    "%s\n", filename, total + 1, line);
+            printf("[resource]: invalid native comment, file smtp_code.txt line: %d, %s\n", total + 1, line);
             continue;
         }
         memcpy(buf, pbackup, len);
         buf[len]    = '\0';
 
         if ((index = resource_find_smtp_code_index(native_code)) < 0) {
-            printf("[resource]: no such native code, file: %s line: %d, %s\n", 
-                filename, total + 1, line);
+            printf("[resource]: no such native code, file smtp_code.txt line: %d, %s\n", total + 1, line);
             continue;
         }
 
         if (-1 != code_table[index].code) {
-            printf("[resource]: the error code has already been defined, file:"
-                " %s line: %d, %s\n", filename, total + 1, line);
+            printf("[resource]: the error code has already been defined, file smtp_code.txt line: %d, %s\n", total + 1, line);
             continue;
 
         }
 
         if (resource_parse_smtp_line(code_table[index].comment, buf, len) < 0) {
-            printf("[resource]: invalid smtp code format, file: %s line: %d,"
-                    " %s", filename, total + 1, line);
+            printf("[resource]: invalid smtp code format, file smtp_code.txt line: %d, %s", total + 1, line);
             continue;
         }
         code_table[index].code  = native_code;
     }
 
     *pptable = code_table;
-    fclose(file_ptr);
     return 0;
 }
 

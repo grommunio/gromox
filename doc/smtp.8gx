@@ -32,7 +32,8 @@ service because it tried to queue too many messages.
 Default: \fI1 minute\fP
 .SS config_file_path
 .PP
-Directory where plugin instances will look for their configuration overrides.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by plugin instances.
 .PP
 Default: \fI/etc/gromox/smtp:/etc/gromox\fP
 .SS console_server_ip
@@ -57,7 +58,8 @@ Default: \fI2M\fP
 Default: \fI200\fP
 .SS data_file_path
 .PP
-Directory where plugin instances will look for their data files.
+Colon-separated list of directories which will be scanned when locating data
+files.
 .PP
 Default: \fI/usr/share/gromox/smtp\fP
 .SS default_domain
@@ -178,6 +180,10 @@ Default: \fI40\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI1\fP
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/smtp_code.txt: Mapping from internal SMTP error codes to
+textual descriptions.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmessage_enqueue\fP(4gx),
