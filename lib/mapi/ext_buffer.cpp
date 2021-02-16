@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include <gromox/mapidefs.h>
 #include <gromox/endian_macro.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -2812,7 +2813,6 @@ static int ext_buffer_pull_extendedexception(
 	uint16_t overrideflags, EXTENDEDEXCEPTION *r)
 {
 	int status;
-	char *pbuff;
 	int string_len;
 	uint16_t tmp_len;
 	
@@ -2861,30 +2861,26 @@ static int ext_buffer_pull_extendedexception(
 			return status;
 		}
 		tmp_len *= 2;
-		pbuff = static_cast<char *>(malloc(3 * (tmp_len + 2)));
-		if (NULL == pbuff) {
+		std::unique_ptr<char[]> pbuff;
+		try {
+			pbuff = std::make_unique<char[]>(3 * (tmp_len + 2));
+		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, pbuff, tmp_len);
+		status = ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len);
 		if (EXT_ERR_SUCCESS != status) {
-			free(pbuff);
 			return status;
 		}
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
-		if (FALSE == utf16le_to_utf8(pbuff,
-			tmp_len, pbuff + tmp_len, 2*tmp_len)) {
-			free(pbuff);
+		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
 			return EXT_ERR_CHARCNV;
-		}
-		string_len = strlen(pbuff + tmp_len);
+		string_len = strlen(&pbuff[tmp_len]);
 		r->subject = static_cast<char *>(pext->alloc(string_len + 1));
 		if (NULL == r->subject) {
-			free(pbuff);
 			return EXT_ERR_ALLOC;
 		}
-		strcpy(r->subject, pbuff + tmp_len);
-		free(pbuff);
+		strcpy(r->subject, &pbuff[tmp_len]);
 	}
 	if (overrideflags & OVERRIDEFLAG_LOCATION) {
 		status = ext_buffer_pull_uint16(pext, &tmp_len);
@@ -2892,30 +2888,26 @@ static int ext_buffer_pull_extendedexception(
 			return status;
 		}
 		tmp_len *= 2;
-		pbuff = static_cast<char *>(malloc(3 * (tmp_len + 2)));
-		if (NULL == pbuff) {
+		std::unique_ptr<char[]> pbuff;
+		try {
+			pbuff = std::make_unique<char[]>(3 * (tmp_len + 2));
+		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, pbuff, tmp_len);
+		status = ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len);
 		if (EXT_ERR_SUCCESS != status) {
-			free(pbuff);
 			return status;
 		}
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
-		if (FALSE == utf16le_to_utf8(pbuff,
-			tmp_len, pbuff + tmp_len, 2*tmp_len)) {
-			free(pbuff);
+		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
 			return EXT_ERR_CHARCNV;
-		}
-		string_len = strlen(pbuff + tmp_len);
+		string_len = strlen(&pbuff[tmp_len]);
 		r->location = static_cast<char *>(pext->alloc(string_len + 1));
 		if (NULL == r->location) {
-			free(pbuff);
 			return EXT_ERR_ALLOC;
 		}
-		strcpy(r->location, pbuff + tmp_len);
-		free(pbuff);
+		strcpy(r->location, &pbuff[tmp_len]);
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
@@ -3467,11 +3459,13 @@ int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
 		return ext_buffer_push_string(pext, pstr);
 	}
 	len = 2*strlen(pstr) + 2;
-	auto pbuff = static_cast<char *>(malloc(len));
-	if (NULL == pbuff) {
+	std::unique_ptr<char[]> pbuff;
+	try {
+		pbuff = std::make_unique<char[]>(len);
+	} catch (const std::bad_alloc &) {
 		return EXT_ERR_ALLOC;
 	}
-	len = utf8_to_utf16le(pstr, pbuff, len);
+	len = utf8_to_utf16le(pstr, pbuff.get(), len);
 	if (len < 2) {
 		pbuff[0] = '\0';
 		pbuff[1] = '\0';
@@ -3484,8 +3478,7 @@ int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
 			pbuff[509] = '\0';
 		}
 	}
-	status = ext_buffer_push_bytes(pext, pbuff, len);
-	free(pbuff);
+	status = ext_buffer_push_bytes(pext, pbuff.get(), len);
 	return status;
 }
 
@@ -5398,7 +5391,6 @@ static int ext_buffer_push_extendedexception(
 	uint16_t overrideflags, const EXTENDEDEXCEPTION *r)
 {
 	int status;
-	char *pbuff;
 	int string_len;
 	uint16_t tmp_len;
 	
@@ -5437,51 +5429,47 @@ static int ext_buffer_push_extendedexception(
 	}
 	if (overrideflags & OVERRIDEFLAG_SUBJECT) {
 		tmp_len = strlen(r->subject) + 1;
-		pbuff = static_cast<char *>(malloc(2 * tmp_len));
-		if (NULL == pbuff) {
+		std::unique_ptr<char[]> pbuff;
+		try {
+			pbuff = std::make_unique<char[]>(2 * tmp_len);
+		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		string_len = utf8_to_utf16le(r->subject, pbuff, 2*tmp_len);
+		string_len = utf8_to_utf16le(r->subject, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2) {
-			free(pbuff);
 			return EXT_ERR_CHARCNV;
 		}
 		string_len -= 2;
 		status = ext_buffer_push_uint16(pext, string_len/2);
 		if (EXT_ERR_SUCCESS != status) {
-			free(pbuff);
 			return status;
 		}
-		status = ext_buffer_push_bytes(pext, pbuff, string_len);
+		status = ext_buffer_push_bytes(pext, pbuff.get(), string_len);
 		if (EXT_ERR_SUCCESS != status) {
-			free(pbuff);
 			return status;
 		}
-		free(pbuff);
 	}
 	if (overrideflags & OVERRIDEFLAG_LOCATION) {
 		tmp_len = strlen(r->location) + 1;
-		pbuff = static_cast<char *>(malloc(2 * tmp_len));
-		if (NULL == pbuff) {
+		std::unique_ptr<char[]> pbuff;
+		try {
+			pbuff = std::make_unique<char[]>(2 * tmp_len);
+		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		string_len = utf8_to_utf16le(r->location, pbuff, 2*tmp_len);
+		string_len = utf8_to_utf16le(r->location, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2) {
-			free(pbuff);
 			return EXT_ERR_CHARCNV;
 		}
 		string_len -= 2;
 		status = ext_buffer_push_uint16(pext, string_len/2);
 		if (EXT_ERR_SUCCESS != status) {
-			free(pbuff);
 			return status;
 		}
-		status = ext_buffer_push_bytes(pext, pbuff, string_len);
+		status = ext_buffer_push_bytes(pext, pbuff.get(), string_len);
 		if (EXT_ERR_SUCCESS != status) {
-			free(pbuff);
 			return status;
 		}
-		free(pbuff);
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
