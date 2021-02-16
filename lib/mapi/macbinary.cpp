@@ -97,7 +97,6 @@ static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 
 static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 {
-	int status;
 	uint16_t crc;
 	uint32_t offset;
 	int32_t tmp_int;
@@ -116,55 +115,25 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	TRY(ext_buffer_pull_bytes(pext, &r->creator, 4));
 	TRY(ext_buffer_pull_uint8(pext, &r->original_flags));
 	TRY(ext_buffer_pull_uint8(pext, &r->pad1));
-	status = macbinary_pull_uint16(pext, &r->point_v);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_pull_uint16(pext, &r->point_h);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_pull_uint16(pext, &r->folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_uint16(pext, &r->point_v));
+	TRY(macbinary_pull_uint16(pext, &r->point_h));
+	TRY(macbinary_pull_uint16(pext, &r->folder_id));
 	TRY(ext_buffer_pull_uint8(pext, &r->protected_flag));
 	TRY(ext_buffer_pull_uint8(pext, &r->pad2));
-	status = macbinary_pull_uint32(pext, &r->data_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_pull_uint32(pext, &r->res_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_pull_int32(pext, &tmp_int);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_uint32(pext, &r->data_len));
+	TRY(macbinary_pull_uint32(pext, &r->res_len));
+	TRY(macbinary_pull_int32(pext, &tmp_int));
 	r->creat_time = TIMEDIFF + tmp_int;
-	status = macbinary_pull_int32(pext, &tmp_int);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_int32(pext, &tmp_int));
 	r->modify_time = TIMEDIFF + tmp_int;
-	status = macbinary_pull_uint16(pext, &r->comment_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_uint16(pext, &r->comment_len));
 	TRY(ext_buffer_pull_uint8(pext, &r->finder_flags));
 	TRY(ext_buffer_pull_bytes(pext, (uint8_t*)&r->signature, 4));
 	TRY(ext_buffer_pull_int8(pext, &r->fd_script));
 	TRY(ext_buffer_pull_int8(pext, &r->fd_xflags));
 	TRY(ext_buffer_pull_bytes(pext, r->pads1, 8));
-	status = macbinary_pull_uint32(pext, &r->total_unpacked);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_pull_uint16(pext, &r->xheader_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_uint32(pext, &r->total_unpacked));
+	TRY(macbinary_pull_uint16(pext, &r->xheader_len));
 	TRY(ext_buffer_pull_uint8(pext, &r->version));
 	if (129 != r->version && 130 != r->version) {
 		return EXT_ERR_FORMAT;
@@ -177,10 +146,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	if (129 != r->mini_version) {
 		return EXT_ERR_FORMAT;
 	}
-	status = macbinary_pull_uint16(pext, &crc);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_uint16(pext, &crc));
 	if (crc != macbinary_crc(pext->data + offset, 124, 0)) {
 		debug_info("[macbinary]: CRC checksum error");
 	}
@@ -219,7 +185,6 @@ static int macbinary_push_uint32(EXT_PUSH *pext, uint32_t v)
 
 static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 {
-	int status;
 	uint16_t crc;
 	uint32_t offset;
 	int32_t tmp_int;
@@ -239,42 +204,18 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	TRY(ext_buffer_push_bytes(pext, &r->creator, 4));
 	TRY(ext_buffer_push_uint8(pext, r->original_flags));
 	TRY(ext_buffer_push_uint8(pext, r->pad1));
-	status = macbinary_push_uint16(pext, r->point_v);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_push_uint16(pext, r->point_h);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_push_uint16(pext, r->folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_uint16(pext, r->point_v));
+	TRY(macbinary_push_uint16(pext, r->point_h));
+	TRY(macbinary_push_uint16(pext, r->folder_id));
 	TRY(ext_buffer_push_uint8(pext, r->protected_flag));
 	TRY(ext_buffer_push_uint8(pext, r->pad2));
-	status = macbinary_push_uint32(pext, r->data_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_push_uint32(pext, r->res_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_uint32(pext, r->data_len));
+	TRY(macbinary_push_uint32(pext, r->res_len));
 	tmp_int = r->creat_time - TIMEDIFF;
-	status = macbinary_push_int32(pext, tmp_int);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_int32(pext, tmp_int));
 	tmp_int = r->modify_time - TIMEDIFF;
-	status = macbinary_push_int32(pext, tmp_int);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_push_uint16(pext, r->comment_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_int32(pext, tmp_int));
+	TRY(macbinary_push_uint16(pext, r->comment_len));
 	TRY(ext_buffer_push_uint8(pext, r->finder_flags));
 	if (0 != strncmp((char*)&r->signature, "mBIN", 4)) {
 		return EXT_ERR_FORMAT;
@@ -283,14 +224,8 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	TRY(ext_buffer_push_int8(pext, r->fd_script));
 	TRY(ext_buffer_push_int8(pext, r->fd_xflags));
 	TRY(ext_buffer_push_bytes(pext, r->pads1, 8));
-	status = macbinary_push_uint32(pext, r->total_unpacked);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = macbinary_push_uint16(pext, r->xheader_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_uint32(pext, r->total_unpacked));
+	TRY(macbinary_push_uint16(pext, r->xheader_len));
 	if (130 != r->version) {
 		return EXT_ERR_FORMAT;
 	}
@@ -300,21 +235,13 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	}
 	TRY(ext_buffer_push_uint8(pext, r->mini_version));
 	crc = macbinary_crc(pext->data + offset, 124, 0);
-	status = macbinary_push_uint16(pext, crc);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_uint16(pext, crc));
 	return ext_buffer_push_bytes(pext, r->pads2, 2);
 }
 
 int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 {
-	int status;
-	
-	status = macbinary_pull_header(pext, &r->header);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_pull_header(pext, &r->header));
 	if (0 != r->header.xheader_len) {
 		pext->offset = (pext->offset + 127) & ~127;
 		if (pext->offset > pext->data_size) {
@@ -360,15 +287,11 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 
 int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 {
-	int status;
 	uint32_t pad_len;
 	uint8_t pad_buff[128];
 	
 	memset(pad_buff, 0, 128);
-	status = macbinary_push_header(pext, &r->header);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(macbinary_push_header(pext, &r->header));
 	if (0 != r->header.xheader_len) {
 		if (NULL == r->pxheader) {
 			return EXT_ERR_FORMAT;
