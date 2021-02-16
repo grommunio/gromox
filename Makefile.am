@@ -28,14 +28,12 @@ mta_plugins = \
 	libmtaflh_message_enqueue.la \
 	libmtahook_alias_translator.la \
 	libmtahook_exmdb_local.la \
-	libmtahook_from_replace.la \
 	libmtahook_mlist_expand.la \
 	libmtasvc_domain_list.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
 	libmtahook_exmdb_local.ldd \
-	libmtahook_from_replace.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtasvc_domain_list.ldd
 mra_system = pop3 imap
@@ -129,10 +127,6 @@ libmtahook_exmdb_local_la_SOURCES = mda/exmdb_local/auto_response.cpp mda/exmdb_
 libmtahook_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 EXTRA_libmtahook_exmdb_local_la_DEPENDENCIES = ${default_sym}
-libmtahook_from_replace_la_SOURCES = mda/from_replace.cpp
-libmtahook_from_replace_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_from_replace_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtahook_from_replace_la_DEPENDENCIES = ${default_sym}
 libmtahook_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/main.cpp
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
