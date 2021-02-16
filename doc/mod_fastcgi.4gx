@@ -1,0 +1,55 @@
+.TH mod_fastcgi 4gx "" "Gromox" "Gromox admin references"
+.SH Name
+.PP
+mod_fastcgi \(em http(8gx) processing plugin for proxying requests to
+FastCGI servers
+.SH Description
+.PP
+mod_fastcgi can forward HTTP requests to one or more FastCGI servers when
+certain URIs are requested.
+.PP
+mod_fastcgi plugin is built into http(8gx) and not a separate .so file.
+.SH Config file directives
+.PP
+This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
+.SH URI map
+.PP
+The filemap that specifies which URIs to handle is \fBproxy.txt\fP,
+which is searched for in \fIconfig_file_path\fP.
+.PP
+Each line in this file consists of 7 columns separated by whitespace:
+.IP \(bu 4
+Domain or asterisk-based wildcard ("*", "*.example.com") to match the HTTP
+Host: request header with.
+.IP \(bu 4
+URI path (prefix) to match
+.IP \(bu 4
+Target directory within the filesystem
+.IP \(bu 4
+File suffix (without dot) to match on, e.g. \fIphp\fP.
+.IP \(bu 4
+A file to use as the default file for a directory (similar to Apache httpd's
+DirectoryIndex).
+.IP \(bu 4
+A set of headers, separated by the pipe symbol \fB|\fP, which should be
+forwarded to the CGI handler. In absence of any desired extra headers, a single
+pipe can be used to fill the column.
+.IP \(bu 4
+An AF_LOCAL socket path to make the FastCGI request to.
+.PP
+If no entries are in fastcgi.txt or the file is absent, no documents will be
+served this way.
+.SS Example
+.PP
+.nf
+* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
+* /sync /usr/share/grammm-sync php index.php | /run/gromox/php-fpm.sock
+* /web /usr/share/grammm-webapp php index.php | /run/gromox/php-fpm.sock
+.fi
+.SH Files
+.PP
+\fIconfig_file_path\fP/fastcgi.txt: URI map specifying which paths this plugin
+shall handle.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBhttp\fP(8gx)

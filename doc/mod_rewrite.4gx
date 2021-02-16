@@ -1,0 +1,45 @@
+.TH mod_rewrite 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+mod_rewrite \(em http(8gx) processing plugin for altering HTTP request URIs
+before processing
+.SH Description
+.PP
+mod_rewrite can alter request URIs. It runs before any of the other built-in or
+HPM processing plugins.
+.SH Config file directives
+.PP
+This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
+.SH Rewrite map
+.PP
+The filemap that specifies which URIs to handle is \fBrewrite.txt\fP,
+which is searched for in \fIconfig_file_path\fP.
+.PP
+Each line in this file consists of 3 columns separated by whitespace:
+.IP \(bu 4
+A POSIX Basic Regular Expression (cf. regcomp(3)) for matching the original URI.
+.IP \(bu 4
+The fixed sequence "=>".
+.IP \(bu 4
+Replacement string. Captures can be spliced using \fB\\1\fP, \fB\\2\fP, .. up
+to a maximum of \fB\\9\fP. The sequence \fB\\0\fP splices the entire string
+(equivalent of Perl's \fB$&\fP).
+.PP
+If no entries are in rewrite.txt or the file is absent, no paths will be
+rewritten.
+.SS Example
+.PP
+.nf
+/autodiscover/autodiscover.xml => \\0/ews/autodiscover.php
+/EWS/Exchange.asmx => \\0/ews/exchange.php
+/OAB/oab.xml => \\0/ews/oab.php
+\\(/Microsoft-Server-ActiveSync\\) => \\1/grammm-sync/index.php
+\\(/.well-known/autoconfig/mail/config-v1.1.xml\\) => \\1/.well-known/autoconfig-mail.php
+.fi
+.SH Files
+.PP
+\fIconfig_file_path\fP/rewrite.txt: Rewrite map specifying which paths this
+plugin shall handle.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBhttp\fP(8gx)

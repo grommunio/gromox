@@ -15,56 +15,25 @@ specified, /etc/gromox/http.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH URI processing
+.SH URI processing order
 .IP \(bu 4
-If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA,
-the data stream is fed to the exchange_emsmdb(4gx) plugin.
+Requests are passed to the mod_rewrite(4gx) module (built-in) to have their URI
+potentially rewritten.
 .IP \(bu 4
-Otherwise, HPM plugins such as mod_proxy(4gx) are consulted whether any of them
-will handle the request. The order depends on the HPM plugin list (cf.
-http.cfg(5gx):\fBhpm_plugin_list\fP).
+If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA, the data
+stream is handed off to the exchange_emsmdb(4gx) plugin.
 .IP \(bu 4
-Otherwise, the FastCGI module (built-in) is consulted whether it wants
-to handle the request.
+Otherwise, HPM plugins such as mod_proxy(4gx) are invoked. Processing ends when
+one plugin signals that the request was handled. The order depends on the HPM
+plugin list (cf. http.cfg(5gx):\fBhpm_plugin_list\fP).
 .IP \(bu 4
-Otherwise, the standard file handler with built-in caching, is used.
-.SH File serving
-.PP
-The filemap that specifies how URIs are handled is located at
-\fIdata_file_path\fP/cache.txt, whereby data_file_path is the eponymous
-directive from the config file.
-.PP
-Each line in this file consists of 3 columns separated by whitespace:
+Otherwise, the mod_fastcgi(4gx) module (built-in) is invoked. Processing ends
+if the module handled the request.
 .IP \(bu 4
-Domain or wildcard to match the HTTP Host: header with.
+Otherwise, the mod_cache(4gx) module (built-in) is invoked. Processing ends
+if the module handled the request.
 .IP \(bu 4
-URI path (prefix) to match
-.IP \(bu 4
-Target directory within the filesystem
-.SH FastCGI
-.PP
-The filemap that specifies how URIs are handled is located at
-\fIdata_file_path\fP/fastcgi.txt, whereby data_file_path is the eponymous
-directive from the config file.
-.PP
-Each line in this file consists of 7 columns separated by whitespace:
-.IP \(bu 4
-Domain or wildcard to match the HTTP Host: header with.
-.IP \(bu 4
-URI path (prefix) to match
-.IP \(bu 4
-Target directory within the filesystem
-.IP \(bu 4
-File suffix (without dot) to match on, e.g. \fIphp\fP.
-.IP \(bu 4
-A file to use as the default file for a directory (similar to Apache httpd's
-DirectoryIndex).
-.IP \(bu 4
-A set of headers, separated by the pipe symbol \fB|\fP, which should be
-forwarded to the CGI handler. In absence of any desired extra headers, a single
-pipe can be used to fill the column.
-.IP \(bu 4
-An AF_LOCAL socket path to make the FastCGI request to.
+Otherwise, the request is rejected.
 .SH RPC-over-HTTP
 .PP
 RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
@@ -276,4 +245,5 @@ Default: \fI5\fP
 Default: \fIen\fP
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBmod_cache\fP(4gx), \fBmod_fastcgi\fP(4gx),
+\fBmod_proxy\fP(4gx), \fBmod_rewrite\fP(4gx)

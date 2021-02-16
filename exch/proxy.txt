@@ -1,2 +1,0 @@
-#domain(asterisk supported)     uri_path        	destination(http following with domain or ipaddr, if with ipaddr, host in request will be relayed)
-*	/webmeetings	http://[::1]:8090/webmeetings

@@ -1,5 +1,0 @@
-#domain(asterisk supported) uri_path directory suffix(asterisk supported) index extra_headers domain_socket
-* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
-* /z-push /usr/share/z-push php index.php | /run/gromox/php-fpm.sock
-* /webapp /usr/share/webapp php index.php | /run/gromox/php-fpm.sock
-* /.well-known /usr/share/gromox/http/php/well-known php index.php | /run/gromox/php-fpm.sock

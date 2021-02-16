@@ -1,11 +1,18 @@
-.TH proxy 4gx "" "Gromox" "Gromox admin reference"
+.TH mod_proxy 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+mod_proxy \(em http(8gx) processing plugin for proxying requests to HTTP
+servers
 .SH Description
 .PP
-A processing plugin for http(8gx) which responds to HTTP requests with
+mod_proxy can forward HTTP requests to other HTTP servers when certain URIs are
+requested.
+.PP
+A processing plugin for http(8gx) which triggers on HTTP requests with
 certain URIs and forwards them to another HTTP server.
 .SH Config file directives
 .PP
-This plugin has no directives.
+This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH URI map
 .PP
 The filemap that specifies which URIs to handle is \fBproxy.txt\fP,
@@ -13,7 +20,8 @@ which is searched for in \fIconfig_file_path\fP.
 .PP
 Each line in this file consists of 3 columns separated by whitespace:
 .IP \(bu 4
-Domain or wildcard to match the HTTP Host: header with.
+Domain or asterisk-based wildcard ("*", "*.example.com") to match the HTTP
+Host: request header with.
 .IP \(bu 4
 URI path (prefix) to match
 .IP \(bu 4
@@ -21,11 +29,17 @@ Target URL with host and prefix replacement (if any)
 .PP
 mod_proxy \fBonly supports the http:// scheme for targets\fP.
 .PP
-Example:
+If no entries are in proxy.txt or the file is absent, no documents will be
+served this way.
+.SS Example
+.PP
 .nf
-.RS 4
 * /web http://localhost:8000/web
-.RE
+.fi
+.SH Files
+.PP
+\fIconfig_file_path\fP/proxy.txt: URI map specifying which paths this plugin
+shall handle.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

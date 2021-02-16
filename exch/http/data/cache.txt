@@ -1,3 +1,0 @@
-#domain(asterisk supported) uri_path directory
-* /webapp /usr/share/webapp
-* / /srv/www/htdocs
