@@ -7,6 +7,7 @@
 #include <gromox/util.hpp>
 #include <cstdlib>
 #include <cstring>
+#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define EXT_SVAL(pext, ofs)			SVAL(pext->data,ofs)
 #define EXT_IVAL(pext, ofs)			IVAL(pext->data,ofs)
 #define EXT_IVALS(pext, ofs)		IVALS(pext->data,ofs)
@@ -42,20 +43,9 @@ int ext_buffer_pull_advance(EXT_PULL *pext, uint32_t size)
 
 int ext_buffer_pull_rpc_header_ext(EXT_PULL *pext, RPC_HEADER_EXT *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->version));
+	TRY(ext_buffer_pull_uint16(pext, &r->flags));
+	TRY(ext_buffer_pull_uint16(pext, &r->size));
 	return ext_buffer_pull_uint16(pext, &r->size_actual);
 }
 
@@ -204,28 +194,11 @@ int ext_buffer_pull_bytes(EXT_PULL *pext, void *data, uint32_t n)
 
 int ext_buffer_pull_guid(EXT_PULL *pext, GUID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->time_low);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->time_mid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->time_hi_and_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->clock_seq, 2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->node, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->time_low));
+	TRY(ext_buffer_pull_uint16(pext, &r->time_mid));
+	TRY(ext_buffer_pull_uint16(pext, &r->time_hi_and_version));
+	TRY(ext_buffer_pull_bytes(pext, r->clock_seq, 2));
+	TRY(ext_buffer_pull_bytes(pext, r->node, 6));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -308,19 +281,12 @@ int ext_buffer_pull_data_blob(EXT_PULL *pext, DATA_BLOB *pblob)
 
 int ext_buffer_pull_binary(EXT_PULL *pext, BINARY *r)
 {
-	int status;
 	uint16_t cb;
 	
 	if (pext->flags & EXT_FLAG_WCOUNT) {
-		status = ext_buffer_pull_uint32(pext, &r->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->cb));
 	} else {
-		status = ext_buffer_pull_uint16(pext, &cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &cb));
 		r->cb = cb;
 	}
 	if (0 == r->cb) {
@@ -335,13 +301,9 @@ int ext_buffer_pull_binary(EXT_PULL *pext, BINARY *r)
 
 int ext_buffer_pull_sbinary(EXT_PULL *pext, BINARY *r)
 {
-	int status;
 	uint16_t cb;
 	
-	status = ext_buffer_pull_uint16(pext, &cb);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &cb));
 	r->cb = cb;
 	if (0 == r->cb) {
 		r->pb = NULL;
@@ -355,12 +317,7 @@ int ext_buffer_pull_sbinary(EXT_PULL *pext, BINARY *r)
 
 int ext_buffer_pull_exbinary(EXT_PULL *pext, BINARY *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->cb);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->cb));
 	if (0 == r->cb) {
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
@@ -374,12 +331,8 @@ int ext_buffer_pull_exbinary(EXT_PULL *pext, BINARY *r)
 int ext_buffer_pull_short_array(EXT_PULL *pext, SHORT_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->ps = NULL;
 		return EXT_ERR_SUCCESS;
@@ -389,10 +342,7 @@ int ext_buffer_pull_short_array(EXT_PULL *pext, SHORT_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint16(pext, &r->ps[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &r->ps[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -400,12 +350,8 @@ int ext_buffer_pull_short_array(EXT_PULL *pext, SHORT_ARRAY *r)
 int ext_buffer_pull_long_array(EXT_PULL *pext, LONG_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pl = NULL;
 		return EXT_ERR_SUCCESS;
@@ -415,10 +361,7 @@ int ext_buffer_pull_long_array(EXT_PULL *pext, LONG_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint32(pext, &r->pl[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->pl[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -426,12 +369,8 @@ int ext_buffer_pull_long_array(EXT_PULL *pext, LONG_ARRAY *r)
 int ext_buffer_pull_longlong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pll = NULL;
 		return EXT_ERR_SUCCESS;
@@ -441,10 +380,7 @@ int ext_buffer_pull_longlong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint64(pext, &r->pll[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint64(pext, &r->pll[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -452,13 +388,9 @@ int ext_buffer_pull_longlong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 int ext_buffer_pull_slonglong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 {
 	int i;
-	int status;
 	uint16_t count;
 	
-	status = ext_buffer_pull_uint16(pext, &count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &count));
 	r->count = count;
 	if (0 == r->count) {
 		r->pll = NULL;
@@ -469,10 +401,7 @@ int ext_buffer_pull_slonglong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint64(pext, &r->pll[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint64(pext, &r->pll[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -480,12 +409,8 @@ int ext_buffer_pull_slonglong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 int ext_buffer_pull_binary_array(EXT_PULL *pext, BINARY_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pbin = NULL;
 		return EXT_ERR_SUCCESS;
@@ -495,10 +420,7 @@ int ext_buffer_pull_binary_array(EXT_PULL *pext, BINARY_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_binary(pext, &r->pbin[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_binary(pext, &r->pbin[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -506,12 +428,8 @@ int ext_buffer_pull_binary_array(EXT_PULL *pext, BINARY_ARRAY *r)
 int ext_buffer_pull_string_array(EXT_PULL *pext, STRING_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->ppstr = NULL;
 		return EXT_ERR_SUCCESS;
@@ -521,10 +439,7 @@ int ext_buffer_pull_string_array(EXT_PULL *pext, STRING_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_string(pext, &r->ppstr[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->ppstr[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -532,12 +447,8 @@ int ext_buffer_pull_string_array(EXT_PULL *pext, STRING_ARRAY *r)
 int ext_buffer_pull_wstring_array(EXT_PULL *pext, STRING_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->ppstr = NULL;
 		return EXT_ERR_SUCCESS;
@@ -547,10 +458,7 @@ int ext_buffer_pull_wstring_array(EXT_PULL *pext, STRING_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_wstring(pext, &r->ppstr[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_wstring(pext, &r->ppstr[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -558,12 +466,8 @@ int ext_buffer_pull_wstring_array(EXT_PULL *pext, STRING_ARRAY *r)
 int ext_buffer_pull_guid_array(EXT_PULL *pext, GUID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pguid = NULL;
 		return EXT_ERR_SUCCESS;
@@ -573,10 +477,7 @@ int ext_buffer_pull_guid_array(EXT_PULL *pext, GUID_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_guid(pext, &r->pguid[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_guid(pext, &r->pguid[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -585,19 +486,12 @@ static int ext_buffer_pull_restriction_and_or(
 	EXT_PULL *pext, RESTRICTION_AND_OR *r)
 {
 	int i;
-	int status;
 	uint16_t count;
 	
 	if (pext->flags & EXT_FLAG_WCOUNT) {
-		status = ext_buffer_pull_uint32(pext, &r->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->count));
 	} else {
-		status = ext_buffer_pull_uint16(pext, &count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &count));
 		r->count = count;
 	}
 	if (0 == r->count) {
@@ -609,10 +503,7 @@ static int ext_buffer_pull_restriction_and_or(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_restriction(pext, &r->pres[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_restriction(pext, &r->pres[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -626,88 +517,52 @@ static int ext_buffer_pull_restriction_not(
 static int ext_buffer_pull_restriction_content(
 	EXT_PULL *pext, RESTRICTION_CONTENT *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->fuzzy_level);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->fuzzy_level));
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag));
 	return ext_buffer_pull_tagged_propval(pext, &r->propval);
 }
 
 static int ext_buffer_pull_restriction_property(
 	EXT_PULL *pext, RESTRICTION_PROPERTY *r)
 {
-	int status;
 	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &relop));
 	r->relop = static_cast<enum relop>(relop);
-	status = ext_buffer_pull_uint32(pext, &r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag));
 	return ext_buffer_pull_tagged_propval(pext, &r->propval);
 }
 
 static int ext_buffer_pull_restriction_propcompare(
 	EXT_PULL *pext, RESTRICTION_PROPCOMPARE *r)
 {
-	int status;
 	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &relop));
 	r->relop = static_cast<enum relop>(relop);
-	status = ext_buffer_pull_uint32(pext, &r->proptag1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag1));
 	return ext_buffer_pull_uint32(pext, &r->proptag2);
 }
 
 static int ext_buffer_pull_restriction_bitmask(
 	EXT_PULL *pext, RESTRICTION_BITMASK *r)
 {
-	int status;
 	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &relop));
 	r->bitmask_relop = static_cast<enum bm_relop>(relop);
-	status = ext_buffer_pull_uint32(pext, &r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag));
 	return ext_buffer_pull_uint32(pext, &r->mask);
 }
 
 static int ext_buffer_pull_restriction_size(
 	EXT_PULL *pext, RESTRICTION_SIZE *r)
 {
-	int status;
 	uint8_t relop;
 	
-	status = ext_buffer_pull_uint8(pext, &relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &relop));
 	r->relop = static_cast<enum relop>(relop);
-	status = ext_buffer_pull_uint32(pext, &r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag));
 	return ext_buffer_pull_uint32(pext, &r->size);
 }
 
@@ -720,12 +575,7 @@ static int ext_buffer_pull_restriction_exist(
 static int ext_buffer_pull_restriction_subobj(
 	EXT_PULL *pext, RESTRICTION_SUBOBJ *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->subobject);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->subobject));
 	return ext_buffer_pull_restriction(pext, &r->res);
 }
 
@@ -733,13 +583,9 @@ static int ext_buffer_pull_restriction_comment(
 	EXT_PULL *pext, RESTRICTION_COMMENT *r)
 {
 	int i;
-	int status;
 	uint8_t res_present;
 	
-	status = ext_buffer_pull_uint8(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -748,15 +594,9 @@ static int ext_buffer_pull_restriction_comment(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
 	}
-	status = ext_buffer_pull_uint8(pext, &res_present);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &res_present));
 	if (0 != res_present) {
 		r->pres = static_cast<RESTRICTION *>(pext->alloc(sizeof(RESTRICTION)));
 		if (NULL == r->pres) {
@@ -771,24 +611,15 @@ static int ext_buffer_pull_restriction_comment(
 static int ext_buffer_pull_restriction_count(
 	EXT_PULL *pext, RESTRICTION_COUNT *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	return ext_buffer_pull_restriction(pext, &r->sub_res);
 }
 
 int ext_buffer_pull_restriction(EXT_PULL *pext, RESTRICTION *r)
 {
-	int status;
 	uint8_t rt;
 	
-	status = ext_buffer_pull_uint8(pext, &rt);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &rt));
 	r->rt = static_cast<res_type>(rt);
 	switch (r->rt) {
 	case RES_AND:
@@ -868,18 +699,11 @@ int ext_buffer_pull_restriction(EXT_PULL *pext, RESTRICTION *r)
 
 int ext_buffer_pull_svreid(EXT_PULL *pext, SVREID *r)
 {
-	int status;
 	uint8_t ours;
 	uint16_t length;
 	
-	status = ext_buffer_pull_uint16(pext, &length);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &ours);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &length));
+	TRY(ext_buffer_pull_uint8(pext, &ours));
 	if (0 == ours) {
 		r->folder_id = 0;
 		r->message_id = 0;
@@ -898,85 +722,40 @@ int ext_buffer_pull_svreid(EXT_PULL *pext, SVREID *r)
 		return EXT_ERR_FORMAT;
 	}
 	r->pbin = NULL;
-	status = ext_buffer_pull_uint64(pext, &r->folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint64(pext, &r->message_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint64(pext, &r->folder_id));
+	TRY(ext_buffer_pull_uint64(pext, &r->message_id));
 	return ext_buffer_pull_uint32(pext, &r->instance);
 }
 
 int ext_buffer_pull_store_entryid(EXT_PULL *pext, STORE_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->dll_name, 14);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->wrapped_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->wrapped_provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->wrapped_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_string(pext, &r->pserver_name);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
+	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_pull_uint8(pext, &r->version));
+	TRY(ext_buffer_pull_uint8(pext, &r->flag));
+	TRY(ext_buffer_pull_bytes(pext, r->dll_name, 14));
+	TRY(ext_buffer_pull_uint32(pext, &r->wrapped_flags));
+	TRY(ext_buffer_pull_bytes(pext, r->wrapped_provider_uid, 16));
+	TRY(ext_buffer_pull_uint32(pext, &r->wrapped_type));
+	TRY(ext_buffer_pull_string(pext, &r->pserver_name));
 	return ext_buffer_pull_string(pext, &r->pmailbox_dn);
 }
 
 static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 {
-	int status;
 	uint16_t eid_size;
 	
-	status = ext_buffer_pull_uint8(pext, &r->same_store);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &eid_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->same_store));
+	TRY(ext_buffer_pull_uint16(pext, &eid_size));
 	if (0 == r->same_store) {
 		r->pstore_eid = static_cast<STORE_ENTRYID *>(pext->alloc(sizeof(STORE_ENTRYID)));
 		if (NULL == r->pstore_eid) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_store_entryid(pext, r->pstore_eid);
+		TRY(ext_buffer_pull_store_entryid(pext, r->pstore_eid));
 	} else {
 		r->pstore_eid = NULL;
-		status = ext_buffer_pull_advance(pext, eid_size);
-	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
+		TRY(ext_buffer_pull_advance(pext, eid_size));
 	}
 	if (0 != r->same_store) {
 		r->pfolder_eid = pext->alloc(sizeof(SVREID));
@@ -995,32 +774,17 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 
 static int ext_buffer_pull_reply_action(EXT_PULL *pext, REPLY_ACTION *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint64(pext, &r->template_folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint64(pext, &r->template_message_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint64(pext, &r->template_folder_id));
+	TRY(ext_buffer_pull_uint64(pext, &r->template_message_id));
 	return ext_buffer_pull_guid(pext, &r->template_guid);
 }
 
 static int ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint8(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->reserved));
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1029,10 +793,7 @@ static int ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1041,12 +802,8 @@ static int ext_buffer_pull_forwarddelegate_action(
 	EXT_PULL *pext, FORWARDDELEGATE_ACTION *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1055,35 +812,19 @@ static int ext_buffer_pull_forwarddelegate_action(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_recipient_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_recipient_block(pext, &r->pblock[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 {
-	int status;
 	uint16_t tmp_len;
 	
-	status = ext_buffer_pull_uint16(pext, &r->length);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->flavor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->length));
+	TRY(ext_buffer_pull_uint8(pext, &r->type));
+	TRY(ext_buffer_pull_uint32(pext, &r->flavor));
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
@@ -1137,12 +878,8 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 int ext_buffer_pull_rule_actions(EXT_PULL *pext, RULE_ACTIONS *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1151,10 +888,7 @@ int ext_buffer_pull_rule_actions(EXT_PULL *pext, RULE_ACTIONS *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_action_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_action_block(pext, &r->pblock[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1295,61 +1029,34 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 
 int ext_buffer_pull_typed_propval(EXT_PULL *pext, TYPED_PROPVAL *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->type));
 	return ext_buffer_pull_propval(pext, r->type, &r->pvalue);
 }
 
 int ext_buffer_pull_tagged_propval(EXT_PULL *pext, TAGGED_PROPVAL *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag));
 	return ext_buffer_pull_propval(pext, PROP_TYPE(r->proptag), &r->pvalue);
 }
 
 int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
 {
-	int status;
-
-	status = ext_buffer_pull_guid(pext, &r->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_guid(pext, &r->guid));
+	TRY(ext_buffer_pull_bytes(pext, r->global_counter, 6));
 	return ext_buffer_pull_uint16(pext, &r->padding);
 }
 
 int ext_buffer_pull_long_term_id_rang(EXT_PULL *pext, LONG_TERM_ID_RANGE *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_long_term_id(pext, &r->min);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_long_term_id(pext, &r->min));
 	return ext_buffer_pull_long_term_id(pext, &r->max);
 }
 
 int ext_buffer_pull_proptag_array(EXT_PULL *pext, PROPTAG_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		r->pproptag = NULL;
 		return EXT_ERR_SUCCESS;
@@ -1359,28 +1066,18 @@ int ext_buffer_pull_proptag_array(EXT_PULL *pext, PROPTAG_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint32(pext, &r->pproptag[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->pproptag[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 {
-	int status;
 	uint32_t offset;
 	uint8_t name_size;
 	
-	status = ext_buffer_pull_uint8(pext, &r->kind);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_guid(pext, &r->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->kind));
+	TRY(ext_buffer_pull_guid(pext, &r->guid));
 	r->plid = NULL;
 	r->pname = NULL;
 	if (r->kind == MNID_ID) {
@@ -1388,23 +1085,14 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 		if (NULL == r->plid) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext, r->plid);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, r->plid));
 	} else if (r->kind == MNID_STRING) {
-		status = ext_buffer_pull_uint8(pext, &name_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint8(pext, &name_size));
 		if (name_size < 2) {
 			return EXT_ERR_FORMAT;
 		}
 		offset = pext->offset + name_size;
-		status = ext_buffer_pull_wstring(pext, &r->pname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_wstring(pext, &r->pname));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -1416,12 +1104,8 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 int ext_buffer_pull_propname_array(EXT_PULL *pext, PROPNAME_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		r->ppropname = NULL;
 		return EXT_ERR_SUCCESS;
@@ -1431,10 +1115,7 @@ int ext_buffer_pull_propname_array(EXT_PULL *pext, PROPNAME_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_property_name(pext, r->ppropname + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_property_name(pext, r->ppropname + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1442,12 +1123,8 @@ int ext_buffer_pull_propname_array(EXT_PULL *pext, PROPNAME_ARRAY *r)
 int ext_buffer_pull_propid_array(EXT_PULL *pext, PROPID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		r->ppropid = NULL;
 		return EXT_ERR_SUCCESS;
@@ -1457,10 +1134,7 @@ int ext_buffer_pull_propid_array(EXT_PULL *pext, PROPID_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint16(pext, r->ppropid + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, r->ppropid + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1468,12 +1142,8 @@ int ext_buffer_pull_propid_array(EXT_PULL *pext, PROPID_ARRAY *r)
 int ext_buffer_pull_tpropval_array(EXT_PULL *pext, TPROPVAL_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		r->ppropval = NULL;
 		return EXT_ERR_SUCCESS;
@@ -1483,10 +1153,7 @@ int ext_buffer_pull_tpropval_array(EXT_PULL *pext, TPROPVAL_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_tagged_propval(pext, r->ppropval + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tagged_propval(pext, r->ppropval + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1494,12 +1161,8 @@ int ext_buffer_pull_tpropval_array(EXT_PULL *pext, TPROPVAL_ARRAY *r)
 int ext_buffer_pull_tarray_set(EXT_PULL *pext, TARRAY_SET *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pparray = NULL;
 		return EXT_ERR_SUCCESS;
@@ -1513,114 +1176,64 @@ int ext_buffer_pull_tarray_set(EXT_PULL *pext, TARRAY_SET *r)
 		if (NULL == r->pparray[i]) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_tpropval_array(pext, r->pparray[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tpropval_array(pext, r->pparray[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_pull_property_problem(EXT_PULL *pext, PROPERTY_PROBLEM *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->index);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->index));
+	TRY(ext_buffer_pull_uint32(pext, &r->proptag));
 	return ext_buffer_pull_uint32(pext, &r->err);
 }
 
 int ext_buffer_pull_problem_array(EXT_PULL *pext, PROBLEM_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	r->pproblem = static_cast<PROPERTY_PROBLEM *>(pext->alloc(sizeof(PROPERTY_PROBLEM) * r->count));
 	if (NULL == r->pproblem) {
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_property_problem(pext, r->pproblem + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_property_problem(pext, r->pproblem + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_xid(EXT_PULL *pext, uint8_t size, XID *pxid)
 {
-	int status;
-	
 	if (size < 17 || size > 24) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_pull_guid(pext, &pxid->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_guid(pext, &pxid->guid));
 	return ext_buffer_pull_bytes(pext, pxid->local_id, size - 16);
 }
 
 int ext_buffer_pull_folder_entryid(EXT_PULL *pext, FOLDER_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->folder_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_guid(pext, &r->database_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
+	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_pull_uint16(pext, &r->folder_type));
+	TRY(ext_buffer_pull_guid(pext, &r->database_guid));
+	TRY(ext_buffer_pull_bytes(pext, r->global_counter, 6));
 	return ext_buffer_pull_bytes(pext, r->pad, 2);
 }
 
 static int ext_buffer_pull_ext_movecopy_action(
 	EXT_PULL *pext, EXT_MOVECOPY_ACTION *r)
 {
-	int status;
 	uint32_t size;
 	
-	status = ext_buffer_pull_uint32(pext, &size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &size));
 	if (0 == size) {
 		return EXT_ERR_FORMAT;
 	} else {
-		status = ext_buffer_pull_advance(pext, size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_advance(pext, size));
 	}
-	status = ext_buffer_pull_uint32(pext, &size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &size));
 	if (46 != size) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1629,60 +1242,27 @@ static int ext_buffer_pull_ext_movecopy_action(
 
 int ext_buffer_pull_message_entryid(EXT_PULL *pext, MESSAGE_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->message_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_guid(pext, &r->folder_database_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->folder_global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->pad1, 2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_guid(pext, &r->message_database_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->message_global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
+	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_pull_uint16(pext, &r->message_type));
+	TRY(ext_buffer_pull_guid(pext, &r->folder_database_guid));
+	TRY(ext_buffer_pull_bytes(pext, r->folder_global_counter, 6));
+	TRY(ext_buffer_pull_bytes(pext, r->pad1, 2));
+	TRY(ext_buffer_pull_guid(pext, &r->message_database_guid));
+	TRY(ext_buffer_pull_bytes(pext, r->message_global_counter, 6));
 	return ext_buffer_pull_bytes(pext, r->pad2, 2);
 }
 
 static int ext_buffer_pull_ext_reply_action(
 	EXT_PULL *pext, EXT_REPLY_ACTION *r)
 {
-	int status;
 	uint32_t size;
 	
-	status = ext_buffer_pull_uint32(pext, &size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &size));
 	if (70 != size) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_pull_message_entryid(pext, &r->message_eid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_message_entryid(pext, &r->message_eid));
 	return ext_buffer_pull_guid(pext, &r->template_guid);
 }
 
@@ -1691,16 +1271,9 @@ static int ext_buffer_pull_ext_recipient_block(
 	EXT_PULL *pext, EXT_RECIPIENT_BLOCK *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint8(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->reserved));
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1709,10 +1282,7 @@ static int ext_buffer_pull_ext_recipient_block(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1721,12 +1291,8 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	EXT_FORWARDDELEGATE_ACTION *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1735,10 +1301,7 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_ext_recipient_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_ext_recipient_block(pext, &r->pblock[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1746,25 +1309,12 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 static int ext_buffer_pull_ext_action_block(
 	EXT_PULL *pext, EXT_ACTION_BLOCK *r)
 {
-	int status;
 	uint32_t tmp_len;
 	
-	status = ext_buffer_pull_uint32(pext, &r->length);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->flavor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->length));
+	TRY(ext_buffer_pull_uint8(pext, &r->type));
+	TRY(ext_buffer_pull_uint32(pext, &r->flavor));
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
@@ -1818,12 +1368,8 @@ static int ext_buffer_pull_ext_action_block(
 int ext_buffer_pull_ext_rule_actions(EXT_PULL *pext, EXT_RULE_ACTIONS *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1832,10 +1378,7 @@ int ext_buffer_pull_ext_rule_actions(EXT_PULL *pext, EXT_RULE_ACTIONS *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_ext_action_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_ext_action_block(pext, &r->pblock[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1844,14 +1387,10 @@ int ext_buffer_pull_namedproperty_information(
 	EXT_PULL *pext, NAMEDPROPERTY_INFOMATION *r)
 {
 	int i;
-	int status;
 	uint32_t size;
 	uint32_t offset;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (0 == r->count) {
 		r->ppropid = NULL;
 		r->ppropname = NULL;
@@ -1866,21 +1405,12 @@ int ext_buffer_pull_namedproperty_information(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint16(pext, r->ppropid + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, r->ppropid + i));
 	}
-	status = ext_buffer_pull_uint32(pext, &size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &size));
 	offset = pext->offset + size;
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_property_name(pext, r->ppropname + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_property_name(pext, r->ppropname + i));
 	}
 	if (offset < pext->offset) {
 		return EXT_ERR_FORMAT;
@@ -1892,14 +1422,10 @@ int ext_buffer_pull_namedproperty_information(
 int ext_buffer_pull_flagged_propval(EXT_PULL *pext,
 	uint16_t type, FLAGGED_PROPVAL *r)
 {
-	int status;
 	void **ppvalue;
 	
 	if (type == PT_UNSPECIFIED) {
-		status = ext_buffer_pull_uint16(pext, &type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &type));
 		r->pvalue = pext->alloc(sizeof(TYPED_PROPVAL));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -1909,10 +1435,7 @@ int ext_buffer_pull_flagged_propval(EXT_PULL *pext,
 	} else {
 		ppvalue = &r->pvalue;
 	}
-	status = ext_buffer_pull_uint8(pext, &r->flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->flag));
 	switch (r->flag) {
 	case FLAGGED_PROPVAL_FLAG_AVAILABLE:
 		return ext_buffer_pull_propval(pext, type, ppvalue);
@@ -1934,23 +1457,15 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint8(pext, &r->flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->flag));
 	r->pppropval = static_cast<void **>(pext->alloc(sizeof(void *) * pcolumns->count));
 	if (NULL == r->pppropval) {
 		return EXT_ERR_ALLOC;
 	}
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
-			status = ext_buffer_pull_propval(pext,
-			         PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_propval(pext, PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]));
 		}
 		return EXT_ERR_SUCCESS;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
@@ -1959,12 +1474,8 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 			if (NULL == r->pppropval[i]) {
 				return EXT_ERR_ALLOC;
 			}
-			status = ext_buffer_pull_flagged_propval(pext,
-			         PROP_TYPE(pcolumns->pproptag[i]),
-			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i]));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_flagged_propval(pext, PROP_TYPE(pcolumns->pproptag[i]),
+			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -1973,39 +1484,21 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 
 int ext_buffer_pull_sort_order(EXT_PULL *pext, SORT_ORDER *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->type));
 	if ((r->type & MVI_FLAG) == MV_FLAG)
 		/* MV_FLAG set without MV_INSTANCE */
 		return EXT_ERR_FORMAT;
-	status = ext_buffer_pull_uint16(pext, &r->propid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->propid));
 	return ext_buffer_pull_uint8(pext, &r->table_sort);
 }
 
 int ext_buffer_pull_sortorder_set(EXT_PULL *pext, SORTORDER_SET *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->ccategories);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->cexpanded);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
+	TRY(ext_buffer_pull_uint16(pext, &r->ccategories));
+	TRY(ext_buffer_pull_uint16(pext, &r->cexpanded));
 	if (0 == r->count || r->ccategories > r->count ||
 		r->cexpanded > r->ccategories) {
 		return EXT_ERR_FORMAT;
@@ -2015,10 +1508,7 @@ int ext_buffer_pull_sortorder_set(EXT_PULL *pext, SORTORDER_SET *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_sort_order(pext, r->psort + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_sort_order(pext, r->psort + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -2026,15 +1516,11 @@ int ext_buffer_pull_sortorder_set(EXT_PULL *pext, SORTORDER_SET *r)
 int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 	const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
 {
-	int status;
 	uint8_t type;
 	BOOL b_unicode;
 	PROPTAG_ARRAY proptags;
 	
-	status = ext_buffer_pull_uint16(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->flags));
 	type = r->flags & 0x0007;
 	b_unicode = FALSE;
 	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE) {
@@ -2048,22 +1534,13 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 		if (NULL == r->pprefix_used) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint8(pext, r->pprefix_used);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint8(pext, r->pprefix_used));
 		r->pdisplay_type = static_cast<uint8_t *>(pext->alloc(sizeof(uint8_t)));
 		if (NULL == r->pprefix_used) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint8(pext, r->pdisplay_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_string(pext, &r->px500dn);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint8(pext, r->pdisplay_type));
+		TRY(ext_buffer_pull_string(pext, &r->px500dn));
 	}
 	r->pentry_id = NULL;
 	r->psearch_key = NULL;
@@ -2073,69 +1550,48 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 		if (NULL == r->pentry_id) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_binary(pext, r->pentry_id);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_binary(pext, r->pentry_id));
 		r->psearch_key = static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
 		if (NULL == r->psearch_key) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_binary(pext, r->psearch_key);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_binary(pext, r->psearch_key));
 	}
 	r->paddress_type = NULL;
 	if (RECIPIENT_ROW_TYPE_NONE == type &&
 		(r->flags & RECIPIENT_ROW_FLAG_OUTOFSTANDARD)) {
-		status = ext_buffer_pull_string(pext, &r->paddress_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->paddress_type));
 	}
 	r->pmail_address = NULL;
 	if (RECIPIENT_ROW_FLAG_EMAIL & r->flags) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_pull_wstring(pext, &r->pmail_address);
+			TRY(ext_buffer_pull_wstring(pext, &r->pmail_address));
 		} else {
-			status = ext_buffer_pull_string(pext, &r->pmail_address);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_pull_string(pext, &r->pmail_address));
 		}
 	}
 	r->pdisplay_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_DISPLAY) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_pull_wstring(pext, &r->pdisplay_name);
+			TRY(ext_buffer_pull_wstring(pext, &r->pdisplay_name));
 		} else {
-			status = ext_buffer_pull_string(pext, &r->pdisplay_name);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_pull_string(pext, &r->pdisplay_name));
 		}
 	}
 	r->psimple_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_SIMPLE) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_pull_wstring(pext, &r->psimple_name);
+			TRY(ext_buffer_pull_wstring(pext, &r->psimple_name));
 		} else {
-			status = ext_buffer_pull_string(pext, &r->psimple_name);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_pull_string(pext, &r->psimple_name));
 		}
 	}
 	r->ptransmittable_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_TRANSMITTABLE) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_pull_wstring(pext, &r->ptransmittable_name);
+			TRY(ext_buffer_pull_wstring(pext, &r->ptransmittable_name));
 		} else {
-			status = ext_buffer_pull_string(pext, &r->ptransmittable_name);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_pull_string(pext, &r->ptransmittable_name));
 		}
 	}
 	if (RECIPIENT_ROW_FLAG_SAME == r->flags) {
@@ -2145,10 +1601,7 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 			r->ptransmittable_name = r->pdisplay_name;
 		}
 	}
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	if (r->count > pproptags->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -2160,22 +1613,12 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 	PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
 {
-	int status;
 	uint32_t offset;
 	uint16_t row_size;
 	
-	status = ext_buffer_pull_uint32(pext, &r->row_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->recipient_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &row_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->row_id));
+	TRY(ext_buffer_pull_uint8(pext, &r->recipient_type));
+	TRY(ext_buffer_pull_uint16(pext, &row_size));
 	if (0 == row_size) {
 		r->precipient_row = NULL;
 		return EXT_ERR_SUCCESS;
@@ -2185,10 +1628,7 @@ int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 	if (NULL == r->precipient_row) {
 		return EXT_ERR_ALLOC;
 	}
-	status = ext_buffer_pull_recipient_row(pext, pproptags, r->precipient_row);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_recipient_row(pext, pproptags, r->precipient_row));
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
 	}
@@ -2198,89 +1638,39 @@ int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 
 int ext_buffer_pull_permission_data(EXT_PULL *pext, PERMISSION_DATA *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint8(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->flags));
 	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
 }
 
 int ext_buffer_pull_rule_data(EXT_PULL *pext, RULE_DATA *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint8(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->flags));
 	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
 }
 
 int ext_buffer_pull_addressbook_entryid(
 	EXT_PULL *pext, ADDRESSBOOK_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
+	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_pull_uint32(pext, &r->version));
+	TRY(ext_buffer_pull_uint32(pext, &r->type));
 	return ext_buffer_pull_string(pext, &r->px500dn);
 }
 
 int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->ctrl_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->flags));
+	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_pull_uint16(pext, &r->version));
+	TRY(ext_buffer_pull_uint16(pext, &r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
-		status = ext_buffer_pull_wstring(pext, &r->pdisplay_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_wstring(pext, &r->paddress_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_wstring(pext, &r->pdisplay_name));
+		TRY(ext_buffer_pull_wstring(pext, &r->paddress_type));
 		return ext_buffer_pull_wstring(pext, &r->pmail_address);
 	} else {
-		status = ext_buffer_pull_string(pext, &r->pdisplay_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_string(pext, &r->paddress_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &r->pdisplay_name));
+		TRY(ext_buffer_pull_string(pext, &r->paddress_type));
 		return ext_buffer_pull_string(pext, &r->pmail_address);
 	}
 }
@@ -2288,44 +1678,28 @@ int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r)
 int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 {
 	int i;
-	int status;
 	uint32_t bytes;
 	uint8_t pad_len;
 	uint32_t offset;
 	uint32_t offset2;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	r->pentry_id = static_cast<ONEOFF_ENTRYID *>(pext->alloc(sizeof(ONEOFF_ENTRYID) * r->count));
 	if (NULL == r->pentry_id) {
 		return EXT_ERR_ALLOC;
 	}
-	status = ext_buffer_pull_uint32(pext, &bytes);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &bytes));
 	offset = pext->offset + bytes;
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint32(pext, &bytes);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &bytes));
 		offset2 = pext->offset + bytes;
-		status = ext_buffer_pull_oneoff_entryid(pext, r->pentry_id + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_oneoff_entryid(pext, r->pentry_id + i));
 		if (pext->offset > offset2) {
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset2;
 		pad_len = ((bytes + 3) & ~3) - bytes;
-		status = ext_buffer_pull_advance(pext, pad_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_advance(pext, pad_len));
 	}
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
@@ -2337,12 +1711,8 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint32(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pids = NULL;
 		return EXT_ERR_SUCCESS;
@@ -2352,167 +1722,70 @@ int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_uint64(pext, &r->pids[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint64(pext, &r->pids[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_systemtime(EXT_PULL *pext, SYSTEMTIME *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_int16(pext, &r->year);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->month);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->dayofweek);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->day);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->hour);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->minute);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->second);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_int16(pext, &r->year));
+	TRY(ext_buffer_pull_int16(pext, &r->month));
+	TRY(ext_buffer_pull_int16(pext, &r->dayofweek));
+	TRY(ext_buffer_pull_int16(pext, &r->day));
+	TRY(ext_buffer_pull_int16(pext, &r->hour));
+	TRY(ext_buffer_pull_int16(pext, &r->minute));
+	TRY(ext_buffer_pull_int16(pext, &r->second));
 	return ext_buffer_pull_int16(pext, &r->milliseconds);
 }
 
 int ext_buffer_pull_timezonestruct(EXT_PULL *pext, TIMEZONESTRUCT *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_int32(pext, &r->bias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int32(pext, &r->standardbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int32(pext, &r->daylightbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->standardyear);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_systemtime(pext, &r->standarddate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->daylightyear);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_int32(pext, &r->bias));
+	TRY(ext_buffer_pull_int32(pext, &r->standardbias));
+	TRY(ext_buffer_pull_int32(pext, &r->daylightbias));
+	TRY(ext_buffer_pull_int16(pext, &r->standardyear));
+	TRY(ext_buffer_pull_systemtime(pext, &r->standarddate));
+	TRY(ext_buffer_pull_int16(pext, &r->daylightyear));
 	return ext_buffer_pull_systemtime(pext, &r->daylightdate);
 }
 
 static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint8(pext, &r->major);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->minor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int16(pext, &r->year);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->x, 14);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int32(pext, &r->bias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int32(pext, &r->standardbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_int32(pext, &r->daylightbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_systemtime(pext, &r->standarddate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->major));
+	TRY(ext_buffer_pull_uint8(pext, &r->minor));
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
+	TRY(ext_buffer_pull_uint16(pext, &r->flags));
+	TRY(ext_buffer_pull_int16(pext, &r->year));
+	TRY(ext_buffer_pull_bytes(pext, r->x, 14));
+	TRY(ext_buffer_pull_int32(pext, &r->bias));
+	TRY(ext_buffer_pull_int32(pext, &r->standardbias));
+	TRY(ext_buffer_pull_int32(pext, &r->daylightbias));
+	TRY(ext_buffer_pull_systemtime(pext, &r->standarddate));
 	return ext_buffer_pull_systemtime(pext, &r->daylightdate);
 }
 
 int ext_buffer_pull_timezonedefinition(EXT_PULL *pext, TIMEZONEDEFINITION *r)
 {
 	int i;
-	int status;
 	uint16_t cbheader;
 	char tmp_buff[262];
 	uint16_t cchkeyname;
 	char tmp_buff1[1024];
 	
-	status = ext_buffer_pull_uint8(pext, &r->major);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->minor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &cbheader);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->major));
+	TRY(ext_buffer_pull_uint8(pext, &r->minor));
+	TRY(ext_buffer_pull_uint16(pext, &cbheader));
 	if (cbheader > 266) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &cchkeyname);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->reserved));
+	TRY(ext_buffer_pull_uint16(pext, &cchkeyname));
 	if (cbheader != 6 + 2*cchkeyname) {
 		return EXT_ERR_FORMAT;
 	}
 	memset(tmp_buff, 0, sizeof(tmp_buff));
-	status = ext_buffer_pull_bytes(pext, tmp_buff, cbheader - 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_bytes(pext, tmp_buff, cbheader - 6));
 	if (FALSE == utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, 1024)) {
 		return EXT_ERR_CHARCNV;
 	}
@@ -2521,19 +1794,13 @@ int ext_buffer_pull_timezonedefinition(EXT_PULL *pext, TIMEZONEDEFINITION *r)
 		return EXT_ERR_ALLOC;
 	}
 	strcpy(r->keyname, tmp_buff1);
-	status = ext_buffer_pull_uint16(pext, &r->crules);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->crules));
 	r->prules = static_cast<TZRULE *>(pext->alloc(sizeof(TZRULE) * r->crules));
 	if (NULL == r->prules) {
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->crules; i++) {
-		status = ext_buffer_pull_tzrule(pext, r->prules + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tzrule(pext, r->prules + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -2541,8 +1808,6 @@ int ext_buffer_pull_timezonedefinition(EXT_PULL *pext, TIMEZONEDEFINITION *r)
 static int ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 	uint16_t patterntype, PATTERNTYPESPECIFIC *r)
 {
-	int status;
-	
 	switch (patterntype) {
 	case PATTERNTYPE_DAY:
 		/* do nothing */
@@ -2556,11 +1821,7 @@ static int ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 		return ext_buffer_pull_uint32(pext, &r->dayofmonth);
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
-		status = ext_buffer_pull_uint32(pext,
-				&r->monthnth.weekrecurrence);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->monthnth.weekrecurrence));
 		return ext_buffer_pull_uint32(pext,
 				&r->monthnth.recurrencenum);
 	default:
@@ -2572,61 +1833,20 @@ static int ext_buffer_pull_recurrencepattern(
 	EXT_PULL *pext, RECURRENCEPATTERN *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_uint16(pext, &r->readerversion);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->writerversion);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->recurfrequency);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->patterntype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->calendartype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->firstdatetime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->period);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->slidingflag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_patterntypespecific(pext,
-			r->patterntype, &r->patterntypespecific);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->endtype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->occurrencecount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->firstdow);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->deletedinstancecount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->readerversion));
+	TRY(ext_buffer_pull_uint16(pext, &r->writerversion));
+	TRY(ext_buffer_pull_uint16(pext, &r->recurfrequency));
+	TRY(ext_buffer_pull_uint16(pext, &r->patterntype));
+	TRY(ext_buffer_pull_uint16(pext, &r->calendartype));
+	TRY(ext_buffer_pull_uint32(pext, &r->firstdatetime));
+	TRY(ext_buffer_pull_uint32(pext, &r->period));
+	TRY(ext_buffer_pull_uint32(pext, &r->slidingflag));
+	TRY(ext_buffer_pull_patterntypespecific(pext, r->patterntype, &r->patterntypespecific));
+	TRY(ext_buffer_pull_uint32(pext, &r->endtype));
+	TRY(ext_buffer_pull_uint32(pext, &r->occurrencecount));
+	TRY(ext_buffer_pull_uint32(pext, &r->firstdow));
+	TRY(ext_buffer_pull_uint32(pext, &r->deletedinstancecount));
 	if (0 == r->deletedinstancecount) {
 		r->pdeletedinstancedates = NULL;
 	} else {
@@ -2637,16 +1857,9 @@ static int ext_buffer_pull_recurrencepattern(
 		}
 	}
 	for (i=0; i<r->deletedinstancecount; i++) {
-		status = ext_buffer_pull_uint32(pext,
-				&r->pdeletedinstancedates[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->pdeletedinstancedates[i]));
 	}
-	status = ext_buffer_pull_uint32(pext, &r->modifiedinstancecount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->modifiedinstancecount));
 	if (0 == r->modifiedinstancecount) {
 		r->pmodifiedinstancedates = NULL;
 	} else {
@@ -2657,50 +1870,24 @@ static int ext_buffer_pull_recurrencepattern(
 		}
 	}
 	for (i=0; i<r->modifiedinstancecount; i++) {
-		status = ext_buffer_pull_uint32(pext,
-				&r->pmodifiedinstancedates[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->pmodifiedinstancedates[i]));
 	}
-	status = ext_buffer_pull_uint32(pext, &r->startdate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->startdate));
 	return ext_buffer_pull_uint32(pext, &r->enddate);
 }
 
 static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 {
-	int status;
 	uint16_t tmp_len;
 	uint16_t tmp_len2;
 	
-	status = ext_buffer_pull_uint32(pext, &r->startdatetime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->enddatetime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->originalstartdate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->overrideflags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->startdatetime));
+	TRY(ext_buffer_pull_uint32(pext, &r->enddatetime));
+	TRY(ext_buffer_pull_uint32(pext, &r->originalstartdate));
+	TRY(ext_buffer_pull_uint16(pext, &r->overrideflags));
 	if (r->overrideflags & OVERRIDEFLAG_SUBJECT) {
-		status = ext_buffer_pull_uint16(pext, &tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_len2);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len2));
 		if (tmp_len != tmp_len2 + 1) {
 			return EXT_ERR_FORMAT;
 		}
@@ -2708,39 +1895,21 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 		if (NULL == r->subject) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, r->subject, tmp_len2);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->subject, tmp_len2));
 		r->subject[tmp_len2] = '\0';
 	}
 	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE) {
-		status = ext_buffer_pull_uint32(pext, &r->meetingtype);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->meetingtype));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA) {
-		status = ext_buffer_pull_uint32(pext, &r->reminderdelta);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->reminderdelta));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_REMINDER) {
-		status = ext_buffer_pull_uint32(pext, &r->reminderset);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->reminderset));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_LOCATION) {
-		status = ext_buffer_pull_uint16(pext, &tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_len2);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len2));
 		if (tmp_len != tmp_len2 + 1) {
 			return EXT_ERR_FORMAT;
 		}
@@ -2748,35 +1917,20 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 		if (NULL == r->location) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, r->location, tmp_len2);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->location, tmp_len2));
 		r->location[tmp_len2] = '\0';
 	}
 	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS) {
-		status = ext_buffer_pull_uint32(pext, &r->busystatus);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->busystatus));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT) {
-		status = ext_buffer_pull_uint32(pext, &r->attachment);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->attachment));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE) {
-		status = ext_buffer_pull_uint32(pext, &r->subtype);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->subtype));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR) {
-		status = ext_buffer_pull_uint32(pext, &r->appointmentcolor);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->appointmentcolor));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -2784,16 +1938,8 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 static int ext_buffer_pull_changehighlight(
 	EXT_PULL *pext, CHANGEHIGHLIGHT *r)
 {
-	int status;
-	
-	status = ext_buffer_pull_uint32(pext, &r->size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->value);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->size));
+	TRY(ext_buffer_pull_uint32(pext, &r->value));
 	if (r->size < sizeof(uint32_t)) {
 		return EXT_ERR_FORMAT;
 	} else if (sizeof(uint32_t) == r->size) {
@@ -2812,21 +1958,13 @@ static int ext_buffer_pull_extendedexception(
 	EXT_PULL *pext, uint32_t writerversion2,
 	uint16_t overrideflags, EXTENDEDEXCEPTION *r)
 {
-	int status;
 	int string_len;
 	uint16_t tmp_len;
 	
 	if (writerversion2 >= 0x00003009) {
-		status = ext_buffer_pull_changehighlight(
-					pext, &r->changehighlight);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_changehighlight(pext, &r->changehighlight));
 	}
-	status = ext_buffer_pull_uint32(pext, &r->reservedblockee1size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->reservedblockee1size));
 	if (0 == r->reservedblockee1size) {
 		r->preservedblockee1 = NULL;
 	} else {
@@ -2834,32 +1972,16 @@ static int ext_buffer_pull_extendedexception(
 		if (NULL == r->preservedblockee1) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext,
-			r->preservedblockee1, r->reservedblockee1size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->preservedblockee1, r->reservedblockee1size));
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
-		status = ext_buffer_pull_uint32(pext, &r->startdatetime);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint32(pext, &r->enddatetime);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint32(pext, &r->originalstartdate);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->startdatetime));
+		TRY(ext_buffer_pull_uint32(pext, &r->enddatetime));
+		TRY(ext_buffer_pull_uint32(pext, &r->originalstartdate));
 	}
 	if (overrideflags & OVERRIDEFLAG_SUBJECT) {
-		status = ext_buffer_pull_uint16(pext, &tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len));
 		tmp_len *= 2;
 		std::unique_ptr<char[]> pbuff;
 		try {
@@ -2867,10 +1989,7 @@ static int ext_buffer_pull_extendedexception(
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len));
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
@@ -2883,10 +2002,7 @@ static int ext_buffer_pull_extendedexception(
 		strcpy(r->subject, &pbuff[tmp_len]);
 	}
 	if (overrideflags & OVERRIDEFLAG_LOCATION) {
-		status = ext_buffer_pull_uint16(pext, &tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len));
 		tmp_len *= 2;
 		std::unique_ptr<char[]> pbuff;
 		try {
@@ -2894,10 +2010,7 @@ static int ext_buffer_pull_extendedexception(
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len));
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
@@ -2911,10 +2024,7 @@ static int ext_buffer_pull_extendedexception(
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
-		status = ext_buffer_pull_uint32(pext, &r->reservedblockee2size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &r->reservedblockee2size));
 		if (0 == r->reservedblockee2size) {
 			r->preservedblockee2 = NULL;
 		} else {
@@ -2922,47 +2032,23 @@ static int ext_buffer_pull_extendedexception(
 			if (NULL == r->preservedblockee2) {
 				return EXT_ERR_ALLOC;
 			}
-			status = ext_buffer_pull_bytes(pext,
-				r->preservedblockee2, r->reservedblockee2size);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_bytes(pext, r->preservedblockee2, r->reservedblockee2size));
 		}
 	}
-	return status;
+	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_appointmentrecurrencepattern(
 	EXT_PULL *pext, APPOINTMENTRECURRENCEPATTERN *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_pull_recurrencepattern(
-				pext, &r->recurrencepattern);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->readerversion2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->writerversion2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->starttimeoffset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &r->endtimeoffset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->exceptioncount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_recurrencepattern(pext, &r->recurrencepattern));
+	TRY(ext_buffer_pull_uint32(pext, &r->readerversion2));
+	TRY(ext_buffer_pull_uint32(pext, &r->writerversion2));
+	TRY(ext_buffer_pull_uint32(pext, &r->starttimeoffset));
+	TRY(ext_buffer_pull_uint32(pext, &r->endtimeoffset));
+	TRY(ext_buffer_pull_uint16(pext, &r->exceptioncount));
 	if (0 == r->exceptioncount) {
 		r->pexceptioninfo = NULL;
 		r->pextendedexception = NULL;
@@ -2979,16 +2065,9 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 		}
 	}
 	for (i=0; i<r->exceptioncount; i++) {
-		status = ext_buffer_pull_exceptioninfo(
-					pext, &r->pexceptioninfo[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_exceptioninfo(pext, &r->pexceptioninfo[i]));
 	}
-	status = ext_buffer_pull_uint32(pext, &r->reservedblock1size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->reservedblock1size));
 	if (0 == r->reservedblock1size) {
 		r->preservedblock1 = NULL;
 	} else {
@@ -2996,23 +2075,12 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 		if (NULL == r->preservedblock1) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext,
-			r->preservedblock1, r->reservedblock1size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->preservedblock1, r->reservedblock1size));
 	}
 	for (i=0; i<r->exceptioncount; i++) {
-		status = ext_buffer_pull_extendedexception(pext, r->writerversion2,
-			r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_extendedexception(pext, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
 	}
-	status = ext_buffer_pull_uint32(pext, &r->reservedblock2size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->reservedblock2size));
 	if (0 == r->reservedblock2size) {
 		r->preservedblock2 = NULL;
 		return EXT_ERR_SUCCESS;
@@ -3030,50 +2098,24 @@ int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r)
 {
 	uint8_t yh;
 	uint8_t yl;
-	int status;
 	
-	status = ext_buffer_pull_bytes(pext, r->arrayid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &yh);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &yl);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_bytes(pext, r->arrayid, 16));
+	TRY(ext_buffer_pull_uint8(pext, &yh));
+	TRY(ext_buffer_pull_uint8(pext, &yl));
 	r->year = ((uint16_t)yh) << 8 | yl;
-	status = ext_buffer_pull_uint8(pext, &r->month);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->day);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint64(pext, &r->creationtime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_bytes(pext, r->x, 8);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->month));
+	TRY(ext_buffer_pull_uint8(pext, &r->day));
+	TRY(ext_buffer_pull_uint64(pext, &r->creationtime));
+	TRY(ext_buffer_pull_bytes(pext, r->x, 8));
 	return ext_buffer_pull_exbinary(pext, &r->data);
 }
 
 static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 {
 	int i;
-	int status;
 	uint8_t tmp_byte;
 	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->count));
 	r->pplist = static_cast<ATTACHMENT_CONTENT **>(pext->alloc(sizeof(ATTACHMENT_CONTENT *) * r->count));
 	if (NULL == r->pplist) {
 		return EXT_ERR_ALLOC;
@@ -3083,25 +2125,14 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 		if (NULL == r->pplist[i]) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_tpropval_array(
-					pext, &r->pplist[i]->proplist);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint8(pext, &tmp_byte);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tpropval_array(pext, &r->pplist[i]->proplist));
+		TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
 		if (0 != tmp_byte) {
 			r->pplist[i]->pembedded = static_cast<MESSAGE_CONTENT *>(pext->alloc(sizeof(MESSAGE_CONTENT)));
 			if (NULL == r->pplist[i]->pembedded) {
 				return EXT_ERR_ALLOC;
 			}
-			status = ext_buffer_pull_message_content(
-						pext, r->pplist[i]->pembedded);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_message_content(pext, r->pplist[i]->pembedded));
 		} else {
 			r->pplist[i]->pembedded = NULL;
 		}
@@ -3111,33 +2142,20 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 
 int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *r)
 {
-	int status;
 	uint8_t tmp_byte;
 	
-	status = ext_buffer_pull_tpropval_array(pext, &r->proplist);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_tpropval_array(pext, &r->proplist));
+	TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
 	if (0 != tmp_byte) {
 		r->children.prcpts = static_cast<TARRAY_SET *>(pext->alloc(sizeof(TARRAY_SET)));
 		if (NULL == r->children.prcpts) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_tarray_set(pext, r->children.prcpts);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_tarray_set(pext, r->children.prcpts));
 	} else {
 		r->children.prcpts = NULL;
 	}
-	status = ext_buffer_pull_uint8(pext, &tmp_byte);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
 	if (0 != tmp_byte) {
 		r->children.pattachments = static_cast<ATTACHMENT_LIST *>(pext->alloc(sizeof(ATTACHMENT_LIST)));
 		if (NULL == r->children.pattachments) {
@@ -3183,20 +2201,9 @@ void ext_buffer_push_free(EXT_PUSH *pext)
 
 int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->version));
+	TRY(ext_buffer_push_uint16(pext, r->flags));
+	TRY(ext_buffer_push_uint16(pext, r->size));
 	return ext_buffer_push_uint16(pext, r->size_actual);
 }
 
@@ -3361,18 +2368,13 @@ int ext_buffer_push_data_blob(EXT_PUSH *pext, DATA_BLOB blob)
 
 int ext_buffer_push_binary(EXT_PUSH *pext, const BINARY *r)
 {
-	int status;
-	
 	if (pext->flags & EXT_FLAG_WCOUNT) {
-		status = ext_buffer_push_uint32(pext, r->cb);
+		TRY(ext_buffer_push_uint32(pext, r->cb));
 	} else {
 		if (r->cb > 0xFFFF) {
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_push_uint16(pext, r->cb);
-	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
+		TRY(ext_buffer_push_uint16(pext, r->cb));
 	}
 	if (0 == r->cb) {
 		return EXT_ERR_SUCCESS;
@@ -3382,15 +2384,10 @@ int ext_buffer_push_binary(EXT_PUSH *pext, const BINARY *r)
 
 int ext_buffer_push_sbinary(EXT_PUSH *pext, const BINARY *r)
 {
-	int status;
-	
 	if (r->cb > 0xFFFF) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint16(pext, r->cb);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->cb));
 	if (0 == r->cb) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -3399,12 +2396,7 @@ int ext_buffer_push_sbinary(EXT_PUSH *pext, const BINARY *r)
 
 int ext_buffer_push_exbinary(EXT_PUSH *pext, const BINARY *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->cb);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->cb));
 	if (0 == r->cb) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -3413,37 +2405,19 @@ int ext_buffer_push_exbinary(EXT_PUSH *pext, const BINARY *r)
 
 int ext_buffer_push_guid(EXT_PUSH *pext, const GUID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->time_low);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->time_mid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->time_hi_and_version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->clock_seq, 2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->time_low));
+	TRY(ext_buffer_push_uint16(pext, r->time_mid));
+	TRY(ext_buffer_push_uint16(pext, r->time_hi_and_version));
+	TRY(ext_buffer_push_bytes(pext, r->clock_seq, 2));
 	return ext_buffer_push_bytes(pext, r->node, 6);
 }
 
 int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr)
 {
-	int status;
 	size_t len = strlen(pstr);
 	if (pext->flags & EXT_FLAG_TBLLMT) {
 		if (len > 509) {
-			status = ext_buffer_push_bytes(pext, pstr, 509);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_bytes(pext, pstr, 509));
 			return ext_buffer_push_uint8(pext, 0);
 		}
 	}
@@ -3453,7 +2427,6 @@ int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr)
 int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
 {
 	int len;
-	int status;
 	
 	if (0 == (pext->flags & EXT_FLAG_UTF16)) {
 		return ext_buffer_push_string(pext, pstr);
@@ -3478,24 +2451,16 @@ int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
 			pbuff[509] = '\0';
 		}
 	}
-	status = ext_buffer_push_bytes(pext, pbuff.get(), len);
-	return status;
+	return ext_buffer_push_bytes(pext, pbuff.get(), len);
 }
 
 int ext_buffer_push_short_array(EXT_PUSH *pext, const SHORT_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint16(pext, r->ps[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, r->ps[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3503,17 +2468,10 @@ int ext_buffer_push_short_array(EXT_PUSH *pext, const SHORT_ARRAY *r)
 int ext_buffer_push_long_array(EXT_PUSH *pext, const LONG_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint32(pext, r->pl[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->pl[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3521,17 +2479,10 @@ int ext_buffer_push_long_array(EXT_PUSH *pext, const LONG_ARRAY *r)
 int ext_buffer_push_longlong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint64(pext, r->pll[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint64(pext, r->pll[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3539,20 +2490,13 @@ int ext_buffer_push_longlong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 int ext_buffer_push_slonglong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 {
 	int i;
-	int status;
 	
 	if (r->count > 0xFFFF) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint64(pext, r->pll[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint64(pext, r->pll[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3560,17 +2504,10 @@ int ext_buffer_push_slonglong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 int ext_buffer_push_binary_array(EXT_PUSH *pext, const BINARY_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_binary(pext, &r->pbin[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_binary(pext, &r->pbin[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3578,17 +2515,10 @@ int ext_buffer_push_binary_array(EXT_PUSH *pext, const BINARY_ARRAY *r)
 int ext_buffer_push_string_array(EXT_PUSH *pext, const STRING_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_string(pext, r->ppstr[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->ppstr[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3596,17 +2526,10 @@ int ext_buffer_push_string_array(EXT_PUSH *pext, const STRING_ARRAY *r)
 int ext_buffer_push_wstring_array(EXT_PUSH *pext, const STRING_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_wstring(pext, r->ppstr[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_wstring(pext, r->ppstr[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3614,17 +2537,10 @@ int ext_buffer_push_wstring_array(EXT_PUSH *pext, const STRING_ARRAY *r)
 int ext_buffer_push_guid_array(EXT_PUSH *pext, const GUID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_guid(pext, &r->pguid[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_guid(pext, &r->pguid[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3633,21 +2549,14 @@ static int ext_buffer_push_restriction_and_or(
 	EXT_PUSH *pext, const RESTRICTION_AND_OR *r)
 {
 	int i;
-	int status;
 	
 	if (pext->flags & EXT_FLAG_WCOUNT) {
-		status = ext_buffer_push_uint32(pext, r->count);
+		TRY(ext_buffer_push_uint32(pext, r->count));
 	} else {
-		status = ext_buffer_push_uint16(pext, r->count);
-	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
+		TRY(ext_buffer_push_uint16(pext, r->count));
 	}
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_restriction(pext, &r->pres[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_restriction(pext, &r->pres[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3661,80 +2570,40 @@ static int ext_buffer_push_restriction_not(
 static int ext_buffer_push_restriction_content(
 	EXT_PUSH *pext, const RESTRICTION_CONTENT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->fuzzy_level);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->fuzzy_level));
+	TRY(ext_buffer_push_uint32(pext, r->proptag));
 	return ext_buffer_push_tagged_propval(pext, &r->propval);
 }
 
 static int ext_buffer_push_restriction_property(
 	EXT_PUSH *pext, const RESTRICTION_PROPERTY *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->relop));
+	TRY(ext_buffer_push_uint32(pext, r->proptag));
 	return ext_buffer_push_tagged_propval(pext, &r->propval);
 }
 
 static int ext_buffer_push_restriction_propcompare(
 	EXT_PUSH *pext, const RESTRICTION_PROPCOMPARE *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->proptag1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->relop));
+	TRY(ext_buffer_push_uint32(pext, r->proptag1));
 	return ext_buffer_push_uint32(pext, r->proptag2);
 }
 
 static int ext_buffer_push_restriction_bitmask(
 	EXT_PUSH *pext, const RESTRICTION_BITMASK *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->bitmask_relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->bitmask_relop));
+	TRY(ext_buffer_push_uint32(pext, r->proptag));
 	return ext_buffer_push_uint32(pext, r->mask);
 }
 
 static int ext_buffer_push_restriction_size(
 	EXT_PUSH *pext, const RESTRICTION_SIZE *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->relop);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->relop));
+	TRY(ext_buffer_push_uint32(pext, r->proptag));
 	return ext_buffer_push_uint32(pext, r->size);
 }
 
@@ -3747,12 +2616,7 @@ static int ext_buffer_push_restriction_exist(
 static int ext_buffer_push_restriction_subobj(
 	EXT_PUSH *pext, const RESTRICTION_SUBOBJ *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->subobject);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->subobject));
 	return ext_buffer_push_restriction(pext, &r->res);
 }
 
@@ -3760,26 +2624,16 @@ static int ext_buffer_push_restriction_comment(
 	EXT_PUSH *pext, const RESTRICTION_COMMENT *r)
 {
 	int i;
-	int status;
 	
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint8(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_tagged_propval(pext, &r->ppropval[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_tagged_propval(pext, &r->ppropval[i]));
 	}
 	if (NULL != r->pres) {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 1));
 		return ext_buffer_push_restriction(pext, r->pres);
 	}
 	return ext_buffer_push_uint8(pext, 0);
@@ -3788,23 +2642,13 @@ static int ext_buffer_push_restriction_comment(
 static int ext_buffer_push_restriction_count(
 	EXT_PUSH *pext, const RESTRICTION_COUNT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	return ext_buffer_push_restriction(pext, &r->sub_res);
 }
 
 int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->rt);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->rt));
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
@@ -3837,123 +2681,55 @@ int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r)
 
 int ext_buffer_push_svreid(EXT_PUSH *pext, const SVREID *r)
 {
-	int status;
-	
 	if (NULL != r->pbin) {
-		status = ext_buffer_push_uint16(pext, r->pbin->cb + 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, r->pbin->cb + 1));
+		TRY(ext_buffer_push_uint8(pext, 0));
 		return ext_buffer_push_bytes(pext, r->pbin->pb, r->pbin->cb);
 	}
-	status = ext_buffer_push_uint16(pext, 21);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, 1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint64(pext, r->folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint64(pext, r->message_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, 21));
+	TRY(ext_buffer_push_uint8(pext, 1));
+	TRY(ext_buffer_push_uint64(pext, r->folder_id));
+	TRY(ext_buffer_push_uint64(pext, r->message_id));
 	return ext_buffer_push_uint32(pext, r->instance);
 }
 
 int ext_buffer_push_store_entryid(EXT_PUSH *pext, const STORE_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->dll_name, 14);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->wrapped_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->wrapped_provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->wrapped_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_string(pext, r->pserver_name);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->flags));
+	TRY(ext_buffer_push_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_push_uint8(pext, r->version));
+	TRY(ext_buffer_push_uint8(pext, r->flag));
+	TRY(ext_buffer_push_bytes(pext, r->dll_name, 14));
+	TRY(ext_buffer_push_uint32(pext, r->wrapped_flags));
+	TRY(ext_buffer_push_bytes(pext, r->wrapped_provider_uid, 16));
+	TRY(ext_buffer_push_uint32(pext, r->wrapped_type));
+	TRY(ext_buffer_push_string(pext, r->pserver_name));
 	return ext_buffer_push_string(pext, r->pmailbox_dn);
 }
 
 static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
     const MOVECOPY_ACTION *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t eid_size;
 	
-	status = ext_buffer_push_uint8(pext, r->same_store);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->same_store));
 	if (0 == r->same_store) {
 		offset = pext->offset;
-		status = ext_buffer_push_advance(pext, sizeof(uint16_t));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
 		if (NULL == r->pstore_eid) {
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_push_store_entryid(pext, r->pstore_eid);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_store_entryid(pext, r->pstore_eid));
 		offset1 = pext->offset;
 		eid_size = offset1 - (offset + sizeof(uint16_t));
 		pext->offset = offset;
-		status = ext_buffer_push_uint16(pext, eid_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, eid_size));
 		pext->offset = offset1;
 	} else {
-		status = ext_buffer_push_uint16(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, 1));
+		TRY(ext_buffer_push_uint8(pext, 0));
 	}
 	if (0 != r->same_store) {
 		return ext_buffer_push_svreid(pext, static_cast<SVREID *>(r->pfolder_eid));
@@ -3965,16 +2741,8 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 static int ext_buffer_push_reply_action(
 	EXT_PUSH *pext, const REPLY_ACTION *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint64(pext, r->template_folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint64(pext, r->template_message_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint64(pext, r->template_folder_id));
+	TRY(ext_buffer_push_uint64(pext, r->template_message_id));
 	return ext_buffer_push_guid(pext, &r->template_guid);
 }
 
@@ -3982,24 +2750,14 @@ static int ext_buffer_push_recipient_block(
 	EXT_PUSH *pext, const RECIPIENT_BLOCK *r)
 {
 	int i;
-	int status;
 	
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint8(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->reserved));
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_tagged_propval(pext, &r->ppropval[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_tagged_propval(pext, &r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4008,20 +2766,13 @@ static int ext_buffer_push_forwarddelegate_action(
 	EXT_PUSH *pext, const FORWARDDELEGATE_ACTION *r)
 {
 	int i;
-	int status;
 	
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_recipient_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_recipient_block(pext, &r->pblock[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4029,67 +2780,47 @@ static int ext_buffer_push_forwarddelegate_action(
 static int ext_buffer_push_action_block(
 	EXT_PUSH *pext, const ACTION_BLOCK *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t tmp_len;
 	
 	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint16_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->flavor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(ext_buffer_push_uint8(pext, r->type));
+	TRY(ext_buffer_push_uint32(pext, r->flavor));
+	TRY(ext_buffer_push_uint32(pext, r->flags));
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		status = ext_buffer_push_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata));
+		TRY(ext_buffer_push_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		status = ext_buffer_push_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata));
+		TRY(ext_buffer_push_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		status = ext_buffer_push_bytes(pext, r->pdata, tmp_len);
+		TRY(ext_buffer_push_bytes(pext, r->pdata, tmp_len));
 		break;
 	case ACTION_TYPE_OP_BOUNCE:
-		status = ext_buffer_push_uint32(pext, *(uint32_t*)r->pdata);
+		TRY(ext_buffer_push_uint32(pext, *static_cast<uint32_t *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		status = ext_buffer_push_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
+		TRY(ext_buffer_push_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_TAG:
-		status = ext_buffer_push_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata));
+		TRY(ext_buffer_push_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata)));
 	case ACTION_TYPE_OP_DELETE:
 	case ACTION_TYPE_OP_MARK_AS_READ:
-		status = EXT_ERR_SUCCESS;
 		break;
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
 	tmp_len = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
 	pext->offset = offset;
-	status = ext_buffer_push_uint16(pext, tmp_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, tmp_len));
 	pext->offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
@@ -4097,20 +2828,13 @@ static int ext_buffer_push_action_block(
 int ext_buffer_push_rule_actions(EXT_PUSH *pext, const RULE_ACTIONS *r)
 {
 	int i;
-	int status;
 	
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_action_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_action_block(pext, &r->pblock[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4175,38 +2899,20 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 
 int ext_buffer_push_typed_propval(EXT_PUSH *pext, const TYPED_PROPVAL *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->type));
 	return ext_buffer_push_propval(pext, r->type, r->pvalue);
 }
 
 int ext_buffer_push_tagged_propval(EXT_PUSH *pext, const TAGGED_PROPVAL *r)
 {
-	int status;
-
-	status = ext_buffer_push_uint32(pext, r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->proptag));
 	return ext_buffer_push_propval(pext, PROP_TYPE(r->proptag), r->pvalue);
 }
 
 int ext_buffer_push_long_term_id(EXT_PUSH *pext, const LONG_TERM_ID *r)
 {
-	int status;
-
-	status = ext_buffer_push_guid(pext, &r->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_guid(pext, &r->guid));
+	TRY(ext_buffer_push_bytes(pext, r->global_counter, 6));
 	return ext_buffer_push_uint16(pext, r->padding);
 }
 
@@ -4214,17 +2920,10 @@ int ext_buffer_push_long_term_id_array(
 	EXT_PUSH *pext, const LONG_TERM_ID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_long_term_id(pext, &r->pids[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_long_term_id(pext, &r->pids[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4232,58 +2931,32 @@ int ext_buffer_push_long_term_id_array(
 int ext_buffer_push_proptag_array(EXT_PUSH *pext, const PROPTAG_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint32(pext, r->pproptag[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->pproptag[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint8_t name_size;
 	
-	status = ext_buffer_push_uint8(pext, r->kind);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_guid(pext, &r->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->kind));
+	TRY(ext_buffer_push_guid(pext, &r->guid));
 	if (r->kind == MNID_ID) {
-		status = ext_buffer_push_uint32(pext, *r->plid);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, *r->plid));
 	} else if (r->kind == MNID_STRING) {
 		offset = pext->offset;
-		status = ext_buffer_push_advance(pext, sizeof(uint8_t));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_wstring(pext, r->pname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_advance(pext, sizeof(uint8_t)));
+		TRY(ext_buffer_push_wstring(pext, r->pname));
 		name_size = pext->offset - (offset + sizeof(uint8_t));
 		offset1 = pext->offset;
 		pext->offset = offset;
-		status = ext_buffer_push_uint8(pext, name_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, name_size));
 		pext->offset = offset1;
 	}
 	return EXT_ERR_SUCCESS;
@@ -4292,17 +2965,10 @@ int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 int ext_buffer_push_propname_array(EXT_PUSH *pext, const PROPNAME_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_property_name(pext, r->ppropname + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_property_name(pext, r->ppropname + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4310,17 +2976,10 @@ int ext_buffer_push_propname_array(EXT_PUSH *pext, const PROPNAME_ARRAY *r)
 int ext_buffer_push_propid_array(EXT_PUSH *pext, const PROPID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint16(pext, r->ppropid[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, r->ppropid[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4328,17 +2987,10 @@ int ext_buffer_push_propid_array(EXT_PUSH *pext, const PROPID_ARRAY *r)
 int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_tagged_propval(pext, r->ppropval + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_tagged_propval(pext, r->ppropval + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4346,17 +2998,10 @@ int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
 int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_tpropval_array(pext, r->pparray[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_tpropval_array(pext, r->pparray[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -4364,122 +3009,58 @@ int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r)
 
 static int ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBLEM *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->index);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->proptag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->index));
+	TRY(ext_buffer_push_uint32(pext, r->proptag));
 	return ext_buffer_push_uint32(pext, r->err);
 }
 
 int ext_buffer_push_problem_array(EXT_PUSH *pext, const PROBLEM_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_property_problem(pext, r->pproblem + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_property_problem(pext, r->pproblem + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_xid(EXT_PUSH *pext, uint8_t size, const XID *pxid)
 {
-	int status;
-	
 	if (size < 17 || size > 24) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_guid(pext, &pxid->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_guid(pext, &pxid->guid));
 	return ext_buffer_push_bytes(pext, pxid->local_id, size - 16);
 }
 
 int ext_buffer_push_folder_entryid(
 	EXT_PUSH *pext, const FOLDER_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->folder_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_guid(pext, &r->database_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->flags));
+	TRY(ext_buffer_push_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_push_uint16(pext, r->folder_type));
+	TRY(ext_buffer_push_guid(pext, &r->database_guid));
+	TRY(ext_buffer_push_bytes(pext, r->global_counter, 6));
 	return ext_buffer_push_bytes(pext, r->pad, 2);
 }
 
 int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->message_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_guid(pext, &r->folder_database_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->folder_global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->pad1, 2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_guid(pext, &r->message_database_guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->message_global_counter, 6);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->flags));
+	TRY(ext_buffer_push_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_push_uint16(pext, r->message_type));
+	TRY(ext_buffer_push_guid(pext, &r->folder_database_guid));
+	TRY(ext_buffer_push_bytes(pext, r->folder_global_counter, 6));
+	TRY(ext_buffer_push_bytes(pext, r->pad1, 2));
+	TRY(ext_buffer_push_guid(pext, &r->message_database_guid));
+	TRY(ext_buffer_push_bytes(pext, r->message_global_counter, 6));
 	return ext_buffer_push_bytes(pext, r->pad2, 2);
 }
 
 int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 	uint16_t type, const FLAGGED_PROPVAL *r)
 {
-	int status;
 	void *pvalue;
 	
 	if (type == PT_UNSPECIFIED) {
@@ -4492,17 +3073,11 @@ int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 			type = ((TYPED_PROPVAL*)r->pvalue)->type;
 			pvalue = ((TYPED_PROPVAL*)r->pvalue)->pvalue;
 		}
-		status = ext_buffer_push_uint16(pext, type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, type));
 	} else {
 		pvalue = r->pvalue;
 	}
-	status = ext_buffer_push_uint8(pext, r->flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->flag));
 	switch (r->flag) {
 	case FLAGGED_PROPVAL_FLAG_AVAILABLE:
 		return ext_buffer_push_propval(pext, type, pvalue);
@@ -4519,29 +3094,17 @@ int ext_buffer_push_property_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint8(pext, r->flag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->flag));
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
-			status = ext_buffer_push_propval(pext,
-			         PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_propval(pext, PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]));
 		}
 		return EXT_ERR_SUCCESS;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
-			status = ext_buffer_push_flagged_propval(pext,
-			         PROP_TYPE(pcolumns->pproptag[i]),
-			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i]));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_flagged_propval(pext, PROP_TYPE(pcolumns->pproptag[i]),
+			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -4550,60 +3113,34 @@ int ext_buffer_push_property_row(EXT_PUSH *pext,
 
 int ext_buffer_push_sort_order(EXT_PUSH *pext, const SORT_ORDER *r)
 {
-	int status;
-	
 	if ((r->type & MVI_FLAG) == MV_FLAG)
 		/* MV_FLAG set without MV_INSTANCE */
 		return EXT_ERR_FORMAT;
-	status = ext_buffer_push_uint16(pext, r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->propid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->type));
+	TRY(ext_buffer_push_uint16(pext, r->propid));
 	return ext_buffer_push_uint8(pext, r->table_sort);
 }
 
 int ext_buffer_push_sortorder_set(EXT_PUSH *pext, const SORTORDER_SET *r)
 {
 	int i;
-	int status;
 	
 	if (0 == r->count || r->ccategories > r->count ||
 		r->cexpanded > r->ccategories) {
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->ccategories);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->cexpanded);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
+	TRY(ext_buffer_push_uint16(pext, r->ccategories));
+	TRY(ext_buffer_push_uint16(pext, r->cexpanded));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_sort_order(pext, r->psort + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_sort_order(pext, r->psort + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_typed_string(EXT_PUSH *pext, const TYPED_STRING *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->string_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->string_type));
 	switch(r->string_type) {
 	case STRING_TYPE_NONE:
 	case STRING_TYPE_EMPTY:
@@ -4621,7 +3158,6 @@ int ext_buffer_push_typed_string(EXT_PUSH *pext, const TYPED_STRING *r)
 int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pproptags, const RECIPIENT_ROW *r)
 {
-	int status;
 	BOOL b_unicode;
 	PROPTAG_ARRAY proptags;
 	
@@ -4629,90 +3165,54 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE) {
 		b_unicode = TRUE;
 	}
-	status = ext_buffer_push_uint16(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->flags));
 	if (NULL != r->pprefix_used) {
-		status = ext_buffer_push_uint8(pext,  *r->pprefix_used);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, *r->pprefix_used));
 	}
 	if (NULL != r->pdisplay_type) {
-		status = ext_buffer_push_uint8(pext, *r->pdisplay_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, *r->pdisplay_type));
 	}
 	if (NULL != r->px500dn) {
-		status = ext_buffer_push_string(pext, r->px500dn);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->px500dn));
 	}
 	if (NULL != r->pentry_id) {
-		status = ext_buffer_push_binary(pext, r->pentry_id);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_binary(pext, r->pentry_id));
 	}
 	if (NULL != r->psearch_key) {
-		status = ext_buffer_push_binary(pext, r->psearch_key);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_binary(pext, r->psearch_key));
 	}
 	if (NULL != r->paddress_type) {
-		status = ext_buffer_push_string(pext, r->paddress_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->paddress_type));
 	}
 	if (NULL != r->pmail_address) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_push_wstring(pext, r->pmail_address);
+			TRY(ext_buffer_push_wstring(pext, r->pmail_address));
 		} else {
-			status = ext_buffer_push_string(pext, r->pmail_address);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_push_string(pext, r->pmail_address));
 		}
 	}
 	if (NULL != r->pdisplay_name) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_push_wstring(pext, r->pdisplay_name);
+			TRY(ext_buffer_push_wstring(pext, r->pdisplay_name));
 		} else {
-			status = ext_buffer_push_string(pext, r->pdisplay_name);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_push_string(pext, r->pdisplay_name));
 		}
 	}
 	if (NULL != r->psimple_name) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_push_wstring(pext, r->psimple_name);
+			TRY(ext_buffer_push_wstring(pext, r->psimple_name));
 		} else {
-			status = ext_buffer_push_string(pext, r->psimple_name);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_push_string(pext, r->psimple_name));
 		}
 	}
 	if (NULL != r->ptransmittable_name) {
 		if (TRUE == b_unicode) {
-			status = ext_buffer_push_wstring(pext, r->ptransmittable_name);
+			TRY(ext_buffer_push_wstring(pext, r->ptransmittable_name));
 		} else {
-			status = ext_buffer_push_string(pext, r->ptransmittable_name);
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
+			TRY(ext_buffer_push_string(pext, r->ptransmittable_name));
 		}
 	}
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	if (r->count > pproptags->count) {
 		return EXT_ERR_FORMAT;
 	}
@@ -4724,39 +3224,20 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t row_size;
 	
-	status = ext_buffer_push_uint8(pext, r->recipient_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->recipient_type));
+	TRY(ext_buffer_push_uint16(pext, r->cpid));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
 	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint16_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_recipient_row(pext, pproptags, &r->recipient_row);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(ext_buffer_push_recipient_row(pext, pproptags, &r->recipient_row));
 	row_size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
 	pext->offset = offset;
-	status = ext_buffer_push_uint16(pext, row_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, row_size));
 	pext->offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
@@ -4764,133 +3245,61 @@ int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
 	PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t row_size;
 	
-	status = ext_buffer_push_uint32(pext, r->row_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->recipient_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->row_id));
+	TRY(ext_buffer_push_uint8(pext, r->recipient_type));
+	TRY(ext_buffer_push_uint16(pext, r->cpid));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
 	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint16_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_recipient_row(pext, pproptags, &r->recipient_row);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(ext_buffer_push_recipient_row(pext, pproptags, &r->recipient_row));
 	row_size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
 	pext->offset = offset;
-	status = ext_buffer_push_uint16(pext, row_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, row_size));
 	pext->offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_permission_data(EXT_PUSH *pext, const PERMISSION_DATA *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->flags));
 	return ext_buffer_push_tpropval_array(pext, &r->propvals);
 }
 
 int ext_buffer_push_rule_data(EXT_PUSH *pext, const RULE_DATA *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->flags));
 	return ext_buffer_push_tpropval_array(pext, &r->propvals);
 }
 
 int ext_buffer_push_addressbook_entryid(
 	EXT_PUSH *pext, const ADDRESSBOOK_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->flags));
+	TRY(ext_buffer_push_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_push_uint32(pext, r->version));
+	TRY(ext_buffer_push_uint32(pext, r->type));
 	return ext_buffer_push_string(pext, r->px500dn);
 }
 
 int ext_buffer_push_oneoff_entryid(EXT_PUSH *pext,
 	const ONEOFF_ENTRYID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->provider_uid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->version);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->ctrl_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->flags));
+	TRY(ext_buffer_push_bytes(pext, r->provider_uid, 16));
+	TRY(ext_buffer_push_uint16(pext, r->version));
+	TRY(ext_buffer_push_uint16(pext, r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
-		status = ext_buffer_push_wstring(pext, r->pdisplay_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_wstring(pext, r->paddress_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_wstring(pext, r->pdisplay_name));
+		TRY(ext_buffer_push_wstring(pext, r->paddress_type));
 		return ext_buffer_push_wstring(pext, r->pmail_address);
 	} else {
-		status = ext_buffer_push_string(pext, r->pdisplay_name);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext, r->paddress_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, r->pdisplay_name));
+		TRY(ext_buffer_push_string(pext, r->paddress_type));
 		return ext_buffer_push_string(pext, r->pmail_address);
 	}
 }
@@ -4898,18 +3307,10 @@ int ext_buffer_push_oneoff_entryid(EXT_PUSH *pext,
 static int ext_buffer_push_persistelement(
 	EXT_PUSH *pext, const PERSISTELEMENT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->element_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->element_id));
 	switch (r->element_id) {
 	case RSF_ELID_HEADER:
-		status = ext_buffer_push_uint16(pext, 4);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, 4));
 		return ext_buffer_push_uint32(pext, 0);
 	case RSF_ELID_ENTRYID:
 		return ext_buffer_push_binary(pext, r->pentry_id);
@@ -4920,34 +3321,21 @@ static int ext_buffer_push_persistelement(
 
 static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t tmp_size;
 	
-	status = ext_buffer_push_uint16(pext, r->persist_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->persist_id));
 	if (PERSIST_SENTINEL == r->persist_id) {
 		return ext_buffer_push_uint16(pext, 0);
 	}
 	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint16_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_persistelement(pext, &r->element);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(ext_buffer_push_persistelement(pext, &r->element));
 	tmp_size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
 	pext->offset = offset;
-	status = ext_buffer_push_uint16(pext, tmp_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, tmp_size));
 	pext->offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
@@ -4956,14 +3344,10 @@ int ext_buffer_push_persistdata_array(
 	EXT_PUSH *pext, const PERSISTDATA_ARRAY *r)
 {
 	int i;
-	int status;
 	PERSISTDATA last_data;
 	
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_persistdata(pext, r->ppitems[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_persistdata(pext, r->ppitems[i]));
 	}
 	last_data.persist_id = PERSIST_SENTINEL;
 	last_data.element.element_id = ELEMENT_SENTINEL;
@@ -4974,131 +3358,49 @@ int ext_buffer_push_persistdata_array(
 int ext_buffer_push_eid_array(EXT_PUSH *pext, const EID_ARRAY *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint64(pext, r->pids[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint64(pext, r->pids[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_systemtime(EXT_PUSH *pext, const SYSTEMTIME *r)
 {
-	int status;
-	
-	status = ext_buffer_push_int16(pext, r->year);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->month);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->dayofweek);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->day);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->hour);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->minute);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->second);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_int16(pext, r->year));
+	TRY(ext_buffer_push_int16(pext, r->month));
+	TRY(ext_buffer_push_int16(pext, r->dayofweek));
+	TRY(ext_buffer_push_int16(pext, r->day));
+	TRY(ext_buffer_push_int16(pext, r->hour));
+	TRY(ext_buffer_push_int16(pext, r->minute));
+	TRY(ext_buffer_push_int16(pext, r->second));
 	return ext_buffer_push_int16(pext, r->milliseconds);
 }
 
 int ext_buffer_push_timezonestruct(EXT_PUSH *pext, const TIMEZONESTRUCT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_int32(pext, r->bias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int32(pext, r->standardbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int32(pext, r->daylightbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->standardyear);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_systemtime(pext, &r->standarddate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->daylightyear);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_int32(pext, r->bias));
+	TRY(ext_buffer_push_int32(pext, r->standardbias));
+	TRY(ext_buffer_push_int32(pext, r->daylightbias));
+	TRY(ext_buffer_push_int16(pext, r->standardyear));
+	TRY(ext_buffer_push_systemtime(pext, &r->standarddate));
+	TRY(ext_buffer_push_int16(pext, r->daylightyear));
 	return ext_buffer_push_systemtime(pext, &r->daylightdate);
 }
 
 static int ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->major);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->minor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int16(pext, r->year);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->x, 14);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int32(pext, r->bias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int32(pext, r->standardbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_int32(pext, r->daylightbias);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_systemtime(pext, &r->standarddate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->major));
+	TRY(ext_buffer_push_uint8(pext, r->minor));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
+	TRY(ext_buffer_push_uint16(pext, r->flags));
+	TRY(ext_buffer_push_int16(pext, r->year));
+	TRY(ext_buffer_push_bytes(pext, r->x, 14));
+	TRY(ext_buffer_push_int32(pext, r->bias));
+	TRY(ext_buffer_push_int32(pext, r->standardbias));
+	TRY(ext_buffer_push_int32(pext, r->daylightbias));
+	TRY(ext_buffer_push_systemtime(pext, &r->standarddate));
 	return ext_buffer_push_systemtime(pext, &r->daylightdate);
 }
 
@@ -5107,57 +3409,30 @@ int ext_buffer_push_timezonedefinition(
 {
 	int i;
 	int len;
-	int status;
 	uint16_t cbheader;
 	char tmp_buff[262];
 	
-	status = ext_buffer_push_uint8(pext, r->major);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->minor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->major));
+	TRY(ext_buffer_push_uint8(pext, r->minor));
 	len = utf8_to_utf16le(r->keyname, tmp_buff, 262);
 	if (len < 2) {
 		return EXT_ERR_CHARCNV;
 	}
 	len -= 2;
 	cbheader = 6 + len;
-	status = ext_buffer_push_uint16(pext, cbheader);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, len/2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, tmp_buff, len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->crules);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, cbheader));
+	TRY(ext_buffer_push_uint16(pext, r->reserved));
+	TRY(ext_buffer_push_uint16(pext, len / 2));
+	TRY(ext_buffer_push_bytes(pext, tmp_buff, len));
+	TRY(ext_buffer_push_uint16(pext, r->crules));
 	for (i=0; i<r->crules; i++) {
-		status = ext_buffer_push_tzrule(pext, r->prules + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_tzrule(pext, r->prules + i));
 	}
 	return EXT_ERR_SUCCESS;
 }
 static int ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
 	uint16_t patterntype, const PATTERNTYPESPECIFIC *r)
 {
-	int status;
-	
 	switch (patterntype) {
 	case PATTERNTYPE_DAY:
 		/* do nothing */
@@ -5171,11 +3446,7 @@ static int ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
 		return ext_buffer_push_uint32(pext, r->dayofmonth);
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
-		status = ext_buffer_push_uint32(pext,
-				r->monthnth.weekrecurrence);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->monthnth.weekrecurrence));
 		return ext_buffer_push_uint32(pext,
 				r->monthnth.recurrencenum);
 	default:
@@ -5187,179 +3458,72 @@ static int ext_buffer_push_recurrencepattern(
 	EXT_PUSH *pext, const RECURRENCEPATTERN *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->readerversion);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->writerversion);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->recurfrequency);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->patterntype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->calendartype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->firstdatetime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->period);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->slidingflag);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_patterntypespecific(pext,
-			r->patterntype, &r->patterntypespecific);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->endtype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->occurrencecount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->firstdow);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->deletedinstancecount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->readerversion));
+	TRY(ext_buffer_push_uint16(pext, r->writerversion));
+	TRY(ext_buffer_push_uint16(pext, r->recurfrequency));
+	TRY(ext_buffer_push_uint16(pext, r->patterntype));
+	TRY(ext_buffer_push_uint16(pext, r->calendartype));
+	TRY(ext_buffer_push_uint32(pext, r->firstdatetime));
+	TRY(ext_buffer_push_uint32(pext, r->period));
+	TRY(ext_buffer_push_uint32(pext, r->slidingflag));
+	TRY(ext_buffer_push_patterntypespecific(pext, r->patterntype, &r->patterntypespecific));
+	TRY(ext_buffer_push_uint32(pext, r->endtype));
+	TRY(ext_buffer_push_uint32(pext, r->occurrencecount));
+	TRY(ext_buffer_push_uint32(pext, r->firstdow));
+	TRY(ext_buffer_push_uint32(pext, r->deletedinstancecount));
 	for (i=0; i<r->deletedinstancecount; i++) {
-		status = ext_buffer_push_uint32(pext,
-				r->pdeletedinstancedates[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->pdeletedinstancedates[i]));
 	}
-	status = ext_buffer_push_uint32(pext, r->modifiedinstancecount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->modifiedinstancecount));
 	for (i=0; i<r->modifiedinstancecount; i++) {
-		status = ext_buffer_push_uint32(pext,
-				r->pmodifiedinstancedates[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->pmodifiedinstancedates[i]));
 	}
-	status = ext_buffer_push_uint32(pext, r->startdate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->startdate));
 	return ext_buffer_push_uint32(pext, r->enddate);
 }
 
 static int ext_buffer_push_exceptioninfo(
 	EXT_PUSH *pext, const EXCEPTIONINFO *r)
 {
-	int status;
 	uint16_t tmp_len;
 	
-	status = ext_buffer_push_uint32(pext, r->startdatetime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->enddatetime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->originalstartdate);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->overrideflags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->startdatetime));
+	TRY(ext_buffer_push_uint32(pext, r->enddatetime));
+	TRY(ext_buffer_push_uint32(pext, r->originalstartdate));
+	TRY(ext_buffer_push_uint16(pext, r->overrideflags));
 	if (r->overrideflags & OVERRIDEFLAG_SUBJECT) {
 		tmp_len = strlen(r->subject);
-		status = ext_buffer_push_uint16(pext, tmp_len + 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, r->subject, tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, tmp_len + 1));
+		TRY(ext_buffer_push_uint16(pext, tmp_len));
+		TRY(ext_buffer_push_bytes(pext, r->subject, tmp_len));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE) {
-		status = ext_buffer_push_uint32(pext, r->meetingtype);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->meetingtype));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA) {
-		status = ext_buffer_push_uint32(pext, r->reminderdelta);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->reminderdelta));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_REMINDER) {
-		status = ext_buffer_push_uint32(pext, r->reminderset);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->reminderset));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_LOCATION) {
 		tmp_len = strlen(r->location);
-		status = ext_buffer_push_uint16(pext, tmp_len + 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, r->location, tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, tmp_len + 1));
+		TRY(ext_buffer_push_uint16(pext, tmp_len));
+		TRY(ext_buffer_push_bytes(pext, r->location, tmp_len));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS) {
-		status = ext_buffer_push_uint32(pext, r->busystatus);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->busystatus));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT) {
-		status = ext_buffer_push_uint32(pext, r->attachment);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->attachment));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE) {
-		status = ext_buffer_push_uint32(pext, r->subtype);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->subtype));
 	}
 	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR) {
-		status = ext_buffer_push_uint32(pext, r->appointmentcolor);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->appointmentcolor));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -5367,16 +3531,8 @@ static int ext_buffer_push_exceptioninfo(
 static int ext_buffer_push_changehighlight(
 	EXT_PUSH *pext, const CHANGEHIGHLIGHT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->value);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->size));
+	TRY(ext_buffer_push_uint32(pext, r->value));
 	if (r->size < sizeof(uint32_t)) {
 		return EXT_ERR_FORMAT;
 	} else if (sizeof(uint32_t) == r->size) {
@@ -5390,42 +3546,21 @@ static int ext_buffer_push_extendedexception(
 	EXT_PUSH *pext, uint32_t writerversion2,
 	uint16_t overrideflags, const EXTENDEDEXCEPTION *r)
 {
-	int status;
 	int string_len;
 	uint16_t tmp_len;
 	
 	if (writerversion2 >= 0x00003009) {
-		status = ext_buffer_push_changehighlight(
-					pext, &r->changehighlight);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_changehighlight(pext, &r->changehighlight));
 	}
-	status = ext_buffer_push_uint32(pext, r->reservedblockee1size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->reservedblockee1size));
 	if (0 != r->reservedblockee1size) {
-		status = ext_buffer_push_bytes(pext,
-			r->preservedblockee1, r->reservedblockee1size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, r->preservedblockee1, r->reservedblockee1size));
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
-		status = ext_buffer_push_uint32(pext, r->startdatetime);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint32(pext, r->enddatetime);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint32(pext, r->originalstartdate);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->startdatetime));
+		TRY(ext_buffer_push_uint32(pext, r->enddatetime));
+		TRY(ext_buffer_push_uint32(pext, r->originalstartdate));
 	}
 	if (overrideflags & OVERRIDEFLAG_SUBJECT) {
 		tmp_len = strlen(r->subject) + 1;
@@ -5440,14 +3575,8 @@ static int ext_buffer_push_extendedexception(
 			return EXT_ERR_CHARCNV;
 		}
 		string_len -= 2;
-		status = ext_buffer_push_uint16(pext, string_len/2);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, pbuff.get(), string_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, string_len / 2));
+		TRY(ext_buffer_push_bytes(pext, pbuff.get(), string_len));
 	}
 	if (overrideflags & OVERRIDEFLAG_LOCATION) {
 		tmp_len = strlen(r->location) + 1;
@@ -5462,85 +3591,38 @@ static int ext_buffer_push_extendedexception(
 			return EXT_ERR_CHARCNV;
 		}
 		string_len -= 2;
-		status = ext_buffer_push_uint16(pext, string_len/2);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, pbuff.get(), string_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, string_len / 2));
+		TRY(ext_buffer_push_bytes(pext, pbuff.get(), string_len));
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
-		status = ext_buffer_push_uint32(pext, r->reservedblockee2size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, r->reservedblockee2size));
 		if (0 != r->reservedblockee2size) {
-			status = ext_buffer_push_bytes(pext,
-				r->preservedblockee2, r->reservedblockee2size);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_bytes(pext, r->preservedblockee2, r->reservedblockee2size));
 		}
 	}
-	return status;
+	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_appointmentrecurrencepattern(
 	EXT_PUSH *pext, const APPOINTMENTRECURRENCEPATTERN *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_recurrencepattern(
-				pext, &r->recurrencepattern);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->readerversion2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->writerversion2);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->starttimeoffset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->endtimeoffset);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->exceptioncount);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_recurrencepattern(pext, &r->recurrencepattern));
+	TRY(ext_buffer_push_uint32(pext, r->readerversion2));
+	TRY(ext_buffer_push_uint32(pext, r->writerversion2));
+	TRY(ext_buffer_push_uint32(pext, r->starttimeoffset));
+	TRY(ext_buffer_push_uint32(pext, r->endtimeoffset));
+	TRY(ext_buffer_push_uint16(pext, r->exceptioncount));
 	for (i=0; i<r->exceptioncount; i++) {
-		status = ext_buffer_push_exceptioninfo(
-					pext, &r->pexceptioninfo[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_exceptioninfo(pext, &r->pexceptioninfo[i]));
 	}
-	status = ext_buffer_push_uint32(pext, r->reservedblock1size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->reservedblock1size));
 	for (i=0; i<r->exceptioncount; i++) {
-		status = ext_buffer_push_extendedexception(pext, r->writerversion2,
-			r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_extendedexception(pext, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
 	}
-	status = ext_buffer_push_uint32(pext, r->reservedblock2size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->reservedblock2size));
 	if (0 == r->reservedblock2size) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -5551,36 +3633,13 @@ int ext_buffer_push_appointmentrecurrencepattern(
 
 int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r)
 {
-	int status;
-	
-	status = ext_buffer_push_bytes(pext, r->arrayid, 16);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->year >> 8);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->year & 0xFF);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->month);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->day);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint64(pext, r->creationtime);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bytes(pext, r->x, 8);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_bytes(pext, r->arrayid, 16));
+	TRY(ext_buffer_push_uint8(pext, r->year >> 8));
+	TRY(ext_buffer_push_uint8(pext, r->year & 0xFF));
+	TRY(ext_buffer_push_uint8(pext, r->month));
+	TRY(ext_buffer_push_uint8(pext, r->day));
+	TRY(ext_buffer_push_uint64(pext, r->creationtime));
+	TRY(ext_buffer_push_bytes(pext, r->x, 8));
 	return ext_buffer_push_exbinary(pext, &r->data);
 }
 
@@ -5589,33 +3648,15 @@ static int ext_buffer_push_attachment_list(
 	EXT_PUSH *pext, const ATTACHMENT_LIST *r)
 {
 	int i;
-	int status;
 	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->count));
 	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_tpropval_array(
-					pext, &r->pplist[i]->proplist);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_tpropval_array(pext, &r->pplist[i]->proplist));
 		if (NULL != r->pplist[i]->pembedded) {
-			status = ext_buffer_push_uint8(pext, 1);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_message_content(
-						pext, r->pplist[i]->pembedded);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint8(pext, 1));
+			TRY(ext_buffer_push_message_content(pext, r->pplist[i]->pembedded));
 		} else {
-			status = ext_buffer_push_uint8(pext, 0);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint8(pext, 0));
 		}
 	}
 	return EXT_ERR_SUCCESS;
@@ -5624,32 +3665,15 @@ static int ext_buffer_push_attachment_list(
 int ext_buffer_push_message_content(
 	EXT_PUSH *pext, const MESSAGE_CONTENT *r)
 {
-	int status;
-	
-	status = ext_buffer_push_tpropval_array(pext, &r->proplist);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_tpropval_array(pext, &r->proplist));
 	if (NULL != r->children.prcpts) {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_tarray_set(pext, r->children.prcpts);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(ext_buffer_push_tarray_set(pext, r->children.prcpts));
 	} else {
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 0));
 	}
 	if (NULL != r->children.pattachments) {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 1));
 		return ext_buffer_push_attachment_list(
 				pext, r->children.pattachments);
 	} else {
