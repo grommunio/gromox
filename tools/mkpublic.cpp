@@ -7,6 +7,7 @@
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/config_file.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -382,52 +383,26 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 	
-	char common_tpl[256], public_tpl[256];
-	snprintf(common_tpl, GX_ARRAY_SIZE(common_tpl), "%s/sqlite3_common.txt", datadir);
-	snprintf(public_tpl, GX_ARRAY_SIZE(public_tpl), "%s/sqlite3_public.txt", datadir);
-	fd = open(common_tpl, O_RDONLY);
-	if (fd < 0) {
-		printf("Failed to open \"%s\": %s\n", common_tpl, strerror(errno));
+	auto filp = fopen_sd("sqlite3_common.txt", datadir);
+	if (filp == nullptr) {
+		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	size_t str_size = fstat(fd, &node_stat) ? node_stat.st_size : 0;
-	auto sql_string = static_cast<char *>(malloc(str_size));
-	if (read(fd, sql_string, str_size) != str_size) {
-		printf("read %s: %s\n", common_tpl, strerror(errno));
-		close(fd);
-		free(sql_string);
+	auto sql_string = slurp_file(filp.get());
+	filp = fopen_sd("sqlite3_public.txt", datadir);
+	if (filp == nullptr) {
+		fprintf(stderr, "fopen_sd sqlite3_public.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	close(fd);
-	fd = open(public_tpl, O_RDONLY);
-	if (fd < 0) {
-		printf("Failed to open \"%s\": %s\n", public_tpl, strerror(errno));
-		return 7;
-	}
-	size_t str_size1 = fstat(fd, &node_stat) ? node_stat.st_size : 0;
-	auto sql_string1 = static_cast<char *>(realloc(sql_string, str_size + str_size1 + 1));
-	if (sql_string1 == nullptr) {
-		printf("%s\n", strerror(errno));
-		close(fd);
-		return 7;
-	}
-	sql_string = sql_string1;
-	if (read(fd, sql_string + str_size, str_size1) != str_size1) {
-		printf("read %s: %s\n", public_tpl, strerror(errno));
-		close(fd);
-		free(sql_string);
-		return 7;
-	}
-	sql_string[str_size + str_size1] = '\0';
+	sql_string += slurp_file(filp.get());
+	filp.reset();
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
-		free(sql_string);
 		return 9;
 	}
 	if (SQLITE_OK != sqlite3_open_v2(temp_path, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
-		free(sql_string);
 		sqlite3_shutdown();
 		return 9;
 	}
@@ -435,23 +410,19 @@ int main(int argc, const char **argv)
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
+	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
-		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	free(sql_string);
 	
-	char proppath[256];
-	snprintf(proppath, GX_ARRAY_SIZE(proppath), "%s/propnames.txt", datadir);
 	std::vector<std::string> namedprop_list;
-	auto ret = list_file_read_fixedstrings(proppath, nullptr, namedprop_list);
+	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
-		printf("Failed to read \"%s\": %s\n", proppath, strerror(-ret));
+		fprintf(stderr, "list_file_initd propnames.txt: %s\n", strerror(-ret));
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 7;

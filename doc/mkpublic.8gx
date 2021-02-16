@@ -1,7 +1,8 @@
 .TH mkpublic 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
-\fBmkpublic\fP [\fB\-c\fP \fIconfig\fP] \fIdomainname\fP
+\fBmkpublic\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdata_path\fP]
+\fIdomainname\fP
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -14,6 +15,19 @@ config file.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/propnames.txt: Initial set of named properties to add to
+the new private store.
+.IP \(bu 4
+\fIdata_file_path\fP/sqlite3_common.txt: SQLite instructions to generate part
+of a public store.
+.IP \(bu 4
+\fIdata_file_path\fP/sqlite3_public.txt: SQLite instructions to generate part
+of a public store.
+.SH Config file directives
+.PP
+The config file is shared with other pgorams. See \fBsa.cfg\fP(5gx).
 .SH See also
 .PP
 \fBgromox\fP(7), \fBsa.cfg\fP(5gx)
