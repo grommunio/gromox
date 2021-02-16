@@ -37,7 +37,6 @@
 #define DEF_MODE				S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 static char g_org_name[256];
-static char g_propname_path[256];
 static pthread_key_t g_alloc_key;
 static STR_HASH_TABLE *g_str_hash;
 static char g_default_charset[32];
@@ -86,12 +85,11 @@ static int exmdb_local_sequence_ID()
 
 
 void exmdb_local_init(const char *org_name, const char *default_charset,
-	const char *default_timezone, const char *propname_path)
+    const char *default_timezone)
 {
 	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
 	HX_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
-	HX_strlcpy(g_propname_path, propname_path, GX_ARRAY_SIZE(g_propname_path));
 	pthread_key_create(&g_alloc_key, NULL);
 }
 
@@ -133,10 +131,9 @@ int exmdb_local_run()
 		return -2;
 	}
 	struct srcitem { char s[256]; };
-	auto plist = list_file_initd(g_propname_path, nullptr, "%s:256");
+	auto plist = list_file_initd("propnames.txt", get_data_path(), "%s:256");
 	if (NULL == plist) {
-		printf("[exmdb_local]: Failed to read property name list from %s: %s\n",
-			g_propname_path, strerror(errno));
+		printf("[exmdb_local]: list_file_initd propnames.txt: %s\n", strerror(errno));
 		return -3;
 	}
 	auto num = plist->get_size();

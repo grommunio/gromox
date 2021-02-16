@@ -33,9 +33,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	char cache_path[256];
 	int response_capacity;
 	int response_interval;
-	char resource_path[256];
-	char propnames_path[256];
-	char exmdb_list_path[256];
 	char *str_value, *psearch;
 	 
 	/* path contains the config files directory */
@@ -54,10 +51,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			       tmp_path, strerror(errno));
 			return FALSE;
 		}
-
-		sprintf(resource_path, "%s/local_bounce", get_data_path());
-		sprintf(propnames_path, "%s/propnames.txt", get_data_path());
-		sprintf(exmdb_list_path, "%s/exmdb_list.txt", get_data_path());
 
 		str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
@@ -209,11 +202,11 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);
 
 		net_failure_init(times, interval, alarm_interval);
-		bounce_producer_init(resource_path, separator);
+		bounce_producer_init(separator);
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
-		exmdb_client_init(conn_num, exmdb_list_path);
-		exmdb_local_init(org_name, charset, timezone, propnames_path);
+		exmdb_client_init(conn_num);
+		exmdb_local_init(org_name, charset, timezone);
 		
 		if (0 != net_failure_run()) {
 			printf("[exmdb_local]: failed to run net failure\n");

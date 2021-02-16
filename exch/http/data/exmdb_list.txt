@@ -1,3 +1,0 @@
-#prefix			private|public		ip_address		port
-/u-data/	private	::1	5000
-/d-data/	public	::1	5000

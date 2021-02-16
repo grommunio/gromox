@@ -73,7 +73,6 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 static int g_conn_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_id;
-static char g_list_path[256];
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;
 static std::mutex g_server_lock;
@@ -526,11 +525,10 @@ static void exmdb_client_put_connection(REMOTE_CONN *pconn, BOOL b_lost)
 	}
 }
 
-void exmdb_client_init(int conn_num, const char *list_path)
+void exmdb_client_init(int conn_num)
 {
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
-	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
 }
@@ -542,10 +540,10 @@ int exmdb_client_run()
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
 	
-	auto plist = list_file_initd(g_list_path, "/", /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
+	auto plist = list_file_initd("exmdb_list.txt", get_config_path(),
+	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
-		printf("[exmdb_local]: Failed to read exmdb list from %s: %s\n",
-			g_list_path, strerror(errno));
+		printf("[exmdb_local]: list_file_initd exmdb_list.txt: %s\n", strerror(errno));
 		return 1;
 	}
 	g_notify_stop = FALSE;

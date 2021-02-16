@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -20,6 +21,8 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <ctime>
+
+using namespace gromox;
 
 enum{
 	TAG_BEGIN,
@@ -70,7 +73,6 @@ struct TAG_ITEM {
 	int			length;
 };
 
-static char g_path[256];
 static char g_separator[16];
 static SINGLE_LIST g_resource_list;
 static RESOURCE_NODE *g_default_resource;
@@ -104,11 +106,8 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
 
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
-
-static BOOL bounce_producer_check_subdir(const char *dir_name);
-
-static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist);
-
+static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
+static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, SINGLE_LIST *);
 static void bounce_producer_unload_list(SINGLE_LIST *plist);
 
 /*
@@ -117,9 +116,8 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist);
  *		path [in]			path of resource
  *		separator [in]		separator character for rcpts and attachements
  */
-void bounce_producer_init(const char *path, const char* separator)
+void bounce_producer_init(const char *separator)
 {
-	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	strcpy(g_separator, separator);
 	g_default_resource = NULL;
 }
@@ -168,7 +166,6 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist)
  */
 BOOL bounce_producer_refresh()
 {
-	DIR *dirp;
     struct dirent *direntp;
 	SINGLE_LIST_NODE *pnode;
 	RESOURCE_NODE *presource;
@@ -177,20 +174,19 @@ BOOL bounce_producer_refresh()
 
 	single_list_init(&resource_list);
 	errno = 0;
-	dirp = opendir(g_path);
-	if (dirp != NULL) {
-		while ((direntp = readdir(dirp)) != NULL) {
+	auto dinfo = opendir_sd("local_bounce", get_data_path());
+	if (dinfo.m_dir != nullptr) {
+		while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {
 			if (strcmp(direntp->d_name, ".") == 0 ||
 			    strcmp(direntp->d_name, "..") == 0)
 				continue;
-			if (!bounce_producer_check_subdir(direntp->d_name))
+			if (!bounce_producer_check_subdir(dinfo.m_path, direntp->d_name))
 				continue;
-			bounce_producer_load_subdir(direntp->d_name, &resource_list);
+			bounce_producer_load_subdir(dinfo.m_path, direntp->d_name, &resource_list);
 		}
-		closedir(dirp);
 	} else if (errno != ENOENT) {
-		printf("[exmdb_local]: failed to open directory %s: %s\n",
-			g_path, strerror(errno));
+		printf("[exmdb_local]: opendir_sd %s: %s\n",
+		       dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
 
@@ -206,7 +202,7 @@ BOOL bounce_producer_refresh()
 	}
 	if (NULL == pdefault) {
 		printf("[exmdb_local]: there are no \"ascii\" bounce mail "
-			"templates in %s\n", g_path);
+			"templates in \"%s\"\n", dinfo.m_path.c_str());
 		bounce_producer_unload_list(&resource_list);
 		single_list_free(&resource_list);
 		return FALSE;
@@ -229,7 +225,7 @@ BOOL bounce_producer_refresh()
  *		TRUE					OK
  *		FALSE					illegal
  */
-static BOOL bounce_producer_check_subdir(const char *dir_name)
+static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name)
 {
 	DIR *sub_dirp;
     struct dirent *sub_direntp;
@@ -237,7 +233,7 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
 	char dir_buff[256], sub_buff[256];
 	int i, item_num;
 
-	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", g_path, dir_name);
+	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir.c_str(), dir_name);
 	if (0 != stat(dir_buff, &node_stat) ||
 		0 == S_ISDIR(node_stat.st_mode)) {
 		return FALSE;	
@@ -275,7 +271,8 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
  *		dir_name [in]			sub directory
  *		plist [out]				resource will be appended into this list
  */
-static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist)
+static void bounce_producer_load_subdir(const std::string &basedir,
+    const char *dir_name, SINGLE_LIST *plist)
 {
 	DIR *sub_dirp;
 	RESOURCE_NODE *presource;
@@ -301,7 +298,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		}
 	}
 	presource->node.pdata = presource;
-	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", g_path, dir_name);
+	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir.c_str(), dir_name);
     sub_dirp = opendir(dir_buff);
     while ((sub_direntp = readdir(sub_dirp)) != NULL) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
@@ -448,7 +445,6 @@ void bounce_producer_stop(void)
  */
 void bounce_producer_free()
 {
-	g_path[0] = '\0';
 	g_default_resource = NULL;
 }
 

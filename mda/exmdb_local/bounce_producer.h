@@ -10,7 +10,7 @@ enum{
 	BOUNCE_TOTAL_NUM
 };
 
-void bounce_producer_init(const char *path, const char *separator);
+extern void bounce_producer_init(const char *separator);
 extern int bounce_producer_run(void);
 extern void bounce_producer_stop(void);
 extern void bounce_producer_free(void);

@@ -8,7 +8,7 @@
 #define EXMDB_RESULT_ERROR		4
 #define EXMDB_MAILBOX_FULL		5
 
-void exmdb_client_init(int conn_num, const char *list_path);
+extern void exmdb_client_init(int conn_num);
 extern int exmdb_client_run(void);
 extern int exmdb_client_stop(void);
 extern void exmdb_client_free(void);

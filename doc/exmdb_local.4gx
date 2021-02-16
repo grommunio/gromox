@@ -14,10 +14,11 @@ This plugin has no directives.
 .IP \(bu 4
 \fIdata_file_path\fP/propnames.txt
 .IP \(bu 4
-\fIdata_file_path\fP/exmdb_list.txt: multiserver map
+\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
+exmdb_provider(4gx) for details.
 .IP \(bu 4
 \fIdata_file_path\fP/local_bounce/: response templates for when mail cannot be
 delivered
 .SH See also
 .PP
-\fBgromox\fP(7), \fBdelivery\fP(8gx)
+\fBgromox\fP(7), \fBdelivery\fP(8gx), \fBexmdb_provider\fP(4gx)
