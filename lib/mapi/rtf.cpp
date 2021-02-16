@@ -20,6 +20,7 @@
 #include <iconv.h>
 #include <cstring>
 #include <cstdlib>
+#define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
 
 #define MAX_ATTRS						10000
 #define MAX_GROUP_DEPTH					1000
@@ -338,15 +339,11 @@ static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 static bool rtf_escape_output(RTF_READER *preader, char *string)
 {
 	int i;
-	int status;
 	int tmp_len;
 	
 	tmp_len = strlen(string);
 	if (preader->is_within_htmltag) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, string, tmp_len)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, string, tmp_len));
 		return true;
 	}
 	if (preader->b_simulate_allcaps)
@@ -356,24 +353,17 @@ static bool rtf_escape_output(RTF_READER *preader, char *string)
 	for (i=0; i<tmp_len; i++) {
 		switch (string[i]) {
 		case '<':
-			status = ext_buffer_push_bytes(
-				&preader->ext_push, "&lt;", 4);
+			QRF(ext_buffer_push_bytes(&preader->ext_push, "&lt;", 4));
 			break;
 		case '>':
-			status = ext_buffer_push_bytes(
-				&preader->ext_push, "&gt;", 4);
+			QRF(ext_buffer_push_bytes(&preader->ext_push, "&gt;", 4));
 			break;
 		case '&':
-			status = ext_buffer_push_bytes(
-				&preader->ext_push, "&amp;", 5);
+			QRF(ext_buffer_push_bytes(&preader->ext_push, "&amp;", 5));
 			break;
 		default:
-			status = ext_buffer_push_uint8(
-				&preader->ext_push, string[i]);
+			QRF(ext_buffer_push_uint8(&preader->ext_push, string[i]));
 			break;
-		}
-		if (EXT_ERR_SUCCESS != status) {
-			return false;
 		}
 	}
 	return true;
@@ -660,53 +650,26 @@ static bool rtf_express_begin_fontsize(RTF_READER *preader, int size)
 	
 	switch (size) {
 	case 8:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE8_BEGIN,
-			sizeof(TAG_FONTSIZE8_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE8_BEGIN, sizeof(TAG_FONTSIZE8_BEGIN) - 1));
 		return true;
 	case 10:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE10_BEGIN,
-			sizeof(TAG_FONTSIZE10_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE10_BEGIN, sizeof(TAG_FONTSIZE10_BEGIN) - 1));
 		return true;
 	case 12:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE12_BEGIN,
-			sizeof(TAG_FONTSIZE12_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE12_BEGIN, sizeof(TAG_FONTSIZE12_BEGIN) - 1));
 		return true;
 	case 14:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE14_BEGIN,
-			sizeof(TAG_FONTSIZE14_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE14_BEGIN, sizeof(TAG_FONTSIZE14_BEGIN) - 1));
 		return true;
 	case 18:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE18_BEGIN,
-			sizeof(TAG_FONTSIZE18_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE18_BEGIN, sizeof(TAG_FONTSIZE18_BEGIN) - 1));
 		return true;
 	case 24:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE24_BEGIN,
-			sizeof(TAG_FONTSIZE24_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE24_BEGIN, sizeof(TAG_FONTSIZE24_BEGIN) - 1));
 		return true;
 	}
 	tmp_len = sprintf(tmp_buff, TAG_FONTSIZE_BEGIN, size);
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, tmp_buff, tmp_len)) {
-		return false;
-	}
+	QRF(ext_buffer_push_bytes(&preader->ext_push, tmp_buff, tmp_len));
 	return true;
 }
 
@@ -714,53 +677,25 @@ static bool rtf_express_end_fontsize(RTF_READER *preader, int size)
 {
 	switch (size) {
 	case 8:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE8_END,
-			sizeof(TAG_FONTSIZE8_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE8_END, sizeof(TAG_FONTSIZE8_END) - 1));
 		return true;
 	case 10:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE10_END,
-			sizeof(TAG_FONTSIZE10_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE10_END, sizeof(TAG_FONTSIZE10_END) - 1));
 		return true;
 	case 12:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE12_END,
-			sizeof(TAG_FONTSIZE12_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE12_END, sizeof(TAG_FONTSIZE12_END) - 1));
 		return true;
 	case 14:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE14_END,
-			sizeof(TAG_FONTSIZE14_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE14_END, sizeof(TAG_FONTSIZE14_END) - 1));
 		return true;
 	case 18:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE18_END,
-			sizeof(TAG_FONTSIZE18_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE18_END, sizeof(TAG_FONTSIZE18_END) - 1));
 		return true;
 	case 24:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FONTSIZE24_END,
-			sizeof(TAG_FONTSIZE24_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE24_END, sizeof(TAG_FONTSIZE24_END) - 1));
 		return true;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, TAG_FONTSIZE_END,
-		sizeof(TAG_FONTSIZE_END) - 1)) {
-		return false;
-	}
+	QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONTSIZE_END, sizeof(TAG_FONTSIZE_END) - 1));
 	return true;
 }
 
@@ -773,18 +708,10 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 	
 	switch (attr) {
 	case ATTR_BOLD:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_BOLD_BEGIN,
-			sizeof(TAG_BOLD_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_BOLD_BEGIN, sizeof(TAG_BOLD_BEGIN) - 1));
 		return true;
 	case ATTR_ITALIC:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_ITALIC_BEGIN,
-			sizeof(TAG_ITALIC_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_ITALIC_BEGIN, sizeof(TAG_ITALIC_BEGIN) - 1));
 		return true;
 	case ATTR_THICK_UL:
 	case ATTR_WAVE_UL:
@@ -794,18 +721,10 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 	case ATTR_2DOT_DASH_UL:
 	case ATTR_WORD_UL:
 	case ATTR_UNDERLINE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_UNDERLINE_BEGIN,
-			sizeof(TAG_UNDERLINE_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_UNDERLINE_BEGIN, sizeof(TAG_UNDERLINE_BEGIN) - 1));
 		return true;
 	case ATTR_DOUBLE_UL:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_DBL_UNDERLINE_BEGIN,
-			sizeof(TAG_DBL_UNDERLINE_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DBL_UNDERLINE_BEGIN, sizeof(TAG_DBL_UNDERLINE_BEGIN) - 1));
 		return true;
 	case ATTR_FONTSIZE:
 		return rtf_express_begin_fontsize(preader, param);
@@ -822,10 +741,7 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 				TAG_FONT_BEGIN, pentry->name);
 		}
 		if (!preader->have_fromhtml) {
-			if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-				&preader->ext_push, tmp_buff, tmp_len)) {
-				return false;
-			}
+			QRF(ext_buffer_push_bytes(&preader->ext_push, tmp_buff, tmp_len));
 		}
 		if (!rtf_iconv_open(preader, encoding))
 			return false;
@@ -833,92 +749,46 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 	case ATTR_FOREGROUND:
 		tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 			TAG_FOREGROUND_BEGIN, param);
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, tmp_buff, tmp_len)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, tmp_buff, tmp_len));
 		return true;
 	case ATTR_BACKGROUND: 
 		tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 			TAG_BACKGROUND_BEGIN, param);
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, tmp_buff, tmp_len)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, tmp_buff, tmp_len));
 		return true;
 	case ATTR_SUPER:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SUPERSCRIPT_BEGIN,
-			sizeof(TAG_SUPERSCRIPT_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SUPERSCRIPT_BEGIN, sizeof(TAG_SUPERSCRIPT_BEGIN) - 1));
 		return true;
 	case ATTR_SUB:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SUBSCRIPT_BEGIN,
-			sizeof(TAG_SUBSCRIPT_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SUBSCRIPT_BEGIN, sizeof(TAG_SUBSCRIPT_BEGIN) - 1));
 		return true;
 	case ATTR_STRIKE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_STRIKETHRU_BEGIN,
-			sizeof(TAG_STRIKETHRU_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_STRIKETHRU_BEGIN, sizeof(TAG_STRIKETHRU_BEGIN) - 1));
 		return true;
 	case ATTR_DBL_STRIKE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_DBL_STRIKETHRU_BEGIN,
-			sizeof(TAG_DBL_STRIKETHRU_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DBL_STRIKETHRU_BEGIN, sizeof(TAG_DBL_STRIKETHRU_BEGIN) - 1));
 		return true;
 	case ATTR_EXPAND:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_EXPAND_BEGIN,
-			sizeof(TAG_EXPAND_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_EXPAND_BEGIN, sizeof(TAG_EXPAND_BEGIN) - 1));
 		return true;
 	case ATTR_OUTLINE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_OUTLINE_BEGIN,
-			sizeof(TAG_OUTLINE_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_OUTLINE_BEGIN, sizeof(TAG_OUTLINE_BEGIN) - 1));
 		return true;
 	case ATTR_SHADOW:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SHADOW_BEGIN,
-			sizeof(TAG_SHADOW_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SHADOW_BEGIN, sizeof(TAG_SHADOW_BEGIN) - 1));
 		return true;
 	case ATTR_EMBOSS:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_EMBOSS_BEGIN,
-			sizeof(TAG_EMBOSS_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_EMBOSS_BEGIN, sizeof(TAG_EMBOSS_BEGIN) - 1));
 		return true;
 	case ATTR_ENGRAVE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_ENGRAVE_BEGIN,
-			sizeof(TAG_ENGRAVE_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_ENGRAVE_BEGIN, sizeof(TAG_ENGRAVE_BEGIN) - 1));
 		return true;
 	case ATTR_CAPS:
 		preader->b_simulate_allcaps = true;
 		return true;
 	case ATTR_SMALLCAPS:
 		preader->b_simulate_smallcaps = true;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SMALLER_BEGIN,
-			sizeof(TAG_SMALLER_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SMALLER_BEGIN, sizeof(TAG_SMALLER_BEGIN) - 1));
 		return true;
 	case ATTR_UBYTES:
 		preader->b_ubytes_switch = true;
@@ -968,18 +838,10 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 	
 	switch (attr) {
 	case ATTR_BOLD:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_BOLD_END,
-			sizeof(TAG_BOLD_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_BOLD_END, sizeof(TAG_BOLD_END) - 1));
 		return true;
 	case ATTR_ITALIC:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_ITALIC_END,
-			sizeof(TAG_ITALIC_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_ITALIC_END, sizeof(TAG_ITALIC_END) - 1));
 		return true;
 	case ATTR_THICK_UL:
 	case ATTR_WAVE_UL:
@@ -989,28 +851,16 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 	case ATTR_2DOT_DASH_UL:
 	case ATTR_WORD_UL:
 	case ATTR_UNDERLINE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_UNDERLINE_END,
-			sizeof(TAG_UNDERLINE_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_UNDERLINE_END, sizeof(TAG_UNDERLINE_END) - 1));
 		return true;
 	case ATTR_DOUBLE_UL:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_DBL_UNDERLINE_END,
-			sizeof(TAG_DBL_UNDERLINE_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DBL_UNDERLINE_END, sizeof(TAG_DBL_UNDERLINE_END) - 1));
 		return true;
 	case ATTR_FONTSIZE:
 		return rtf_express_end_fontsize(preader, param);
 	case ATTR_FONTFACE: 
 		if (!preader->have_fromhtml) {
-			if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-				&preader->ext_push, TAG_FONT_END,
-				sizeof(TAG_FONT_END) - 1)) {
-				return false;
-			}
+			QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FONT_END, sizeof(TAG_FONT_END) - 1));
 		}
 		/* Caution: no BREAK here */
 	case ATTR_HTMLTAG:
@@ -1032,91 +882,43 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 			return false;
 		return true;
 	case ATTR_FOREGROUND:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_FOREGROUND_END,
-			sizeof(TAG_FOREGROUND_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_FOREGROUND_END, sizeof(TAG_FOREGROUND_END) - 1));
 		return true;
 	case ATTR_BACKGROUND:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_BACKGROUND_END,
-			sizeof(TAG_BACKGROUND_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_BACKGROUND_END, sizeof(TAG_BACKGROUND_END) - 1));
 		return true;
 	case ATTR_SUPER:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SUPERSCRIPT_END,
-			sizeof(TAG_SUPERSCRIPT_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SUPERSCRIPT_END, sizeof(TAG_SUPERSCRIPT_END) - 1));
 		return true;
 	case ATTR_SUB:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SUBSCRIPT_END,
-			sizeof(TAG_SUBSCRIPT_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SUBSCRIPT_END, sizeof(TAG_SUBSCRIPT_END) - 1));
 		return true;
 	case ATTR_STRIKE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_STRIKETHRU_END,
-			sizeof(TAG_STRIKETHRU_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_STRIKETHRU_END, sizeof(TAG_STRIKETHRU_END) - 1));
 		return true;
 	case ATTR_DBL_STRIKE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_DBL_STRIKETHRU_END,
-			sizeof(TAG_DBL_STRIKETHRU_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DBL_STRIKETHRU_END, sizeof(TAG_DBL_STRIKETHRU_END) - 1));
 		return true;
 	case ATTR_OUTLINE:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_OUTLINE_END,
-			sizeof(TAG_OUTLINE_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_OUTLINE_END, sizeof(TAG_OUTLINE_END) - 1));
 		return true;
 	case ATTR_SHADOW:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SHADOW_END,
-			sizeof(TAG_SHADOW_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SHADOW_END, sizeof(TAG_SHADOW_END) - 1));
 		return true;
 	case ATTR_EMBOSS:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_EMBOSS_END,
-			sizeof(TAG_EMBOSS_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_EMBOSS_END, sizeof(TAG_EMBOSS_END) - 1));
 		return true;
 	case ATTR_ENGRAVE: 
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_ENGRAVE_END,
-			sizeof(TAG_ENGRAVE_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_ENGRAVE_END, sizeof(TAG_ENGRAVE_END) - 1));
 		return true;
 	case ATTR_EXPAND: 
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_EXPAND_END,
-			sizeof(TAG_EXPAND_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_EXPAND_END, sizeof(TAG_EXPAND_END) - 1));
 		return true;
 	case ATTR_CAPS:
 		preader->b_simulate_allcaps = false;
 		return true;
 	case ATTR_SMALLCAPS: 
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_SMALLER_END,
-			sizeof(TAG_SMALLER_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_SMALLER_END, sizeof(TAG_SMALLER_END) - 1));
 		preader->b_simulate_smallcaps = false;
 		return true;
 	case ATTR_UBYTES:
@@ -1632,16 +1434,8 @@ static bool rtf_starting_body(RTF_READER *preader)
 	preader->have_printed_body = true;
 	if (preader->have_fromhtml)
 		return true;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, TAG_HEADER_END,
-		sizeof(TAG_HEADER_END) - 1)) {
-		return false;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, TAG_BODY_BEGIN,
-		sizeof(TAG_BODY_BEGIN) - 1)) {
-		return false;
-	}
+	QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_HEADER_END, sizeof(TAG_HEADER_END) - 1));
+	QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_BODY_BEGIN, sizeof(TAG_BODY_BEGIN) - 1));
 	return true;
 }
 
@@ -1650,21 +1444,13 @@ static bool rtf_starting_text(RTF_READER *preader)
 	if (!preader->is_within_table)
 		return true;
 	if (!preader->b_printed_row_begin) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_TABLE_ROW_BEGIN,
-			sizeof(TAG_TABLE_ROW_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_TABLE_ROW_BEGIN, sizeof(TAG_TABLE_ROW_BEGIN) - 1));
 		preader->b_printed_row_begin = true;
 		preader->b_printed_row_end = false;
 		preader->b_printed_cell_begin = false;
 	}
 	if (!preader->b_printed_cell_begin) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_TABLE_CELL_BEGIN,
-			sizeof(TAG_TABLE_CELL_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1));
 		if (!rtf_attrstack_express_all(preader))
 			return false;
 		preader->b_printed_cell_begin = true;
@@ -1681,27 +1467,15 @@ static bool rtf_starting_paragraph_align(RTF_READER *preader, int align)
 	}
 	switch (align) {
 	case ALIGN_CENTER:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_CENTER_BEGIN,
-			sizeof(TAG_CENTER_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_CENTER_BEGIN, sizeof(TAG_CENTER_BEGIN) - 1));
 		break;
 	case ALIGN_LEFT:
 		break;
 	case ALIGN_RIGHT:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_ALIGN_RIGHT_BEGIN,
-			sizeof(TAG_ALIGN_RIGHT_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_ALIGN_RIGHT_BEGIN, sizeof(TAG_ALIGN_RIGHT_BEGIN) - 1));
 		break;
 	case ALIGN_JUSTIFY:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_JUSTIFY_BEGIN,
-			sizeof(TAG_JUSTIFY_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_JUSTIFY_BEGIN, sizeof(TAG_JUSTIFY_BEGIN) - 1));
 		break;
 	}
 	return true;
@@ -1711,27 +1485,15 @@ static bool rtf_ending_paragraph_align(RTF_READER *preader, int align)
 {
 	switch (align) {
 	case ALIGN_CENTER:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_CENTER_END,
-			sizeof(TAG_CENTER_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_CENTER_END, sizeof(TAG_CENTER_END) - 1));
 		break;
 	case ALIGN_LEFT:
 		break;
 	case ALIGN_RIGHT:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_ALIGN_RIGHT_END,
-			sizeof(TAG_ALIGN_RIGHT_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_ALIGN_RIGHT_END, sizeof(TAG_ALIGN_RIGHT_END) - 1));
 		break;
 	case ALIGN_JUSTIFY:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_JUSTIFY_END,
-			sizeof(TAG_JUSTIFY_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_JUSTIFY_END, sizeof(TAG_JUSTIFY_END) - 1));
 		break;
 	}
 	return true;
@@ -1746,11 +1508,7 @@ static bool rtf_begin_table(RTF_READER *preader)
 	preader->b_printed_cell_end = false;
 	if (!rtf_stack_list_new_node(preader) || !rtf_starting_body(preader))
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, TAG_TABLE_BEGIN,
-		sizeof(TAG_TABLE_BEGIN) - 1)) {
-		return false;
-	}
+	QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_TABLE_BEGIN, sizeof(TAG_TABLE_BEGIN) - 1));
 	return true;
 }
 
@@ -1761,24 +1519,12 @@ static bool rtf_end_table(RTF_READER *preader)
 	if (!preader->b_printed_cell_end) {
 		if (!rtf_attrstack_pop_express_all(preader))
 			return false;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_TABLE_CELL_END,
-			sizeof(TAG_TABLE_CELL_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1));
 	}
 	if (!preader->b_printed_row_end) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&preader->ext_push, TAG_TABLE_ROW_END,
-			sizeof(TAG_TABLE_ROW_END) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_TABLE_ROW_END, sizeof(TAG_TABLE_ROW_END) - 1));
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, TAG_TABLE_END,
-		sizeof(TAG_TABLE_END) - 1)) {
-		return false;
-	}
+	QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_TABLE_END, sizeof(TAG_TABLE_END) - 1));
 	preader->is_within_table = false;
 	preader->b_printed_row_begin = false;
 	preader->b_printed_cell_begin = false;
@@ -1804,10 +1550,7 @@ static bool rtf_put_iconv_cache(RTF_READER *preader, int ch)
 			return true;
 		}
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
-		&preader->iconv_push, ch)) {
-		return false;
-	}
+	QRF(ext_buffer_push_uint8(&preader->iconv_push, ch));
 	return true;
 }
 
@@ -2007,10 +1750,7 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	if (hour >= 0 && minute >= 0) {
 		tmp_len += sprintf(tmp_buff + tmp_len, "%02d:%02d ", hour, minute);
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&preader->ext_push, tmp_buff, tmp_len)) {
-		return false;
-	}
+	QRF(ext_buffer_push_bytes(&preader->ext_push, tmp_buff, tmp_len));
 	return true;
 }
 
@@ -2027,11 +1767,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				return true;
 			}
 			if (strcmp(static_cast<char *>(pchild->pdata), "\\title") == 0) {
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_DOCUMENT_TITLE_BEGIN,
-					sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DOCUMENT_TITLE_BEGIN, sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1));
 				pword2 = simple_tree_node_get_sibling(pchild);
 				while (NULL != pword2) {
 					if (NULL != pword2->pdata) {
@@ -2042,27 +1778,16 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 								return false;
 						} else if ('\'' == ((char*)pword2->pdata)[1]) {
 							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
-							if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
-								&preader->iconv_push, ch)) {
-								return false;
-							}
+							QRF(ext_buffer_push_uint8(&preader->iconv_push, ch));
 						}
 					}
 					pword2 = simple_tree_node_get_sibling(pword2);
 				}
 				if (!rtf_flush_iconv_cache(preader))
 					return false;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_DOCUMENT_TITLE_END,
-					sizeof(TAG_DOCUMENT_TITLE_END) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DOCUMENT_TITLE_END, sizeof(TAG_DOCUMENT_TITLE_END) - 1));
 			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\author") == 0) {
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_DOCUMENT_AUTHOR_BEGIN,
-					sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DOCUMENT_AUTHOR_BEGIN, sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1));
 				pword2 = simple_tree_node_get_sibling(pchild);
 				while (NULL != pword2) {
 					if (NULL != pword2->pdata) {
@@ -2073,97 +1798,46 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 								return false;
 						} else if ('\'' == ((char*)pword2->pdata)[1]) {
 							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
-							if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
-								&preader->iconv_push, ch)) {
-								return false;
-							}
+							QRF(ext_buffer_push_uint8(&preader->iconv_push, ch));
 						}
 					}
 					pword2 = simple_tree_node_get_sibling(pword2);
 				}
 				if (!rtf_flush_iconv_cache(preader))
 					return false;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_DOCUMENT_AUTHOR_END,
-					sizeof(TAG_DOCUMENT_AUTHOR_END) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_DOCUMENT_AUTHOR_END, sizeof(TAG_DOCUMENT_AUTHOR_END) - 1));
 			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\creatim") == 0) {
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_BEGIN,
-					sizeof(TAG_COMMENT_BEGIN) - 1)) {
-					return false;
-				}
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, "creation date: ", 15)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+				QRF(ext_buffer_push_bytes(&preader->ext_push, "creation date: ", 15));
 				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (!rtf_word_output_date(preader,
 					    simple_tree_node_get_sibling(pchild)))
 						return false;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_END,
-					sizeof(TAG_COMMENT_END) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
 			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\printim") == 0) {
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_BEGIN,
-					sizeof(TAG_COMMENT_BEGIN) - 1)) {
-					return false;
-				}
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, "last print date: ", 17)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+				QRF(ext_buffer_push_bytes(&preader->ext_push, "last print date: ", 17));
 				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (!rtf_word_output_date(preader,
 					    simple_tree_node_get_sibling(pchild)))
 						return false;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_END,
-					sizeof(TAG_COMMENT_END) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
 			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\buptim") == 0) {
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_BEGIN,
-					sizeof(TAG_COMMENT_BEGIN) - 1)) {
-					return false;
-				}
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, "last backup date: ", 18)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+				QRF(ext_buffer_push_bytes(&preader->ext_push, "last backup date: ", 18));
 				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (!rtf_word_output_date(preader,
 					    simple_tree_node_get_sibling(pchild)))
 						return false;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_END,
-					sizeof(TAG_COMMENT_END) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
 			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\revtim") == 0) {
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_BEGIN,
-					sizeof(TAG_COMMENT_BEGIN) - 1)) {
-					return false;
-				}
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, "modified date: ", 15)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+				QRF(ext_buffer_push_bytes(&preader->ext_push, "modified date: ", 15));
 				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (!rtf_word_output_date(preader,
 					    simple_tree_node_get_sibling(pchild)))
 						return false;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&preader->ext_push, TAG_COMMENT_END,
-					sizeof(TAG_COMMENT_END) - 1)) {
-					return false;
-				}
+				QRF(ext_buffer_push_bytes(&preader->ext_push, TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
 			}
 		}
 		pword = simple_tree_node_get_sibling(pword);
