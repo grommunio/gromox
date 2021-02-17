@@ -30,7 +30,6 @@ static int g_listen_port;
 static int g_listen_sockd;
 static BOOL g_notify_stop;
 static char g_listen_ip[32];
-static char g_list_path[256];
 static std::vector<std::string> g_acl_list;
 static pthread_t g_listener_id;
 
@@ -74,14 +73,12 @@ static void *thread_work_func(void *param)
 			close(sockd);
 			continue;
 		}
-		if ('\0' != g_list_path[0]) {
-			if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-			    client_hostip) == g_acl_list.cend()) {
-				tmp_byte = exmdb_response::ACCESS_DENY;
-				write(sockd, &tmp_byte, 1);
-				close(sockd);
-				continue;
-			}
+		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+		    client_hostip) == g_acl_list.cend()) {
+			tmp_byte = exmdb_response::ACCESS_DENY;
+			write(sockd, &tmp_byte, 1);
+			close(sockd);
+			continue;
 		}
 		pconnection = exmdb_parser_get_connection();
 		if (NULL == pconnection) {
@@ -97,20 +94,16 @@ static void *thread_work_func(void *param)
 	return nullptr;
 }
 
-void exmdb_listener_init(const char *ip,
-	int port, const char *list_path)
+void exmdb_listener_init(const char *ip, int port)
 {
-	if ('\0' != ip[0]) {
+	if (ip[0] != '\0')
 		HX_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
-	} else {
-		HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
-	}
 	g_listen_port = port;
 	g_listen_sockd = -1;
 	g_notify_stop = TRUE;
 }
 
-int exmdb_listener_run()
+int exmdb_listener_run(const char *config_path)
 {
 	if (0 == g_listen_port) {
 		return 0;
@@ -121,17 +114,14 @@ int exmdb_listener_run()
 		return -1;
 	}
 
-	if ('\0' != g_list_path[0]) {
-		auto ret = list_file_read_fixedstrings(g_list_path, nullptr, g_acl_list);
-		if (ret == -ENOENT) {
-			printf("[system]: defaulting to implicit access ACL containing ::1.\n");
-			g_acl_list = {"::1"};
-		} else if (ret < 0) {
-			printf("[exmdb_provider]: Failed to read ACLs from %s: %s\n",
-				g_list_path, strerror(errno));
-			close(g_listen_sockd);
-			return -5;
-		}
+	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, g_acl_list);
+	if (ret == -ENOENT) {
+		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+		g_acl_list = {"::1"};
+	} else if (ret < 0) {
+		printf("[exmdb_provider]: Failed to read ACLs from exmdb_acl.txt: %s\n", strerror(errno));
+		close(g_listen_sockd);
+		return -5;
 	}
 	return 0;
 }

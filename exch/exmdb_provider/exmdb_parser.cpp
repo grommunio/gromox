@@ -27,7 +27,6 @@
 
 static int g_max_threads;
 static int g_max_routers;
-static char g_list_path[256];
 static DOUBLE_LIST g_local_list;
 static DOUBLE_LIST g_router_list;
 static DOUBLE_LIST g_connection_list;
@@ -43,12 +42,10 @@ int exmdb_parser_get_param(int param)
 	return -1;
 }
 
-void exmdb_parser_init(int max_threads,
-	int max_routers, const char *list_path)
+void exmdb_parser_init(int max_threads, int max_routers)
 {
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;
-	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	pthread_mutex_init(&g_router_lock, NULL);
 	pthread_mutex_init(&g_connection_lock, NULL);
 	double_list_init(&g_connection_list);
@@ -1064,18 +1061,15 @@ BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
 	return FALSE;
 }
 
-int exmdb_parser_run()
+int exmdb_parser_run(const char *config_path)
 {
 	BOOL b_private;
 	LOCAL_SVR *plocal;
 	
-	if ('\0' == g_list_path[0]) {
-		return 0;
-	}
-	auto plist = list_file_initd(g_list_path, "/", /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
+	auto plist = list_file_initd("exmdb_list.txt", config_path,
+	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
-		printf("[exmdb_provider]: Failed to read exmdb list from %s: %s\n",
-			g_list_path, strerror(errno));
+		printf("[exmdb_provider]: list_file_initd exmdb_list.txt: %s\n", strerror(errno));
 		return 1;
 	}
 	auto list_num = plist->get_size();
@@ -1114,9 +1108,8 @@ int exmdb_parser_stop()
 	ROUTER_CONNECTION *prouter;
 	EXMDB_CONNECTION *pconnection;
 	
-	if ('\0' == g_list_path[0]) {
+	if (double_list_get_nodes_num(&g_local_list) == 0)
 		return 0;
-	}
 	pthr_ids = NULL;
 	pthread_mutex_lock(&g_connection_lock);
 	num = double_list_get_nodes_num(&g_connection_list);

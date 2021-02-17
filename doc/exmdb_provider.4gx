@@ -4,12 +4,28 @@
 exmdb_provider is a service plugin for http(8gx). It listens on (by default)
 port 5000 for exmdb RPCs, a Gromox-specific protocol.
 .SH Configuration file directives
-.SS acl_path
 .PP
-Path to a file with one address (IPv6 or v4-mapped) per line of allowed
-clients. In its absence, ::1 is default-whitelisted.
+.SH Multiserver selection map
 .PP
-Default: \fI/etc/gromox/exmdb_acl.txt\fP
+The SQL column \fBusers.homedir\fP specifies a home directory location in an
+abstract namespace. This abstract namespace is shared between all Gromox
+programs, and can be used to divide users into custom subsets and steer
+connections to different servers.
+.PP
+exmdb_list.txt specifies how to map from this namespace to exmdb servers. The
+file is used by exmdb clients to select the right server to connect to, and the
+file is used by exmdb_provider to set up its own data structures.
+.PP
+Each line in this file consists of 4 columns separated by whitespace:
+.IP \(bu 4
+Abstract path to prefix-match on.
+.IP \(bu 4
+The type of mail stores that are served beneath the prefix. This must either be
+"private" or "public".
+.IP \(bu 4
+The IPv6 (or v4-mapped) address of the midb server to use for this prefix.
+.IP \(bu 4
+The port number.
 .SH Network protocol
 .PP
 The transmissions on the socket are simple concatenations of protocol data
@@ -36,7 +52,16 @@ pdu := {
 }
 .SH Files
 .IP \(bu 4
+\fIconfig_file_path\fP/exmdb_acl.txt: A file with one address (IPv6 or
+v4-mapped) per line of allowed clients. In its absence, ::1 is
+default-whitelisted.
+.IP \(bu 4
+\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
+.IP \(bu 4
 \fIdata_file_path\fP/mail_bounce/
+.PP
+\fIconfig_file_path\fP and \fIdata_file_path\fP is determined by the
+configuration of the program that loaded the exmdb_provider plugin.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

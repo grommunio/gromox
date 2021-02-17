@@ -88,13 +88,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	int connection_num;
 	int populating_num;
 	char listen_ip[32];
-	char acl_path[256];
 	char org_name[256];
 	char file_name[256];
-	char list_path[256];
 	char config_path[256];
-	char resource_path[256];
-	
 
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -111,14 +107,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			       config_path, strerror(errno));
 			return FALSE;
 		}
-		
-		sprintf(resource_path, "%s/mail_bounce", get_data_path());
-		sprintf(list_path, "%s/exmdb_list.txt", get_data_path());
-
-		str_value = config_file_get_value(pconfig, "acl_path");
-		HX_strlcpy(acl_path, str_value != nullptr ? str_value :
-		           PKGSYSCONFDIR "/exmdb_acl.txt", GX_ARRAY_SIZE(acl_path));
-		printf("[exmdb_provider]: acl file path is %s\n", acl_path);
 		
 		str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
@@ -330,23 +318,23 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 				" number is %d\n", populating_num);
 		
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
-		bounce_producer_init(resource_path, separator);
+		bounce_producer_init(separator);
 		db_engine_init(table_size, cache_interval,
 			b_async, b_wal, mmap_size, populating_num);
 		exmdb_server_init();
 		if (0 == listen_port) {
-			exmdb_parser_init(0, 0, "");
+			exmdb_parser_init(0, 0);
 		} else {
-			exmdb_parser_init(max_threads, max_routers, list_path);
+			exmdb_parser_init(max_threads, max_routers);
 		}
-		exmdb_listener_init(listen_ip, listen_port, acl_path);
-		exmdb_client_init(connection_num, threads_num, list_path);
+		exmdb_listener_init(listen_ip, listen_port);
+		exmdb_client_init(connection_num, threads_num);
 		
 		if (0 != common_util_run()) {
 			printf("[exmdb_provider]: failed to run common util\n");
 			return FALSE;
 		}
-		if (0 != bounce_producer_run()) {
+		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exmdb_provider]: failed to run bounce producer\n");
 			return FALSE;
 		}
@@ -358,11 +346,11 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			printf("[exmdb_provider]: failed to run exmdb server\n");
 			return FALSE;
 		}
-		if (0 != exmdb_parser_run()) {
+		if (exmdb_parser_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb parser\n");
 			return FALSE;
 		}
-		if (0 != exmdb_listener_run()) {
+		if (exmdb_listener_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb listener\n");
 			return FALSE;
 		}
@@ -370,7 +358,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			printf("[exmdb_provider]: fail to trigger exmdb listener\n");
 			return FALSE;
 		}
-		if (0 != exmdb_client_run()) {
+		if (exmdb_client_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb client\n");
 			return FALSE;
 		}
