@@ -64,7 +64,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	char temp_buff[256];
 	char file_name[256];
 	char temp_path[256];
-	char resource_path[256];
 	char submit_command[1024];
 	char *str_value, *psearch;
 	DCERPC_INTERFACE interface_emsmdb;
@@ -79,7 +78,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		snprintf(resource_path, GX_ARRAY_SIZE(resource_path), "%s/notify_bounce", get_data_path());
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
 		auto pfile = config_file_initd(temp_path, get_config_path());
 		if (NULL == pfile) {
@@ -254,14 +252,14 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
 			return FALSE;
 		}
-		bounce_producer_init(resource_path, separator);
+		bounce_producer_init(separator);
 		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
 		msgchg_grouping_init(get_data_path());
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
 		rop_processor_init(average_handles, ping_interval);
-		if (0 != bounce_producer_run()) {
+		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exchange_emsmdb]: failed to run bounce producer\n");
 			return FALSE;
 		}
