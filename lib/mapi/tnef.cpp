@@ -242,7 +242,6 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 {
 	int i;
-	int status;
 	uint32_t offset;
 	uint32_t tmp_int;
 	uint16_t fake_byte;
@@ -255,10 +254,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->ppropname) {
 			return EXT_ERR_ALLOC;
 		}
-		status = tnef_pull_property_name(pext, r->ppropname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(tnef_pull_property_name(pext, r->ppropname));
 	}
 	switch (r->proptype) {
 	case PT_SHORT:
@@ -569,7 +565,6 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 {
 	int i, j;
-	int status;
 	DTR tmp_dtr;
 	uint32_t len;
 	uint32_t offset;
@@ -755,10 +750,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < tf->count; ++i) {
-			status = tnef_pull_propval(pext, tf->ppropval + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(tnef_pull_propval(pext, tf->ppropval + i));
 		}
 		break;
 	}
@@ -793,10 +785,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 					return EXT_ERR_ALLOC;
 			}
 			for (j = 0; j < tf->pplist[i]->count; ++j) {
-				status = tnef_pull_propval(pext, tf->pplist[i]->ppropval + j);
-				if (EXT_ERR_SUCCESS != status) {
-					return status;
-				}
+				TRY(tnef_pull_propval(pext, tf->pplist[i]->ppropval + j));
 			}
 		}
 		break;
@@ -1899,7 +1888,6 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
 	int i;
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint32_t tmp_int;
@@ -1907,10 +1895,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	TRY(ext_buffer_push_uint16(pext, r->proptype));
 	TRY(ext_buffer_push_uint16(pext, r->propid));
 	if (NULL != r->ppropname) {
-		status = tnef_push_property_name(pext, r->ppropname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(tnef_push_property_name(pext, r->ppropname));
 	}
 	switch (r->proptype) {
 	case PT_SHORT:
@@ -2074,7 +2059,6 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
 	int i, j;
-	int status;
 	DTR tmp_dtr;
 	uint32_t offset;
 	uint32_t offset1;
@@ -2149,11 +2133,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	case ATTRIBUTE_ID_ATTACHMENT:
 		TRY(ext_buffer_push_uint32(pext, static_cast<TNEF_PROPLIST *>(r->pvalue)->count));
 		for (i=0; i<((TNEF_PROPLIST*)r->pvalue)->count; i++) {
-			status = tnef_push_propval(pext, ((TNEF_PROPLIST*)
-				r->pvalue)->ppropval + i, alloc, get_propname);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(tnef_push_propval(pext, static_cast<TNEF_PROPLIST *>(r->pvalue)->ppropval + i, alloc, get_propname));
 		}
 		break;
 	case ATTRIBUTE_ID_RECIPTABLE: {
@@ -2162,11 +2142,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 		for (i = 0; i < tf->count; ++i) {
 			TRY(ext_buffer_push_uint32(pext, tf->pplist[i]->count));
 			for (j = 0; j < tf->pplist[i]->count; ++j) {
-				status = tnef_push_propval(pext, tf->pplist[i]->ppropval + j,
-							alloc, get_propname);
-				if (EXT_ERR_SUCCESS != status) {
-					return status;
-				}
+				TRY(tnef_push_propval(pext, tf->pplist[i]->ppropval + j, alloc, get_propname));
 			}
 		}
 		break;
