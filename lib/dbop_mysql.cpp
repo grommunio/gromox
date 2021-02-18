@@ -557,6 +557,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{64, "ALTER TABLE `classes` DROP COLUMN `group_id`"},
 	{65, "ALTER TABLE `members` DROP COLUMN `domain_id`"},
 	{66, "ALTER TABLE `members` DROP COLUMN `group_id`"},
+	{67, "ALTER TABLE `classes` ADD COLUMN `filters` TEXT"},
 	{0, nullptr},
 };
 
