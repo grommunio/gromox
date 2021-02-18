@@ -449,7 +449,7 @@ static const char* flusher_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
 	if (NULL == ret_value) {
-		ret_value = PKGDATASMTPDIR;
+		ret_value = PKGDATADIR "/smtp:" PKGDATADIR;
 	}
 	return ret_value;
 }

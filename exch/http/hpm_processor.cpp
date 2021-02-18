@@ -146,7 +146,7 @@ static const char* hpm_processor_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
     if (NULL == ret_value) {
-		ret_value = PKGDATAHTTPDIR;
+		ret_value = PKGDATADIR "/http:" PKGDATADIR;
     }
     return ret_value;
 }

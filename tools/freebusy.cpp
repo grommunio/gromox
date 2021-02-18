@@ -2327,11 +2327,10 @@ int main(int argc, const char **argv)
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_initd("exmdb_list.txt", PKGDATAAGENTDIR,
+	auto plist = list_file_initd("exmdb_list.txt", PKGSYSCONFDIR,
 	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
 	if (NULL == plist) {
-		fprintf(stderr, "Failed to read exmdb list from %s: %s\n",
-			PKGDATAAGENTDIR "/exmdb_list.txt", strerror(errno));
+		fprintf(stderr, "list_file_initd exmdb_list: %s\n", strerror(errno));
 		exit(1);
 	}
 	auto list_num = plist->get_size();

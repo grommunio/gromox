@@ -248,7 +248,7 @@ int main(int argc, const char **argv)
 
 	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		data_dir = str_val = PKGDATADELIVERYDIR;
+		data_dir = str_val = PKGDATADIR "/delivery:" PKGDATADIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);

@@ -126,7 +126,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, PKGDATAMIDBDIR);
+		strcpy(data_path, PKGDATADIR "/midb:" PKGDATADIR);
 	} else {
 		strcpy(data_path, str_value);
 	}

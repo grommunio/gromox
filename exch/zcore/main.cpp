@@ -174,7 +174,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, PKGDATAZCOREDIR);
+		strcpy(data_path, PKGDATADIR "/zcore:" PKGDATADIR);
 	} else {
 		strcpy(data_path, str_value);
 	}
