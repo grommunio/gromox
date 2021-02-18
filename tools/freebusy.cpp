@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <ctime>
 #include <cstdint>
+#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define SOCKET_TIMEOUT								60
 
 using cookie_jar = std::map<std::string, std::string, std::less<>>;
@@ -112,232 +113,102 @@ static std::shared_ptr<ICAL_COMPONENT> g_tz_component;
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->prefix);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_string(pext, r->remote_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_string(pext, r->prefix));
+	TRY(ext_buffer_push_string(pext, r->remote_id));
 	return ext_buffer_push_bool(pext, r->b_private);
 }
 
 static int exmdb_client_push_get_named_propids(
 	EXT_PUSH *pext, const GET_NAMED_PROPIDS_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_bool(pext, r->b_create);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(ext_buffer_push_bool(pext, r->b_create));
 	return ext_buffer_push_propname_array(pext, r->ppropnames);
 }
 
 static int exmdb_client_push_check_folder_permission_request(
 	EXT_PUSH *pext, const CHECK_FOLDER_PERMISSION_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint64(pext, r->folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(ext_buffer_push_uint64(pext, r->folder_id));
 	return ext_buffer_push_string(pext, r->username);
 }
 
 static int exmdb_client_push_load_content_table_request(
 	EXT_PUSH *pext, const LOAD_CONTENT_TABLE_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint64(pext, r->folder_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(ext_buffer_push_uint32(pext, r->cpid));
+	TRY(ext_buffer_push_uint64(pext, r->folder_id));
 	if (NULL == r->username) {
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 0));
 	} else {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext, r->username);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(ext_buffer_push_string(pext, r->username));
 	}
-	status = ext_buffer_push_uint8(pext, r->table_flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->table_flags));
 	if (NULL == r->prestriction) {
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 0));
 	} else {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_restriction(pext, r->prestriction);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(ext_buffer_push_restriction(pext, r->prestriction));
 	}
 	if (NULL == r->psorts) {
 		return ext_buffer_push_uint8(pext, 0);
 	}
-	status = ext_buffer_push_uint8(pext, 1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, 1));
 	return ext_buffer_push_sortorder_set(pext, r->psorts);
 }
 
 static int exmdb_client_push_unload_table_request(
 	EXT_PUSH *pext, const UNLOAD_TABLE_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_string(pext, r->dir));
 	return ext_buffer_push_uint32(pext, r->table_id);
 }
 
 static int exmdb_client_push_query_table_request(
 	EXT_PUSH *pext, const QUERY_TABLE_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_string(pext, r->dir));
 	if (NULL == r->username) {
-		status = ext_buffer_push_uint8(pext, 0);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 0));
 	} else {
-		status = ext_buffer_push_uint8(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext, r->username);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(ext_buffer_push_string(pext, r->username));
 	}
-	status = ext_buffer_push_uint32(pext, r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->table_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_proptag_array(pext, r->pproptags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->start_pos);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, r->cpid));
+	TRY(ext_buffer_push_uint32(pext, r->table_id));
+	TRY(ext_buffer_push_proptag_array(pext, r->pproptags));
+	TRY(ext_buffer_push_uint32(pext, r->start_pos));
 	return ext_buffer_push_int32(pext, r->row_needed);
 }
 
-static int exmdb_client_push_request(uint8_t call_id,
+static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	void *prequest, BINARY *pbin_out)
 {
-	int status;
-	EXT_PUSH ext_push;
-	
-	if (FALSE == ext_buffer_push_init(
-		&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
-		return EXT_ERR_ALLOC;
-	}
-	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
-	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
-		return status;
-	}
-	status = ext_buffer_push_uint8(&ext_push, call_id);
-	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
-		return status;
-	}
+	TRY(ext_buffer_push_advance(&ext_push, sizeof(uint32_t)));
+	TRY(ext_buffer_push_uint8(&ext_push, call_id));
 	switch (call_id) {
 	case exmdb_callid::CONNECT:
-		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
-			return status;
-		}
+		TRY(exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest)));
 		break;
 	case exmdb_callid::GET_NAMED_PROPIDS:
-		status = exmdb_client_push_get_named_propids(&ext_push, static_cast<GET_NAMED_PROPIDS_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
-			return status;
-		}
+		TRY(exmdb_client_push_get_named_propids(&ext_push, static_cast<GET_NAMED_PROPIDS_REQUEST *>(prequest)));
 		break;
 	case exmdb_callid::CHECK_FOLDER_PERMISSION:
-		status = exmdb_client_push_check_folder_permission_request(&ext_push, static_cast<CHECK_FOLDER_PERMISSION_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
-			return status;
-		}
+		TRY(exmdb_client_push_check_folder_permission_request(&ext_push, static_cast<CHECK_FOLDER_PERMISSION_REQUEST *>(prequest)));
 		break;
 	case exmdb_callid::LOAD_CONTENT_TABLE:
-		status = exmdb_client_push_load_content_table_request(&ext_push, static_cast<LOAD_CONTENT_TABLE_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
-			return status;
-		}
+		TRY(exmdb_client_push_load_content_table_request(&ext_push, static_cast<LOAD_CONTENT_TABLE_REQUEST *>(prequest)));
 		break;
 	case exmdb_callid::UNLOAD_TABLE:
-		status = exmdb_client_push_unload_table_request(&ext_push, static_cast<UNLOAD_TABLE_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
-			return status;
-		}
+		TRY(exmdb_client_push_unload_table_request(&ext_push, static_cast<UNLOAD_TABLE_REQUEST *>(prequest)));
 		break;
 	case exmdb_callid::QUERY_TABLE:
-		status = exmdb_client_push_query_table_request(&ext_push, static_cast<QUERY_TABLE_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
-			return status;
-		}
+		TRY(exmdb_client_push_query_table_request(&ext_push, static_cast<QUERY_TABLE_REQUEST *>(prequest)));
 		break;
 	default:
-		ext_buffer_push_free(&ext_push);
 		return EXT_ERR_BAD_SWITCH;
 	}
 	pbin_out->cb = ext_push.offset;
@@ -347,6 +218,18 @@ static int exmdb_client_push_request(uint8_t call_id,
 	/* memory referneced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_push.data;
 	return EXT_ERR_SUCCESS;
+}
+
+static int exmdb_client_push_request(uint8_t call_id,
+	void *prequest, BINARY *pbin_out)
+{
+	EXT_PUSH ext_push;
+	if (!ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT))
+		return EXT_ERR_ALLOC;
+	auto ret = exmdb_client_push_request2(ext_push, call_id, prequest, pbin_out);
+	if (ret != 0)
+		ext_buffer_push_free(&ext_push);
+	return ret;
 }
 
 static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
