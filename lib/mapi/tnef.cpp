@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 #define TNEF_LEGACY								0x0001
 #define TNEF_VERSION							0x10000
@@ -212,18 +213,11 @@ static uint8_t tnef_align(uint32_t length)
 
 static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t tmp_int;
 	
-	status = ext_buffer_pull_guid(pext, &r->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint32(pext, &tmp_int);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_guid(pext, &r->guid));
+	TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 	if (0 == tmp_int) {
 		r->kind = MNID_ID;
 		r->plid = static_cast<uint32_t *>(pext->alloc(sizeof(uint32_t)));
@@ -233,15 +227,9 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 		return ext_buffer_pull_uint32(pext, r->plid);
 	} else if (1 == tmp_int) {
 		r->kind = MNID_STRING;
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		offset = pext->offset + tmp_int;
-		status = ext_buffer_pull_wstring(pext, &r->pname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_wstring(pext, &r->pname));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -259,14 +247,8 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 	uint32_t tmp_int;
 	uint16_t fake_byte;
 	
-	status = ext_buffer_pull_uint16(pext, &r->proptype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->propid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &r->proptype));
+	TRY(ext_buffer_pull_uint16(pext, &r->propid));
 	r->ppropname = NULL;
 	if (r->propid & 0x8000) {
 		r->ppropname = static_cast<PROPERTY_NAME *>(pext->alloc(sizeof(PROPERTY_NAME)));
@@ -284,10 +266,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext, static_cast<uint16_t *>(r->pvalue));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, static_cast<uint16_t *>(r->pvalue)));
 		return ext_buffer_pull_advance(pext, 2);
 	case PT_ERROR:
 	case PT_LONG:
@@ -314,10 +293,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext, &fake_byte);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &fake_byte));
 		*(uint8_t*)r->pvalue = fake_byte;
 		return ext_buffer_pull_advance(pext, 2);
 	case PT_CURRENCY:
@@ -329,44 +305,26 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		return ext_buffer_pull_uint64(pext, static_cast<uint64_t *>(r->pvalue));
 	case PT_STRING8:
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		if (1 != tmp_int) {
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		offset = pext->offset + tmp_int;
-		status = ext_buffer_pull_string(pext, (char**)&r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, reinterpret_cast<char **>(&r->pvalue)));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset;
 		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
 	case PT_UNICODE:
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		if (1 != tmp_int) {
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		offset = pext->offset + tmp_int;
-		status = ext_buffer_pull_wstring(pext, (char**)&r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_wstring(pext, reinterpret_cast<char **>(&r->pvalue)));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -389,28 +347,19 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		if (1 != tmp_int) {
 			return EXT_ERR_FORMAT;
 		}
 		auto bv = static_cast<BINARY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &bv->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &bv->cb));
 		if (bv->cb < 16 || bv->cb > pext->data_size - pext->offset)
 			return EXT_ERR_FORMAT;
 		bv->pv = pext->alloc(bv->cb);
 		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
 		offset = pext->offset;
-		status = ext_buffer_pull_bytes(pext, bv->pv, bv->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, bv->pv, bv->cb));
 		if (memcmp(bv->pv, IID_IMessage, 16) != 0 &&
 		    memcmp(bv->pv, IID_IStorage, 16) != 0 &&
 		    memcmp(bv->pv, IID_IStream, 16) != 0)
@@ -423,28 +372,19 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext, &tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 		if (1 != tmp_int) {
 			return EXT_ERR_FORMAT;
 		}
 		auto bv = static_cast<BINARY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &bv->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &bv->cb));
 		if (bv->cb + pext->offset > pext->data_size)
 			return EXT_ERR_FORMAT;
 		bv->pv = pext->alloc(bv->cb);
 		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
 		offset = pext->offset;
-		status = ext_buffer_pull_bytes(pext, bv->pv, bv->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, bv->pv, bv->cb));
 		return ext_buffer_pull_advance(pext,
 			tnef_align(pext->offset - offset));
 	}
@@ -454,10 +394,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto sa = static_cast<SHORT_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &sa->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &sa->count));
 		if (sa->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (sa->count == 0) {
@@ -468,14 +405,8 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < sa->count; ++i) {
-			status = ext_buffer_pull_uint16(pext, sa->ps + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_pull_advance(pext, 2);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint16(pext, sa->ps + i));
+			TRY(ext_buffer_pull_advance(pext, 2));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -485,10 +416,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &la->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &la->count));
 		if (la->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (la->count == 0) {
@@ -499,10 +427,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < la->count; ++i) {
-			status = ext_buffer_pull_uint32(pext, la->pl + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint32(pext, la->pl + i));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -512,10 +437,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto la = static_cast<LONGLONG_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &la->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &la->count));
 		if (la->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (la->count == 0) {
@@ -526,10 +448,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < la->count; ++i) {
-			status = ext_buffer_pull_uint64(pext, la->pll + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint64(pext, la->pll + i));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -539,10 +458,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &sa->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &sa->count));
 		if (sa->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (sa->count == 0) {
@@ -553,23 +469,14 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < sa->count; ++i) {
-			status = ext_buffer_pull_uint32(pext, &tmp_int);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 			offset = pext->offset + tmp_int;
-			status = ext_buffer_pull_string(pext, &sa->ppstr[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_string(pext, &sa->ppstr[i]));
 			if (pext->offset > offset) {
 				return EXT_ERR_FORMAT;
 			}
 			pext->offset = offset;
-			status = ext_buffer_pull_advance(pext, tnef_align(tmp_int));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_advance(pext, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -579,10 +486,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &sa->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &sa->count));
 		if (sa->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (sa->count == 0) {
@@ -593,23 +497,14 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < sa->count; ++i) {
-			status = ext_buffer_pull_uint32(pext, &tmp_int);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 			offset = pext->offset + tmp_int;
-			status = ext_buffer_pull_wstring(pext, &sa->ppstr[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_wstring(pext, &sa->ppstr[i]));
 			if (pext->offset > offset) {
 				return EXT_ERR_FORMAT;
 			}
 			pext->offset = offset;
-			status = ext_buffer_pull_advance(pext, tnef_align(tmp_int));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_advance(pext, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -619,10 +514,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto ga = static_cast<GUID_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &ga->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &ga->count));
 		if (ga->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (ga->count == 0) {
@@ -633,10 +525,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < ga->count; ++i) {
-			status = ext_buffer_pull_guid(pext, ga->pguid + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_guid(pext, ga->pguid + i));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -646,10 +535,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto ba = static_cast<BINARY_ARRAY *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &ba->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &ba->count));
 		if (ba->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (ba->count == 0) {
@@ -660,10 +546,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < ba->count; ++i) {
-			status = ext_buffer_pull_uint32(pext, &ba->pbin[i].cb);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint32(pext, &ba->pbin[i].cb));
 			if (ba->pbin[i].cb + pext->offset > pext->data_size)
 				return EXT_ERR_FORMAT;
 			if (ba->pbin[i].cb == 0) {
@@ -674,15 +557,8 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 					return EXT_ERR_ALLOC;
 			}
 			offset = pext->offset;
-			status = ext_buffer_pull_bytes(pext, ba->pbin[i].pv, ba->pbin[i].cb);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_pull_advance(pext,
-				tnef_align(pext->offset - offset));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_bytes(pext, ba->pbin[i].pv, ba->pbin[i].cb));
+			TRY(ext_buffer_pull_advance(pext,tnef_align(pext->offset - offset)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -703,19 +579,13 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
     uint16_t checksum;
 	TRP_HEADER header;
 
-    status = ext_buffer_pull_uint8(pext, &r->lvl);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint8(pext, &r->lvl));
 	if (LVL_MESSAGE != r->lvl &&
 		LVL_ATTACHMENT != r->lvl) {
 		debug_info("[tnef]: attribute level error");
 		return EXT_ERR_FORMAT;
 	}
-	status = ext_buffer_pull_uint32(pext, &r->attr_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &r->attr_id));
 	if (LVL_MESSAGE == r->lvl) {
 		switch (r->attr_id) {
 		case ATTRIBUTE_ID_MSGPROPS:
@@ -764,10 +634,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			return EXT_ERR_FORMAT;
 		}
 	}
-	status = ext_buffer_pull_uint32(pext, &len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint32(pext, &len));
 	if (pext->offset + len > pext->data_size) {
 		return EXT_ERR_FORMAT;
 	}
@@ -778,58 +645,35 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext, &header.trp_id);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &header.trp_id));
 		if (0x0004 != header.trp_id) {
 			debug_info("[tnef]: tripidOneOff error");
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_pull_uint16(pext, &header.total_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &header.displayname_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &header.address_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &header.total_len));
+		TRY(ext_buffer_pull_uint16(pext, &header.displayname_len));
+		TRY(ext_buffer_pull_uint16(pext, &header.address_len));
 		if (header.total_len != header.displayname_len +
 			header.address_len + 16) {
 			debug_info("[tnef]: triple header's structure-length error");
 			return EXT_ERR_FORMAT;
 		}
 		offset1 = pext->offset;
-		status = ext_buffer_pull_string(pext,
-			&((ATTR_ADDR*)r->pvalue)->displayname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
 		offset1 += header.displayname_len;
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: triple header's sender-name-length error");
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset1;
-		status = ext_buffer_pull_string(pext,
-			&((ATTR_ADDR*)r->pvalue)->address);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->address));
 		offset1 += header.address_len;
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: triple header's sender-email-length error");
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset1;
-		status = ext_buffer_pull_advance(pext, 8);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_advance(pext, 8));
 		break;
 	case ATTRIBUTE_ID_SUBJECT:
 	case ATTRIBUTE_ID_MESSAGEID:
@@ -839,10 +683,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
 	case ATTRIBUTE_ID_PARENTID:
 	case ATTRIBUTE_ID_CONVERSATIONID:
-		status = ext_buffer_pull_string(pext, (char**)&r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, reinterpret_cast<char **>(&r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_DATESTART:
 	case ATTRIBUTE_ID_DATEEND:
@@ -855,34 +696,13 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.year);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.month);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.day);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.hour);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.min);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.sec);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &tmp_dtr.dow);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.year));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.month));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.day));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.hour));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.min));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.sec));
+		TRY(ext_buffer_pull_uint16(pext, &tmp_dtr.dow));
 		tmp_tm.tm_sec = tmp_dtr.sec;
 		tmp_tm.tm_min = tmp_dtr.min;
 		tmp_tm.tm_hour = tmp_dtr.hour;
@@ -900,30 +720,21 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext, static_cast<uint16_t *>(r->pvalue));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, static_cast<uint16_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_AIDOWNER:
 		r->pvalue = pext->alloc(sizeof(uint32_t));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(r->pvalue));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_BODY:
 		r->pvalue = pext->alloc(len + 1);
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_bytes(pext, r->pvalue, len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, r->pvalue, len));
 		((char*)r->pvalue)[len] = '\0';
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
@@ -933,10 +744,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto tf = static_cast<TNEF_PROPLIST *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &tf->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tf->count));
 		if (tf->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (tf->count == 0) {
@@ -960,10 +768,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto tf = static_cast<TNEF_PROPSET *>(r->pvalue);
-		status = ext_buffer_pull_uint32(pext, &tf->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint32(pext, &tf->count));
 		if (tf->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
 		if (tf->count == 0) {
@@ -977,10 +782,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			tf->pplist[i] = static_cast<TNEF_PROPLIST *>(pext->alloc(sizeof(TNEF_PROPLIST)));
 			if (tf->pplist[i] == nullptr)
 				return EXT_ERR_ALLOC;
-			status = ext_buffer_pull_uint32(pext, &tf->pplist[i]->count);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint32(pext, &tf->pplist[i]->count));
 			if (tf->pplist[i]->count > 0xFFFF)
 				return EXT_ERR_FORMAT;
 			if (tf->pplist[i]->count == 0) {
@@ -1005,31 +807,17 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext, &tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len));
 		offset1 = pext->offset + tmp_len;
-		status = ext_buffer_pull_string(pext,
-			&((ATTR_ADDR*)r->pvalue)->displayname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: owner's display-name-length error");
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset1;
-		status = ext_buffer_pull_uint16(pext, &tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &tmp_len));
 		offset1 = pext->offset + tmp_len;
-		status = ext_buffer_pull_string(pext,
-			&((ATTR_ADDR*)r->pvalue)->address);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->address));
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: owner's address-length error");
 			return EXT_ERR_FORMAT;
@@ -1042,26 +830,11 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			return EXT_ERR_ALLOC;
 		}
 		auto rd = static_cast<REND_DATA *>(r->pvalue);
-		status = ext_buffer_pull_uint16(pext, &rd->attach_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint32(pext, &rd->attach_position);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &rd->render_width);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint16(pext, &rd->render_height);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_pull_uint32(pext, &rd->data_flags);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_uint16(pext, &rd->attach_type));
+		TRY(ext_buffer_pull_uint32(pext, &rd->attach_position));
+		TRY(ext_buffer_pull_uint16(pext, &rd->render_width));
+		TRY(ext_buffer_pull_uint16(pext, &rd->render_height));
+		TRY(ext_buffer_pull_uint32(pext, &rd->data_flags));
 		break;
 	}
 	case ATTRIBUTE_ID_DELEGATE:
@@ -1077,10 +850,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		bv->pv = pext->alloc(len);
 		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
-		status = ext_buffer_pull_bytes(pext, bv->pv, len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_pull_bytes(pext, bv->pv, len));
 		break;
 	}
 	case ATTRIBUTE_ID_TNEFVERSION:
@@ -1095,10 +865,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (la->pl == nullptr)
 			return EXT_ERR_ALLOC;
 		for (i = 0; i < la->count; ++i) {
-			status = ext_buffer_pull_uint32(pext, la->pl + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_pull_uint32(pext, la->pl + i));
 		}
 		break;
 	}
@@ -1108,10 +875,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		return EXT_ERR_FORMAT;
 	}
 	pext->offset = offset + len;
-	status = ext_buffer_pull_uint16(pext, &checksum);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_pull_uint16(pext, &checksum));
 #ifdef _DEBUG_UMTA
 	if (checksum != tnef_generate_checksum(
 		pext->data + offset, len)) {
@@ -2102,44 +1866,28 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 
 static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 {
-	int status;
 	uint32_t offset;
 	uint32_t offset1;
 	uint32_t tmp_int;
 	
-	status = ext_buffer_push_guid(pext, &r->guid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_guid(pext, &r->guid));
 	if (r->kind == MNID_ID)
 		tmp_int = 0;
 	else if (r->kind == MNID_STRING)
 		tmp_int = 1;
 	else
 		return EXT_ERR_FORMAT;
-	status = ext_buffer_push_uint32(pext, tmp_int);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, tmp_int));
 	if (0 == tmp_int) {
 		return ext_buffer_push_uint32(pext, *r->plid);
 	} else if (1 == tmp_int) {
 		offset = pext->offset;
-		status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_wstring(pext, r->pname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+		TRY(ext_buffer_push_wstring(pext, r->pname));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
 		pext->offset = offset;
-		status = ext_buffer_push_uint32(pext, tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, tmp_int));
 		pext->offset = offset1;
 		return ext_buffer_push_bytes(pext,
 			g_pad_bytes, tnef_align(tmp_int));
@@ -2156,14 +1904,8 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	uint32_t offset1;
 	uint32_t tmp_int;
 	
-	status = ext_buffer_push_uint16(pext, r->proptype);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->propid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint16(pext, r->proptype));
+	TRY(ext_buffer_push_uint16(pext, r->propid));
 	if (NULL != r->ppropname) {
 		status = tnef_push_property_name(pext, r->ppropname);
 		if (EXT_ERR_SUCCESS != status) {
@@ -2172,10 +1914,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	}
 	switch (r->proptype) {
 	case PT_SHORT:
-		status = ext_buffer_push_uint16(pext, *(uint16_t*)r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, *static_cast<uint16_t *>(r->pvalue)));
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
 	case PT_ERROR:
 	case PT_LONG:
@@ -2186,60 +1925,33 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_APPTIME:
 		return ext_buffer_push_double(pext, *(double*)r->pvalue);
 	case PT_BOOLEAN:
-		status = ext_buffer_push_uint16(pext, *(uint8_t*)r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, *static_cast<uint8_t *>(r->pvalue)));
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)r->pvalue);
 	case PT_STRING8:
-		status = ext_buffer_push_uint32(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, 1));
 		offset = pext->offset;
-		status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext, static_cast<char *>(r->pvalue));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+		TRY(ext_buffer_push_string(pext, static_cast<char *>(r->pvalue)));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
 		pext->offset = offset;
-		status = ext_buffer_push_uint32(pext, tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, tmp_int));
 		pext->offset = offset1;
 		return ext_buffer_push_bytes(pext,
 			g_pad_bytes, tnef_align(tmp_int));
 	case PT_UNICODE:
-		status = ext_buffer_push_uint32(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, 1));
 		offset = pext->offset;
-		status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_wstring(pext, static_cast<char *>(r->pvalue));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+		TRY(ext_buffer_push_wstring(pext, static_cast<char *>(r->pvalue)));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
 		pext->offset = offset;
-		status = ext_buffer_push_uint32(pext, tmp_int);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, tmp_int));
 		pext->offset = offset1;
 		return ext_buffer_push_bytes(pext,
 			g_pad_bytes, tnef_align(tmp_int));
@@ -2248,211 +1960,109 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
-		status = ext_buffer_push_uint32(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, 1));
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		if (bv->cb != 0xFFFFFFFF) {
-			status = ext_buffer_push_uint32(pext, bv->cb + 16);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_bytes(pext, IID_IStorage, 16);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_bytes(pext, bv->pb, bv->cb);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, bv->cb + 16));
+			TRY(ext_buffer_push_bytes(pext, IID_IStorage, 16));
+			TRY(ext_buffer_push_bytes(pext, bv->pb, bv->cb));
 			return ext_buffer_push_bytes(pext, g_pad_bytes,
 			       tnef_align(bv->cb + 16));
 		} else {
 			offset = pext->offset;
-			status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_bytes(pext, IID_IMessage, 16);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+			TRY(ext_buffer_push_bytes(pext, IID_IMessage, 16));
 			if (FALSE == tnef_serialize_internal(pext, TRUE,
 			    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
 				return EXT_ERR_FORMAT;
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
-			status = ext_buffer_push_uint32(pext, tmp_int);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, tmp_int));
 			pext->offset = offset1;
 			return ext_buffer_push_bytes(pext,
 				g_pad_bytes, tnef_align(tmp_int));
 		}
 	}
 	case PT_BINARY: {
-		status = ext_buffer_push_uint32(pext, 1);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, 1));
 		auto bv = static_cast<BINARY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, bv->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, bv->pb, bv->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, bv->cb));
+		TRY(ext_buffer_push_bytes(pext, bv->pb, bv->cb));
 		return ext_buffer_push_bytes(pext, g_pad_bytes, tnef_align(bv->cb));
 	}
 	case PT_MV_SHORT: {
 		auto sa = static_cast<SHORT_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, sa->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, sa->count));
 		for (i = 0; i < sa->count; ++i) {
-			status = ext_buffer_push_uint16(pext, sa->ps[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_bytes(pext, g_pad_bytes, 2);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint16(pext, sa->ps[i]));
+			TRY(ext_buffer_push_bytes(pext, g_pad_bytes, 2));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_LONG: {
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, la->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, la->count));
 		for (i = 0; i < la->count; ++i) {
-			status = ext_buffer_push_uint32(pext, la->pl[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, la->pl[i]));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_I8: {
 		auto la = static_cast<LONGLONG_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, la->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, la->count));
 		for (i = 0; i < la->count; ++i) {
-			status = ext_buffer_push_uint64(pext, la->pll[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint64(pext, la->pll[i]));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_STRING8: {
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, sa->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, sa->count));
 		for (i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
-			status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_string(pext, sa->ppstr[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+			TRY(ext_buffer_push_string(pext, sa->ppstr[i]));
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
-			status = ext_buffer_push_uint32(pext, tmp_int);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, tmp_int));
 			pext->offset = offset1;
-			status = ext_buffer_push_bytes(pext,
-				g_pad_bytes, tnef_align(tmp_int));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_bytes(pext,g_pad_bytes, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_UNICODE: {
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, sa->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, sa->count));
 		for (i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
-			status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_wstring(pext, sa->ppstr[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+			TRY(ext_buffer_push_wstring(pext, sa->ppstr[i]));
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
-			status = ext_buffer_push_uint32(pext, tmp_int);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, tmp_int));
 			pext->offset = offset1;
-			status = ext_buffer_push_bytes(pext,
-				g_pad_bytes, tnef_align(tmp_int));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_bytes(pext,g_pad_bytes, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_CLSID: {
 		auto ga = static_cast<GUID_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, ga->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, ga->count));
 		for (i = 0; i < ga->count; ++i) {
-			status = ext_buffer_push_guid(pext, ga->pguid + i);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_guid(pext, ga->pguid + i));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {
 		auto ba = static_cast<BINARY_ARRAY *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, ba->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, ba->count));
 		for (i = 0; i < ba->count; ++i) {
-			status = ext_buffer_push_uint32(pext, ba->pbin[i].cb);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_bytes(pext, ba->pbin[i].pb, ba->pbin[i].cb);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
-			status = ext_buffer_push_bytes(pext, g_pad_bytes,
-			         tnef_align(ba->pbin[i].cb));
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, ba->pbin[i].cb));
+			TRY(ext_buffer_push_bytes(pext, ba->pbin[i].pb, ba->pbin[i].cb));
+			TRY(ext_buffer_push_bytes(pext, g_pad_bytes,tnef_align(ba->pbin[i].cb)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -2475,55 +2085,23 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	TRP_HEADER header;
 	static uint8_t empty_bytes[8];
 
-    status = ext_buffer_push_uint8(pext, r->lvl);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->attr_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint8(pext, r->lvl));
+	TRY(ext_buffer_push_uint32(pext, r->attr_id));
 	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
 	switch (r->attr_id) {
 	case ATTRIBUTE_ID_FROM:
-		status = ext_buffer_push_uint16(pext, 0x0004);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, 0x0004));
 		header.displayname_len =
 			strlen(((ATTR_ADDR*)r->pvalue)->displayname) + 1;
 		header.address_len = strlen(((ATTR_ADDR*)r->pvalue)->address) + 1;
 		header.total_len = header.displayname_len + header.address_len + 16;
-		status = ext_buffer_push_uint16(pext, header.total_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, header.displayname_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, header.address_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext,
-			((ATTR_ADDR*)r->pvalue)->displayname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext,
-			((ATTR_ADDR*)r->pvalue)->address);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_bytes(pext, empty_bytes, 8);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, header.total_len));
+		TRY(ext_buffer_push_uint16(pext, header.displayname_len));
+		TRY(ext_buffer_push_uint16(pext, header.address_len));
+		TRY(ext_buffer_push_string(pext, static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
+		TRY(ext_buffer_push_string(pext, static_cast<ATTR_ADDR *>(r->pvalue)->address));
+		TRY(ext_buffer_push_bytes(pext, empty_bytes, 8));
 		break;
 	case ATTRIBUTE_ID_SUBJECT:
 	case ATTRIBUTE_ID_MESSAGEID:
@@ -2531,10 +2109,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	case ATTRIBUTE_ID_ORIGNINALMESSAGECLASS:
 	case ATTRIBUTE_ID_MESSAGECLASS:
 	case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
-		status = ext_buffer_push_string(pext, static_cast<char *>(r->pvalue));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_string(pext, static_cast<char *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_DATESTART:
 	case ATTRIBUTE_ID_DATEEND:
@@ -2552,61 +2127,27 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 		tmp_dtr.month = tmp_tm.tm_mon + 1;
 		tmp_dtr.year = tmp_tm.tm_year + 1900;
 		tmp_dtr.dow = tmp_tm.tm_wday + 1;
-		status = ext_buffer_push_uint16(pext, tmp_dtr.year);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_dtr.month);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_dtr.day);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_dtr.hour);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_dtr.min);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_dtr.sec);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, tmp_dtr.dow);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.year));
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.month));
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.day));
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.hour));
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.min));
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.sec));
+		TRY(ext_buffer_push_uint16(pext, tmp_dtr.dow));
 		break;
 	case ATTRIBUTE_ID_REQUESTRES:
 	case ATTRIBUTE_ID_PRIORITY:
-		status = ext_buffer_push_uint16(pext, *(uint16_t*)r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, *static_cast<uint16_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_AIDOWNER:
-		status = ext_buffer_push_uint32(pext, *(uint32_t*)r->pvalue);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, *static_cast<uint32_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_BODY:
-		status = ext_buffer_push_bytes(pext, static_cast<char *>(r->pvalue), strlen(static_cast<char *>(r->pvalue)));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, static_cast<char *>(r->pvalue), strlen(static_cast<char *>(r->pvalue))));
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
 	case ATTRIBUTE_ID_ATTACHMENT:
-		status = ext_buffer_push_uint32(pext,
-			((TNEF_PROPLIST*)r->pvalue)->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, static_cast<TNEF_PROPLIST *>(r->pvalue)->count));
 		for (i=0; i<((TNEF_PROPLIST*)r->pvalue)->count; i++) {
 			status = tnef_push_propval(pext, ((TNEF_PROPLIST*)
 				r->pvalue)->ppropval + i, alloc, get_propname);
@@ -2617,15 +2158,9 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 		break;
 	case ATTRIBUTE_ID_RECIPTABLE: {
 		auto tf = static_cast<TNEF_PROPSET *>(r->pvalue);
-		status = ext_buffer_push_uint32(pext, tf->count);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint32(pext, tf->count));
 		for (i = 0; i < tf->count; ++i) {
-			status = ext_buffer_push_uint32(pext, tf->pplist[i]->count);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, tf->pplist[i]->count));
 			for (j = 0; j < tf->pplist[i]->count; ++j) {
 				status = tnef_push_propval(pext, tf->pplist[i]->ppropval + j,
 							alloc, get_propname);
@@ -2640,68 +2175,32 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	case ATTRIBUTE_ID_SENTFOR: {
 		auto aa = static_cast<ATTR_ADDR *>(r->pvalue);
 		tmp_len = strlen(aa->displayname) + 1;
-		status = ext_buffer_push_uint16(pext, tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext, aa->displayname);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, tmp_len));
+		TRY(ext_buffer_push_string(pext, aa->displayname));
 		tmp_len = strlen(aa->address) + 1;
-		status = ext_buffer_push_uint16(pext, tmp_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_string(pext, aa->address);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, tmp_len));
+		TRY(ext_buffer_push_string(pext, aa->address));
 		break;
 	}
 	case ATTRIBUTE_ID_ATTACHRENDDATA: {
 		auto rd = static_cast<REND_DATA *>(r->pvalue);
-		status = ext_buffer_push_uint16(pext, rd->attach_type);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint32(pext, rd->attach_position);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, rd->render_width);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint16(pext, rd->render_height);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_uint32(pext, rd->data_flags);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_uint16(pext, rd->attach_type));
+		TRY(ext_buffer_push_uint32(pext, rd->attach_position));
+		TRY(ext_buffer_push_uint16(pext, rd->render_width));
+		TRY(ext_buffer_push_uint16(pext, rd->render_height));
+		TRY(ext_buffer_push_uint32(pext, rd->data_flags));
 		break;
 	}
 	case ATTRIBUTE_ID_DELEGATE:
 	case ATTRIBUTE_ID_ATTACHDATA:
 	case ATTRIBUTE_ID_ATTACHMETAFILE:
 	case ATTRIBUTE_ID_MESSAGESTATUS:
-		status = ext_buffer_push_bytes(pext,
-					((BINARY*)r->pvalue)->pb,
-					((BINARY*)r->pvalue)->cb);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ext_buffer_push_bytes(pext, static_cast<BINARY *>(r->pvalue)->pb, static_cast<BINARY *>(r->pvalue)->cb));
 		break;
 	case ATTRIBUTE_ID_TNEFVERSION:
 	case ATTRIBUTE_ID_OEMCODEPAGE:
 		for (i=0; i<((LONG_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_uint32(pext,
-				((LONG_ARRAY*)r->pvalue)->pl[i]);
-			if (EXT_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ext_buffer_push_uint32(pext, static_cast<LONG_ARRAY *>(r->pvalue)->pl[i]));
 		}
 		break;
 	default:
@@ -2710,10 +2209,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	offset1 = pext->offset;
 	tmp_len = offset1 - (offset + sizeof(uint32_t));
 	pext->offset = offset;
-	status = ext_buffer_push_uint32(pext, tmp_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ext_buffer_push_uint32(pext, tmp_len));
 	pext->offset = offset1;
 	offset += sizeof(uint32_t);
 	checksum = tnef_generate_checksum(pext->data + offset, tmp_len);
