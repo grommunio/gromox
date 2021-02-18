@@ -33,8 +33,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	int cache_interval;
 	char temp_buff[45];
 	char file_name[256];
-	char temp_path[256];
-	char *str_value, *psearch;
+	char temp_path[256], *psearch;
 	DCERPC_INTERFACE interface;
 	
 	/* path contains the config files directory */
@@ -59,7 +58,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 			org_name = "Gromox default";
 		}
 		printf("[exchange_nsp]: x500 org name is \"%s\"\n", org_name);
-		str_value = config_file_get_value(pfile, "HASH_TABLE_SIZE");
+		auto str_value = config_file_get_value(pfile, "HASH_TABLE_SIZE");
 		if (NULL == str_value) {
 			table_size = 3000;
 			config_file_set_value(pfile, "HASH_TABLE_SIZE", "3000");

@@ -243,14 +243,12 @@ int main(int argc, const char **argv)
 	int mysql_port;
 	int store_ratio;
 	uint16_t propid;
-	char *str_value;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
 	char db_name[256];
 	uint64_t max_size;
 	MYSQL_RES *pmyres;
-	char *mysql_passwd;
 	char tmp_buff[256];
 	char temp_path[256];
 	sqlite3_stmt* pstmt;
@@ -271,7 +269,7 @@ int main(int argc, const char **argv)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
-	str_value = config_file_get_value(pconfig, "PUBLIC_STORE_RATIO");
+	auto str_value = config_file_get_value(pconfig, "PUBLIC_STORE_RATIO");
 	if (NULL == str_value) {
 		store_ratio = 10;
 	} else {
@@ -304,8 +302,7 @@ int main(int argc, const char **argv)
 		strcpy(mysql_user, str_value);
 	}
 
-	mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
-
+	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");

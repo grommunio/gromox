@@ -64,8 +64,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	char temp_buff[256];
 	char file_name[256];
 	char temp_path[256];
-	char submit_command[1024];
-	char *str_value, *psearch;
+	char submit_command[1024], *psearch;
 	DCERPC_INTERFACE interface_emsmdb;
 	DCERPC_INTERFACE interface_async_emsmdb;
 	
@@ -85,7 +84,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			       temp_path, strerror(errno));
 			return FALSE;
 		}
-		str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
+		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
 			strcpy(separator, " ");
 		} else {

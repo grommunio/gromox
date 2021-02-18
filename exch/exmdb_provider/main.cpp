@@ -74,7 +74,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	int max_rule;
 	char *psearch;
 	int table_size;
-	char *str_value;
 	int listen_port;
 	int max_routers;
 	int max_threads;
@@ -108,7 +107,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			return FALSE;
 		}
 		
-		str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
+		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
 			strcpy(separator, ";");
 		} else {

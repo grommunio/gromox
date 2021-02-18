@@ -35,12 +35,10 @@ int main(int argc, const char **argv)
 	MYSQL *pmysql;
 	char dir[256];
 	int mysql_port;
-	char *str_value;
 	MYSQL_ROW myrow;
 	sqlite3 *psqlite;
 	char db_name[256];
 	MYSQL_RES *pmyres;
-	char *mysql_passwd;
 	char tmp_sql[1024];
 	char temp_path[256];
 	sqlite3_stmt* pstmt;
@@ -61,7 +59,7 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 
-	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
+	auto str_value = config_file_get_value(pconfig, "MYSQL_HOST");
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
 	} else {
@@ -85,8 +83,7 @@ int main(int argc, const char **argv)
 		strcpy(mysql_user, str_value);
 	}
 
-	mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
-
+	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");

@@ -494,7 +494,7 @@ static BOOL log_plugin_flush_log()
 static BOOL svc_log_plugin(int reason, void **ppdata)
 {
 	char file_name[256], tmp_path[256], temp_buff[64], log_file_name[256];
-	char *str_value, *psearch;
+	char *psearch;
 	int cache_size, log_level, files_num;
 
 	switch (reason) {
@@ -515,7 +515,7 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 			       tmp_path, strerror(errno));
 			return false;
 		}
-		str_value = config_file_get_value(pfile, "LOG_LEVEL");
+		auto str_value = config_file_get_value(pfile, "LOG_LEVEL");
 		if (str_value == nullptr) {
 			log_level = 0;
 			config_file_set_value(pfile, "LOG_LEVEL", "0");

@@ -106,7 +106,6 @@ int main(int argc, const char **argv)
 	char listen_ip[32];
 	char temp_path[256];
 	char temp_line[2048];
-	char *str_value;
 	TIMER *ptimer;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
@@ -126,7 +125,7 @@ int main(int argc, const char **argv)
 	}
 
 	char config_dir[256];
-	str_value = config_file_get_value(pconfig, "config_file_path");
+	auto str_value = config_file_get_value(pconfig, "config_file_path");
 	HX_strlcpy(config_dir, str_value != nullptr ? str_value :
 	           PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
 	str_value = config_file_get_value(pconfig, "timer_state_path");

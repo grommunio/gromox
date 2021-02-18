@@ -35,7 +35,6 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 {
-	char *str_value;
 	char log_path[256];
 	char state_dir[256], domainlist_path[256];
 	char aliasaddress_path[256];
@@ -44,7 +43,6 @@ int main(int argc, const char **argv)
 	char mysql_host[256];
 	int mysql_port;
 	char mysql_user[256];
-	char *mysql_passwd;
 	char db_name[256];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -59,7 +57,7 @@ int main(int argc, const char **argv)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}
-	str_value = config_file_get_value(pconfig, "STATE_PATH");
+	auto str_value = config_file_get_value(pconfig, "STATE_PATH");
 	if (NULL == str_value) {
 		HX_strlcpy(state_dir, PKGSTATEDIR, sizeof(state_dir));
 		config_file_set_value(pconfig, "STATE_PATH", state_dir);
@@ -111,7 +109,7 @@ int main(int argc, const char **argv)
 		printf("[system]: mysql username is %s\n", mysql_user);
 	}
 
-	mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
+	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
 	if (NULL == mysql_passwd) {
 		printf("[system]: use empty password as mysql password\n");
 	} else {

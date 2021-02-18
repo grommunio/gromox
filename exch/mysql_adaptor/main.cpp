@@ -16,10 +16,8 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 {
 	char file_name[256];
 	char config_path[256];
-	char uncheck_path[256];
-	char *str_value, *psearch;
-	char mysql_host[256], mysql_user[256];
-	char *mysql_passwd, db_name[256]; 
+	char uncheck_path[256], *psearch;
+	char mysql_host[256], mysql_user[256], db_name[256]; 
 	int conn_num, mysql_port, timeout;
 
     switch(reason) {
@@ -38,7 +36,7 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 			       config_path, strerror(errno));
 			return FALSE;
 		}
-		str_value = config_file_get_value(pfile, "CONNECTION_NUM");
+		auto str_value = config_file_get_value(pfile, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			conn_num = 8;
 			config_file_set_value(pfile, "CONNECTION_NUM", "8");
@@ -83,7 +81,7 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 			printf("[mysql_adaptor]: mysql username is %s\n", mysql_user);
 		}
 		
-		mysql_passwd = config_file_get_value(pfile, "MYSQL_PASSWORD");
+		auto mysql_passwd = config_file_get_value(pfile, "MYSQL_PASSWORD");
 		if (NULL == mysql_passwd) {
 			printf("[mysql_adaptor]: use empty password as mysql password\n");
 		} else {

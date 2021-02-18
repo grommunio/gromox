@@ -18,9 +18,7 @@ DECLARE_API();
 static BOOL svc_str_filter(int reason, void **ppdata)
 {
 	char file_name[256], list_path[256];
-	char config_path[256], temp_buff[128];
-	char *str_value, *psearch;
-	char *judge_name, *add_name, *query_name;
+	char config_path[256], temp_buff[128], *psearch;
 	int audit_max, audit_interval, audit_times;
 	int temp_list_size, growing_num;
 	BOOL case_sensitive;
@@ -44,7 +42,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			       file_name, config_path, strerror(errno));
 			return FALSE;
 		}
-		str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
+		auto str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
 		if (NULL == str_value) {
 			case_sensitive = FALSE;
 			config_file_set_value(pfile, "IS_CASE_SENSITIVE", "FALSE");
@@ -125,9 +123,9 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		}
 		printf("[%s]: grey list growing number is %d\n", file_name,
 			growing_num);
-		judge_name = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
-		add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
-		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		auto judge_name = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
+		auto add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
+		auto query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
 		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s/%s.txt",
 		         get_data_path(), file_name);
 		str_filter_init(file_name, case_sensitive, audit_max,

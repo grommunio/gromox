@@ -28,7 +28,6 @@ void auto_response_reply(const char *user_home,
 	char *pcontent;
 	BOOL b_internal;
 	time_t cur_time;
-	char *str_value;
 	char charset[32];
 	struct tm tm_buff;
 	int i, j, fd, len;
@@ -73,7 +72,7 @@ void auto_response_reply(const char *user_home,
 	if (NULL == pconfig) {
 		return;
 	}
-	str_value = config_file_get_value(pconfig, "OOF_STATE");
+	auto str_value = config_file_get_value(pconfig, "OOF_STATE");
 	if (NULL == str_value) {
 		return;
 	}

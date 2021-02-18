@@ -124,7 +124,6 @@ int main(int argc, const char **argv)
 	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
-	char *str_value;
 	pthread_attr_t thr_attr;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -142,7 +141,7 @@ int main(int argc, const char **argv)
 	}
 
 	char config_dir[256];
-	str_value = config_file_get_value(pconfig, "config_file_path");
+	auto str_value = config_file_get_value(pconfig, "config_file_path");
 	HX_strlcpy(config_dir, str_value != nullptr ? str_value :
 	           PKGSYSCONFDIR "/event:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");

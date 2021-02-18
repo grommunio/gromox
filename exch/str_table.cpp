@@ -405,8 +405,7 @@ static void str_table_echo(const char *format, ...)
 
 static BOOL svc_str_table(int reason, void **ppdata)
 {
-	char file_name[256], tmp_path[256], *str_value, *psearch;
-	char *query_name, *add_name, *remove_name;
+	char file_name[256], tmp_path[256], *psearch;
 	BOOL case_sensitive;
 	int growing_num;
 
@@ -428,11 +427,10 @@ static BOOL svc_str_table(int reason, void **ppdata)
 			       tmp_path, strerror(errno));
 			return false;
 		}
-		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
-		add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
-		remove_name = config_file_get_value(pfile, "REMOVE_SERVICE_NAME");
-
-		str_value = config_file_get_value(pfile, "GROWING_NUM");
+		auto query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		auto add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
+		auto remove_name = config_file_get_value(pfile, "REMOVE_SERVICE_NAME");
+		auto str_value = config_file_get_value(pfile, "GROWING_NUM");
 		if (str_value == nullptr) {
 			growing_num = 100;
 			config_file_set_value(pfile, "GROWING_NUM", "100");

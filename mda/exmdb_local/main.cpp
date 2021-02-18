@@ -30,10 +30,9 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	int alarm_interval;
 	int times, interval;
 	char file_name[256];
-	char cache_path[256];
+	char cache_path[256], *psearch;
 	int response_capacity;
 	int response_interval;
-	char *str_value, *psearch;
 	 
 	/* path contains the config files directory */
     switch (reason) {
@@ -52,7 +51,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			return FALSE;
 		}
 
-		str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
+		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
 		if (NULL == str_value) {
 			strcpy(separator, " ");
 		} else {

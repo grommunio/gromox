@@ -68,7 +68,6 @@ int main(int argc, const char **argv)
 	int table_size;
 	int listen_port;
 	int threads_num;
-	char *str_value;
 	struct rlimit rl;
 	char charset[32];
 	int console_port;
@@ -98,7 +97,7 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 
-	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
+	auto str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {
 		strcpy(service_path, PKGLIBDIR);
 		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);

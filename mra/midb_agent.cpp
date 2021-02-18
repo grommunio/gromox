@@ -246,7 +246,6 @@ static bool list_file_read_midb(const char *filename)
 static BOOL svc_midb_agent(int reason, void **ppdata)
 {
 	char *psearch;
-	char *str_value;
 	char file_name[256];
 	char config_path[256];
     DOUBLE_LIST_NODE *pnode;
@@ -272,7 +271,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			return FALSE;
 		}
 		
-		str_value = config_file_get_value(pconfig, "CONNECTION_NUM");
+		auto str_value = config_file_get_value(pconfig, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			g_conn_num = 5;
 			config_file_set_value(pconfig, "CONNECTION_NUM", "5");

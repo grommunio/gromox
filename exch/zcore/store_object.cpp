@@ -776,7 +776,7 @@ static void* store_object_get_oof_property(
 	char *pbuff;
 	int buff_len;
 	void *pvalue;
-	char *str_value;
+	const char *str_value;
 	int parsed_length;
 	char subject[1024];
 	char temp_path[256];

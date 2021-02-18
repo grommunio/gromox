@@ -176,7 +176,7 @@ CONFIG_FILE::~CONFIG_FILE()
  *	@return
  *		the value that mapped the specified key
  */
-char *config_file_get_value(std::shared_ptr<CONFIG_FILE> cfg_file, const char *key)
+const char *config_file_get_value(std::shared_ptr<CONFIG_FILE> cfg_file, const char *key)
 {
 	size_t i, len;
 

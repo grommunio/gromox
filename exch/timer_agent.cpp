@@ -56,8 +56,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
     BACK_CONN *pback;
     DOUBLE_LIST_NODE *pnode;
 	char file_name[256];
-	char config_path[256];
-	char *str_value, *psearch;
+	char config_path[256], *psearch;
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -82,7 +81,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 			return FALSE;
 		}
 
-		str_value = config_file_get_value(pfile, "CONNECTION_NUM");
+		auto str_value = config_file_get_value(pfile, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			conn_num = 8;
 			config_file_set_value(pfile, "CONNECTION_NUM", "8");
