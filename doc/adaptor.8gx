@@ -53,6 +53,9 @@ Default: (unset)
 The TCP port number for contacting the SQL server.
 .PP
 Default: \fI3306\fP
+.SS mysql_username
+.PP
+Default: \fIroot\fP
 .SS state_path
 .PP
 Directory for additional files.

@@ -65,9 +65,14 @@ int main(int argc, const char **argv)
 	if (pmysql == nullptr)
 		abort();
 	auto mysql_host = config_file_get_value(pconfig, "mysql_host");
-	auto mysql_user = config_file_get_value(pconfig, "mysql_username");
+	const char *mysql_user = config_file_get_value(pconfig, "mysql_username");
+	if (mysql_user == nullptr)
+		/* keep aligned with mysql_adaptor/main.cpp */
+		mysql_user = "root";
 	auto mysql_pass = config_file_get_value(pconfig, "mysql_password");
-	auto mysql_dbname = config_file_get_value(pconfig, "mysql_dbname");
+	const char *mysql_dbname = config_file_get_value(pconfig, "mysql_dbname");
+	if (mysql_dbname == nullptr)
+		mysql_dbname = "email";
 	auto str = config_file_get_value(pconfig, "mysql_port");
 	auto mysql_port = str != nullptr ? strtoul(str, nullptr, 0) : 0;
 

@@ -33,7 +33,7 @@ on the MySQL connection.
 Default: \fI0\fP (no timeout)
 .SS mysql_username
 .PP
-Default: (unset)
+Default: \fIroot\fP
 .SS scan_interval
 .PP
 Default: \fI1 minute\fP

@@ -72,26 +72,8 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		       *mysql_host == '\0' ? "*" : mysql_host, mysql_port);
 
 		str_value = config_file_get_value(pfile, "MYSQL_USERNAME");
-		if (NULL == str_value) {
-			mysql_user[0] = '\0';
-			printf("[mysql_adaptor]: cannot find mysql username in config "
-				"file, use current unix login name\n");
-		} else {
-			strcpy(mysql_user, str_value);
-			printf("[mysql_adaptor]: mysql username is %s\n", mysql_user);
-		}
-		
+		HX_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 		auto mysql_passwd = config_file_get_value(pfile, "MYSQL_PASSWORD");
-		if (NULL == mysql_passwd) {
-			printf("[mysql_adaptor]: use empty password as mysql password\n");
-		} else {
-			if ('\0' == mysql_passwd[0]) {
-				printf("[mysql_adaptor]: use empty password as mysql password\n");
-			} else {
-				printf("[mysql_adaptor]: mysql password is ********\n");
-			}
-		}
-
 		str_value = config_file_get_value(pfile, "MYSQL_DBNAME");
 		if (NULL == str_value) {
 			strcpy(db_name, "email");

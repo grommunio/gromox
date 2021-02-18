@@ -61,7 +61,7 @@ The TCP port number for contacting the SQL server.
 Default: \fI3306\fP
 .SS mysql_username
 .PP
-Default: (unset)
+Default: \fIroot\fP
 .SS oversea_relay_switch
 .PP
 Default: \fItrue\fP

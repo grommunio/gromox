@@ -16,7 +16,7 @@ function get_db_connection()
 		die("cannot find MYSQL_PORT in config file");
 	}
 	if (empty($config['MYSQL_USERNAME'])) {
-		die("cannot find MYSQL_USERNAME in config file");
+		$config["MYSQL_USERNAME"] = "root";
 	}
 	if (empty($config['MYSQL_PASSWORD'])) {
 		die("cannot find MYSQL_PASSWORD in config file");

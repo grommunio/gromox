@@ -100,26 +100,8 @@ int main(int argc, const char **argv)
 	printf("[system]: mysql host is [%s]:%d\n", mysql_host, mysql_port);
 
 	str_value = config_file_get_value(pconfig, "MYSQL_USERNAME");
-	if (NULL == str_value) {
-		mysql_user[0] = '\0';
-		printf("[system]: cannot find mysql username in config "
-			"file, use current unix login name\n");
-	} else {
-		strcpy(mysql_user, str_value);
-		printf("[system]: mysql username is %s\n", mysql_user);
-	}
-
+	HX_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
-	if (NULL == mysql_passwd) {
-		printf("[system]: use empty password as mysql password\n");
-	} else {
-		if ('\0' == mysql_passwd[0]) {
-			printf("[system]: use empty password as mysql password\n");
-		} else {
-			printf("[system]: mysql password is ********\n");
-		}
-	}
-
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");

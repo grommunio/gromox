@@ -482,12 +482,7 @@ int main(int argc, const char **argv)
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_USERNAME");
-	if (NULL == str_value) {
-		mysql_user[0] = '\0';
-	} else {
-		strcpy(mysql_user, str_value);
-	}
-
+	HX_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
