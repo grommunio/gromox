@@ -54,7 +54,7 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 	switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		get_id_from_username = reinterpret_cast<decltype(get_id_from_username)>(query_service("get_id_from_username"));
+		query_service1(get_id_from_username);
 		if (NULL == get_id_from_username) {
 			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");
 			return FALSE;

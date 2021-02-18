@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <typeinfo>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
@@ -112,7 +113,7 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		}
 
 #define E(f, s) do { \
-	if (!register_service((s), reinterpret_cast<void *>(f))) { \
+	if (!register_service((s), f)) { \
 		printf("[%s]: failed to register the \"%s\" service\n", "mysql_adaptor", (s)); \
 		return false; \
 	} \

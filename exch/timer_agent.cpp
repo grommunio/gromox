@@ -130,9 +130,9 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "timer_agent");
-		if (!register_service("add_timer", reinterpret_cast<void *>(add_timer)))
+		if (!register_service("add_timer", add_timer))
 			printf("[timer_agent]: failed to register add_timer\n");
-		if (!register_service("cancel_timer", reinterpret_cast<void *>(cancel_timer)))
+		if (!register_service("cancel_timer", cancel_timer))
 			printf("[timer_agent]: failed to register cancel_timer\n");
 		return TRUE;
 	}

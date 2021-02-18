@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstring>
 #include <memory>
+#include <typeinfo>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -518,7 +519,8 @@ int main(int argc, const char **argv)
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr, context_num});
 	if (!service_register_service("ndr_stack_alloc",
-	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc))) {
+	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
+	    typeid(*pdu_processor_ndr_stack_alloc))) {
 		printf("service_register ndr_stack_alloc failed\n");
 		return EXIT_FAILURE;
 	}

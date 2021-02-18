@@ -177,10 +177,8 @@ static BOOL svc_ip6_filter(int reason, void **data)
 	printf("[%s]: audit times is %d\n", plugname.c_str(), g_max_within_interval);
 	printf("[%s]: temporary list capacity is %zu\n", plugname.c_str(), g_templist_maxsize);
 
-	if ((add_name != nullptr &&
-	    !register_service(add_name, reinterpret_cast<void *>(ip6flt_add))) ||
-	    (judge_name != nullptr &&
-	    !register_service(judge_name, reinterpret_cast<void *>(ip6flt_judge)))) {
+	if ((add_name != nullptr && !register_service(add_name, ip6flt_add)) ||
+	    (judge_name != nullptr && !register_service(judge_name, ip6flt_judge))) {
 		printf("[ip6_filter]: can't register services (symbol clash?)\n");
 		return false;
 	}

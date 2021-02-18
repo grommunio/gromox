@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 #include <gromox/common_types.hpp>
 #include <gromox/plugin.hpp>
 
@@ -15,10 +16,8 @@ extern int service_stop(void);
 int service_load_library(const char *path);
 
 int service_unload_library(const char *path);
-
-void* service_query(const char *service_name, const char *module);
-
+extern void *service_query(const char *service_name, const char *module, const std::type_info &);
 void service_release(const char *service_name, const char *module);
 
 int service_console_talk(int argc, char **argv, char *reason, int len);
-extern BOOL service_register_service(const char *func_name, void *addr);
+extern BOOL service_register_service(const char *func_name, void *addr, const std::type_info &);

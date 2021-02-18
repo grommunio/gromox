@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <string>
+#include <typeinfo>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -38,10 +39,11 @@ struct SERVICE_ENTRY {
     char				service_name[256];
     void				*service_addr;
 	PLUG_ENTITY *plib;	
+	const std::type_info *type_info;
 	DOUBLE_LIST			list_reference;
 };
 
-static void* service_query_service(const char *service);
+static void *service_query_service(const char *service, const std::type_info &);
 static BOOL service_register_talk(TALK_MAIN talk);
 static const char *service_get_plugin_name(void);
 static const char *service_get_config_path(void);
@@ -290,7 +292,7 @@ static const char *service_get_state_path()
  *  @return
  *      address of function
  */
-static void* service_query_service(const char *service)
+static void *service_query_service(const char *service, const std::type_info &ti)
 {
     if (0 == strcmp(service, "register_service")) {
 		return reinterpret_cast<void *>(service_register_service);
@@ -315,7 +317,7 @@ static void* service_query_service(const char *service)
 	if (0 == strcmp(service, "get_host_ID")) {
 		return reinterpret_cast<void *>(service_get_host_ID);
 	}
-	return service_query(service, nullptr);
+	return service_query(service, nullptr, ti);
 }
 
 /*
@@ -390,7 +392,7 @@ static const char* service_get_host_ID()
  *  @return
  *      TRUE or FALSE
  */
-BOOL service_register_service(const char *func_name, void *addr)
+BOOL service_register_service(const char *func_name, void *addr, const std::type_info &ti)
 {
 	 DOUBLE_LIST_NODE *pnode;
 	 SERVICE_ENTRY *pservice;
@@ -422,6 +424,7 @@ BOOL service_register_service(const char *func_name, void *addr)
 	pservice->node_service.pdata	= pservice;
 	pservice->node_lib.pdata		= pservice;
 	pservice->service_addr			= addr;
+	pservice->type_info = &ti;
 	pservice->plib = plug;
 	double_list_init(&pservice->list_reference);
 	HX_strlcpy(pservice->service_name, func_name, GX_ARRAY_SIZE(pservice->service_name));
@@ -453,7 +456,7 @@ static BOOL service_register_talk(TALK_MAIN talk)
  *		service_name [in]	indicate the service name
  *		module [in]			indicate the module name
  */
-void* service_query(const char *service_name, const char *module)
+void *service_query(const char *service_name, const char *module, const std::type_info &ti)
 {
 	DOUBLE_LIST_NODE *pnode;
 	SERVICE_ENTRY	 *pservice;
@@ -468,8 +471,12 @@ void* service_query(const char *service_name, const char *module)
 		}
 	}
 	if (NULL == pnode) {
+		printf("[service]: dlname \"%s\" not found\n", service_name);
 		return NULL;
 	}
+	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
+		printf("[service]: type mismatch on dlname \"%s\" (%s VS %s)\n",
+			service_name, pservice->type_info->name(), ti.name());
 	if (module == nullptr)
 		/* untracked user */
 		return pservice->service_addr;

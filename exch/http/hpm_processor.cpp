@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdio>
 #include <string>
+#include <typeinfo>
 #include <unistd.h>
 #include <vector>
 #include <libHX/string.h>
@@ -257,7 +258,7 @@ static void hpm_processor_activate_context(int context_id)
 	context_pool_activate_context((SCHEDULE_CONTEXT*)phttp);
 }
 
-static void* hpm_processor_queryservice(char *service)
+static void *hpm_processor_queryservice(const char *service, const std::type_info &ti)
 {
 	void *ret_addr;
 	DOUBLE_LIST_NODE *pnode;
@@ -333,7 +334,7 @@ static void* hpm_processor_queryservice(char *service)
 			return pservice->service_addr;
 		}
 	}
-	ret_addr = service_query(service, g_cur_plugin->file_name);
+	ret_addr = service_query(service, g_cur_plugin->file_name, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}

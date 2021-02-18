@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <typeinfo>
 #include <gromox/mem_file.hpp>
 #include <gromox/common_types.hpp>
 #include <openssl/ssl.h>
@@ -61,7 +62,6 @@ struct HTTP_AUTH_INFO {
 };
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef void *(*QUERY_SERVICE)(const char *);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 typedef void (*SET_INTEGER)(int);
@@ -80,7 +80,7 @@ typedef void (*FREE_ENVIRONMENT)(void);
 typedef void (*LOG_INFO)(int, const char *, ...);
 
 #define DECLARE_API(x) \
-	x QUERY_SERVICE query_service; \
+	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x REGISTER_INTERFACE register_interface; \
 	x TALK_REGISTRATION register_talk; \
 	x GET_CONNECTION get_connection; \
@@ -101,6 +101,8 @@ typedef void (*LOG_INFO)(int, const char *, ...);
 	x NDR_STACK_ALLOC ndr_stack_alloc; \
 	x NEW_ENVIRONMENT rpc_new_environment; \
 	x FREE_ENVIRONMENT rpc_free_environment;
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
+#define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC
 DECLARE_API(static);
 #else
@@ -108,28 +110,28 @@ DECLARE_API(extern);
 #endif
 	
 #define LINK_API(param) \
-	query_service = (QUERY_SERVICE)param[0]; \
-	register_interface = (REGISTER_INTERFACE)query_service("register_interface");\
-	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
-	get_connection = (GET_CONNECTION)query_service("get_connection"); \
-	get_request = (GET_REQUEST)query_service("get_request"); \
-	get_auth_info = (GET_AUTH_INFO)query_service("get_auth_info"); \
-	write_response = (WRITE_RESPONSE)query_service("write_response"); \
-	wakeup_context = (WAKEUP_CONTEXT)query_service("wakeup_context"); \
-	activate_context = (ACTIVATE_CONTEXT)query_service("activate_context"); \
-	log_info = (LOG_INFO)query_service("log_info"); \
-	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
-	get_default_domain = (GET_ENVIRONMENT)query_service("get_default_domain"); \
-	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
-	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
-	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
-	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
-	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
-	set_context = (SET_INTEGER)query_service("set_context"); \
-	set_ep_info = (SET_EP_INFO)query_service("set_ep_info"); \
-	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc"); \
-	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
-	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment")
+	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
+	query_service1(register_interface); \
+	query_service1(register_talk); \
+	query_service1(get_connection); \
+	query_service1(get_request); \
+	query_service1(get_auth_info); \
+	query_service1(write_response); \
+	query_service1(wakeup_context); \
+	query_service1(activate_context); \
+	query_service1(log_info); \
+	query_service1(get_host_ID); \
+	query_service1(get_default_domain); \
+	query_service1(get_plugin_name); \
+	query_service1(get_config_path); \
+	query_service1(get_data_path); \
+	query_service1(get_state_path); \
+	query_service1(get_context_num); \
+	query_service1(set_context); \
+	query_service1(set_ep_info); \
+	query_service1(ndr_stack_alloc); \
+	query_service1(rpc_new_environment); \
+	query_service1(rpc_free_environment);
 #define HPM_ENTRY(s) BOOL HPM_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */

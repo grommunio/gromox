@@ -564,7 +564,7 @@ void nsp_interface_init(BOOL b_check)
 int nsp_interface_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
+	query_service2(s, f); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
 		return -1; \
@@ -575,8 +575,8 @@ int nsp_interface_run()
 	E(get_maildir, "get_maildir");
 	E(get_id_from_username, "get_id_from_username");
 	E(verify_cpid, "verify_cpid");
-	nsp_abktojson = reinterpret_cast<decltype(nsp_abktojson)>(query_service("abkt_tojson"));
-	nsp_abktobinary = reinterpret_cast<decltype(nsp_abktobinary)>(query_service("abkt_tobinary"));
+	query_service2("abkt_tojson", nsp_abktojson);
+	query_service2("abkt_tobinary", nsp_abktobinary);
 	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
 		fprintf(stderr, "[exchange_nsp]: address book user interface templates not available\n");
 	return 0;

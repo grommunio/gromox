@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <string>
+#include <typeinfo>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -3679,7 +3680,7 @@ static uint64_t pdu_processor_get_binding_handle()
 	return 0;
 }
 
-static void* pdu_processor_queryservice(char *service)
+static void *pdu_processor_queryservice(const char *service, const std::type_info &ti)
 {
 	DOUBLE_LIST_NODE *pnode;
 	void *ret_addr;
@@ -3758,7 +3759,7 @@ static void* pdu_processor_queryservice(char *service)
 			return pservice->service_addr;
 		}
 	}
-	ret_addr = service_query(service, g_cur_plugin->file_name);
+	ret_addr = service_query(service, g_cur_plugin->file_name, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}

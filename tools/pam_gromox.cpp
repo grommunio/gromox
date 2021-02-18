@@ -8,6 +8,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <typeinfo>
 #include <libHX/misc.h>
 #include <security/pam_modules.h>
 #include <gromox/defs.h>
@@ -116,8 +117,8 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	auto cleanup_1 = make_scope_exit(service_stop);
 
-	using login_t = BOOL (*)(const char *, const char *, char *, int);
-	auto fptr_login = reinterpret_cast<login_t>(service_query("auth_login_smtp", "system"));
+	BOOL (*fptr_login)(const char *, const char *, char *, int);
+	fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_smtp", "system", typeid(*fptr_login)));
 	if (fptr_login == nullptr)
 		return PAM_AUTH_ERR;
 	auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_smtp", "system"); });

@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 #include <sys/time.h>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
@@ -54,7 +55,6 @@ typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef BOOL (*CANCEL_REGISTRATION)(CANCEL_FUNCTION);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
-typedef void* (*QUERY_SERVICE)(const char*);
 typedef int (*GET_QUEUE_LENGTH)(void);
 typedef BOOL (*FEEDBACK_ENTITY)(FLUSH_ENTITY*);
 typedef FLUSH_ENTITY *(*QUEUE_OPERATION)(void);
@@ -69,7 +69,7 @@ typedef BOOL (*CHECKING_FUNCTION)(char*);
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
 #define DECLARE_API(x) \
-	x QUERY_SERVICE query_service; \
+	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x GET_QUEUE_LENGTH get_queue_length; \
 	x LOG_INFO log_info; \
 	x FEEDBACK_ENTITY feedback_entity; \
@@ -86,6 +86,8 @@ typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 	x INC_FLUSH_ID inc_flush_ID; \
 	x CHECKING_FUNCTION check_domain; \
 	x IS_DOMAINLIST_VALID is_domainlist_valid;
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
+#define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC
 DECLARE_API(static);
 #else
@@ -93,24 +95,24 @@ DECLARE_API(extern);
 #endif
 
 #define LINK_API(param) \
-	query_service = (QUERY_SERVICE)param[0]; \
-	get_queue_length = (GET_QUEUE_LENGTH)query_service("get_queue_length"); \
-	feedback_entity = (FEEDBACK_ENTITY)query_service("feedback_entity"); \
-	register_cancel = (CANCEL_REGISTRATION)query_service("register_cancel"); \
-	get_from_queue = (QUEUE_OPERATION)query_service("get_from_queue"); \
-	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
-	log_info = (LOG_INFO)query_service("log_info"); \
-	set_flush_ID = (SET_FLUSH_ID)query_service("set_flush_ID"); \
-	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
-	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
-	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
-	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
-	inc_flush_ID = (INC_FLUSH_ID)query_service("inc_flush_ID"); \
-    get_extra_num = (GET_EXTRA_NUM)query_service("get_extra_num"); \
-    get_extra_tag = (GET_EXTRA_TAGVAL)query_service("get_extra_tag"); \
-    get_extra_value = (GET_EXTRA_TAGVAL)query_service("get_extra_value"); \
-	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
-	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
+	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
+	query_service1(get_queue_length); \
+	query_service1(feedback_entity); \
+	query_service1(register_cancel); \
+	query_service1(get_from_queue); \
+	query_service1(get_host_ID); \
+	query_service1(log_info); \
+	query_service1(set_flush_ID); \
+	query_service1(get_plugin_name); \
+	query_service1(get_config_path); \
+	query_service1(get_data_path); \
+	query_service1(get_state_path); \
+	query_service1(inc_flush_ID); \
+	query_service1(get_extra_num); \
+	query_service1(get_extra_tag); \
+	query_service1(get_extra_value); \
+	query_service1(check_domain); \
+	query_service1(is_domainlist_valid);
 #define FLH_ENTRY(s) BOOL FLH_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */

@@ -384,7 +384,7 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 
 int common_util_run()
 {
-	cpid_to_charset = reinterpret_cast<decltype(cpid_to_charset)>(query_service("cpid_to_charset"));
+	query_service1(cpid_to_charset);
 	if (NULL == cpid_to_charset) {
 		printf("[exchange_nsp]: failed to get service \"cpid_to_charset\"\n");
 		return -1;

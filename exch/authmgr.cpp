@@ -79,14 +79,15 @@ static BOOL authmgr_init()
 	else if (strcmp(val, "externid") == 0)
 		am_choice = A_EXTERNID;
 
-	fptr_mysql_meta = reinterpret_cast<decltype(fptr_mysql_meta)>(query_service("mysql_auth_meta"));
+	query_service2("mysql_auth_meta", fptr_mysql_meta);
 	if (fptr_mysql_meta == nullptr) {
 		printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
 		return false;
 	}
 	if (am_choice >= A_LDAP) {
-		auto fload = reinterpret_cast<bool (*)()>(query_service("ldap_adaptor_load"));
-		fptr_ldap_login = reinterpret_cast<decltype(fptr_ldap_login)>(query_service("ldap_auth_login2"));
+		bool (*fload)();
+		query_service2("ldap_adaptor_load", fload);
+		query_service2("ldap_auth_login2", fptr_ldap_login);
 		if (fload == nullptr || fptr_ldap_login == nullptr) {
 			printf("[authmgr]: ldap_adaptor plugin not loaded yet\n");
 			return false;
@@ -94,14 +95,14 @@ static BOOL authmgr_init()
 		if (!fload())
 			return false;
 	}
-	fptr_mysql_login = reinterpret_cast<decltype(fptr_mysql_login)>(query_service("mysql_auth_login2"));
+	query_service2("mysql_auth_login2", fptr_mysql_login);
 	if (fptr_mysql_login == nullptr) {
 		printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
 		return false;
 	}
-	if (!register_service("auth_login_exch", reinterpret_cast<void *>(login_exch)) ||
-	    !register_service("auth_login_pop3", reinterpret_cast<void *>(login_pop3)) ||
-	    !register_service("auth_login_smtp", reinterpret_cast<void *>(login_smtp))) {
+	if (!register_service("auth_login_exch", login_exch) ||
+	    !register_service("auth_login_pop3", login_pop3) ||
+	    !register_service("auth_login_smtp", login_smtp)) {
 		printf("[authmgr]: failed to register auth services\n");
 		return false;
 	}

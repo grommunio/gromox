@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <mutex>
+#include <typeinfo>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
@@ -49,7 +50,7 @@ struct PLUG_ENTITY {
 
 static BOOL flusher_load_plugin(char* path);
 static BOOL flusher_unload_plugin(void);
-static void* flusher_queryservice(const char *service);
+static void *flusher_queryservice(const char *service, const std::type_info &);
 static int flusher_get_queue_length(void);
 static const char *flusher_get_host_ID(void);
 static FLUSH_ENTITY *flusher_get_from_queue(void);
@@ -320,7 +321,7 @@ static BOOL flusher_set_flush_ID(int ID)
 	}
 }
 
-static void* flusher_queryservice(const char *service)
+static void *flusher_queryservice(const char *service, const std::type_info &ti)
 {
 	void *ret_addr;
 	SERVICE_NODE *pservice;
@@ -354,7 +355,7 @@ static void* flusher_queryservice(const char *service)
 			return pservice->service_addr;
 		}
 	}
-	ret_addr = service_query(service, g_flusher_plug->file_name);
+	ret_addr = service_query(service, g_flusher_plug->file_name, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}

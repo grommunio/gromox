@@ -77,8 +77,8 @@ static BOOL svc_ip6_container(int reason, void **data)
 	g_max_num = strv != nullptr ? strtoul(strv, nullptr, 0) : 200;
 	printf("[ip6_container]: maximum number of connections per client is %u\n", g_max_num);
 
-	if (!register_service("ip_container_add", reinterpret_cast<void *>(ip6co_add)) ||
-	    !register_service("ip_container_remove", reinterpret_cast<void *>(ip6co_remove))) {
+	if (!register_service("ip_container_add", ip6co_add) ||
+	    !register_service("ip_container_remove", ip6co_remove)) {
 		printf("[ip6_container]: can't register services (symbol clash?)\n");
 		return false;
 	}

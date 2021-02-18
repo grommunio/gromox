@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <typeinfo>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "bounce_producer.h"
@@ -143,7 +144,7 @@ void bounce_producer_init(const char *path, const char* separator)
 int bounce_producer_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
+	query_service2(s, f); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "mlist_expand", (s)); \
 		return -1; \

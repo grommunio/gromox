@@ -138,8 +138,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			return FALSE;
 		}
 
-		if (!register_service("install_event_stub",
-		    reinterpret_cast<void *>(install_event_stub)))
+		if (!register_service("install_event_stub", install_event_stub))
 			printf("[event_proxy]: failed to register install_event_stub\n");
 		return TRUE;
 	}

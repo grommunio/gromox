@@ -466,20 +466,17 @@ static BOOL svc_str_table(int reason, void **ppdata)
 			printf("[%s]: failed to run the module\n", file_name);
 			return FALSE;
 		}
-		if (query_name != nullptr && !register_service(query_name,
-		    reinterpret_cast<void *>(str_table_query))) {
+		if (query_name != nullptr && !register_service(query_name, str_table_query)) {
 			printf("[%s]: failed to register \"%s\" service\n",
 			       file_name, query_name);
 			return false;
 		}
-		if (add_name != nullptr && !register_service(add_name,
-		    reinterpret_cast<void *>(str_table_add))) {
+		if (add_name != nullptr && !register_service(add_name, str_table_add)) {
 			printf("[%s]: failed to register \"%s\" service\n",
 			       file_name, add_name);
 			return false;
 		}
-		if (remove_name != nullptr && !register_service(remove_name,
-		    reinterpret_cast<void *>(str_table_remove))) {
+		if (remove_name != nullptr && !register_service(remove_name, str_table_remove)) {
 			printf("[%s]: failed to register \"%s\" service\n",
 			       file_name, remove_name);
 			return false;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstring>
 #include <string>
+#include <typeinfo>
 #include <unistd.h>
 #include <vector>
 #include <libHX/string.h>
@@ -144,8 +145,7 @@ static void transporter_collect_hooks(void);
 static void* thread_work_func(void* arg);
 
 static void* scan_work_func(void* arg);
-static void* transporter_queryservice(char *service);
-
+static void *transporter_queryservice(const char *service, const std::type_info &);
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
 static BOOL transporter_register_talk(TALK_MAIN talk);
@@ -908,7 +908,7 @@ static const char *transporter_get_state_path()
  *	@return
  *		service pointer
  */
-static void* transporter_queryservice(char *service)
+static void *transporter_queryservice(const char *service, const std::type_info &ti)
 {
 	DOUBLE_LIST_NODE *pnode;
     SERVICE_NODE *pservice;
@@ -949,7 +949,7 @@ static void* transporter_queryservice(char *service)
             return pservice->service_addr;
         }
     }
-    ret_addr = service_query(service, g_cur_lib->file_name);
+	ret_addr = service_query(service, g_cur_lib->file_name, ti);
     if (NULL == ret_addr) {
         return NULL;
     }

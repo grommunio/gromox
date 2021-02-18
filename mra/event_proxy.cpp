@@ -129,11 +129,11 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "event_proxy");
-		if (!register_service("broadcast_event", reinterpret_cast<void *>(broadcast_event)))
+		if (!register_service("broadcast_event", broadcast_event))
 			printf("[event_proxy]: failed to register broadcast_event\n");
-		if (!register_service("broadcast_select", reinterpret_cast<void *>(broadcast_select)))
+		if (!register_service("broadcast_select", broadcast_select))
 			printf("[event_proxy]: failed to register broadcast_select\n");
-		if (!register_service("broadcast_unselect", reinterpret_cast<void *>(broadcast_unselect)))
+		if (!register_service("broadcast_unselect", broadcast_unselect))
 			printf("[event_proxy]: failed to register broadcast_unselect\n");
 		return TRUE;
 	}

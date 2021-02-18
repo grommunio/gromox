@@ -219,7 +219,7 @@ void ab_tree_init(const char *org_name, int base_size,
 int ab_tree_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
+	query_service2(s, f); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
 		return -1; \

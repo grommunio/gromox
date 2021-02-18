@@ -134,20 +134,17 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			printf("[%s]: failed to run the module\n", file_name);
 			return FALSE;
 		}
-		if (NULL != judge_name &&
-		    !register_service(judge_name, reinterpret_cast<void *>(str_filter_judge))) {
+		if (judge_name != nullptr && !register_service(judge_name, str_filter_judge)) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					judge_name);
 			return FALSE;
 		}
-		if (NULL != query_name &&
-		    !register_service(query_name, reinterpret_cast<void *>(str_filter_query))) {
+		if (query_name != nullptr && !register_service(query_name, str_filter_query)) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					query_name);
 			return FALSE;
 		}
-		if (add_name != nullptr && !register_service(add_name,
-		    reinterpret_cast<void *>(str_filter_add_string_into_temp_list))) {
+		if (add_name != nullptr && !register_service(add_name, str_filter_add_string_into_temp_list)) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					add_name);
 			return FALSE;

@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
+#include <typeinfo>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -98,7 +99,7 @@ int exmdb_local_run()
 	char temp_line[256];
 	
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
+	query_service2((s), f); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exmdb_local", (s)); \
 		return -1; \

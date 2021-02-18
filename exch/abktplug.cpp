@@ -11,8 +11,8 @@ static BOOL svc_abktplug(int reason, void **apidata)
 	if (reason != PLUGIN_INIT)
 		return false;
 	LINK_API(apidata);
-	if (!register_service("abkt_tobinary", reinterpret_cast<void *>(gromox::abkt_tobinary)) ||
-	    !register_service("abkt_tojson", reinterpret_cast<void *>(gromox::abkt_tojson))) {
+	if (!register_service("abkt_tobinary", gromox::abkt_tobinary) ||
+	    !register_service("abkt_tojson", gromox::abkt_tojson)) {
 		fprintf(stderr, "[abktxfrm]: failed to register services\n");
 		return false;
 	}

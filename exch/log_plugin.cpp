@@ -569,7 +569,7 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 			printf("[log_plugin]: failed to run log plugin\n");
 			return false;
 		}
-		if (!register_service("log_info", reinterpret_cast<void *>(log_plugin_log_info))) {
+		if (!register_service("log_info", log_plugin_log_info)) {
 			printf("[log_plugin]: failed to register \"log_info\" service\n");
 			return false;
 		}

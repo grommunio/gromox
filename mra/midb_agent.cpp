@@ -312,7 +312,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		}
 		pthread_setname_np(g_scan_id, "midb_agent");
 
-#define E(f) register_service(#f, reinterpret_cast<void *>(f))
+#define E(f) register_service(#f, f)
 		if (!E(list_mail) || !E(delete_mail) || !E(get_mail_id) ||
 		    !E(get_mail_uid) || !E(summary_folder) || !E(make_folder) ||
 		    !E(remove_folder) || !E(ping_mailbox) ||

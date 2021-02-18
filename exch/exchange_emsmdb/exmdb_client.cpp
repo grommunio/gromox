@@ -466,7 +466,7 @@ int exmdb_client_run()
 	void (*pass_service)(int, void*);
 	
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
+	query_service2(s, f); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
 		return -1; \
