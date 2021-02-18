@@ -197,10 +197,10 @@ int main(int argc, const char **argv)
 	}
 	
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
-	if (sockd == -1) {
+	if (sockd < 0) {
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
+		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 5;
 	}
 	pthread_mutex_init(&g_enqueue_lock, NULL);

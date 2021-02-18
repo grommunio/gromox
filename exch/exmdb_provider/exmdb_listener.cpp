@@ -108,8 +108,8 @@ int exmdb_listener_run(const char *config_path)
 		return 0;
 	}
 	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
-	if (g_listen_sockd == -1) {
-		printf("[exmdb_provider]: failed to create listen socket: %s\n", strerror(errno));
+	if (g_listen_sockd < 0) {
+		printf("[exmdb_provider]: failed to create listen socket: %s\n", strerror(-g_listen_sockd));
 		return -1;
 	}
 

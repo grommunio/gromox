@@ -223,8 +223,8 @@ int main(int argc, const char **argv)
 	pfile.reset();
 
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
-	if (sockd == -1) {
-		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
+	if (sockd < 0) {
+		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 4;
 	}
 	g_list_fd = open(g_list_path, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);

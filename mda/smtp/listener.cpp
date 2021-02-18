@@ -62,14 +62,14 @@ void listener_init(int port, int ssl_port)
 int listener_run()
 {
 	g_listener_sock = gx_inet_listen("::", g_listener_port);
-	if (g_listener_sock == -1) {
-		printf("[listener]: failed to create socket: %s\n", strerror(errno));
+	if (g_listener_sock < 0) {
+		printf("[listener]: failed to create socket: %s\n", strerror(-g_listener_sock));
 		return -1;
 	}
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
-		if (g_listener_ssl_sock == -1) {
-			printf("[listener]: failed to create socket: %s\n", strerror(errno));
+		if (g_listener_ssl_sock < 0) {
+			printf("[listener]: failed to create socket: %s\n", strerror(-g_listener_ssl_sock));
 			return -1;
 		}
 	}

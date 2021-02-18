@@ -107,7 +107,7 @@ int console_server_run()
 
 	auto sock = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (sock < 0) {
-		printf("[console_server]: failed to create socket: %s\n", strerror(errno));
+		printf("[console_server]: failed to create socket: %s\n", strerror(-sock));
         return -1;
 	}
 	pnodes = (CONSOLE_NODE*)malloc(MAX_CONSOLE_NUMBER*sizeof(CONSOLE_NODE));
