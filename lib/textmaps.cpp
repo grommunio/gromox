@@ -62,6 +62,10 @@ static void xmap_read(const char *file, const char *dirs,
 			++e;
 		if (*e == '\0')
 			continue;
+		auto eol = e;
+		while (!HX_isspace(*eol) && *eol != '\0')
+			++eol;
+		*eol = '\0';
 		HX_strlower(e);
 		fm.emplace(a, e);
 		bm.emplace(e, a);
@@ -89,6 +93,10 @@ static void smap_read(const char *file, const char *dirs,
 			++value;
 		if (*value == '\0')
 			continue;
+		auto eol = value;
+		while (!HX_isspace(*eol) && *eol != '\0')
+			++eol;
+		*eol = '\0';
 		HX_strlower(value);
 		fm.emplace(line, value);
 		if (&bm != &g_ignore_map)
