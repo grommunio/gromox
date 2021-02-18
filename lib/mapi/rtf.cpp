@@ -7,6 +7,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/rtf.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/str_hash.hpp>
@@ -146,6 +147,7 @@
 #define TAG_CHARS_NONBREAKING_SPACE		"&nbsp;"
 #define TAG_CHARS_SOFT_HYPHEN			"&shy;"
 
+using namespace gromox;
 
 enum {
 	ATTR_NONE = 0,
@@ -3335,13 +3337,12 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	*pbuff_out = nullptr;
 	if (!rtf_init_reader(&reader, pbuff_in, length, pattachments))
 		return false;
+	auto cl_0 = make_scope_exit([&]() { rtf_free_reader(&reader); });
 	if (!rtf_load_element_tree(&reader)) {
-		rtf_free_reader(&reader);
 		return false;
 	}
 	proot = simple_tree_get_root(&reader.element_tree);
 	if (NULL == proot) {
-		rtf_free_reader(&reader);
 		return false;
 	}
 	for (pnode=simple_tree_node_get_child(proot),i=1;
@@ -3357,41 +3358,34 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&reader.ext_push, TAG_DOCUMENT_BEGIN,
 			sizeof(TAG_DOCUMENT_BEGIN) - 1)) {
-			rtf_free_reader(&reader);
 			return false;
 		}
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&reader.ext_push, TAG_HEADER_BEGIN,
 			sizeof(TAG_HEADER_BEGIN) - 1)) {
-			rtf_free_reader(&reader);
 			return false;
 		}
 		tmp_len = sprintf(tmp_buff, TAG_HTML_CHARSET, charset);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&reader.ext_push, tmp_buff, tmp_len)) {
-			rtf_free_reader(&reader);
 			return false;
 		}
 	}
 	if (!rtf_convert_group_node(&reader, proot)) {
-		rtf_free_reader(&reader);
 		return false;
 	}
 	if (!rtf_end_table(&reader)) {
-		rtf_free_reader(&reader);
 		return false;
 	}
 	if (!reader.have_fromhtml) {
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&reader.ext_push, TAG_BODY_END,
 			sizeof(TAG_BODY_END) -1)) {
-			rtf_free_reader(&reader);
 			return false;
 		}
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&reader.ext_push, TAG_DOCUMENT_END,
 			sizeof(TAG_DOCUMENT_END) -1)) {
-			rtf_free_reader(&reader);
 			return false;
 		}
 	}
@@ -3400,20 +3394,17 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		0 == strcasecmp(charset, "US-ASCII")) {
 		*pbuff_out = static_cast<char *>(malloc(reader.ext_push.offset));
 		if (*pbuff_out == nullptr) {
-			rtf_free_reader(&reader);
 			return false;
 		}
 		memcpy(*pbuff_out, reader.ext_push.data,
 			reader.ext_push.offset);
 		*plength = reader.ext_push.offset;
-		rtf_free_reader(&reader);
 		return true;
 	}
 	snprintf(tmp_buff, 128, "%s//TRANSLIT",
 		replace_iconv_charset(charset));
 	conv_id = iconv_open(tmp_buff, "UTF-8");
 	if ((iconv_t)-1 == conv_id) {
-		rtf_free_reader(&reader);
 		return false;
 	}
 	pin = (char*)reader.ext_push.data;
@@ -3423,18 +3414,15 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	*pbuff_out = static_cast<char *>(malloc(out_len + 1));
 	if (*pbuff_out == nullptr) {
 		iconv_close(conv_id);
-		rtf_free_reader(&reader);
 		return false;
 	}
 	pout = *pbuff_out;
 	size_t in_len = reader.ext_push.offset;
 	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &out_len)) {
 		iconv_close(conv_id);
-		rtf_free_reader(&reader);
 		return false;
 	}
 	iconv_close(conv_id);
-	rtf_free_reader(&reader);
 	*plength -= out_len;
 	return true;
 }
