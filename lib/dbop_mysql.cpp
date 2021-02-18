@@ -366,14 +366,10 @@ static const char tbl_members_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `class_id` int(10) unsigned NOT NULL,"
-"  `domain_id` int(10) unsigned NOT NULL,"
-"  `group_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `class_id_2` (`class_id`,`username`),"
 "  KEY `username` (`username`),"
 "  KEY `class_id` (`class_id`),"
-"  KEY `domain_id` (`domain_id`),"
-"  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_mlists_top[] =
@@ -559,6 +555,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{62, "ALTER TABLE `hierarchy` DROP COLUMN `domain_id`"},
 	{63, "ALTER TABLE `classes` DROP COLUMN `domain_id`"},
 	{64, "ALTER TABLE `classes` DROP COLUMN `group_id`"},
+	{65, "ALTER TABLE `members` DROP COLUMN `domain_id`"},
+	{66, "ALTER TABLE `members` DROP COLUMN `group_id`"},
 	{0, nullptr},
 };
 
