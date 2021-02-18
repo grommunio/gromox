@@ -9,6 +9,7 @@
 #include <gromox/ndr.hpp>
 #include <cstdlib>
 #include <cstring>
+#define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 
 #define NDR_SVAL(pndr, ofs) (NDR_BE(pndr)?RSVAL(pndr->data,ofs):SVAL(pndr->data,ofs))
@@ -172,12 +173,7 @@ int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v)
 
 int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 2);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_align(pndr, 2));
 	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -188,13 +184,7 @@ int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 
 int ndr_pull_int32(NDR_PULL *pndr, int32_t *v)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	
+	TRY(ndr_pull_align(pndr, 4));
 	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -205,12 +195,7 @@ int ndr_pull_int32(NDR_PULL *pndr, int32_t *v)
 
 int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_align(pndr, 4));
 	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -221,12 +206,7 @@ int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 
 int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 8);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_align(pndr, 8));
 	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -243,14 +223,10 @@ int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 
 int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v)
 {
-	int status;
 	uint64_t v64;
 	
 	if (pndr->flags & NDR_FLAG_NDR64) {
-		status = ndr_pull_uint64(pndr, &v64);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ndr_pull_uint64(pndr, &v64));
 		*v = (uint32_t)v64;
 		if (v64 != *v) {
 			return NDR_ERR_NDR64;
@@ -279,66 +255,28 @@ int ndr_pull_array_uint8(NDR_PULL *pndr, uint8_t *data, uint32_t n)
 
 int ndr_pull_guid(NDR_PULL *pndr, GUID *r)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_uint32(pndr, &r->time_low);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_uint16(pndr, &r->time_mid);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_uint16(pndr, &r->time_hi_and_version);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_array_uint8(pndr, r->clock_seq, 2);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_array_uint8(pndr, r->node, 6);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_trailer_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_align(pndr, 4));
+	TRY(ndr_pull_uint32(pndr, &r->time_low));
+	TRY(ndr_pull_uint16(pndr, &r->time_mid));
+	TRY(ndr_pull_uint16(pndr, &r->time_hi_and_version));
+	TRY(ndr_pull_array_uint8(pndr, r->clock_seq, 2));
+	TRY(ndr_pull_array_uint8(pndr, r->node, 6));
+	TRY(ndr_pull_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
 
 
 int ndr_pull_syntax_id(NDR_PULL *pndr, SYNTAX_ID *r)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_guid(pndr, &r->uuid);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_uint32(pndr, &r->version);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_trailer_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_align(pndr, 4));
+	TRY(ndr_pull_guid(pndr, &r->uuid));
+	TRY(ndr_pull_uint32(pndr, &r->version));
+	TRY(ndr_pull_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
 
 int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 {
-	int status;
 	uint32_t length;
 
 	length = 0;
@@ -356,10 +294,7 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 			length = pndr->data_size - pndr->offset;
 		}
 	} else {
-		status = ndr_pull_uint32(pndr, &length);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ndr_pull_uint32(pndr, &length));
 	}
 	if (pndr->data_size < length ||
 		pndr->offset + length > pndr->data_size) {
@@ -388,15 +323,11 @@ void ndr_free_data_blob(DATA_BLOB *pblob)
 int ndr_pull_check_string(NDR_PULL *pndr,
 	uint32_t count, uint32_t element_size)
 {
-	int status;
 	uint32_t i;
 	uint32_t saved_offset;
 
 	saved_offset = pndr->offset;
-	status = ndr_pull_advance(pndr, (count - 1) * element_size);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_advance(pndr, (count - 1) * element_size));
 	if (pndr->data_size < element_size ||
 		pndr->offset + element_size > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
@@ -424,24 +355,10 @@ int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v)
 
 int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r)
 {
-	int status;
-	
-	status = ndr_pull_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_uint32(pndr, &r->handle_type);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_guid(pndr, &r->guid);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_pull_trailer_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_pull_align(pndr, 4));
+	TRY(ndr_pull_uint32(pndr, &r->handle_type));
+	TRY(ndr_pull_guid(pndr, &r->guid));
+	TRY(ndr_pull_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -514,7 +431,6 @@ int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v)
 
 int ndr_push_align(NDR_PUSH *pndr, size_t size)
 {
-	int status;
 	uint32_t pad;
 	
 	if (size == 5) {
@@ -533,10 +449,7 @@ int ndr_push_align(NDR_PUSH *pndr, size_t size)
 	if (0 == (pndr->flags & NDR_FLAG_NOALIGN)) {
 		pad = ((pndr->offset + (size - 1)) & ~(size - 1)) - pndr->offset;
 		while (pad--) {
-			status = ndr_push_uint8(pndr, 0);
-			if (NDR_ERR_SUCCESS != status) {
-				return status;
-			}
+			TRY(ndr_push_uint8(pndr, 0));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -560,12 +473,7 @@ int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size)
 
 int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 2);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 2));
 	if (!ndr_push_check_overflow(pndr, 2))
 		return NDR_ERR_BUFSIZE;
 	NDR_SSVAL(pndr, pndr->offset, v);
@@ -575,12 +483,7 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 
 int ndr_push_int32(NDR_PUSH *pndr, int32_t v)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 4));
 	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
 	NDR_SIVALS(pndr, pndr->offset, v);
@@ -590,12 +493,7 @@ int ndr_push_int32(NDR_PUSH *pndr, int32_t v)
 
 int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 4));
 	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
 	NDR_SIVAL(pndr, pndr->offset, v);
@@ -605,12 +503,7 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 8);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 8));
 	if (!ndr_push_check_overflow(pndr, 8))
 		return NDR_ERR_BUFSIZE;
 	if (NDR_BE(pndr)) {
@@ -668,16 +561,10 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 		status = ndr_push_bytes(pndr, buff, length);
 		return status;
 	} else {
-		status = ndr_push_uint32(pndr, blob.length);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
+		TRY(ndr_push_uint32(pndr, blob.length));
 	}
 	assert(blob.data != nullptr || blob.length == 0);
-	status = ndr_push_bytes(pndr, blob.data, blob.length);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_bytes(pndr, blob.data, blob.length));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -692,55 +579,21 @@ int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required)
 
 int ndr_push_guid(NDR_PUSH *pndr, const GUID *r)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_uint32(pndr, r->time_low);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_uint16(pndr, r->time_mid);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_uint16(pndr, r->time_hi_and_version);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_array_uint8(pndr, r->clock_seq, 2);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_array_uint8(pndr, r->node, 6);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 4));
+	TRY(ndr_push_uint32(pndr, r->time_low));
+	TRY(ndr_push_uint16(pndr, r->time_mid));
+	TRY(ndr_push_uint16(pndr, r->time_hi_and_version));
+	TRY(ndr_push_array_uint8(pndr, r->clock_seq, 2));
+	TRY(ndr_push_array_uint8(pndr, r->node, 6));
 	return ndr_push_trailer_align(pndr, 4);
 }
 
 int ndr_push_syntax_id(NDR_PUSH *pndr, const SYNTAX_ID *r)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_guid(pndr, &r->uuid);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_uint32(pndr, r->version);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_trailer_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 4));
+	TRY(ndr_push_guid(pndr, &r->uuid));
+	TRY(ndr_push_uint32(pndr, r->version));
+	TRY(ndr_push_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -768,23 +621,9 @@ int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p)
 
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_uint32(pndr, r->handle_type);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_guid(pndr, &r->guid);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ndr_push_trailer_align(pndr, 4);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
+	TRY(ndr_push_align(pndr, 4));
+	TRY(ndr_push_uint32(pndr, r->handle_type));
+	TRY(ndr_push_guid(pndr, &r->guid));
+	TRY(ndr_push_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
