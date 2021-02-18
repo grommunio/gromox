@@ -3355,21 +3355,10 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		pnode = simple_tree_node_get_sibling(pnode);
 	}
 	if (!reader.have_fromhtml) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&reader.ext_push, TAG_DOCUMENT_BEGIN,
-			sizeof(TAG_DOCUMENT_BEGIN) - 1)) {
-			return false;
-		}
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&reader.ext_push, TAG_HEADER_BEGIN,
-			sizeof(TAG_HEADER_BEGIN) - 1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&reader.ext_push, TAG_DOCUMENT_BEGIN, sizeof(TAG_DOCUMENT_BEGIN) - 1));
+		QRF(ext_buffer_push_bytes(&reader.ext_push, TAG_HEADER_BEGIN, sizeof(TAG_HEADER_BEGIN) - 1));
 		tmp_len = sprintf(tmp_buff, TAG_HTML_CHARSET, charset);
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&reader.ext_push, tmp_buff, tmp_len)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&reader.ext_push, tmp_buff, tmp_len));
 	}
 	if (!rtf_convert_group_node(&reader, proot)) {
 		return false;
@@ -3378,16 +3367,8 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		return false;
 	}
 	if (!reader.have_fromhtml) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&reader.ext_push, TAG_BODY_END,
-			sizeof(TAG_BODY_END) -1)) {
-			return false;
-		}
-		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-			&reader.ext_push, TAG_DOCUMENT_END,
-			sizeof(TAG_DOCUMENT_END) -1)) {
-			return false;
-		}
+		QRF(ext_buffer_push_bytes(&reader.ext_push, TAG_BODY_END, sizeof(TAG_BODY_END) - 1));
+		QRF(ext_buffer_push_bytes(&reader.ext_push, TAG_DOCUMENT_END, sizeof(TAG_DOCUMENT_END) - 1));
 	}
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
