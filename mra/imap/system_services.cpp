@@ -8,7 +8,7 @@ BOOL (*system_services_judge_ip)(const char*);
 BOOL (*system_services_judge_user)(const char*);
 BOOL (*system_services_container_add_ip)(const char*);
 BOOL (*system_services_container_remove_ip)(const char*);
-int (*system_services_add_user_into_temp_list)(const char*, int);
+BOOL (*system_services_add_user_into_temp_list)(const char*, int);
 BOOL (*system_services_auth_login)(const char*, const char*, char*, char*, char*, int);
 int (*system_services_get_id)(const char*, const char*, const char*, unsigned int*);
 int (*system_services_get_uid)(const char*, const char*, const char*, unsigned int*);
@@ -39,7 +39,7 @@ int (*system_services_copy_mail)(const char*, const char*, const char*,
 	const char*, char*, int*);
 int (*system_services_search)(const char*, const char*, const char*, int, char**, char*, int*, int*);
 int (*system_services_search_uid)(const char*, const char*, const char*, int, char**, char*, int*, int*);
-void (*system_services_install_event_stub)(void *);
+void (*system_services_install_event_stub)(void (*)(char *));
 void (*system_services_broadcast_event)(const char*);
 void (*system_services_broadcast_select)(const char*, const char*);
 void (*system_services_broadcast_unselect)(const char*, const char*);

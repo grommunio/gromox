@@ -294,7 +294,7 @@ int imap_parser_run()
 		return -12;
 	}
 	pthread_setname_np(g_scan_id, "parser/scan");
-	system_services_install_event_stub(reinterpret_cast<void *>(imap_parser_event_proc));
+	system_services_install_event_stub(imap_parser_event_proc);
     return 0;
 }
 

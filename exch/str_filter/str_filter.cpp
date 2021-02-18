@@ -120,7 +120,7 @@ int str_filter_stop()
  *		TRUE			OK pass
  *		FALSE			cannot pass
  */                                                                                        
-BOOL str_filter_judge(char* str) 
+BOOL str_filter_judge(const char *str)
 {
     if (TRUE == temp_list_query(str)) {
         return FALSE;
@@ -148,7 +148,7 @@ BOOL str_filter_judge(char* str)
  *		TRUE			string is in filter
  *		FALSE			string is not in filter
  */                                                                                        
-BOOL str_filter_query(char* str) 
+BOOL str_filter_query(const char *str)
 {	
     if (TRUE == temp_list_query(str)) {
         return TRUE;
@@ -201,7 +201,7 @@ static int str_filter_search(char* str)
  *		TRUE		OK
  *		FALSE		fail
  */
-BOOL str_filter_add_string_into_temp_list(char *str, int interval)
+BOOL str_filter_add_string_into_temp_list(const char *str, int interval)
 {
     return temp_list_add_string(str, interval);
 }

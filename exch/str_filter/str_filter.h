@@ -11,12 +11,9 @@ extern void str_filter_init(const char *module_name, BOOL case_sensitive, int au
 extern void str_filter_free(void);
 extern int str_filter_run(void);
 extern int str_filter_stop(void);
-BOOL str_filter_judge(char* str);
-
-BOOL str_filter_query(char* str);
-
-BOOL str_filter_add_string_into_temp_list(char* str, int interval);
-
+extern BOOL str_filter_judge(const char *str);
+extern BOOL str_filter_query(const char *str);
+extern BOOL str_filter_add_string_into_temp_list(const char *str, int interval);
 void str_filter_console_talk(int argc, char **argv, char *result, int length);
 
 void str_filter_echo(const char *format, ...);

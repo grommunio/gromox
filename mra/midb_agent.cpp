@@ -91,80 +91,33 @@ static BOOL get_digest_string(const char *src, int length, const char *tag, char
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
 static int list_mail(const char *path, const char *folder, ARRAY *parray, int *pnum, uint64_t *psize);
 static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist);
-static int get_mail_id(char *path, char *folder, char *mid_string,
-	unsigned int *pid);
-
-static int get_mail_uid(char *path, char *folder, char *mid_string,
-	unsigned int *puid);
-
-static int summary_folder(char *path, char *folder, int *pexists, 
-	int *precent, int *punseen, unsigned long *puidvalid,
-	unsigned int *puidnext, int *pfirst_seen, int *perrno);
-	
-static int make_folder(char *path, char *folder, int *perrno);
-
-static int remove_folder(char *path, char *folder, int *perrno);
-
-static int ping_mailbox(char *path, int *perrno);
-
-static int rename_folder(char *path, char *src_name, char *dst_name,
-	int *perrno);
-
-static int subscribe_folder(char *path, char *folder, int *perrno);
-
-static int unsubscribe_folder(char *path, char *folder, int *perrno);
-
-static int enum_folders(char *path, MEM_FILE *pfile, int *perrno);
-
-static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno);
-
-static int insert_mail(char *path, char *folder, char *file_name,
-	char *flags_string, long time_stamp, int *perrno);
-
-static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
-	int *perrno);
-
-static int list_simple(char *path, char *folder, XARRAY *pxarray,
-	int *perrno);
-	
-static int list_deleted(char *path, char *folder, XARRAY *pxarray,
-	int *perrno);
-
-static int list_detail(char *path, char *folder, XARRAY *pxarray,
-	int *perrno);
-
+static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
+static int get_mail_uid(const char *path, const char *folder, const char *mid_string, unsigned int *uid);
+static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *first_seen, int *perrno);
+static int make_folder(const char *path, const char *folder, int *perrno);
+static int remove_folder(const char *path, const char *folder, int *perrno);
+static int ping_mailbox(const char *path, int *perrno);
+static int rename_folder(const char *path, const char *src_name, const char *dst_name, int *perrno);
+static int subscribe_folder(const char *path, const char *folder, int *perrno);
+static int unsubscribe_folder(const char *path, const char *folder, int *perrno);
+static int enum_folders(const char *path, MEM_FILE *, int *perrno);
+static int enum_subscriptions(const char *path, MEM_FILE *, int *perrno);
+static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
+static int remove_mail(const char *path, const char *folder, SINGLE_LIST *, int *perrno);
+static int list_simple(const char *path, const char *folder, XARRAY *, int *perrno);
+static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
+static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
 static void free_result(XARRAY *pxarray);
-
-static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno);
-
-static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno);
-	
-static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno);
-	
-static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno);
-
-static int set_mail_flags(char *path, char *folder, char *mid_string,
-	int flag_bits, int *perrno);
-	
-static int unset_mail_flags(char *path, char *folder, char *mid_string,
-	int flag_bits, int *perrno);
-	
-static int get_mail_flags(char *path, char *folder, char *mid_string,
-	int *pflag_bits, int *perrno);
-	
-static int copy_mail(char *path, char *src_folder, char *mid_string,
-	char *dst_folder, char *dst_mid, int *perrno);
-
-static int imap_search(char *path, char *folder, char *charset,
-	int argc, char **argv, char *ret_buff, int *plen, int *perrno);
-
-static int imap_search_uid(char *path, char *folder, char *charset,
-	int argc, char **argv, char *ret_buff, int *plen, int *perrno);
-
+static int fetch_simple(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_detail(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_simple_uid(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_detail_uid(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
+static int set_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
+static int unset_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
+static int get_mail_flags(const char *path, const char *folder, const char *mid_string, int *pflag_bits, int *perrno);
+static int copy_mail(const char *path, const char *src_folder, const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno);
+static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
+static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
 static BOOL check_full(char *path);
 
 static void console_talk(int argc, char **argv, char *result, int length);
@@ -736,8 +689,9 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 	return MIDB_RDWR_ERROR;
 }
 
-static int imap_search(char *path, char *folder, char *charset,
-	int argc, char **argv, char *ret_buff, int *plen, int *perrno)
+static int imap_search(const char *path, const char *folder,
+    const char *charset, int argc, char **argv, char *ret_buff,
+    int *plen, int *perrno)
 {
 	int i;
 	int length;
@@ -816,8 +770,9 @@ static int imap_search(char *path, char *folder, char *charset,
 
 }
 
-static int imap_search_uid(char *path, char *folder, char *charset,
-	int argc, char **argv, char *ret_buff, int *plen, int *perrno)
+static int imap_search_uid(const char *path, const char *folder,
+   const char *charset, int argc, char **argv, char *ret_buff,
+   int *plen, int *perrno)
 {
 	int i;
 	int length;
@@ -896,9 +851,8 @@ static int imap_search_uid(char *path, char *folder, char *charset,
 
 }
 
-
-static int get_mail_id(char *path, char *folder, char *mid_string,
-	unsigned int *pid)
+static int get_mail_id(const char *path, const char *folder,
+    const char *mid_string, unsigned int *pid)
 {
 	int length;
 	BACK_CONN *pback;
@@ -942,8 +896,8 @@ static int get_mail_id(char *path, char *folder, char *mid_string,
 
 }
 
-static int get_mail_uid(char *path, char *folder, char *mid_string,
-	unsigned int *puid)
+static int get_mail_uid(const char *path, const char *folder,
+    const char *mid_string, unsigned int *puid)
 {
 	int length;
 	BACK_CONN *pback;
@@ -986,7 +940,7 @@ static int get_mail_uid(char *path, char *folder, char *mid_string,
 	return MIDB_RDWR_ERROR;
 }
 
-static int summary_folder(char *path, char *folder, int *pexists, 
+static int summary_folder(const char *path, const char *folder, int *pexists,
 	int *precent, int *punseen, unsigned long *puidvalid,
 	unsigned int *puidnext, int *pfirst_unseen, int *perrno)
 {
@@ -1061,7 +1015,7 @@ static int summary_folder(char *path, char *folder, int *pexists,
 	return MIDB_RDWR_ERROR;
 }
 	
-static int make_folder(char *path, char *folder, int *perrno)
+static int make_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -1103,7 +1057,7 @@ static int make_folder(char *path, char *folder, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int remove_folder(char *path, char *folder, int *perrno)
+static int remove_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -1145,7 +1099,7 @@ static int remove_folder(char *path, char *folder, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int ping_mailbox(char *path, int *perrno)
+static int ping_mailbox(const char *path, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -1187,8 +1141,8 @@ static int ping_mailbox(char *path, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int rename_folder(char *path, char *src_name, char *dst_name,
-	int *perrno)
+static int rename_folder(const char *path, const char *src_name,
+    const char *dst_name, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -1231,7 +1185,7 @@ static int rename_folder(char *path, char *src_name, char *dst_name,
 	return MIDB_RDWR_ERROR;
 }
 
-static int subscribe_folder(char *path, char *folder, int *perrno)
+static int subscribe_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -1273,7 +1227,7 @@ static int subscribe_folder(char *path, char *folder, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int unsubscribe_folder(char *path, char *folder, int *perrno)
+static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -1315,7 +1269,7 @@ static int unsubscribe_folder(char *path, char *folder, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
+static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 {
 	int i;
 	int lines;
@@ -1440,7 +1394,7 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
 
 }
 
-static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
+static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 {
 	int i;
 	int lines;
@@ -1566,8 +1520,9 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
 
 }
 
-static int insert_mail(char *path, char *folder, char *file_name,
-	char *flags_string, long time_stamp, int *perrno)
+static int insert_mail(const char *path, const char *folder,
+    const char *file_name, const char *flags_string, long time_stamp,
+    int *perrno)
 {
 	int length;
 	char buff[1024];
@@ -1609,8 +1564,8 @@ static int insert_mail(char *path, char *folder, char *file_name,
 	return MIDB_RDWR_ERROR;
 }
 
-static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
-	int *perrno)
+static int remove_mail(const char *path, const char *folder,
+    SINGLE_LIST *plist, int *perrno)
 {
 	int length;
 	int cmd_len;
@@ -1701,7 +1656,7 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 	return MIDB_RDWR_ERROR;
 }
 
-static int list_simple(char *path, char *folder, XARRAY *pxarray,
+static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
 	int i;
@@ -1875,7 +1830,7 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 	return MIDB_RDWR_ERROR;
 }
 
-static int list_deleted(char *path, char *folder, XARRAY *pxarray,
+static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
 	int i;
@@ -2031,7 +1986,7 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 	return MIDB_RDWR_ERROR;
 }
 
-static int list_detail(char *path, char *folder, XARRAY *pxarray,
+static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
 	int i, num;
@@ -2239,8 +2194,8 @@ static void free_result(XARRAY *pxarray)
 	}
 }
 
-static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno)
+static int fetch_simple(const char *path, const char *folder,
+    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int i;
 	int uid;
@@ -2438,8 +2393,8 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	return MIDB_RDWR_ERROR;
 }
 
-static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno)
+static int fetch_detail(const char *path, const char *folder,
+    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int i;
 	int num;
@@ -2661,8 +2616,8 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 	return MIDB_RDWR_ERROR;
 }
 
-static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno)
+static int fetch_simple_uid(const char *path, const char *folder,
+    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int i;
 	int uid;
@@ -2857,8 +2812,8 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	return MIDB_RDWR_ERROR;
 }
 
-static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
-	XARRAY *pxarray, int *perrno)
+static int fetch_detail_uid(const char *path, const char *folder,
+    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int i;
 	int num;
@@ -3075,10 +3030,8 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	return MIDB_RDWR_ERROR;
 }
 
-
-
-static int set_mail_flags(char *path, char *folder, char *mid_string,
-	int flag_bits, int *perrno)
+static int set_mail_flags(const char *path, const char *folder,
+    const char *mid_string, int flag_bits, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -3157,8 +3110,8 @@ static int set_mail_flags(char *path, char *folder, char *mid_string,
 	return MIDB_RDWR_ERROR;
 }
 	
-static int unset_mail_flags(char *path, char *folder, char *mid_string,
-	int flag_bits, int *perrno)
+static int unset_mail_flags(const char *path, const char *folder,
+    const char *mid_string, int flag_bits, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -3237,8 +3190,8 @@ static int unset_mail_flags(char *path, char *folder, char *mid_string,
 	return MIDB_RDWR_ERROR;
 }
 	
-static int get_mail_flags(char *path, char *folder, char *mid_string,
-	int *pflag_bits, int *perrno)
+static int get_mail_flags(const char *path, const char *folder,
+    const char *mid_string, int *pflag_bits, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
@@ -3304,8 +3257,8 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
 
 }
 	
-static int copy_mail(char *path, char *src_folder, char *mid_string,
-	char *dst_folder, char *dst_mid, int *perrno)
+static int copy_mail(const char *path, const char *src_folder,
+    const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;

@@ -8,7 +8,7 @@ BOOL (*system_services_judge_ip)(const char*);
 BOOL (*system_services_judge_user)(const char*);
 BOOL (*system_services_container_add_ip)(const char*);
 BOOL (*system_services_container_remove_ip)(const char*);
-int (*system_services_add_user_into_temp_list)(const char*, int);
+BOOL (*system_services_add_user_into_temp_list)(const char*, int);
 BOOL (*system_services_auth_login)(const char*, const char*, char*, char*, char*, int);
 int (*system_services_list_mail)(const char *, const char *, ARRAY *, int *pnum, uint64_t *psize);
 int (*system_services_delete_mail)(const char *, const char *, SINGLE_LIST *);
