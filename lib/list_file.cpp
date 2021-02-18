@@ -65,10 +65,16 @@ static std::unique_ptr<LIST_FILE> list_file_init(const char *filename, const cha
 }
 
 std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
-    const char *format)
+    const char *format, unsigned int mode)
 {
-	if (sdlist == nullptr || strchr(fb, '/') != nullptr)
-		return list_file_init(fb, format);
+	if (sdlist == nullptr || strchr(fb, '/') != nullptr) {
+		auto cfg = list_file_init(fb, format);
+		if (cfg != nullptr)
+			return cfg;
+		if (errno == ENOENT && mode == EMPTY_ON_ABSENCE)
+			return list_file_alloc(format);
+		return nullptr;
+	}
 	errno = 0;
 	try {
 		for (auto dir : gx_split(sdlist, ':')) {
@@ -89,7 +95,7 @@ std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
 		errno = ENOMEM;
 		return nullptr;
 	}
-	return list_file_alloc(format);
+	return mode == EMPTY_ON_ABSENCE ? list_file_alloc(format) : nullptr;
 }
 
 LIST_FILE::~LIST_FILE()
@@ -331,7 +337,7 @@ int list_file_read_fixedstrings(const char *filename, const char *sdlist,
     std::vector<std::string> &out)
 {
 	struct item { char data[256]; };
-	auto plist = list_file_initd(filename, sdlist, "%s:256");
+	auto plist = list_file_initd(filename, sdlist, "%s:256", ERROR_ON_ABSENCE);
 	if (plist == nullptr)
 		return -errno;
 	auto num = plist->get_size();

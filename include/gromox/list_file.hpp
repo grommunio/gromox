@@ -18,5 +18,10 @@ struct LIST_FILE {
     void*       pfile;
 };
 
-extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_initd(const char *filename, const char *sdlist, const char *format);
+enum {
+	EMPTY_ON_ABSENCE = 0,
+	ERROR_ON_ABSENCE,
+};
+
+extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_initd(const char *filename, const char *sdlist, const char *format, unsigned int mode = EMPTY_ON_ABSENCE);
 extern GX_EXPORT int list_file_read_fixedstrings(const char *filename, const char *sdlist, std::vector<std::string> &out);
