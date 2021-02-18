@@ -2084,7 +2084,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	
 	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
 	if (sockd < 0) {
-		common_util_log_info(0, "cannot connect to "
+		common_util_log_info("cannot connect to "
 			"smtp server [%s]:%d: %s", g_smtp_ip, g_smtp_port,
 			strerror(-sockd));
 		return FALSE;
@@ -2094,7 +2094,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "time out with smtp "
+		common_util_log_info("time out with smtp "
 			"server %s:%d", g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2103,7 +2103,7 @@ BOOL common_util_send_mail(MAIL *pmail,
         /* send quit command to server */
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "Failed to connect to SMTP. "
+		common_util_log_info("Failed to connect to SMTP. "
 			"server response is \"%s\"", last_response);
 		return FALSE;
 	}
@@ -2114,14 +2114,14 @@ BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == common_util_send_command(
 		sockd, last_command, command_len)) {
 		close(sockd);
-		common_util_log_info(0, "fail to send \"helo\" command");
+		common_util_log_info("fail to send \"helo\" command");
 		return FALSE;
 	}
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "time out with smtp "
+		common_util_log_info("time out with smtp "
 			"server %s:%d", g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2130,7 +2130,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		/* send quit command to server */
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "smtp server responded \"%s\" "
+		common_util_log_info("smtp server responded \"%s\" "
 			"after sending \"helo\" command", last_response);
 		return FALSE;
 	}
@@ -2140,7 +2140,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == common_util_send_command(
 		sockd, last_command, command_len)) {
 		close(sockd);
-		common_util_log_info(0, "fail to send \"mail from\" command");
+		common_util_log_info("fail to send \"mail from\" command");
 		return FALSE;
 	}
 	/* read mail from response information */
@@ -2148,7 +2148,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "time out with smtp "
+		common_util_log_info("time out with smtp "
 			"server %s:%d", g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2157,7 +2157,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		/* send quit command to server */
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "smtp server responded \"%s\" "
+		common_util_log_info("smtp server responded \"%s\" "
 			"after sending \"mail from\" command", last_response);
 		return FALSE;
 	}
@@ -2176,7 +2176,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		if (FALSE == common_util_send_command(
 			sockd, last_command, command_len)) {
 			close(sockd);
-			common_util_log_info(0, "fail to send \"rcpt to\" command");
+			common_util_log_info("fail to send \"rcpt to\" command");
 			return FALSE;
 		}
 		/* read rcpt to response information */
@@ -2184,7 +2184,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		switch (res_val) {
 		case SMTP_TIME_OUT:
 			close(sockd);
-			common_util_log_info(0, "time out with smtp "
+			common_util_log_info("time out with smtp "
 				"server %s:%d", g_smtp_ip, g_smtp_port);
 			return FALSE;
 		case SMTP_PERMANENT_ERROR:
@@ -2192,7 +2192,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		case SMTP_UNKOWN_RESPONSE:
 			common_util_send_command(sockd, "quit\r\n", 6);
 			close(sockd);
-			common_util_log_info(0, "smtp server responded \"%s\" "
+			common_util_log_info("smtp server responded \"%s\" "
 				"after sending \"rcpt to\" command", last_response);
 			return FALSE;
 		}						
@@ -2203,7 +2203,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == common_util_send_command(
 		sockd, last_command, command_len)) {
 		close(sockd);
-		common_util_log_info(0, "sender %s, fail "
+		common_util_log_info("sender %s, fail "
 			"to send \"data\" command", sender);
 		return FALSE;
 	}
@@ -2213,7 +2213,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "sender %s, time out with smtp "
+		common_util_log_info("sender %s, time out with smtp "
 			"server %s:%d", sender, g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2221,7 +2221,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	case SMTP_UNKOWN_RESPONSE:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "sender %s, smtp server responded \"%s\" "
+		common_util_log_info("sender %s, smtp server responded \"%s\" "
 				"after sending \"data\" command", sender, last_response);
 		return FALSE;
 	}
@@ -2230,7 +2230,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == mail_to_file(pmail, sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
-		common_util_log_info(0, "sender %s, fail"
+		common_util_log_info("sender %s, fail"
 				" to send mail content", sender);
 		return FALSE;
 	}
@@ -2238,7 +2238,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "sender %s, time out with smtp "
+		common_util_log_info("sender %s, time out with smtp "
 				"server %s:%d", sender, g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2246,13 +2246,13 @@ BOOL common_util_send_mail(MAIL *pmail,
 	case SMTP_UNKOWN_RESPONSE:	
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "sender %s, smtp server responded \"%s\" "
+		common_util_log_info("sender %s, smtp server responded \"%s\" "
 					"after sending mail content", sender, last_response);
 		return FALSE;
 	case SMTP_SEND_OK:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "smtp server %s:%d has received"
+		common_util_log_info("smtp server %s:%d has received"
 			" message from %s", g_smtp_ip, g_smtp_port, sender);
 		return TRUE;
 	}
@@ -2336,7 +2336,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, PROP_TAG_PARENTFOLDERID,
 		&pvalue) || NULL == pvalue) {
-		common_util_log_info(0, "cannot get parent folder_id "
+		common_util_log_info("cannot get parent folder_id "
 			"of message %llu when sending it", LLU(message_id));
 		return FALSE;
 	}
@@ -2344,7 +2344,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	if (FALSE == exmdb_client_read_message(
 		logon_object_get_dir(plogon), NULL, cpid,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {
-		common_util_log_info(0, "fail to read message %llu"
+		common_util_log_info("fail to read message %llu"
 				" from exmdb when sending it", message_id);
 		return FALSE;
 	}
@@ -2364,7 +2364,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
 	if (NULL == pvalue) {
-		common_util_log_info(0, "fail to get message_flag"
+		common_util_log_info("fail to get message_flag"
 			" of message %llu when sending it", LLU(message_id));
 		return FALSE;
 	}
@@ -2377,7 +2377,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
-		common_util_log_info(0, "mssing recipients"
+		common_util_log_info("mssing recipients"
 			" when sending message %llu", LLU(message_id));
 		return FALSE;
 	}
@@ -2420,12 +2420,12 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			pvalue = common_util_get_propvals(
 				prcpts->pparray[i], PROP_TAG_ENTRYID);
 			if (NULL == pvalue) {
-				common_util_log_info(0, "cannot get recipient "
+				common_util_log_info("cannot get recipient "
 					"entryid when sending message %llu", LLU(message_id));
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username)) {
-				common_util_log_info(0, "cannot convert recipient entryid "
+				common_util_log_info("cannot convert recipient entryid "
 					"to smtp address when sending message %llu", LLU(message_id));
 				return FALSE;	
 			}
@@ -2440,7 +2440,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 				pnode->pdata = common_util_get_propvals(
 					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
 				if (NULL == pnode->pdata) {
-					common_util_log_info(0, "cannot get email address "
+					common_util_log_info("cannot get email address "
 						"of recipient of SMTP address type when sending"
 						" message %llu", LLU(message_id));
 					return FALSE;
@@ -2466,7 +2466,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		double_list_append_as_tail(&temp_list, pnode);
 	}
 	if (0 == double_list_get_nodes_num(&temp_list)) {
-		common_util_log_info(0, "empty converted recipients "
+		common_util_log_info("empty converted recipients "
 			"list when sending message %llu", LLU(message_id));
 		return FALSE;
 	}
@@ -2488,14 +2488,14 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 		body_type, g_mime_pool, &imail, common_util_alloc,
 		common_util_get_propids, common_util_get_propname)) {
-		common_util_log_info(0, "fail to export to rfc822"
+		common_util_log_info("fail to export to rfc822"
 			" mail when sending message %llu", LLU(message_id));
 		return FALSE;	
 	}
 	if (FALSE == common_util_send_mail(&imail,
 		logon_object_get_account(plogon), &temp_list)) {
 		mail_free(&imail);
-		common_util_log_info(0, "fail to send "
+		common_util_log_info("fail to send "
 			"message %llu via SMTP", LLU(message_id));
 		return FALSE;
 	}
@@ -2513,14 +2513,14 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(
 			plogon, ptarget, &folder_id, &new_id)) {
-			common_util_log_info(0, "fail to retrieve target "
+			common_util_log_info("fail to retrieve target "
 				"entryid when sending message %llu", LLU(message_id));
 			return FALSE;	
 		}
 		if (FALSE == exmdb_client_clear_submit(
 			logon_object_get_dir(plogon),
 			message_id, FALSE)) {
-			common_util_log_info(0, "fail to clear submit "
+			common_util_log_info("fail to clear submit "
 				"flag when sending message %llu", LLU(message_id));
 			return FALSE;
 		}
@@ -2529,7 +2529,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			logon_object_get_account_id(plogon),
 			cpid, message_id, folder_id, new_id,
 			TRUE, &b_result)) {
-			common_util_log_info(0, "fail to move to target "
+			common_util_log_info("fail to move to target "
 				"folder when sending message %llu", LLU(message_id));
 			return FALSE;
 		}
@@ -2542,7 +2542,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		if (FALSE == exmdb_client_clear_submit(
 			logon_object_get_dir(plogon),
 			message_id, FALSE)) {
-			common_util_log_info(0, "fail to clear submit "
+			common_util_log_info("fail to clear submit "
 				"flag when sending message %llu", LLU(message_id));
 			return FALSE;
 		}
@@ -2554,7 +2554,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			cpid, FALSE, NULL, parent_id,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
 			FALSE, &ids, &b_partial)) {
-			common_util_log_info(0, "fail to move to \"sent\""
+			common_util_log_info("fail to move to \"sent\""
 				" folder when sending message %llu", LLU(message_id));
 			return FALSE;	
 		}
@@ -2729,7 +2729,7 @@ MIME_POOL* common_util_get_mime_pool()
 	return g_mime_pool;
 }
 
-void common_util_log_info(int level, const char *format, ...)
+void common_util_log_info(const char *format, ...)
 {
 	va_list ap;
 	char log_buf[2048];
@@ -2743,6 +2743,6 @@ void common_util_log_info(int level, const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	log_info(level, "user: %s, IP: %s  %s",
+	log_info(0, "user: %s, IP: %s  %s",
 		rpc_info.username, rpc_info.client_ip, log_buf);
 }

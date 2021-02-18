@@ -1966,7 +1966,7 @@ static int common_util_get_response(int sockd,
 	}
 }
 
-static void common_util_log_info(int level, const char *format, ...)
+static void common_util_log_info(const char *format, ...)
 {
 	va_list ap;
 	USER_INFO *pinfo;
@@ -1980,7 +1980,7 @@ static void common_util_log_info(int level, const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	system_services_log_info(level, "user: %s, %s", pinfo->username, log_buf);
+	system_services_log_info(0, "user: %s, %s", pinfo->username, log_buf);
 }
 
 static BOOL common_util_send_mail(MAIL *pmail,
@@ -1994,7 +1994,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	
 	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
 	if (sockd < 0) {
-		common_util_log_info(0, "cannot connect to "
+		common_util_log_info("cannot connect to "
 			"smtp server [%s]:%d: %s", g_smtp_ip, g_smtp_port,
 			strerror(-sockd));
 		return FALSE;
@@ -2004,7 +2004,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "time out with smtp "
+		common_util_log_info("time out with smtp "
 			"server %s:%d", g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2013,7 +2013,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
         /* send quit command to server */
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "Failed to connect to SMTP. "
+		common_util_log_info("Failed to connect to SMTP. "
 			"server response is \"%s\"", last_response);
 		return FALSE;
 	}
@@ -2031,7 +2031,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "time out with smtp "
+		common_util_log_info("time out with smtp "
 			"server %s:%d", g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2040,7 +2040,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		/* send quit command to server */
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "smtp server responded \"%s\" "
+		common_util_log_info("smtp server responded \"%s\" "
 			"after sending \"helo\" command", last_response);
 		return FALSE;
 	}
@@ -2050,7 +2050,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == common_util_send_command(
 		sockd, last_command, command_len)) {
 		close(sockd);
-		common_util_log_info(0, "fail to send \"mail from\" command");
+		common_util_log_info("fail to send \"mail from\" command");
 		return FALSE;
 	}
 	/* read mail from response information */
@@ -2058,7 +2058,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "time out with smtp "
+		common_util_log_info("time out with smtp "
 			"server %s:%d", g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2067,7 +2067,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		/* send quit command to server */
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "smtp server responded \"%s\" "
+		common_util_log_info("smtp server responded \"%s\" "
 			"after sending \"mail from\" command", last_response);
 		return FALSE;
 	}
@@ -2086,7 +2086,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		if (FALSE == common_util_send_command(
 			sockd, last_command, command_len)) {
 			close(sockd);
-			common_util_log_info(0, "fail to send \"rcpt to\" command");
+			common_util_log_info("fail to send \"rcpt to\" command");
 			return FALSE;
 		}
 		/* read rcpt to response information */
@@ -2094,7 +2094,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		switch (res_val) {
 		case SMTP_TIME_OUT:
 			close(sockd);
-			common_util_log_info(0, "time out with smtp "
+			common_util_log_info("time out with smtp "
 				"server %s:%d", g_smtp_ip, g_smtp_port);
 			return FALSE;
 		case SMTP_PERMANENT_ERROR:
@@ -2102,7 +2102,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		case SMTP_UNKOWN_RESPONSE:
 			common_util_send_command(sockd, "quit\r\n", 6);
 			close(sockd);
-			common_util_log_info(0, "smtp server responded \"%s\" "
+			common_util_log_info("smtp server responded \"%s\" "
 				"after sending \"rcpt to\" command", last_response);
 			return FALSE;
 		}						
@@ -2113,7 +2113,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == common_util_send_command(
 		sockd, last_command, command_len)) {
 		close(sockd);
-		common_util_log_info(0, "sender %s, fail "
+		common_util_log_info("sender %s, fail "
 			"to send \"data\" command", sender);
 		return FALSE;
 	}
@@ -2123,7 +2123,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "sender %s, time out with smtp "
+		common_util_log_info("sender %s, time out with smtp "
 			"server %s:%d", sender, g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2131,7 +2131,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	case SMTP_UNKOWN_RESPONSE:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "sender %s, smtp server responded \"%s\" "
+		common_util_log_info("sender %s, smtp server responded \"%s\" "
 				"after sending \"data\" command", sender, last_response);
 		return FALSE;
 	}
@@ -2139,7 +2139,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	if (FALSE == mail_to_file(pmail, sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
-		common_util_log_info(0, "sender %s, fail"
+		common_util_log_info("sender %s, fail"
 				" to send mail content", sender);
 		return FALSE;
 	}
@@ -2147,7 +2147,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		common_util_log_info(0, "sender %s, time out with smtp "
+		common_util_log_info("sender %s, time out with smtp "
 				"server %s:%d", sender, g_smtp_ip, g_smtp_port);
 		return FALSE;
 	case SMTP_PERMANENT_ERROR:
@@ -2155,13 +2155,13 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	case SMTP_UNKOWN_RESPONSE:	
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "sender %s, smtp server responded \"%s\" "
+		common_util_log_info("sender %s, smtp server responded \"%s\" "
 					"after sending mail content", sender, last_response);
 		return FALSE;
 	case SMTP_SEND_OK:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "smtp server %s:%d has received"
+		common_util_log_info("smtp server %s:%d has received"
 			" message from %s", g_smtp_ip, g_smtp_port, sender);
 		return TRUE;
 	}
