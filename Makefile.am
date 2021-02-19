@@ -18,6 +18,8 @@ pamlib_LTLIBRARIES = pam_gromox.la
 noinst_DATA += pam_gromox.ldd
 endif
 if HAVE_PHP
+phpinidir = ${PHP_SYSCONF_DIR}
+phpini_DATA = php_mapi/mapi.ini
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 endif
