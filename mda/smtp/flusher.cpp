@@ -431,8 +431,8 @@ static const char* flusher_get_plugin_name()
 	if (NULL == g_flusher_plug) {
 		    return NULL;
 	}
-	if (strncmp(g_flusher_plug->file_name, "libmtaflh_", 10) == 0)
-		return g_flusher_plug->file_name + 10;
+	if (strncmp(g_flusher_plug->file_name, "libgxf_", 7) == 0)
+		return g_flusher_plug->file_name + 7;
 	return g_flusher_plug->file_name;
 }
 

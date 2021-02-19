@@ -74,7 +74,7 @@ Default: \fIfalse\fP if server mode is 0 (incoming), \fItrue\fP otherwise
 Filename of a flusher plugin to load and use. (Only one can be in use at any
 time.)
 .PP
-Default: \fIlibmtaflh_message_enqueue.so\fP
+Default: \fIlibgxf_message_enqueue.so\fP
 .SS host_id
 .PP
 Default: (system hostname)
@@ -184,6 +184,8 @@ Default: \fI1\fP
 .IP \(bu 4
 \fIdata_file_path\fP/smtp_code.txt: Mapping from internal SMTP error codes to
 textual descriptions.
+.IP \(bu 4
+/usr/lib/gromox/libgxs_*.so: flusher plugins
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also

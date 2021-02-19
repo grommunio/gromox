@@ -25,13 +25,13 @@ unit_DATA = ${unit_services} ${unit_targets}
 
 mta_system = delivery smtp
 mta_plugins = \
-	libmtaflh_message_enqueue.la \
+	libgxf_message_enqueue.la \
 	libgxm_alias_translator.la \
 	libgxm_exmdb_local.la \
 	libgxm_mlist_expand.la \
 	libgxs_domain_list.la
 noinst_DATA += \
-	libmtaflh_message_enqueue.ldd \
+	libgxf_message_enqueue.ldd \
 	libgxm_alias_translator.ldd \
 	libgxm_exmdb_local.ldd \
 	libgxm_mlist_expand.ldd \
@@ -115,10 +115,10 @@ delivery_SOURCES = exch/http/service.cpp lib/console_server.cpp mda/delivery_app
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 smtp_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
 smtp_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
-libmtaflh_message_enqueue_la_SOURCES = mda/message_enqueue.cpp
-libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtaflh_message_enqueue_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtaflh_message_enqueue_la_DEPENDENCIES = ${default_sym}
+libgxf_message_enqueue_la_SOURCES = mda/message_enqueue.cpp
+libgxf_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxf_message_enqueue_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxf_message_enqueue_la_DEPENDENCIES = ${default_sym}
 libgxm_alias_translator_la_SOURCES = mda/alias_translator.cpp
 libgxm_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
