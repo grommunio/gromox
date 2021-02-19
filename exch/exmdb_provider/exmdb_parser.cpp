@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <cstdint>
+#include <string>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -27,7 +30,7 @@
 
 static int g_max_threads;
 static int g_max_routers;
-static DOUBLE_LIST g_local_list;
+static std::vector<LOCAL_SVR> g_local_list;
 static DOUBLE_LIST g_router_list;
 static DOUBLE_LIST g_connection_list;
 static pthread_mutex_t g_router_lock;
@@ -50,12 +53,10 @@ void exmdb_parser_init(int max_threads, int max_routers)
 	pthread_mutex_init(&g_connection_lock, NULL);
 	double_list_init(&g_connection_list);
 	double_list_init(&g_router_list);
-	double_list_init(&g_local_list);
 }
 
 void exmdb_parser_free()
 {
-	double_list_free(&g_local_list);
 	double_list_free(&g_router_list);
 	double_list_free(&g_connection_list);
 	pthread_mutex_destroy(&g_router_lock);
@@ -79,16 +80,12 @@ EXMDB_CONNECTION* exmdb_parser_get_connection()
 
 static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_local_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_local_list, pnode)) {
-		if (0 == strcmp(((LOCAL_SVR*)pnode->pdata)->prefix, prefix)) {
-			*pb_private = ((LOCAL_SVR*)pnode->pdata)->b_private;
-			return TRUE;
-		}
-	}
-	return FALSE;
+	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),
+	         [&](const LOCAL_SVR &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
+	if (i == g_local_list.cend())
+		return false;
+	*pb_private = i->b_private;
+	return TRUE;
 }
 
 static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
@@ -1064,7 +1061,6 @@ BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
 int exmdb_parser_run(const char *config_path)
 {
 	BOOL b_private;
-	LOCAL_SVR *plocal;
 	
 	auto plist = list_file_initd("exmdb_list.txt", config_path,
 	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
@@ -1074,7 +1070,7 @@ int exmdb_parser_run(const char *config_path)
 	}
 	auto list_num = plist->get_size();
 	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
-	for (decltype(list_num) i = 0; i < list_num; ++i) {
+	for (decltype(list_num) i = 0; i < list_num; ++i) try {
 		if (0 == strcasecmp(pitem[i].type, "private")) {
 			b_private = TRUE;
 		} else if (0 == strcasecmp(pitem[i].type, "public")) {
@@ -1086,16 +1082,13 @@ int exmdb_parser_run(const char *config_path)
 		}
 		if (!gx_peer_is_local(pitem[i].ip_addr))
 			continue;
-		plocal = me_alloc<LOCAL_SVR>();
-		if (NULL == plocal) {
-			printf("[exmdb_provider]: Failed to allocate memory\n");
-			return 3;
-		}
-		plocal->node.pdata = plocal;
-		strcpy(plocal->prefix, pitem[i].prefix);
-		plocal->prefix_len = strlen(plocal->prefix);
-		plocal->b_private = b_private;
-		double_list_append_as_tail(&g_local_list, &plocal->node);
+		LOCAL_SVR lcl;
+		lcl.prefix = pitem[i].prefix;
+		lcl.b_private = b_private;
+		g_local_list.push_back(std::move(lcl));
+	} catch (const std::bad_alloc &) {
+		printf("[exmdb_provider]: Failed to allocate memory\n");
+		return 3;
 	}
 	return 0;
 }
@@ -1108,7 +1101,7 @@ int exmdb_parser_stop()
 	ROUTER_CONNECTION *prouter;
 	EXMDB_CONNECTION *pconnection;
 	
-	if (double_list_get_nodes_num(&g_local_list) == 0)
+	if (g_local_list.size() == 0)
 		return 0;
 	pthr_ids = NULL;
 	pthread_mutex_lock(&g_connection_lock);
@@ -1161,7 +1154,5 @@ int exmdb_parser_stop()
 		free(pthr_ids);
 		pthr_ids = NULL;
 	}
-	while ((pnode = double_list_pop_front(&g_local_list)) != nullptr)
-		free(pnode->pdata);
 	return 0;
 }

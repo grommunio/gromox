@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
 #include <gromox/common_types.hpp>
@@ -22,9 +23,7 @@ struct EXMDB_ITEM {
 };
 
 struct LOCAL_SVR {
-	DOUBLE_LIST_NODE node;
-	char prefix[256];
-	int prefix_len;
+	std::string prefix;
 	BOOL b_private;
 };
 

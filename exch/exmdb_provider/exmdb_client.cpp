@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cstdint>
+#include <string>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -55,7 +58,7 @@ static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_agent_list;
-static DOUBLE_LIST g_local_list;
+static std::vector<LOCAL_SVR> g_local_list;
 static DOUBLE_LIST g_server_list;
 static pthread_mutex_t g_server_lock;
 
@@ -495,7 +498,6 @@ void exmdb_client_init(int conn_num, int threads_num)
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
 	g_threads_num = threads_num;
-	double_list_init(&g_local_list);
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
 	double_list_init(&g_agent_list);
@@ -505,7 +507,6 @@ void exmdb_client_init(int conn_num, int threads_num)
 int exmdb_client_run(const char *config_path)
 {
 	BOOL b_private;
-	LOCAL_SVR *plocal;
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
 	AGENT_THREAD *pagent;
@@ -530,19 +531,16 @@ int exmdb_client_run(const char *config_path)
 			g_notify_stop = TRUE;
 			return 2;
 		}
-		if (gx_peer_is_local(pitem[i].ip_addr)) {
-			plocal = me_alloc<LOCAL_SVR>();
-			if (NULL == plocal) {
-				printf("[exmdb_provider]: Failed to allocate memory\n");
-				g_notify_stop = TRUE;
-				return 3;
-			}
-			plocal->node.pdata = plocal;
-			strcpy(plocal->prefix, pitem[i].prefix);
-			plocal->prefix_len = strlen(plocal->prefix);
-			plocal->b_private = b_private;
-			double_list_append_as_tail(&g_local_list, &plocal->node);
+		if (gx_peer_is_local(pitem[i].ip_addr)) try {
+			LOCAL_SVR lcl;
+			lcl.prefix = pitem[i].prefix;
+			lcl.b_private = b_private;
+			g_local_list.push_back(std::move(lcl));
 			continue;
+		} catch (const std::bad_alloc &) {
+			printf("[exmdb_provider]: Failed to allocate memory\n");
+			g_notify_stop = TRUE;
+			return 3;
 		}
 		if (0 == g_conn_num) {
 			printf("[exmdb_provider]: there's remote store media "
@@ -637,8 +635,6 @@ int exmdb_client_stop()
 		}
 		free(pagent);
 	}
-	while ((pnode = double_list_pop_front(&g_local_list)) != nullptr)
-		free(pnode->pdata);
 	while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 		free(pnode->pdata);
 	while ((pnode = double_list_pop_front(&g_server_list)) != nullptr) {
@@ -655,7 +651,6 @@ int exmdb_client_stop()
 
 void exmdb_client_free()
 {
-	double_list_free(&g_local_list);
 	double_list_free(&g_lost_list);
 	double_list_free(&g_server_list);
 	double_list_free(&g_agent_list);
@@ -664,18 +659,12 @@ void exmdb_client_free()
 
 BOOL exmdb_client_check_local(const char *prefix, BOOL *pb_private)
 {
-	LOCAL_SVR *plocal;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_local_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_local_list, pnode)) {
-		plocal = (LOCAL_SVR*)pnode->pdata;
-		if (0 == strncmp(plocal->prefix, prefix, plocal->prefix_len)) {
-			*pb_private = ((LOCAL_SVR*)pnode->pdata)->b_private;
-			return TRUE;
-		}
-	}
-	return FALSE;
+	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),
+	         [&](const LOCAL_SVR &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
+	if (i == g_local_list.cend())
+		return false;
+	*pb_private = i->b_private;
+	return TRUE;
 }
 
 BOOL exmdb_client_do_rpc(const char *dir,
