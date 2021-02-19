@@ -98,21 +98,14 @@ AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 MYSQL_WITH_MYSQL_CONFIG
 AC_ARG_WITH([php], [AS_HELP_STRING([--without-php], [Disable building PHP components])])
 AS_IF([test "$with_php" != "no"], [
-	# Checks for PHP through php-config and tests the truth of
-	# php-config results
 	PHP_WITH_PHP_CONFIG
-	PHP_CHECK_INCLUDES
-	echo "PHP version: $PHP_VERSION"
-	AS_CASE([$PHP_VERSION],
-		[5.*], [AC_MSG_ERROR([php5 is not supported])],
-		[7.*], [with_php=7]
-	)
 	CPPFLAGS="$saved_CPPFLAGS"
 	CFLAGS="$saved_CFLAGS"
 	CXXFLAGS="$saved_CXXFLAGS"
 	LDFLAGS="$saved_LDFLAGS"
 	LIBS="$saved_LIBS"
 ])
+AM_CONDITIONAL([HAVE_PHP], [test "$with_php" != no])
 
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
