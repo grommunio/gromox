@@ -25,9 +25,9 @@ Replacement string. Captures can be spliced using \fB\\1\fP, \fB\\2\fP, .. up
 to a maximum of \fB\\9\fP. The sequence \fB\\0\fP splices the entire string
 (equivalent of Perl's \fB$&\fP).
 .PP
-If no entries are in rewrite.txt or the file is absent, no paths will be
-rewritten.
-.SS Example
+If the file has no lines, no paths will be rewritten.
+If the file is absent however, a set of default entries will be used.
+.SH Default rules
 .PP
 .nf
 /autodiscover/autodiscover.xml => \\0/ews/autodiscover.php

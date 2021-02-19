@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#include <memory>
 #include <string>
 #include <vector>
 #include <utility>
@@ -110,17 +111,83 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	return FALSE;
 }
 
+static int mod_rewrite_default()
+{
+	REWRITE_NODE node;
+	static constexpr size_t ebufsize = 512;
+	auto errbuf = std::make_unique<char[]>(ebufsize);
+
+	printf("[mod_rewrite]: defaulting to built-in rule list\n");
+	node.replace_string = "\\0/ews/autodiscover.php";
+	auto ret = regcomp(&node.search_pattern, "/autodiscover/autodiscover.xml", REG_ICASE);
+	if (ret != 0) {
+		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
+		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		return -EINVAL;
+	}
+	node.reg_set = true;
+	g_rewrite_list.push_back(std::move(node));
+
+	node.replace_string = "\\0/ews/exchange.php";
+	ret = regcomp(&node.search_pattern, "/EWS/Exchange.asmx", REG_ICASE);
+	if (ret != 0) {
+		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
+		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		return -EINVAL;
+	}
+	node.reg_set = true;
+	g_rewrite_list.push_back(std::move(node));
+
+	node.replace_string = "\\0/ews/oab.php";
+	ret = regcomp(&node.search_pattern, "/OAB/oab.xml", REG_ICASE);
+	if (ret != 0) {
+		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
+		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		return -EINVAL;
+	}
+	node.reg_set = true;
+	g_rewrite_list.push_back(std::move(node));
+
+	node.replace_string = "\\1/grammm-sync/index.php";
+	ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
+	if (ret != 0) {
+		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
+		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		return -EINVAL;
+	}
+	node.reg_set = true;
+	g_rewrite_list.push_back(std::move(node));
+
+	node.replace_string = "\\1/.well-known/autoconfig-mail.php";
+	ret = regcomp(&node.search_pattern, "\\(/.well-known/autoconfig/mail/config-v1.1.xml\\)", REG_ICASE);
+	if (ret != 0) {
+		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
+		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		return -EINVAL;
+	}
+	node.reg_set = true;
+	g_rewrite_list.push_back(std::move(node));
+	return 0;
+}
+
 int mod_rewrite_run(const char *sdlist) try
 {
 	int tmp_len;
 	int line_no;
 	char *ptoken;
 	char line[MAX_LINE];
+	static constexpr size_t ebufsize = 512;
+	auto errbuf = std::make_unique<char[]>(ebufsize);
 	
 	line_no = 0;
 	auto file_ptr = fopen_sd("rewrite.txt", sdlist);
-	if (file_ptr == nullptr)
-		return 0;
+	if (file_ptr == nullptr && errno == ENOENT)
+		return mod_rewrite_default();
+	if (file_ptr == nullptr) {
+		int se = errno;
+		printf("[mod_rewrite]: fopen_sd rewrite.txt: %s\n", strerror(errno));
+		return -(errno = se);
+	}
 	while (fgets(line, GX_ARRAY_SIZE(line), file_ptr.get())) {
 		line_no ++;
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
@@ -154,10 +221,11 @@ int mod_rewrite_run(const char *sdlist) try
 		}
 		REWRITE_NODE node;
 		node.replace_string = ptoken;
-		if (regcomp(&node.search_pattern, line, REG_ICASE) != 0) {
-			printf("[mod_rewrite]: invalid line %d, search"
-						" pattern regex error\n", line_no);
-			continue;
+		auto ret = regcomp(&node.search_pattern, line, REG_ICASE);
+		if (ret != 0) {
+			regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
+			printf("[mod_rewrite]: line %d: %s\n", line_no, errbuf.get());
+			return -EINVAL;
 		}
 		node.reg_set = true;
 		g_rewrite_list.push_back(std::move(node));
