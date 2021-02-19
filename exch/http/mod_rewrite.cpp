@@ -158,7 +158,7 @@ static int mod_rewrite_default()
 	node.reg_set = true;
 	g_rewrite_list.push_back(std::move(node));
 
-	node.replace_string = "\\1/.well-known/autoconfig-mail.php";
+	node.replace_string = "\\1/well-known/autoconfig-mail.php";
 	ret = regcomp(&node.search_pattern, "\\(/.well-known/autoconfig/mail/config-v1.1.xml\\)", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
