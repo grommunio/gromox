@@ -588,14 +588,10 @@ int main(int argc, const char **argv)
 	auto cleanup_13 = make_scope_exit(hpm_processor_free);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 
-	mod_rewrite_init();
 	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {
 		printf("[system]: failed to run mod rewrite\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_15 = make_scope_exit(mod_rewrite_free);
-	auto cleanup_16 = make_scope_exit(mod_rewrite_stop);
-
 	mod_fastcgi_init(context_num, fastcgi_cache_size,
 		fastcgi_max_size, fastcgi_exec_timeout); 
  

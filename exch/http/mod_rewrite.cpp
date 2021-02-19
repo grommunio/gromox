@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021 grammm GmbH
+// This file is part of Gromox.
+#include <string>
+#include <vector>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -15,12 +20,31 @@
 using namespace gromox;
 
 struct REWRITE_NODE {
-	DOUBLE_LIST_NODE node;
-	regex_t search_pattern;
-	char *replace_string;
+	REWRITE_NODE() = default;
+	REWRITE_NODE(REWRITE_NODE &&);
+	~REWRITE_NODE();
+	void operator=(REWRITE_NODE &&) = delete;
+	regex_t search_pattern{};
+	std::string replace_string;
+	bool reg_set = false;
 };
 
-static DOUBLE_LIST g_rewrite_list;
+static std::vector<REWRITE_NODE> g_rewrite_list;
+
+REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) :
+    replace_string(std::move(o.replace_string))
+{
+	if (reg_set)
+		regfree(&search_pattern);
+	memcpy(&search_pattern, &o.search_pattern, sizeof(search_pattern));
+	o.reg_set = false;
+}
+
+REWRITE_NODE::~REWRITE_NODE()
+{
+	if (reg_set)
+		regfree(&search_pattern);
+}
 
 static BOOL mod_rewrite_rreplace(char *buf,
 	int size, regex_t *re, const char *rp)
@@ -86,18 +110,12 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	return FALSE;
 }
 
-void mod_rewrite_init()
-{
-	double_list_init(&g_rewrite_list);
-}
-
-int mod_rewrite_run(const char *sdlist)
+int mod_rewrite_run(const char *sdlist) try
 {
 	int tmp_len;
 	int line_no;
 	char *ptoken;
 	char line[MAX_LINE];
-	REWRITE_NODE *prnode;
 	
 	line_no = 0;
 	auto file_ptr = fopen_sd("rewrite.txt", sdlist);
@@ -134,67 +152,34 @@ int mod_rewrite_run(const char *sdlist)
 				" find replace sequence number\n", line_no);
 			continue;
 		}
-		prnode = static_cast<REWRITE_NODE *>(malloc(sizeof(REWRITE_NODE)));
-		if (NULL == prnode) {
-			printf("[mod_rewrite]: cannot load line"
-					" %d, out of memory\n", line_no);
-			continue;
-		}
-		prnode->node.pdata = prnode;
-		prnode->replace_string = strdup(ptoken);
-		if (NULL == prnode->replace_string) {
-			free(prnode);
-			printf("[mod_rewrite]: cannot load line"
-					" %d, out of memory\n", line_no);
-			continue;
-		}
-		if (0 != regcomp(&prnode->search_pattern, line, REG_ICASE)) {
-			free(prnode->replace_string);
-			free(prnode);
+		REWRITE_NODE node;
+		node.replace_string = ptoken;
+		if (regcomp(&node.search_pattern, line, REG_ICASE) != 0) {
 			printf("[mod_rewrite]: invalid line %d, search"
 						" pattern regex error\n", line_no);
 			continue;
 		}
-		double_list_append_as_tail(&g_rewrite_list, &prnode->node);
+		node.reg_set = true;
+		g_rewrite_list.push_back(std::move(node));
 	}
 	return 0;
-}
-
-void mod_rewrite_stop(void)
-{
-	REWRITE_NODE *prnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&g_rewrite_list)) != nullptr) {
-		prnode = (REWRITE_NODE*)pnode->pdata;
-		regfree(&prnode->search_pattern);
-		free(prnode->replace_string);
-		free(prnode);
-	}
-}
-
-void mod_rewrite_free()
-{
-	double_list_free(&g_rewrite_list);
+} catch (const std::bad_alloc &) {
+	return -ENOMEM;
 }
 
 BOOL mod_rewrite_process(const char *uri_buff,
 	int uri_len, MEM_FILE *pf_request_uri)
 {
 	char tmp_buff[8192];
-	REWRITE_NODE *prnode;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (uri_len >= sizeof(tmp_buff)) {
 		return FALSE;
 	}
-	for (pnode = double_list_get_head(&g_rewrite_list); pnode != nullptr;
-	     pnode = double_list_get_after(&g_rewrite_list, pnode)) {
-		prnode = (REWRITE_NODE*)pnode->pdata;
+	for (auto &node : g_rewrite_list) {
 		memcpy(tmp_buff, uri_buff, uri_len);
 		tmp_buff[uri_len] = '\0';
-		if (TRUE == mod_rewrite_rreplace(tmp_buff, sizeof(tmp_buff),
-			&prnode->search_pattern, prnode->replace_string)) {
+		if (mod_rewrite_rreplace(tmp_buff, sizeof(tmp_buff),
+		    &node.search_pattern, node.replace_string.c_str())) {
 			mem_file_write(pf_request_uri, tmp_buff, strlen(tmp_buff));
 			return TRUE;
 		}
