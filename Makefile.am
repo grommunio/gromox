@@ -50,9 +50,9 @@ exchange_plugins = \
 	libgxs_codepage_lang.la \
 	libgxs_exmdb_provider.la \
 	libgxs_timer_agent.la \
-	libexproc_exchange_emsmdb.la \
-	libexproc_exchange_nsp.la \
-	libexproc_exchange_rfr.la \
+	libgxp_exchange_emsmdb.la \
+	libgxp_exchange_nsp.la \
+	libgxp_exchange_rfr.la \
 	libexhpm_proxy.la \
 	libgxs_abktplug.la \
 	libgxs_at_client.la \
@@ -67,9 +67,9 @@ noinst_DATA += \
 	libgxs_codepage_lang.ldd \
 	libgxs_exmdb_provider.ldd \
 	libgxs_timer_agent.ldd \
-	libexproc_exchange_emsmdb.ldd \
-	libexproc_exchange_nsp.ldd \
-	libexproc_exchange_rfr.ldd \
+	libgxp_exchange_emsmdb.ldd \
+	libgxp_exchange_nsp.ldd \
+	libgxp_exchange_rfr.ldd \
 	libexhpm_proxy.ldd \
 	libgxs_abktplug.ldd \
 	libgxs_at_client.ldd \
@@ -173,18 +173,18 @@ libgxs_timer_agent_la_SOURCES = exch/timer_agent.cpp
 libgxs_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_timer_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_timer_agent_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_emsmdb_la_SOURCES = exch/exchange_emsmdb/asyncemsmdb_interface.cpp exch/exchange_emsmdb/asyncemsmdb_ndr.cpp exch/exchange_emsmdb/attachment_object.cpp exch/exchange_emsmdb/aux_ext.cpp exch/exchange_emsmdb/bounce_producer.cpp exch/exchange_emsmdb/common_util.cpp exch/exchange_emsmdb/emsmdb_interface.cpp exch/exchange_emsmdb/emsmdb_ndr.cpp exch/exchange_emsmdb/exmdb_client.cpp exch/exchange_emsmdb/fastdownctx_object.cpp exch/exchange_emsmdb/fastupctx_object.cpp exch/exchange_emsmdb/folder_object.cpp exch/exchange_emsmdb/ftstream_parser.cpp exch/exchange_emsmdb/ftstream_producer.cpp exch/exchange_emsmdb/ics_state.cpp exch/exchange_emsmdb/icsdownctx_object.cpp exch/exchange_emsmdb/icsupctx_object.cpp exch/exchange_emsmdb/logon_object.cpp exch/exchange_emsmdb/main.cpp exch/exchange_emsmdb/message_object.cpp exch/exchange_emsmdb/msgchg_grouping.cpp exch/exchange_emsmdb/names.c exch/exchange_emsmdb/notify_response.cpp exch/exchange_emsmdb/oxcfold.cpp exch/exchange_emsmdb/oxcfxics.cpp exch/exchange_emsmdb/oxcmsg.cpp exch/exchange_emsmdb/oxcnotif.cpp exch/exchange_emsmdb/oxcperm.cpp exch/exchange_emsmdb/oxcprpt.cpp exch/exchange_emsmdb/oxcstore.cpp exch/exchange_emsmdb/oxctabl.cpp exch/exchange_emsmdb/oxomsg.cpp exch/exchange_emsmdb/oxorule.cpp exch/exchange_emsmdb/rop_dispatch.cpp exch/exchange_emsmdb/rop_ext.cpp exch/exchange_emsmdb/rop_processor.cpp exch/exchange_emsmdb/stream_object.cpp exch/exchange_emsmdb/subscription_object.cpp exch/exchange_emsmdb/table_object.cpp lib/mapi/lzxpress.cpp
-libexproc_exchange_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
-libexproc_exchange_emsmdb_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
-EXTRA_libexproc_exchange_emsmdb_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_nsp_la_SOURCES = exch/exchange_nsp/ab_tree.cpp exch/exchange_nsp/common_util.cpp exch/exchange_nsp/main.cpp exch/exchange_nsp/nsp_interface.cpp exch/exchange_nsp/nsp_ndr.cpp
-libexproc_exchange_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
-libexproc_exchange_nsp_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} libgromox_common.la libgromox_rpc.la
-EXTRA_libexproc_exchange_nsp_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_rfr_la_SOURCES = exch/exchange_rfr.cpp
-libexproc_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
-libexproc_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
-EXTRA_libexproc_exchange_rfr_la_DEPENDENCIES = ${default_sym}
+libgxp_exchange_emsmdb_la_SOURCES = exch/exchange_emsmdb/asyncemsmdb_interface.cpp exch/exchange_emsmdb/asyncemsmdb_ndr.cpp exch/exchange_emsmdb/attachment_object.cpp exch/exchange_emsmdb/aux_ext.cpp exch/exchange_emsmdb/bounce_producer.cpp exch/exchange_emsmdb/common_util.cpp exch/exchange_emsmdb/emsmdb_interface.cpp exch/exchange_emsmdb/emsmdb_ndr.cpp exch/exchange_emsmdb/exmdb_client.cpp exch/exchange_emsmdb/fastdownctx_object.cpp exch/exchange_emsmdb/fastupctx_object.cpp exch/exchange_emsmdb/folder_object.cpp exch/exchange_emsmdb/ftstream_parser.cpp exch/exchange_emsmdb/ftstream_producer.cpp exch/exchange_emsmdb/ics_state.cpp exch/exchange_emsmdb/icsdownctx_object.cpp exch/exchange_emsmdb/icsupctx_object.cpp exch/exchange_emsmdb/logon_object.cpp exch/exchange_emsmdb/main.cpp exch/exchange_emsmdb/message_object.cpp exch/exchange_emsmdb/msgchg_grouping.cpp exch/exchange_emsmdb/names.c exch/exchange_emsmdb/notify_response.cpp exch/exchange_emsmdb/oxcfold.cpp exch/exchange_emsmdb/oxcfxics.cpp exch/exchange_emsmdb/oxcmsg.cpp exch/exchange_emsmdb/oxcnotif.cpp exch/exchange_emsmdb/oxcperm.cpp exch/exchange_emsmdb/oxcprpt.cpp exch/exchange_emsmdb/oxcstore.cpp exch/exchange_emsmdb/oxctabl.cpp exch/exchange_emsmdb/oxomsg.cpp exch/exchange_emsmdb/oxorule.cpp exch/exchange_emsmdb/rop_dispatch.cpp exch/exchange_emsmdb/rop_ext.cpp exch/exchange_emsmdb/rop_processor.cpp exch/exchange_emsmdb/stream_object.cpp exch/exchange_emsmdb/subscription_object.cpp exch/exchange_emsmdb/table_object.cpp lib/mapi/lzxpress.cpp
+libgxp_exchange_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxp_exchange_emsmdb_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
+EXTRA_libgxp_exchange_emsmdb_la_DEPENDENCIES = ${default_sym}
+libgxp_exchange_nsp_la_SOURCES = exch/exchange_nsp/ab_tree.cpp exch/exchange_nsp/common_util.cpp exch/exchange_nsp/main.cpp exch/exchange_nsp/nsp_interface.cpp exch/exchange_nsp/nsp_ndr.cpp
+libgxp_exchange_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxp_exchange_nsp_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} libgromox_common.la libgromox_rpc.la
+EXTRA_libgxp_exchange_nsp_la_DEPENDENCIES = ${default_sym}
+libgxp_exchange_rfr_la_SOURCES = exch/exchange_rfr.cpp
+libgxp_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxp_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
+EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = ${default_sym}
 libexhpm_proxy_la_SOURCES = exch/mod_proxy.cpp
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la

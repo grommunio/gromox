@@ -3576,8 +3576,8 @@ static const char* pdu_processor_get_plugin_name()
 	if (NULL == g_cur_plugin) {
 		return NULL;
 	}
-	if (strncmp(g_cur_plugin->file_name, "libexproc_", 10) == 0)
-		return g_cur_plugin->file_name + 10;
+	if (strncmp(g_cur_plugin->file_name, "libgxp_", 7) == 0)
+		return g_cur_plugin->file_name + 7;
 	return g_cur_plugin->file_name;
 }
 

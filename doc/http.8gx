@@ -245,6 +245,8 @@ Default: \fI5\fP
 Default: \fIen\fP
 .SH Files
 .IP \(bu 4
+/usr/lib/gromox/libgxp_*.so: PDU processing plugins
+.IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 .PP

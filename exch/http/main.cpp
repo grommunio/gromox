@@ -56,9 +56,9 @@ static const char *const g_dfl_hpm_plugins[] = {
 };
 
 static const char *const g_dfl_proc_plugins[] = {
-	"libexproc_exchange_emsmdb.so",
-	"libexproc_exchange_nsp.so",
-	"libexproc_exchange_rfr.so",
+	"libgxp_exchange_emsmdb.so",
+	"libgxp_exchange_nsp.so",
+	"libgxp_exchange_rfr.so",
 	NULL,
 };
 
