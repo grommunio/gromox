@@ -7,9 +7,10 @@
 #include <utility>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/contexts_pool.hpp>
+#include <gromox/paths.h>
 #include <gromox/threads_pool.hpp>
 #include "mod_fastcgi.h"
 #include "http_parser.h"
@@ -136,6 +137,28 @@ void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
 	g_exec_timeout = exec_timeout;
 }
 
+static int mod_fastcgi_defaults()
+{
+	printf("[mod_fastcgi]: defaulting to built-in list of handled paths\n");
+	FASTCGI_NODE node;
+	node.domain = "*";
+	node.path = "/ews";
+	node.dir = PKGDATADIR "/http/php/ews";
+	node.suffix = "php";
+	node.index = "index.php";
+	node.header_list = {"X-MAPIHttpCapability", "X-AnchorMailbox", "X-ClientCanHandle"};
+	node.sock_path = PKGRUNDIR "/php-fpm.sock";
+	g_fastcgi_list.push_back(node);
+	node.path = "/sync";
+	node.dir = PKGDATADIR "/../grammm-sync";
+	node.header_list.clear();
+	g_fastcgi_list.push_back(node);
+	node.path = "/web";
+	node.dir = PKGDATADIR "/../grammm-webapp";
+	g_fastcgi_list.push_back(node);
+	return 0;
+}
+
 static int mod_fastcgi_read_txt() try
 {
 	struct srcitem {
@@ -143,8 +166,10 @@ static int mod_fastcgi_read_txt() try
 		char extra_headers[304], sock_path[256];
 	};
 	auto pfile = list_file_initd("fastcgi.txt", resource_get_string("config_file_path"),
-		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256");
-	if (NULL == pfile) {
+		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256", ERROR_ON_ABSENCE);
+	if (pfile == nullptr && errno == ENOENT) {
+		return mod_fastcgi_defaults();
+	} else if (pfile == nullptr) {
 		printf("[mod_fastcgi]: list_file_initd fastcgi.txt: %s\n", strerror(errno));
 		return -1;
 	}
