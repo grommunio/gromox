@@ -40,6 +40,18 @@ struct REMOTE_CONN {
 	int sockd;
 };
 
+struct REMOTE_CONN_floating {
+	REMOTE_CONN_floating() = default;
+	REMOTE_CONN_floating(REMOTE_CONN_floating &&);
+	~REMOTE_CONN_floating() { reset(true); }
+	REMOTE_CONN *operator->() const { return pconn; }
+	bool operator==(std::nullptr_t) { return pconn == nullptr; }
+	bool operator!=(std::nullptr_t) { return pconn != nullptr; }
+	void reset(bool lost = false);
+
+	REMOTE_CONN *pconn = nullptr;
+};
+
 struct AGENT_THREAD {
 	REMOTE_SVR *pserver;
 	pthread_t thr_id;
@@ -419,13 +431,14 @@ static void *thread_work_func(void *pparam)
 	return nullptr;
 }
 
-static REMOTE_CONN *exmdb_client_get_connection(const char *dir)
+static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 {
+	REMOTE_CONN_floating fc;
 	auto i = std::find_if(g_server_list.begin(), g_server_list.end(),
 	         [&](const REMOTE_SVR &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
 	if (i == g_server_list.end()) {
 		printf("[exmdb_client]: cannot find remote server for %s\n", dir);
-		return NULL;
+		return fc;
 	}
 	pthread_mutex_lock(&g_server_lock);
 	auto pnode = double_list_pop_front(&i->conn_list);
@@ -433,14 +446,17 @@ static REMOTE_CONN *exmdb_client_get_connection(const char *dir)
 	if (NULL == pnode) {
 		printf("[exmdb_client]: no alive connection for [%s]:%hu/%s\n",
 		       i->host.c_str(), i->port, i->prefix.c_str());
-		return NULL;
+		return fc;
 	}
-	return (REMOTE_CONN*)pnode->pdata;
+	fc.pconn = static_cast<REMOTE_CONN *>(pnode->pdata);
+	return fc;
 }
 
-static void exmdb_client_put_connection(REMOTE_CONN *pconn, BOOL b_lost)
+void REMOTE_CONN_floating::reset(bool lost)
 {
-	if (FALSE == b_lost) {
+	if (pconn == nullptr)
+		return;
+	if (!lost) {
 		pthread_mutex_lock(&g_server_lock);
 		double_list_append_as_tail(&pconn->psvr->conn_list, &pconn->node);
 		pthread_mutex_unlock(&g_server_lock);
@@ -451,6 +467,14 @@ static void exmdb_client_put_connection(REMOTE_CONN *pconn, BOOL b_lost)
 		double_list_append_as_tail(&g_lost_list, &pconn->node);
 		pthread_mutex_unlock(&g_server_lock);
 	}
+	pconn = nullptr;
+}
+
+REMOTE_CONN_floating::REMOTE_CONN_floating(REMOTE_CONN_floating &&o)
+{
+	reset(true);
+	pconn = o.pconn;
+	o.pconn = nullptr;
 }
 
 void exmdb_client_init(int conn_num, int threads_num)
@@ -585,28 +609,25 @@ BOOL exmdb_client_do_rpc(const char *dir,
 	const EXMDB_REQUEST *prequest, EXMDB_RESPONSE *presponse)
 {
 	BINARY tmp_bin;
-	REMOTE_CONN *pconn;
 	
 	if (EXT_ERR_SUCCESS != exmdb_ext_push_request(prequest, &tmp_bin)) {
 		return FALSE;
 	}
-	pconn = exmdb_client_get_connection(dir);
-	if (NULL == pconn) {
+	auto pconn = exmdb_client_get_connection(dir);
+	if (pconn == nullptr) {
 		free(tmp_bin.pb);
 		return FALSE;
 	}
 	if (FALSE == exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
-		exmdb_client_put_connection(pconn, TRUE);
 		return FALSE;
 	}
 	free(tmp_bin.pb);
 	if (FALSE == exmdb_client_read_socket(pconn->sockd, &tmp_bin)) {
-		exmdb_client_put_connection(pconn, TRUE);
 		return FALSE;
 	}
 	time(&pconn->last_time);
-	exmdb_client_put_connection(pconn, FALSE);
+	pconn.reset();
 	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
 	presponse->call_id = prequest->call_id;
