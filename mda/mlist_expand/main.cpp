@@ -21,8 +21,6 @@ static void console_talk(int argc, char **argv, char *result, int length);
 
 static BOOL hook_mlist_expand(int reason, void **ppdata)
 {
-	char resource_path[256];
-	
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
@@ -31,10 +29,8 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 			printf("[mlist_expand]: failed to get service \"get_mail_list\"\n");
 			return FALSE;
 		}
-		
-		sprintf(resource_path, "%s/mlist_bounce", get_data_path());
-		bounce_producer_init(resource_path, ";");
-		if (0 != bounce_producer_run()) {
+		bounce_producer_init(";");
+		if (bounce_producer_run(get_data_path())) {
 			printf("[mlist_expand]: failed to run bounce producer\n");
 			return FALSE;
 		}
@@ -289,11 +285,10 @@ static void console_talk(int argc, char **argv, char *result, int length)
 
 	if (3 == argc && 0 == strcmp("bounce", argv[1]) &&
 		0 == strcmp("reload", argv[2])) {
-		if (TRUE == bounce_producer_refresh()) {
+		if (bounce_producer_refresh(get_data_path()))
 			strncpy(result, "250 bounce resource list reload OK", length);
-		} else {
+		else
 			strncpy(result, "550 bounce resource list reload error", length);
-		}
 		return;
 	}
 
