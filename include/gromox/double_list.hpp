@@ -73,7 +73,7 @@ DOUBLE_LIST_NODE* double_list_backward(DOUBLE_LIST *plist,
     DOUBLE_LIST_NODE *pbase_node, size_t *num);
 
 /* get the actual number of nodes in the double list */
-size_t double_list_get_nodes_num(DOUBLE_LIST *plist);
+size_t double_list_get_nodes_num(const DOUBLE_LIST *);
 
 /* get head node and does not remove it from list */
 DOUBLE_LIST_NODE* double_list_get_head(DOUBLE_LIST *plist);

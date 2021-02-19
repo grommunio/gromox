@@ -477,7 +477,7 @@ DOUBLE_LIST_NODE* double_list_backward(DOUBLE_LIST *plist,
  *	  @return
  *		  the number of the nodes
  */
-size_t double_list_get_nodes_num(DOUBLE_LIST *plist)
+size_t double_list_get_nodes_num(const DOUBLE_LIST *plist)
 {
 #ifndef _DEBUG_UMTA
 	if (NULL == plist) {

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cstdint>
+#include <list>
 #include <mutex>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/endian_macro.hpp>
@@ -34,13 +37,10 @@ struct EXMDB_ITEM {
 };
 
 struct REMOTE_SVR {
-	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST conn_list;
-	char ip_addr[32];
-	char prefix[256];
-	int prefix_len;
+	std::string host, prefix;
 	BOOL b_private;
-	int port;
+	uint16_t port;
 };
 
 struct REMOTE_CONN {
@@ -74,7 +74,7 @@ static int g_conn_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
-static DOUBLE_LIST g_server_list;
+static std::list<REMOTE_SVR> g_server_list;
 static std::mutex g_server_lock;
 
 static int exmdb_client_push_connect_request(
@@ -278,13 +278,13 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	uint8_t response_code, tmp_buff[1024];
 	CONNECT_REQUEST request;
 
-	int sockd = gx_inet_connect(pserver->ip_addr, pserver->port, 0);
+	int sockd = gx_inet_connect(pserver->host.c_str(), pserver->port, 0);
 	if (sockd < 0)
 		return -1;
 	str_host = get_host_ID();
 	process_id = getpid();
 	sprintf(remote_id, "%s:%d", str_host, process_id);
-	request.prefix = pserver->prefix;
+	request.prefix = deconst(pserver->prefix.c_str());
 	request.remote_id = remote_id;
 	request.b_private = pserver->b_private;
 	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
@@ -307,47 +307,33 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			printf("[exmdb_local]: response format error "
-				"when connect to %s:%d for prefix \"%s\"\n",
-				pserver->ip_addr, pserver->port, pserver->prefix);
+			       "during connect to [%s]:%hu/%s\n",
+			       pserver->host.c_str(), pserver->port, pserver->prefix.c_str());
 			close(sockd);
 			return -1;
 		}
 		return sockd;
 	}
+	printf("[exmdb_provider]: Failed to connect to [%s]:%hu/%s",
+	       pserver->host.c_str(), pserver->port, pserver->prefix.c_str());
 	switch (response_code) {
 	case exmdb_response::ACCESS_DENY:
-		printf("[exmdb_local]: Failed to connect to "
-			"%s:%d for prefix \"%s\", access denied.\n",
-			pserver->ip_addr, pserver->port, pserver->prefix);
+		printf(": access denied\n");
 		break;
 	case exmdb_response::MAX_REACHED:
-		printf("[exmdb_local]: Failed to connect to %s:%d for "
-			"prefix \"%s\",maximum connections reached in server!\n",
-			pserver->ip_addr, pserver->port, pserver->prefix);
+		printf(": maximum connections reached in server\n");
 		break;
 	case exmdb_response::LACK_MEMORY:
-		printf("[exmdb_local]: Failed to connect to %s:%d "
-			"for prefix \"%s\", server out of memory!\n",
-			pserver->ip_addr, pserver->port, pserver->prefix);
+		printf(": server out of memory\n");
 		break;
 	case exmdb_response::MISCONFIG_PREFIX:
-		printf("[exmdb_local]: Failed to connect to %s:%d for "
-			"prefix \"%s\", server does not serve the prefix, "
-			"configuation file of client or server may be incorrect!",
-			pserver->ip_addr, pserver->port, pserver->prefix);
+		printf(": prefix not served by server\n");
 		break;
 	case exmdb_response::MISCONFIG_MODE:
-		printf("[exmdb_local]: Failed to connect to %s:%d for "
-			"prefix \"%s\", work mode with the prefix in server is"
-			"different from the mode in client, configuation file "
-			"of client or server may be incorrect!",
-			pserver->ip_addr, pserver->port, pserver->prefix);
+		printf(": misconfigured prefix mode\n");
 		break;
 	default:
-		printf("[exmdb_local]: Failed to connect to "
-			"%s:%d for prefix \"%s\", error code %d!\n",
-			pserver->ip_addr, pserver->port,
-			pserver->prefix, (int)response_code);
+		printf(": error code %d\n", response_code);
 		break;
 	}
 	close(sockd);
@@ -362,7 +348,6 @@ static void *scan_work_func(void *pparam)
 	uint8_t resp_buff;
 	uint32_t ping_buff;
 	REMOTE_CONN *pconn;
-	REMOTE_SVR *pserver;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
@@ -375,17 +360,14 @@ static void *scan_work_func(void *pparam)
 	while (FALSE == g_notify_stop) {
 		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
-		for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
-			pnode=double_list_get_after(&g_server_list, pnode)) {
-			pserver = (REMOTE_SVR*)pnode->pdata;
-			ptail = double_list_get_tail(&pserver->conn_list);
-			while ((pnode1 = double_list_pop_front(&pserver->conn_list)) != nullptr) {
+		for (auto &srv : g_server_list) {
+			ptail = double_list_get_tail(&srv.conn_list);
+			while ((pnode1 = double_list_pop_front(&srv.conn_list)) != nullptr) {
 				pconn = (REMOTE_CONN*)pnode1->pdata;
 				if (now_time - pconn->last_time >= SOCKET_TIMEOUT - 3) {
 					double_list_append_as_tail(&temp_list, &pconn->node);
 				} else {
-					double_list_append_as_tail(&pserver->conn_list,
-						&pconn->node);
+					double_list_append_as_tail(&srv.conn_list, &pconn->node);
 				}
 
 				if (pnode1 == ptail) {
@@ -463,26 +445,18 @@ static void *scan_work_func(void *pparam)
 
 static REMOTE_CONN* exmdb_client_get_connection(const char *dir)
 {
-	REMOTE_SVR *pserver;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_server_list, pnode)) {
-		pserver = (REMOTE_SVR*)pnode->pdata;
-		if (0 == strncmp(dir, pserver->prefix, pserver->prefix_len)) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto i = std::find_if(g_server_list.begin(), g_server_list.end(),
+	         [&](const REMOTE_SVR &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
+	if (i == g_server_list.end()) {
 		printf("[exmdb_local]: cannot find remote server for %s\n", dir);
 		return NULL;
 	}
 	std::unique_lock sv_hold(g_server_lock);
-	pnode = double_list_pop_front(&pserver->conn_list);
+	auto pnode = double_list_pop_front(&i->conn_list);
 	sv_hold.unlock();
 	if (NULL == pnode) {
-		printf("[exmdb_local]: no alive connection for"
-			" remote server for %s\n", pserver->prefix);
+		printf("[exmdb_client]: no alive connection for [%s]:%hu/%s\n",
+		       i->host.c_str(), i->port, i->prefix.c_str());
 		return NULL;
 	}
 	return (REMOTE_CONN*)pnode->pdata;
@@ -492,22 +466,13 @@ BOOL exmdb_client_get_exmdb_information(
 	const char *dir, char *ip_addr, int *pport,
 	int *pconn_num, int *palive_conn)
 {
-	REMOTE_SVR *pserver;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_server_list, pnode)) {
-		pserver = (REMOTE_SVR*)pnode->pdata;
-		if (0 == strncmp(dir, pserver->prefix, pserver->prefix_len)) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto i = std::find_if(g_server_list.begin(), g_server_list.end(),
+	         [&](const REMOTE_SVR &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
+	if (i == g_server_list.end())
 		return FALSE;
-	}
-	strcpy(ip_addr, pserver->ip_addr);
-	*pport = pserver->port;
-	*palive_conn = double_list_get_nodes_num(&pserver->conn_list);
+	strcpy(ip_addr, i->host.c_str());
+	*pport = i->port;
+	*palive_conn = double_list_get_nodes_num(&i->conn_list);
 	*pconn_num = g_conn_num;
 	return TRUE;
 }
@@ -529,7 +494,6 @@ void exmdb_client_init(int conn_num)
 {
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
-	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
 }
 
@@ -538,7 +502,6 @@ int exmdb_client_run()
 	int i, j;
 	BOOL b_private;
 	REMOTE_CONN *pconn;
-	REMOTE_SVR *pserver;
 	
 	auto plist = list_file_initd("exmdb_list.txt", get_config_path(),
 	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
@@ -560,20 +523,21 @@ int exmdb_client_run()
 			g_notify_stop = TRUE;
 			return 2;
 		}
-		pserver = static_cast<REMOTE_SVR *>(malloc(sizeof(REMOTE_SVR)));
-		if (NULL == pserver) {
+
+		try {
+			g_server_list.push_back(REMOTE_SVR{});
+			auto &srv = g_server_list.back();
+			srv.prefix = pitem[i].prefix;
+			srv.b_private = b_private;
+			srv.host = pitem[i].ip_addr;
+			srv.port = pitem[i].port;
+			double_list_init(&srv.conn_list);
+		} catch (const std::bad_alloc &) {
 			printf("[exmdb_local]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;
 			return 3;
 		}
-		pserver->node.pdata = pserver;
-		strcpy(pserver->prefix, pitem[i].prefix);
-		pserver->prefix_len = strlen(pserver->prefix);
-		pserver->b_private = b_private;
-		HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
-		pserver->port = pitem[i].port;
-		double_list_init(&pserver->conn_list);
-		double_list_append_as_tail(&g_server_list, &pserver->node);
+		auto &srv = g_server_list.back();
 		for (j=0; j<g_conn_num; j++) {
 			pconn = static_cast<REMOTE_CONN *>(malloc(sizeof(REMOTE_CONN)));
 			if (NULL == pconn) {
@@ -584,7 +548,9 @@ int exmdb_client_run()
 			}
 			pconn->node.pdata = pconn;
 			pconn->sockd = -1;
-			pconn->psvr = pserver;
+			static_assert(std::is_same_v<decltype(g_server_list), std::list<decltype(g_server_list)::value_type>>,
+				"addrof REMOTE_SVRs must not change; REMOTE_CONN/AGENT_THREAD has a pointer to it");
+			pconn->psvr = &srv;
 			double_list_append_as_tail(&g_lost_list, &pconn->node);
 		}
 	}
@@ -601,7 +567,6 @@ int exmdb_client_run()
 int exmdb_client_stop()
 {
 	REMOTE_CONN *pconn;
-	REMOTE_SVR *pserver;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == g_notify_stop) {
@@ -611,14 +576,12 @@ int exmdb_client_stop()
 	g_notify_stop = TRUE;
 	while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 		free(pnode->pdata);
-	while ((pnode = double_list_pop_front(&g_server_list)) != nullptr) {
-		pserver = (REMOTE_SVR*)pnode->pdata;
-		while ((pnode = double_list_pop_front(&pserver->conn_list)) != nullptr) {
+	for (auto &srv : g_server_list) {
+		while ((pnode = double_list_pop_front(&srv.conn_list)) != nullptr) {
 			pconn = (REMOTE_CONN*)pnode->pdata;
 			close(pconn->sockd);
 			free(pconn);
 		}
-		free(pserver);
 	}
 	return 0;
 }
@@ -626,7 +589,6 @@ int exmdb_client_stop()
 void exmdb_client_free()
 {
 	double_list_free(&g_lost_list);
-	double_list_free(&g_server_list);
 }
 
 int exmdb_client_delivery_message(const char *dir,
