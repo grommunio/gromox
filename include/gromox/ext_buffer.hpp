@@ -340,3 +340,4 @@ int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r);
 
 int ext_buffer_push_message_content(
 	EXT_PUSH *pext, const MESSAGE_CONTENT *pmsg);
+uint8_t *ext_buffer_push_release(EXT_PUSH *);

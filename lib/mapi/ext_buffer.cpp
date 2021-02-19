@@ -3680,3 +3680,12 @@ int ext_buffer_push_message_content(
 		return ext_buffer_push_uint8(pext, 0);
 	}
 }
+
+uint8_t *ext_buffer_push_release(EXT_PUSH *p)
+{
+	uint8_t *t = p->data;
+	p->data = nullptr;
+	p->b_alloc = false;
+	p->offset = 0;
+	return t;
+}

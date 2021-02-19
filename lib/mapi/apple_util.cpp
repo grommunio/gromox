@@ -53,7 +53,7 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_push.data;
+	pbin->pb = ext_buffer_push_release(&ext_push);
 	return pbin;
 }
 
@@ -122,7 +122,7 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_push.data;
+	pbin->pb = ext_buffer_push_release(&ext_push);
 	return pbin;
 }
 
@@ -193,7 +193,7 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_push.data;
+	pbin->pb = ext_buffer_push_release(&ext_push);
 	return pbin;
 }
 
@@ -264,7 +264,7 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_push.data;
+	pbin->pb = ext_buffer_push_release(&ext_push);
 	return pbin;
 }
 
@@ -303,7 +303,7 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_push.data;
+	pbin->pb = ext_buffer_push_release(&ext_push);
 	return pbin;
 }
 
@@ -343,6 +343,6 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_push.data;
+	pbin->pb = ext_buffer_push_release(&ext_push);
 	return pbin;
 }
