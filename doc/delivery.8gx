@@ -114,6 +114,9 @@ Default: \fI32\fP
 .SS work_threads_min
 .PP
 Default: \fI16\fP
+.SH Files
+.IP \(bu 4
+/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 .PP
 \fBgromox\fP(7)

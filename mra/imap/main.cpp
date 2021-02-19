@@ -41,16 +41,16 @@ static struct HXoption g_options_table[] = {
 };
 
 static const char *const g_dfl_svc_plugins[] = {
-	"libgxsvc_event_proxy.so",
+	"libgxs_event_proxy.so",
 	"libmrasvc_event_stub.so",
-	"libgxsvc_ip6_container.so",
-	"libgxsvc_ip6_filter.so",
-	"libgxsvc_log_plugin.so",
-	"libgxsvc_midb_agent.so",
-	"libgxsvc_ldap_adaptor.so",
-	"libgxsvc_mysql_adaptor.so",
-	"libgxsvc_authmgr.so",
-	"libgxsvc_user_filter.so",
+	"libgxs_ip6_container.so",
+	"libgxs_ip6_filter.so",
+	"libgxs_log_plugin.so",
+	"libgxs_midb_agent.so",
+	"libgxs_ldap_adaptor.so",
+	"libgxs_mysql_adaptor.so",
+	"libgxs_authmgr.so",
+	"libgxs_user_filter.so",
 	NULL,
 };
 

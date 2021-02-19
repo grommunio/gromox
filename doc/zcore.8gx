@@ -74,6 +74,8 @@ libc locale names.
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: A directory with translation files for
 various bounce notifications.
+.IP \(bu 4
+/usr/lib/gromox/libgxs_*.so: service plugins
 .SH Configuration file directives
 .SS address_cache_internal
 .PP

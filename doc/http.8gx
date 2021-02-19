@@ -243,6 +243,9 @@ Default: \fI5\fP
 .SS user_default_lang
 .PP
 Default: \fIen\fP
+.SH Files
+.IP \(bu 4
+/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmod_cache\fP(4gx), \fBmod_fastcgi\fP(4gx),

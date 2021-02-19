@@ -43,11 +43,11 @@ static const char *const g_dfl_mpc_plugins[] = {
 
 static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_domain_list.so",
-	"libgxsvc_log_plugin.so",
-	"libgxsvc_ldap_adaptor.so",
-	"libgxsvc_mysql_adaptor.so",
-	"libgxsvc_textmaps.so",
-	"libgxsvc_authmgr.so",
+	"libgxs_log_plugin.so",
+	"libgxs_ldap_adaptor.so",
+	"libgxs_mysql_adaptor.so",
+	"libgxs_textmaps.so",
+	"libgxs_authmgr.so",
 	NULL,
 };
 

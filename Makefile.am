@@ -38,48 +38,48 @@ noinst_DATA += \
 	libmtasvc_domain_list.ldd
 mra_system = pop3 imap
 mra_plugins = \
-	libgxsvc_event_proxy.la \
+	libgxs_event_proxy.la \
 	libmrasvc_event_stub.la \
-	libgxsvc_midb_agent.la
+	libgxs_midb_agent.la
 noinst_DATA += \
-	libgxsvc_event_proxy.ldd \
+	libgxs_event_proxy.ldd \
 	libmrasvc_event_stub.ldd \
-	libgxsvc_midb_agent.ldd
+	libgxs_midb_agent.ldd
 exchange_progs = http midb zcore
 exchange_plugins = \
-	libexsvc_codepage_lang.la \
-	libexsvc_exmdb_provider.la \
-	libexsvc_timer_agent.la \
+	libgxs_codepage_lang.la \
+	libgxs_exmdb_provider.la \
+	libgxs_timer_agent.la \
 	libexproc_exchange_emsmdb.la \
 	libexproc_exchange_nsp.la \
 	libexproc_exchange_rfr.la \
 	libexhpm_proxy.la \
-	libgxsvc_abktplug.la \
-	libgxsvc_at_client.la \
-	libgxsvc_authmgr.la \
-	libgxsvc_ip6_container.la libgxsvc_ip6_filter.la \
-	libgxsvc_ldap_adaptor.la \
-	libgxsvc_log_plugin.la \
-	libgxsvc_mysql_adaptor.la \
-	libgxsvc_textmaps.la \
-	libgxsvc_user_filter.la
+	libgxs_abktplug.la \
+	libgxs_at_client.la \
+	libgxs_authmgr.la \
+	libgxs_ip6_container.la libgxs_ip6_filter.la \
+	libgxs_ldap_adaptor.la \
+	libgxs_log_plugin.la \
+	libgxs_mysql_adaptor.la \
+	libgxs_textmaps.la \
+	libgxs_user_filter.la
 noinst_DATA += \
-	libexsvc_codepage_lang.ldd \
-	libexsvc_exmdb_provider.ldd \
-	libexsvc_timer_agent.ldd \
+	libgxs_codepage_lang.ldd \
+	libgxs_exmdb_provider.ldd \
+	libgxs_timer_agent.ldd \
 	libexproc_exchange_emsmdb.ldd \
 	libexproc_exchange_nsp.ldd \
 	libexproc_exchange_rfr.ldd \
 	libexhpm_proxy.ldd \
-	libgxsvc_abktplug.ldd \
-	libgxsvc_at_client.ldd \
-	libgxsvc_authmgr.ldd \
-	libgxsvc_ip6_container.ldd libgxsvc_ip6_filter.ldd \
-	libgxsvc_ldap_adaptor.ldd \
-	libgxsvc_log_plugin.ldd \
-	libgxsvc_mysql_adaptor.ldd \
-	libgxsvc_textmaps.ldd \
-	libgxsvc_user_filter.ldd
+	libgxs_abktplug.ldd \
+	libgxs_at_client.ldd \
+	libgxs_authmgr.ldd \
+	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
+	libgxs_ldap_adaptor.ldd \
+	libgxs_log_plugin.ldd \
+	libgxs_mysql_adaptor.ldd \
+	libgxs_textmaps.ldd \
+	libgxs_user_filter.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
@@ -141,18 +141,18 @@ pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/imap/console_cmd_handler.cpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/listener.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
-libgxsvc_event_proxy_la_SOURCES = mra/event_proxy.cpp
-libgxsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_event_proxy_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_event_proxy_la_DEPENDENCIES = ${default_sym}
+libgxs_event_proxy_la_SOURCES = mra/event_proxy.cpp
+libgxs_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_event_proxy_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_event_proxy_la_DEPENDENCIES = ${default_sym}
 libmrasvc_event_stub_la_SOURCES = mra/event_stub.cpp
 libmrasvc_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_event_stub_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmrasvc_event_stub_la_DEPENDENCIES = ${default_sym}
-libgxsvc_midb_agent_la_SOURCES = mra/midb_agent.cpp
-libgxsvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_midb_agent_la_DEPENDENCIES = ${default_sym}
+libgxs_midb_agent_la_SOURCES = mra/midb_agent.cpp
+libgxs_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # exch
 http_SOURCES = exch/http/blocks_allocator.cpp exch/http/console_cmd_handler.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp lib/console_server.cpp
@@ -161,18 +161,18 @@ midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_u
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 zcore_SOURCES = exch/http/service.cpp exch/zcore/ab_tree.cpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.cpp exch/zcore/common_util.cpp exch/zcore/console_cmd_handler.cpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_ext.cpp exch/zcore/exmdb_rpc.cpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/msgchg_grouping.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_parser.cpp exch/zcore/store_object.cpp exch/zcore/system_services.cpp exch/zcore/table_object.cpp exch/zcore/user_object.cpp exch/zcore/zarafa_server.cpp lib/console_server.cpp
 zcore_LDADD = -ldl -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-libexsvc_codepage_lang_la_SOURCES = exch/codepage_lang.cpp
-libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_codepage_lang_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_codepage_lang_la_DEPENDENCIES = ${default_sym}
-libexsvc_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_ext.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/table.cpp
-libexsvc_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-EXTRA_libexsvc_exmdb_provider_la_DEPENDENCIES = ${default_sym}
-libexsvc_timer_agent_la_SOURCES = exch/timer_agent.cpp
-libexsvc_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_timer_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_timer_agent_la_DEPENDENCIES = ${default_sym}
+libgxs_codepage_lang_la_SOURCES = exch/codepage_lang.cpp
+libgxs_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_codepage_lang_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_codepage_lang_la_DEPENDENCIES = ${default_sym}
+libgxs_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_ext.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/table.cpp
+libgxs_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+EXTRA_libgxs_exmdb_provider_la_DEPENDENCIES = ${default_sym}
+libgxs_timer_agent_la_SOURCES = exch/timer_agent.cpp
+libgxs_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_timer_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_timer_agent_la_DEPENDENCIES = ${default_sym}
 libexproc_exchange_emsmdb_la_SOURCES = exch/exchange_emsmdb/asyncemsmdb_interface.cpp exch/exchange_emsmdb/asyncemsmdb_ndr.cpp exch/exchange_emsmdb/attachment_object.cpp exch/exchange_emsmdb/aux_ext.cpp exch/exchange_emsmdb/bounce_producer.cpp exch/exchange_emsmdb/common_util.cpp exch/exchange_emsmdb/emsmdb_interface.cpp exch/exchange_emsmdb/emsmdb_ndr.cpp exch/exchange_emsmdb/exmdb_client.cpp exch/exchange_emsmdb/fastdownctx_object.cpp exch/exchange_emsmdb/fastupctx_object.cpp exch/exchange_emsmdb/folder_object.cpp exch/exchange_emsmdb/ftstream_parser.cpp exch/exchange_emsmdb/ftstream_producer.cpp exch/exchange_emsmdb/ics_state.cpp exch/exchange_emsmdb/icsdownctx_object.cpp exch/exchange_emsmdb/icsupctx_object.cpp exch/exchange_emsmdb/logon_object.cpp exch/exchange_emsmdb/main.cpp exch/exchange_emsmdb/message_object.cpp exch/exchange_emsmdb/msgchg_grouping.cpp exch/exchange_emsmdb/names.c exch/exchange_emsmdb/notify_response.cpp exch/exchange_emsmdb/oxcfold.cpp exch/exchange_emsmdb/oxcfxics.cpp exch/exchange_emsmdb/oxcmsg.cpp exch/exchange_emsmdb/oxcnotif.cpp exch/exchange_emsmdb/oxcperm.cpp exch/exchange_emsmdb/oxcprpt.cpp exch/exchange_emsmdb/oxcstore.cpp exch/exchange_emsmdb/oxctabl.cpp exch/exchange_emsmdb/oxomsg.cpp exch/exchange_emsmdb/oxorule.cpp exch/exchange_emsmdb/rop_dispatch.cpp exch/exchange_emsmdb/rop_ext.cpp exch/exchange_emsmdb/rop_processor.cpp exch/exchange_emsmdb/stream_object.cpp exch/exchange_emsmdb/subscription_object.cpp exch/exchange_emsmdb/table_object.cpp lib/mapi/lzxpress.cpp
 libexproc_exchange_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_emsmdb_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
@@ -189,46 +189,46 @@ libexhpm_proxy_la_SOURCES = exch/mod_proxy.cpp
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
-libgxsvc_abktplug_la_SOURCES = exch/abktplug.cpp
-libgxsvc_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_abktplug_la_LIBADD = libgromox_cplus.la
-EXTRA_libgxsvc_abktplug_la_DEPENDENCIES = ${default_sym}
-libgxsvc_at_client_la_SOURCES = exch/at_client.cpp
-libgxsvc_at_client_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_at_client_la_LIBADD = ${HX_LIBS}
-EXTRA_libgxsvc_at_client_la_DEPENDENCIES = ${default_sym}
-libgxsvc_authmgr_la_SOURCES = exch/authmgr.cpp
-libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_authmgr_la_LIBADD = libgromox_common.la
-EXTRA_libgxsvc_authmgr_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ip6_container_la_SOURCES = exch/ip6_container.cpp
-libgxsvc_ip6_container_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_ip6_container_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libgxsvc_ip6_container_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ip6_filter_la_SOURCES = exch/ip6_filter.cpp
-libgxsvc_ip6_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_ip6_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_ip6_filter_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp
-libgxsvc_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
-EXTRA_libgxsvc_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxsvc_log_plugin_la_SOURCES = exch/log_plugin.cpp
-libgxsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_log_plugin_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_log_plugin_la_DEPENDENCIES = ${default_sym}
-libgxsvc_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/main.cpp exch/mysql_adaptor/mysql_adaptor.cpp exch/mysql_adaptor/sql2.cpp
-libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
-EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxsvc_textmaps_la_SOURCES = exch/textmapplug.cpp
-libgxsvc_textmaps_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_textmaps_la_LIBADD = ${HX_LIBS} libgromox_cplus.la
-EXTRA_libgxsvc_textmaps_la_DEPENDENCIES = ${default_sym}
-libgxsvc_user_filter_la_SOURCES = exch/str_filter/audit_filter.cpp exch/str_filter/grey_list.cpp exch/str_filter/main.cpp exch/str_filter/str_filter.cpp exch/str_filter/temp_list.cpp
-libgxsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
+libgxs_abktplug_la_SOURCES = exch/abktplug.cpp
+libgxs_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_abktplug_la_LIBADD = libgromox_cplus.la
+EXTRA_libgxs_abktplug_la_DEPENDENCIES = ${default_sym}
+libgxs_at_client_la_SOURCES = exch/at_client.cpp
+libgxs_at_client_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_at_client_la_LIBADD = ${HX_LIBS}
+EXTRA_libgxs_at_client_la_DEPENDENCIES = ${default_sym}
+libgxs_authmgr_la_SOURCES = exch/authmgr.cpp
+libgxs_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_authmgr_la_LIBADD = libgromox_common.la
+EXTRA_libgxs_authmgr_la_DEPENDENCIES = ${default_sym}
+libgxs_ip6_container_la_SOURCES = exch/ip6_container.cpp
+libgxs_ip6_container_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_ip6_container_la_LIBADD = -lpthread libgromox_common.la
+EXTRA_libgxs_ip6_container_la_DEPENDENCIES = ${default_sym}
+libgxs_ip6_filter_la_SOURCES = exch/ip6_filter.cpp
+libgxs_ip6_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_ip6_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_ip6_filter_la_DEPENDENCIES = ${default_sym}
+libgxs_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp
+libgxs_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
+EXTRA_libgxs_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
+libgxs_log_plugin_la_SOURCES = exch/log_plugin.cpp
+libgxs_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_log_plugin_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_log_plugin_la_DEPENDENCIES = ${default_sym}
+libgxs_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/main.cpp exch/mysql_adaptor/mysql_adaptor.cpp exch/mysql_adaptor/sql2.cpp
+libgxs_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
+EXTRA_libgxs_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
+libgxs_textmaps_la_SOURCES = exch/textmapplug.cpp
+libgxs_textmaps_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_textmaps_la_LIBADD = ${HX_LIBS} libgromox_cplus.la
+EXTRA_libgxs_textmaps_la_DEPENDENCIES = ${default_sym}
+libgxs_user_filter_la_SOURCES = exch/str_filter/audit_filter.cpp exch/str_filter/grey_list.cpp exch/str_filter/main.cpp exch/str_filter/str_filter.cpp exch/str_filter/temp_list.cpp
+libgxs_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
 
 digest_SOURCES = tools/digest.cpp
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la

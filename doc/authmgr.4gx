@@ -6,7 +6,7 @@ authmgr(4gx) \(em Demultiplexer for authentication requests
 .PP
 authmgr is a service plugin that, for mail account authentication, dynamically
 selects the authentication backend per user account. The
-libgxsvc_mysql_adaptor.so and/or libgxsvc_ldap_adaptor.so plugins need to be
+libgxs_mysql_adaptor.so and/or libgxs_ldap_adaptor.so plugins need to be
 loaded in advance (this is the case by default).
 .SH Configuration file directives
 .SS auth_backend_selection

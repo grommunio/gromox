@@ -63,18 +63,18 @@ static const char *const g_dfl_proc_plugins[] = {
 };
 
 static const char *const g_dfl_svc_plugins[] = {
-	"libgxsvc_abktplug.so",
-	"libexsvc_codepage_lang.so",
-	"libexsvc_exmdb_provider.so",
-	"libgxsvc_ip6_container.so",
-	"libgxsvc_ip6_filter.so",
-	"libgxsvc_log_plugin.so",
-	"libgxsvc_ldap_adaptor.so",
-	"libgxsvc_mysql_adaptor.so",
-	"libgxsvc_authmgr.so",
-	"libgxsvc_textmaps.so",
-	"libexsvc_timer_agent.so",
-	"libgxsvc_user_filter.so",
+	"libgxs_abktplug.so",
+	"libgxs_codepage_lang.so",
+	"libgxs_exmdb_provider.so",
+	"libgxs_ip6_container.so",
+	"libgxs_ip6_filter.so",
+	"libgxs_log_plugin.so",
+	"libgxs_ldap_adaptor.so",
+	"libgxs_mysql_adaptor.so",
+	"libgxs_authmgr.so",
+	"libgxs_textmaps.so",
+	"libgxs_timer_agent.so",
+	"libgxs_user_filter.so",
 	NULL,
 };
 

@@ -28,9 +28,9 @@ using namespace gromox;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static std::mutex g_svc_once;
 static const char *const g_dfl_svc_plugins[] = {
-	"libgxsvc_ldap_adaptor.so",
-	"libgxsvc_mysql_adaptor.so",
-	"libgxsvc_authmgr.so",
+	"libgxs_ldap_adaptor.so",
+	"libgxs_mysql_adaptor.so",
+	"libgxs_authmgr.so",
 	nullptr,
 };
 

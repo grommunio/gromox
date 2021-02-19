@@ -193,6 +193,8 @@ Default: \fI1\fP
 textual descriptions.
 .IP \(bu 4
 \fIdata_file_path\fP/imap_lang.txt: Translations for IMAP folder names.
+.IP \(bu 4
+/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)
