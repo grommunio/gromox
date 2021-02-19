@@ -12,11 +12,6 @@ BOOL (*system_services_add_user_into_temp_list)(const char*, int);
 BOOL (*system_services_auth_login)(const char*, const char*, char*, char*, char*, int);
 int (*system_services_list_mail)(const char *, const char *, ARRAY *, int *pnum, uint64_t *psize);
 int (*system_services_delete_mail)(const char *, const char *, SINGLE_LIST *);
-int (*system_services_list_cdn_mail)(char*, ARRAY*);
-int (*system_services_delete_cdn_mail)(char*, SINGLE_LIST*);
-BOOL (*system_services_auth_cdn_user)(const char*, const char*);
-int (*system_services_check_cdn_user)(const char*);
-int (*system_services_create_cdn_user)(const char*);
 void (*system_services_broadcast_event)(const char*);
 void (*system_services_log_info)(int, const char *, ...);
 
@@ -47,11 +42,6 @@ int system_services_run()
 	E(system_services_auth_login, "auth_login_pop3");
 	E(system_services_list_mail, "list_mail");
 	E(system_services_delete_mail, "delete_mail");
-	E2(system_services_list_cdn_mail, "cdn_uidl");
-	E2(system_services_delete_cdn_mail, "cdn_remove");
-	E2(system_services_check_cdn_user, "cdn_check");
-	E2(system_services_auth_cdn_user, "cdn_auth");
-	E2(system_services_create_cdn_user, "cdn_create");
 	E2(system_services_broadcast_event, "broadcast_event");
 	return 0;
 #undef E
@@ -78,12 +68,5 @@ int system_services_stop()
 	service_release("list_mail", "system");
 	service_release("delete_mail", "system");
 	service_release("broadcast_event", "system");
-	if (NULL != system_services_check_cdn_user) {
-		service_release("cdn_uidl", "system");
-		service_release("cdn_remove", "system");
-		service_release("cdn_check", "system");
-		service_release("cdn_auth", "system");
-		service_release("cdn_create", "system");
-	}
 	return 0;
 }

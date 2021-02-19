@@ -823,7 +823,6 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->until_line = 0x7FFFFFFF;
 	pcontext->total_mail = 0;
 	pcontext->total_size = 0;
-	pcontext->is_cdn = 0;
 	pcontext->is_login = 0;
 	pcontext->is_stls = 0;
 	pcontext->auth_times = 0;

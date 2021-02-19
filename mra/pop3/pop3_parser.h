@@ -53,7 +53,6 @@ struct POP3_CONTEXT {
 	uint64_t         total_size;
 	ARRAY            array;          /* mailbox message list */
 	SINGLE_LIST      list;           /* deleted message list */
-	BOOL             is_cdn;
     BOOL             is_login;       /* if user is logged in */
 	BOOL             is_stls;        /* if last command is STLS */
 	int              auth_times;

@@ -180,10 +180,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	int i, count;
-	MSG_UNIT *punit;
-	BOOL b_cdn_create;
-    int string_length;
+	int count, string_length;
 	char reason[256];
 	char temp_buff[1024];
 	char temp_password[256];
@@ -237,53 +234,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);
-
-	b_cdn_create = FALSE;
-	/* cdn service is installed */ 
-	if (NULL != system_services_check_cdn_user) {
-		pcontext->is_cdn = TRUE; /* to avoid read mails from maildir
-								   (instablility of NFS over internet) */
-		if (FALSE == system_services_check_cdn_user(pcontext->username)) {
-			b_cdn_create = TRUE;
-			goto NORMAL_LOGIN;
-		}
-		if (FALSE == system_services_auth_cdn_user(pcontext->username,
-			temp_password)) {
-			goto NORMAL_LOGIN;
-		}
-
-		if (0 != system_services_list_cdn_mail(pcontext->username,
-			&pcontext->array)) {
-			array_clear(&pcontext->array);
-			goto NORMAL_LOGIN;
-		}
-
-	
-		count = array_get_capacity(&pcontext->array);
-		for (i=0; i<count; i++) {
-			punit = (MSG_UNIT*)array_get_item(&pcontext->array, i);
-			pcontext->total_size += punit->size;
-		}
-		pcontext->total_mail = count;
-		pcontext->is_login = TRUE;
-		pop3_parser_log_info(pcontext, 8, "login success");
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170000, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
-	}
-
- NORMAL_LOGIN:
 	if (TRUE == system_services_auth_login(pcontext->username, temp_password,
 		pcontext->maildir, NULL, reason, 256)) {
-		if (NULL != system_services_check_cdn_user && TRUE == b_cdn_create) {
-			system_services_create_cdn_user(pcontext->username);
-		}
-		
 		array_clear(&pcontext->array);
 		pcontext->total_size = 0;
 		
@@ -670,13 +622,8 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	
 	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
-		if (TRUE == pcontext->is_cdn) {
-			snprintf(temp_path, 255, "%s/%s/inbox/%s", pop3_parser_cdn_path(),
-				pcontext->username, punit->file_name);
-		} else {
-			snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
-				punit->file_name);
-		}
+		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
+			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
 		if (-1 == pcontext->message_fd) {
 			pop3_reply_str = resource_get_pop3_code(
@@ -857,13 +804,8 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 
 	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
-		if (TRUE == pcontext->is_cdn) {
-			snprintf(temp_path, 255, "%s/%s/inbox/%s", pop3_parser_cdn_path(),
-				pcontext->username, punit->file_name);
-		} else {
-			snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
-				punit->file_name);
-		}
+		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
+			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
 		if (-1 == pcontext->message_fd) {
 			pop3_reply_str = resource_get_pop3_code(
@@ -924,29 +866,6 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	
 	if (TRUE == pcontext->is_login) {
 		if (single_list_get_nodes_num(&pcontext->list) > 0) {
-			if (TRUE == pcontext->is_cdn) {
-				if (0 != system_services_delete_cdn_mail(pcontext->username,
-						&pcontext->list)) {
-					goto NORMAL_DELETE;
-				}
-				string_length = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
-					"FOLDER-TOUCH %s inbox", pcontext->username);
-				system_services_broadcast_event(temp_buff);
-
-				while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) {
-					punit = (MSG_UNIT*)pnode->pdata;
-					snprintf(temp_path, 255, "%s/%s/inbox/%s",
-						pop3_parser_cdn_path(), pcontext->username,
-						punit->file_name);
-					if (0 == remove(temp_path)) {
-						pop3_parser_log_info(pcontext, 8, "message %s is deleted",
-							temp_path);
-					}
-				}
-				goto END_QUIT;
-			}
-
- NORMAL_DELETE:
 			switch (system_services_delete_mail(pcontext->maildir, "inbox",
 				&pcontext->list)) {
 			case MIDB_RESULT_OK:
@@ -999,7 +918,6 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 		}
 	}
 
- END_QUIT:
 	array_clear(&pcontext->array);
 	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(POP3_CODE_2170010, 1, 
 		&string_length), resource_get_string("HOST_ID"),
