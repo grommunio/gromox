@@ -325,8 +325,9 @@ exch/exmdb_provider/exmdb_rpc.cpp: exch/exmdb_provider/exmdb_client.h exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl -p <$< >$@
 
 install-data-local:
-	${MKDIR_P} ${DESTDIR}${pkgdatadir}
+	${MKDIR_P} ${DESTDIR}${pkgdatadir}/http/php
 	cp -av data/* ${DESTDIR}${pkgdatadir}/
+	cp -av exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
