@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021 grammm GmbH
+// This file is part of Gromox.
 #include <cstdint>
+#include <string>
+#include <vector>
+#include <utility>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -61,6 +66,14 @@
 #define PROTOCOL_STATUS_OVERLOADED				2
 #define PROTOCOL_STATUS_UNKNOWN_ROLE			3
 
+using namespace gromox;
+
+struct FASTCGI_NODE {
+	std::string domain, path, dir, suffix, index;
+	std::vector<std::string> header_list;
+	std::string sock_path;
+};
+
 struct FCGI_ENDREQUESTBODY {
 	uint32_t app_status;
 	uint8_t protocol_status;
@@ -85,41 +98,30 @@ static int g_context_num;
 static int g_exec_timeout;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
-static DOUBLE_LIST g_fastcgi_list;
+static std::vector<FASTCGI_NODE> g_fastcgi_list;
 static FASTCGI_CONTEXT *g_context_list;
 static volatile int g_unavailable_times;
 
-static FASTCGI_NODE* mod_fastcgi_find_backend(
-	const char*domain, const char *uri_path,
-	const char *file_name, const char *suffix,
+static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
+    const char *uri_path, const char *file_name, const char *suffix,
 	BOOL *pb_index)
 {
-	int tmp_len;
-	FASTCGI_NODE *pfnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_fastcgi_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_fastcgi_list, pnode)) {
-		pfnode = (FASTCGI_NODE*)pnode->pdata;
-		if (0 == wildcard_match(domain, pfnode->domain, TRUE)) {
+	for (const auto &node : g_fastcgi_list) {
+		if (wildcard_match(domain, node.domain.c_str(), TRUE) == 0)
 			continue;
-		}
-		tmp_len = strlen(pfnode->path);
-		if (0 != strncasecmp(uri_path, pfnode->path,
-			tmp_len) || ('/' != uri_path[tmp_len] &&
-			'\0' != uri_path[tmp_len])) {
+		auto tmp_len = node.path.size();
+		if (strncasecmp(uri_path, node.path.c_str(), tmp_len) != 0 ||
+		    (uri_path[tmp_len] != '/' && uri_path[tmp_len] != '\0'))
 			continue;
-		}
 		if ('\0' == file_name[0] && '\0' == suffix[0]) {
 			*pb_index = TRUE;
-			return pfnode;
+			return &node;
 		}
-		if (0 != strcmp(pfnode->suffix, "*") &&
-			0 == wildcard_match(suffix, pfnode->suffix, TRUE)) {
+		if (strcmp(node.suffix.c_str(), "*") != 0 &&
+		    wildcard_match(suffix, node.suffix.c_str(), TRUE) == 0)
 			continue;
-		}
 		*pb_index = FALSE;
-		return pfnode;
+		return &node;
 	}
 	return NULL;
 }
@@ -132,55 +134,10 @@ void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
 	g_cache_size = cache_size;
 	g_max_size = max_size;
 	g_exec_timeout = exec_timeout;
-	double_list_init(&g_fastcgi_list);
 }
 
-static void mod_fastcgi_load_extra_headers(
-	char *extra_headers, DOUBLE_LIST *plist)
+static int mod_fastcgi_read_txt() try
 {
-	int i;
-	int tmp_len;
-	char *ptoken;
-	char *plast_token;
-	char tmp_buff[128];
-	DOUBLE_LIST_NODE *pnode;
-	
-	double_list_init(plist);
-	tmp_len = strlen(extra_headers);
-	if ('|' != extra_headers[tmp_len - 1]) {
-		extra_headers[tmp_len] = '|';
-		tmp_len ++;
-	}
-	plast_token = extra_headers;
-	for (i=0; i<tmp_len; i++) {
-		if ('|' != extra_headers[i]) {
-			continue;
-		}
-		ptoken = extra_headers + i;
-		if (ptoken == plast_token || ptoken -
-			plast_token >= sizeof(tmp_buff)) {
-			continue;
-		}
-		memcpy(tmp_buff, plast_token, ptoken - plast_token);
-		tmp_buff[ptoken - plast_token] = '\0';
-		HX_strrtrim(tmp_buff);
-		HX_strltrim(tmp_buff);
-		if ('\0' == tmp_buff[0]) {
-			continue;
-		}
-		HX_strupper(tmp_buff);
-		pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(*pnode)));
-		pnode->pdata = strdup(tmp_buff);
-		double_list_append_as_tail(plist, pnode);
-	}
-}
-
-int mod_fastcgi_run()
-{
-	int tmp_len;
-	FASTCGI_NODE *pfnode;
-	char extra_headers[512];
-
 	struct srcitem {
 		char domain[256], path[256], dir[256], suffix[16], index[256];
 		char extra_headers[304], sock_path[256];
@@ -194,68 +151,43 @@ int mod_fastcgi_run()
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
 	for (decltype(item_num) i = 0; i < item_num; ++i) {
-		pfnode = static_cast<FASTCGI_NODE *>(malloc(sizeof(*pfnode)));
-		if (NULL == pfnode) {
-			continue;
-		}
-		pfnode->node.pdata = pfnode;
-		double_list_init(&pfnode->header_list);
-		pfnode->domain = strdup(pitem[i].domain);
-		pfnode->path = strdup(pitem[i].path);
-		tmp_len = strlen(pfnode->path);
-		if ('/' == pfnode->path[tmp_len - 1]) {
-			pfnode->path[tmp_len - 1] = '\0';
-		}
-		pfnode->directory = strdup(pitem[i].dir);
-		tmp_len = strlen(pfnode->directory);
-		if ('/' == pfnode->directory[tmp_len - 1]) {
-			pfnode->directory[tmp_len - 1] = '\0';
-		}
-		pfnode->suffix = strdup(pitem[i].suffix);
-		pfnode->index = strdup(pitem[i].index);
-		HX_strlcpy(extra_headers, pitem[i].extra_headers, sizeof(extra_headers));
-		mod_fastcgi_load_extra_headers(
-			extra_headers, &pfnode->header_list);
-		pfnode->sock_path = strdup(pitem[i].sock_path);
-		double_list_append_as_tail(&g_fastcgi_list, &pfnode->node);
+		FASTCGI_NODE node;
+		node.domain = pitem[i].domain;
+		node.path = pitem[i].path;
+		if (node.path.size() > 0 && node.path.back() == '/')
+			node.path.pop_back();
+		node.dir = pitem[i].dir;
+		if (node.dir.size() > 0 && node.dir.back() == '/')
+			node.dir.pop_back();
+		node.suffix = pitem[i].suffix;
+		node.index = pitem[i].index;
+		node.header_list = gx_split(pitem[i].extra_headers, '|');
+		node.sock_path = pitem[i].sock_path;
+		g_fastcgi_list.push_back(std::move(node));
 	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	printf("[mod_fastcgi]: bad_alloc\n");
+	return -ENOMEM;
+}
+
+int mod_fastcgi_run()
+{
+	auto ret = mod_fastcgi_read_txt();
+	if (ret < 0)
+		return ret;
 	g_context_list = static_cast<FASTCGI_CONTEXT *>(malloc(sizeof(FASTCGI_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[mod_fastcgi]: Failed to allocate context list\n");
-		return -2;
+		return -ENOMEM;
 	}
 	return 0;
 }
 
 void mod_fastcgi_stop(void)
 {
-	FASTCGI_NODE *pfnode;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	
-	while ((pnode = double_list_pop_front(&g_fastcgi_list)) != nullptr) {
-		pfnode = (FASTCGI_NODE*)pnode->pdata;
-		free(pfnode->domain);
-		free(pfnode->path);
-		free(pfnode->directory);
-		free(pfnode->suffix);
-		free(pfnode->index);
-		free(pfnode->sock_path);
-		while ((pnode1 = double_list_pop_front(&pfnode->header_list)) != nullptr) {
-			free(pnode1->pdata);
-			free(pnode1);
-		}
-		free(pfnode);
-	}
-	if (NULL != g_context_list) {
-		free(g_context_list);
-		g_context_list = NULL;
-	}
-}
-
-void mod_fastcgi_free()
-{
-	double_list_free(&g_fastcgi_list);
+	free(g_context_list);
+	g_context_list = NULL;
 }
 
 static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
@@ -447,7 +379,6 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	char domain[256];
 	char file_name[256];
 	char tmp_buff[8192];
-	FASTCGI_NODE *pfnode;
 	char request_uri[8192];
 	uint64_t content_length;
 	FASTCGI_CONTEXT *pcontext;
@@ -521,14 +452,13 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 					"error, missing slash for mod_fastcgi");
 		return FALSE;
 	}
-	pfnode = mod_fastcgi_find_backend(domain,
-		request_uri, file_name, suffix, &b_index);
+	auto pfnode = mod_fastcgi_find_backend(domain, request_uri, file_name, suffix, &b_index);
 	if (NULL == pfnode) {
 		return FALSE;
 	}
 	http_parser_log_info(phttp, 8, "http request \"%s\" "
 		"to \"%s\" will be relayed to fastcgi back-end %s",
-		tmp_buff, domain, pfnode->sock_path);
+		tmp_buff, domain, pfnode->sock_path.c_str());
 	tmp_len = mem_file_get_total_length(&phttp->request.f_content_length);
 	if (0 == tmp_len) {
 		content_length = 0;
@@ -602,7 +532,6 @@ BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp)
 static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	uint8_t *pbuff, int *plength)
 {
-	int tmp_len;
 	char *ptoken;
 	char *ptoken1;
 	char *path_info;
@@ -610,9 +539,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	NDR_PUSH ndr_push;
 	char uri_path[8192];
 	char tmp_buff[8192];
-	FASTCGI_NODE *pfnode;
 	struct stat node_stat;
-	DOUBLE_LIST_NODE *pnode;
 	
 	ndr_push_init(&ndr_push, pbuff, *plength,
 		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
@@ -624,7 +551,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));
 	}
-	tmp_len = mem_file_get_total_length(&phttp->request.f_host);
+	auto tmp_len = mem_file_get_total_length(&phttp->request.f_host);
 	if (tmp_len >= sizeof(domain)) {
 		http_parser_log_info(phttp, 8, "length of "
 			"request host is too long for mod_fastcgi");
@@ -693,22 +620,22 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			path_info = ptoken1 + 1;
 		}
 	}
-	pfnode = phttp->pfast_context->pfnode;
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->directory));
+	auto pfnode = phttp->pfast_context->pfnode;
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->dir.c_str()));
 	if (NULL != path_info) {
-		sprintf(tmp_buff, "%s/%s", pfnode->directory, path_info);
+		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s/%s", pfnode->dir.c_str(), path_info);
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", tmp_buff));
 	}
-	tmp_len = strlen(pfnode->path);
+	tmp_len = pfnode->path.size();
 	if (TRUE == phttp->pfast_context->b_index) {
-		sprintf(tmp_buff, "%s%s", uri_path, pfnode->index);
+		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s", uri_path, pfnode->index.c_str());
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", tmp_buff));
-		sprintf(tmp_buff, "%s%s%s", pfnode->directory,
-			uri_path + tmp_len, pfnode->index);
+		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s%s", pfnode->dir.c_str(),
+		         uri_path + tmp_len, pfnode->index.c_str());
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	} else {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", uri_path));
-		sprintf(tmp_buff, "%s%s", pfnode->directory, uri_path + tmp_len);
+		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s", pfnode->dir.c_str(), uri_path + tmp_len);
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	}
 	tmp_len = mem_file_get_total_length(&phttp->request.f_accept);
@@ -820,13 +747,11 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		tmp_buff, 128)) {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", tmp_buff));
 	}
-	for (pnode=double_list_get_head(&pfnode->header_list); NULL!=pnode;
-		pnode=double_list_get_after(&pfnode->header_list, pnode)) {
+	for (const auto &hdr : pfnode->header_list) {
 		if (mod_fastcgi_get_others_field(&phttp->request.f_others,
-		    static_cast<char *>(pnode->pdata), tmp_buff, 1024)) {
+		    hdr.c_str(), tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			QRF(mod_fastcgi_push_name_value(&ndr_push,
-			         static_cast<char *>(pnode->pdata), tmp_buff));
-		}
+			    hdr.c_str(), tmp_buff));
 	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
@@ -868,12 +793,11 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		phttp, ndr_buff, &ndr_length)) {
 		return FALSE;	
 	}
-	cli_sockd = mod_fastcgi_connect_backend(
-		phttp->pfast_context->pfnode->sock_path);
+	cli_sockd = mod_fastcgi_connect_backend(phttp->pfast_context->pfnode->sock_path.c_str());
 	if (cli_sockd < 0) {
 		http_parser_log_info(phttp, 8, "fail to "
 				"connect to fastcgi back-end %s",
-				phttp->pfast_context->pfnode->sock_path);
+				phttp->pfast_context->pfnode->sock_path.c_str());
 		return FALSE;
 	}
 	if (16 != write(cli_sockd, tmp_buff, 16) ||
@@ -882,7 +806,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		close(cli_sockd);
 		http_parser_log_info(phttp, 8, "fail to "
 			"write record to fastcgi back-end %s",
-			phttp->pfast_context->pfnode->sock_path);
+			phttp->pfast_context->pfnode->sock_path.c_str());
 		return FALSE;
 	}
 	ndr_push_init(&ndr_push, tmp_buff, 8,
@@ -893,7 +817,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		close(cli_sockd);
 		http_parser_log_info(phttp, 8, "fail to "
 			"write record to fastcgi back-end %s",
-			phttp->pfast_context->pfnode->sock_path);
+			phttp->pfast_context->pfnode->sock_path.c_str());
 		return FALSE;
 	}
 	if (-1 == phttp->pfast_context->cache_fd) {
@@ -925,7 +849,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 				close(cli_sockd);
 				http_parser_log_info(phttp, 8, "fail to "
 					"write record to fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path);
+					phttp->pfast_context->pfnode->sock_path.c_str());
 				return FALSE;
 			}
 			if (0 == phttp->pfast_context->content_length) {
@@ -965,7 +889,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 				close(cli_sockd);
 				http_parser_log_info(phttp, 8, "fail to "
 					"write record to fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path);
+					phttp->pfast_context->pfnode->sock_path.c_str());
 				return FALSE;
 			}
 		}
@@ -985,7 +909,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		close(cli_sockd);
 		http_parser_log_info(phttp, 8, "fail to write"
 			" last empty stdin to fastcgi back-end %s",
-			phttp->pfast_context->pfnode->sock_path);
+			phttp->pfast_context->pfnode->sock_path.c_str());
 		return FALSE;
 	}
 	phttp->pfast_context->cli_sockd = cli_sockd;
@@ -1223,7 +1147,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			phttp->pfast_context, header_buff, 8)) {
 			http_parser_log_info(phttp, 8, "fail to read"
 				" record header from fastcgi back-end %s",
-				phttp->pfast_context->pfnode->sock_path);
+				phttp->pfast_context->pfnode->sock_path.c_str());
 			mod_fastcgi_put_context(phttp);
 			return FALSE;	
 		}
@@ -1241,7 +1165,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			if (8 != header.content_len) {
 				http_parser_log_info(phttp, 8, "record header"
 					" format error from fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path);
+					phttp->pfast_context->pfnode->sock_path.c_str());
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
@@ -1251,7 +1175,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				tmp_len)) {
 				http_parser_log_info(phttp, 8, "fail to read"
 				" record header from fastcgi back-end %s",
-				phttp->pfast_context->pfnode->sock_path);
+				phttp->pfast_context->pfnode->sock_path.c_str());
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
@@ -1266,7 +1190,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 						"protocol_status %d from fastcgi back-end"
 						" %s", end_request.app_status,
 						(int)end_request.protocol_status,
-						phttp->pfast_context->pfnode->sock_path);
+						phttp->pfast_context->pfnode->sock_path.c_str());
 			}
 			if (TRUE == phttp->pfast_context->b_header &&
 				TRUE == phttp->pfast_context->b_chunked) {
@@ -1282,7 +1206,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				tmp_len)) {
 				http_parser_log_info(phttp, 8, "fail to read"
 					" record header from fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path);
+					phttp->pfast_context->pfnode->sock_path.c_str());
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
@@ -1301,7 +1225,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				tmp_buff[std_stream.length] = '\0';
 				http_parser_log_info(phttp, 8, "stderr message "
 					"\"%s\" from fastcgi back-end %s", tmp_buff,
-					phttp->pfast_context->pfnode->sock_path);
+					phttp->pfast_context->pfnode->sock_path.c_str());
 				continue;
 			}
 			if (TRUE == phttp->pfast_context->b_header) {
@@ -1340,7 +1264,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			if (response_offset + std_stream.length > sizeof(response_buff)) {
 				http_parser_log_info(phttp, 8, "response "
 					"header too long from fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path);
+					phttp->pfast_context->pfnode->sock_path.c_str());
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
@@ -1370,7 +1294,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					- ptoken) >= sizeof(status_line)) {
 					http_parser_log_info(phttp, 8, "response header"
 						"format error from fastcgi back-end %s",
-						phttp->pfast_context->pfnode->sock_path);
+						phttp->pfast_context->pfnode->sock_path.c_str());
 					mod_fastcgi_put_context(phttp);
 					return FALSE;
 				}
@@ -1462,13 +1386,13 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				tmp_len)) {
 				http_parser_log_info(phttp, 8, "fail to read"
 				" record header from fastcgi back-end %s",
-				phttp->pfast_context->pfnode->sock_path);
+				phttp->pfast_context->pfnode->sock_path.c_str());
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
 			http_parser_log_info(phttp, 8, "ignore record %d"
 				" from fastcgi back-end %s", (int)header.type,
-				phttp->pfast_context->pfnode->sock_path);
+				phttp->pfast_context->pfnode->sock_path.c_str());
 			continue;
 		}
 	}

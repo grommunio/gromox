@@ -599,7 +599,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run mod fastcgi\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_17 = make_scope_exit(mod_fastcgi_free);
 	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 
 	mod_cache_init(context_num);

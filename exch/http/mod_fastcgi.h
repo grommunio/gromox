@@ -7,16 +7,7 @@
 #define RESPONSE_WAITING				0
 #define RESPONSE_AVAILABLE				1
 
-struct FASTCGI_NODE {
-	DOUBLE_LIST_NODE node;
-	char *domain;
-	char *path;
-	char *directory;
-	char *suffix;
-	char *index;
-	DOUBLE_LIST header_list;
-	char *sock_path;
-};
+struct FASTCGI_NODE;
 
 struct FASTCGI_CONTEXT {
 	BOOL b_index;
@@ -25,7 +16,7 @@ struct FASTCGI_CONTEXT {
 	uint32_t chunk_offset; 
 	BOOL b_end;
 	uint64_t content_length;
-	FASTCGI_NODE *pfnode;
+	const FASTCGI_NODE *pfnode;
 	int cache_fd;
 	uint64_t cache_size;
 	int cli_sockd;
@@ -38,7 +29,6 @@ struct HTTP_CONTEXT;
 extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, int exec_timeout);
 extern int mod_fastcgi_run(void);
 extern void mod_fastcgi_stop(void);
-extern void mod_fastcgi_free(void);
 BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp);
 
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp);
