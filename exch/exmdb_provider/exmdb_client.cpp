@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cstdint>
+#include <list>
 #include <string>
 #include <vector>
 #include <libHX/string.h>
@@ -46,7 +47,6 @@ struct REMOTE_CONN {
 };
 
 struct AGENT_THREAD {
-	DOUBLE_LIST_NODE node;
 	REMOTE_SVR *pserver;
 	pthread_t thr_id;
 	int sockd;
@@ -57,7 +57,7 @@ static int g_threads_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
-static DOUBLE_LIST g_agent_list;
+static std::list<AGENT_THREAD> g_agent_list;
 static std::vector<LOCAL_SVR> g_local_list;
 static DOUBLE_LIST g_server_list;
 static pthread_mutex_t g_server_lock;
@@ -500,7 +500,6 @@ void exmdb_client_init(int conn_num, int threads_num)
 	g_threads_num = threads_num;
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
-	double_list_init(&g_agent_list);
 	pthread_mutex_init(&g_server_lock, NULL);
 }
 
@@ -509,7 +508,6 @@ int exmdb_client_run(const char *config_path)
 	BOOL b_private;
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
-	AGENT_THREAD *pagent;
 	
 	auto plist = list_file_initd("exmdb_list.txt", config_path,
 	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
@@ -576,27 +574,29 @@ int exmdb_client_run(const char *config_path)
 			double_list_append_as_tail(&g_lost_list, &pconn->node);
 		}
 		for (decltype(g_threads_num) j = 0; j < g_threads_num; ++j) {
-			pagent = me_alloc<AGENT_THREAD>();
-			if (NULL == pagent) {
+			try {
+				g_agent_list.push_back(AGENT_THREAD{});
+			} catch (const std::bad_alloc &) {
 				printf("[exmdb_provider]: fail to "
 					"allocate memory for exmdb\n");
 				g_notify_stop = TRUE;
 				return 7;
 			}
-			pagent->node.pdata = pagent;
-			pagent->pserver = pserver;
-			pagent->sockd = -1;
-			if (0 != pthread_create(&pagent->thr_id,
-				NULL, thread_work_func, pagent)) {
+			auto &ag = g_agent_list.back();
+			ag.pserver = pserver;
+			ag.sockd = -1;
+			static_assert(std::is_same_v<decltype(g_agent_list), std::list<decltype(g_agent_list)::value_type>>,
+				"addrof AGENT_THREADs must not change; other thread has its address in use");
+			if (pthread_create(&ag.thr_id, nullptr, thread_work_func, &ag) != 0) {
 				printf("[exmdb_provider]: fail to "
 					"create agent thread for exmdb\n");
 				g_notify_stop = TRUE;
+				g_agent_list.pop_back();
 				return 8;
 			}
 			char buf[32];
 			snprintf(buf, sizeof(buf), "exmdbcl/%u", i);
-			pthread_setname_np(pagent->thr_id, buf);
-			double_list_append_as_tail(&g_agent_list, &pagent->node);
+			pthread_setname_np(ag.thr_id, buf);
 		}
 	}
 	plist.reset();
@@ -617,7 +617,6 @@ int exmdb_client_stop()
 {
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
-	AGENT_THREAD *pagent;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 != g_conn_num) {
@@ -627,13 +626,10 @@ int exmdb_client_stop()
 		}
 	}
 	g_notify_stop = TRUE;
-	while ((pnode = double_list_pop_front(&g_agent_list)) != nullptr) {
-		pagent = (AGENT_THREAD*)pnode->pdata;
-		pthread_cancel(pagent->thr_id);
-		if (-1 != pagent->sockd) {
-			close(pagent->sockd);
-		}
-		free(pagent);
+	for (auto &ag : g_agent_list) {
+		pthread_cancel(ag.thr_id);
+		if (ag.sockd >= 0)
+			close(ag.sockd);
 	}
 	while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 		free(pnode->pdata);
@@ -653,7 +649,6 @@ void exmdb_client_free()
 {
 	double_list_free(&g_lost_list);
 	double_list_free(&g_server_list);
-	double_list_free(&g_agent_list);
 	pthread_mutex_destroy(&g_server_lock);
 }
 
