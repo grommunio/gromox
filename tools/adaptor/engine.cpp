@@ -103,7 +103,7 @@ static void* thread_work_func1(void *param)
 
 		if (0 != file_operation_compare(temp_path, g_domainlist_path)) {
 			rename(temp_path, g_domainlist_path);
-			gateway_control_notify("libmtasvc_domain_list.so reload",
+			gateway_control_notify("libgxs_domain_list.so reload",
 				NOTIFY_SMTP|NOTIFY_DELIVERY);
 		}
 		

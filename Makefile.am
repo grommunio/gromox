@@ -29,21 +29,21 @@ mta_plugins = \
 	libmtahook_alias_translator.la \
 	libmtahook_exmdb_local.la \
 	libmtahook_mlist_expand.la \
-	libmtasvc_domain_list.la
+	libgxs_domain_list.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_mlist_expand.ldd \
-	libmtasvc_domain_list.ldd
+	libgxs_domain_list.ldd
 mra_system = pop3 imap
 mra_plugins = \
 	libgxs_event_proxy.la \
-	libmrasvc_event_stub.la \
+	libgxs_event_stub.la \
 	libgxs_midb_agent.la
 noinst_DATA += \
 	libgxs_event_proxy.ldd \
-	libmrasvc_event_stub.ldd \
+	libgxs_event_stub.ldd \
 	libgxs_midb_agent.ldd
 exchange_progs = http midb zcore
 exchange_plugins = \
@@ -131,10 +131,10 @@ libmtahook_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/ml
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_mlist_expand_la_DEPENDENCIES = ${default_sym}
-libmtasvc_domain_list_la_SOURCES = exch/str_table.cpp
-libmtasvc_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
+libgxs_domain_list_la_SOURCES = exch/str_table.cpp
+libgxs_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_domain_list_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
 pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/pop3/console_cmd_handler.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp mra/pop3/units_allocator.cpp
@@ -145,10 +145,10 @@ libgxs_event_proxy_la_SOURCES = mra/event_proxy.cpp
 libgxs_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_event_proxy_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_event_proxy_la_DEPENDENCIES = ${default_sym}
-libmrasvc_event_stub_la_SOURCES = mra/event_stub.cpp
-libmrasvc_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
-libmrasvc_event_stub_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmrasvc_event_stub_la_DEPENDENCIES = ${default_sym}
+libgxs_event_stub_la_SOURCES = mra/event_stub.cpp
+libgxs_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_event_stub_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxs_event_stub_la_DEPENDENCIES = ${default_sym}
 libgxs_midb_agent_la_SOURCES = mra/midb_agent.cpp
 libgxs_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la

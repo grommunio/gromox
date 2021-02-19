@@ -47,7 +47,7 @@ static const char *const g_dfl_as_plugins[] = {
 };
 
 static const char *const g_dfl_svc_plugins[] = {
-	"libmtasvc_domain_list.so",
+	"libgxs_domain_list.so",
 	"libgxs_ip6_container.so",
 	"libgxs_ip6_filter.so",
 	"libgxs_log_plugin.so",

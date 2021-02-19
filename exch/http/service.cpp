@@ -333,9 +333,6 @@ static const char* service_get_plugin_name()
 	}
 	if (strncmp(g_cur_plug->file_name, "libgxs_", 7) == 0)
 		return g_cur_plug->file_name + 7;
-	if (strncmp(g_cur_plug->file_name, "libmrasvc_", 10) == 0 ||
-	    strncmp(g_cur_plug->file_name, "libmtasvc_", 10) == 0)
-		return g_cur_plug->file_name + 10;
 	return g_cur_plug->file_name;
 }
 
