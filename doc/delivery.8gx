@@ -116,6 +116,8 @@ Default: \fI32\fP
 Default: \fI16\fP
 .SH Files
 .IP \(bu 4
+/usr/lib/gromox/libgxm_*.so: hook plugins
+.IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 .PP

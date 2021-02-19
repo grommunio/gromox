@@ -1313,8 +1313,8 @@ static const char* transporter_get_plugin_name()
 	if (NULL == g_cur_lib) {
 		return NULL;
     }
-	if (strncmp(g_cur_lib->file_name, "libmtahook_", 11) == 0)
-		return g_cur_lib->file_name + 11;
+	if (strncmp(g_cur_lib->file_name, "libgxm_", 7) == 0)
+		return g_cur_lib->file_name + 7;
     return g_cur_lib->file_name;
 }
 

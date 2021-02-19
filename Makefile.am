@@ -26,15 +26,15 @@ unit_DATA = ${unit_services} ${unit_targets}
 mta_system = delivery smtp
 mta_plugins = \
 	libmtaflh_message_enqueue.la \
-	libmtahook_alias_translator.la \
-	libmtahook_exmdb_local.la \
-	libmtahook_mlist_expand.la \
+	libgxm_alias_translator.la \
+	libgxm_exmdb_local.la \
+	libgxm_mlist_expand.la \
 	libgxs_domain_list.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
-	libmtahook_alias_translator.ldd \
-	libmtahook_exmdb_local.ldd \
-	libmtahook_mlist_expand.ldd \
+	libgxm_alias_translator.ldd \
+	libgxm_exmdb_local.ldd \
+	libgxm_mlist_expand.ldd \
 	libgxs_domain_list.ldd
 mra_system = pop3 imap
 mra_plugins = \
@@ -119,18 +119,18 @@ libmtaflh_message_enqueue_la_SOURCES = mda/message_enqueue.cpp
 libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtaflh_message_enqueue_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtaflh_message_enqueue_la_DEPENDENCIES = ${default_sym}
-libmtahook_alias_translator_la_SOURCES = mda/alias_translator.cpp
-libmtahook_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtahook_alias_translator_la_DEPENDENCIES = ${default_sym}
-libmtahook_exmdb_local_la_SOURCES = mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_client.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/main.cpp mda/exmdb_local/net_failure.cpp
-libmtahook_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-EXTRA_libmtahook_exmdb_local_la_DEPENDENCIES = ${default_sym}
-libmtahook_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/main.cpp
-libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_mlist_expand_la_DEPENDENCIES = ${default_sym}
+libgxm_alias_translator_la_SOURCES = mda/alias_translator.cpp
+libgxm_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxm_alias_translator_la_DEPENDENCIES = ${default_sym}
+libgxm_exmdb_local_la_SOURCES = mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_client.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/main.cpp mda/exmdb_local/net_failure.cpp
+libgxm_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = ${default_sym}
+libgxm_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/main.cpp
+libgxm_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
+EXTRA_libgxm_mlist_expand_la_DEPENDENCIES = ${default_sym}
 libgxs_domain_list_la_SOURCES = exch/str_table.cpp
 libgxs_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
