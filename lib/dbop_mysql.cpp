@@ -305,7 +305,7 @@ static const char tbl_classes_top[] =
 "  `classname` varchar(128) NOT NULL,"
 "  `listname` varchar(320) CHARACTER SET ascii DEFAULT NULL,"
 "  PRIMARY KEY (`id`),"
-"  KEY `listname` (`listname`),"
+"  KEY `listname` (`listname`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_domains_top[] =
