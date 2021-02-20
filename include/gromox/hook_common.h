@@ -40,7 +40,7 @@ typedef MESSAGE_CONTEXT *(*GET_CONTEXT)(void);
 typedef void (*PUT_CONTEXT)(MESSAGE_CONTEXT*);
 typedef BOOL (*THROW_CONTEXT)(MESSAGE_CONTEXT*);
 typedef void (*ENQUEUE_CONTEXT)(MESSAGE_CONTEXT*);
-typedef BOOL (*CHECKING_FUNCTION)(char*);
+typedef BOOL (*CHECKING_FUNCTION)(const char *);
 /* is domain list valid, if TRUE, check_domain will functionate */
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 

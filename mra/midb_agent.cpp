@@ -118,8 +118,7 @@ static int get_mail_flags(const char *path, const char *folder, const char *mid_
 static int copy_mail(const char *path, const char *src_folder, const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno);
 static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
 static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
-static BOOL check_full(char *path);
-
+static BOOL check_full(const char *path);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static int g_conn_num;
@@ -3339,7 +3338,7 @@ static BOOL read_line(int sockd, char *buff, int length)
 	
 }
 
-static BOOL check_full(char *path)
+static BOOL check_full(const char *path)
 {
 	int length;
 	int offset;

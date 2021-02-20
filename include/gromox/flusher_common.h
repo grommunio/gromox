@@ -64,7 +64,7 @@ typedef int (*GET_EXTRA_NUM)(int);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef BOOL (*SET_FLUSH_ID)(int);
 typedef int (*INC_FLUSH_ID)(void);
-typedef BOOL (*CHECKING_FUNCTION)(char*);
+typedef BOOL (*CHECKING_FUNCTION)(const char *);
 /* is domain list valid, if TRUE, check_domain will functionate */
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
