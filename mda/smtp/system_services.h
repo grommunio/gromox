@@ -21,5 +21,3 @@ extern BOOL (*system_services_check_domain)(const char*);
 extern BOOL (*system_services_check_user)(const char*, char*);
 extern BOOL (*system_services_check_full)(const char*);
 extern void (*system_services_log_info)(int, const char *, ...);
-extern void (*system_services_etrn_process)(const char*, int, char*, int);
-extern void (*system_services_vrfy_process)(const char*, int, char*, int);

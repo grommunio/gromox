@@ -14,8 +14,6 @@ BOOL (*system_services_check_domain)(const char*);
 BOOL (*system_services_check_user)(const char*, char*);
 BOOL (*system_services_check_full)(const char*);
 void (*system_services_log_info)(int, const char *, ...);
-void (*system_services_etrn_process)(const char*, int, char*, int);
-void (*system_services_vrfy_process)(const char*, int, char*, int);
 
 /*
  *	run system services module
@@ -44,8 +42,6 @@ int system_services_run()
 	E(system_services_check_domain, "check_domain");
 	E2(system_services_check_user, "check_user");
 	E2(system_services_check_full, "check_full");
-	E2(system_services_etrn_process, "etrn_process");
-	E2(system_services_vrfy_process, "vrfy_process");
 	return 0;
 #undef E
 #undef E2
@@ -68,12 +64,6 @@ int system_services_stop()
 	service_release("check_domain", "system");
 	if (NULL != system_services_check_user) {
 		service_release("check_user", "system");
-	}
-	if (NULL != system_services_etrn_process) {
-		service_release("etrn_process", "system");
-	}
-	if (NULL != system_services_vrfy_process) {
-		service_release("vrfy_process", "system");
 	}
 	service_release("log_info", "system");
 	return 0;
