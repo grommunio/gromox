@@ -242,7 +242,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		exmdb_local_stop();
 		exmdb_local_free();
 		exmdb_client_stop();
-		exmdb_client_free();
 		cache_queue_stop();
 		cache_queue_free();
 		bounce_audit_stop();

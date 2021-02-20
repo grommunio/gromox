@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021 grammm GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <list>
 #include <cstdint>
 #include <list>
 #include <string>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -30,15 +33,15 @@
 #include <ctime>
 #include <poll.h>
 
+struct REMOTE_CONN;
 struct REMOTE_SVR {
-	DOUBLE_LIST conn_list;
+	std::list<REMOTE_CONN> conn_list;
 	std::string host, prefix;
 	BOOL b_private;
 	uint16_t port;
 };
 
 struct REMOTE_CONN {
-    DOUBLE_LIST_NODE node;
 	time_t last_time;
 	REMOTE_SVR *psvr;
 	int sockd;
@@ -48,12 +51,12 @@ struct REMOTE_CONN_floating {
 	REMOTE_CONN_floating() = default;
 	REMOTE_CONN_floating(REMOTE_CONN_floating &&);
 	~REMOTE_CONN_floating() { reset(true); }
-	REMOTE_CONN *operator->() const { return pconn; }
-	bool operator==(std::nullptr_t) { return pconn == nullptr; }
-	bool operator!=(std::nullptr_t) { return pconn != nullptr; }
+	REMOTE_CONN *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
+	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
+	bool operator!=(std::nullptr_t) const { return tmplist.size() != 0; }
 	void reset(bool lost = false);
 
-	REMOTE_CONN *pconn = nullptr;
+	std::list<REMOTE_CONN> tmplist;
 };
 
 struct AGENT_THREAD {
@@ -66,7 +69,7 @@ static int g_conn_num;
 static int g_threads_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_id;
-static DOUBLE_LIST g_lost_list;
+static std::list<REMOTE_CONN> g_lost_list;
 static std::list<AGENT_THREAD> g_agent_list;
 static std::vector<LOCAL_SVR> g_local_list;
 static std::list<REMOTE_SVR> g_server_list;
@@ -81,10 +84,10 @@ int exmdb_client_get_param(int param)
 	case ALIVE_PROXY_CONNECTIONS:
 		total_num = 0;
 		for (const auto &srv : g_server_list)
-			total_num += double_list_get_nodes_num(&srv.conn_list);
+			total_num += srv.conn_list.size();
 		return total_num;
 	case LOST_PROXY_CONNECTIONS:
-		return double_list_get_nodes_num(&g_lost_list);
+		return g_lost_list.size();
 	}
 	return -1;
 }
@@ -210,7 +213,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			exmdb_server_free_environment();
-			printf("[exmdb_provider]: response format error "
+			printf("[exmdb_client]: response format error "
 			       "during connect to [%s]:%hu/%s\n",
 			       pserver->host.c_str(), pserver->port, pserver->prefix.c_str());
 			close(sockd);
@@ -252,42 +255,32 @@ static void *scan_work_func(void *pparam)
 	time_t now_time;
 	uint8_t resp_buff;
 	uint32_t ping_buff;
-	REMOTE_CONN *pconn;
-	DOUBLE_LIST temp_list;
 	struct pollfd pfd_read;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
-	DOUBLE_LIST_NODE *pnode1;
-	
+	std::list<REMOTE_CONN> temp_list;
 	
 	ping_buff = 0;
-	double_list_init(&temp_list);
-
 	while (FALSE == g_notify_stop) {
 		pthread_mutex_lock(&g_server_lock);
 		time(&now_time);
 		for (auto &srv : g_server_list) {
-			ptail = double_list_get_tail(&srv.conn_list);
-			while ((pnode1 = double_list_pop_front(&srv.conn_list)) != nullptr) {
-				pconn = (REMOTE_CONN*)pnode1->pdata;
-				if (now_time - pconn->last_time >= SOCKET_TIMEOUT - 3) {
-					double_list_append_as_tail(&temp_list, &pconn->node);
-				} else {
-					double_list_append_as_tail(&srv.conn_list, &pconn->node);
-				}
-
-				if (pnode1 == ptail) {
+			auto tail = &*srv.conn_list.rbegin();
+			while (srv.conn_list.size() > 0) {
+				auto pconn = &srv.conn_list.front();
+				if (now_time - pconn->last_time >= SOCKET_TIMEOUT - 3)
+					temp_list.splice(temp_list.end(), srv.conn_list, srv.conn_list.begin());
+				else
+					srv.conn_list.splice(srv.conn_list.end(), srv.conn_list, srv.conn_list.begin());
+				if (pconn == tail)
 					break;
-				}
 			}
 		}
 		pthread_mutex_unlock(&g_server_lock);
 
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			pconn = (REMOTE_CONN*)pnode->pdata;
+		while (temp_list.size() > 0) {
+			auto pconn = &temp_list.front();
 			if (TRUE == g_notify_stop) {
 				close(pconn->sockd);
-				free(pconn);
+				temp_list.pop_front();
 				continue;
 			}
 			if (sizeof(uint32_t) != write(pconn->sockd,
@@ -295,7 +288,7 @@ static void *scan_work_func(void *pparam)
 				close(pconn->sockd);
 				pconn->sockd = -1;
 				pthread_mutex_lock(&g_server_lock);
-				double_list_append_as_tail(&g_lost_list, &pconn->node);
+				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				pthread_mutex_unlock(&g_server_lock);
 				continue;
 			}
@@ -308,39 +301,36 @@ static void *scan_work_func(void *pparam)
 				close(pconn->sockd);
 				pconn->sockd = -1;
 				pthread_mutex_lock(&g_server_lock);
-				double_list_append_as_tail(&g_lost_list, &pconn->node);
+				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				pthread_mutex_unlock(&g_server_lock);
 			} else {
 				time(&pconn->last_time);
 				pthread_mutex_lock(&g_server_lock);
-				double_list_append_as_tail(&pconn->psvr->conn_list,
-					&pconn->node);
+				pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), temp_list, temp_list.begin());
 				pthread_mutex_unlock(&g_server_lock);
 			}
 		}
 
 		pthread_mutex_lock(&g_server_lock);
-		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
-			double_list_append_as_tail(&temp_list, pnode);
+		temp_list = std::move(g_lost_list);
 		pthread_mutex_unlock(&g_server_lock);
 
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			pconn = (REMOTE_CONN*)pnode->pdata;
+		while (temp_list.size() > 0) {
+			auto pconn = &temp_list.front();
 			if (TRUE == g_notify_stop) {
 				close(pconn->sockd);
-				free(pconn);
+				temp_list.pop_front();
 				continue;
 			}
 			pconn->sockd = exmdb_client_connect_exmdb(pconn->psvr, FALSE);
 			if (-1 != pconn->sockd) {
 				time(&pconn->last_time);
 				pthread_mutex_lock(&g_server_lock);
-				double_list_append_as_tail(&pconn->psvr->conn_list,
-					&pconn->node);
+				pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), temp_list, temp_list.begin());
 				pthread_mutex_unlock(&g_server_lock);
 			} else {
 				pthread_mutex_lock(&g_server_lock);
-				double_list_append_as_tail(&g_lost_list, &pconn->node);
+				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				pthread_mutex_unlock(&g_server_lock);
 			}
 		}
@@ -449,40 +439,40 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	pthread_mutex_lock(&g_server_lock);
-	auto pnode = double_list_pop_front(&i->conn_list);
-	pthread_mutex_unlock(&g_server_lock);
-	if (NULL == pnode) {
-		printf("[exmdb_client]: no alive connection for [%s]:%hu/%s\n",
+	if (i->conn_list.size() == 0) {
+		pthread_mutex_unlock(&g_server_lock);
+		printf("[exmdb_provider]: no alive connection for [%s]:%hu/%s\n",
 		       i->host.c_str(), i->port, i->prefix.c_str());
 		return fc;
 	}
-	fc.pconn = static_cast<REMOTE_CONN *>(pnode->pdata);
+	fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
+	pthread_mutex_unlock(&g_server_lock);
 	return fc;
 }
 
 void REMOTE_CONN_floating::reset(bool lost)
 {
-	if (pconn == nullptr)
+	if (tmplist.size() == 0)
 		return;
+	auto pconn = &tmplist.front();
 	if (!lost) {
 		pthread_mutex_lock(&g_server_lock);
-		double_list_append_as_tail(&pconn->psvr->conn_list, &pconn->node);
+		pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 		pthread_mutex_unlock(&g_server_lock);
 	} else {
 		close(pconn->sockd);
 		pconn->sockd = -1;
 		pthread_mutex_lock(&g_server_lock);
-		double_list_append_as_tail(&g_lost_list, &pconn->node);
+		g_lost_list.splice(g_lost_list.end(), tmplist, tmplist.begin());
 		pthread_mutex_unlock(&g_server_lock);
 	}
-	pconn = nullptr;
+	tmplist.clear();
 }
 
 REMOTE_CONN_floating::REMOTE_CONN_floating(REMOTE_CONN_floating &&o)
 {
 	reset(true);
-	pconn = o.pconn;
-	o.pconn = nullptr;
+	tmplist = std::move(o.tmplist);
 }
 
 void exmdb_client_init(int conn_num, int threads_num)
@@ -490,14 +480,12 @@ void exmdb_client_init(int conn_num, int threads_num)
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
 	g_threads_num = threads_num;
-	double_list_init(&g_lost_list);
 	pthread_mutex_init(&g_server_lock, NULL);
 }
 
 int exmdb_client_run(const char *config_path)
 {
 	BOOL b_private;
-	REMOTE_CONN *pconn;
 	
 	auto plist = list_file_initd("exmdb_list.txt", config_path,
 	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
@@ -544,7 +532,6 @@ int exmdb_client_run(const char *config_path)
 			srv.b_private = b_private;
 			srv.host = pitem[i].ip_addr;
 			srv.port = pitem[i].port;
-			double_list_init(&srv.conn_list);
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_provider]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;
@@ -552,19 +539,19 @@ int exmdb_client_run(const char *config_path)
 		}
 		auto &srv = g_server_list.back();
 		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
-			pconn = me_alloc<REMOTE_CONN>();
-			if (NULL == pconn) {
+			REMOTE_CONN conn;
+			conn.sockd = -1;
+			static_assert(std::is_same_v<decltype(g_server_list), std::list<decltype(g_server_list)::value_type>>,
+				"addrof REMOTE_SVRs must not change; REMOTE_CONN/AGENT_THREAD has a pointer to it");
+			conn.psvr = &srv;
+			try {
+				g_lost_list.push_back(std::move(conn));
+			} catch (const std::bad_alloc &) {
 				printf("[exmdb_provider]: fail to "
 					"allocate memory for exmdb\n");
 				g_notify_stop = TRUE;
 				return 6;
 			}
-			pconn->node.pdata = pconn;
-			pconn->sockd = -1;
-			static_assert(std::is_same_v<decltype(g_server_list), std::list<decltype(g_server_list)::value_type>>,
-				"addrof REMOTE_SVRs must not change; REMOTE_CONN/AGENT_THREAD has a pointer to it");
-			pconn->psvr = &srv;
-			double_list_append_as_tail(&g_lost_list, &pconn->node);
 		}
 		for (decltype(g_threads_num) j = 0; j < g_threads_num; ++j) {
 			try {
@@ -608,9 +595,6 @@ int exmdb_client_run(const char *config_path)
 
 int exmdb_client_stop()
 {
-	REMOTE_CONN *pconn;
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (0 != g_conn_num) {
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;
@@ -623,21 +607,14 @@ int exmdb_client_stop()
 		if (ag.sockd >= 0)
 			close(ag.sockd);
 	}
-	while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
-		free(pnode->pdata);
-	for (auto &srv : g_server_list) {
-		while ((pnode = double_list_pop_front(&srv.conn_list)) != nullptr) {
-			pconn = (REMOTE_CONN*)pnode->pdata;
-			close(pconn->sockd);
-			free(pconn);
-		}
-	}
+	for (auto &srv : g_server_list)
+		for (auto &conn : srv.conn_list)
+			close(conn.sockd);
 	return 0;
 }
 
 void exmdb_client_free()
 {
-	double_list_free(&g_lost_list);
 	pthread_mutex_destroy(&g_server_lock);
 }
 
