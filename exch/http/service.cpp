@@ -467,7 +467,8 @@ void *service_query(const char *service_name, const char *module, const std::typ
 		}
 	}
 	if (NULL == pnode) {
-		printf("[service]: dlname \"%s\" not found\n", service_name);
+		if (strcmp(service_name, "ndr_stack_alloc") != 0)
+			printf("[service]: dlname \"%s\" not found\n", service_name);
 		return NULL;
 	}
 	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
