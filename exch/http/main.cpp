@@ -68,7 +68,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libgxs_exmdb_provider.so",
 	"libgxs_ip6_container.so",
 	"libgxs_ip6_filter.so",
-	"libgxs_log_plugin.so",
+	"libgxs_logthru.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",

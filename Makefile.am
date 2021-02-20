@@ -63,7 +63,7 @@ exchange_plugins = \
 	libgxs_authmgr.la \
 	libgxs_ip6_container.la libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
-	libgxs_log_plugin.la \
+	libgxs_log_plugin.la libgxs_logthru.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_textmaps.la \
 	libgxs_user_filter.la
@@ -80,7 +80,7 @@ noinst_DATA += \
 	libgxs_authmgr.ldd \
 	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
 	libgxs_ldap_adaptor.ldd \
-	libgxs_log_plugin.ldd \
+	libgxs_log_plugin.ldd libgxs_logthru.ldd \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_textmaps.ldd \
 	libgxs_user_filter.ldd
@@ -221,6 +221,10 @@ libgxs_log_plugin_la_SOURCES = exch/log_plugin.cpp
 libgxs_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_log_plugin_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_log_plugin_la_DEPENDENCIES = ${default_sym}
+libgxs_logthru_la_SOURCES = exch/logthru.cpp
+libgxs_logthru_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_logthru_la_LIBADD = libgromox_common.la
+EXTRA_libgxs_logthru_la_DEPENDENCIES = ${default_sym}
 libgxs_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/main.cpp exch/mysql_adaptor/mysql_adaptor.cpp exch/mysql_adaptor/sql2.cpp
 libgxs_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
