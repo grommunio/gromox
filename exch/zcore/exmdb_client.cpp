@@ -280,8 +280,9 @@ static void *scan_work_func(void *pparam)
 				&ping_buff, sizeof(uint32_t))) {
 				close(pconn->sockd);
 				pconn->sockd = -1;
-				std::unique_lock sv2(g_server_lock);
+				sv_hold.lock();
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
+				sv_hold.unlock();
 				continue;
 			}
 			tv_msec = SOCKET_TIMEOUT * 1000;
@@ -292,12 +293,14 @@ static void *scan_work_func(void *pparam)
 			    resp_buff != exmdb_response::SUCCESS) {
 				close(pconn->sockd);
 				pconn->sockd = -1;
-				std::unique_lock sv2(g_server_lock);
+				sv_hold.lock();
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
+				sv_hold.unlock();
 			} else {
 				time(&pconn->last_time);
-				std::unique_lock sv2(g_server_lock);
+				sv_hold.lock();
 				pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), temp_list, temp_list.begin());
+				sv_hold.unlock();
 			}
 		}
 
@@ -315,11 +318,13 @@ static void *scan_work_func(void *pparam)
 			pconn->sockd = exmdb_client_connect_exmdb(pconn->psvr, FALSE);
 			if (-1 != pconn->sockd) {
 				time(&pconn->last_time);
-				std::unique_lock sv2(g_server_lock);
+				sv_hold.lock();
 				pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), temp_list, temp_list.begin());
+				sv_hold.unlock();
 			} else {
-				std::unique_lock sv2(g_server_lock);
+				sv_hold.lock();
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
+				sv_hold.unlock();
 			}
 		}
 		sleep(1);
