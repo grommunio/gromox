@@ -126,15 +126,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(listen_ip));
 		str_value = config_file_get_value(pconfig, "LISTEN_PORT");
-		if (NULL == str_value) {
-			listen_port = 0;
-			printf("[exmdb_provider]: do not listen, any "
-				"proxy connection will not be accepted\n");
-		} else {
-			listen_port = atoi(str_value);
-			printf("[exmdb_provider]: listen address is [%s]:%d\n",
-			       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
-		}
+		listen_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 5000;
+		printf("[exmdb_provider]: listen address is [%s]:%d\n",
+		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 		
 		str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 		if (NULL == str_value) {
