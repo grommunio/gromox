@@ -305,7 +305,7 @@ man_MANS = \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
-	doc/str_table.4gx doc/textmaps.4gx \
+	doc/str_filter.4gx doc/str_table.4gx doc/textmaps.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status

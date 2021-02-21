@@ -1,0 +1,60 @@
+.TH filter 4gx "" "Gromox" "Gromox admin reference"
+.SH Configuration file directives
+.SS add_service_name
+.PP
+The plugin instance will expose its function through this service function
+name. You should not generally this, because other plugins rely on certain
+fixed values.
+.PP
+Default: \fIinstance_name\fP_add (e.g. user_filter_add for libgxs_user_filter.so)
+.SS audit_interval
+.PP
+Default: \fI1minute\fP
+.SS audit_max_num
+.PP
+Default: \fI0\fP
+.SS audit_times
+.PP
+Default: \fI10\fP
+.SS grey_growing_num
+.PP
+Default: \fI0\fP
+.SS growing_num
+.PP
+The maximum number of additional string table entries on top of what the
+on-disk table file has supplied. So when the table file contains 40 entries and
+growing_num is 100, the in-memory copy of the table can hold up to 140 entries
+total.
+.PP
+Default: \fI0\fP
+.SS is_case_sensitive
+.PP
+Flag which determines whether matches should treat uppercase and lowercase
+differently or not.
+.PP
+Default: \fIfalse\fP
+.SS judge_service_name
+.PP
+The plugin instance will expose its function through this service function
+name. You should not generally this, because other plugins rely on certain
+fixed values.
+.PP
+Default: \fIinstance_name\fP_judge
+.SS query_service_name
+.PP
+The plugin instance will expose its function through this service function
+name. You should not generally this, because other plugins rely on certain
+fixed values.
+.PP
+Default: \fIinstance_name\fP_query
+.SS temp_list_size
+.PP
+Default: \fI2000\fP
+.SH Files
+.IP \(bu 4
+\fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
+of str_filter (e.g. /etc/gromox/http/user_list.cfg when http(8gx) was made to
+load libgxs_user_list.so.)
+.SH See also
+.PP
+\fBgromox\fP(7)
