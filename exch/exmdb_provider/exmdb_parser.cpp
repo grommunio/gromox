@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -1060,31 +1061,19 @@ BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
 
 int exmdb_parser_run(const char *config_path)
 {
-	BOOL b_private;
-	
-	auto plist = list_file_initd("exmdb_list.txt", config_path,
-	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
-	if (NULL == plist) {
-		printf("[exmdb_provider]: list_file_initd exmdb_list.txt: %s\n", strerror(errno));
+	std::vector<EXMDB_ITEM> xmlist;
+
+	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, xmlist);
+	if (ret < 0) {
+		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return 1;
 	}
-	auto list_num = plist->get_size();
-	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
-	for (decltype(list_num) i = 0; i < list_num; ++i) try {
-		if (0 == strcasecmp(pitem[i].type, "private")) {
-			b_private = TRUE;
-		} else if (0 == strcasecmp(pitem[i].type, "public")) {
-			b_private = FALSE;
-		} else {
-			printf("[exmdb_provider]: unknown type \"%s\", only"
-				"can be \"private\" or \"public\"!", pitem[i].type);
-			return 2;
-		}
-		if (!gx_peer_is_local(pitem[i].ip_addr))
+	for (auto &&item : xmlist) try {
+		if (!gx_peer_is_local(item.host.c_str()))
 			continue;
 		LOCAL_SVR lcl;
-		lcl.prefix = pitem[i].prefix;
-		lcl.b_private = b_private;
+		lcl.prefix = std::move(item.prefix);
+		lcl.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 		g_local_list.push_back(std::move(lcl));
 	} catch (const std::bad_alloc &) {
 		printf("[exmdb_provider]: Failed to allocate memory\n");

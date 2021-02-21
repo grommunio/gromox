@@ -7,13 +7,6 @@
 #define SOCKET_TIMEOUT										60
 #define MAX_DIGLEN											256*1024
 
-struct EXMDB_ITEM {
-	char prefix[256];
-	char type[16];
-	char ip_addr[32];
-	int port;
-};
-
 struct REQ_CONNECT {
 	char *prefix;
 	char *remote_id;

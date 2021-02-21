@@ -4,13 +4,6 @@
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 
-struct EXMDB_ITEM {
-	char prefix[256];
-	char type[16];
-	char ip_addr[32];
-	int port;
-};
-
 struct REQ_CONNECT {
 	char *prefix;
 	char *remote_id;

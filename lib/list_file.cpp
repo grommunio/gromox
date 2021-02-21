@@ -2,11 +2,13 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <cstdlib>
 #include <memory>
 #include <libHX/string.h>
+#include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/list_file.hpp>
-#include <gromox/common_types.hpp>
+#include <gromox/paths.h>
 #include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
@@ -348,6 +350,49 @@ int list_file_read_fixedstrings(const char *filename, const char *sdlist,
 		} catch (const std::bad_alloc &) {
 			return -ENOMEM;
 		}
+	}
+	return 0;
+}
+
+int list_file_read_exmdb(const char *filename, const char *sdlist,
+    std::vector<EXMDB_ITEM> &out)
+{
+	struct raw {
+		char prefix[256], type[16], host[32];
+		int port;
+	};
+	auto plist = list_file_initd(filename, sdlist, "%s:256%s:16%s:32%d", ERROR_ON_ABSENCE);
+	if (plist == nullptr && errno == ENOENT) {
+		EXMDB_ITEM e;
+		e.prefix = PKGSTATEDIR "/user";
+		e.host   = "::1";
+		e.port   = 5000;
+		e.type   = EXMDB_ITEM::EXMDB_PRIVATE;
+		out.push_back(e);
+		e.prefix = PKGSTATEDIR "/domain";
+		e.type   = EXMDB_ITEM::EXMDB_PUBLIC;
+		out.push_back(std::move(e));
+		return 0;
+	} else if (plist == nullptr) {
+		return -errno;
+	}
+	auto num = plist->get_size();
+	auto item = static_cast<const raw *>(plist->get_list());
+	for (decltype(num) i = 0; i < num; ++i) {
+		EXMDB_ITEM e;
+		if (strcmp(item[i].type, "public") == 0) {
+			e.type = EXMDB_ITEM::EXMDB_PUBLIC;
+		} else if (strcmp(item[i].type, "private") == 0) {
+			e.type = EXMDB_ITEM::EXMDB_PRIVATE;
+		} else {
+			fprintf(stderr, "list_file_read_exmdb:%s: skipping line with illegal type \"%s\"\n",
+			        filename, item[i].type);
+			continue;
+		}
+		e.prefix = item[i].prefix;
+		e.host   = item[i].host;
+		e.port   = item[i].port;
+		out.push_back(std::move(e));
 	}
 	return 0;
 }

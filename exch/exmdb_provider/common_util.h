@@ -15,13 +15,6 @@
 #define MAX_DAMS_PER_RULE_FOLDER							128
 #define MAX_FAI_COUNT										1024
 
-struct EXMDB_ITEM {
-	char prefix[256];
-	char type[16];
-	char ip_addr[32];
-	int port;
-};
-
 struct LOCAL_SVR {
 	std::string prefix;
 	BOOL b_private;

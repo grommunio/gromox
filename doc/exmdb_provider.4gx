@@ -89,6 +89,15 @@ The type of mail stores that are served beneath the prefix. This must either be
 The IPv6 (or v4-mapped) address of the midb server to use for this prefix.
 .IP \(bu 4
 The port number.
+.PP
+In the absence of exmdb_list.txt, two implicit default entries are used:
+.RS 4
+.PP
+.nf
+/var/lib/gromox/user private ::1 5000
+/var/lib/gromox/domain public ::1 5000
+.fi
+.RE
 .SH Network protocol
 .PP
 The transmissions on the socket are simple concatenations of protocol data

@@ -481,32 +481,20 @@ void exmdb_client_init(int conn_num, int threads_num)
 
 int exmdb_client_run(const char *config_path)
 {
-	BOOL b_private;
-	
-	auto plist = list_file_initd("exmdb_list.txt", config_path,
-	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
-	if (NULL == plist) {
-		printf("[exmdb_provider]: list_file_initd exmdb_list.txt: %s\n", strerror(errno));
+	std::vector<EXMDB_ITEM> xmlist;
+	size_t i = 0;
+
+	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, xmlist);
+	if (ret < 0) {
+		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return 1;
 	}
 	g_notify_stop = FALSE;
-	auto list_num = plist->get_size();
-	auto pitem = static_cast<EXMDB_ITEM * >(plist->get_list());
-	for (decltype(list_num) i = 0; i < list_num; ++i) {
-		if (0 == strcasecmp(pitem[i].type, "private")) {
-			b_private = TRUE;
-		} else if (0 == strcasecmp(pitem[i].type, "public")) {
-			b_private = FALSE;
-		} else {
-			printf("[exmdb_provider]: unknown type \"%s\", only"
-				"can be \"private\" or \"public\"!", pitem[i].type);
-			g_notify_stop = TRUE;
-			return 2;
-		}
-		if (gx_peer_is_local(pitem[i].ip_addr)) try {
+	for (auto &&item : xmlist) {
+		if (gx_peer_is_local(item.host.c_str())) try {
 			LOCAL_SVR lcl;
-			lcl.prefix = pitem[i].prefix;
-			lcl.b_private = b_private;
+			lcl.prefix = std::move(item.prefix);
+			lcl.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 			g_local_list.push_back(std::move(lcl));
 			continue;
 		} catch (const std::bad_alloc &) {
@@ -524,10 +512,10 @@ int exmdb_client_run(const char *config_path)
 		try {
 			g_server_list.push_back(REMOTE_SVR{});
 			auto &srv = g_server_list.back();
-			srv.prefix = pitem[i].prefix;
-			srv.b_private = b_private;
-			srv.host = pitem[i].ip_addr;
-			srv.port = pitem[i].port;
+			srv.prefix = std::move(item.prefix);
+			srv.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
+			srv.host = std::move(item.host);
+			srv.port = item.port;
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_provider]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;
@@ -571,15 +559,15 @@ int exmdb_client_run(const char *config_path)
 				return 8;
 			}
 			char buf[32];
-			snprintf(buf, sizeof(buf), "exmdbcl/%u", i);
+			snprintf(buf, sizeof(buf), "exmdbcl/%zu", i);
 			pthread_setname_np(ag.thr_id, buf);
 		}
+		++i;
 	}
-	plist.reset();
 	if (0 == g_conn_num) {
 		return 0;
 	}
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_provider]: failed to create proxy scan thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;

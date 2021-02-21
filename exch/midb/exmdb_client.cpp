@@ -7,8 +7,10 @@
 #include <mutex>
 #include <string>
 #include <utility>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <libHX/string.h>
 #include "exmdb_client.h"
@@ -474,25 +476,25 @@ void exmdb_client_init(int conn_num, int threads_num)
 
 int exmdb_client_run(const char *configdir)
 {
-	auto plist = list_file_initd("exmdb_list.txt", configdir,
-	             /* EXMIDB_ITEM */ "%s:256%s:16%s:32%d");
-	if (NULL == plist) {
-		printf("[exmdb_client]: list_file_initd exmdb_list.txt: %s\n", strerror(errno));
+	size_t i = 0;
+	std::vector<EXMDB_ITEM> xmlist;
+
+	auto ret = list_file_read_exmdb("exmdb_list.txt", configdir, xmlist);
+	if (ret < 0) {
+		printf("[exmdb_client]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return 1;
 	}
 	g_notify_stop = FALSE;
-	auto list_num = plist->get_size();
-	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
-	for (decltype(list_num) i = 0; i < list_num; ++i) {
-		if (0 != strcasecmp(pitem[i].type, "private") ||
-		    !gx_peer_is_local(pitem[i].ip_addr))
+	for (auto &&item : xmlist) {
+		if (item.type != EXMDB_ITEM::EXMDB_PRIVATE ||
+		    !gx_peer_is_local(item.host.c_str()))
 			continue;	
 		try {
 			g_server_list.push_back(REMOTE_SVR{});
 			auto &srv = g_server_list.back();
-			srv.prefix = pitem[i].prefix;
-			srv.host = pitem[i].ip_addr;
-			srv.port = pitem[i].port;
+			srv.prefix = std::move(item.prefix);
+			srv.host = std::move(item.host);
+			srv.port = item.port;
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;
@@ -536,14 +538,15 @@ int exmdb_client_run(const char *configdir)
 				return 8;
 			}
 			char buf[32];
-			snprintf(buf, sizeof(buf), "exmdbcl/%u", i);
+			snprintf(buf, sizeof(buf), "exmdbcl/%zu", i);
 			pthread_setname_np(ag.thr_id, buf);
 		}
+		++i;
 	}
 	if (0 == g_conn_num) {
 		return 0;
 	}
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_client]: failed to create proxy scan thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;

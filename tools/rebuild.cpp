@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <utility>
+#include <vector>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
@@ -26,13 +28,6 @@
 #define SOCKET_TIMEOUT								60
 
 using namespace gromox;
-
-struct EXMDB_ITEM {
-	char prefix[256];
-	char type[16];
-	char ip_addr[32];
-	int port;
-};
 
 struct EXMDB_NODE {
 	DOUBLE_LIST_NODE node;
@@ -211,7 +206,6 @@ static BOOL exmdb_client_write_socket(
 
 static int connect_exmdb(const char *dir)
 {
-	int prefix_len;
 	int process_id;
 	BINARY tmp_bin;
 	EXMDB_NODE *pexnode;
@@ -224,20 +218,18 @@ static int connect_exmdb(const char *dir)
 	for (pnode=double_list_get_head(&g_exmdb_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_exmdb_list, pnode)) {
 		pexnode = (EXMDB_NODE*)pnode->pdata;
-		prefix_len = strlen(pexnode->exmdb_info.prefix);
-		if (0 == strncmp(pexnode->exmdb_info.prefix, dir, prefix_len)) {
+		if (strncmp(pexnode->exmdb_info.prefix.c_str(), dir, pexnode->exmdb_info.prefix.size()) == 0)
 			break;
-		}
 	}
 	if (NULL == pnode) {
 		return -1;
 	}
-	int sockd = gx_inet_connect(pexnode->exmdb_info.ip_addr, pexnode->exmdb_info.port, 0);
+	int sockd = gx_inet_connect(pexnode->exmdb_info.host.c_str(), pexnode->exmdb_info.port, 0);
 	if (sockd < 0)
 	        return -1;
 	process_id = getpid();
 	sprintf(remote_id, "freebusy:%d", process_id);
-	request.prefix = pexnode->exmdb_info.prefix;
+	request.prefix    = deconst(pexnode->exmdb_info.prefix.c_str());
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
 	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
@@ -257,49 +249,35 @@ static int connect_exmdb(const char *dir)
 	response_code = tmp_bin.pb[0];
 	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
-			fprintf(stderr, "response format error when connect to "
-				"%s:%d for prefix \"%s\"\n", pexnode->exmdb_info.ip_addr,
-				pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
+			fprintf(stderr, "response format error during connect to "
+				"[%s]:%hu/%s\n", pexnode->exmdb_info.host.c_str(),
+				pexnode->exmdb_info.port, pexnode->exmdb_info.prefix.c_str());
 			close(sockd);
 			return -1;
 		}
 		return sockd;
 	}
+	fprintf(stderr, "Failed to connect to [%s]:%hu/%s",
+	        pexnode->exmdb_info.host.c_str(), pexnode->exmdb_info.port,
+	        pexnode->exmdb_info.prefix.c_str());
 	switch (response_code) {
 	case exmdb_response::ACCESS_DENY:
-		fprintf(stderr, "Failed to connect to %s:%d for prefix "
-			"\"%s\", access denied.\n", pexnode->exmdb_info.ip_addr,
-			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
+		fprintf(stderr, ": access denied\n");
 		break;
 	case exmdb_response::MAX_REACHED:
-		fprintf(stderr, "Failed to connect to %s:%d for prefix"
-			" \"%s\",maximum connections reached in server!\n",
-			pexnode->exmdb_info.ip_addr, pexnode->exmdb_info.port,
-			pexnode->exmdb_info.prefix);
+		fprintf(stderr, ": maximum connections reached in server\n");
 		break;
 	case exmdb_response::LACK_MEMORY:
-		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
-			"server out of memory!\n", pexnode->exmdb_info.ip_addr,
-			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
+		fprintf(stderr, ": server out of memory\n");
 		break;
 	case exmdb_response::MISCONFIG_PREFIX:
-		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
-			"server does not serve the prefix, configuation file of "
-			"client or server may be incorrect!", pexnode->exmdb_info.ip_addr,
-			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
+		fprintf(stderr, ": prefix not served by server\n");
 		break;
 	case exmdb_response::MISCONFIG_MODE:
-		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
-			" work mode with the prefix in server is different from "
-			"the mode in client, configuation file of client or server"
-			" may be incorrect!", pexnode->exmdb_info.ip_addr,
-			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
+		fprintf(stderr, ": misconfigured prefix mode\n");
 		break;
 	default:
-		fprintf(stderr, "Failed to connect to %s:%d for prefix "
-			"\"%s\", error code %d!\n", pexnode->exmdb_info.ip_addr,
-			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix,
-			(int)response_code);
+		fprintf(stderr, ": error code %d\n", response_code);
 		break;
 	}
 	close(sockd);
@@ -338,7 +316,6 @@ static BOOL exmdb_client_unload_store(const char *dir)
 
 int main(int argc, const char **argv)
 {
-	int i;
 	char *err_msg;
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
@@ -610,24 +587,21 @@ int main(int argc, const char **argv)
 	sqlite3_shutdown();
 	
 	double_list_init(&g_exmdb_list);
-	auto plist = list_file_initd("exmdb_list.txt", configdir,
-	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d");
-	if (NULL == plist) {
-		fprintf(stderr, "list_file_initd exmdb_list.txt: %s\n", strerror(errno));
+	std::vector<EXMDB_ITEM> xmlist;
+	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, xmlist);
+	if (ret < 0) {
+		fprintf(stderr, "list_file_read_exmdb: %s\n", strerror(-ret));
 		return 11;
 	}
-	auto list_num = plist->get_size();
-	auto pitem = static_cast<EXMDB_ITEM *>(plist->get_list());
-	for (i=0; i<list_num; i++) {
-		if (0 != strcasecmp(pitem[i].type, "private")) {
+	for (auto &&item : xmlist) {
+		if (item.type != EXMDB_ITEM::EXMDB_PRIVATE)
 			continue;
-		}
-		pexnode = static_cast<EXMDB_NODE *>(malloc(sizeof(EXMDB_NODE)));
+		pexnode = new(std::nothrow) EXMDB_NODE;
 		if (NULL == pexnode) {
 			continue;
 		}
 		pexnode->node.pdata = pexnode;
-		memcpy(&pexnode->exmdb_info, pitem + i, sizeof(EXMDB_ITEM));
+		pexnode->exmdb_info = std::move(item);
 		double_list_append_as_tail(&g_exmdb_list, &pexnode->node);
 	}
 	if (FALSE == exmdb_client_unload_store(argv[1])) {
