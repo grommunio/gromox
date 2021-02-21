@@ -364,12 +364,12 @@ int list_file_read_exmdb(const char *filename, const char *sdlist,
 	auto plist = list_file_initd(filename, sdlist, "%s:256%s:16%s:32%d", ERROR_ON_ABSENCE);
 	if (plist == nullptr && errno == ENOENT) {
 		EXMDB_ITEM e;
-		e.prefix = PKGSTATEDIR "/user";
+		e.prefix = PKGSTATEDIR "/user/";
 		e.host   = "::1";
 		e.port   = 5000;
 		e.type   = EXMDB_ITEM::EXMDB_PRIVATE;
 		out.push_back(e);
-		e.prefix = PKGSTATEDIR "/domain";
+		e.prefix = PKGSTATEDIR "/domain/";
 		e.type   = EXMDB_ITEM::EXMDB_PUBLIC;
 		out.push_back(std::move(e));
 		return 0;

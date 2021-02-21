@@ -25,13 +25,21 @@ connections to different servers.
 midb_list.txt specifies how to map from this namespace to midb servers.
 Each line in this file consists of 3 columns separated by whitespace:
 .IP \(bu 4
-String used for prefix-matching a home directory location.
+Initial prefix to match a user's exmdb home directory on. The pattern should
+almost always end in a '/' character, otherwise a prefix of "/home" is able to
+match a userdir of "/home2/username" as well, which may be undesired.
 .IP \(bu 4
 The IPv6 (or v4-mapped) address of the midb server to use for this prefix.
 .IP \(bu 4
 The port number.
 .PP
-In the absence of midb_list.txt, an implicit default entry "/ ::1 5555" is used.
+In the absence of midb_list.txt, an implicit default entry is used:
+.RS 4
+.PP
+.nf
+/ ::1 5555
+.fi
+.RE
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
