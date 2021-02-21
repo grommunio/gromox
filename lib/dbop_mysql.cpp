@@ -369,7 +369,7 @@ static const char tbl_members_top[] =
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `class_id_2` (`class_id`,`username`),"
 "  KEY `username` (`username`),"
-"  KEY `class_id` (`class_id`),"
+"  KEY `class_id` (`class_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_mlists_top[] =
