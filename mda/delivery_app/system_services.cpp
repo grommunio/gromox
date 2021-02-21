@@ -22,7 +22,7 @@ int system_services_run()
 	} \
 } while (false)
 	E(system_services_log_info, "log_info");
-	E(system_services_check_domain, "check_domain");
+	E(system_services_check_domain, "domain_list_query");
 	return 0;
 #undef E
 }
@@ -36,6 +36,6 @@ int system_services_run()
 int system_services_stop()
 {
 	service_release("log_info", "system");
-	service_release("check_domain", "system");
+	service_release("domain_list_query", "system");
 	return 0;
 }

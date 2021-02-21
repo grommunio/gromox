@@ -146,7 +146,7 @@ int bounce_producer_run(const char *datadir)
 	} \
 } while (false)
 
-	E(bounce_producer_check_domain, "check_domain");
+	E(bounce_producer_check_domain, "domain_list_query");
 	E(bounce_producer_get_lang, "get_user_lang");
 	E(bounce_producer_get_timezone, "get_timezone");
 	E(bounce_producer_lang_to_charset, "lang_to_charset");

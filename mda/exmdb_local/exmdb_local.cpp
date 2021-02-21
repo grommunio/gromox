@@ -106,7 +106,7 @@ int exmdb_local_run()
 	} \
 } while (false)
 
-	E(exmdb_local_check_domain, "check_domain");
+	E(exmdb_local_check_domain, "domain_list_query");
 	E(exmdb_local_get_user_info, "get_user_info");
 	E(exmdb_local_get_lang, "get_user_lang");
 	E(exmdb_local_get_timezone, "get_timezone");

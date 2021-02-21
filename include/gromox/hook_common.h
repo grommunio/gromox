@@ -93,7 +93,7 @@ DECLARE_API(extern);
 	query_service1(put_context); \
 	query_service1(enqueue_context); \
 	query_service1(throw_context); \
-	query_service1(check_domain); \
+	query_service2("domain_list_query", check_domain); \
 	query_service1(is_domainlist_valid);
 #define HOOK_ENTRY(s) BOOL HOOK_LibMain(int r, void **p) { return (s)((r), (p)); }
 

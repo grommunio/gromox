@@ -111,7 +111,7 @@ DECLARE_API(extern);
 	query_service1(get_extra_num); \
 	query_service1(get_extra_tag); \
 	query_service1(get_extra_value); \
-	query_service1(check_domain); \
+	query_service2("domain_list_query", check_domain); \
 	query_service1(is_domainlist_valid);
 #define FLH_ENTRY(s) BOOL FLH_LibMain(int r, void **p) { return (s)((r), (p)); }
 
