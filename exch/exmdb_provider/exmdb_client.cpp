@@ -35,11 +35,9 @@
 #include <poll.h>
 
 struct REMOTE_CONN;
-struct REMOTE_SVR {
+struct REMOTE_SVR : public EXMDB_ITEM {
+	REMOTE_SVR(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
 	std::list<REMOTE_CONN> conn_list;
-	std::string host, prefix;
-	BOOL b_private;
-	uint16_t port;
 };
 
 struct REMOTE_CONN {
@@ -72,7 +70,7 @@ static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static std::list<REMOTE_CONN> g_lost_list;
 static std::list<AGENT_THREAD> g_agent_list;
-static std::vector<LOCAL_SVR> g_local_list;
+static std::vector<EXMDB_ITEM> g_local_list;
 static std::list<REMOTE_SVR> g_server_list;
 static std::mutex g_server_lock;
 
@@ -188,7 +186,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		request.call_id = exmdb_callid::CONNECT;
 		request.payload.connect.prefix = deconst(pserver->prefix.c_str());
 		request.payload.connect.remote_id = remote_id;
-		request.payload.connect.b_private = pserver->b_private;
+		request.payload.connect.b_private = pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	} else {
 		request.call_id = exmdb_callid::LISTEN_NOTIFICATION;
 		request.payload.listen_notification.remote_id = remote_id;
@@ -203,7 +201,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		return -1;
 	}
 	free(tmp_bin.pb);
-	exmdb_server_build_environment(FALSE, pserver->b_private, NULL);
+	exmdb_server_build_environment(false, pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false, nullptr);
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		exmdb_server_free_environment();
 		close(sockd);
@@ -400,8 +398,7 @@ static void *thread_work_func(void *pparam)
 			if (offset == buff_len) {
 				tmp_bin.cb = buff_len;
 				tmp_bin.pb = buff;
-				exmdb_server_build_environment(FALSE,
-					pagent->pserver->b_private, NULL);
+				exmdb_server_build_environment(false, pagent->pserver->type == EXMDB_ITEM::EXMDB_PRIVATE, nullptr);
 				if (EXT_ERR_SUCCESS == exmdb_ext_pull_db_notify(
 					&tmp_bin, &notify)) {
 					resp_code = exmdb_response::SUCCESS;
@@ -492,10 +489,7 @@ int exmdb_client_run(const char *config_path)
 	g_notify_stop = FALSE;
 	for (auto &&item : xmlist) {
 		if (gx_peer_is_local(item.host.c_str())) try {
-			LOCAL_SVR lcl;
-			lcl.prefix = std::move(item.prefix);
-			lcl.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-			g_local_list.push_back(std::move(lcl));
+			g_local_list.push_back(std::move(item));
 			continue;
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_provider]: Failed to allocate memory\n");
@@ -510,12 +504,7 @@ int exmdb_client_run(const char *config_path)
 		}
 
 		try {
-			g_server_list.push_back(REMOTE_SVR{});
-			auto &srv = g_server_list.back();
-			srv.prefix = std::move(item.prefix);
-			srv.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-			srv.host = std::move(item.host);
-			srv.port = item.port;
+			g_server_list.emplace_back(std::move(item));
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_provider]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;
@@ -600,10 +589,10 @@ int exmdb_client_stop()
 BOOL exmdb_client_check_local(const char *prefix, BOOL *pb_private)
 {
 	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),
-	         [&](const LOCAL_SVR &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
+	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
 	if (i == g_local_list.cend())
 		return false;
-	*pb_private = i->b_private;
+	*pb_private = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	return TRUE;
 }
 

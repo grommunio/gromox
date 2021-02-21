@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>
@@ -38,11 +39,10 @@
 
 using cookie_jar = std::map<std::string, std::string, std::less<>>;
 
-struct EXMDB_NODE {
-	DOUBLE_LIST_NODE node;
-	int sockd;
-	time_t last_time;
-	EXMDB_ITEM exmdb_info;
+struct EXMDB_NODE : public EXMDB_ITEM {
+	EXMDB_NODE(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
+	int sockd = -1;
+	time_t last_time{};
 };
 
 struct CONNECT_REQUEST {
@@ -101,7 +101,7 @@ using namespace gromox;
 static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;
-static DOUBLE_LIST g_exmdb_list;
+static std::vector<EXMDB_NODE> g_exmdb_list;
 static std::shared_ptr<ICAL_COMPONENT> g_tz_component;
 
 static int exmdb_client_push_connect_request(
@@ -454,40 +454,27 @@ static BOOL exmdb_client_query_table(int sockd, const char *dir,
 
 static void cache_connection(const char *dir, int sockd)
 {
-	EXMDB_NODE *pexnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_exmdb_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_exmdb_list, pnode)) {
-		pexnode = (EXMDB_NODE*)pnode->pdata;
-		if (strncmp(pexnode->exmdb_info.prefix.c_str(), dir, pexnode->exmdb_info.prefix.size()) == 0) {
-			pexnode->sockd = sockd;
-			time(&pexnode->last_time);
-			break;
-		}
-	}
+	auto i = std::find_if(g_exmdb_list.begin(), g_exmdb_list.end(),
+	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
+	if (i == g_exmdb_list.end())
+		return;
+	i->sockd = sockd;
+	time(&i->last_time);
 }
 
 static int connect_exmdb(const char *dir)
 {
 	int process_id;
 	BINARY tmp_bin;
-	EXMDB_NODE *pexnode;
 	char remote_id[128];
 	char tmp_buff[1024];
 	uint8_t response_code;
 	CONNECT_REQUEST request;
-	DOUBLE_LIST_NODE *pnode;
 	
-	for (pnode=double_list_get_head(&g_exmdb_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_exmdb_list, pnode)) {
-		pexnode = (EXMDB_NODE*)pnode->pdata;
-		if (strncmp(pexnode->exmdb_info.prefix.c_str(), dir, pexnode->exmdb_info.prefix.size()) == 0)
-			break;
-	}
-	if (NULL == pnode) {
+	auto pexnode = std::find_if(g_exmdb_list.begin(), g_exmdb_list.end(),
+	               [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
+	if (pexnode == g_exmdb_list.end())
 		return -1;
-	}
 	if (-1 != pexnode->sockd) {
 		if (time(NULL) - pexnode->last_time > SOCKET_TIMEOUT - 3) {
 			close(pexnode->sockd);
@@ -496,12 +483,12 @@ static int connect_exmdb(const char *dir)
 			return pexnode->sockd;
 		}
 	}
-	int sockd = gx_inet_connect(pexnode->exmdb_info.host.c_str(), pexnode->exmdb_info.port, 0);
+	int sockd = gx_inet_connect(pexnode->host.c_str(), pexnode->port, 0);
 	if (sockd < 0)
 	        return -1;
 	process_id = getpid();
 	sprintf(remote_id, "freebusy:%d", process_id);
-	request.prefix    = deconst(pexnode->exmdb_info.prefix.c_str());
+	request.prefix    = deconst(pexnode->prefix.c_str());
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
 	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
@@ -522,16 +509,15 @@ static int connect_exmdb(const char *dir)
 	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			fprintf(stderr, "response format error during connect to "
-				"[%s]:%hu/%s\n", pexnode->exmdb_info.host.c_str(),
-				pexnode->exmdb_info.port, pexnode->exmdb_info.prefix.c_str());
+				"[%s]:%hu/%s\n", pexnode->host.c_str(),
+				pexnode->port, pexnode->prefix.c_str());
 			close(sockd);
 			return -1;
 		}
 		return sockd;
 	}
 	fprintf(stderr, "Failed to connect to [%s]:%hu/%s",
-	        pexnode->exmdb_info.host.c_str(), pexnode->exmdb_info.port,
-	        pexnode->exmdb_info.prefix.c_str());
+	        pexnode->host.c_str(), pexnode->port, pexnode->prefix.c_str());
 	switch (response_code) {
 	case exmdb_response::ACCESS_DENY:
 		fprintf(stderr, ": access deniedn\n");
@@ -2165,7 +2151,6 @@ int main(int argc, const char **argv)
 	const char *pbias;
 	char tmp_buff[128];
 	ICAL_TIME itime_end;
-	EXMDB_NODE *pexnode;
 	const char *pstdbias;
 	const char *pstdtime;
 	const char *pdtlbias;
@@ -2184,24 +2169,19 @@ int main(int argc, const char **argv)
 	const char *pdtldayofweek;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	double_list_init(&g_exmdb_list);
 	std::vector<EXMDB_ITEM> xmlist;
 	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, xmlist);
 	if (ret < 0) {
 		fprintf(stderr, "list_file_read_exmdb: %s\n", strerror(-ret));
 		exit(1);
 	}
-	for (auto &&item : xmlist) {
+	for (auto &&item : xmlist) try {
 		if (item.type != EXMDB_ITEM::EXMDB_PRIVATE)
 			continue;
-		pexnode = new(std::nothrow) EXMDB_NODE;
-		if (NULL == pexnode) {
-			continue;
-		}
-		pexnode->node.pdata = pexnode;
-		pexnode->sockd = -1;
-		pexnode->exmdb_info = std::move(item);
-		double_list_append_as_tail(&g_exmdb_list, &pexnode->node);
+		auto &n = g_exmdb_list.emplace_back(std::move(item));
+		n.sockd = -1;
+	} catch (const std::bad_alloc &) {
+		return -ENOMEM;
 	}
 	
 	line = NULL;

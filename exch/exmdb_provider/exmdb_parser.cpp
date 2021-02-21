@@ -31,7 +31,7 @@
 
 static int g_max_threads;
 static int g_max_routers;
-static std::vector<LOCAL_SVR> g_local_list;
+static std::vector<EXMDB_ITEM> g_local_list;
 static DOUBLE_LIST g_router_list;
 static DOUBLE_LIST g_connection_list;
 static pthread_mutex_t g_router_lock;
@@ -82,10 +82,10 @@ EXMDB_CONNECTION* exmdb_parser_get_connection()
 static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
 {
 	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),
-	         [&](const LOCAL_SVR &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
+	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
 	if (i == g_local_list.cend())
 		return false;
-	*pb_private = i->b_private;
+	*pb_private = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	return TRUE;
 }
 
@@ -1061,24 +1061,14 @@ BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
 
 int exmdb_parser_run(const char *config_path)
 {
-	std::vector<EXMDB_ITEM> xmlist;
-
-	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, xmlist);
+	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, g_local_list);
 	if (ret < 0) {
 		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return 1;
 	}
-	for (auto &&item : xmlist) try {
-		if (!gx_peer_is_local(item.host.c_str()))
-			continue;
-		LOCAL_SVR lcl;
-		lcl.prefix = std::move(item.prefix);
-		lcl.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-		g_local_list.push_back(std::move(lcl));
-	} catch (const std::bad_alloc &) {
-		printf("[exmdb_provider]: Failed to allocate memory\n");
-		return 3;
-	}
+	g_local_list.erase(std::remove_if(g_local_list.begin(), g_local_list.end(),
+		[&](const EXMDB_ITEM &s) { return !gx_peer_is_local(s.host.c_str()); }),
+		g_local_list.end());
 	return 0;
 }
 

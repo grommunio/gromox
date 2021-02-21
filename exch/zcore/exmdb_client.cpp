@@ -34,11 +34,9 @@
 #include <poll.h>
 
 struct REMOTE_CONN;
-struct REMOTE_SVR {
+struct REMOTE_SVR : public EXMDB_ITEM {
+	REMOTE_SVR(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
 	std::list<REMOTE_CONN> conn_list;
-	std::string host, prefix;
-	BOOL b_private;
-	uint16_t port;
 };
 
 struct REMOTE_CONN {
@@ -181,7 +179,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		request.call_id = exmdb_callid::CONNECT;
 		request.payload.connect.prefix = deconst(pserver->prefix.c_str());
 		request.payload.connect.remote_id = remote_id;
-		request.payload.connect.b_private = pserver->b_private;
+		request.payload.connect.b_private = pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	} else {
 		request.call_id = exmdb_callid::LISTEN_NOTIFICATION;
 		request.payload.listen_notification.remote_id = remote_id;
@@ -485,12 +483,7 @@ int exmdb_client_run(const char *configdir)
 	g_notify_stop = FALSE;
 	for (auto &&item : xmlist) {
 		try {
-			g_server_list.push_back(REMOTE_SVR{});
-			auto &srv = g_server_list.back();
-			srv.prefix = std::move(item.prefix);
-			srv.host = std::move(item.host);
-			srv.port = item.port;
-			srv.b_private = item.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
+			g_server_list.emplace_back(std::move(item));
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <utility>
 #include <vector>
 #include <libHX/option.h>
@@ -29,11 +30,6 @@
 
 using namespace gromox;
 
-struct EXMDB_NODE {
-	DOUBLE_LIST_NODE node;
-	EXMDB_ITEM exmdb_info;
-};
-
 struct CONNECT_REQUEST {
 	char *prefix;
 	char *remote_id;
@@ -44,7 +40,7 @@ struct UNLOAD_STORE_REQUEST {
 	const char *dir;
 };
 
-static DOUBLE_LIST g_exmdb_list;
+static std::vector<EXMDB_ITEM> g_exmdb_list;
 static char *opt_config_file, *opt_datadir;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -208,28 +204,21 @@ static int connect_exmdb(const char *dir)
 {
 	int process_id;
 	BINARY tmp_bin;
-	EXMDB_NODE *pexnode;
 	char remote_id[128];
 	char tmp_buff[1024];
 	uint8_t response_code;
 	CONNECT_REQUEST request;
-	DOUBLE_LIST_NODE *pnode;
 	
-	for (pnode=double_list_get_head(&g_exmdb_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_exmdb_list, pnode)) {
-		pexnode = (EXMDB_NODE*)pnode->pdata;
-		if (strncmp(pexnode->exmdb_info.prefix.c_str(), dir, pexnode->exmdb_info.prefix.size()) == 0)
-			break;
-	}
-	if (NULL == pnode) {
+	auto pexnode = std::find_if(g_exmdb_list.cbegin(), g_exmdb_list.cend(),
+	               [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
+	if (pexnode == g_exmdb_list.cend())
 		return -1;
-	}
-	int sockd = gx_inet_connect(pexnode->exmdb_info.host.c_str(), pexnode->exmdb_info.port, 0);
+	int sockd = gx_inet_connect(pexnode->host.c_str(), pexnode->port, 0);
 	if (sockd < 0)
 	        return -1;
 	process_id = getpid();
 	sprintf(remote_id, "freebusy:%d", process_id);
-	request.prefix    = deconst(pexnode->exmdb_info.prefix.c_str());
+	request.prefix    = deconst(pexnode->prefix.c_str());
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
 	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
@@ -250,16 +239,15 @@ static int connect_exmdb(const char *dir)
 	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			fprintf(stderr, "response format error during connect to "
-				"[%s]:%hu/%s\n", pexnode->exmdb_info.host.c_str(),
-				pexnode->exmdb_info.port, pexnode->exmdb_info.prefix.c_str());
+				"[%s]:%hu/%s\n", pexnode->host.c_str(),
+				pexnode->port, pexnode->prefix.c_str());
 			close(sockd);
 			return -1;
 		}
 		return sockd;
 	}
 	fprintf(stderr, "Failed to connect to [%s]:%hu/%s",
-	        pexnode->exmdb_info.host.c_str(), pexnode->exmdb_info.port,
-	        pexnode->exmdb_info.prefix.c_str());
+	        pexnode->host.c_str(), pexnode->port, pexnode->prefix.c_str());
 	switch (response_code) {
 	case exmdb_response::ACCESS_DENY:
 		fprintf(stderr, ": access denied\n");
@@ -319,7 +307,6 @@ int main(int argc, const char **argv)
 	char *err_msg;
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
-	EXMDB_NODE *pexnode;
 	const char *presult;
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
@@ -586,24 +573,14 @@ int main(int argc, const char **argv)
 	sqlite3_close(psqlite);
 	sqlite3_shutdown();
 	
-	double_list_init(&g_exmdb_list);
-	std::vector<EXMDB_ITEM> xmlist;
-	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, xmlist);
+	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, g_exmdb_list);
 	if (ret < 0) {
 		fprintf(stderr, "list_file_read_exmdb: %s\n", strerror(-ret));
 		return 11;
 	}
-	for (auto &&item : xmlist) {
-		if (item.type != EXMDB_ITEM::EXMDB_PRIVATE)
-			continue;
-		pexnode = new(std::nothrow) EXMDB_NODE;
-		if (NULL == pexnode) {
-			continue;
-		}
-		pexnode->node.pdata = pexnode;
-		pexnode->exmdb_info = std::move(item);
-		double_list_append_as_tail(&g_exmdb_list, &pexnode->node);
-	}
+	g_exmdb_list.erase(std::remove_if(g_exmdb_list.begin(), g_exmdb_list.end(),
+		[&](const EXMDB_ITEM &s) { return s.type != EXMDB_ITEM::EXMDB_PRIVATE; }),
+		g_exmdb_list.end());
 	if (FALSE == exmdb_client_unload_store(argv[1])) {
 		printf("fail to unload store\n");
 		return 12;

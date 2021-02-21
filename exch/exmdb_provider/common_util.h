@@ -15,11 +15,6 @@
 #define MAX_DAMS_PER_RULE_FOLDER							128
 #define MAX_FAI_COUNT										1024
 
-struct LOCAL_SVR {
-	std::string prefix;
-	BOOL b_private;
-};
-
 #define ID_TAG_BODY 												0x00010014
 #define ID_TAG_BODY_STRING8											0x00020014
 #define ID_TAG_HTML													0x00040014

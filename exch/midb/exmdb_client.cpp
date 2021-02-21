@@ -34,10 +34,9 @@
 #include <poll.h>
 
 struct REMOTE_CONN;
-struct REMOTE_SVR {
+struct REMOTE_SVR : public EXMDB_ITEM {
+	REMOTE_SVR(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
 	std::list<REMOTE_CONN> conn_list;
-	std::string host, prefix;
-	uint16_t port;
 };
 
 struct REMOTE_CONN {
@@ -490,11 +489,7 @@ int exmdb_client_run(const char *configdir)
 		    !gx_peer_is_local(item.host.c_str()))
 			continue;	
 		try {
-			g_server_list.push_back(REMOTE_SVR{});
-			auto &srv = g_server_list.back();
-			srv.prefix = std::move(item.prefix);
-			srv.host = std::move(item.host);
-			srv.port = item.port;
+			g_server_list.emplace_back(std::move(item));
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");
 			g_notify_stop = TRUE;
