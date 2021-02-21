@@ -1,0 +1,34 @@
+.TH log_plugin 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+log_plugin \(em service plugin that implements a log buffer
+.SH Description
+.PP
+Log messages sent to "log_plugin" will be buffered and written only to a
+file when either the in-memory buffer is full or when the daily logrotation
+event happens.
+.PP
+To make use of log_plugin, you need to set and override
+\fBservice_plugin_list\fP in the respective daemon's configuration.
+.SH Configuration file directives
+.SS files_num
+.PP
+The maximum number of days to keep past log files for.
+.PP
+Default: \fI30\fP
+.SS log_cache_size
+.PP
+Default: \fI1M\fP
+.SS log_file_name
+.PP
+The basic filename for the log file. The rotated files will have a name derived
+from this, in form the style of xyz.txt => xyz-YYYYMMDD.txt.
+You should always specify an absolute path here.
+.PP
+Default: \fIlog.txt\fP
+.SS log_level
+.PP
+Default: \fI0\fP
+.SH See also
+.PP
+\fBgromox\fP(7)

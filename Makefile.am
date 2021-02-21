@@ -298,6 +298,7 @@ man_MANS = \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
+	doc/log_plugin.4gx doc/logthru.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_proxy.4gx doc/mod_rewrite.4gx \
