@@ -427,10 +427,13 @@ static BOOL svc_str_table(int reason, void **ppdata)
 			       tmp_path, strerror(errno));
 			return false;
 		}
-		auto query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
-		auto add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
-		auto remove_name = config_file_get_value(pfile, "REMOVE_SERVICE_NAME");
-		auto str_value = config_file_get_value(pfile, "GROWING_NUM");
+		auto str_value = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		std::string query_name = str_value != nullptr ? str_value : file_name + "_query"s;
+		str_value = config_file_get_value(pfile, "ADD_SERVICE_NAME");
+		std::string add_name = str_value != nullptr ? str_value : file_name + "_add"s;
+		str_value = config_file_get_value(pfile, "REMOVE_SERVICE_NAME");
+		std::string remove_name = str_value != nullptr ? str_value : file_name + "_remove"s;
+		str_value = config_file_get_value(pfile, "GROWING_NUM");
 		if (str_value == nullptr) {
 			growing_num = 100;
 			config_file_set_value(pfile, "GROWING_NUM", "100");
@@ -466,19 +469,19 @@ static BOOL svc_str_table(int reason, void **ppdata)
 			printf("[%s]: failed to run the module\n", file_name);
 			return FALSE;
 		}
-		if (query_name != nullptr && !register_service(query_name, str_table_query)) {
+		if (query_name.size() > 0 && !register_service(query_name.c_str(), str_table_query)) {
 			printf("[%s]: failed to register \"%s\" service\n",
-			       file_name, query_name);
+			       file_name, query_name.c_str());
 			return false;
 		}
-		if (add_name != nullptr && !register_service(add_name, str_table_add)) {
+		if (add_name.size() > 0 && !register_service(add_name.c_str(), str_table_add)) {
 			printf("[%s]: failed to register \"%s\" service\n",
-			       file_name, add_name);
+			       file_name, add_name.c_str());
 			return false;
 		}
-		if (remove_name != nullptr && !register_service(remove_name, str_table_remove)) {
+		if (remove_name.size() > 0 && !register_service(remove_name.c_str(), str_table_remove)) {
 			printf("[%s]: failed to register \"%s\" service\n",
-			       file_name, remove_name);
+			       file_name, remove_name.c_str());
 			return false;
 		}
 		return TRUE;

@@ -21,6 +21,13 @@ The plugin supports temporary modification of the string table as it exists in
 memory through the telnet console mechanism. A reload of the table from disk
 purges these modifications.
 .SH Configuration file directives
+.SS add_service_name
+.PP
+The plugin instance will expose its function through this service function
+name. You should not generally this, because other plugins rely on certain
+fixed values.
+.PP
+Default: \fIinstance_name\fP_add
 .SS growing_num
 .PP
 The maximum number of additional string table entries on top of what the
@@ -37,11 +44,18 @@ differently or not.
 Default: \fIfalse\fP
 .SS query_service_name
 .PP
-The plugin instance will expose its function through this service name. You
-should not change this ever, because other plugins rely on certain fixed
-values.
+The plugin instance will expose its function through this service function
+name. You should not generally this, because other plugins rely on certain
+fixed values.
 .PP
-Default: varies per instance
+Default: \fIinstance_name\fP_query
+.SS remove_service_name
+.PP
+The plugin instance will expose its function through this service function
+name. You should not generally this, because other plugins rely on certain
+fixed values.
+.PP
+Default: \fIinstance_name\fP_remove
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
