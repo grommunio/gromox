@@ -174,7 +174,7 @@ static void* thread_work_func(void* arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(0, "new connection %s:%d is now incoming", 
+		system_services_log_info(6, "New connection from [%s]:%hu",
 					client_hostip, client_port);
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
 		flag = 1;
@@ -206,7 +206,7 @@ static void* thread_work_func(void* arg)
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "connection %s is denied by ipaddr filter",
+			system_services_log_info(6, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -224,7 +224,7 @@ static void* thread_work_func(void* arg)
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "connection %s is denied by "
+			system_services_log_info(6, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -312,7 +312,7 @@ static void* thread_work_ssl_func(void* arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(0, "ssl new connection %s:%d is now incoming", 
+		system_services_log_info(6, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
 		flag = 1;
@@ -344,7 +344,7 @@ static void* thread_work_ssl_func(void* arg)
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "SSL connection %s is denied by ipaddr filter",
+			system_services_log_info(6, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -362,7 +362,7 @@ static void* thread_work_ssl_func(void* arg)
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "ssl connection %s is denied by "
+			system_services_log_info(6, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */

@@ -15,7 +15,8 @@ logthru is the default logging plugin for all Gromox services.
 .PP
 Controls which messages will be shown. Messages with a equal or higher severity
 (lower numeric value) will pass, messages with lower severity (higher numeric
-value) will be suppressed.
+value) will be suppressed. The levels used in practice are: critical (2),
+error (3), warning (4), notice/info (5), debug (6).
 .PP
 Default: \fI4\fP
 .SH See also

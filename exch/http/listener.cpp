@@ -188,8 +188,8 @@ static void* thread_work_func(void* arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(0, "new connection %s:%d "
-			"is now incoming", client_hostip, client_port);
+		system_services_log_info(6, "New connection from [%s]:%hu",
+			client_hostip, client_port);
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
 		flag = 1;
 		setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY,
@@ -197,7 +197,7 @@ static void* thread_work_func(void* arg)
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			system_services_log_info(8, "out of http context");
+			system_services_log_info(4, "no available HTTP_CONTEXT/processing slot");
 			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
@@ -219,7 +219,7 @@ static void* thread_work_func(void* arg)
 								"Connection: close\r\n"
 								"\r\n""", host_ID);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "connection %s is denied by ipaddr filter",
+			system_services_log_info(6, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -236,7 +236,7 @@ static void* thread_work_func(void* arg)
 								"Connection: close\r\n"
 								"\r\n""", host_ID);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "connection %s is denied by "
+			system_services_log_info(6, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -317,7 +317,7 @@ static void* thread_work_ssl_func(void* arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(0, "ssl new connection %s:%d is now incoming", 
+		system_services_log_info(6, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
 		flag = 1;
@@ -326,7 +326,7 @@ static void* thread_work_ssl_func(void* arg)
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			system_services_log_info(8, "out of http context");
+			system_services_log_info(4, "no available HTTP_CONTEXT/processing slot");
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
@@ -348,7 +348,7 @@ static void* thread_work_ssl_func(void* arg)
 								"Connection: close\r\n"
 								"\r\n""", host_ID);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "SSL connection %s is denied by ipaddr filter",
+			system_services_log_info(6, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -365,7 +365,7 @@ static void* thread_work_ssl_func(void* arg)
 								"Connection: close\r\n"
 								"\r\n""", host_ID);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "ssl connection %s is denied by "
+			system_services_log_info(6, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */

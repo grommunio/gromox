@@ -340,9 +340,9 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-                smtp_parser_log_info(pcontext, 8, "close session because"
-                             " rcpt address is not in our system and ipaddr is not"
-                             " in our relay list, too");
+                smtp_parser_log_info(pcontext, 6, "Closed session because"
+                             " RCPT address is not in our system and ipaddr is not"
+                             " in our relay list either");
                 return DISPATCH_SHOULD_CLOSE;
             }
         }
@@ -365,8 +365,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-	            system_services_log_info(8, "remote MTA IP: %s, FROM: %s, "
-						"TO: %s  rcpt address is invalid",
+	            system_services_log_info(6, "remote=%s from=%s to=%s  RCPT address is invalid",
 						pcontext->connection.client_ip,
 						pcontext->mail.envelop.from, buff);
                 return DISPATCH_CONTINUE;		
@@ -386,8 +385,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-				system_services_log_info(8, "remote MTA IP: %s, FROM: %s, "
-						"TO: %s  mailbox is full",
+				system_services_log_info(6, "remote=%s from=%s to=%s  Mailbox is full",
 						pcontext->connection.client_ip,
 						pcontext->mail.envelop.from, buff);
 				return DISPATCH_CONTINUE;		
@@ -493,7 +491,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 						write(pcontext->connection.sockd, smtp_reply_str,
 							string_length);
 					}
-		            smtp_parser_log_info(pcontext, 8, "out of memory");
+		            smtp_parser_log_info(pcontext, 4, "out of memory");
                     return DISPATCH_SHOULD_CLOSE;
                 }
                 size2_used = size - size_copied;

@@ -92,12 +92,12 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(8, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				log_info(6, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"mlist %s is expanded", pcontext->pcontrol->queue_ID,
 					pcontext->pcontrol->from, rcpt_to, rcpt_to);
 				break;
 			default:
-				log_info(8, "APP created message FROM: %s, TO: %s  "
+				log_info(6, "APP created message FROM: %s, TO: %s  "
 					"mlist %s is expanded", pcontext->pcontrol->from, rcpt_to,
 					rcpt_to);
 				break;
@@ -127,14 +127,14 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(8, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				log_info(6, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
 					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 					rcpt_to, pcontext->pcontrol->from, rcpt_to);
 				break;
 			default:
-				log_info(8, "APP created message FROM: %s, TO: %s  "
+				log_info(6, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
 					pcontext->pcontrol->from, rcpt_to,
@@ -163,14 +163,14 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(8, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				log_info(6, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
 					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 					rcpt_to, pcontext->pcontrol->from, rcpt_to);
 				break;
 			default:
-				log_info(8, "APP created message FROM: %s, TO: %s  "
+				log_info(6, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
 					pcontext->pcontrol->from, rcpt_to,
@@ -199,14 +199,14 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(8, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				log_info(6, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders' message can be accepted",
 					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 					rcpt_to, pcontext->pcontrol->from, rcpt_to);
 				break;
 			default:
-				log_info(8, "APP created message FROM: %s, TO: %s  "
+				log_info(6, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders's message can be accepted",
 					pcontext->pcontrol->from, rcpt_to,

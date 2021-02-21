@@ -4185,9 +4185,9 @@ static BOOL message_make_deferred_action_messages(
 	}
 	if (double_list_get_nodes_num(pdam_list) >
 		MAX_DAMS_PER_RULE_FOLDER) {
-		common_util_log_info(0, "user: %s, IP: unknown"
-			"  dam error! too many deferred actions "
-			"triggered by message %llu under folder "
+		common_util_log_info(4, "user=%s host=unknown  "
+			"DAM error: Too many Deferred Actions "
+			"triggered by message %llu in folder "
 			"%llu", username, LLU(message_id), LLU(folder_id));
 		return TRUE;
 	}
@@ -4407,15 +4407,15 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					}
 					if (ACTION_TYPE_OP_MOVE == pactions->pblock[i].type) {
 						b_del = TRUE;
-						common_util_log_info(0, "user: %s, IP: unknown"
-							"  message %llu under folder %llu is going"
-							" to be moved to %llu under folder %llu by"
+						common_util_log_info(6, "user=%s host=unknown  "
+							"Message %llu in folder %llu is going"
+							" to be moved to %llu in folder %llu by"
 							" rule", account, LLU(message_id), LLU(folder_id),
 							LLU(dst_mid), LLU(dst_fid));
 					} else {
-						common_util_log_info(0, "user: %s, IP: unknown"
-							"  message %llu under folder %llu is going"
-							" to be copied to %llu under folder %llu by"
+						common_util_log_info(6, "user=%s host=unknown  "
+							"Message %llu in folder %llu is going"
+							" to be copied to %llu in folder %llu by"
 							" rule", account, LLU(message_id), LLU(folder_id),
 							LLU(dst_mid), LLU(dst_fid));
 					}
@@ -4484,8 +4484,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				b_del = TRUE;
-				common_util_log_info(0, "user: %s, IP: unknown"
-					"  message %llu under folder %llu is going"
+				common_util_log_info(6, "user=%s host=unknown  "
+					"Message %llu in folder %llu is going"
 					" to be deleted by rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
@@ -4539,9 +4539,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				}
 				if (NULL != common_util_get_propvals(
 					&pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
-					common_util_log_info(0, "user: %s, IP: unknown delegated"
-						" message %llu under folder %llu cannot be delegated"
-						" again!", account, LLU(message_id), LLU(folder_id));
+					common_util_log_info(6, "user=%s host=unkonwn  Delegated"
+						" message %llu in folder %llu cannot be delegated"
+						" again", account, LLU(message_id), LLU(folder_id));
 					break;	
 				}
 				common_util_remove_propvals(
@@ -4654,8 +4654,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			case ACTION_TYPE_OP_DELETE:
 				b_del = TRUE;
-				common_util_log_info(0, "user: %s, IP: unknown"
-					"  message %llu under folder %llu is going"
+				common_util_log_info(6, "user=%s host=unknown  "
+					"Message %llu in folder %llu is going"
 					" to be deleted by rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
@@ -4873,15 +4873,15 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				}
 				if (ACTION_TYPE_OP_MOVE == ext_actions.pblock[i].type) {
 					b_del = TRUE;
-					common_util_log_info(0, "user: %s, IP: unknown"
-						"  message %llu under folder %llu is going"
-						" to be moved to %llu under folde %llu by "
+					common_util_log_info(6, "user=%s host=unknown  "
+						"Message %llu in folder %llu is going"
+						" to be moved to %llu in folder %llu by "
 						"ext rule", account, LLU(message_id),
 						LLU(folder_id), LLU(dst_mid), LLU(dst_fid));
 				} else {
-					common_util_log_info(0, "user: %s, IP: unknown"
-						"  message %llu under folder %llu is going"
-						" to be copied to %llu under folde %llu by "
+					common_util_log_info(6, "user=%s host=unknown  "
+						"Message %llu in folder %llu is going"
+						" to be copied to %llu in folder %llu by "
 						"ext rule", account, LLU(message_id),
 						LLU(folder_id), LLU(dst_mid), LLU(dst_fid));
 				}
@@ -4945,8 +4945,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				b_del = TRUE;
-				common_util_log_info(0, "user: %s, IP: unknown"
-					"  message %llu under folder %llu is going"
+				common_util_log_info(6, "user=%s host=unknown  "
+					"Message %llu in folder %llu is going"
 					" to be deleted by ext rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
@@ -4985,9 +4985,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				}
 				if (NULL != common_util_get_propvals(
 					&pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
-					common_util_log_info(0, "user: %s, IP: unknown delegated"
-						" message %llu under folder %llu cannot be delegated"
-						" again!", account, LLU(message_id), LLU(folder_id));
+					common_util_log_info(6, "user=%s host=unkonwn  Delegated"
+						" message %llu in folder %llu cannot be delegated"
+						" again", account, LLU(message_id), LLU(folder_id));
 					break;	
 				}
 				common_util_remove_propvals(
@@ -5099,8 +5099,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			case ACTION_TYPE_OP_DELETE:
 				b_del = TRUE;
-				common_util_log_info(0, "user: %s, IP: unknown"
-					"  message %llu under folder %llu is going"
+				common_util_log_info(6, "user=%s host=unknown  "
+					"Message %llu in folder %llu is going"
 					" to be deleted by ext rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
@@ -5387,8 +5387,8 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			}
 		}
 	}
-	common_util_log_info(0, "user: %s, IP: unknown"
-		"  message %llu is delivered into folder "
+	common_util_log_info(6, "user=%s host=unknown  "
+		"Message %llu is delivered into folder "
 		"%llu", account, LLU(message_id), LLU(fid_val));
 	if (FALSE == message_rule_new_message(b_oof,
 		from_address, account, cpid, pdb->psqlite,

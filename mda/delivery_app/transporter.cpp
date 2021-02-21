@@ -608,8 +608,8 @@ static void* thread_work_func(void* arg)
 			if (!mail_retrieve(pcontext->pmail,
 			    static_cast<char *>(pmessage->mail_begin),
 			    pmessage->mail_length)) {
-				system_services_log_info(8, "queue-id: %d, fail to be "
-					"retrieved into mail object", pmessage->flush_ID);
+				system_services_log_info(6, "QID %d: Failed to "
+					"load into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
 				message_dequeue_put(pmessage);
 				continue;
@@ -631,8 +631,8 @@ static void* thread_work_func(void* arg)
 		pthr_data->last_thrower = NULL;
 		pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 		if (FALSE == pass_result) {
-			transporter_log_info(pcontext, 8, "message cannot be processed by "
-				"any hook registered in mpc");
+			transporter_log_info(pcontext, 6, "Message cannot be processed by "
+				"any hook registered in MPC");
 			if (FALSE == b_self) {
 				message_dequeue_save(pmessage);
 			}
@@ -1121,8 +1121,8 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (FALSE == pass_result) {
 		ret_val = FALSE;
-		transporter_log_info(pcontext, 8, "message cannot be processed by any "
-				"hook registered in mpc");
+		transporter_log_info(pcontext, 6, "Message cannot be processed by any "
+			"hook registered in MPC");
 	} else {
 		ret_val = TRUE;
 	}
