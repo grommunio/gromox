@@ -304,8 +304,10 @@ static const char tbl_classes_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
 "  `listname` varchar(320) CHARACTER SET ascii DEFAULT NULL,"
+"  `domain_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
-"  KEY `listname` (`listname`)"
+"  KEY `listname` (`listname`),"
+"  FOREIGN KEY (`domain_id`) REFERENCES domains (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_domains_top[] =
@@ -431,7 +433,6 @@ static const char tbl_uprops_top[] =
 static const struct tbl_init tbl_init_top[] = {
 	{"admin_roles", tbl_admroles_41},
 	{"associations", tbl_assoc_top},
-	{"classes", tbl_classes_top},
 	{"domains", tbl_domains_top},
 	{"forwards", tbl_forwards_top},
 	{"groups", tbl_groups_top},
@@ -446,6 +447,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"user_properties", tbl_uprops_top},
 	{"admin_role_permission_relation", tbl_admroleperm_42},
 	{"admin_user_role_relation", tbl_admuserrole_43},
+	{"classes", tbl_classes_top},
 	{nullptr},
 };
 
@@ -558,6 +560,9 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{65, "ALTER TABLE `members` DROP COLUMN `domain_id`"},
 	{66, "ALTER TABLE `members` DROP COLUMN `group_id`"},
 	{67, "ALTER TABLE `classes` ADD COLUMN `filters` TEXT"},
+	{68, "TRUNCATE `classes`"},
+	{69, "ALTER TABLE `classes` ADD COLUMN `domain_id` int(10) unsigned NOT NULL"},
+	{70, "ALTER TABLE `classes` ADD CONSTRAINT FOREIGN KEY (`domain_id`) REFERENCES domains (`id`)"},
 	{0, nullptr},
 };
 
