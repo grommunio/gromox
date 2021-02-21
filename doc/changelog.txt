@@ -4,6 +4,7 @@
   cache.txt, exmdb_list.txt, event_acl.txt, fastcgi.txt, midb_acl.txt,
   proxy.txt, rewrite.txt, timer_acl.txt. Their presence is also
   optional now; built-in defaults will be used if absent.
+* user_filter.cfg is now optional
 
 
 0.15

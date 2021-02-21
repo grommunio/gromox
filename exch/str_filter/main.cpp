@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdlib>
+#include <string>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -12,6 +13,8 @@
 #include <cstdio>
 #include <cstring>
 #include <sys/types.h>
+
+using namespace std::string_literals;
 
 DECLARE_API();
 
@@ -123,9 +126,12 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		}
 		printf("[%s]: grey list growing number is %d\n", file_name,
 			growing_num);
-		auto judge_name = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
-		auto add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
-		auto query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		str_value = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
+		std::string judge_name = str_value != nullptr ? str_value : file_name + "_judge"s;
+		str_value = config_file_get_value(pfile, "ADD_SERVICE_NAME");
+		std::string add_name = str_value != nullptr ? str_value : file_name + "_add"s;
+		str_value = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		std::string query_name = str_value != nullptr ? str_value : file_name + "_query"s;
 		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s/%s.txt",
 		         get_data_path(), file_name);
 		str_filter_init(file_name, case_sensitive, audit_max,
@@ -134,19 +140,19 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			printf("[%s]: failed to run the module\n", file_name);
 			return FALSE;
 		}
-		if (judge_name != nullptr && !register_service(judge_name, str_filter_judge)) {
-			printf("[%s]: failed to register \"%s\" service\n", file_name,
-					judge_name);
+		if (judge_name.size() > 0 && !register_service(judge_name.c_str(), str_filter_judge)) {
+			printf("[%s]: failed to register \"%s\" service\n",
+			       file_name, judge_name.c_str());
 			return FALSE;
 		}
-		if (query_name != nullptr && !register_service(query_name, str_filter_query)) {
-			printf("[%s]: failed to register \"%s\" service\n", file_name,
-					query_name);
+		if (query_name.size() > 0 && !register_service(query_name.c_str(), str_filter_query)) {
+			printf("[%s]: failed to register \"%s\" service\n",
+			       file_name, query_name.c_str());
 			return FALSE;
 		}
-		if (add_name != nullptr && !register_service(add_name, str_filter_add_string_into_temp_list)) {
-			printf("[%s]: failed to register \"%s\" service\n", file_name,
-					add_name);
+		if (add_name.size() > 0 && !register_service(add_name.c_str(), str_filter_add_string_into_temp_list)) {
+			printf("[%s]: failed to register \"%s\" service\n",
+			       file_name, add_name.c_str());
 			return FALSE;
 		}
 		return TRUE;
