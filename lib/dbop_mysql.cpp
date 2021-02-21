@@ -410,7 +410,7 @@ static const char tbl_users_top[] =
 "  `sub_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_type` tinyint(4) NOT NULL DEFAULT 0,"
-"  `entryid` varbinary(64) DEFAULT NULL,"
+"  `externid` varbinary(64) DEFAULT NULL,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `username` (`username`),"
 "  UNIQUE KEY `domain_id_2` (`domain_id`,`username`),"
