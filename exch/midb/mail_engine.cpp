@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <atomic>
 #include <climits>
 #include <libHX/ctype_helper.h>
@@ -2033,6 +2036,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			common_util_switch_allocator();
 			return;
 		}
+		mail_set_header(&imail, "X-Mailer", "gromox-midb " PACKAGE_VERSION);
 		common_util_switch_allocator();
 		tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 		if (mail_get_digest(&imail, &size, temp_buff + tmp_len,
