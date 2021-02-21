@@ -2,4 +2,14 @@
 if test ! -e configure; then
 	autoreconf -fiv
 fi
-exec ./configure --sysconfdir=/etc --localstatedir=/var CFLAGS="-Og -g" CXXFLAGS="-Og -g" "$@"
+echo -en '#include <libHX/string.h>\nint main(void) { HXmc_free(NULL); }' >conftest.c
+libdir=""
+if gcc -o conftest conftest.c $(pkg-config --cflags --libs libHX) >/dev/null 2>/dev/null; then
+	libdir=$(ldd conftest 2>/dev/null | perl -lne 'if(m{(\S+)/libHX.so.}){print$1;exit}')
+	if [ -n "$libdir" ]; then
+		libdir="--libdir=$libdir"
+		echo -e "\e[33m""qconf: Adding $libdir""\e[0m"
+	fi
+fi
+set -x
+exec ./configure --sysconfdir=/etc --localstatedir=/var $libdir CFLAGS="-Og -g" CXXFLAGS="-Og -g" "$@"
