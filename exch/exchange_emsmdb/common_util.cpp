@@ -2345,7 +2345,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		logon_object_get_dir(plogon), NULL, cpid,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {
 		common_util_log_info("fail to read message %llu"
-				" from exmdb when sending it", message_id);
+			" from exmdb when sending it", LLU(message_id));
 		return FALSE;
 	}
 	if (NULL == common_util_get_propvals(

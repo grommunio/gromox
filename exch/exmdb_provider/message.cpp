@@ -4188,7 +4188,7 @@ static BOOL message_make_deferred_action_messages(
 		common_util_log_info(0, "user: %s, IP: unknown"
 			"  dam error! too many deferred actions "
 			"triggered by message %llu under folder "
-			"%llu", username, message_id, folder_id);
+			"%llu", username, LLU(message_id), LLU(folder_id));
 		return TRUE;
 	}
 	provider = NULL;
@@ -4410,14 +4410,14 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						common_util_log_info(0, "user: %s, IP: unknown"
 							"  message %llu under folder %llu is going"
 							" to be moved to %llu under folder %llu by"
-							" rule", account, message_id, folder_id,
-							dst_mid, dst_fid);
+							" rule", account, LLU(message_id), LLU(folder_id),
+							LLU(dst_mid), LLU(dst_fid));
 					} else {
 						common_util_log_info(0, "user: %s, IP: unknown"
 							"  message %llu under folder %llu is going"
 							" to be copied to %llu under folder %llu by"
-							" rule", account, message_id, folder_id,
-							dst_mid, dst_fid);
+							" rule", account, LLU(message_id), LLU(folder_id),
+							LLU(dst_mid), LLU(dst_fid));
 					}
 				} else {
 					if (FALSE == exmdb_server_check_private()) {
@@ -4487,7 +4487,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				common_util_log_info(0, "user: %s, IP: unknown"
 					"  message %llu under folder %llu is going"
 					" to be deleted by rule", account,
-					message_id, folder_id);
+					LLU(message_id), LLU(folder_id));
 				break;
 			case ACTION_TYPE_OP_FORWARD:
 				if (FALSE == exmdb_server_check_private()) {
@@ -4541,7 +4541,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					&pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
 					common_util_log_info(0, "user: %s, IP: unknown delegated"
 						" message %llu under folder %llu cannot be delegated"
-						" again!", account, message_id, folder_id);
+						" again!", account, LLU(message_id), LLU(folder_id));
 					break;	
 				}
 				common_util_remove_propvals(
@@ -4657,7 +4657,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				common_util_log_info(0, "user: %s, IP: unknown"
 					"  message %llu under folder %llu is going"
 					" to be deleted by rule", account,
-					message_id, folder_id);
+					LLU(message_id), LLU(folder_id));
 				break;
 			case ACTION_TYPE_OP_MARK_AS_READ:
 				if (FALSE == exmdb_server_check_private()) {
@@ -4876,14 +4876,14 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					common_util_log_info(0, "user: %s, IP: unknown"
 						"  message %llu under folder %llu is going"
 						" to be moved to %llu under folde %llu by "
-						"ext rule", account, message_id, folder_id,
-						dst_mid, dst_fid);
+						"ext rule", account, LLU(message_id),
+						LLU(folder_id), LLU(dst_mid), LLU(dst_fid));
 				} else {
 					common_util_log_info(0, "user: %s, IP: unknown"
 						"  message %llu under folder %llu is going"
 						" to be copied to %llu under folde %llu by "
-						"ext rule", account, message_id, folder_id,
-						dst_mid, dst_fid);
+						"ext rule", account, LLU(message_id),
+						LLU(folder_id), LLU(dst_mid), LLU(dst_fid));
 				}
 				break;
 			case ACTION_TYPE_OP_REPLY:
@@ -4948,7 +4948,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				common_util_log_info(0, "user: %s, IP: unknown"
 					"  message %llu under folder %llu is going"
 					" to be deleted by ext rule", account,
-					message_id, folder_id);
+					LLU(message_id), LLU(folder_id));
 				break;
 			case ACTION_TYPE_OP_FORWARD:
 				if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
@@ -4987,7 +4987,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					&pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
 					common_util_log_info(0, "user: %s, IP: unknown delegated"
 						" message %llu under folder %llu cannot be delegated"
-						" again!", account, message_id, folder_id);
+						" again!", account, LLU(message_id), LLU(folder_id));
 					break;	
 				}
 				common_util_remove_propvals(
@@ -5102,7 +5102,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				common_util_log_info(0, "user: %s, IP: unknown"
 					"  message %llu under folder %llu is going"
 					" to be deleted by ext rule", account,
-					message_id, folder_id);
+					LLU(message_id), LLU(folder_id));
 				break;
 			case ACTION_TYPE_OP_MARK_AS_READ:
 				if (FALSE == exmdb_server_check_private()) {
@@ -5389,7 +5389,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	}
 	common_util_log_info(0, "user: %s, IP: unknown"
 		"  message %llu is delivered into folder "
-		"%llu", account, message_id, fid_val);
+		"%llu", account, LLU(message_id), LLU(fid_val));
 	if (FALSE == message_rule_new_message(b_oof,
 		from_address, account, cpid, pdb->psqlite,
 		fid_val, message_id, pdigest, &folder_list, &msg_list)) {
