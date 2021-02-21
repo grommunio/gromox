@@ -132,8 +132,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		std::string add_name = str_value != nullptr ? str_value : file_name + "_add"s;
 		str_value = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
 		std::string query_name = str_value != nullptr ? str_value : file_name + "_query"s;
-		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s/%s.txt",
-		         get_data_path(), file_name);
+		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s.txt", file_name);
 		str_filter_init(file_name, case_sensitive, audit_max,
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {

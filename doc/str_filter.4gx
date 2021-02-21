@@ -55,6 +55,8 @@ Default: \fI2000\fP
 \fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
 of str_filter (e.g. /etc/gromox/http/user_list.cfg when http(8gx) was made to
 load libgxs_user_list.so.)
+.IP \(bu 4
+\fIstate_file_path\fP/\fIinstance\fP.txt: greylist
 .SH See also
 .PP
 \fBgromox\fP(7)

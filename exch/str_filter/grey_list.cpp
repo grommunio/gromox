@@ -8,11 +8,14 @@
 #include "grey_list.h"
 #include <gromox/list_file.hpp>
 #include <gromox/str_hash.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <cstdio>
 #include <pthread.h>
+
+DECLARE_API(extern);
 
 struct GREY_LIST_ENTRY {
 	int				current_times;
@@ -234,7 +237,7 @@ int grey_list_refresh()
 	if (0 == g_growing_num) {
 		return GREY_REFRESH_OK;
 	}
-	auto plist_file = list_file_initd(g_list_path, "/", "%s:256%d%s:32");
+	auto plist_file = list_file_initd(g_list_path, get_state_path(), "%s:256%d%s:32");
 	if (NULL == plist_file) {
 		str_filter_echo("Failed to read graylist from %s: %s",
 			g_list_path, strerror(errno));
