@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cerrno>
 #include <cstdint>
 #include <unistd.h>
@@ -2131,6 +2134,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		return FALSE;
 	}
 
+	mail_set_header(pmail, "X-Mailer", "gromox-zcore " PACKAGE_VERSION);
 	if (FALSE == mail_to_file(pmail, sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
