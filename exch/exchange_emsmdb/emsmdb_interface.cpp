@@ -127,6 +127,23 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 	return FALSE;
 }
 
+/* called by moh_emsmdb module */
+void emsmdb_interface_touch_handle(CXH *pcxh)
+{
+	char guid_string[64];
+
+	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
+		return;
+	}
+	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
+	pthread_mutex_lock(&g_lock);
+	auto phandle = static_cast<HANDLE_DATA *>(str_hash_query(g_handle_hash, guid_string));
+	if (NULL != phandle) {
+		time(&phandle->last_time);
+	}
+	pthread_mutex_unlock(&g_lock);
+}
+
 static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 {
 	char guid_string[64];

@@ -50,6 +50,12 @@ static void *thread_work_func(void *param);
 
 static void (*active_hpm_context)(int context_id, BOOL b_pending);
 
+/* called by moh_emsmdb module */
+void asyncemsmdb_interface_register_active(void *pproc)
+{
+	active_hpm_context = reinterpret_cast<decltype(*active_hpm_context)>(pproc);
+}
+
 void asyncemsmdb_interface_init(int threads_num)
 {
 	g_thread_ids = NULL;
@@ -232,6 +238,35 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	HX_strlower(tmp_tag);
 	str_hash_remove(g_tag_hash, tmp_tag);
 	int_hash_remove(g_async_hash, async_id);
+	pthread_mutex_unlock(&g_async_lock);
+	lib_buffer_put(g_wait_allocator, pwait);
+}
+
+/* called by moh_emsmdb module */
+void asyncemsmdb_interface_remove(ACXH *pacxh)
+{
+	uint16_t cxr;
+	ASYNC_WAIT *pwait;
+	char tmp_tag[256];
+	char username[256];
+
+	if (FALSE == emsmdb_interface_check_acxh(
+		pacxh, username, &cxr, FALSE)) {
+		return;
+	}
+	sprintf(tmp_tag, "%s:%d", username, cxr);
+	HX_strlower(tmp_tag);
+	pthread_mutex_lock(&g_async_lock);
+	auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_query(g_tag_hash, tmp_tag));
+	if (NULL == ppwait) {
+		pthread_mutex_unlock(&g_async_lock);
+		return;
+	}
+	pwait = *ppwait;
+	if (0 != pwait->async_id) {
+		int_hash_remove(g_async_hash, pwait->async_id);
+	}
+	str_hash_remove(g_tag_hash, tmp_tag);
 	pthread_mutex_unlock(&g_async_lock);
 	lib_buffer_put(g_wait_allocator, pwait);
 }

@@ -54,6 +54,7 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	char *username, uint16_t *pcxr, BOOL b_touch);
 
 BOOL emsmdb_interface_check_notify(ACXH *pacxh);
+extern void emsmdb_interface_touch_handle(CXH *);
 extern const GUID *emsmdb_interface_get_handle(void);
 extern EMSMDB_INFO *emsmdb_interface_get_emsmdb_info(void);
 extern DOUBLE_LIST *emsmdb_interface_get_notify_list(void);
