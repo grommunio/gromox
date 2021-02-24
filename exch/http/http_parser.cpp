@@ -1919,7 +1919,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		pcontext->connection.ssl = NULL;
 	}
 	close(pcontext->connection.sockd);
-	system_services_container_remove_ip(pcontext->connection.client_ip);
+	if (system_services_container_remove_ip != nullptr)
+		system_services_container_remove_ip(pcontext->connection.client_ip);
 	http_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }

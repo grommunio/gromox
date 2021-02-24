@@ -440,8 +440,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				imap_parser_log_info(pcontext, 8, "out of SSL object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
-				system_services_container_remove_ip(
-					pcontext->connection.client_ip);
+				if (system_services_container_remove_ip != nullptr)
+					system_services_container_remove_ip(pcontext->connection.client_ip);
 				imap_parser_context_clear(pcontext);
 				return PROCESS_CLOSE;
 			}
@@ -467,8 +467,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			SSL_free(pcontext->connection.ssl);
 			pcontext->connection.ssl = NULL;
 			close(pcontext->connection.sockd);
-			system_services_container_remove_ip(
-				pcontext->connection.client_ip);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
 			imap_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -1075,8 +1075,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		remove(pcontext->file_path);
 		pcontext->file_path[0] = '\0';
 	}
-	
-	system_services_container_remove_ip(pcontext->connection.client_ip);
+	if (system_services_container_remove_ip != nullptr)
+		system_services_container_remove_ip(pcontext->connection.client_ip);
 	imap_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }

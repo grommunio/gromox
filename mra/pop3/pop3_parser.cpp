@@ -254,8 +254,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				pop3_parser_log_info(pcontext, 8, "out of SSL object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
-				system_services_container_remove_ip(
-					pcontext->connection.client_ip);
+				if (system_services_container_remove_ip != nullptr)
+					system_services_container_remove_ip(pcontext->connection.client_ip);
 				pop3_parser_context_clear(pcontext);
 				return PROCESS_CLOSE;
 			}
@@ -280,8 +280,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			SSL_free(pcontext->connection.ssl);
 			pcontext->connection.ssl = NULL;
 			close(pcontext->connection.sockd);
-			system_services_container_remove_ip(
-				pcontext->connection.client_ip);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
 			pop3_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -421,7 +421,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		}
 		pop3_parser_log_info(pcontext, 0, "connection lost");
 		close(pcontext->connection.sockd);
-		system_services_container_remove_ip(pcontext->connection.client_ip);
+		if (system_services_container_remove_ip != nullptr)
+			system_services_container_remove_ip(pcontext->connection.client_ip);
 		pop3_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	} else if (read_len < 0) {
@@ -446,7 +447,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			}
 			SLEEP_BEFORE_CLOSE;
 			close(pcontext->connection.sockd);
-			system_services_container_remove_ip(pcontext->connection.client_ip);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
 			pop3_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -478,8 +480,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				}
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
-				system_services_container_remove_ip(
-					pcontext->connection.client_ip);
+				if (system_services_container_remove_ip != nullptr)
+					system_services_container_remove_ip(pcontext->connection.client_ip);
 				pop3_parser_context_clear(pcontext);
 				return PROCESS_CLOSE;
 			case DISPATCH_DATA:
@@ -530,7 +532,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		pcontext->connection.ssl = NULL;
 	}
 	close(pcontext->connection.sockd);
-	system_services_container_remove_ip(pcontext->connection.client_ip);
+	if (system_services_container_remove_ip != nullptr)
+		system_services_container_remove_ip(pcontext->connection.client_ip);
 	pop3_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 

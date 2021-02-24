@@ -400,7 +400,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 		SLEEP_BEFORE_CLOSE;
 		close(pcontext->connection.sockd);
-		system_services_container_remove_ip(pcontext->connection.client_ip);
+		if (system_services_container_remove_ip != nullptr)
+			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}
@@ -416,8 +417,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				smtp_parser_log_info(pcontext, 8, "out of SSL object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
-	            system_services_container_remove_ip(
-					pcontext->connection.client_ip);
+				if (system_services_container_remove_ip != nullptr)
+					system_services_container_remove_ip(pcontext->connection.client_ip);
 		        smtp_parser_context_clear(pcontext);
 			    return PROCESS_CLOSE;        
 			}
@@ -444,8 +445,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			SSL_free(pcontext->connection.ssl);
 			pcontext->connection.ssl = NULL;
 			close(pcontext->connection.sockd);
-			system_services_container_remove_ip(
-				pcontext->connection.client_ip);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -487,7 +488,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 		SLEEP_BEFORE_CLOSE;
 		close(pcontext->connection.sockd);
-		system_services_container_remove_ip(pcontext->connection.client_ip);
+		if (system_services_container_remove_ip != nullptr)
+			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}
@@ -509,7 +511,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 		smtp_parser_log_info(pcontext, 0, "connection lost");
 		close(pcontext->connection.sockd);
-		system_services_container_remove_ip(pcontext->connection.client_ip);
+		if (system_services_container_remove_ip != nullptr)
+			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	} else if (actual_read > 0) {
@@ -541,7 +544,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			}
 			SLEEP_BEFORE_CLOSE;
 			close(pcontext->connection.sockd);
-			system_services_container_remove_ip(pcontext->connection.client_ip);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -570,7 +574,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			}
 			SLEEP_BEFORE_CLOSE;
 			close(pcontext->connection.sockd);
-			system_services_container_remove_ip(pcontext->connection.client_ip);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;        
 		case STREAM_LINE_UNAVAILABLE:
@@ -589,8 +594,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						}
 						SLEEP_BEFORE_CLOSE;
 						close(pcontext->connection.sockd);
-						system_services_container_remove_ip(
-							pcontext->connection.client_ip);
+						if (system_services_container_remove_ip != nullptr)
+							system_services_container_remove_ip(pcontext->connection.client_ip);
 						smtp_parser_context_clear(pcontext);
 						return PROCESS_CLOSE;
 					case DISPATCH_CONTINUE:
@@ -617,8 +622,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 							pcontext->connection.ssl = NULL;
 						}
 						close(pcontext->connection.sockd);
-						system_services_container_remove_ip(
-							pcontext->connection.client_ip);
+						if (system_services_container_remove_ip != nullptr)
+							system_services_container_remove_ip(pcontext->connection.client_ip);
 						smtp_parser_context_clear(pcontext);
 						return PROCESS_CLOSE;
 					}
@@ -673,7 +678,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	if (pcontext->connection.sockd >= 0) {
 		close(pcontext->connection.sockd);
 	}
-	system_services_container_remove_ip(pcontext->connection.client_ip);
+	if (system_services_container_remove_ip != nullptr)
+		system_services_container_remove_ip(pcontext->connection.client_ip);
 	smtp_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }
@@ -708,7 +714,8 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		}
 		SLEEP_BEFORE_CLOSE;
 		close(pcontext->connection.sockd);
-		system_services_container_remove_ip(pcontext->connection.client_ip);
+		if (system_services_container_remove_ip != nullptr)
+			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}
@@ -735,7 +742,8 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		}
 		SLEEP_BEFORE_CLOSE;
 		close(pcontext->connection.sockd);
-		system_services_container_remove_ip(pcontext->connection.client_ip);
+		if (system_services_container_remove_ip != nullptr)
+			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}

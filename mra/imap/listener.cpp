@@ -215,7 +215,8 @@ static void* thread_work_func(void* arg)
 			continue;
 		}
 		/* pass the client ipaddr into the ipaddr container */
-		if (FALSE == system_services_container_add_ip(client_hostip)) {
+		if (system_services_container_add_ip != nullptr &&
+		    !system_services_container_add_ip(client_hostip)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
 			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180016, 1,
 							 &string_length);
@@ -354,7 +355,8 @@ static void* thread_work_ssl_func(void* arg)
 			continue;
 		}
 		/* pass the client ipaddr into the ipaddr container */
-		if (FALSE == system_services_container_add_ip(client_hostip)) {
+		if (system_services_container_add_ip != nullptr &&
+		    !system_services_container_add_ip(client_hostip)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
 			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180016, 1,
 							 &string_length);

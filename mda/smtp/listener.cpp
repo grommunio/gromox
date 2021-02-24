@@ -215,7 +215,8 @@ static void* thread_work_func(void* arg)
 			continue;
 		}
 		/* pass the client ipaddr into the ipaddr container */
-		if (FALSE == system_services_container_add_ip(client_hostip)) {
+		if (system_services_container_add_ip != nullptr &&
+		    !system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
@@ -352,7 +353,8 @@ static void* thread_work_ssl_func(void* arg)
 			continue;
 		}
 		/* pass the client ipaddr into the ipaddr container */
-		if (FALSE == system_services_container_add_ip(client_hostip)) {
+		if (system_services_container_add_ip != nullptr &&
+		    !system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
