@@ -209,15 +209,6 @@ static BOOL message_enqueue_check()
         printf("[message_enqueue]: %s is not a directory\n", name);
 		return FALSE;
     }
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
-    if (0 != stat(name, &node_stat)) {
-        printf("[message_enqueue]: can not find ipc token file  %s\n", name);
-        return FALSE;
-    }
-    if (0 == S_ISREG(node_stat.st_mode)) {
-        debug_info("[message_enqueue]: %s should be a regular file\n", name);
-        return FALSE;
-    }
     return TRUE;
 }
 
