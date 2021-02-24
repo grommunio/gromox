@@ -94,7 +94,7 @@ pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
 BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/array.cpp lib/config_file.cpp lib/dir_tree.cpp lib/double_list.cpp lib/errno.cpp lib/files_allocator.cpp lib/fopen.cpp lib/guid.cpp lib/int_hash.cpp lib/lib_buffer.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp
+libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/array.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/dir_tree.cpp lib/double_list.cpp lib/errno.cpp lib/files_allocator.cpp lib/fopen.cpp lib/guid.cpp lib/int_hash.cpp lib/lib_buffer.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS}
