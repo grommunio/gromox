@@ -69,6 +69,7 @@ enum {
 	ecNotSupported = 0x80040102,
 	ecInvalidObject = 0x80040108,
 	ecObjectModified = 0x80040109,
+	ecInsufficientResrc = 0x8004010E,
 	ecNotFound = 0x8004010F,
 	ecLoginFailure = 0x80040111,
 	ecUnableToAbort = 0x80040114,
