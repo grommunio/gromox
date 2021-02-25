@@ -34,11 +34,9 @@ if (0 != strcasecmp($_SERVER['REQUEST_METHOD'], "POST")) {
 $xml_in = file_get_contents("php://input");
 error_log("Autodiscover Request:\n" . $xml_in, 0);
 $xml_request = simplexml_load_string($xml_in);
-
-if (0 != strcasecmp($xml_request->getName(), "Autodiscover")) {
+if ($xml_request === false ||
+    strcasecmp($xml_request->getName(), "Autodiscover") != 0)
 	die("invalid request xml root, should be Autodiscover");
-}
-
 $email_address = $xml_request->Request->EMailAddress;
 if (!isset($email_address)) {
 	die("cannot find Request/EMailAddress in xml request");
