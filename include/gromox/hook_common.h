@@ -30,41 +30,29 @@ struct MESSAGE_CONTEXT {
 
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef const char *(*GET_ENVIRONMENT)(void);
-typedef int (*GET_INTEGER)(void);
-typedef BOOL(*HOOK_REGISTRATION)(HOOK_FUNCTION);
-typedef BOOL(*TALK_REGISTRATION)(TALK_MAIN);
-/* represent function type of log_info */
-typedef void (*LOG_INFO)(int, const char *, ...);
-typedef MESSAGE_CONTEXT *(*GET_CONTEXT)(void);
-typedef void (*PUT_CONTEXT)(MESSAGE_CONTEXT*);
-typedef BOOL (*THROW_CONTEXT)(MESSAGE_CONTEXT*);
-typedef void (*ENQUEUE_CONTEXT)(MESSAGE_CONTEXT*);
-typedef BOOL (*CHECKING_FUNCTION)(const char *);
-/* is domain list valid, if TRUE, check_domain will functionate */
-typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
-	x HOOK_REGISTRATION register_hook; \
-	x HOOK_REGISTRATION register_local; \
-	x TALK_REGISTRATION register_talk; \
-	x LOG_INFO log_info; \
-	x GET_ENVIRONMENT get_host_ID; \
-	x GET_ENVIRONMENT get_default_domain; \
-	x GET_ENVIRONMENT get_admin_mailbox; \
-	x GET_ENVIRONMENT get_plugin_name; \
-	x GET_ENVIRONMENT get_config_path; \
-	x GET_ENVIRONMENT get_data_path, get_state_path; \
-	x GET_ENVIRONMENT get_queue_path; \
-	x GET_INTEGER get_context_num; \
-	x GET_INTEGER get_threads_num; \
-	x GET_CONTEXT get_context; \
-	x PUT_CONTEXT put_context; \
-	x ENQUEUE_CONTEXT enqueue_context; \
-	x THROW_CONTEXT throw_context; \
-	x CHECKING_FUNCTION check_domain; \
-	x IS_DOMAINLIST_VALID is_domainlist_valid;
+	x BOOL (*register_hook)(HOOK_FUNCTION); \
+	x BOOL (*register_local)(HOOK_FUNCTION); \
+	x BOOL (*register_talk)(TALK_MAIN); \
+	x void (*log_info)(int, const char *, ...); \
+	x const char *(*get_host_ID)(); \
+	x const char *(*get_default_domain)(); \
+	x const char *(*get_admin_mailbox)(); \
+	x const char *(*get_plugin_name)(); \
+	x const char *(*get_config_path)(); \
+	x const char *(*get_data_path)(); \
+	x const char *(*get_state_path)(); \
+	x const char *(*get_queue_path)(); \
+	x int (*get_context_num)(); \
+	x int (*get_threads_num)(); \
+	x MESSAGE_CONTEXT *(*get_context)(); \
+	x void (*put_context)(MESSAGE_CONTEXT *); \
+	x void (*enqueue_context)(MESSAGE_CONTEXT *); \
+	x BOOL (*throw_context)(MESSAGE_CONTEXT *); \
+	x BOOL (*check_domain)(const char *); \
+	x BOOL (*is_domainlist_valid)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC

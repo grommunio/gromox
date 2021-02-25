@@ -9,21 +9,18 @@
 #define NDR_STACK_OUT				1
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
-typedef const char *(*GET_ENVIRONMENT)(void);
-typedef int (*GET_INTEGER)(void);
-typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 
 #define	DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_serviceF)(const char *, void *, const std::type_info &); \
-	x TALK_REGISTRATION register_talk; \
-	x GET_ENVIRONMENT get_plugin_name; \
-	x GET_ENVIRONMENT get_config_path; \
-	x GET_ENVIRONMENT get_data_path, get_state_path; \
-	x GET_INTEGER get_context_num; \
-	x GET_ENVIRONMENT get_host_ID; \
-	x NDR_STACK_ALLOC ndr_stack_alloc;
+	x BOOL (*register_talk)(TALK_MAIN); \
+	x const char *(*get_plugin_name)(); \
+	x const char *(*get_config_path)(); \
+	x const char *(*get_data_path)(); \
+	x const char *(*get_state_path)(); \
+	x int (*get_context_num)(); \
+	x const char *(*get_host_ID)(); \
+	x void *(*ndr_stack_alloc)(int, size_t);
 #define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(*(f)))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
 #define query_service1(n) query_service2(#n, n)

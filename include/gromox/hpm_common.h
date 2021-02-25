@@ -62,45 +62,30 @@ struct HTTP_AUTH_INFO {
 };
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef const char *(*GET_ENVIRONMENT)(void);
-typedef int (*GET_INTEGER)(void);
-typedef void (*SET_INTEGER)(int);
-typedef BOOL (*REGISTER_INTERFACE)(HPM_INTERFACE*);
-typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
-typedef CONNECTION* (*GET_CONNECTION)(int);
-typedef HTTP_REQUEST* (*GET_REQUEST)(int);
-typedef HTTP_AUTH_INFO (*GET_AUTH_INFO)(int);
-typedef BOOL (*WRITE_RESPONSE)(int, const void*, int);
-typedef void (*WAKEUP_CONTEXT)(int);
-typedef void (*ACTIVATE_CONTEXT)(int);
-typedef void (*SET_EP_INFO)(int, const char*, int);
-typedef void* (*NDR_STACK_ALLOC)(int, size_t);
-typedef BOOL (*NEW_ENVIRONMENT)(void);
-typedef void (*FREE_ENVIRONMENT)(void);
-typedef void (*LOG_INFO)(int, const char *, ...);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
-	x REGISTER_INTERFACE register_interface; \
-	x TALK_REGISTRATION register_talk; \
-	x GET_CONNECTION get_connection; \
-	x GET_REQUEST get_request; \
-	x GET_AUTH_INFO get_auth_info; \
-	x WRITE_RESPONSE write_response; \
-	x WAKEUP_CONTEXT wakeup_context; \
-	x ACTIVATE_CONTEXT activate_context; \
-	x LOG_INFO log_info; \
-	x GET_ENVIRONMENT get_host_ID; \
-	x GET_ENVIRONMENT get_default_domain; \
-	x GET_ENVIRONMENT get_plugin_name; \
-	x GET_ENVIRONMENT get_config_path; \
-	x GET_ENVIRONMENT get_data_path, get_state_path; \
-	x GET_INTEGER get_context_num; \
-	x SET_INTEGER set_context; \
-	x SET_EP_INFO set_ep_info; \
-	x NDR_STACK_ALLOC ndr_stack_alloc; \
-	x NEW_ENVIRONMENT rpc_new_environment; \
-	x FREE_ENVIRONMENT rpc_free_environment;
+	x BOOL (*register_interface)(HPM_INTERFACE *); \
+	x BOOL (*register_talk)(TALK_MAIN); \
+	x CONNECTION *(*get_connection)(int); \
+	x HTTP_REQUEST *(*get_request)(int); \
+	x HTTP_AUTH_INFO (*get_auth_info)(int); \
+	x BOOL (*write_response)(int, const void *, int); \
+	x void (*wakeup_context)(int); \
+	x void (*activate_context)(int); \
+	x void (*log_info)(int, const char *, ...); \
+	x const char *(*get_host_ID)(); \
+	x const char *(*get_default_domain)(); \
+	x const char *(*get_plugin_name)(); \
+	x const char *(*get_config_path)(); \
+	x const char *(*get_data_path)(); \
+	x const char *(*get_state_path)(); \
+	x int (*get_context_num)(); \
+	x void (*set_context)(int); \
+	x void (*set_ep_info)(int, const char *, int); \
+	x void *(*ndr_stack_alloc)(int, size_t); \
+	x BOOL (*rpc_new_environment)(); \
+	x void (*rpc_free_environment)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC

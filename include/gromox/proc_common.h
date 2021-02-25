@@ -50,46 +50,31 @@ struct DCERPC_INTERFACE {
 };
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef const char *(*GET_ENVIRONMENT)(void);
-typedef int (*GET_INTEGER)(void);
-typedef void (*SET_INTEGER)(int);
-typedef BOOL (*GET_BOOLEAN)(void);
-typedef void* (*EP_REGISTRATION)(const char*, int);
-typedef BOOL (*IF_REGISTRATION)(void*, DCERPC_INTERFACE*);
-typedef DCERPC_INFO (*GET_RPC_INFO)(void);
-typedef uint64_t (*GET_BINDING_HANDLE)(void);
-typedef void* (*NDR_STACK_ALLOC)(int, size_t);
-typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
-typedef BOOL (*BUILD_ENVIRONMENT)(int);
-typedef BOOL (*NEW_ENVIRONMENT)(void);
-typedef void (*FREE_ENVIRONMENT)(void);
-typedef void (*ASYNC_REPLY)(int, void*);
-/* represent function type of log_info */
-typedef void (*LOG_INFO)(int, const char *, ...);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
-	x EP_REGISTRATION register_endpoint; \
-	x IF_REGISTRATION register_interface; \
-	x TALK_REGISTRATION register_talk; \
-	x LOG_INFO log_info; \
-	x GET_ENVIRONMENT get_host_ID; \
-	x GET_ENVIRONMENT get_default_domain; \
-	x GET_ENVIRONMENT get_plugin_name; \
-	x GET_ENVIRONMENT get_config_path; \
-	x GET_ENVIRONMENT get_data_path, get_state_path; \
-	x GET_INTEGER get_context_num; \
-	x GET_BINDING_HANDLE get_binding_handle; \
-	x GET_RPC_INFO get_rpc_info; \
-	x GET_BOOLEAN is_rpc_bigendian; \
-	x NDR_STACK_ALLOC ndr_stack_alloc; \
-	x GET_INTEGER apply_async_id; \
-	x SET_INTEGER activate_async_id; \
-	x SET_INTEGER cancel_async_id; \
-	x BUILD_ENVIRONMENT rpc_build_environment; \
-	x NEW_ENVIRONMENT rpc_new_environment; \
-	x FREE_ENVIRONMENT rpc_free_environment; \
-	x ASYNC_REPLY async_reply;
+	x void *(*register_endpoint)(const char *, int); \
+	x BOOL (*register_interface)(void *, DCERPC_INTERFACE *); \
+	x BOOL (*register_talk)(TALK_MAIN); \
+	x void (*log_info)(int, const char *, ...); \
+	x const char *(*get_host_ID)(); \
+	x const char *(*get_default_domain)(); \
+	x const char *(*get_plugin_name)(); \
+	x const char *(*get_config_path)(); \
+	x const char *(*get_data_path)(); \
+	x const char *(*get_state_path)(); \
+	x int (*get_context_num)(); \
+	x uint64_t (*get_binding_handle)(); \
+	x DCERPC_INFO (*get_rpc_info)(); \
+	x BOOL (*is_rpc_bigendian)(); \
+	x void *(*ndr_stack_alloc)(int, size_t); \
+	x int (*apply_async_id)(); \
+	x void (*activate_async_id)(int); \
+	x void (*cancel_async_id)(int); \
+	x BOOL (*rpc_build_environment)(int); \
+	x void (*rpc_new_environment)(); \
+	x void (*rpc_free_environment)(); \
+	x void (*async_reply)(int, void *);
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC

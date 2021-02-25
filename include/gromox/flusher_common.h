@@ -53,39 +53,26 @@ struct FLUSH_ENTITY {
 
 typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef BOOL (*CANCEL_REGISTRATION)(CANCEL_FUNCTION);
-typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
-typedef int (*GET_QUEUE_LENGTH)(void);
-typedef BOOL (*FEEDBACK_ENTITY)(FLUSH_ENTITY*);
-typedef FLUSH_ENTITY *(*QUEUE_OPERATION)(void);
-typedef void (*LOG_INFO)(int, const char *, ...);
-typedef const char* (*GET_EXTRA_TAGVAL)(int, int);
-typedef int (*GET_EXTRA_NUM)(int);
-typedef const char *(*GET_ENVIRONMENT)(void);
-typedef BOOL (*SET_FLUSH_ID)(int);
-typedef int (*INC_FLUSH_ID)(void);
-typedef BOOL (*CHECKING_FUNCTION)(const char *);
-/* is domain list valid, if TRUE, check_domain will functionate */
-typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
-	x GET_QUEUE_LENGTH get_queue_length; \
-	x LOG_INFO log_info; \
-	x FEEDBACK_ENTITY feedback_entity; \
-	x CANCEL_REGISTRATION register_cancel; \
-	x QUEUE_OPERATION get_from_queue; \
-	x GET_ENVIRONMENT get_host_ID; \
-	x GET_ENVIRONMENT get_plugin_name; \
-	x GET_ENVIRONMENT get_config_path; \
-	x GET_ENVIRONMENT get_data_path, get_state_path; \
-	x GET_EXTRA_NUM get_extra_num; \
-	x GET_EXTRA_TAGVAL get_extra_tag; \
-	x GET_EXTRA_TAGVAL get_extra_value; \
-	x SET_FLUSH_ID set_flush_ID; \
-	x INC_FLUSH_ID inc_flush_ID; \
-	x CHECKING_FUNCTION check_domain; \
-	x IS_DOMAINLIST_VALID is_domainlist_valid;
+	x int (*get_queue_length)(); \
+	x void (*log_info)(int, const char *, ...); \
+	x BOOL (*feedback_entity)(FLUSH_ENTITY *); \
+	x BOOL (*register_cancel)(CANCEL_FUNCTION); \
+	x FLUSH_ENTITY *(*get_from_queue)(); \
+	x const char *(*get_host_ID)(); \
+	x const char *(*get_plugin_name)(); \
+	x const char *(*get_config_path)(); \
+	x const char *(*get_data_path)(); \
+	x const char *(*get_state_path)(); \
+	x int (*get_extra_num)(int); \
+	x const char *(*get_extra_tag)(int, int); \
+	x const char *(*get_extra_value)(int, int); \
+	x BOOL (*set_flush_ID)(int); \
+	x int (*inc_flush_ID)(); \
+	x BOOL (*check_domain)(const char *); \
+	x BOOL (*is_domainlist_valid)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC
