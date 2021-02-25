@@ -34,7 +34,7 @@ struct PROXY_CONTEXT {
 	PROXY_NODE *pxnode;
 	int sockd;
 	time_t last_time;
-	BOOL b_upgrated;
+	BOOL b_upgraded;
 	char *pmore_buff;
 	int buff_offset;
 	int buff_length;
@@ -426,7 +426,7 @@ static BOOL proxy_proc(int context_id,
 		pcontext->sockd = -1;
 		return FALSE;
 	}
-	pcontext->b_upgrated = FALSE;
+	pcontext->b_upgraded = false;
 	pcontext->pmore_buff = NULL;
 	pcontext->buff_length = 0;
 	pcontext->buff_offset = 0;
@@ -625,7 +625,7 @@ static BOOL proxy_proc(int context_id,
 	}
 	ptoken ++;
 	if (0 == strncmp(ptoken, "101", 3)) {
-		pcontext->b_upgrated = TRUE;
+		pcontext->b_upgraded = TRUE;
 		ptoken = static_cast<char *>(memmem(tmp_buff, offset, "\r\n\r\n", 4));
 		if (offset > ptoken + 4 - tmp_buff) {
 			tmp_len = tmp_buff + offset - (ptoken + 4);
@@ -680,7 +680,7 @@ static int proxy_retr(int context_id)
 	if (-1 == pcontext->sockd) {
 		return HPM_RETRIEVE_DONE;
 	}
-	if (TRUE == pcontext->b_upgrated) {
+	if (pcontext->b_upgraded) {
 		tmp_ev.events = EPOLLIN;
 		tmp_ev.data.ptr = pcontext;
 		if (-1 == epoll_ctl(g_epoll_fd, EPOLL_CTL_ADD,
@@ -762,9 +762,8 @@ static void proxy_term(int context_id)
 	
 	pcontext = &g_context_list[context_id];
 	if (-1 != pcontext->sockd) {
-		if (TRUE == pcontext->b_upgrated) {
+		if (pcontext->b_upgraded)
 			epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, pcontext->sockd, NULL);
-		}
 		close(pcontext->sockd);
 		pcontext->sockd = -1;
 	}
