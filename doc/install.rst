@@ -32,7 +32,7 @@ The rest of the documentation assumes that Gromox was configured with
 Runtime desirables
 ==================
 
-* A FastCGI server that can execute PHP,
+* A FastCGI server that can execute PHP >= 7.4,
   to enable AutoDiscover and Free/Busy Scheduling Assistant functions.
 
 * PHP command-line interface,
