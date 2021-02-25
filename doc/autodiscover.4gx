@@ -1,0 +1,92 @@
+.TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+Autodiscover HTTP Service Protocol handler
+.SH Description
+.PP
+Autodiscover clients can locate the Autodiscover server for a given domain
+\fIexample.com\fP by attempting to resolve the
+\fB_autodiscover._tcp.\fP\fIexample.com\fP IN SRV record from DNS, and
+otherwise fall back to \fBautodiscover.\fP\fIexample.com\fP.
+.PP
+To force using a particular Autodiscover server, such as when Gromox is run in
+a development environment with a fake domain,
+c:\\windows\\system32\\drivers\\etc\\hosts can be populated with a static entry
+for \fBautodiscover.\fP\fIexample.com\fP to get that particular scenario
+working.
+.PP
+An Autodiscover client would make a "POST /Autodiscover/Autodiscover.xml"
+request to the autodiscover server that was determined moments ago. The mailbox
+credentials are presented using HTTP authentication.
+.PP
+In a Gromox minimal setup, http(8gx) will receive this POST request and, in
+conjunction with the built-in defaults of mod_rewrite(4gx) and
+mod_fastcgi(4gx), is forwarded to a php-fpm instance, since the Autodiscover
+handler is coded in PHP. Alternative setups where, for example, an nginx
+frontend is used, nginx can also be the server that passes the request to a PHP
+executor.
+.PP
+The Autodiscover response contains a HTTP server (generally the HTTP home
+server) and the designated choice for protocol framing. A client uses this to
+set up the EMSMDB MAPI service within a MAPI profile. Because the HTTP home
+server is then known, Autodiscover is not used again when making a connection
+to the message store service. However, the Address Book always issues
+Autodiscover requests. (In other words, removing the DNS entry for the
+Autodiscover server after a profile is set up would break the address book, but
+not the message store.)
+.SH Configuration file directives
+.PP
+The configuration file is /etc/gromox/autodiscover.ini. In its absence,
+built-in defaults, tuned for the minimal Gromox installation, are used. A few
+ini sections and keys are recognized.
+.SS [database]
+.TP
+\fBhost\fP
+Host and optionally port to pass to php-mysqli. Default: \fIlocalhost\fP.
+.TP
+\fBusername\fP
+User for the SQL connection. Default: \fIroot\fP.
+.TP
+\fBpassword\fP
+Password for the same. Default: (empty string).
+.TP
+\fBdbname\fP
+Database name. Default: \fIemail\fP.
+.SS [exchange]
+.TP
+\fBhostname\fP
+The hostname of the Autodiscover server. This is used by the Autodiscovery
+handler to issue HTTP->HTTPS upgrades. Default: (system hostname).
+.TP
+\fBmapihttp\fP
+This setting controls the framing method presented in Autodiscover responses.
+Either DCERPC-in-HTTP (a.k.a. RPCH, RPCHTTP, OutlookAnywhere) or just HTTP
+framing (a.k.a. MOH, MAPI-over-HTTP) can be selected. MOH is only supported in
+Outlook >= 2016. \fI0\fP selects RPCH, \fI1\fP selects MOH. Default: \fI0\fP.
+.SS [default]
+.TP
+\fBtimezone\fP
+Default: (unspecified)
+.SS [system]
+.SS [http-proxy]
+.PP
+This section contains the emsmdb multiserver map. This conveys the HTTP home
+server for users. If a HTTP home server is not also the exmdb/sqlite home
+server for a user, said HTTP server will proxy the datastream to the right
+exmdb home server, which may result in lower performance than when connecting
+to the right server from the start.
+.PP
+Keys in this ini section are homedir prefixes, and values are the
+corresponding HTTP server, quite similar to exmdb_list.txt.
+.PP
+Default:
+.PP
+.RS 4
+.nf
+/var/lib/gromox/user/ = (system hostname)
+/var/lib/gromox/domain/ = (system hostname)
+.fi
+.RE
+.SH See also
+.PP
+\fBgromox\fP(7)

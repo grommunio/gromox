@@ -286,7 +286,7 @@ tests_icalparse_LDADD = libgromox_common.la libgromox_email.la libgromox_mapi.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
-	doc/authmgr.4gx doc/delivery.8gx \
+	doc/authmgr.4gx doc/autodiscover.4gx doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
