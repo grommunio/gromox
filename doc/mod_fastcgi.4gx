@@ -24,7 +24,9 @@ Host: request header with.
 .IP \(bu 4
 URI path (prefix) to match
 .IP \(bu 4
-Target directory within the filesystem
+Mapped path that will be passed to the FastCGI executor. Note that the FastCGI
+process may additionally have a document root setting that could map the path
+one more time.
 .IP \(bu 4
 File suffix (without dot) to match on, e.g. \fIphp\fP.
 .IP \(bu 4
@@ -42,7 +44,7 @@ If the file is absent however, a set of default entries will be used.
 .SS Default entries
 .PP
 .nf
-* /ews /usr/share/gromox/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
+* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
 * /sync /usr/share/grammm-sync php index.php | /run/gromox/php-fpm.sock
 * /web /usr/share/grammm-webapp php index.php | /run/gromox/php-fpm.sock
 .fi
