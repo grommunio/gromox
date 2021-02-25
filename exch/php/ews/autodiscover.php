@@ -59,7 +59,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 	$User->addChild('AutoDiscoverSMTPAddress', 'public.folder.root@' . $domain);
 	$User->addChild('DisplayName', 'Public Folder');
 	$User->addChild('LegacyDN', publicfolder_to_essdn($dinfo));
-	$User->addChild('DelpoymentId', get_domain_server_guid($dinfo));
+	$User->addChild('DeploymentId', get_domain_server_guid($dinfo));
 	$Account = $Response->addChild('Account');
 	$Account->addChild('AccountType', 'email');
 	$Account->addChild('Action', 'settings');
@@ -162,7 +162,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$User->addChild('DisplayName', $uinfo['real_name']);
 		$User->addChild('LegacyDN', username_to_essdn($uinfo));
 		$User->addChild('EMailAddress', $uinfo['username']);
-		$User->addChild('DelpoymentId', get_user_server_guid($uinfo));
+		$User->addChild('DeploymentId', get_user_server_guid($uinfo));
 		$Account = $Response->addChild('Account');
 		$Account->addChild('AccountType', 'email');
 		$Account->addChild('Action', 'settings');
