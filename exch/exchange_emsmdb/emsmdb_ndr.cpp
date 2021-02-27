@@ -25,7 +25,7 @@ int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	TRY(ndr_pull_context_handle(pndr, &r->cxh));
 	TRY(ndr_pull_uint32(pndr, &r->rpc));
 	TRY(ndr_pull_ulong(pndr, &size));
-	r->pctx = static_cast<uint8_t *>(ndr_stack_alloc(NDR_STACK_IN, size));
+	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (NULL == r->pctx) {
 		return NDR_ERR_ALLOC;
 	}
@@ -36,7 +36,7 @@ int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	}
 	TRY(ndr_pull_uint32(pndr, &r->advise_bits));
 	TRY(ndr_pull_ulong(pndr, &size));
-	r->paddr = static_cast<uint8_t *>(ndr_stack_alloc(NDR_STACK_IN, size));
+	r->paddr = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (NULL == r->paddr) {
 		return NDR_ERR_ALLOC;
 	}
@@ -88,7 +88,7 @@ int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[2]));
 	TRY(ndr_pull_uint32(pndr, &r->timestamp));
 	TRY(ndr_pull_ulong(pndr, &size));
-	r->pauxin = static_cast<uint8_t *>(ndr_stack_alloc(NDR_STACK_IN, size));
+	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (NULL == r->pauxin) {
 		return NDR_ERR_ALLOC;
 	}
@@ -151,7 +151,7 @@ int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	TRY(ndr_pull_context_handle(pndr, &r->cxh));
 	TRY(ndr_pull_uint32(pndr, &r->flags));
 	TRY(ndr_pull_ulong(pndr, &size));
-	r->pin = static_cast<uint8_t *>(ndr_stack_alloc(NDR_STACK_IN, size));
+	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (NULL == r->pin) {
 		return NDR_ERR_ALLOC;
 	}
@@ -165,7 +165,7 @@ int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 		return NDR_ERR_RANGE;
 	}
 	TRY(ndr_pull_ulong(pndr, &size));
-	r->pauxin = static_cast<uint8_t *>(ndr_stack_alloc(NDR_STACK_IN, size));
+	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (NULL == r->pauxin) {
 		return NDR_ERR_ALLOC;
 	}

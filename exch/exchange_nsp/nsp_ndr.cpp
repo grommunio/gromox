@@ -3,6 +3,7 @@
 #include <memory>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/ndr_stack.hpp>
 #include "nsp_ndr.h"
 #include <iconv.h>
 #include <cstring>
@@ -127,7 +128,7 @@ static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, PROPTAG_ARRAY *r)
 	if (size != r->cvalues + 1 || length != r->cvalues) {
 		return NDR_ERR_ARRAY_SIZE;
 	}
-	r->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(uint32_t) * size));
+	r->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 	if (NULL == r->pproptag) {
 		return NDR_ERR_ALLOC;
 	}
@@ -162,7 +163,7 @@ static int nsp_ndr_pull_property_name(NDR_PULL *pndr, int flag, PROPERTY_NAME *r
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pguid = static_cast<FLATUID *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(FLATUID)));
+			r->pguid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 			if (NULL == r->pguid) {
 				return NDR_ERR_ALLOC;
 			}
@@ -215,7 +216,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 		if (size != r->cvalues) {
 			return NDR_ERR_ARRAY_SIZE;
 		}
-		r->ppstr = static_cast<char **>(ndr_stack_alloc(NDR_STACK_IN, sizeof(char *) * size));
+		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (NULL == r->ppstr) {
 			return NDR_ERR_ALLOC;
 		}
@@ -236,7 +237,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 					return NDR_ERR_ARRAY_SIZE;
 				}
 				TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
-				r->ppstr[cnt] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, length1 + 1));
+				r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
 				if (NULL == r->ppstr[cnt]) {
 					return NDR_ERR_ALLOC;
 				}
@@ -298,7 +299,7 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 		if (r->count != size) {
 			return NDR_ERR_ARRAY_SIZE;
 		}
-		r->ppstrings = static_cast<char **>(ndr_stack_alloc(NDR_STACK_IN, sizeof(char *) * size));
+		r->ppstrings = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (NULL == r->ppstrings) {
 			return NDR_ERR_ALLOC;
 		}
@@ -323,7 +324,7 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 					return NDR_ERR_ARRAY_SIZE;
 				}
 				TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
-				r->ppstrings[cnt] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, length1 + 1));
+				r->ppstrings[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
 				if (NULL == r->ppstrings[cnt]) {
 					return NDR_ERR_ALLOC;
 				}
@@ -367,7 +368,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 		if (size != r->cvalues) {
 			return NDR_ERR_ARRAY_SIZE;
 		}
-		r->ppstr = static_cast<char **>(ndr_stack_alloc(NDR_STACK_IN, sizeof(char *) * size));
+		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (NULL == r->ppstr) {
 			return NDR_ERR_ALLOC;
 		}
@@ -395,7 +396,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 					return NDR_ERR_ALLOC;
 				}
 				TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1));
-				r->ppstr[cnt] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1));
+				r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
 				if (NULL == r->ppstr[cnt]) {
 					return NDR_ERR_ALLOC;
 				}
@@ -471,7 +472,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 		if (r->count != size) {
 			return NDR_ERR_ARRAY_SIZE;
 		}
-		r->ppstrings = static_cast<char **>(ndr_stack_alloc(NDR_STACK_IN, sizeof(char *) * size));
+		r->ppstrings = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (NULL == r->ppstrings) {
 			return NDR_ERR_ALLOC;
 		}
@@ -503,7 +504,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 					return NDR_ERR_ALLOC;
 				}
 				TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1));
-				r->ppstrings[cnt] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1));
+				r->ppstrings[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
 				if (NULL == r->ppstrings[cnt]) {
 					return NDR_ERR_ALLOC;
 				}
@@ -543,7 +544,7 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, int flag, BINARY *r)
 			if (size != r->cb) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pb = static_cast<uint8_t *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(uint8_t)));
+			r->pb = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 			if (NULL == r->pb) {
 				return NDR_ERR_ALLOC;
 			}
@@ -614,7 +615,7 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, int flag, SHORT_ARRAY *r)
 			if (size != r->cvalues) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->ps = static_cast<uint16_t *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(uint16_t) * size));
+			r->ps = ndr_stack_anew<uint16_t>(NDR_STACK_IN, size);
 			if (NULL == r->ps) {
 				return NDR_ERR_ALLOC;
 			}
@@ -675,7 +676,7 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, int flag, LONG_ARRAY *r)
 			if (size != r->cvalues) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pl = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(uint32_t)));
+			r->pl = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 			if (NULL == r->pl) {
 				return NDR_ERR_ALLOC;
 			}
@@ -737,7 +738,7 @@ static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, int flag, BINARY_ARRAY *r)
 			if (size != r->cvalues) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pbin = static_cast<BINARY *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(BINARY)));
+			r->pbin = ndr_stack_anew<BINARY>(NDR_STACK_IN, size);
 			if (NULL == r->pbin) {
 				return NDR_ERR_ALLOC;
 			}
@@ -804,14 +805,14 @@ static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, int flag, FLATUID_ARRAY *r
 			if (size != r->cvalues) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->ppguid = static_cast<FLATUID **>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(FLATUID *)));
+			r->ppguid = ndr_stack_anew<FLATUID *>(NDR_STACK_IN, size);
 			if (NULL == r->ppguid) {
 				return NDR_ERR_ALLOC;
 			}
 			for (cnt=0; cnt<size; cnt++) {
 				TRY(ndr_pull_generic_ptr(pndr, &ptr));
 				if (0 != ptr) {
-					r->ppguid[cnt] = static_cast<FLATUID *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(FLATUID)));
+					r->ppguid[cnt] = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 					if (NULL == r->ppguid[cnt]) {
 						return NDR_ERR_ALLOC;
 					}
@@ -882,7 +883,7 @@ static int nsp_ndr_pull_filetime_array(NDR_PULL *pndr, int flag, FILETIME_ARRAY 
 			if (size != r->cvalues) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pftime = static_cast<FILETIME *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(FILETIME)));
+			r->pftime = ndr_stack_anew<FILETIME>(NDR_STACK_IN, size);
 			if (NULL == r->pftime) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1011,7 +1012,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 					return NDR_ERR_ARRAY_SIZE;
 				}
 				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-				r->pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, length + 1));
+				r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, length + 1);
 				if (NULL == r->pstr) {
 					return NDR_ERR_ALLOC;
 				}
@@ -1034,7 +1035,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 					return NDR_ERR_ALLOC;
 				}
 				TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length));
-				r->pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, 2 * sizeof(uint16_t) * length));
+				r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length);
 				if (NULL == r->pstr) {
 					return NDR_ERR_ALLOC;
 				}
@@ -1295,7 +1296,7 @@ static int nsp_ndr_pull_property_row(NDR_PULL *pndr, int flag, PROPERTY_ROW *r)
 			if (size != r->cvalues) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(PROPERTY_VALUE)));
+			r->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN, size);
 			if (NULL == r->pprops) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1386,7 +1387,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION
 			if (size != r->cres) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pres = static_cast<RESTRICTION *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(RESTRICTION)));
+			r->pres = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN, size);
 			if (NULL == r->pres) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1434,7 +1435,7 @@ static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, int flag, RESTRICTION_NO
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pres = static_cast<RESTRICTION *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RESTRICTION)));
+			r->pres = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN);
 			if (NULL == r->pres) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1478,7 +1479,7 @@ static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, int flag, RESTRICTIO
 		TRY(ndr_pull_uint32(pndr, &r->proptag));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pprop = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPERTY_VALUE)));
+			r->pprop = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN);
 			if (NULL == r->pprop) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1524,7 +1525,7 @@ static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, int flag, RESTRICTI
 		TRY(ndr_pull_uint32(pndr, &r->proptag));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pprop = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPERTY_VALUE)));
+			r->pprop = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN);
 			if (NULL == r->pprop) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1650,7 +1651,7 @@ static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, int flag, RESTRICTION_SU
 		TRY(ndr_pull_uint32(pndr, &r->subobject));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pres = static_cast<RESTRICTION *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RESTRICTION)));
+			r->pres = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN);
 			if (NULL == r->pres) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1885,7 +1886,7 @@ int nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pserver_guid = static_cast<FLATUID *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(FLATUID)));
+		r->pserver_guid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 		if (NULL == r->pserver_guid) {
 			return NDR_ERR_ALLOC;
 		}
@@ -1931,7 +1932,7 @@ int nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pdelta = static_cast<int32_t *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(int32_t)));
+		r->pdelta = ndr_stack_anew<int32_t>(NDR_STACK_IN);
 		if (NULL == r->pdelta) {
 			return NDR_ERR_ALLOC;
 		}
@@ -1974,7 +1975,7 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 		if (size != r->table_count) {
 			return NDR_ERR_ARRAY_SIZE;
 		}
-		r->ptable = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN, size * sizeof(uint32_t)));
+		r->ptable = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 		if (NULL == r->ptable) {
 			return NDR_ERR_ALLOC;
 		}
@@ -1987,7 +1988,7 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->count));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2019,7 +2020,7 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 	TRY(nsp_ndr_pull_property_value(pndr, FLAG_HEADER|FLAG_CONTENT, &r->target));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->ptable = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->ptable = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->ptable) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2029,7 +2030,7 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 	}
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2059,7 +2060,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->preserved = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->preserved = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->preserved) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2070,7 +2071,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->reserved2));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pfilter = static_cast<RESTRICTION *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RESTRICTION)));
+		r->pfilter = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN);
 		if (NULL == r->pfilter) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2080,7 +2081,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	}
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->ppropname = static_cast<PROPERTY_NAME *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPERTY_NAME)));
+		r->ppropname = ndr_stack_anew<PROPERTY_NAME>(NDR_STACK_IN);
 		if (NULL == r->ppropname) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2092,7 +2093,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->requested));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2127,7 +2128,7 @@ int nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr, NSPIRESORTRESTRICTION_IN 
 	TRY(nsp_ndr_pull_proptag_array(pndr, &r->inmids));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->poutmids = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->poutmids = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->poutmids) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2190,7 +2191,7 @@ int nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2235,7 +2236,7 @@ int nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2289,7 +2290,7 @@ int nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr, NSPIGETTEMPLATEINFO_IN *r)
 			return NDR_ERR_ARRAY_SIZE;
 		}
 		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-		r->pdn = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, length + 1));
+		r->pdn = ndr_stack_anew<char>(NDR_STACK_IN, length + 1);
 		if (NULL == r->pdn) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2349,7 +2350,7 @@ int nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2383,7 +2384,7 @@ int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}

@@ -16,6 +16,7 @@
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
+#include <gromox/ndr_stack.hpp>
 #include <gromox/list_file.hpp>
 #include "ab_tree.h"
 #include <gromox/guid.hpp>
@@ -443,20 +444,18 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} catch (...) {
 		}
 		pprop->value.string_array.cvalues = 1 + alias_list.size();
-		pprop->value.string_array.ppstr =
-			static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(char *) * pprop->value.string_array.cvalues));
+		pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, pprop->value.string_array.cvalues);
 		if (NULL == pprop->value.string_array.ppstr) {
 			return ecMAPIOOM;
 		}
-		pprop->value.string_array.ppstr[0] =
-			static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, strlen(dn) + 6));
+		pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, strlen(dn) + 6);
 		if (NULL == pprop->value.string_array.ppstr[0]) {
 			return ecMAPIOOM;
 		}
 		sprintf(pprop->value.string_array.ppstr[0], "SMTP:%s", dn);
 		size_t i = 1;
 		for (const auto &a : alias_list) {
-			pprop->value.string_array.ppstr[i] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, a.size() + 6));
+			pprop->value.string_array.ppstr[i] = ndr_stack_anew<char>(NDR_STACK_OUT, a.size() + 6);
 			if (pprop->value.string_array.ppstr[i] == nullptr)
 				return ecMAPIOOM;
 			strcpy(pprop->value.string_array.ppstr[i], "smtp:");
@@ -470,18 +469,15 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		temp_len = strlen(rpc_info.ep_host);
 		pprop->value.string_array.cvalues = 2;
 		if (NULL == pbuff) {
-			pprop->value.string_array.ppstr =
-				static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, 2 * sizeof(char *)));
+			pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, 2);
 			if (NULL == pprop->value.string_array.ppstr) {
 				return ecMAPIOOM;
 			}
-			pprop->value.string_array.ppstr[0] =
-				static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len + 14));
+			pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 14);
 			if (NULL == pprop->value.string_array.ppstr[0]) {
 				return ecMAPIOOM;
 			}
-			pprop->value.string_array.ppstr[1] =
-				static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len - 12));
+			pprop->value.string_array.ppstr[1] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len - 12);
 			if (NULL == pprop->value.string_array.ppstr[1]) {
 				return ecMAPIOOM;
 			}
@@ -873,8 +869,7 @@ static void nsp_interface_make_ptyperror_row(
 	
 	prow->reserved = 0x0;
 	prow->cvalues = pproptags->cvalues;
-	prow->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_OUT,
-	               sizeof(PROPERTY_VALUE) * prow->cvalues));
+	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, prow->cvalues);
 	if (NULL == prow->pprops) {
 		return;
 	}
@@ -924,14 +919,13 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 	
 	if (NULL == pproptags) {
-		pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == pproptags) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
 		pproptags->cvalues = 7;
-		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN,
-			sizeof(uint32_t) * pproptags->cvalues));
+		pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, pproptags->cvalues);
 		if (pproptags->pproptag == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
@@ -1146,14 +1140,13 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	if (NULL == pproptags) {
-		pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == pproptags) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
 		pproptags->cvalues = 7;
-		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN,
-			sizeof(uint32_t) * pproptags->cvalues));
+		pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, pproptags->cvalues);
 		if (pproptags->pproptag == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
@@ -1865,17 +1858,16 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		*ppoutmids = NULL;
 		return ecNotSupported;
 	}
-	auto parray = static_cast<nsp_sort_item *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(nsp_sort_item) * pinmids->cvalues));
+	auto parray = ndr_stack_anew<nsp_sort_item>(NDR_STACK_IN, pinmids->cvalues);
 	if (NULL == parray) {
 		*ppoutmids = NULL;
 		return ecMAPIOOM;
 	}
-	*ppoutmids = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY)));
+	*ppoutmids = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppoutmids) {
 		return ecMAPIOOM;
 	}
-	(*ppoutmids)->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-	                         sizeof(uint32_t) * pinmids->cvalues));
+	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids->cvalues);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
 		return ecMAPIOOM;
@@ -1947,12 +1939,11 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 		*ppoutmids = NULL;
 		return ecError;
 	}
-	*ppoutmids = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY)));
+	*ppoutmids = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppoutmids) {
 		return ecMAPIOOM;
 	}
-	(*ppoutmids)->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-	                         sizeof(uint32_t) * pnames->count));
+	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
 		return ecMAPIOOM;
@@ -1988,8 +1979,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	static constexpr size_t UPPER_LIMIT = 32;
 	unsigned int &z = pproptags->cvalues;
 	pproptags->cvalues  = 0;
-	pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-	                      sizeof(uint32_t) * UPPER_LIMIT));
+	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, UPPER_LIMIT);
 	if (pproptags->pproptag == nullptr)
 		return ecMAPIOOM;
 
@@ -2082,7 +2072,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	} else {
 		b_unicode = FALSE;
 	}
-	*ppproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY)));
+	*ppproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppproptags) {
 		return ecMAPIOOM;
 	}
@@ -2237,7 +2227,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	b_proptags = TRUE;
 	if (NULL == pproptags) {
 		b_proptags = FALSE;
-		pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == pproptags) {
 			result = ecMAPIOOM;
 			goto EXIT_GET_PROPS;
@@ -2396,7 +2386,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	} else {
 		prow->cvalues = 7;
 	}
-	prow->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_OUT, prow->cvalues * sizeof(PROPERTY_VALUE)));
+	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, prow->cvalues);
 	if (NULL == prow->pprops) {
 		return FALSE;
 	}
@@ -2505,9 +2495,8 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	PROPERTY_ROW *prow;
 	char str_dname[1024];
 	SIMPLE_TREE_NODE *pnode1;
-	PERMANENT_ENTRYID *ppermeid;
 	
-	ppermeid = static_cast<decltype(ppermeid)>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PERMANENT_ENTRYID)));
+	auto ppermeid = ndr_stack_anew<PERMANENT_ENTRYID>(NDR_STACK_OUT);
 	if (NULL == ppermeid) {
 		return ecMAPIOOM;
 	}
@@ -2819,14 +2808,13 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		b_unicode = FALSE;
 	}
-	pcolumns = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY)));
+	pcolumns = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pcolumns) {
 		*ppcolumns = NULL;
 		return ecMAPIOOM;
 	}
 	pcolumns->cvalues = 31;
-	pcolumns->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_OUT,
-	                     sizeof(uint32_t) * pcolumns->cvalues));
+	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
 	if (NULL == pcolumns->pproptag) {
 		*ppcolumns = NULL;
 		return ecMAPIOOM;
@@ -2878,7 +2866,7 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 	
 	for (i=0; i<pstrs->count; i++) {
 		temp_len = 2*strlen(pstrs->ppstrings[i]) + 1;
-		pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_IN, temp_len));
+		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (NULL == pstr) {
 			*ppmids = NULL;
 			*pprows = NULL;
@@ -3092,15 +3080,14 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	if (NULL == pproptags) {
-		pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY)));
+		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == pproptags) {
 			*ppmids = NULL;
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
 		pproptags->cvalues = 7;
-		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN,
-		                      sizeof(uint32_t)*pproptags->cvalues));
+		pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, pproptags->cvalues);
 		if (pproptags->pproptag == nullptr) {
 			*ppmids = NULL;
 			*pprows = NULL;
@@ -3300,14 +3287,12 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 		return MAPI_E_UNKNOWN_LCID;
 	}
 
-	auto row = *ppdata = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(
-	           NDR_STACK_OUT, sizeof(PROPERTY_ROW)));
+	auto row = *ppdata = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT);
 	if (row == nullptr)
 		return ecMAPIOOM;
 	row->reserved = 0;
 	row->cvalues  = 1;
-	auto val = row->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(
-	           NDR_STACK_OUT, sizeof(PROPERTY_VALUE)));
+	auto val = row->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT);
 	if (val == nullptr)
 		return ecMAPIOOM;
 	val->proptag  = PROP_TAG_TEMPLATEDATA;

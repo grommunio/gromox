@@ -8,6 +8,7 @@
 #include "ab_tree.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
+#include <gromox/ndr_stack.hpp>
 #include <gromox/config_file.hpp>
 #include "nsp_interface.h"
 #include <cstring>
@@ -158,109 +159,109 @@ static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	
 	switch (opnum) {
 	case 0:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIBIND_IN));
+		*ppin = ndr_stack_anew<NSPIBIND_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspibind(pndr, static_cast<NSPIBIND_IN *>(*ppin));
 	case 1:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIUNBIND_IN));
+		*ppin = ndr_stack_anew<NSPIUNBIND_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiunbind(pndr, static_cast<NSPIUNBIND_IN *>(*ppin));
 	case 2:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIUPDATESTAT_IN));
+		*ppin = ndr_stack_anew<NSPIUPDATESTAT_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiupdatestat(pndr, static_cast<NSPIUPDATESTAT_IN *>(*ppin));
 	case 3:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIQUERYROWS_IN));
+		*ppin = ndr_stack_anew<NSPIQUERYROWS_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiqueryrows(pndr, static_cast<NSPIQUERYROWS_IN *>(*ppin));
 	case 4:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPISEEKENTRIES_IN));
+		*ppin = ndr_stack_anew<NSPISEEKENTRIES_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiseekentries(pndr, static_cast<NSPISEEKENTRIES_IN *>(*ppin));
 	case 5:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIGETMATCHES_IN));
+		*ppin = ndr_stack_anew<NSPIGETMATCHES_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspigetmatches(pndr, static_cast<NSPIGETMATCHES_IN *>(*ppin));
 	case 6:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIRESORTRESTRICTION_IN));
+		*ppin = ndr_stack_anew<NSPIRESORTRESTRICTION_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiresortrestriction(pndr, static_cast<NSPIRESORTRESTRICTION_IN *>(*ppin));
 	case 7:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIDNTOMID_IN));
+		*ppin = ndr_stack_anew<NSPIDNTOMID_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspidntomid(pndr, static_cast<NSPIDNTOMID_IN *>(*ppin));
 	case 8:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIGETPROPLIST_IN));
+		*ppin = ndr_stack_anew<NSPIGETPROPLIST_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspigetproplist(pndr, static_cast<NSPIGETPROPLIST_IN *>(*ppin));
 	case 9:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIGETPROPS_IN));
+		*ppin = ndr_stack_anew<NSPIGETPROPS_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspigetprops(pndr, static_cast<NSPIGETPROPS_IN *>(*ppin));
 	case 10:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPICOMPAREMIDS_IN));
+		*ppin = ndr_stack_anew<NSPICOMPAREMIDS_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspicomparemids(pndr, static_cast<NSPICOMPAREMIDS_IN *>(*ppin));
 	case 11:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIMODPROPS_IN));
+		*ppin = ndr_stack_anew<NSPIMODPROPS_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspimodprops(pndr, static_cast<NSPIMODPROPS_IN *>(*ppin));
 	case 12:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIGETSPECIALTABLE_IN));
+		*ppin = ndr_stack_anew<NSPIGETSPECIALTABLE_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspigetspecialtable(pndr, static_cast<NSPIGETSPECIALTABLE_IN *>(*ppin));
 	case 13:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIGETTEMPLATEINFO_IN));
+		*ppin = ndr_stack_anew<NSPIGETTEMPLATEINFO_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspigettemplateinfo(pndr, static_cast<NSPIGETTEMPLATEINFO_IN *>(*ppin));
 	case 14:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIMODLINKATT_IN));
+		*ppin = ndr_stack_anew<NSPIMODLINKATT_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspimodlinkatt(pndr, static_cast<NSPIMODLINKATT_IN *>(*ppin));
 	case 16:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIQUERYCOLUMNS_IN));
+		*ppin = ndr_stack_anew<NSPIQUERYCOLUMNS_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiquerycolumns(pndr, static_cast<NSPIQUERYCOLUMNS_IN *>(*ppin));
 	case 19:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIRESOLVENAMES_IN));
+		*ppin = ndr_stack_anew<NSPIRESOLVENAMES_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return nsp_ndr_pull_nspiresolvenames(pndr, static_cast<NSPIRESOLVENAMES_IN *>(*ppin));
 	case 20:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(NSPIRESOLVENAMESW_IN));
+		*ppin = ndr_stack_anew<NSPIRESOLVENAMESW_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
@@ -276,7 +277,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 	
 	switch (opnum) {
 	case 0:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIBIND_OUT));
+		*ppout = ndr_stack_anew<NSPIBIND_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -286,7 +287,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIBIND_OUT*)(*ppout))->pserver_guid = ((NSPIBIND_IN*)pin)->pserver_guid;
 		return DISPATCH_SUCCESS;
 	case 1:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIUNBIND_OUT));
+		*ppout = ndr_stack_anew<NSPIUNBIND_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -295,7 +296,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIUNBIND_OUT*)(*ppout))->handle = ((NSPIUNBIND_IN*)pin)->handle;
 		return DISPATCH_SUCCESS;
 	case 2:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIUPDATESTAT_OUT));
+		*ppout = ndr_stack_anew<NSPIUPDATESTAT_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -307,7 +308,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIUPDATESTAT_OUT*)(*ppout))->pdelta = ((NSPIUPDATESTAT_IN*)pin)->pdelta;
 		return DISPATCH_SUCCESS;
 	case 3:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIQUERYROWS_OUT));
+		*ppout = ndr_stack_anew<NSPIQUERYROWS_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -322,7 +323,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIQUERYROWS_OUT*)(*ppout))->stat = ((NSPIQUERYROWS_IN*)pin)->stat;
 		return DISPATCH_SUCCESS;
 	case 4:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPISEEKENTRIES_OUT));
+		*ppout = ndr_stack_anew<NSPISEEKENTRIES_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -336,7 +337,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPISEEKENTRIES_OUT*)(*ppout))->stat = ((NSPISEEKENTRIES_IN*)pin)->stat;
 		return DISPATCH_SUCCESS;
 	case 5:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIGETMATCHES_OUT));
+		*ppout = ndr_stack_anew<NSPIGETMATCHES_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -354,7 +355,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIGETMATCHES_OUT*)(*ppout))->stat = ((NSPIGETMATCHES_IN*)pin)->stat;
 		return DISPATCH_SUCCESS;
 	case 6:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIRESORTRESTRICTION_OUT));
+		*ppout = ndr_stack_anew<NSPIRESORTRESTRICTION_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -367,7 +368,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIRESORTRESTRICTION_OUT*)(*ppout))->poutmids = ((NSPIRESORTRESTRICTION_IN*)pin)->poutmids;
 		return DISPATCH_SUCCESS;
 	case 7:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIDNTOMID_OUT));
+		*ppout = ndr_stack_anew<NSPIDNTOMID_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -377,7 +378,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 												&((NSPIDNTOMID_OUT*)(*ppout))->poutmids);
 		return DISPATCH_SUCCESS;
 	case 8:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIGETPROPLIST_OUT));
+		*ppout = ndr_stack_anew<NSPIGETPROPLIST_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -388,7 +389,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 													&((NSPIGETPROPLIST_OUT*)(*ppout))->pproptags);
 		return DISPATCH_SUCCESS;
 	case 9:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIGETPROPS_OUT));
+		*ppout = ndr_stack_anew<NSPIGETPROPS_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -399,7 +400,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 												&((NSPIGETPROPS_OUT*)(*ppout))->prows);
 		return DISPATCH_SUCCESS;
 	case 10:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPICOMPAREMIDS_OUT));
+		*ppout = ndr_stack_anew<NSPICOMPAREMIDS_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -411,7 +412,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 													&((NSPICOMPAREMIDS_OUT*)(*ppout))->result);
 		return DISPATCH_SUCCESS;
 	case 11:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIMODPROPS_OUT));
+		*ppout = ndr_stack_anew<NSPIMODPROPS_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -422,7 +423,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 												&((NSPIMODPROPS_IN*)pin)->row);
 		return DISPATCH_SUCCESS;
 	case 12:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIGETSPECIALTABLE_OUT));
+		*ppout = ndr_stack_anew<NSPIGETSPECIALTABLE_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -434,7 +435,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 		((NSPIGETSPECIALTABLE_OUT*)(*ppout))->version = ((NSPIGETSPECIALTABLE_IN*)pin)->version;
 		return DISPATCH_SUCCESS;
 	case 13:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIGETTEMPLATEINFO_OUT));
+		*ppout = ndr_stack_anew<NSPIGETTEMPLATEINFO_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -447,7 +448,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 														&((NSPIGETTEMPLATEINFO_OUT*)(*ppout))->pdata);
 		return DISPATCH_SUCCESS;
 	case 14:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIMODLINKATT_OUT));
+		*ppout = ndr_stack_anew<NSPIMODLINKATT_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -458,7 +459,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 													&((NSPIMODLINKATT_IN*)pin)->entry_ids);
 		return DISPATCH_SUCCESS;
 	case 16:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIQUERYCOLUMNS_OUT));
+		*ppout = ndr_stack_anew<NSPIQUERYCOLUMNS_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -468,7 +469,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 													&((NSPIQUERYCOLUMNS_OUT*)(*ppout))->pcolumns);
 		return DISPATCH_SUCCESS;
 	case 19:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIRESOLVENAMES_OUT));
+		*ppout = ndr_stack_anew<NSPIRESOLVENAMES_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -481,7 +482,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 													&((NSPIRESOLVENAMES_OUT*)(*ppout))->prows);
 		return DISPATCH_SUCCESS;
 	case 20:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(NSPIRESOLVENAMESW_OUT));
+		*ppout = ndr_stack_anew<NSPIRESOLVENAMESW_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}

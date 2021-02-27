@@ -4,6 +4,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
+#include <gromox/ndr_stack.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <cstring>
@@ -154,7 +155,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	
 	switch (opnum) {
 	case 0:
-		prfr = static_cast<RFRGETNEWDSA_IN *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RFRGETNEWDSA_IN)));
+		prfr = ndr_stack_anew<RFRGETNEWDSA_IN>(NDR_STACK_IN);
 		if (NULL == prfr) {
 			return NDR_ERR_ALLOC;
 		}
@@ -207,7 +208,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		*ppin = prfr;
 		return NDR_ERR_SUCCESS;
 	case 1:
-		prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_IN *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RFRGETFQDNFROMLEGACYDN_IN)));
+		prfr_dn = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_IN>(NDR_STACK_IN);
 		if (NULL == prfr_dn) {
 			return NDR_ERR_ALLOC;
 		}
@@ -243,7 +244,7 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 	switch (opnum) {
 	case 0:	
 		prfr_in = (RFRGETNEWDSA_IN*)pin;
-		prfr_out = static_cast<RFRGETNEWDSA_OUT *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(RFRGETNEWDSA_OUT)));
+		prfr_out = ndr_stack_anew<RFRGETNEWDSA_OUT>(NDR_STACK_OUT);
 		if (NULL == prfr_out) {
 			return DISPATCH_FAIL;
 		}
@@ -255,7 +256,7 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 		return DISPATCH_SUCCESS;
 	case 1:
 		prfr_dn_in = (RFRGETFQDNFROMLEGACYDN_IN*)pin;
-		prfr_dn_out = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(RFRGETFQDNFROMLEGACYDN_OUT)));
+		prfr_dn_out = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_OUT>(NDR_STACK_OUT);
 		if (NULL == prfr_dn_out) {
 			return DISPATCH_FAIL;
 		}

@@ -3,6 +3,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/ndr_stack.hpp>
 
 struct EMSMDB_INFO {
 	uint32_t cpid;

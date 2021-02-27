@@ -312,14 +312,13 @@ static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 {
 	switch (opnum) {
 	case 1:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(ECDODISCONNECT_IN));
+		*ppin = ndr_stack_anew<ECDODISCONNECT_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_IN *>(*ppin));
 	case 4:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN,
-					sizeof(ECRREGISTERPUSHNOTIFICATION_IN));
+		*ppin = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
@@ -328,19 +327,19 @@ static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		*ppin = NULL;
 		return NDR_ERR_SUCCESS;
 	case 10:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(ECDOCONNECTEX_IN));
+		*ppin = ndr_stack_anew<ECDOCONNECTEX_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_IN *>(*ppin));
 	case 11:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(ECDORPCEXT2_IN));
+		*ppin = ndr_stack_anew<ECDORPCEXT2_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_IN *>(*ppin));
 	case 14:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(ECDOASYNCCONNECTEX_IN));
+		*ppin = ndr_stack_anew<ECDOASYNCCONNECTEX_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
@@ -355,7 +354,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 {
 	switch (opnum) {
 	case 1:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(ECDODISCONNECT_OUT));
+		*ppout = ndr_stack_anew<ECDODISCONNECT_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -365,8 +364,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 										((ECDOASYNCCONNECTEX_IN*)pin)->cxh;
 		return DISPATCH_SUCCESS;
 	case 4:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT,
-						sizeof(ECRREGISTERPUSHNOTIFICATION_OUT));
+		*ppout = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -384,14 +382,14 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 			((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->cxh;
 		return DISPATCH_SUCCESS;
 	case 6:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(int32_t));
+		*ppout = ndr_stack_anew<int32_t>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
 		*(int32_t*)*ppout = emsmdb_interface_dummy_rpc(handle);
 		return DISPATCH_SUCCESS;
 	case 10:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(ECDOCONNECTEX_OUT));
+		*ppout = ndr_stack_anew<ECDOCONNECTEX_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -427,7 +425,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 						((ECDOCONNECTEX_IN*)pin)->cb_auxout;
 		return DISPATCH_SUCCESS;
 	case 11:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(ECDORPCEXT2_OUT));
+		*ppout = ndr_stack_anew<ECDORPCEXT2_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -450,7 +448,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 									((ECDORPCEXT2_IN*)pin)->cb_auxout;
 		return DISPATCH_SUCCESS;
 	case 14:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(ECDOASYNCCONNECTEX_OUT));
+		*ppout = ndr_stack_anew<ECDOASYNCCONNECTEX_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -494,7 +492,7 @@ static int exchange_async_emsmdb_ndr_pull(int opnum,
 {
 	switch (opnum) {
 	case 0:
-		*ppin = ndr_stack_alloc(NDR_STACK_IN, sizeof(ECDOASYNCWAITEX_IN));
+		*ppin = ndr_stack_anew<ECDOASYNCWAITEX_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
@@ -512,7 +510,7 @@ static int exchange_async_emsmdb_dispatch(int opnum, const GUID *pobject,
 	
 	switch (opnum) {
 	case 0:
-		*ppout = ndr_stack_alloc(NDR_STACK_OUT, sizeof(ECDOASYNCWAITEX_OUT));
+		*ppout = ndr_stack_anew<ECDOASYNCWAITEX_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}

@@ -4,6 +4,7 @@
 #include "common_util.h"
 #include <gromox/fileio.h>
 #include <gromox/proc_common.h>
+#include <gromox/ndr_stack.hpp>
 #include <gromox/guid.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -176,7 +177,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 				pobj_guid->node[0], pobj_guid->node[1],
 				pobj_guid->node[2], pobj_guid->node[3],
 				pobj_guid->node[4], pobj_guid->node[5]);
-			ppermeid->pdn = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, len + 1));
+			ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
 			if (NULL == ppermeid->pdn) {
 				return FALSE;
 			}
@@ -184,7 +185,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 		}
 	}  else {
 		len = strlen(pdn);
-		ppermeid->pdn = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, len + 1));
+		ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
 		if (NULL == ppermeid->pdn) {
 			return FALSE;
 		}
@@ -251,13 +252,12 @@ BOOL common_util_ephemeral_entryid_to_binary(
 
 PROPROW_SET* common_util_proprowset_init()
 {
-	auto pset = static_cast<PROPROW_SET *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPROW_SET)));
+	auto pset = ndr_stack_anew<PROPROW_SET>(NDR_STACK_OUT);
 	if (NULL == pset) {
 		return NULL;
 	}
 	memset(pset, 0, sizeof(PROPROW_SET));
-	pset->prows = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(
-	              NDR_STACK_OUT, sizeof(PROPERTY_ROW) * 100));
+	pset->prows = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT, 100);
 	if (NULL == pset->prows) {
 		return NULL;
 	}
@@ -272,8 +272,7 @@ PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset)
 	count = (pset->crows/100 + 1) * 100;
 	if (pset->crows + 1 >= count) {
 		count += 100;
-		prows = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(NDR_STACK_OUT,
-		        count * sizeof(PROPERTY_ROW)));
+		prows = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT, count);
 		if (NULL == prows) {
 			return NULL;
 		}
@@ -287,14 +286,13 @@ PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset)
 PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow)
 {
 	if (NULL == prow) {
-		prow = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPERTY_ROW)));
+		prow = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT);
 		if (NULL == prow) {
 			return NULL;
 		}
 	}
 	memset(prow, 0, sizeof(PROPERTY_ROW));
-	prow->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(
-	               NDR_STACK_OUT, sizeof(PROPERTY_VALUE) * 40));
+	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, 40);
 	if (NULL == prow->pprops) {
 		return NULL;
 	}
@@ -309,8 +307,7 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
 	count = (prow->cvalues/40 + 1) * 40;
 	if (prow->cvalues + 1 >= count) {
 		count += 40;
-		pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_OUT,
-		         count * sizeof(PROPERTY_VALUE)));
+		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
 		if (NULL == pprops) {
 			return NULL;
 		}
@@ -324,13 +321,12 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
 
 PROPTAG_ARRAY* common_util_proptagarray_init()
 {
-	auto pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY)));
+	auto pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pproptags) {
 		return NULL;
 	}
 	memset(pproptags, 0, sizeof(PROPTAG_ARRAY));
-	pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(
-	                      NDR_STACK_OUT, sizeof(uint32_t) * 100));
+	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, 100);
 	if (NULL == pproptags->pproptag) {
 		return NULL;
 	}
@@ -345,8 +341,7 @@ uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags)
 	count = (pproptags->cvalues/100 + 1) * 100;
 	if (pproptags->cvalues + 1 >= count) {
 		count += 100;
-		pproptag = static_cast<uint32_t *>(ndr_stack_alloc(
-		           NDR_STACK_OUT, count * sizeof(uint32_t)));
+		pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
 		if (NULL == pproptag) {
 			return NULL;
 		}

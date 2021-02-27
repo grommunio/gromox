@@ -14,6 +14,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptags.hpp>
 #include "ab_tree.h"
+#include <gromox/ndr_stack.hpp>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -1615,7 +1616,7 @@ int ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 		common_util_day_to_filetime(it->second.c_str(), &prop->value.ftime);
 		return ecSuccess;
 	case PT_STRING8: {
-		auto tg = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, it->second.size() + 1));
+		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
 			return ecMAPIOOM;
 		auto ret = common_util_from_utf8(codepage, it->second.c_str(), tg, it->second.size());
@@ -1626,7 +1627,7 @@ int ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 		return ecSuccess;
 	}
 	case PT_UNICODE: {
-		auto tg = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, it->second.size() + 1));
+		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
 			return ecMAPIOOM;
 		strcpy(tg, it->second.c_str());
@@ -1644,10 +1645,10 @@ int ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 	case PT_MV_UNICODE: {
 		auto &x = prop->value.string_array;
 		x.cvalues = 1;
-		x.ppstr = static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(char *)));
+		x.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT);
 		if (x.ppstr == nullptr)
 			return ecMAPIOOM;
-		auto tg = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, it->second.size() + 1));
+		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
 			return ecMAPIOOM;
 		strcpy(tg, it->second.c_str());
