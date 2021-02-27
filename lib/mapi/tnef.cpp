@@ -220,7 +220,7 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 	TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 	if (0 == tmp_int) {
 		r->kind = MNID_ID;
-		r->plid = static_cast<uint32_t *>(pext->alloc(sizeof(uint32_t)));
+		r->plid = pext->anew<uint32_t>();
 		if (NULL == r->plid) {
 			return EXT_ERR_ALLOC;
 		}
@@ -250,7 +250,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 	TRY(ext_buffer_pull_uint16(pext, &r->propid));
 	r->ppropname = NULL;
 	if (r->propid & 0x8000) {
-		r->ppropname = static_cast<PROPERTY_NAME *>(pext->alloc(sizeof(PROPERTY_NAME)));
+		r->ppropname = pext->anew<PROPERTY_NAME>();
 		if (NULL == r->ppropname) {
 			return EXT_ERR_ALLOC;
 		}
@@ -258,7 +258,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 	}
 	switch (r->proptype) {
 	case PT_SHORT:
-		r->pvalue = pext->alloc(sizeof(uint16_t));
+		r->pvalue = pext->anew<uint16_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -266,26 +266,26 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return ext_buffer_pull_advance(pext, 2);
 	case PT_ERROR:
 	case PT_LONG:
-		r->pvalue = pext->alloc(sizeof(uint32_t));
+		r->pvalue = pext->anew<uint32_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(r->pvalue));
 	case PT_FLOAT:
-		r->pvalue = pext->alloc(sizeof(float));
+		r->pvalue = pext->anew<float>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_float(pext, static_cast<float *>(r->pvalue));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		r->pvalue = pext->alloc(sizeof(double));
+		r->pvalue = pext->anew<double>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_double(pext, static_cast<double *>(r->pvalue));
 	case PT_BOOLEAN:
-		r->pvalue = pext->alloc(sizeof(uint8_t));
+		r->pvalue = pext->anew<uint8_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -295,7 +295,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		r->pvalue = pext->alloc(sizeof(uint64_t));
+		r->pvalue = pext->anew<uint64_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -327,19 +327,19 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		pext->offset = offset;
 		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
 	case PT_CLSID:
-		r->pvalue = pext->alloc(sizeof(GUID));
+		r->pvalue = pext->anew<GUID>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_guid(pext, static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
-		r->pvalue = pext->alloc(sizeof(SVREID));
+		r->pvalue = pext->anew<SVREID>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_svreid(pext, static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
-		r->pvalue = pext->alloc(sizeof(BINARY));
+		r->pvalue = pext->anew<BINARY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -364,7 +364,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			tnef_align(pext->offset - offset));
 	}
 	case PT_BINARY: {
-		r->pvalue = pext->alloc(sizeof(BINARY));
+		r->pvalue = pext->anew<BINARY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -385,7 +385,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			tnef_align(pext->offset - offset));
 	}
 	case PT_MV_SHORT: {
-		r->pvalue = pext->alloc(sizeof(SHORT_ARRAY));
+		r->pvalue = pext->anew<SHORT_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -396,7 +396,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (sa->count == 0) {
 			sa->ps = NULL;
 		} else {
-			sa->ps = static_cast<uint16_t *>(pext->alloc(sizeof(uint16_t) * sa->count));
+			sa->ps = pext->anew<uint16_t>(sa->count);
 			if (sa->ps == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -407,7 +407,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_LONG: {
-		r->pvalue = pext->alloc(sizeof(LONG_ARRAY));
+		r->pvalue = pext->anew<LONG_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -418,7 +418,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (la->count == 0) {
 			la->pl = nullptr;
 		} else {
-			la->pl = static_cast<uint32_t *>(pext->alloc(sizeof(uint32_t) * la->count));
+			la->pl = pext->anew<uint32_t>(la->count);
 			if (la->pl == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -428,7 +428,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_I8: {
-		r->pvalue = pext->alloc(sizeof(LONGLONG_ARRAY));
+		r->pvalue = pext->anew<LONGLONG_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -439,7 +439,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (la->count == 0) {
 			la->pll = nullptr;
 		} else {
-			la->pll = static_cast<uint64_t *>(pext->alloc(sizeof(uint64_t) * la->count));
+			la->pll = pext->anew<uint64_t>(la->count);
 			if (la->pll == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -449,7 +449,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_STRING8: {
-		r->pvalue = pext->alloc(sizeof(STRING_ARRAY));
+		r->pvalue = pext->anew<STRING_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -460,7 +460,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (sa->count == 0) {
 			sa->ppstr = nullptr;
 		} else {
-			sa->ppstr = static_cast<char **>(pext->alloc(sizeof(char *) * sa->count));
+			sa->ppstr = pext->anew<char *>(sa->count);
 			if (sa->ppstr == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -477,7 +477,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_UNICODE: {
-		r->pvalue = pext->alloc(sizeof(STRING_ARRAY));
+		r->pvalue = pext->anew<STRING_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -488,7 +488,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (sa->count == 0) {
 			sa->ppstr = nullptr;
 		} else {
-			sa->ppstr = static_cast<char **>(pext->alloc(sizeof(char *) * sa->count));
+			sa->ppstr = pext->anew<char *>(sa->count);
 			if (sa->ppstr == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -505,7 +505,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_CLSID: {
-		r->pvalue = pext->alloc(sizeof(GUID_ARRAY));
+		r->pvalue = pext->anew<GUID_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -516,7 +516,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (ga->count == 0) {
 			ga->pguid = nullptr;
 		} else {
-			ga->pguid = static_cast<GUID *>(pext->alloc(sizeof(GUID *) * ga->count));
+			ga->pguid = pext->anew<GUID>(ga->count);
 			if (ga->pguid == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -526,7 +526,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {
-		r->pvalue = pext->alloc(sizeof(BINARY_ARRAY));
+		r->pvalue = pext->anew<BINARY_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -537,7 +537,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (ba->count == 0) {
 			ba->pbin = nullptr;
 		} else {
-			ba->pbin = static_cast<BINARY *>(pext->alloc(sizeof(BINARY) * ba->count));
+			ba->pbin = pext->anew<BINARY>(ba->count);
 			if (ba->pbin == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -636,7 +636,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	offset = pext->offset;
 	switch (r->attr_id) {
 	case ATTRIBUTE_ID_FROM:
-		r->pvalue = pext->alloc(sizeof(ATTR_ADDR));
+		r->pvalue = pext->anew<ATTR_ADDR>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -687,7 +687,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	case ATTRIBUTE_ID_ATTACHCREATEDATE:
 	case ATTRIBUTE_ID_ATTACHMODIFYDATE:
 	case ATTRIBUTE_ID_DATEMODIFY:
-		r->pvalue = pext->alloc(sizeof(uint64_t));
+		r->pvalue = pext->anew<uint64_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -711,14 +711,14 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		break;
 	case ATTRIBUTE_ID_REQUESTRES:
 	case ATTRIBUTE_ID_PRIORITY:
-		r->pvalue = pext->alloc(sizeof(uint16_t));
+		r->pvalue = pext->anew<uint16_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		TRY(ext_buffer_pull_uint16(pext, static_cast<uint16_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_AIDOWNER:
-		r->pvalue = pext->alloc(sizeof(uint32_t));
+		r->pvalue = pext->anew<uint32_t>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -734,7 +734,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
 	case ATTRIBUTE_ID_ATTACHMENT: {
-		r->pvalue = pext->alloc(sizeof(TNEF_PROPLIST));
+		r->pvalue = pext->anew<TNEF_PROPLIST>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -745,7 +745,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (tf->count == 0) {
 			tf->ppropval = nullptr;
 		} else {
-			tf->ppropval = static_cast<TNEF_PROPVAL *>(pext->alloc(sizeof(TNEF_PROPVAL) * tf->count));
+			tf->ppropval = pext->anew<TNEF_PROPVAL>(tf->count);
 			if (tf->ppropval == nullptr)
 				return EXT_ERR_ALLOC;
 		}
@@ -755,7 +755,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		break;
 	}
 	case ATTRIBUTE_ID_RECIPTABLE: {
-		r->pvalue = pext->alloc(sizeof(TNEF_PROPSET));
+		r->pvalue = pext->anew<TNEF_PROPSET>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -766,12 +766,12 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (tf->count == 0) {
 			tf->pplist = nullptr;
 		} else {
-			tf->pplist = static_cast<TNEF_PROPLIST **>(pext->alloc(sizeof(TNEF_PROPLIST *) * tf->count));
+			tf->pplist = pext->anew<TNEF_PROPLIST *>(tf->count);
 			if (tf->pplist == nullptr)
 				return EXT_ERR_ALLOC;
 		}
 		for (i = 0; i < tf->count; ++i) {
-			tf->pplist[i] = static_cast<TNEF_PROPLIST *>(pext->alloc(sizeof(TNEF_PROPLIST)));
+			tf->pplist[i] = pext->anew<TNEF_PROPLIST>();
 			if (tf->pplist[i] == nullptr)
 				return EXT_ERR_ALLOC;
 			TRY(ext_buffer_pull_uint32(pext, &tf->pplist[i]->count));
@@ -780,7 +780,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			if (tf->pplist[i]->count == 0) {
 				tf->pplist[i]->ppropval = nullptr;
 			} else {
-				tf->pplist[i]->ppropval = static_cast<TNEF_PROPVAL *>(pext->alloc(sizeof(TNEF_PROPVAL) * tf->pplist[i]->count));
+				tf->pplist[i]->ppropval = pext->anew<TNEF_PROPVAL>(tf->pplist[i]->count);
 				if (tf->pplist[i]->ppropval == nullptr)
 					return EXT_ERR_ALLOC;
 			}
@@ -792,7 +792,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	}
 	case ATTRIBUTE_ID_OWNER:
 	case ATTRIBUTE_ID_SENTFOR:
-		r->pvalue = pext->alloc(sizeof(ATTR_ADDR));
+		r->pvalue = pext->anew<ATTR_ADDR>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -814,7 +814,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		pext->offset = offset1;
 		break;
 	case ATTRIBUTE_ID_ATTACHRENDDATA: {
-		r->pvalue = pext->alloc(sizeof(REND_DATA));
+		r->pvalue = pext->anew<REND_DATA>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -830,7 +830,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	case ATTRIBUTE_ID_ATTACHDATA:
 	case ATTRIBUTE_ID_ATTACHMETAFILE:
 	case ATTRIBUTE_ID_MESSAGESTATUS: {
-		r->pvalue = pext->alloc(sizeof(BINARY));
+		r->pvalue = pext->anew<BINARY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -844,13 +844,13 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	}
 	case ATTRIBUTE_ID_TNEFVERSION:
 	case ATTRIBUTE_ID_OEMCODEPAGE: {
-		r->pvalue = pext->alloc(sizeof(LONG_ARRAY));
+		r->pvalue = pext->anew<LONG_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
 		la->count = len / sizeof(uint32_t);
-		la->pl = static_cast<uint32_t *>(pext->alloc(len));
+		la->pl = pext->anew<uint32_t>(la->count);
 		if (la->pl == nullptr)
 			return EXT_ERR_ALLOC;
 		for (i = 0; i < la->count; ++i) {

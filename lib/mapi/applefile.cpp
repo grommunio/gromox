@@ -252,63 +252,63 @@ static int applefile_pull_entry(EXT_PULL *pext,
 {	
 	switch (entry_id) {
 	case AS_ICONBW:
-		*ppentry = pext->alloc(sizeof(ASICONBW));
+		*ppentry = pext->anew<ASICONBW>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASICONBW));
 		return applefile_pull_asiconbw(pext, entry_length, static_cast<ASICONBW *>(*ppentry));
 	case AS_FILEDATES:
-		*ppentry = pext->alloc(sizeof(ASFILEDATES));
+		*ppentry = pext->anew<ASFILEDATES>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASFILEDATES));
 		return applefile_pull_asfiledates(pext, entry_length, static_cast<ASFILEDATES *>(*ppentry));
 	case AS_FINDERINFO:
-		*ppentry = pext->alloc(sizeof(ASFINDERINFO));
+		*ppentry = pext->anew<ASFINDERINFO>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASFINDERINFO));
 		return applefile_pull_asfinderinfo(pext, entry_length, static_cast<ASFINDERINFO *>(*ppentry));
 	case AS_MACINFO:
-		*ppentry = pext->alloc(sizeof(ASMACINFO));
+		*ppentry = pext->anew<ASMACINFO>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASMACINFO));
 		return applefile_pull_asmacinfo(pext, entry_length, static_cast<ASMACINFO *>(*ppentry));
 	case AS_PRODOSINFO:
-		*ppentry = pext->alloc(sizeof(ASPRODOSINFO));
+		*ppentry = pext->anew<ASPRODOSINFO>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASPRODOSINFO));
 		return applefile_pull_asprodosinfo(pext, entry_length, static_cast<ASPRODOSINFO *>(*ppentry));
 	case AS_MSDOSINFO:
-		*ppentry = pext->alloc(sizeof(ASMSDOSINFO));
+		*ppentry = pext->anew<ASMSDOSINFO>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASMSDOSINFO));
 		return applefile_pull_asmsdosinfo(pext, entry_length, static_cast<ASMSDOSINFO *>(*ppentry));
 	case AS_AFPINFO:
-		*ppentry = pext->alloc(sizeof(ASAFPINFO));
+		*ppentry = pext->anew<ASAFPINFO>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASAFPINFO));
 		return applefile_pull_asafpinfo(pext, entry_length, static_cast<ASAFPINFO *>(*ppentry));
 	case AS_AFPDIRID:
-		*ppentry = pext->alloc(sizeof(ASAFPDIRID));
+		*ppentry = pext->anew<ASAFPDIRID>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
 		memset(*ppentry, 0, sizeof(ASAFPDIRID));
 		return applefile_pull_asafpdirid(pext, static_cast<ASAFPDIRID *>(*ppentry));
 	default:
-		*ppentry = pext->alloc(sizeof(BINARY));
+		*ppentry = pext->anew<BINARY>();
 		if (NULL == *ppentry) {
 			return EXT_ERR_ALLOC;
 		}
@@ -525,7 +525,7 @@ int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 	
 	TRY(applefile_pull_asheader(pext, &r->header));
 	TRY(applefile_pull_uint16(pext, &r->count));
-	r->pentries = static_cast<ENTRY_DATA *>(pext->alloc(sizeof(ENTRY_DATA) * r->count));
+	r->pentries = pext->anew<ENTRY_DATA>(r->count);
 	if (NULL == r->pentries) {
 		return FALSE;
 	}

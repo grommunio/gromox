@@ -24,6 +24,8 @@ typedef void* (*EXT_BUFFER_ALLOC)(size_t);
 
 struct EXT_PULL {
 	EXT_BUFFER_ALLOC alloc;
+	template<typename T> inline T *anew() { return static_cast<T *>(alloc(sizeof(T))); }
+	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(alloc(sizeof(T) * elem)); }
 	union {
 		const uint8_t *data;
 		const char *cdata;

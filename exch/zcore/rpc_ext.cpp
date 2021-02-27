@@ -33,7 +33,7 @@ static BOOL rpc_ext_pull_recipient_block(
 	if (0 == r->count) {
 		return FALSE;
 	}
-	r->ppropval = static_cast<TAGGED_PROPVAL *>(pext->alloc(sizeof(TAGGED_PROPVAL) * r->count));
+	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		return FALSE;
 	}
@@ -52,7 +52,7 @@ static BOOL rpc_ext_pull_forwarddelegate_action(
 	if (0 == r->count) {
 		return FALSE;
 	}
-	r->pblock = static_cast<RECIPIENT_BLOCK *>(pext->alloc(sizeof(RECIPIENT_BLOCK) * r->count));
+	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		return FALSE;
 	}
@@ -77,7 +77,7 @@ static BOOL rpc_ext_pull_action_block(
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		r->pdata = pext->alloc(sizeof(ZMOVECOPY_ACTION));
+		r->pdata = pext->anew<ZMOVECOPY_ACTION>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
@@ -85,7 +85,7 @@ static BOOL rpc_ext_pull_action_block(
 		       static_cast<ZMOVECOPY_ACTION *>(r->pdata));
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		r->pdata = pext->alloc(sizeof(ZREPLY_ACTION));
+		r->pdata = pext->anew<ZREPLY_ACTION>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
@@ -100,7 +100,7 @@ static BOOL rpc_ext_pull_action_block(
 		QRF(ext_buffer_pull_bytes(pext, r->pdata, tmp_len));
 		return TRUE;
 	case ACTION_TYPE_OP_BOUNCE:
-		r->pdata = pext->alloc(sizeof(uint32_t));
+		r->pdata = pext->anew<uint32_t>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
@@ -108,14 +108,14 @@ static BOOL rpc_ext_pull_action_block(
 		return TRUE;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		r->pdata = pext->alloc(sizeof(FORWARDDELEGATE_ACTION));
+		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
 		return rpc_ext_pull_forwarddelegate_action(pext,
 		       static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 	case ACTION_TYPE_OP_TAG:
-		r->pdata = pext->alloc(sizeof(TAGGED_PROPVAL));
+		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
@@ -139,7 +139,7 @@ static BOOL rpc_ext_pull_rule_actions(
 	if (0 == r->count) {
 		return FALSE;
 	}
-	r->pblock = static_cast<ACTION_BLOCK *>(pext->alloc(sizeof(ACTION_BLOCK) * r->count));
+	r->pblock = pext->anew<ACTION_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		return FALSE;
 	}
@@ -160,7 +160,7 @@ static BOOL rpc_ext_pull_propval(
 		type &= ~MVI_FLAG;
 	switch (type) {
 	case PT_SHORT:
-		*ppval = pext->alloc(sizeof(uint16_t));
+		*ppval = pext->anew<uint16_t>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
@@ -168,14 +168,14 @@ static BOOL rpc_ext_pull_propval(
 		return TRUE;
 	case PT_LONG:
 	case PT_ERROR:
-		*ppval = pext->alloc(sizeof(uint32_t));
+		*ppval = pext->anew<uint32_t>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(*ppval)));
 		return TRUE;
 	case PT_FLOAT:
-		*ppval = pext->alloc(sizeof(float));
+		*ppval = pext->anew<float>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
@@ -183,14 +183,14 @@ static BOOL rpc_ext_pull_propval(
 		return TRUE;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		*ppval = pext->alloc(sizeof(double));
+		*ppval = pext->anew<double>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_double(pext, static_cast<double *>(*ppval)));
 		return TRUE;
 	case PT_BOOLEAN:
-		*ppval = pext->alloc(sizeof(uint8_t));
+		*ppval = pext->anew<uint8_t>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
@@ -198,7 +198,7 @@ static BOOL rpc_ext_pull_propval(
 		return TRUE;
 	case PT_I8:
 	case PT_SYSTIME:
-		*ppval = pext->alloc(sizeof(uint64_t));
+		*ppval = pext->anew<uint64_t>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
@@ -211,76 +211,76 @@ static BOOL rpc_ext_pull_propval(
 		QRF(ext_buffer_pull_wstring(pext, reinterpret_cast<char **>(ppval)));
 		return TRUE;
 	case PT_CLSID:
-		*ppval = pext->alloc(sizeof(GUID));
+		*ppval = pext->anew<GUID>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_guid(pext, static_cast<GUID *>(*ppval)));
 		return TRUE;
 	case PT_SRESTRICT:
-		*ppval = pext->alloc(sizeof(RESTRICTION));
+		*ppval = pext->anew<RESTRICTION>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_restriction(pext, static_cast<RESTRICTION *>(*ppval)));
 		return TRUE;
 	case PT_ACTIONS:
-		*ppval = pext->alloc(sizeof(RULE_ACTIONS));
+		*ppval = pext->anew<RULE_ACTIONS>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		return rpc_ext_pull_rule_actions(pext, static_cast<RULE_ACTIONS *>(*ppval));
 	case PT_BINARY:
-		*ppval = pext->alloc(sizeof(BINARY));
+		*ppval = pext->anew<BINARY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_binary(pext, static_cast<BINARY *>(*ppval)));
 		return TRUE;
 	case PT_MV_SHORT:
-		*ppval = pext->alloc(sizeof(SHORT_ARRAY));
+		*ppval = pext->anew<SHORT_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_short_array(pext, static_cast<SHORT_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_LONG:
-		*ppval = pext->alloc(sizeof(LONG_ARRAY));
+		*ppval = pext->anew<LONG_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_long_array(pext, static_cast<LONG_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_I8:
-		*ppval = pext->alloc(sizeof(LONGLONG_ARRAY));
+		*ppval = pext->anew<LONGLONG_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_longlong_array(pext, static_cast<LONGLONG_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_STRING8:
-		*ppval = pext->alloc(sizeof(STRING_ARRAY));
+		*ppval = pext->anew<STRING_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_string_array(pext, static_cast<STRING_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_UNICODE:
-		*ppval = pext->alloc(sizeof(STRING_ARRAY));
+		*ppval = pext->anew<STRING_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_wstring_array(pext, static_cast<STRING_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_CLSID:
-		*ppval = pext->alloc(sizeof(GUID_ARRAY));
+		*ppval = pext->anew<GUID_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_guid_array(pext, static_cast<GUID_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_BINARY:
-		*ppval = pext->alloc(sizeof(BINARY_ARRAY));
+		*ppval = pext->anew<BINARY_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
@@ -308,7 +308,7 @@ static BOOL rpc_ext_pull_tpropval_array(
 		r->ppropval = NULL;
 		return TRUE;
 	}
-	r->ppropval = static_cast<TAGGED_PROPVAL *>(pext->alloc(sizeof(TAGGED_PROPVAL) * r->count));
+	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		return FALSE;
 	}
@@ -338,7 +338,7 @@ static BOOL rpc_ext_pull_rule_list(
 		r->prule = NULL;
 		return TRUE;
 	}
-	r->prule = static_cast<RULE_DATA *>(pext->alloc(sizeof(RULE_DATA) * r->count));
+	r->prule = pext->anew<RULE_DATA>(r->count);
 	if (NULL == r->prule) {
 		return FALSE;
 	}
@@ -366,7 +366,7 @@ static BOOL rpc_ext_pull_permission_set(
 	int i;
 	
 	QRF(ext_buffer_pull_uint16(pext, &r->count));
-	r->prows = static_cast<PERMISSION_ROW *>(pext->alloc(sizeof(PERMISSION_ROW) * r->count));
+	r->prows = pext->anew<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		return FALSE;
 	}
@@ -397,7 +397,7 @@ static BOOL rpc_ext_pull_state_array(
 		r->pstate = NULL;
 		return TRUE;
 	}
-	r->pstate = static_cast<MESSAGE_STATE *>(pext->alloc(sizeof(MESSAGE_STATE) * r->count));
+	r->pstate = pext->anew<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
 		return FALSE;
 	}
@@ -882,8 +882,7 @@ static BOOL rpc_ext_pull_resolvename_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->resolvename.hsession));
-	ppayload->resolvename.pcond_set =
-		static_cast<TARRAY_SET *>(pext->alloc(sizeof(TARRAY_SET)));
+	ppayload->resolvename.pcond_set = pext->anew<TARRAY_SET>();
 	if (NULL == ppayload->resolvename.pcond_set) {
 		return FALSE;
 	}
@@ -918,8 +917,7 @@ static BOOL rpc_ext_pull_modifypermissions_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->modifypermissions.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->modifypermissions.hfolder));
-	ppayload->modifypermissions.pset =
-		static_cast<PERMISSION_SET *>(pext->alloc(sizeof(PERMISSION_SET)));
+	ppayload->modifypermissions.pset = pext->anew<PERMISSION_SET>();
 	if (NULL == ppayload->modifypermissions.pset) {
 		return FALSE;
 	}
@@ -933,8 +931,7 @@ static BOOL rpc_ext_pull_modifyrules_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->modifyrules.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->modifyrules.hfolder));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->modifyrules.flags));
-	ppayload->modifyrules.plist =
-		static_cast<RULE_LIST *>(pext->alloc(sizeof(RULE_LIST)));
+	ppayload->modifyrules.plist = pext->anew<RULE_LIST>();
 	if (NULL == ppayload->modifyrules.plist) {
 		return FALSE;
 	}
@@ -995,8 +992,7 @@ static BOOL rpc_ext_pull_openpropfilesec_request(
 	if (0 == tmp_byte) {
 		ppayload->openpropfilesec.puid = NULL;
 	} else {
-		ppayload->openpropfilesec.puid =
-			static_cast<FLATUID *>(pext->alloc(sizeof(FLATUID)));
+		ppayload->openpropfilesec.puid = pext->anew<FLATUID>();
 		if (NULL == ppayload->openpropfilesec.puid) {
 			return FALSE;
 		}
@@ -1095,8 +1091,7 @@ static BOOL rpc_ext_pull_deletemessages_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->deletemessages.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->deletemessages.hfolder));
-	ppayload->deletemessages.pentryids =
-		static_cast<BINARY_ARRAY *>(pext->alloc(sizeof(BINARY_ARRAY)));
+	ppayload->deletemessages.pentryids = pext->anew<BINARY_ARRAY>();
 	if (NULL == ppayload->deletemessages.pentryids) {
 		return FALSE;
 	}
@@ -1111,8 +1106,7 @@ static BOOL rpc_ext_pull_copymessages_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->copymessages.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->copymessages.hsrcfolder));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->copymessages.hdstfolder));
-	ppayload->copymessages.pentryids =
-		static_cast<BINARY_ARRAY *>(pext->alloc(sizeof(BINARY_ARRAY)));
+	ppayload->copymessages.pentryids = pext->anew<BINARY_ARRAY>();
 	if (NULL == ppayload->copymessages.pentryids) {
 		return FALSE;
 	}
@@ -1126,8 +1120,7 @@ static BOOL rpc_ext_pull_setreadflags_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->setreadflags.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->setreadflags.hfolder));
-	ppayload->setreadflags.pentryids =
-		static_cast<BINARY_ARRAY *>(pext->alloc(sizeof(BINARY_ARRAY)));
+	ppayload->setreadflags.pentryids = pext->anew<BINARY_ARRAY>();
 	if (NULL == ppayload->setreadflags.pentryids) {
 		return FALSE;
 	}
@@ -1225,8 +1218,7 @@ static BOOL rpc_ext_pull_entryidfromsourcekey_request(
 	if (0 == tmp_byte) {
 		ppayload->entryidfromsourcekey.pmessage_key = NULL;
 	} else {
-		ppayload->entryidfromsourcekey.pmessage_key =
-			static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+		ppayload->entryidfromsourcekey.pmessage_key = pext->anew<BINARY>();
 		if (NULL == ppayload->entryidfromsourcekey.pmessage_key) {
 			return FALSE;
 		}
@@ -1255,8 +1247,7 @@ static BOOL rpc_ext_pull_storeadvise_request(
 	if (0 == tmp_byte) {
 		ppayload->storeadvise.pentryid = NULL;
 	} else {
-		ppayload->storeadvise.pentryid =
-			static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+		ppayload->storeadvise.pentryid = pext->anew<BINARY>();
 		if (NULL == ppayload->storeadvise.pentryid) {
 			return FALSE;
 		}
@@ -1287,17 +1278,14 @@ static BOOL rpc_ext_pull_notifdequeue_request(
 {
 	int i;
 	
-	ppayload->notifdequeue.psink =
-		static_cast<NOTIF_SINK *>(pext->alloc(sizeof(NOTIF_SINK)));
+	ppayload->notifdequeue.psink = pext->anew<NOTIF_SINK>();
 	if (NULL == ppayload->notifdequeue.psink) {
 		return FALSE;
 	}
 	QRF(ext_buffer_pull_guid(pext,
 		&ppayload->notifdequeue.psink->hsession));
 	QRF(ext_buffer_pull_uint16(pext, &ppayload->notifdequeue.psink->count));
-	ppayload->notifdequeue.psink->padvise
-		= static_cast<ADVISE_INFO *>(pext->alloc(sizeof(ADVISE_INFO) *
-		ppayload->notifdequeue.psink->count));
+	ppayload->notifdequeue.psink->padvise = pext->anew<ADVISE_INFO>(ppayload->notifdequeue.psink->count);
 	if (NULL == ppayload->notifdequeue.psink->padvise) {
 		return FALSE;
 	}
@@ -1331,8 +1319,7 @@ static BOOL rpc_ext_pull_queryrows_request(
 	if (0 == tmp_byte) {
 		ppayload->queryrows.prestriction = NULL;
 	} else {
-		ppayload->queryrows.prestriction =
-			static_cast<RESTRICTION *>(pext->alloc(sizeof(RESTRICTION)));
+		ppayload->queryrows.prestriction = pext->anew<RESTRICTION>();
 		if (NULL == ppayload->queryrows.prestriction) {
 			return FALSE;
 		}
@@ -1342,8 +1329,7 @@ static BOOL rpc_ext_pull_queryrows_request(
 	if (0 == tmp_byte) {
 		ppayload->queryrows.pproptags = NULL;
 	} else {
-		ppayload->queryrows.pproptags =
-			static_cast<PROPTAG_ARRAY *>(pext->alloc(sizeof(PROPTAG_ARRAY)));
+		ppayload->queryrows.pproptags = pext->anew<PROPTAG_ARRAY>();
 		if (NULL == ppayload->queryrows.pproptags) {
 			return FALSE;
 		}
@@ -1364,8 +1350,7 @@ static BOOL rpc_ext_pull_setcolumns_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->setcolumns.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->setcolumns.htable));
-	ppayload->setcolumns.pproptags =
-		static_cast<PROPTAG_ARRAY *>(pext->alloc(sizeof(PROPTAG_ARRAY)));
+	ppayload->setcolumns.pproptags = pext->anew<PROPTAG_ARRAY>();
 	if (NULL == ppayload->setcolumns.pproptags) {
 		return FALSE;
 	}
@@ -1396,8 +1381,7 @@ static BOOL rpc_ext_pull_sorttable_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->sorttable.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->sorttable.htable));
-	ppayload->sorttable.psortset =
-		static_cast<SORTORDER_SET *>(pext->alloc(sizeof(SORTORDER_SET)));
+	ppayload->sorttable.psortset = pext->anew<SORTORDER_SET>();
 	if (NULL == ppayload->sorttable.psortset) {
 		return FALSE;
 	}
@@ -1425,8 +1409,7 @@ static BOOL rpc_ext_pull_restricttable_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->restricttable.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->restricttable.htable));
-	ppayload->restricttable.prestriction =
-		static_cast<RESTRICTION *>(pext->alloc(sizeof(RESTRICTION)));
+	ppayload->restricttable.prestriction = pext->anew<RESTRICTION>();
 	if (NULL == ppayload->restricttable.prestriction) {
 		return FALSE;
 	}
@@ -1441,8 +1424,7 @@ static BOOL rpc_ext_pull_findrow_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->findrow.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->findrow.htable));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->findrow.bookmark));
-	ppayload->findrow.prestriction =
-		static_cast<RESTRICTION *>(pext->alloc(sizeof(RESTRICTION)));
+	ppayload->findrow.prestriction = pext->anew<RESTRICTION>();
 	if (NULL == ppayload->findrow.prestriction) {
 		return FALSE;
 	}
@@ -1514,8 +1496,7 @@ static BOOL rpc_ext_pull_modifyrecipients_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->modifyrecipients.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->modifyrecipients.hmessage));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->modifyrecipients.flags));
-	ppayload->modifyrecipients.prcpt_list =
-		static_cast<TARRAY_SET *>(pext->alloc(sizeof(TARRAY_SET)));
+	ppayload->modifyrecipients.prcpt_list = pext->anew<TARRAY_SET>();
 	if (NULL == ppayload->modifyrecipients.prcpt_list) {
 		return FALSE;
 	}
@@ -1595,8 +1576,7 @@ static BOOL rpc_ext_pull_setpropvals_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->setpropvals.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->setpropvals.hobject));
-	ppayload->setpropvals.ppropvals =
-		static_cast<TPROPVAL_ARRAY *>(pext->alloc(sizeof(TPROPVAL_ARRAY)));
+	ppayload->setpropvals.ppropvals = pext->anew<TPROPVAL_ARRAY>();
 	if (NULL == ppayload->setpropvals.ppropvals) {
 		return FALSE;
 	}
@@ -1615,8 +1595,7 @@ static BOOL rpc_ext_pull_getpropvals_request(
 	if (0 == tmp_byte) {
 		ppayload->getpropvals.pproptags = NULL;
 	} else {
-		ppayload->getpropvals.pproptags =
-			static_cast<PROPTAG_ARRAY *>(pext->alloc(sizeof(PROPTAG_ARRAY)));
+		ppayload->getpropvals.pproptags = pext->anew<PROPTAG_ARRAY>();
 		if (NULL == ppayload->getpropvals.pproptags) {
 			return FALSE;
 		}
@@ -1675,8 +1654,7 @@ static BOOL rpc_ext_pull_getnamedpropids_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->getnamedpropids.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->getnamedpropids.hstore));
-	ppayload->getnamedpropids.ppropnames =
-		static_cast<PROPNAME_ARRAY *>(pext->alloc(sizeof(PROPNAME_ARRAY)));
+	ppayload->getnamedpropids.ppropnames = pext->anew<PROPNAME_ARRAY>();
 	if (NULL == ppayload->getnamedpropids.ppropnames) {
 		return FALSE;
 	}
@@ -1696,8 +1674,7 @@ static BOOL rpc_ext_pull_getpropnames_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->getpropnames.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->getpropnames.hstore));
-	ppayload->getpropnames.ppropids =
-		static_cast<PROPID_ARRAY *>(pext->alloc(sizeof(PROPID_ARRAY)));
+	ppayload->getpropnames.ppropids = pext->anew<PROPID_ARRAY>();
 	if (NULL == ppayload->getpropnames.ppropids) {
 		return FALSE;
 	}
@@ -1717,8 +1694,7 @@ static BOOL rpc_ext_pull_copyto_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->copyto.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->copyto.hsrcobject));
-	ppayload->copyto.pexclude_proptags =
-		static_cast<PROPTAG_ARRAY *>(pext->alloc(sizeof(PROPTAG_ARRAY)));
+	ppayload->copyto.pexclude_proptags = pext->anew<PROPTAG_ARRAY>();
 	if (NULL == ppayload->copyto.pexclude_proptags) {
 		return FALSE;
 	}
@@ -1774,8 +1750,7 @@ static BOOL rpc_ext_pull_configsync_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->configsync.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->configsync.hctx));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->configsync.flags));
-	ppayload->configsync.pstate =
-		static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+	ppayload->configsync.pstate = pext->anew<BINARY>();
 	if (NULL == ppayload->configsync.pstate) {
 		return FALSE;
 	}
@@ -1784,8 +1759,7 @@ static BOOL rpc_ext_pull_configsync_request(
 	if (0 == tmp_byte) {
 		ppayload->configsync.prestriction = NULL;
 	} else {
-		ppayload->configsync.prestriction =
-			static_cast<RESTRICTION *>(pext->alloc(sizeof(RESTRICTION)));
+		ppayload->configsync.prestriction = pext->anew<RESTRICTION>();
 		if (NULL == ppayload->configsync.prestriction) {
 			return FALSE;
 		}
@@ -1916,8 +1890,7 @@ static BOOL rpc_ext_pull_configimport_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->configimport.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->configimport.hctx));
 	QRF(ext_buffer_pull_uint8(pext, &ppayload->configimport.sync_type));
-	ppayload->configimport.pstate =
-		static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+	ppayload->configimport.pstate = pext->anew<BINARY>();
 	if (NULL == ppayload->configimport.pstate) {
 		return FALSE;
 	}
@@ -1952,8 +1925,7 @@ static BOOL rpc_ext_pull_importmessage_request(
 		&ppayload->importmessage.flags)) {
 		return FALSE;
 	}
-	ppayload->importmessage.pproplist =
-		static_cast<TPROPVAL_ARRAY *>(pext->alloc(sizeof(TPROPVAL_ARRAY)));
+	ppayload->importmessage.pproplist = pext->anew<TPROPVAL_ARRAY>();
 	if (NULL == ppayload->importmessage.pproplist) {
 		return FALSE;
 	}
@@ -1976,8 +1948,7 @@ static BOOL rpc_ext_pull_importfolder_request(
 		&ppayload->importfolder.hctx)) {
 		return FALSE;
 	}
-	ppayload->importfolder.pproplist =
-		static_cast<TPROPVAL_ARRAY *>(pext->alloc(sizeof(TPROPVAL_ARRAY)));
+	ppayload->importfolder.pproplist = pext->anew<TPROPVAL_ARRAY>();
 	if (NULL == ppayload->importfolder.pproplist) {
 		return FALSE;
 	}
@@ -1997,8 +1968,7 @@ static BOOL rpc_ext_pull_importdeletion_request(
 		&ppayload->importdeletion.flags)) {
 		return FALSE;
 	}
-	ppayload->importdeletion.pbins =
-		static_cast<BINARY_ARRAY *>(pext->alloc(sizeof(BINARY_ARRAY)));
+	ppayload->importdeletion.pbins = pext->anew<BINARY_ARRAY>();
 	if (NULL == ppayload->importdeletion.pbins) {
 		return FALSE;
 	}
@@ -2011,8 +1981,7 @@ static BOOL rpc_ext_pull_importreadstates_request(
 {
 	QRF(ext_buffer_pull_guid(pext, &ppayload->importreadstates.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->importreadstates.hctx));
-	ppayload->importreadstates.pstates =
-		static_cast<STATE_ARRAY *>(pext->alloc(sizeof(STATE_ARRAY)));
+	ppayload->importreadstates.pstates = pext->anew<STATE_ARRAY>();
 	if (NULL == ppayload->importreadstates.pstates) {
 		return FALSE;
 	}
@@ -2053,8 +2022,7 @@ static BOOL rpc_ext_pull_setsearchcriteria_request(
 	QRF(ext_buffer_pull_guid(pext, &ppayload->setsearchcriteria.hsession));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->setsearchcriteria.hfolder));
 	QRF(ext_buffer_pull_uint32(pext, &ppayload->setsearchcriteria.flags));
-	ppayload->setsearchcriteria.pfolder_array =
-		static_cast<BINARY_ARRAY *>(pext->alloc(sizeof(BINARY_ARRAY)));
+	ppayload->setsearchcriteria.pfolder_array = pext->anew<BINARY_ARRAY>();
 	if (NULL == ppayload->setsearchcriteria.pfolder_array) {
 		return FALSE;
 	}
@@ -2063,8 +2031,7 @@ static BOOL rpc_ext_pull_setsearchcriteria_request(
 	if (0 == tmp_byte) {
 		ppayload->setsearchcriteria.prestriction = NULL;
 	} else {
-		ppayload->setsearchcriteria.prestriction =
-			static_cast<RESTRICTION *>(pext->alloc(sizeof(RESTRICTION)));
+		ppayload->setsearchcriteria.prestriction = pext->anew<RESTRICTION>();
 		if (NULL == ppayload->setsearchcriteria.prestriction) {
 			return FALSE;
 		}
@@ -2098,8 +2065,7 @@ static BOOL rpc_ext_pull_rfc822tomessage_request(
 		&ppayload->rfc822tomessage.hmessage)) {
 		return FALSE;
 	}
-	ppayload->rfc822tomessage.peml_bin =
-		static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+	ppayload->rfc822tomessage.peml_bin = pext->anew<BINARY>();
 	if (NULL == ppayload->rfc822tomessage.peml_bin) {
 		return FALSE;
 	}
@@ -2130,8 +2096,7 @@ static BOOL rpc_ext_pull_icaltomessage_request(
 		&ppayload->icaltomessage.hmessage)) {
 		return FALSE;
 	}
-	ppayload->icaltomessage.pical_bin =
-		static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+	ppayload->icaltomessage.pical_bin = pext->anew<BINARY>();
 	if (NULL == ppayload->icaltomessage.pical_bin) {
 		return FALSE;
 	}
@@ -2162,8 +2127,7 @@ static BOOL rpc_ext_pull_vcftomessage_request(
 		&ppayload->vcftomessage.hmessage)) {
 		return FALSE;
 	}
-	ppayload->vcftomessage.pvcf_bin =
-		static_cast<BINARY *>(pext->alloc(sizeof(BINARY)));
+	ppayload->vcftomessage.pvcf_bin = pext->anew<BINARY>();
 	if (NULL == ppayload->vcftomessage.pvcf_bin) {
 		return FALSE;
 	}
