@@ -221,6 +221,19 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
 		
+#define regsvr(f) register_service(#f, f)
+		if (!regsvr(asyncemsmdb_interface_async_wait) ||
+		    !regsvr(asyncemsmdb_interface_register_active) ||
+		    !regsvr(asyncemsmdb_interface_remove) ||
+		    !regsvr(emsmdb_interface_connect_ex) ||
+		    !regsvr(emsmdb_interface_disconnect) ||
+		    !regsvr(emsmdb_interface_rpc_ext2) ||
+		    !regsvr(emsmdb_interface_touch_handle)) {
+			printf("[exchange_emsmdb]: service interface registration failure\n");
+			return false;
+		}
+#undef regsvr
+
 		/* host can include wildcard */
 		pendpoint = register_endpoint("*", 6001);
 		if (NULL == pendpoint) {

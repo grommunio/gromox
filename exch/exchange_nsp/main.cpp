@@ -106,6 +106,30 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 			b_check = FALSE;
 		}
 		ab_tree_init(org_name, table_size, cache_interval, max_item_num);
+
+#define regsvr(n) register_service(#n, n)
+		if (!regsvr(nsp_interface_bind) ||
+		    !regsvr(nsp_interface_compare_mids) ||
+		    !regsvr(nsp_interface_dntomid) ||
+		    !regsvr(nsp_interface_get_matches) ||
+		    !regsvr(nsp_interface_get_proplist) ||
+		    !regsvr(nsp_interface_get_props) ||
+		    !regsvr(nsp_interface_get_specialtable) ||
+		    !regsvr(nsp_interface_get_templateinfo) ||
+		    !regsvr(nsp_interface_mod_linkatt) ||
+		    !regsvr(nsp_interface_mod_props) ||
+		    !regsvr(nsp_interface_query_columns) ||
+		    !regsvr(nsp_interface_query_rows) ||
+		    !regsvr(nsp_interface_resolve_namesw) ||
+		    !regsvr(nsp_interface_resort_restriction) ||
+		    !regsvr(nsp_interface_seek_entries) ||
+		    !regsvr(nsp_interface_unbind) ||
+		    !regsvr(nsp_interface_update_stat)) {
+			printf("[exchange_nsp]: exchange_nsp not loaded\n");
+			return false;
+		}
+#undef regsvr
+
 		pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
 			printf("[exchange_nsp]: failed to register endpoint with port 6001\n");

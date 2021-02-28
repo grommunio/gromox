@@ -3694,6 +3694,8 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	if (strcmp(service, "register_interface") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_register_interface);
 	}
+	if (strcmp(service, "register_service") == 0)
+		return reinterpret_cast<void *>(service_register_service);
 	if (strcmp(service, "register_talk") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_register_talk);
 	}
