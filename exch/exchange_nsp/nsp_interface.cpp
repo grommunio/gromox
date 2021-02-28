@@ -524,9 +524,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	return ecNotFound;
 }		
 
-static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
-	BOOL b_ephid, uint32_t codepage, PROPTAG_ARRAY *pproptags,
-	PROPERTY_ROW *prow)
+static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode, BOOL b_ephid,
+    uint32_t codepage, const LPROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
 {
 	int i;
 	uint32_t err_val;
@@ -579,8 +578,8 @@ int nsp_interface_run()
 #undef E
 }
 
-int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
-	STAT *pstat, FLATUID *pserver_guid, NSPI_HANDLE *phandle)
+int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
+    FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {
 	int org_id;
 	int base_id;
@@ -655,8 +654,9 @@ static uint32_t nsp_interface_minid_in_list(
 	return 0;
 }
 
-static void nsp_interface_position_in_list(STAT *pstat, SINGLE_LIST *plist,
-    uint32_t *pout_row, uint32_t *pout_last_row, uint32_t *pcount)
+static void nsp_interface_position_in_list(const STAT *pstat,
+    SINGLE_LIST *plist, uint32_t *pout_row, uint32_t *pout_last_row,
+    uint32_t *pcount)
 {
 	BOOL b_found;
 	uint32_t row;
@@ -706,7 +706,7 @@ static void nsp_interface_position_in_list(STAT *pstat, SINGLE_LIST *plist,
 	*pout_last_row = last_row;
 }
 
-static void nsp_interface_position_in_table(STAT *pstat,
+static void nsp_interface_position_in_table(const STAT *pstat,
 	SIMPLE_TREE_NODE *pnode, uint32_t *pout_row,
 	uint32_t *pout_last_row, uint32_t *pcount)
 {
@@ -862,8 +862,8 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	return ecSuccess;
 }
 
-static void nsp_interface_make_ptyperror_row(
-	PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
+static void nsp_interface_make_ptyperror_row(const LPROPTAG_ARRAY *pproptags,
+    PROPERTY_ROW *prow)
 {
 	int i;
 	
@@ -880,9 +880,9 @@ static void nsp_interface_make_ptyperror_row(
 	}
 }
 
-int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
-	STAT *pstat, uint32_t table_count, uint32_t *ptable,
-	uint32_t count, PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
+int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
+    uint32_t table_count, uint32_t *ptable, uint32_t count,
+    const LPROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
 {
 	int i;
 	int base_id;
@@ -919,24 +919,25 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 	
 	if (NULL == pproptags) {
-		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
-		if (NULL == pproptags) {
+		auto nt = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		if (nt == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		pproptags->cvalues = 7;
-		pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, pproptags->cvalues);
-		if (pproptags->pproptag == nullptr) {
+		pproptags = nt;
+		nt->cvalues = 7;
+		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
+		if (nt->pproptag == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		pproptags->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
-		pproptags->pproptag[1] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[2] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
-		pproptags->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
-		pproptags->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		pproptags->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
+		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
+		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
+		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
+		nt->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
+		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
+		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
+		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
 	} else {
 		if (pproptags->cvalues > 100) {
 			*pprows = NULL;
@@ -1097,8 +1098,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-    STAT *pstat, PROPERTY_VALUE *ptarget, MID_ARRAY *ptable,
-	PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
+    STAT *pstat, PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
+    const PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
 {
 	int base_id, row;
 	AB_BASE *pbase;
@@ -1140,24 +1141,25 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	if (NULL == pproptags) {
-		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
-		if (NULL == pproptags) {
+		auto nt = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		if (nt == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		pproptags->cvalues = 7;
-		pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, pproptags->cvalues);
-		if (pproptags->pproptag == nullptr) {
+		pproptags = nt;
+		nt->cvalues = 7;
+		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
+		if (nt->pproptag == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		pproptags->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
-		pproptags->pproptag[1] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[2] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
-		pproptags->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
-		pproptags->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		pproptags->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
+		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
+		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
+		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
+		nt->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
+		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
+		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
+		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
 	} else {
 		if (pproptags->cvalues > 100) {
 			*pprows = NULL;
@@ -1324,8 +1326,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	return result;
 }
 
-static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, RESTRICTION *pfilter)
+static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
+    const RESTRICTION *pfilter)
 {
 	int i;
 	char *ptoken;
@@ -1614,9 +1616,10 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 }
 
 int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
-    STAT *pstat, MID_ARRAY *preserved, uint32_t reserved2, RESTRICTION *pfilter,
-    NSP_PROPNAME *ppropname, uint32_t requested, MID_ARRAY **ppoutmids,
-    LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
+    STAT *pstat, const MID_ARRAY *preserved, uint32_t reserved2,
+    const RESTRICTION *pfilter, const NSP_PROPNAME *ppropname,
+    uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
+    NSP_ROWSET **pprows)
 {
 	int base_id;
 	int user_id;
@@ -1844,7 +1847,7 @@ static int nsp_interface_cmpstring(const void *p1, const void *p2)
 }
 
 int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
-    STAT *pstat, MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
+    STAT *pstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
 {
 	int i;
 	int count;
@@ -1923,7 +1926,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
-    STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
+    const STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
 {
 	int base_id;
 	AB_BASE *pbase;
@@ -2111,7 +2114,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
-	STAT *pstat, PROPTAG_ARRAY *pproptags, PROPERTY_ROW **pprows)
+    const STAT *pstat, const PROPTAG_ARRAY *pproptags, PROPERTY_ROW **pprows)
 {
 	int i;
 	int count;
@@ -2225,13 +2228,14 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	b_proptags = TRUE;
 	if (NULL == pproptags) {
 		b_proptags = FALSE;
-		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
-		if (NULL == pproptags) {
+		auto nt = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		if (nt == nullptr) {
 			result = ecMAPIOOM;
 			goto EXIT_GET_PROPS;
 		}
+		pproptags = nt;
 		result = nsp_interface_get_default_proptags(
-			ab_tree_get_node_type(pnode1), b_unicode, pproptags);
+			ab_tree_get_node_type(pnode1), b_unicode, nt);
 		if (result != ecSuccess)
 			goto EXIT_GET_PROPS;
 	} else if (pproptags->cvalues > 100) {
@@ -2282,7 +2286,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, uint32_t mid1, uint32_t mid2, uint32_t *presult)
+    const STAT *pstat, uint32_t mid1, uint32_t mid2, uint32_t *presult)
 {
 	int i;
 	int base_id;
@@ -2364,7 +2368,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
+    const STAT *pstat, const PROPTAG_ARRAY *pproptags, const PROPERTY_ROW *prow)
 {
 	return ecNotSupported;
 }
@@ -2548,7 +2552,7 @@ static uint32_t nsp_interface_get_tree_specialtables(
 }
 
 int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
-	STAT *pstat, uint32_t *pversion, PROPROW_SET **pprows)
+    const STAT *pstat, uint32_t *pversion, PROPROW_SET **pprows)
 {
 	int base_id;
 	BOOL b_unicode;
@@ -2642,7 +2646,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
-	uint32_t proptag, uint32_t mid, BINARY_ARRAY *pentry_ids)
+    uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids)
 {
 	int base_id, fd;
 	AB_BASE *pbase;
@@ -2855,8 +2859,8 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
-	PROPTAG_ARRAY **ppmids, PROPROW_SET **pprows)
+    const STAT *pstat, const LPROPTAG_ARRAY *pproptags,
+    const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	char *pstr;
 	int temp_len;
@@ -3018,7 +3022,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 }
 
 static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
-	PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
+    const LPROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
 {
 	int i;
 	uint32_t err_val;
@@ -3040,8 +3044,8 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 }
 
 int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
-    MID_ARRAY **ppmids, NSP_ROWSET **pprows)
+    const STAT *pstat, const LPROPTAG_ARRAY *pproptags,
+    const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	int j;
 	int base_id;
@@ -3075,26 +3079,27 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	if (NULL == pproptags) {
-		pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
-		if (NULL == pproptags) {
+		auto nt = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		if (nt == nullptr) {
 			*ppmids = NULL;
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		pproptags->cvalues = 7;
-		pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, pproptags->cvalues);
-		if (pproptags->pproptag == nullptr) {
+		pproptags = nt;
+		nt->cvalues = 7;
+		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
+		if (nt->pproptag == nullptr) {
 			*ppmids = NULL;
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		pproptags->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
-		pproptags->pproptag[1] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[2] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
-		pproptags->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
-		pproptags->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		pproptags->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
+		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
+		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
+		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
+		nt->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
+		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
+		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
+		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
 	} else {
 		if (pproptags->cvalues > 100) {
 			*ppmids = NULL;
@@ -3251,7 +3256,7 @@ void nsp_interface_unbind_rpc_handle(uint64_t hrpc)
 }
 
 int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
-    uint32_t type, char *dn, uint32_t codepage, uint32_t locale_id,
+    uint32_t type, const char *dn, uint32_t codepage, uint32_t locale_id,
     PROPERTY_ROW **ppdata)
 {
 	*ppdata = nullptr;
