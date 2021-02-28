@@ -32,16 +32,18 @@ struct STAT {
 	uint32_t sort_locale;
 };
 
-struct PROPTAG_ARRAY {
+struct LPROPTAG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pproptag;
 };
+using PROPTAG_ARRAY = LPROPTAG_ARRAY;
 
-struct PROPERTY_NAME {
+struct NSP_PROPNAME {
 	FLATUID *pguid;
 	uint32_t reserved;
 	uint32_t id;
 };
+using PROPERTY_NAME = NSP_PROPNAME;
 
 struct STRING_ARRAY {
 	uint32_t cvalues;
@@ -117,86 +119,97 @@ struct PROPERTY_VALUE {
 	PROP_VAL_UNION value; /* type is PROP_TYPE(proptag) */
 };
 
-struct PROPERTY_ROW {
+struct NSP_PROPROW {
 	uint32_t reserved;
 	uint32_t cvalues;
 	PROPERTY_VALUE *pprops;
 };
+using PROPERTY_ROW = NSP_PROPROW;
 
-struct PROPROW_SET {
+struct NSP_ROWSET {
 	uint32_t crows;
 	PROPERTY_ROW *prows;
 };
+using PROPROW_SET = NSP_ROWSET;
 
-struct RESTRICTION;
-struct RESTRICTION_AND_OR {
+struct NSPRES;
+struct NSPRES_AND_OR {
 	uint32_t cres;
-	RESTRICTION *pres;
-};
-typedef struct RESTRICTION_AND_OR RESTRICTION_AND, RESTRICTION_OR;
-
-struct RESTRICTION_NOT {
-	RESTRICTION *pres;
+	NSPRES *pres;
 };
 
-struct RESTRICTION_CONTENT {
+struct NSPRES_NOT {
+	NSPRES *pres;
+};
+
+struct NSPRES_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	PROPERTY_VALUE *pprop;
 };
 
-struct RESTRICTION_PROPERTY {
+struct NSPRES_PROPERTY {
 	uint32_t relop;
 	uint32_t proptag;
 	PROPERTY_VALUE *pprop;
 };
 
-struct RESTRICTION_PROPCOMPARE {
+struct NSPRES_PROPCOMPARE {
 	uint32_t relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
 };
 
-struct RESTRICTION_BITMASK {
+struct NSPRES_BITMASK {
 	uint32_t rel_mbr;
 	uint32_t proptag;
 	uint32_t mask;
 };
 
-struct RESTRICTION_SIZE {
+struct NSPRES_SIZE {
 	uint32_t relop;
 	uint32_t proptag;
 	uint32_t cb;
 };
 
-struct RESTRICTION_EXIST {
+struct NSPRES_EXIST {
 	uint32_t reserved1;
 	uint32_t proptag;
 	uint32_t reserved2;
 };
 
-struct RESTRICTION_SUB {
+struct NSPRES_SUB {
 	uint32_t subobject;
-	RESTRICTION *pres;
+	NSPRES *pres;
 };
 
-union RESTRICTION_UNION {
-	RESTRICTION_AND res_and;
-	RESTRICTION_OR res_or;
-	RESTRICTION_NOT res_not;
-	RESTRICTION_CONTENT res_content;
-	RESTRICTION_PROPERTY res_property;
-	RESTRICTION_PROPCOMPARE res_propcompare;
-	RESTRICTION_BITMASK res_bitmask;
-	RESTRICTION_SIZE res_size;
-	RESTRICTION_EXIST res_exist;
-	RESTRICTION_SUB res_sub;
+union NSPRES_UNION {
+	NSPRES_AND_OR res_and, res_or;
+	NSPRES_NOT res_not;
+	NSPRES_CONTENT res_content;
+	NSPRES_PROPERTY res_property;
+	NSPRES_PROPCOMPARE res_propcompare;
+	NSPRES_BITMASK res_bitmask;
+	NSPRES_SIZE res_size;
+	NSPRES_EXIST res_exist;
+	NSPRES_SUB res_sub;
 };
 
-struct RESTRICTION {
+struct NSPRES {
 	uint32_t res_type;
-	RESTRICTION_UNION res;
+	NSPRES_UNION res;
 };
+using RESTRICTION = NSPRES;
+using RESTRICTION_AND_OR = NSPRES_AND_OR;
+using RESTRICTION_NOT = NSPRES_NOT;
+using RESTRICTION_CONTENT = NSPRES_CONTENT;
+using RESTRICTION_PROPERTY = NSPRES_PROPERTY;
+using RESTRICTION_PROPCOMPARE = NSPRES_PROPCOMPARE;
+using RESTRICTION_BITMASK = NSPRES_BITMASK;
+using RESTRICTION_SIZE = NSPRES_SIZE;
+using RESTRICTION_EXIST = NSPRES_EXIST;
+using RESTRICTION_SUB = NSPRES_SUB;
+using RESTRICTION_UNION = NSPRES_UNION;
 
 struct PERMANENT_ENTRYID {
 	uint8_t id_type;	/* constant: 0x0	*/
