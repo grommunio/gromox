@@ -686,7 +686,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_rfc1123_dstring(dstring);
 					response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),
-						"HTTP/1.1 503 Service Unavailable\r\n"
+						"HTTP/1.1 503 L-689 Service Unavailable\r\n"
 						"Date: %s\r\n"
 						"Server: %s\r\n"
 						"Content-Length: 0\r\n"

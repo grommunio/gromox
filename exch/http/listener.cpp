@@ -199,7 +199,7 @@ static void* thread_work_func(void* arg)
 		if (NULL == pcontext) {
 			system_services_log_info(4, "no available HTTP_CONTEXT/processing slot");
 			host_ID = resource_get_string("HOST_ID");
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -213,7 +213,7 @@ static void* thread_work_func(void* arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -231,7 +231,7 @@ static void* thread_work_func(void* arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-234 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -329,7 +329,7 @@ static void* thread_work_ssl_func(void* arg)
 		if (NULL == pcontext) {
 			system_services_log_info(4, "no available HTTP_CONTEXT/processing slot");
 			host_ID = resource_get_string("HOST_ID");
-			len = sprintf(buff, "HTTP/1.1 503 Service Unavailable\r\n"
+			len = sprintf(buff, "HTTP/1.1 503 L-332 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -343,7 +343,7 @@ static void* thread_work_ssl_func(void* arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-346 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -361,7 +361,7 @@ static void* thread_work_ssl_func(void* arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-364 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
