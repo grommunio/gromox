@@ -32,14 +32,15 @@ uint64_t rop_util_get_gc_value(uint64_t eid)
 	uint64_t value;
 	
 	if (rop_util_is_little_endian()) {
-		((uint8_t*)&value)[0] = ((uint8_t*)&eid)[7];
-		((uint8_t*)&value)[1] = ((uint8_t*)&eid)[6];
-		((uint8_t*)&value)[2] = ((uint8_t*)&eid)[5];
-		((uint8_t*)&value)[3] = ((uint8_t*)&eid)[4];
-		((uint8_t*)&value)[4] = ((uint8_t*)&eid)[3];
-		((uint8_t*)&value)[5] = ((uint8_t*)&eid)[2];
-		((uint8_t*)&value)[6] = 0;
-		((uint8_t*)&value)[7] = 0;
+		auto v = reinterpret_cast<uint8_t *>(&value);
+		auto e = reinterpret_cast<const uint8_t *>(&eid);
+		v[0] = e[7];
+		v[1] = e[6];
+		v[2] = e[5];
+		v[3] = e[4];
+		v[4] = e[3];
+		v[5] = e[2];
+		v[6] = v[7] = 0;
 	} else {
 		value = eid >> 16;
 	}
@@ -57,35 +58,37 @@ void rop_util_get_gc_array(uint64_t eid, uint8_t gc[6])
 
 void rop_util_value_to_gc(uint64_t value, uint8_t gc[6])
 {
+	auto v = reinterpret_cast<const uint8_t *>(&value);
 	if (rop_util_is_little_endian()) {
-		gc[5] = ((uint8_t*)&value)[0];
-		gc[4] = ((uint8_t*)&value)[1];
-		gc[3] = ((uint8_t*)&value)[2];
-		gc[2] = ((uint8_t*)&value)[3];
-		gc[1] = ((uint8_t*)&value)[4];
-		gc[0] = ((uint8_t*)&value)[5];
+		gc[5] = v[0];
+		gc[4] = v[1];
+		gc[3] = v[2];
+		gc[2] = v[3];
+		gc[1] = v[4];
+		gc[0] = v[5];
 	} else {
-		memcpy(gc, (uint8_t*)&value + 2, 6);
+		memcpy(gc, v + 2, 6);
 	}
 }
 
 uint64_t rop_util_gc_to_value(uint8_t gc[6])
 {
 	uint64_t value;
+	auto v = reinterpret_cast<uint8_t *>(&value);
 	
 	if (rop_util_is_little_endian()) {
-		((uint8_t*)&value)[0] = gc[5];
-		((uint8_t*)&value)[1] = gc[4];
-		((uint8_t*)&value)[2] = gc[3];
-		((uint8_t*)&value)[3] = gc[2];
-		((uint8_t*)&value)[4] = gc[1];
-		((uint8_t*)&value)[5] = gc[0];
-		((uint8_t*)&value)[6] = 0;
-		((uint8_t*)&value)[7] = 0;
+		v[0] = gc[5];
+		v[1] = gc[4];
+		v[2] = gc[3];
+		v[3] = gc[2];
+		v[4] = gc[1];
+		v[5] = gc[0];
+		v[6] = 0;
+		v[7] = 0;
 	} else {
-		((uint8_t*)&value)[0] = 0;
-		((uint8_t*)&value)[1] = 0;
-		memcpy((uint8_t*)&value + 2, gc, 6);
+		v[0] = 0;
+		v[1] = 0;
+		memcpy(v + 2, gc, 6);
 	}
 	return value;
 	
@@ -94,15 +97,16 @@ uint64_t rop_util_gc_to_value(uint8_t gc[6])
 uint64_t rop_util_make_eid(uint16_t replid, const uint8_t gc[6])
 {
 	uint64_t eid;
+	auto e = reinterpret_cast<uint8_t *>(&eid);
 	
 	if (rop_util_is_little_endian()) {
-		((uint8_t*)&eid)[0] = 0;
-		((uint8_t*)&eid)[1] = 0;
-		memcpy((uint8_t*)&eid + 2, gc, 6);
+		e[0] = 0;
+		e[1] = 0;
+		memcpy(e + 2, gc, 6);
 	} else {
 		memcpy(&eid, gc, 6);
-		((uint8_t*)&eid)[6] = 0;
-		((uint8_t*)&eid)[7] = 0;
+		e[6] = 0;
+		e[7] = 0;
 	}
 	return (eid | replid);
 }

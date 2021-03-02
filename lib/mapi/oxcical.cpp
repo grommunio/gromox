@@ -131,7 +131,9 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 
 static int oxcical_cmp_tzrule(const void *prule1, const void *prule2)
 {
-	return ((TZRULE*)prule1)->year - ((TZRULE*)prule2)->year;
+	auto a = static_cast<const TZRULE *>(prule1);
+	auto b = static_cast<const TZRULE *>(prule2);
+	return a->year - b->year;
 }
 
 static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_component,
@@ -2099,15 +2101,17 @@ static BOOL oxcical_parse_appointment_recurrence(
 static int oxcical_cmp_exception(
 	const void *pexception1, const void *pexception2)
 {
-	return ((EXCEPTIONINFO*)pexception1)->startdatetime -
-			((EXCEPTIONINFO*)pexception2)->startdatetime;
+	auto a = static_cast<const EXCEPTIONINFO *>(pexception1);
+	auto b = static_cast<const EXCEPTIONINFO *>(pexception2);
+	return a->startdatetime - b->startdatetime;
 }
 
 static int oxcical_cmp_ext_exception(
 	const void *pext_exception1, const void *pext_exception2)
 {
-	return ((EXTENDEDEXCEPTION*)pext_exception1)->startdatetime -
-			((EXTENDEDEXCEPTION*)pext_exception2)->startdatetime;
+	auto a = static_cast<const EXTENDEDEXCEPTION *>(pext_exception1);
+	auto b = static_cast<const EXTENDEDEXCEPTION *>(pext_exception2);
+	return a->startdatetime - b->startdatetime;
 }
 
 static void oxcical_replace_propid(

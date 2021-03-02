@@ -136,43 +136,32 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 	memset(&macbin, 0, sizeof(MACBINARY));
 	for (i=0; i<papplefile->count; i++) {
 		if (AS_REALNAME == papplefile->pentries[i].entry_id) {
-			if (((BINARY*)papplefile->pentries[i].pentry)->cb > 63) {
-				memcpy(macbin.header.file_name,
-					((BINARY*)papplefile->pentries[i].pentry)->pb, 63);
-			} else {
-				memcpy(macbin.header.file_name,
-					((BINARY*)papplefile->pentries[i].pentry)->pb,
-					((BINARY*)papplefile->pentries[i].pentry)->cb);
-			}
+			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
+			if (bin->cb > 63)
+				memcpy(macbin.header.file_name, bin->pb, 63);
+			else
+				memcpy(macbin.header.file_name, bin->pb, bin->cb);
 			
 		} else if (AS_FINDERINFO == papplefile->pentries[i].entry_id) {
-			macbin.header.type = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_type;
-			macbin.header.creator = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_creator;
-			macbin.header.original_flags = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_flags >> 8;
-			macbin.header.finder_flags = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_flags & 0xFF;
-			macbin.header.folder_id = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_folder;
-			macbin.header.point_v = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_location.v;
-			macbin.header.point_h = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_location.h;
+			auto fi = static_cast<ASFINDERINFO *>(papplefile->pentries[i].pentry);
+			macbin.header.type = fi->finfo.fd_type;
+			macbin.header.creator = fi->finfo.fd_creator;
+			macbin.header.original_flags = fi->finfo.fd_flags >> 8;
+			macbin.header.finder_flags = fi->finfo.fd_flags & 0xFF;
+			macbin.header.folder_id = fi->finfo.fd_folder;
+			macbin.header.point_v = fi->finfo.fd_location.v;
+			macbin.header.point_h = fi->finfo.fd_location.h;
 		} else if (AS_RESOURCE == papplefile->pentries[i].entry_id) {
-			macbin.header.res_len = ((BINARY*)
-				papplefile->pentries[i].pentry)->cb;
-			macbin.presource = ((BINARY*)
-				papplefile->pentries[i].pentry)->pb;
+			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
+			macbin.header.res_len = bin->cb;
+			macbin.presource = bin->pb;
 		} else if (AS_MACINFO == papplefile->pentries[i].entry_id) {
-			macbin.header.protected_flag = (((ASMACINFO*)
-				papplefile->pentries[i].pentry)->attribute & 0x01) << 1;
+			auto mi = static_cast<ASMACINFO *>(papplefile->pentries[i].pentry);
+			macbin.header.protected_flag = (mi->attribute & 0x01) << 1;
 		} else if (AS_FILEDATES == papplefile->pentries[i].entry_id) {
-			macbin.header.creat_time = ((ASFILEDATES*)
-				papplefile->pentries[i].pentry)->create;
-			macbin.header.modify_time = ((ASFILEDATES*)
-				papplefile->pentries[i].pentry)->modify;
+			auto fd = static_cast<ASFILEDATES *>(papplefile->pentries[i].pentry);
+			macbin.header.creat_time  = fd->create;
+			macbin.header.modify_time = fd->modify;
 		}
 	}
 	macbin.header.version = 130;
@@ -206,46 +195,35 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 	memset(&macbin, 0, sizeof(MACBINARY));
 	for (i=0; i<papplefile->count; i++) {
 		if (AS_REALNAME == papplefile->pentries[i].entry_id) {
-			if (((BINARY*)papplefile->pentries[i].pentry)->cb > 63) {
-				memcpy(macbin.header.file_name,
-					((BINARY*)papplefile->pentries[i].pentry)->pb, 63);
-			} else {
-				memcpy(macbin.header.file_name,
-					((BINARY*)papplefile->pentries[i].pentry)->pb,
-					((BINARY*)papplefile->pentries[i].pentry)->cb);
-			}
+			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
+			if (bin->cb > 63)
+				memcpy(macbin.header.file_name, bin->pb, 63);
+			else
+				memcpy(macbin.header.file_name, bin->pb, bin->cb);
 		} else if (AS_FINDERINFO == papplefile->pentries[i].entry_id) {
-			macbin.header.type = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_type;
-			macbin.header.creator = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_creator;
-			macbin.header.original_flags = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_flags >> 8;
-			macbin.header.finder_flags = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_flags & 0xFF;
-			macbin.header.folder_id = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_folder;
-			macbin.header.point_v = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_location.v;
-			macbin.header.point_h = ((ASFINDERINFO*)
-				papplefile->pentries[i].pentry)->finfo.fd_location.h;
+			auto fi = static_cast<ASFINDERINFO *>(papplefile->pentries[i].pentry);
+			macbin.header.type = fi->finfo.fd_type;
+			macbin.header.creator = fi->finfo.fd_creator;
+			macbin.header.original_flags = fi->finfo.fd_flags >> 8;
+			macbin.header.finder_flags = fi->finfo.fd_flags & 0xFF;
+			macbin.header.folder_id = fi->finfo.fd_folder;
+			macbin.header.point_v = fi->finfo.fd_location.v;
+			macbin.header.point_h = fi->finfo.fd_location.h;
 		} else if (AS_RESOURCE == papplefile->pentries[i].entry_id) {
-			macbin.header.res_len = ((BINARY*)
-				papplefile->pentries[i].pentry)->cb;
-			macbin.presource = ((BINARY*)
-				papplefile->pentries[i].pentry)->pb;
+			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
+			macbin.header.res_len = bin->cb;
+			macbin.presource = bin->pb;
 		} else if (AS_MACINFO == papplefile->pentries[i].entry_id) {
-			macbin.header.protected_flag = (((ASMACINFO*)
-				papplefile->pentries[i].pentry)->attribute & 0x01) << 1;
+			auto mi = static_cast<ASMACINFO *>(papplefile->pentries[i].pentry);
+			macbin.header.protected_flag = (mi->attribute & 0x01) << 1;
 		} else if (AS_FILEDATES == papplefile->pentries[i].entry_id) {
-			macbin.header.creat_time = ((ASFILEDATES*)
-				papplefile->pentries[i].pentry)->create;
-			macbin.header.modify_time = ((ASFILEDATES*)
-				papplefile->pentries[i].pentry)->modify;
+			auto fd = static_cast<ASFILEDATES *>(papplefile->pentries[i].pentry);
+			macbin.header.creat_time  = fd->create;
+			macbin.header.modify_time = fd->modify;
 		} else if (AS_DATA == papplefile->pentries[i].entry_id) {
-			macbin.header.data_len = ((BINARY*)
-				papplefile->pentries[i].pentry)->cb;
-			macbin.pdata = ((BINARY*)papplefile->pentries[i].pentry)->pb;
+			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
+			macbin.header.data_len = bin->cb;
+			macbin.pdata = bin->pb;
 		}
 	}
 	macbin.header.version = 130;
