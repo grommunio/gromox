@@ -552,34 +552,31 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			return ecMAPIOOM;
 		}
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.offset);
-		result = rop_dispatch(static_cast<ROP_REQUEST *>(pnode->pdata),
-				(ROP_RESPONSE**)&pnode1->pdata,
+		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
+		result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
 				prop_buff->phandles, prop_buff->hnum);
 		switch (result) {
 		case ecSuccess:
 			/* disable compression when RopReadStream
 				RopFastTransferSourceGetBuffer success.
 				in many cases, lzxpress will make buffer inflate! */
-			if (static_cast<ROP_REQUEST *>(pnode->pdata)->rop_id == ropReadStream ||
-			    static_cast<ROP_REQUEST *>(pnode->pdata)->rop_id == ropFastTransferSourceGetBuffer)
+			if (req->rop_id == ropReadStream ||
+			    req->rop_id == ropFastTransferSourceGetBuffer)
 				prop_buff->rhe_flags &= ~RHE_FLAG_COMPRESSED;
 			break;
-		case ecBufferTooSmall:
-			static_cast<ROP_RESPONSE *>(pnode1->pdata)->rop_id = ropBufferTooSmall;
-			static_cast<ROP_RESPONSE *>(pnode1->pdata)->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
-			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
+		case ecBufferTooSmall: {
+			auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+			rsp->rop_id = ropBufferTooSmall;
+			rsp->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
+			if (rsp->ppayload == nullptr)
 				return ecMAPIOOM;
-			}
-			((BUFFERTOOSMALL_RESPONSE*)((ROP_RESPONSE*)
-				pnode1->pdata)->ppayload)->size_needed = 0x8000;
-			((BUFFERTOOSMALL_RESPONSE*)((ROP_RESPONSE*)
-				pnode1->pdata)->ppayload)->buffer =
-					((ROP_REQUEST*)pnode->pdata)->bookmark;
-			if (rop_ext_push_rop_response(&ext_push,
-			    static_cast<ROP_REQUEST *>(pnode->pdata)->logon_id,
-			    static_cast<ROP_RESPONSE *>(pnode1->pdata)) != EXT_ERR_SUCCESS)
+			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
+			bts->size_needed = 0x8000;
+			bts->buffer = req->bookmark;
+			if (rop_ext_push_rop_response(&ext_push, req->logon_id, rsp) != EXT_ERR_SUCCESS)
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
+		}
 		default:
 			return result;
 		}

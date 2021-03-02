@@ -353,34 +353,28 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 	uint64_t handle, void *pin, void **ppout)
 {
 	switch (opnum) {
-	case 1:
-		*ppout = ndr_stack_anew<ECDODISCONNECT_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	case 1: {
+		auto in  = static_cast<ECDOASYNCCONNECTEX_IN *>(pin);
+		auto out = ndr_stack_anew<ECDODISCONNECT_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((ECDODISCONNECT_OUT*)*ppout)->result =
-			emsmdb_interface_disconnect(&((ECDOASYNCCONNECTEX_IN*)pin)->cxh);
-		((ECDODISCONNECT_OUT*)*ppout)->cxh =
-										((ECDOASYNCCONNECTEX_IN*)pin)->cxh;
+		*ppout = out;
+		out->result = emsmdb_interface_disconnect(&in->cxh);
+		out->cxh = in->cxh;
 		return DISPATCH_SUCCESS;
-	case 4:
-		*ppout = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 4: {
+		auto in  = static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(pin);
+		auto out = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((ECRREGISTERPUSHNOTIFICATION_OUT*)*ppout)->result =
-			emsmdb_interface_register_push_notification(
-				&((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->cxh,
-				((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->rpc,
-				((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->pctx,
-				((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->cb_ctx,
-				((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->advise_bits,
-				((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->paddr,
-				((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->cb_addr,
-				&((ECRREGISTERPUSHNOTIFICATION_OUT*)*ppout)->hnotification);
-		((ECRREGISTERPUSHNOTIFICATION_OUT*)*ppout)->cxh =
-			((ECRREGISTERPUSHNOTIFICATION_IN*)pin)->cxh;
+		*ppout = out;
+		out->result = emsmdb_interface_register_push_notification(&in->cxh,
+		              in->rpc, in->pctx, in->cb_ctx, in->advise_bits,
+		              in->paddr, in->cb_addr, &out->hnotification);
+		out->cxh = in->cxh;
 		return DISPATCH_SUCCESS;
+	}
 	case 6:
 		*ppout = ndr_stack_anew<int32_t>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
@@ -388,75 +382,50 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 		}
 		*(int32_t*)*ppout = emsmdb_interface_dummy_rpc(handle);
 		return DISPATCH_SUCCESS;
-	case 10:
-		*ppout = ndr_stack_anew<ECDOCONNECTEX_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	case 10: {
+		auto in  = static_cast<ECDOCONNECTEX_IN *>(pin);
+		auto out = ndr_stack_anew<ECDOCONNECTEX_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((ECDOCONNECTEX_OUT*)*ppout)->result =
-			emsmdb_interface_connect_ex(handle,
-				&((ECDOCONNECTEX_OUT*)*ppout)->cxh,
-				((ECDOCONNECTEX_IN*)pin)->puserdn,
-				((ECDOCONNECTEX_IN*)pin)->flags,
-				((ECDOCONNECTEX_IN*)pin)->conmod,
-				((ECDOCONNECTEX_IN*)pin)->limit,
-				((ECDOCONNECTEX_IN*)pin)->cpid,
-				((ECDOCONNECTEX_IN*)pin)->lcid_string,
-				((ECDOCONNECTEX_IN*)pin)->lcid_sort,
-				((ECDOCONNECTEX_IN*)pin)->cxr_link,
-				((ECDOCONNECTEX_IN*)pin)->cnvt_cps,
-				&((ECDOCONNECTEX_OUT*)*ppout)->max_polls,
-				&((ECDOCONNECTEX_OUT*)*ppout)->max_retry,
-				&((ECDOCONNECTEX_OUT*)*ppout)->retry_delay,
-				&((ECDOCONNECTEX_OUT*)*ppout)->cxr,
-				((ECDOCONNECTEX_OUT*)*ppout)->pdn_prefix,
-				((ECDOCONNECTEX_OUT*)*ppout)->pdisplayname,
-				((ECDOCONNECTEX_IN*)pin)->pclient_vers,
-				((ECDOCONNECTEX_OUT*)*ppout)->pserver_vers,
-				((ECDOCONNECTEX_OUT*)*ppout)->pbest_vers,
-				&((ECDOCONNECTEX_IN*)pin)->timestamp,
-				((ECDOCONNECTEX_IN*)pin)->pauxin,
-				((ECDOCONNECTEX_IN*)pin)->cb_auxin,
-				((ECDOCONNECTEX_OUT*)*ppout)->pauxout,
-				&((ECDOCONNECTEX_IN*)pin)->cb_auxout);
-		((ECDOCONNECTEX_OUT*)*ppout)->timestamp =
-						((ECDOCONNECTEX_IN*)pin)->timestamp;
-		((ECDOCONNECTEX_OUT*)*ppout)->cb_auxout =
-						((ECDOCONNECTEX_IN*)pin)->cb_auxout;
+		*ppout = out;
+		out->result = emsmdb_interface_connect_ex(handle, &out->cxh,
+		              in->puserdn, in->flags, in->conmod, in->limit,
+		              in->cpid, in->lcid_string, in->lcid_sort,
+		              in->cxr_link, in->cnvt_cps, &out->max_polls,
+		              &out->max_retry, &out->retry_delay, &out->cxr,
+		              out->pdn_prefix, out->pdisplayname,
+		              in->pclient_vers, out->pserver_vers,
+		              out->pbest_vers, &in->timestamp, in->pauxin,
+		              in->cb_auxin, out->pauxout, &in->cb_auxout);
+		out->timestamp = in->timestamp;
+		out->cb_auxout = in->cb_auxout;
 		return DISPATCH_SUCCESS;
-	case 11:
-		*ppout = ndr_stack_anew<ECDORPCEXT2_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 11: {
+		auto in  = static_cast<ECDORPCEXT2_IN *>(pin);
+		auto out = ndr_stack_anew<ECDORPCEXT2_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((ECDORPCEXT2_OUT*)*ppout)->result =
-			emsmdb_interface_rpc_ext2(&((ECDORPCEXT2_IN*)pin)->cxh,
-				&((ECDORPCEXT2_IN*)pin)->flags,
-				((ECDORPCEXT2_IN*)pin)->pin,
-				((ECDORPCEXT2_IN*)pin)->cb_in,
-				((ECDORPCEXT2_OUT*)*ppout)->pout,
-				&((ECDORPCEXT2_IN*)pin)->cb_out,
-				((ECDORPCEXT2_IN*)pin)->pauxin,
-				((ECDORPCEXT2_IN*)pin)->cb_auxin,
-				((ECDORPCEXT2_OUT*)*ppout)->pauxout,
-				&((ECDORPCEXT2_IN*)pin)->cb_auxout,
-				&((ECDORPCEXT2_OUT*)*ppout)->trans_time);
-		((ECDORPCEXT2_OUT*)*ppout)->cxh = ((ECDORPCEXT2_IN*)pin)->cxh;
-		((ECDORPCEXT2_OUT*)*ppout)->flags = ((ECDORPCEXT2_IN*)pin)->flags;
-		((ECDORPCEXT2_OUT*)*ppout)->cb_out = ((ECDORPCEXT2_IN*)pin)->cb_out;
-		((ECDORPCEXT2_OUT*)*ppout)->cb_auxout =
-									((ECDORPCEXT2_IN*)pin)->cb_auxout;
+		*ppout = out;
+		out->result = emsmdb_interface_rpc_ext2(&in->cxh, &in->flags,
+		              in->pin, in->cb_in, out->pout, &in->cb_out,
+		              in->pauxin, in->cb_auxin, out->pauxout,
+		              &in->cb_auxout, &out->trans_time);
+		out->cxh = in->cxh;
+		out->flags = in->flags;
+		out->cb_out = in->cb_out;
+		out->cb_auxout = in->cb_auxout;
 		return DISPATCH_SUCCESS;
-	case 14:
-		*ppout = ndr_stack_anew<ECDOASYNCCONNECTEX_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 14: {
+		auto in  = static_cast<ECDOASYNCCONNECTEX_IN *>(pin);
+		auto out = ndr_stack_anew<ECDOASYNCCONNECTEX_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((ECDOASYNCCONNECTEX_OUT*)*ppout)->result =
-			emsmdb_interface_async_connect_ex(
-				((ECDOASYNCCONNECTEX_IN*)pin)->cxh,
-				&((ECDOASYNCCONNECTEX_OUT*)*ppout)->acxh);
+		*ppout = out;
+		out->result = emsmdb_interface_async_connect_ex(in->cxh, &out->acxh);
 		return DISPATCH_SUCCESS;
+	}
 	default:
 		return DISPATCH_FAIL;
 	}

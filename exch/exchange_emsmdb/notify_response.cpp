@@ -697,141 +697,136 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	uint8_t notification_flags;
 	
 	switch (pdb_notify->type) {
-	case DB_NOTIFY_TYPE_NEW_MAIL:
-		return notify_response_specify_new_mail(pnotify,
-			((DB_NOTIFY_NEW_MAIL*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_NEW_MAIL*)pdb_notify->pdata)->message_id,
-			((DB_NOTIFY_NEW_MAIL*)pdb_notify->pdata)->message_flags, b_cache,
-			((DB_NOTIFY_NEW_MAIL*)pdb_notify->pdata)->pmessage_class);
-	case DB_NOTIFY_TYPE_FOLDER_CREATED:
+	case DB_NOTIFY_TYPE_NEW_MAIL: {
+		auto x = static_cast<DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
+		return notify_response_specify_new_mail(pnotify, x->folder_id,
+		       x->message_id, x->message_flags, b_cache,
+		       x->pmessage_class);
+	}
+	case DB_NOTIFY_TYPE_FOLDER_CREATED: {
+		auto x = static_cast<DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_created(pnotify,
-			((DB_NOTIFY_FOLDER_CREATED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_FOLDER_CREATED*)pdb_notify->pdata)->parent_id,
-			&((DB_NOTIFY_FOLDER_CREATED*)pdb_notify->pdata)->proptags);
-	case DB_NOTIFY_TYPE_MESSAGE_CREATED:
+		       x->folder_id, x->parent_id, &x->proptags);
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_CREATED: {
+		auto x = static_cast<DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
 		return notify_response_specify_message_created(pnotify,
-			((DB_NOTIFY_MESSAGE_CREATED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_MESSAGE_CREATED*)pdb_notify->pdata)->message_id,
-			&((DB_NOTIFY_MESSAGE_CREATED*)pdb_notify->pdata)->proptags);
-	case DB_NOTIFY_TYPE_LINK_CREATED:
+		       x->folder_id, x->message_id, &x->proptags);
+	}
+	case DB_NOTIFY_TYPE_LINK_CREATED: {
+		auto x = static_cast<DB_NOTIFY_LINK_CREATED *>(pdb_notify->pdata);
 		return notify_response_specify_link_created(pnotify,
-			((DB_NOTIFY_LINK_CREATED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_LINK_CREATED*)pdb_notify->pdata)->message_id,
-			((DB_NOTIFY_LINK_CREATED*)pdb_notify->pdata)->parent_id,
-			&((DB_NOTIFY_LINK_CREATED*)pdb_notify->pdata)->proptags);
-	case DB_NOTIFY_TYPE_FOLDER_DELETED:
+		       x->folder_id, x->message_id, x->parent_id, &x->proptags);
+	}
+	case DB_NOTIFY_TYPE_FOLDER_DELETED: {
+		auto x = static_cast<DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_deleted(pnotify,
-			((DB_NOTIFY_FOLDER_DELETED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_FOLDER_DELETED*)pdb_notify->pdata)->parent_id);
-	case DB_NOTIFY_TYPE_MESSAGE_DELETED:
+		       x->folder_id, x->parent_id);
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_DELETED: {
+		auto x = static_cast<DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_message_deleted(pnotify,
-			((DB_NOTIFY_MESSAGE_DELETED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_MESSAGE_DELETED*)pdb_notify->pdata)->message_id);
-	case DB_NOTIFY_TYPE_LINK_DELETED:
+		       x->folder_id, x->message_id);
+	}
+	case DB_NOTIFY_TYPE_LINK_DELETED: {
+		auto x = static_cast<DB_NOTIFY_LINK_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_link_deleted(pnotify,
-			((DB_NOTIFY_LINK_DELETED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_LINK_DELETED*)pdb_notify->pdata)->message_id,
-			((DB_NOTIFY_LINK_DELETED*)pdb_notify->pdata)->parent_id);
-	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
+		       x->folder_id, x->message_id, x->parent_id);
+	}
+	case DB_NOTIFY_TYPE_FOLDER_MODIFIED: {
+		auto x = static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_modified(pnotify,
-			((DB_NOTIFY_FOLDER_MODIFIED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_FOLDER_MODIFIED*)pdb_notify->pdata)->ptotal,
-			((DB_NOTIFY_FOLDER_MODIFIED*)pdb_notify->pdata)->punread,
-			&((DB_NOTIFY_FOLDER_MODIFIED*)pdb_notify->pdata)->proptags);
-	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
+		       x->folder_id, x->ptotal, x->punread, &x->proptags);
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED: {
+		auto x = static_cast<DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_message_modified(pnotify,
-			((DB_NOTIFY_MESSAGE_MODIFIED*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_MESSAGE_MODIFIED*)pdb_notify->pdata)->message_id,
-			&((DB_NOTIFY_MESSAGE_MODIFIED*)pdb_notify->pdata)->proptags);
+		       x->folder_id, x->message_id, &x->proptags);
+	}
 	case DB_NOTIFY_TYPE_FOLDER_MOVED:
-	case DB_NOTIFY_TYPE_FOLDER_COPIED:
+	case DB_NOTIFY_TYPE_FOLDER_COPIED: {
+		auto x = static_cast<DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
 		if (DB_NOTIFY_TYPE_FOLDER_MOVED == pdb_notify->type) {
 			notification_flags = NOTIFICATION_FLAG_OBJECTMOVED;
 		} else {
 			notification_flags = NOTIFICATION_FLAG_OBJECTCOPIED;
 		}
-		return notify_response_specify_folder_mvcp(
-			pnotify, notification_flags,
-			((DB_NOTIFY_FOLDER_MVCP*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_FOLDER_MVCP*)pdb_notify->pdata)->parent_id,
-			((DB_NOTIFY_FOLDER_MVCP*)pdb_notify->pdata)->old_folder_id,
-			((DB_NOTIFY_FOLDER_MVCP*)pdb_notify->pdata)->old_parent_id);
+		return notify_response_specify_folder_mvcp(pnotify,
+		       notification_flags, x->folder_id, x->parent_id,
+		       x->old_folder_id, x->old_parent_id);
+	}
 	case DB_NOTIFY_TYPE_MESSAGE_MOVED:
-	case DB_NOTIFY_TYPE_MESSAGE_COPIED:
+	case DB_NOTIFY_TYPE_MESSAGE_COPIED: {
+		auto x = static_cast<DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		if (DB_NOTIFY_TYPE_MESSAGE_MOVED == pdb_notify->type) {
 			notification_flags = NOTIFICATION_FLAG_OBJECTMOVED;
 		} else {
 			notification_flags = NOTIFICATION_FLAG_OBJECTCOPIED;
 		}
-		return notify_response_specify_message_mvcp(
-			pnotify, notification_flags,
-			((DB_NOTIFY_MESSAGE_MVCP*)pdb_notify->pdata)->folder_id,
-			((DB_NOTIFY_MESSAGE_MVCP*)pdb_notify->pdata)->message_id,
-			((DB_NOTIFY_MESSAGE_MVCP*)pdb_notify->pdata)->old_folder_id,
-			((DB_NOTIFY_MESSAGE_MVCP*)pdb_notify->pdata)->old_message_id);
-	case DB_NOTIFY_TYPE_SEARCH_COMPLETED:
+		return notify_response_specify_message_mvcp(pnotify,
+		       notification_flags, x->folder_id, x->message_id,
+		       x->old_folder_id, x->old_message_id);
+	}
+	case DB_NOTIFY_TYPE_SEARCH_COMPLETED: {
+		auto x = static_cast<DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_search_completed(pnotify,
-			((DB_NOTIFY_SEARCH_COMPLETED*)pdb_notify->pdata)->folder_id);
+		       x->folder_id);
+	}
 	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_CHANGED:
 		return notify_response_specify_hierarchy_table_changed(pnotify);
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED:
 		return notify_response_specify_content_table_changed(pnotify);
 	case DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED:
 		return notify_response_specify_search_table_changed(pnotify);
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED:
+	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED: {
+		auto x = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(pdb_notify->pdata);
 		return notify_response_specify_hierarchy_table_row_added(pnotify,
-			((DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_folder_id);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED:
+		       x->row_folder_id, x->after_folder_id);
+	}
+	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED: {
+		auto x = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(pdb_notify->pdata);
 		return notify_response_specify_content_table_row_added(pnotify,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_message_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_instance,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_row_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_instance);
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED:
+		       x->row_folder_id, x->row_message_id, x->row_instance,
+		       x->after_folder_id, x->after_row_id, x->after_instance);
+	}
+	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED: {
+		auto x = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(pdb_notify->pdata);
 		return notify_response_specify_search_table_row_added(pnotify,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_message_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->row_instance,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_row_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_ADDED*)pdb_notify->pdata)->after_instance);
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED:
-		return notify_response_specify_hierarchy_table_row_deleted(
-			pnotify, ((DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED*)
-			pdb_notify->pdata)->row_folder_id);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED:
+		       x->row_folder_id, x->row_message_id, x->row_instance,
+		       x->after_folder_id, x->after_row_id, x->after_instance);
+	}
+	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED: {
+		auto x = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(pdb_notify->pdata);
+		return notify_response_specify_hierarchy_table_row_deleted(pnotify,
+		       x->row_folder_id);
+	}
+	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED: {
+		auto x = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_content_table_row_deleted(pnotify,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)pdb_notify->pdata)->row_message_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)pdb_notify->pdata)->row_instance);
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED:
+		       x->row_folder_id, x->row_message_id, x->row_instance);
+	}
+	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED: {
+		auto x = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_search_table_row_deleted(pnotify,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)pdb_notify->pdata)->row_message_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_DELETED*)pdb_notify->pdata)->row_instance);
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED:
+		       x->row_folder_id, x->row_message_id, x->row_instance);
+	}
+	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED: {
+		auto x = static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_hierarchy_table_row_modified(pnotify,
-			((DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_folder_id);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED:
+		       x->row_folder_id, x->after_folder_id);
+	}
+	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED: {
+		auto x = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_content_table_row_modified(pnotify,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_message_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_instance,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_row_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_instance);
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED:
+		       x->row_folder_id, x->row_message_id, x->row_instance,
+		       x->after_folder_id, x->after_row_id, x->after_instance);
+	}
+	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED: {
+		auto x = static_cast<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_search_table_row_modified(pnotify,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_message_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->row_instance,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_folder_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_row_id,
-			((DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED*)pdb_notify->pdata)->after_instance);
+		       x->row_folder_id, x->row_message_id, x->row_instance,
+		       x->after_folder_id, x->after_row_id, x->after_instance);
+	}
 	}
 	return FALSE;
 }

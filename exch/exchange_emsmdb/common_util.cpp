@@ -1671,22 +1671,21 @@ BOOL common_util_convert_tagged_propval(
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
-		case PT_MV_STRING8:
-			for (i=0; i<((STRING_ARRAY*)ppropval->pvalue)->count; i++) {
-				len = 2*strlen(((STRING_ARRAY*)ppropval->pvalue)->ppstr[i]) + 1;
+		case PT_MV_STRING8: {
+			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
+			for (i = 0; i < sa->count; ++i) {
+				len = 2 * strlen(sa->ppstr[i]) + 1;
 				pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
 				}
-				if (common_util_convert_string(TRUE,
-					((STRING_ARRAY*)ppropval->pvalue)->ppstr[i],
-					pstring, len) < 0) {
+				if (common_util_convert_string(TRUE, sa->ppstr[i], pstring, len) < 0)
 					return FALSE;	
-				}
-				((STRING_ARRAY*)ppropval->pvalue)->ppstr[i] = pstring;
+				sa->ppstr[i] = pstring;
 			}
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
+		}
 		case PT_SRESTRICT:
 			if (!common_util_convert_restriction(TRUE,
 			    static_cast<RESTRICTION *>(ppropval->pvalue)))
@@ -1712,23 +1711,21 @@ BOOL common_util_convert_tagged_propval(
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
-		case PT_MV_UNICODE:
-			for (i=0; i<((STRING_ARRAY*)ppropval->pvalue)->count; i++) {
-				len = 2*strlen(((STRING_ARRAY*)
-						ppropval->pvalue)->ppstr[i]) + 1;
+		case PT_MV_UNICODE: {
+			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
+			for (i = 0; i < sa->count; ++i) {
+				len = 2 * strlen(sa->ppstr[i]) + 1;
 				pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
 				}
-				if (common_util_convert_string(FALSE,
-					((STRING_ARRAY*)ppropval->pvalue)->ppstr[i],
-					pstring, len) < 0) {
+				if (common_util_convert_string(FALSE, sa->ppstr[i], pstring, len) < 0)
 					return FALSE;	
-				}
-				((STRING_ARRAY*)ppropval->pvalue)->ppstr[i] = pstring;
+				sa->ppstr[i] = pstring;
 			}
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
+		}
 		case PT_SRESTRICT:
 			if (!common_util_convert_restriction(FALSE,
 			    static_cast<RESTRICTION *>(ppropval->pvalue)))
