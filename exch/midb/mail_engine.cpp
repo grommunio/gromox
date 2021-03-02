@@ -6755,11 +6755,10 @@ static void mail_engine_notification_proc(const char *dir,
 		return;
 	}
 	switch (pdb_notify->type) {
-	case DB_NOTIFY_TYPE_NEW_MAIL:
-		folder_id = ((DB_NOTIFY_NEW_MAIL*)
-			pdb_notify->pdata)->folder_id;
-		message_id = ((DB_NOTIFY_NEW_MAIL*)
-			pdb_notify->pdata)->message_id;
+	case DB_NOTIFY_TYPE_NEW_MAIL: {
+		auto n = static_cast<DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		message_id = n->message_id;
 		mail_engine_add_notification_message(
 				pidb, folder_id, message_id);
 		sprintf(sql_string, "SELECT name FROM"
@@ -6775,90 +6774,91 @@ static void mail_engine_notification_proc(const char *dir,
 		sqlite3_finalize(pstmt);
 		system_services_broadcast_event(temp_buff);
 		break;
-	case DB_NOTIFY_TYPE_FOLDER_CREATED:
-		folder_id = ((DB_NOTIFY_FOLDER_CREATED*)
-					pdb_notify->pdata)->folder_id;
-		parent_id = ((DB_NOTIFY_FOLDER_CREATED*)
-					pdb_notify->pdata)->parent_id;
+	}
+	case DB_NOTIFY_TYPE_FOLDER_CREATED: {
+		auto n = static_cast<DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		parent_id = n->parent_id;
 		mail_engine_add_notification_folder(
 				pidb, parent_id, folder_id);
 		break;
-	case DB_NOTIFY_TYPE_MESSAGE_CREATED:
-		folder_id = ((DB_NOTIFY_MESSAGE_CREATED*)
-					pdb_notify->pdata)->folder_id;
-		message_id = ((DB_NOTIFY_MESSAGE_CREATED*)
-					pdb_notify->pdata)->message_id;
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_CREATED: {
+		auto n = static_cast<DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		message_id = n->message_id;
 		mail_engine_add_notification_message(
 				pidb, folder_id, message_id);
 		break;
-	case DB_NOTIFY_TYPE_FOLDER_DELETED:
-		folder_id = ((DB_NOTIFY_FOLDER_DELETED*)
-					pdb_notify->pdata)->folder_id;
+	}
+	case DB_NOTIFY_TYPE_FOLDER_DELETED: {
+		auto n = static_cast<DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
 		mail_engine_delete_notification_folder(
 								pidb, folder_id);
 		break;
-	case DB_NOTIFY_TYPE_MESSAGE_DELETED:
-		folder_id = ((DB_NOTIFY_MESSAGE_DELETED*)
-					pdb_notify->pdata)->folder_id;
-		message_id = ((DB_NOTIFY_MESSAGE_DELETED*)
-					pdb_notify->pdata)->message_id;
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_DELETED: {
+		auto n = static_cast<DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		message_id = n->message_id;
 		mail_engine_delete_notification_message(
 					pidb, folder_id, message_id);
 		break;
-	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
-		folder_id = ((DB_NOTIFY_FOLDER_MODIFIED*)
-					pdb_notify->pdata)->folder_id;
+	}
+	case DB_NOTIFY_TYPE_FOLDER_MODIFIED: {
+		auto n = static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
 		mail_engine_modify_notification_folder(
 								pidb, folder_id);
 		break;
-	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
-		message_id = ((DB_NOTIFY_MESSAGE_MODIFIED*)
-					pdb_notify->pdata)->message_id;
-		folder_id = ((DB_NOTIFY_MESSAGE_MODIFIED*)
-					pdb_notify->pdata)->folder_id;
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED: {
+		auto n = static_cast<DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
+		message_id = n->message_id;
+		folder_id = n->folder_id;
 		mail_engine_modify_notification_message(
 					pidb, folder_id, message_id);
 		break;
-	case DB_NOTIFY_TYPE_FOLDER_MOVED:
-		folder_id = ((DB_NOTIFY_FOLDER_MVCP*)
-				pdb_notify->pdata)->folder_id;
-		parent_id = ((DB_NOTIFY_FOLDER_MVCP*)
-				pdb_notify->pdata)->parent_id;
+	}
+	case DB_NOTIFY_TYPE_FOLDER_MOVED: {
+		auto n = static_cast<DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		parent_id = n->parent_id;
 		mail_engine_move_notification_folder(
 				pidb, parent_id, folder_id);
 		break;
-	case DB_NOTIFY_TYPE_MESSAGE_MOVED:
-		folder_id = ((DB_NOTIFY_MESSAGE_MVCP*)
-			pdb_notify->pdata)->old_folder_id;
-		message_id = ((DB_NOTIFY_MESSAGE_MVCP*)
-			pdb_notify->pdata)->old_message_id;
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_MOVED: {
+		auto n = static_cast<DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
+		folder_id = n->old_folder_id;
+		message_id = n->old_message_id;
 		mail_engine_delete_notification_message(
 					pidb, folder_id, message_id);
-		folder_id = ((DB_NOTIFY_MESSAGE_MVCP*)
-				pdb_notify->pdata)->folder_id;
-		message_id = ((DB_NOTIFY_MESSAGE_MVCP*)
-				pdb_notify->pdata)->message_id;
+		folder_id = n->folder_id;
+		message_id = n->message_id;
 		mail_engine_add_notification_message(
 				pidb, folder_id, message_id);
 		break;
-	case DB_NOTIFY_TYPE_FOLDER_COPIED:
-		folder_id = ((DB_NOTIFY_FOLDER_MVCP*)
-				pdb_notify->pdata)->folder_id;
-		parent_id = ((DB_NOTIFY_FOLDER_MVCP*)
-				pdb_notify->pdata)->parent_id;
+	}
+	case DB_NOTIFY_TYPE_FOLDER_COPIED: {
+		auto n = static_cast<DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		parent_id = n->parent_id;
 		if (TRUE == mail_engine_add_notification_folder(
 			pidb, parent_id, folder_id)) {
 			mail_engine_sync_contents(pidb, folder_id);
 		}
 		break;
-	case DB_NOTIFY_TYPE_MESSAGE_COPIED:
-		folder_id = ((DB_NOTIFY_MESSAGE_MVCP*)
-				pdb_notify->pdata)->folder_id;
-		message_id = ((DB_NOTIFY_MESSAGE_MVCP*)
-				pdb_notify->pdata)->message_id;
+	}
+	case DB_NOTIFY_TYPE_MESSAGE_COPIED: {
+		auto n = static_cast<DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
+		folder_id = n->folder_id;
+		message_id = n->message_id;
 		mail_engine_add_notification_message(
 				pidb, folder_id, message_id);
 		break;
+	}
 	}
 	mail_engine_put_idb(pidb);
 }
