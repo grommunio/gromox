@@ -129,6 +129,10 @@ int main(int argc, const char **argv)
 		printf("[system]: maximum TCP segment size is %d\n", mss_size);
 	}
 
+	str_val = resource_get_string("user_default_lang");
+	if (str_val == nullptr)
+		resource_set_string("user_default_lang", "en");
+
 	str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
