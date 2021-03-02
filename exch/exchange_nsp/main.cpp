@@ -276,224 +276,205 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 {
 	
 	switch (opnum) {
-	case 0:
-		*ppout = ndr_stack_anew<NSPIBIND_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	case 0: {
+		auto in  = static_cast<NSPIBIND_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIBIND_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIBIND_OUT*)(*ppout))->result = nsp_interface_bind(handle, ((NSPIBIND_IN*)pin)->flags,
-											&((NSPIBIND_IN*)pin)->stat, ((NSPIBIND_IN*)pin)->pserver_guid,
-											&((NSPIBIND_OUT*)(*ppout))->handle);
-		((NSPIBIND_OUT*)(*ppout))->pserver_guid = ((NSPIBIND_IN*)pin)->pserver_guid;
+		*ppout = out;
+		out->result = nsp_interface_bind(handle, in->flags, &in->stat,
+		              in->pserver_guid, &out->handle);
+		out->pserver_guid = in->pserver_guid;
 		return DISPATCH_SUCCESS;
-	case 1:
-		*ppout = ndr_stack_anew<NSPIUNBIND_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 1: {
+		auto in  = static_cast<NSPIUNBIND_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIUNBIND_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIUNBIND_OUT*)(*ppout))->result = nsp_interface_unbind(&((NSPIUNBIND_IN*)pin)->handle,
-												((NSPIUNBIND_IN*)pin)->reserved);
-		((NSPIUNBIND_OUT*)(*ppout))->handle = ((NSPIUNBIND_IN*)pin)->handle;
+		*ppout = out;
+		out->result = nsp_interface_unbind(&in->handle, in->reserved);
+		out->handle = in->handle;
 		return DISPATCH_SUCCESS;
-	case 2:
-		*ppout = ndr_stack_anew<NSPIUPDATESTAT_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 2: {
+		auto in  = static_cast<NSPIUPDATESTAT_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIUPDATESTAT_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIUPDATESTAT_OUT*)(*ppout))->result = nsp_interface_update_stat(((NSPIUPDATESTAT_IN*)pin)->handle,
-													((NSPIUPDATESTAT_IN*)pin)->reserved,
-													&((NSPIUPDATESTAT_IN*)pin)->stat,
-													((NSPIUPDATESTAT_IN*)pin)->pdelta);
-		((NSPIUPDATESTAT_OUT*)(*ppout))->stat = ((NSPIUPDATESTAT_IN*)pin)->stat;
-		((NSPIUPDATESTAT_OUT*)(*ppout))->pdelta = ((NSPIUPDATESTAT_IN*)pin)->pdelta;
+		*ppout = out;
+		out->result = nsp_interface_update_stat(in->handle,
+		              in->reserved, &in->stat, in->pdelta);
+		out->stat = in->stat;
+		out->pdelta = in->pdelta;
 		return DISPATCH_SUCCESS;
-	case 3:
-		*ppout = ndr_stack_anew<NSPIQUERYROWS_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 3: {
+		auto in  = static_cast<NSPIQUERYROWS_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIQUERYROWS_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIQUERYROWS_OUT*)(*ppout))->result = nsp_interface_query_rows(((NSPIQUERYROWS_IN*)pin)->handle,
-													((NSPIQUERYROWS_IN*)pin)->flags,
-													&((NSPIQUERYROWS_IN*)pin)->stat,
-													((NSPIQUERYROWS_IN*)pin)->table_count,
-													((NSPIQUERYROWS_IN*)pin)->ptable,
-													((NSPIQUERYROWS_IN*)pin)->count,
-													((NSPIQUERYROWS_IN*)pin)->pproptags,
-													&((NSPIQUERYROWS_OUT*)(*ppout))->prows);
-		((NSPIQUERYROWS_OUT*)(*ppout))->stat = ((NSPIQUERYROWS_IN*)pin)->stat;
+		*ppout = out;
+		out->result = nsp_interface_query_rows(in->handle, in->flags,
+		              &in->stat, in->table_count, in->ptable, in->count,
+		              in->pproptags, &out->prows);
+		out->stat = in->stat;
 		return DISPATCH_SUCCESS;
-	case 4:
-		*ppout = ndr_stack_anew<NSPISEEKENTRIES_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 4: {
+		auto in  = static_cast<NSPISEEKENTRIES_IN *>(pin);
+		auto out = ndr_stack_anew<NSPISEEKENTRIES_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPISEEKENTRIES_OUT*)(*ppout))->result = nsp_interface_seek_entries(((NSPISEEKENTRIES_IN*)pin)->handle,
-													((NSPISEEKENTRIES_IN*)pin)->reserved,
-													&((NSPISEEKENTRIES_IN*)pin)->stat,
-													&((NSPISEEKENTRIES_IN*)pin)->target,
-													((NSPISEEKENTRIES_IN*)pin)->ptable,
-													((NSPISEEKENTRIES_IN*)pin)->pproptags,
-													&((NSPISEEKENTRIES_OUT*)(*ppout))->prows);
-		((NSPISEEKENTRIES_OUT*)(*ppout))->stat = ((NSPISEEKENTRIES_IN*)pin)->stat;
+		*ppout = out;
+		out->result = nsp_interface_seek_entries(in->handle,
+		              in->reserved, &in->stat, &in->target, in->ptable,
+		              in->pproptags, &out->prows);
+		out->stat = in->stat;
 		return DISPATCH_SUCCESS;
-	case 5:
-		*ppout = ndr_stack_anew<NSPIGETMATCHES_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 5: {
+		auto in  = static_cast<NSPIGETMATCHES_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIGETMATCHES_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIGETMATCHES_OUT*)(*ppout))->result = nsp_interface_get_matches(((NSPIGETMATCHES_IN*)pin)->handle,	
-													((NSPIGETMATCHES_IN*)pin)->reserved1,
-													&((NSPIGETMATCHES_IN*)pin)->stat,
-													((NSPIGETMATCHES_IN*)pin)->preserved,
-													((NSPIGETMATCHES_IN*)pin)->reserved2,
-													((NSPIGETMATCHES_IN*)pin)->pfilter,
-													((NSPIGETMATCHES_IN*)pin)->ppropname,
-													((NSPIGETMATCHES_IN*)pin)->requested,
-													&((NSPIGETMATCHES_OUT*)(*ppout))->poutmids,
-													((NSPIGETMATCHES_IN*)pin)->pproptags,
-													&((NSPIGETMATCHES_OUT*)(*ppout))->prows);
-		((NSPIGETMATCHES_OUT*)(*ppout))->stat = ((NSPIGETMATCHES_IN*)pin)->stat;
+		*ppout = out;
+		out->result = nsp_interface_get_matches(in->handle,
+		              in->reserved1, &in->stat, in->preserved,
+		              in->reserved2, in->pfilter, in->ppropname,
+		              in->requested, &out->poutmids, in->pproptags,
+		              &out->prows);
+		out->stat = in->stat;
 		return DISPATCH_SUCCESS;
-	case 6:
-		*ppout = ndr_stack_anew<NSPIRESORTRESTRICTION_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 6: {
+		auto in  = static_cast<NSPIRESORTRESTRICTION_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIRESORTRESTRICTION_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIRESORTRESTRICTION_OUT*)(*ppout))->result = nsp_interface_resort_restriction(((NSPIRESORTRESTRICTION_IN*)pin)->handle,
-															((NSPIRESORTRESTRICTION_IN*)pin)->reserved,
-															&((NSPIRESORTRESTRICTION_IN*)pin)->stat,
-															&((NSPIRESORTRESTRICTION_IN*)pin)->inmids,
-															&((NSPIRESORTRESTRICTION_IN*)pin)->poutmids);
-		((NSPIRESORTRESTRICTION_OUT*)(*ppout))->stat = ((NSPIRESORTRESTRICTION_IN*)pin)->stat;
-		((NSPIRESORTRESTRICTION_OUT*)(*ppout))->poutmids = ((NSPIRESORTRESTRICTION_IN*)pin)->poutmids;
+		*ppout = out;
+		out->result = nsp_interface_resort_restriction(in->handle,
+		              in->reserved, &in->stat, &in->inmids,
+		              &in->poutmids);
+		out->stat = in->stat;
+		out->poutmids = in->poutmids;
 		return DISPATCH_SUCCESS;
-	case 7:
-		*ppout = ndr_stack_anew<NSPIDNTOMID_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 7: {
+		auto in  = static_cast<NSPIDNTOMID_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIDNTOMID_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIDNTOMID_OUT*)(*ppout))->result = nsp_interface_dntomid(((NSPIDNTOMID_IN*)pin)->handle,
-												((NSPIDNTOMID_IN*)pin)->reserved,
-												&((NSPIDNTOMID_IN*)pin)->names,
-												&((NSPIDNTOMID_OUT*)(*ppout))->poutmids);
+		*ppout = out;
+		out->result = nsp_interface_dntomid(in->handle, in->reserved,
+		              &in->names, &out->poutmids);
 		return DISPATCH_SUCCESS;
-	case 8:
-		*ppout = ndr_stack_anew<NSPIGETPROPLIST_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 8: {
+		auto in  = static_cast<NSPIGETPROPLIST_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIGETPROPLIST_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIGETPROPLIST_OUT*)(*ppout))->result = nsp_interface_get_proplist(((NSPIGETPROPLIST_IN*)pin)->handle,
-													((NSPIGETPROPLIST_IN*)pin)->flags,
-													((NSPIGETPROPLIST_IN*)pin)->mid,
-													((NSPIGETPROPLIST_IN*)pin)->codepage,
-													&((NSPIGETPROPLIST_OUT*)(*ppout))->pproptags);
+		*ppout = out;
+		out->result = nsp_interface_get_proplist(in->handle, in->flags,
+		              in->mid, in->codepage, &out->pproptags);
 		return DISPATCH_SUCCESS;
-	case 9:
-		*ppout = ndr_stack_anew<NSPIGETPROPS_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 9: {
+		auto in  = static_cast<NSPIGETPROPS_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIGETPROPS_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIGETPROPS_OUT*)(*ppout))->result = nsp_interface_get_props(((NSPIGETPROPS_IN*)pin)->handle,
-												((NSPIGETPROPS_IN*)pin)->flags,
-												&((NSPIGETPROPS_IN*)pin)->stat,
-												((NSPIGETPROPS_IN*)pin)->pproptags,
-												&((NSPIGETPROPS_OUT*)(*ppout))->prows);
+		*ppout = out;
+		out->result = nsp_interface_get_props(in->handle, in->flags,
+		              &in->stat, in->pproptags, &out->prows);
 		return DISPATCH_SUCCESS;
-	case 10:
-		*ppout = ndr_stack_anew<NSPICOMPAREMIDS_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 10: {
+		auto in  = static_cast<NSPICOMPAREMIDS_IN *>(pin);
+		auto out = ndr_stack_anew<NSPICOMPAREMIDS_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPICOMPAREMIDS_OUT*)(*ppout))->result1 = nsp_interface_compare_mids(((NSPICOMPAREMIDS_IN*)pin)->handle,
-													((NSPICOMPAREMIDS_IN*)pin)->reserved,
-													&((NSPICOMPAREMIDS_IN*)pin)->stat,
-													((NSPICOMPAREMIDS_IN*)pin)->mid1,
-													((NSPICOMPAREMIDS_IN*)pin)->mid2,
-													&((NSPICOMPAREMIDS_OUT*)(*ppout))->result);
+		*ppout = out;
+		out->result1 = nsp_interface_compare_mids(in->handle,
+		               in->reserved, &in->stat, in->mid1, in->mid2,
+		               &out->result);
 		return DISPATCH_SUCCESS;
-	case 11:
-		*ppout = ndr_stack_anew<NSPIMODPROPS_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 11: {
+		auto in  = static_cast<NSPIMODPROPS_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIMODPROPS_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIMODPROPS_OUT*)(*ppout))->result = nsp_interface_mod_props(((NSPIMODPROPS_IN*)pin)->handle,
-												((NSPIMODPROPS_IN*)pin)->reserved,
-												&((NSPIMODPROPS_IN*)pin)->stat,
-												((NSPIMODPROPS_IN*)pin)->pproptags,
-												&((NSPIMODPROPS_IN*)pin)->row);
+		*ppout = out;
+		out->result = nsp_interface_mod_props(in->handle, in->reserved,
+		              &in->stat, in->pproptags, &in->row);
 		return DISPATCH_SUCCESS;
-	case 12:
-		*ppout = ndr_stack_anew<NSPIGETSPECIALTABLE_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 12: {
+		auto in  = static_cast<NSPIGETSPECIALTABLE_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIGETSPECIALTABLE_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIGETSPECIALTABLE_OUT*)(*ppout))->result = nsp_interface_get_specialtable(((NSPIGETSPECIALTABLE_IN*)pin)->handle,
-														((NSPIGETSPECIALTABLE_IN*)pin)->flags,
-														&((NSPIGETSPECIALTABLE_IN*)pin)->stat,
-														&((NSPIGETSPECIALTABLE_IN*)pin)->version,
-														&((NSPIGETSPECIALTABLE_OUT*)(*ppout))->prows);
-		((NSPIGETSPECIALTABLE_OUT*)(*ppout))->version = ((NSPIGETSPECIALTABLE_IN*)pin)->version;
+		*ppout = out;
+		out->result = nsp_interface_get_specialtable(in->handle,
+		              in->flags, &in->stat, &in->version, &out->prows);
+		out->version = in->version;
 		return DISPATCH_SUCCESS;
-	case 13:
-		*ppout = ndr_stack_anew<NSPIGETTEMPLATEINFO_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 13: {
+		auto in  = static_cast<NSPIGETTEMPLATEINFO_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIGETTEMPLATEINFO_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIGETTEMPLATEINFO_OUT*)(*ppout))->result = nsp_interface_get_templateinfo(((NSPIGETTEMPLATEINFO_IN*)pin)->handle,
-														((NSPIGETTEMPLATEINFO_IN*)pin)->flags,
-														((NSPIGETTEMPLATEINFO_IN*)pin)->type,
-														((NSPIGETTEMPLATEINFO_IN*)pin)->pdn,
-														((NSPIGETTEMPLATEINFO_IN*)pin)->codepage,
-														((NSPIGETTEMPLATEINFO_IN*)pin)->locale_id,
-														&((NSPIGETTEMPLATEINFO_OUT*)(*ppout))->pdata);
+		*ppout = out;
+		out->result = nsp_interface_get_templateinfo(in->handle,
+		              in->flags, in->type, in->pdn, in->codepage,
+		              in->locale_id, &out->pdata);
 		return DISPATCH_SUCCESS;
-	case 14:
-		*ppout = ndr_stack_anew<NSPIMODLINKATT_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 14: {
+		auto in  = static_cast<NSPIMODLINKATT_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIMODLINKATT_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIMODLINKATT_OUT*)(*ppout))->result = nsp_interface_mod_linkatt(((NSPIMODLINKATT_IN*)pin)->handle,
-													((NSPIMODLINKATT_IN*)pin)->flags,
-													((NSPIMODLINKATT_IN*)pin)->proptag,
-													((NSPIMODLINKATT_IN*)pin)->mid,
-													&((NSPIMODLINKATT_IN*)pin)->entry_ids);
+		*ppout = out;
+		out->result = nsp_interface_mod_linkatt(in->handle, in->flags,
+		              in->proptag, in->mid, &in->entry_ids);
 		return DISPATCH_SUCCESS;
-	case 16:
-		*ppout = ndr_stack_anew<NSPIQUERYCOLUMNS_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 16: {
+		auto in  = static_cast<NSPIQUERYCOLUMNS_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIQUERYCOLUMNS_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIQUERYCOLUMNS_OUT*)(*ppout))->result = nsp_interface_query_columns(((NSPIQUERYCOLUMNS_IN*)pin)->handle,
-													((NSPIQUERYCOLUMNS_IN*)pin)->reserved,
-													((NSPIQUERYCOLUMNS_IN*)pin)->flags,
-													&((NSPIQUERYCOLUMNS_OUT*)(*ppout))->pcolumns);
+		*ppout = out;
+		out->result = nsp_interface_query_columns(in->handle,
+		              in->reserved, in->flags, &out->pcolumns);
 		return DISPATCH_SUCCESS;
-	case 19:
-		*ppout = ndr_stack_anew<NSPIRESOLVENAMES_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 19: {
+		auto in  = static_cast<NSPIRESOLVENAMES_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIRESOLVENAMES_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIRESOLVENAMES_OUT*)(*ppout))->result = nsp_interface_resolve_names(((NSPIRESOLVENAMES_IN*)pin)->handle,
-													((NSPIRESOLVENAMES_IN*)pin)->reserved,
-													&((NSPIRESOLVENAMES_IN*)pin)->stat,
-													((NSPIRESOLVENAMES_IN*)pin)->pproptags,
-													&((NSPIRESOLVENAMES_IN*)pin)->strs,
-													&((NSPIRESOLVENAMES_OUT*)(*ppout))->pmids,
-													&((NSPIRESOLVENAMES_OUT*)(*ppout))->prows);
+		*ppout = out;
+		out->result = nsp_interface_resolve_names(in->handle,
+		              in->reserved, &in->stat, in->pproptags, &in->strs,
+		              &out->pmids, &out->prows);
 		return DISPATCH_SUCCESS;
-	case 20:
-		*ppout = ndr_stack_anew<NSPIRESOLVENAMESW_OUT>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+	}
+	case 20: {
+		auto in  = static_cast<NSPIRESOLVENAMESW_IN *>(pin);
+		auto out = ndr_stack_anew<NSPIRESOLVENAMESW_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		}
-		((NSPIRESOLVENAMESW_OUT*)(*ppout))->result = nsp_interface_resolve_namesw(((NSPIRESOLVENAMESW_IN*)pin)->handle,
-													((NSPIRESOLVENAMESW_IN*)pin)->reserved,
-													&((NSPIRESOLVENAMESW_IN*)pin)->stat,
-													((NSPIRESOLVENAMESW_IN*)pin)->pproptags,
-													&((NSPIRESOLVENAMESW_IN*)pin)->strs,
-													&((NSPIRESOLVENAMESW_OUT*)(*ppout))->pmids,
-													&((NSPIRESOLVENAMESW_OUT*)(*ppout))->prows);
+		*ppout = out;
+		out->result = nsp_interface_resolve_namesw(in->handle,
+		              in->reserved, &in->stat, in->pproptags, &in->strs,
+		              &out->pmids, &out->prows);
 		return DISPATCH_SUCCESS;
+	}
 	default:
 		return DISPATCH_FAIL;
 	}
