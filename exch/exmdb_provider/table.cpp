@@ -1193,16 +1193,14 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					continue;
 				}
 				switch (type) {
-				case PT_MV_SHORT:
-					if (0 == ((SHORT_ARRAY*)pvalue)->count) {
+				case PT_MV_SHORT: {
+					auto sa = static_cast<SHORT_ARRAY *>(pvalue);
+					if (sa->count == 0)
 						goto BIND_NULL_INSTANCE;
-					}
-					for (i=0; i<((SHORT_ARRAY*)pvalue)->count; i++) {
+					for (i = 0; i < sa->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_SHORT,
-							((SHORT_ARRAY*)pvalue)->ps + i)) {
+						    pstmt1, multi_index, PT_SHORT, &sa->ps[i]))
 							goto LOAD_CONTENT_FAIL;
-						}
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1211,16 +1209,15 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PT_MV_LONG:
-					if (0 == ((LONG_ARRAY*)pvalue)->count) {
+				}
+				case PT_MV_LONG: {
+					auto la = static_cast<LONG_ARRAY *>(pvalue);
+					if (la->count == 0)
 						goto BIND_NULL_INSTANCE;
-					}
-					for (i=0; i<((LONG_ARRAY*)pvalue)->count; i++) {
+					for (i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_LONG,
-							((LONG_ARRAY*)pvalue)->pl + i)) {
+						    pstmt1, multi_index, PT_LONG, &la->pl[i]))
 							goto LOAD_CONTENT_FAIL;
-						}
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1229,16 +1226,15 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PT_MV_I8:
-					if (0 == ((LONGLONG_ARRAY*)pvalue)->count) {
+				}
+				case PT_MV_I8: {
+					auto la = static_cast<LONGLONG_ARRAY *>(pvalue);
+					if (la->count == 0)
 						goto BIND_NULL_INSTANCE;
-					}
-					for (i=0; i<((LONGLONG_ARRAY*)pvalue)->count; i++) {
+					for (i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_I8,
-							((LONGLONG_ARRAY*)pvalue)->pll + i)) {
+						    pstmt1, multi_index, PT_I8, &la->pll[i]))
 							goto LOAD_CONTENT_FAIL;
-						}
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1247,17 +1243,16 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 						sqlite3_reset(pstmt1);
 					}
 					break;
+				}
 				case PT_MV_STRING8:
-				case PT_MV_UNICODE:
-					if (0 == ((STRING_ARRAY*)pvalue)->count) {
+				case PT_MV_UNICODE: {
+					auto sa = static_cast<STRING_ARRAY *>(pvalue);
+					if (sa->count == 0)
 						goto BIND_NULL_INSTANCE;
-					}
-					for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
+					for (i = 0; i < sa->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_STRING8,
-							((STRING_ARRAY*)pvalue)->ppstr[i])) {
+						    pstmt1, multi_index, PT_STRING8, &sa->ppstr[i]))
 							goto LOAD_CONTENT_FAIL;
-						}
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1266,16 +1261,15 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PT_MV_CLSID:
-					if (0 == ((GUID_ARRAY*)pvalue)->count) {
+				}
+				case PT_MV_CLSID: {
+					auto ga = static_cast<GUID_ARRAY *>(pvalue);
+					if (ga->count == 0)
 						goto BIND_NULL_INSTANCE;
-					}
-					for (i=0; i<((GUID_ARRAY*)pvalue)->count; i++) {
+					for (i = 0; i < ga->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_CLSID,
-							((GUID_ARRAY*)pvalue)->pguid + i)) {
+						    pstmt1, multi_index, PT_CLSID, &ga->pguid[i]))
 							goto LOAD_CONTENT_FAIL;
-						}
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1284,6 +1278,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 						sqlite3_reset(pstmt1);
 					}
 					break;
+				}
 				case PT_MV_BINARY: {
 					auto ba = static_cast<BINARY_ARRAY *>(pvalue);
 					if (ba->count == 0)
@@ -2652,37 +2647,29 @@ static BOOL table_get_content_row_property(
 	
 	prow_param = (CONTENT_ROW_PARAM*)pparam;
 	if (proptag == PROP_TAG_INSTANCESVREID) {
-		*ppvalue = cu_alloc<SVREID>();
-		if (NULL == *ppvalue) {
+		auto eid = cu_alloc<SVREID>();
+		if (eid == nullptr)
 			return FALSE;
-		}
-		((SVREID*)(*ppvalue))->pbin = NULL;
+		*ppvalue = eid;
+		eid->pbin = nullptr;
 		if (CONTENT_ROW_HEADER == prow_param->row_type) {
-			((SVREID*)(*ppvalue))->folder_id =
-						rop_util_make_eid_ex(1,
-						prow_param->folder_id);
-			((SVREID*)(*ppvalue))->message_id =
-						rop_util_make_eid_ex(2,
-						prow_param->inst_id &
-						0x00FFFFFFFFFFFFFFULL);
-			((SVREID*)(*ppvalue))->instance = 0;
+			eid->folder_id = rop_util_make_eid_ex(1, prow_param->folder_id);
+			eid->message_id = rop_util_make_eid_ex(2, prow_param->inst_id & 0x00FFFFFFFFFFFFFFULL);
+			eid->instance = 0;
 		} else {
 			if (FALSE == common_util_get_message_parent_folder(
 				prow_param->psqlite, prow_param->inst_id,
 				&parent_fid)) {
 				return FALSE;	
 			}
-			((SVREID*)(*ppvalue))->folder_id =
-				rop_util_make_eid_ex(1, parent_fid);
-			((SVREID*)(*ppvalue))->message_id =
-							rop_util_make_eid_ex(
-							1, prow_param->inst_id);
+			eid->folder_id = rop_util_make_eid_ex(1, parent_fid);
+			eid->message_id = rop_util_make_eid_ex(1, prow_param->inst_id);
 			pinst_num = static_cast<uint32_t *>(common_util_column_sqlite_statement(
 			            prow_param->pstmt, 10, PT_LONG));
 			if (NULL == pinst_num) {
 				return FALSE;
 			}
-			((SVREID*)(*ppvalue))->instance = *pinst_num;
+			eid->instance = *pinst_num;
 		}
 		return TRUE;
 	}
