@@ -33,7 +33,7 @@ struct BACK_CONN {
 };
 
 static BOOL g_notify_stop;
-static char g_timer_ip[32];
+static char g_timer_ip[40];
 static int g_timer_port;
 static pthread_t g_scan_id;
 static pthread_mutex_t g_back_lock;

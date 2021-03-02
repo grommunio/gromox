@@ -75,9 +75,8 @@ int main(int argc, const char **argv)
 	char org_name[256];
 	int cache_interval;
 	char temp_buff[45];
-	char listen_ip[32];
+	char listen_ip[40], console_ip[40];
 	uint64_t mmap_size;
-	char console_ip[32];
 	char data_path[256], state_dir[256];
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	char config_path[256];

@@ -120,7 +120,7 @@ int main(int argc, const char **argv)
 	pthread_t thr_id;
 	pthread_t *en_ids;
 	pthread_t *de_ids;
-	char listen_ip[32];
+	char listen_ip[40];
 	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
@@ -496,7 +496,7 @@ static void* accept_work_func(void *param)
 {
 	socklen_t addrlen;
 	int sockd, sockd2;
-	char client_hostip[32];
+	char client_hostip[40];
 	struct sockaddr_storage peer_name;
 	ENQUEUE_NODE *penqueue;
 

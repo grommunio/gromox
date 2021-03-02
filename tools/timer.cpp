@@ -103,7 +103,7 @@ int main(int argc, const char **argv)
 	time_t last_cltime;
 	pthread_t thr_accept_id;
 	pthread_t *thr_ids;
-	char listen_ip[32];
+	char listen_ip[40];
 	char temp_path[256];
 	char temp_line[2048];
 	TIMER *ptimer;
@@ -450,7 +450,7 @@ static void *accept_work_func(void *param)
 {
 	int sockd, sockd2;
 	socklen_t addrlen;
-	char client_hostip[32];
+	char client_hostip[40];
 	struct sockaddr_storage peer_name;
 	CONNECTION_NODE *pconnection;	
 

@@ -26,9 +26,9 @@ enum {
 };
 
 struct CONNECTION {
-	char client_ip[32]; /* client ip address string */
+	char client_ip[40]; /* client ip address string */
     int            client_port;        /* value of client port */
-	char server_ip[32]; /* server ip address */
+	char server_ip[40]; /* server ip address */
     int            server_port;        /* value of server port */
     int            sockd;              /* context's socket file description */
 	SSL            *ssl;

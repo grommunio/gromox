@@ -48,7 +48,7 @@ enum {
 static int g_max_rcpt;
 static int g_smtp_port;
 static int g_max_message;
-static char g_smtp_ip[32];
+static char g_smtp_ip[40];
 static char g_org_name[256];
 static int g_faststream_id;
 static int g_average_blocks;

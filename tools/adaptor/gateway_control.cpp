@@ -15,9 +15,9 @@
 #include <sys/socket.h>
 
 struct CONSOLE_PORT {
-	char smtp_ip[32];
+	char smtp_ip[40];
 	int smtp_port;
-	char delivery_ip[32];
+	char delivery_ip[40];
 	int delivery_port;
 };
 
@@ -37,7 +37,7 @@ void gateway_control_init(const char *path)
 
 int gateway_control_run()
 {
-	auto plist_file = list_file_initd(g_list_path, "/", /* CONSOLE_PORT */ "%s:32%d%s:32%d");
+	auto plist_file = list_file_initd(g_list_path, "/", /* CONSOLE_PORT */ "%s:40%d%s:40%d");
 	if (NULL == plist_file) {
 		printf("[gateway_control]: Failed to read console list from %s: %s\n",
 			g_list_path, strerror(errno));

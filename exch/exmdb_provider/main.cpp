@@ -86,7 +86,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	int cache_interval;
 	int connection_num;
 	int populating_num;
-	char listen_ip[32];
+	char listen_ip[40];
 	char org_name[256];
 	char file_name[256];
 	char config_path[256];

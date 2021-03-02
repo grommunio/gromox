@@ -28,9 +28,9 @@ struct HPM_INTERFACE {
 };
 
 struct CONNECTION {
-	char client_ip[32];
+	char client_ip[40];
 	int				client_port;
-	char server_ip[32];
+	char server_ip[40];
 	int				server_port;
 	int				sockd;
 	SSL				*ssl;

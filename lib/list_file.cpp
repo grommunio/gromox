@@ -358,10 +358,10 @@ int list_file_read_exmdb(const char *filename, const char *sdlist,
     std::vector<EXMDB_ITEM> &out)
 {
 	struct raw {
-		char prefix[256], type[16], host[32];
+		char prefix[256], type[16], host[40];
 		int port;
 	};
-	auto plist = list_file_initd(filename, sdlist, "%s:256%s:16%s:32%d", ERROR_ON_ABSENCE);
+	auto plist = list_file_initd(filename, sdlist, "%s:256%s:16%s:40%d", ERROR_ON_ABSENCE);
 	if (plist == nullptr && errno == ENOENT) {
 		EXMDB_ITEM e;
 		e.prefix = PKGSTATEDIR "/user/";

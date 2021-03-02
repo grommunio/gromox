@@ -26,7 +26,7 @@
 using namespace gromox;
 
 static int g_listen_port;
-static char g_listen_ip[32];
+static char g_listen_ip[40];
 static int g_listen_sockd;
 static BOOL g_notify_stop;
 static std::vector<std::string> g_acl_list;
@@ -98,7 +98,7 @@ static void *thread_work_func(void *param)
 {
 	int sockd;
 	socklen_t addrlen;
-	char client_hostip[32];
+	char client_hostip[40];
 	CONNECTION *pconnection;
 	struct sockaddr_storage peer_name;
 

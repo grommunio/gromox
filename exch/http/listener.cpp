@@ -145,7 +145,7 @@ static void* thread_work_func(void* arg)
 	int sockd2, client_port;
 	int len, flag;
 	struct sockaddr_storage fact_addr, client_peer;
-	char client_hostip[32], client_txtport[32], server_hostip[32];
+	char client_hostip[40], client_txtport[8], server_hostip[40];
 	HTTP_CONTEXT *pcontext;
 	const char *host_ID;
 	char buff[1024];
@@ -275,7 +275,7 @@ static void* thread_work_ssl_func(void* arg)
 	int sockd2, client_port;
 	int len, flag;
 	struct sockaddr_storage fact_addr, client_peer;
-	char client_hostip[32], client_txtport[32], server_hostip[32];
+	char client_hostip[40], client_txtport[8], server_hostip[40];
 	HTTP_CONTEXT *pcontext;
 	const char *host_ID;
 	char buff[1024];

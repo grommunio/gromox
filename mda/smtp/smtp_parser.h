@@ -105,7 +105,7 @@ struct MAIL_HEAD {
     MEM_FILE    f_content_type;   /* content type in mime */
     MEM_FILE    f_others;          /* other mail header field */
     char        x_priority;       /* x priority */
-	char x_original_ip[32]; /* oringinal ip information in mime */
+	char x_original_ip[40]; /* oringinal ip information in mime */
     char        compose_time[64];    /* compose time in mime */
     int         mail_part;             /* single part mail or multi-parts */
 };
@@ -123,9 +123,9 @@ struct MAIL_INFO {
 };
 
 struct CONNECTION {
-	char client_ip[32]; /* client ip address string */
+	char client_ip[40]; /* client ip address string */
     int            client_port;        /* value of client port */
-	char server_ip[32]; /* server ip address */
+	char server_ip[40]; /* server ip address */
     int            server_port;        /* value of server port */
     int            sockd;              /* context's socket file description */
 	SSL            *ssl;

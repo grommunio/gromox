@@ -54,7 +54,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	int max_length;
 	void *pendpoint;
 	int max_rule_len;
-	char smtp_ip[32];
+	char smtp_ip[40];
 	int ping_interval;
 	int average_blocks;
 	char size_buff[32];

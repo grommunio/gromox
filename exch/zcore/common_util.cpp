@@ -69,7 +69,7 @@ static int g_max_rcpt;
 static int g_mime_num;
 static int g_smtp_port;
 static int g_max_message;
-static char g_smtp_ip[32];
+static char g_smtp_ip[40];
 static char g_org_name[256];
 static char g_hostname[256];
 static MIME_POOL *g_mime_pool;

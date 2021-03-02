@@ -636,7 +636,7 @@ void exmdb_local_console_talk(int argc,
 	int response_interval;
 	char str_interval[64];
 	char str_response[64];
-	char *ptr, tmp_ip[32];
+	char *ptr, tmp_ip[40];
 	int scan_interval, retrying_times;
 	int times, interval, alarm_interval;
 	char help_string[] = "250 exmdb local help information:\r\n"

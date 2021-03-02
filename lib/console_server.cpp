@@ -53,7 +53,7 @@ extern BOOL g_notify_stop;
 /* declare private global variables */
 static BOOL g_terminate;
 static size_t g_cmd_num;
-static char g_listen_ip[32];
+static char g_listen_ip[40];
 static int g_listen_port;
 static pthread_t g_listening_tid;
 static CONSOLE_NODE *g_console_buff;

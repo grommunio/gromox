@@ -32,7 +32,7 @@ struct BACK_CONN {
 };
 
 static BOOL g_notify_stop;
-static char g_event_ip[32];
+static char g_event_ip[40];
 static int g_event_port;
 static pthread_t g_scan_id;
 static std::mutex g_back_lock;

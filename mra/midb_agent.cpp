@@ -63,7 +63,7 @@ struct BACK_SVR {
 	DOUBLE_LIST_NODE node;
 	char prefix[256];
 	int prefix_len;
-	char ip_addr[32];
+	char ip_addr[40];
 	int port;
 	DOUBLE_LIST conn_list;
 };
@@ -133,11 +133,11 @@ static int g_file_ratio;
 static bool list_file_read_midb(const char *filename)
 {
 	struct MIDB_ITEM {
-		char prefix[256], ip_addr[32];
+		char prefix[256], ip_addr[40];
 		int port;
 	};
 	auto plist = list_file_initd(filename, get_config_path(),
-	             /* MIDB_ITEM */ "%s:256%s:32%d");
+	             /* MIDB_ITEM */ "%s:256%s:40%d");
 	if (plist == nullptr) {
 		printf("[midb_agent]: list_file_initd %s: %s\n",
 		       filename, strerror(errno));
