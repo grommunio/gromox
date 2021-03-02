@@ -359,21 +359,20 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 	*pb_data = FALSE;
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		if (0 == strcasecmp((char*)pnode->pdata, "ALL") ||
-			0 == strcasecmp((char*)pnode->pdata, "FAST") ||
-			0 == strcasecmp((char*)pnode->pdata, "FULL")) {
+		auto kw = static_cast<const char *>(pnode->pdata);
+		if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FAST") == 0 ||
+		    strcasecmp(kw, "FULL") == 0) {
 			i ++;
 			nodes[i].pdata = deconst("INTERNALDATE");
 			double_list_append_as_tail(plist, &nodes[i]);
 			i ++;
 			nodes[i].pdata = deconst("RFC822.SIZE");
 			double_list_append_as_tail(plist, &nodes[i]);
-			if (0 == strcasecmp((char*)pnode->pdata, "ALL") ||
-				0 == strcasecmp((char*)pnode->pdata, "FULL")) {
+			if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FULL") == 0) {
 				i ++;
 				nodes[i].pdata = deconst("ENVELOPE");
 				double_list_append_as_tail(plist, &nodes[i]);
-				if(0 == strcasecmp((char*)pnode->pdata, "FULL")) {
+				if(0 == strcasecmp(kw, "FULL")) {
 					i ++;
 					nodes[i].pdata = deconst("BODY");
 					double_list_append_as_tail(plist, &nodes[i]);
@@ -381,23 +380,21 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 			}
 			*pb_detail = TRUE;
 			pnode->pdata = deconst("FLAGS");
-		} else if (0 == strcasecmp((char*)pnode->pdata, "RFC822") ||
-			0 == strcasecmp((char*)pnode->pdata, "RFC822.HEADER") ||
-			0 == strcasecmp((char*)pnode->pdata, "RFC822.TEXT")) {
+		} else if (strcasecmp(kw, "RFC822") == 0 ||
+		    strcasecmp(kw, "RFC822.HEADER") == 0 ||
+		    strcasecmp(kw, "RFC822.TEXT") == 0) {
 			*pb_data = TRUE;
 			*pb_detail = TRUE;
-		} else if (0 == strcasecmp((char*)pnode->pdata, "BODY") ||
-			0 == strcasecmp((char*)pnode->pdata, "BODYSTRUCTURE") ||
-			0 == strcasecmp((char*)pnode->pdata, "ENVELOPE") ||
-			0 == strcasecmp((char*)pnode->pdata, "INTERNALDATE") ||
-			0 == strcasecmp((char*)pnode->pdata, "RFC822.SIZE")) {
+		} else if (strcasecmp(kw, "BODY") == 0 ||
+		    strcasecmp(kw, "BODYSTRUCTURE") == 0 ||
+		    strcasecmp(kw, "ENVELOPE") == 0 ||
+		    strcasecmp(kw, "INTERNALDATE") == 0 ||
+		    strcasecmp(kw, "RFC822.SIZE") == 0) {
 			*pb_detail = TRUE;
-		} else if (0 == strncasecmp((char*)pnode->pdata, "BODY[", 5)||
-			0 == strncasecmp((char*)pnode->pdata, "BODY.PEEK[", 10)) {
-			if (NULL == search_string((char*)pnode->pdata, "FIELDS",
-				strlen((char*)pnode->pdata))) {
+		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
+		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
+			if (search_string(kw, "FIELDS", strlen(kw)) == nullptr)
 				*pb_data = TRUE;
-			}
 			*pb_detail = TRUE;
 		}
 	}
@@ -816,7 +813,8 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			buff[buff_len] = ' ';
 			buff_len ++;
 		}
-		if (0 == strcasecmp((char*)pnode->pdata, "BODY")) {
+		auto kw = static_cast<const char *>(pnode->pdata);
+		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "BODY ");
 			if (TRUE == mjson_rfc822_check(&mjson)) {
@@ -847,7 +845,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					buff_len += len;
 				}
 			}
-		} else if (0 == strcasecmp((char*)pnode->pdata, "BODYSTRUCTURE")) {
+		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "BODYSTRUCTURE ");
 			if (TRUE == mjson_rfc822_check(&mjson)) {
@@ -878,7 +876,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					buff_len += len;
 				}
 			}
-		} else if (0 == strcasecmp((char*)pnode->pdata, "ENVELOPE")) {
+		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "ENVELOPE ");
 			len = mjson_fetch_envelope(&mjson,
@@ -890,12 +888,12 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			} else {
 				buff_len += len;
 			}
-		} else if(0 == strcasecmp((char*)pnode->pdata, "FLAGS")) {
+		} else if (strcasecmp(kw, "FLAGS") == 0) {
 			imap_cmd_parser_convert_flags_string(
 				pitem->flag_bits, flags_string);
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "FLAGS %s", flags_string);
-		} else if (0 == strcasecmp((char*)pnode->pdata, "INTERNALDATE")) {
+		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
 			if (FALSE == parse_rfc822_timestamp(
 				mjson_get_mail_received(&mjson), &tmp_time)) {
 				tmp_time = atol(mjson_get_mail_filename(&mjson));
@@ -904,7 +902,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			localtime_r(&tmp_time, &tmp_tm);
 			buff_len += strftime(buff + buff_len, MAX_DIGLEN - buff_len,
 							"INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
-		} else if (strcasecmp(static_cast<char *>(pnode->pdata), "RFC822") == 0) {
+		} else if (strcasecmp(kw, "RFC822") == 0) {
 			buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
 							"RFC822 ({%ld}\r\n<<{file}%s|0|%ld\r\n)",
 							mjson_get_mail_length(&mjson),
@@ -918,7 +916,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
-		} else if (0 == strcasecmp((char*)pnode->pdata, "RFC822.HEADER")) {
+		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
 			pmime = mjson_get_mime(&mjson, "");
 			if (NULL != pmime) {
 				buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
@@ -930,11 +928,11 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				buff_len += gx_snprintf(buff + buff_len,
 				            GX_ARRAY_SIZE(buff) - buff_len, "RFC822.HEADER NIL");
 			}
-		} else if (0 == strcasecmp((char*)pnode->pdata, "RFC822.SIZE")) {
+		} else if (strcasecmp(kw, "RFC822.SIZE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len,
 							"RFC822.SIZE %ld", mjson_get_mail_length(&mjson));
-		} else if (0 == strcasecmp((char*)pnode->pdata, "RFC822.TEXT")) {
+		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
 			pmime = mjson_get_mime(&mjson, "");
 			if (NULL != pmime) {
 				buff_len += gx_snprintf(buff + buff_len,
@@ -956,11 +954,11 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
-		} else if (0 == strcasecmp((char*)pnode->pdata, "UID")) {
+		} else if (strcasecmp(kw, "UID") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "UID %d", pitem->uid);
-		} else if (0 == strncasecmp((char*)pnode->pdata, "BODY[", 5)||
-			0 == strncasecmp((char*)pnode->pdata, "BODY.PEEK[", 10)) {
+		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
+		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			pbody = strchr(static_cast<char *>(pnode->pdata), '[');
 			ptr = pbody + 1;
 			pend = strchr(ptr, ']');
@@ -1032,7 +1030,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			buff_len += len;
 			if (FALSE == pcontext->b_readonly &&
 				0 == (pitem->flag_bits & FLAG_SEEN) &&
-			    strncasecmp(static_cast<char *>(pnode->pdata), "BODY[", 5) == 0) {
+			    strncasecmp(kw, "BODY[", 5) == 0) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
