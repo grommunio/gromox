@@ -1411,7 +1411,7 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	imap_reply_str = resource_get_imap_code(IMAP_CODE_2170001, 1, &string_length);
 	char starttls_str[16]{};
-	if (pcontext->connection.ssl != nullptr)
+	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS))
 		HX_strlcpy(starttls_str, " STARTTLS", GX_ARRAY_SIZE(starttls_str));
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 	                "* CAPABILITY IMAP4rev1 XLIST SPECIAL-USE "
