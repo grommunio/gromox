@@ -1,4 +1,7 @@
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
+.SH Synopsis
+.PP
+gromox \(em overview of the Gromox groupware server
 .SH Overview
 .PP
 Gromox is a groupware server capable of serving as a replacement for Microsoft
@@ -7,9 +10,6 @@ IMAP/POP3, an SMTP-speaking LDA, and a PHP module with a Z-MAPI function
 subset. Gromox is preferably used in conjunction with a proven httpd, MTA and
 spam solution (e.g. nginx, Postfix, rspamd) to form a comprehensive mail
 system.
-.SH Synopsis
-.PP
-gromox \(em overview of the Gromox groupware server
 .SH Configuration files
 .PP
 Program configuration files reside within /etc/gromox. Most of the programs
@@ -195,6 +195,11 @@ mapi(4gx) \(em PHP module for Gromox services
 .IP \(bu 4
 [::1]:33333 \(em event(8gx) service
 .SH Files
+.PP
+The exact paths depend on the options used when Gromox's build was configured.
+Especially the path for libraries, represented in this documentation as
+/usr/lib/gromox, may for example actually be /usr/lib64/gromox or
+/usr/lib/riscv64-linux-gnu, depending on the platform.
 .IP \(bu 4
 /usr/lib/gromox/libgxf_*.so: flusher plugins for smtp(8gx)
 .IP \(bu 4
