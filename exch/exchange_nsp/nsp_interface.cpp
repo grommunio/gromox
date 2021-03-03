@@ -1097,7 +1097,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPERTY_VALUE *ptarget, PROPTAG_ARRAY *ptable,
+    STAT *pstat, PROPERTY_VALUE *ptarget, MID_ARRAY *ptable,
 	PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
 {
 	int base_id, row;
@@ -1614,9 +1614,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 }
 
 int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
-	STAT *pstat, PROPTAG_ARRAY *preserved, uint32_t reserved2,
-	RESTRICTION *pfilter, PROPERTY_NAME *ppropname, uint32_t requested,
-	PROPTAG_ARRAY **ppoutmids, PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
+    STAT *pstat, MID_ARRAY *preserved, uint32_t reserved2, RESTRICTION *pfilter,
+    NSP_PROPNAME *ppropname, uint32_t requested, MID_ARRAY **ppoutmids,
+    LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
 	int base_id;
 	int user_id;
@@ -1844,7 +1844,7 @@ static int nsp_interface_cmpstring(const void *p1, const void *p2)
 }
 
 int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPTAG_ARRAY *pinmids, PROPTAG_ARRAY **ppoutmids)
+    STAT *pstat, MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
 {
 	int i;
 	int count;
@@ -1923,7 +1923,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
-	STRINGS_ARRAY *pnames, PROPTAG_ARRAY **ppoutmids)
+    STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
 {
 	int i;
 	int base_id;
@@ -3046,7 +3046,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 
 int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
-	PROPTAG_ARRAY **ppmids, PROPROW_SET **pprows)
+    MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	int i, j;
 	int base_id;

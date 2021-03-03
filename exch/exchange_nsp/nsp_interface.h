@@ -15,22 +15,10 @@ int nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
 int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	STAT *pstat, uint32_t table_count, uint32_t *ptable,
 	uint32_t count, PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows);
-
-int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPERTY_VALUE *ptarget, PROPTAG_ARRAY *ptable,
-	PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows);
-
-int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
-	STAT *pstat, PROPTAG_ARRAY *preserved, uint32_t reserved2,
-	RESTRICTION *pfilter, PROPERTY_NAME *ppropname, uint32_t requested,
-	PROPTAG_ARRAY **ppoutmids, PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows);
-
-int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPTAG_ARRAY *pinmids, PROPTAG_ARRAY **ppoutmids);
-
-int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
-	STRINGS_ARRAY *pnames, PROPTAG_ARRAY **ppoutmids);
-
+extern int nsp_interface_seek_entries(NSPI_HANDLE, uint32_t reserved, STAT *, PROPERTY_VALUE *target, MID_ARRAY *table, LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern int nsp_interface_get_matches(NSPI_HANDLE, uint32_t reserved1, STAT *, MID_ARRAY *preserved, uint32_t reserved2, NSPRES *filter, NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern int nsp_interface_resort_restriction(NSPI_HANDLE, uint32_t reserved, STAT *, MID_ARRAY *in, MID_ARRAY **out);
+extern int nsp_interface_dntomid(NSPI_HANDLE, uint32_t reserved, STRINGS_ARRAY *names, MID_ARRAY **out);
 int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t mid, uint32_t codepage, PROPTAG_ARRAY **ppproptags);
 
@@ -59,10 +47,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
 	PROPTAG_ARRAY **ppmids, PROPROW_SET **pprows);
-
-int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
-	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
-	PROPTAG_ARRAY **ppmids, PROPROW_SET **pprows);
+extern int nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t reserved, STAT *, LPROPTAG_ARRAY *, STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
 
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
