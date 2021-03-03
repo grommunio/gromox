@@ -51,11 +51,8 @@ struct STRING_ARRAY {
 	uint32_t cvalues;
 	char **ppstr;
 };
-
-struct STRINGS_ARRAY {
-	uint32_t count;
-	char **ppstrings;
-};
+/* OXNSPI §2.2.2.6 vs §2.2.7.1 oddity that is irrelevant for our implementation */
+using STRINGS_ARRAY = STRING_ARRAY;
 
 struct BINARY {
 	uint32_t cb;

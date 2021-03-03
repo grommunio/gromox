@@ -1925,7 +1925,6 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
     STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
 {
-	int i;
 	int base_id;
 	AB_BASE *pbase;
 	SIMPLE_TREE_NODE *ptnode;
@@ -1943,13 +1942,13 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	if (NULL == *ppoutmids) {
 		return ecMAPIOOM;
 	}
-	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
+	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->cvalues);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
 		return ecMAPIOOM;
 	}
-	(*ppoutmids)->cvalues = pnames->count;
-	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t)*pnames->count);
+	(*ppoutmids)->cvalues = pnames->cvalues;
+	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->cvalues);
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
@@ -1959,11 +1958,10 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 		*ppoutmids = NULL;
 		return ecError;
 	}
-	for (i=0; i<pnames->count; i++) {
-		if (NULL == pnames->ppstrings[i]) {
+	for (unsigned int i = 0; i < pnames->cvalues; ++i) {
+		if (pnames->ppstr[i] == nullptr)
 			continue;
-		}
-		ptnode = ab_tree_dn_to_node(pbase, pnames->ppstrings[i]);
+		ptnode = ab_tree_dn_to_node(pbase, pnames->ppstr[i]);
 		if (NULL != ptnode) {
 			(*ppoutmids)->pproptag[i] = ab_tree_get_node_minid(ptnode);
 		}
@@ -2860,24 +2858,21 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
 	PROPTAG_ARRAY **ppmids, PROPROW_SET **pprows)
 {
-	int i;
 	char *pstr;
 	int temp_len;
 	
-	for (i=0; i<pstrs->count; i++) {
-		temp_len = 2*strlen(pstrs->ppstrings[i]) + 1;
+	for (unsigned int i = 0; i < pstrs->cvalues; ++i) {
+		temp_len = 2 * strlen(pstrs->ppstr[i]) + 1;
 		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (NULL == pstr) {
 			*ppmids = NULL;
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		if (-1 == common_util_to_utf8(pstat->codepage,
-			pstrs->ppstrings[i], pstr, temp_len)) {
-			pstrs->ppstrings[i] = NULL;
-		} else {
-			pstrs->ppstrings[i] = pstr;
-		}
+		if (common_util_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
+			pstrs->ppstr[i] = nullptr;
+		else
+			pstrs->ppstr[i] = pstr;
 	}
 	return nsp_interface_resolve_namesw(handle, reserved,
 				pstat, pproptags, pstrs, ppmids, pprows);
@@ -3048,7 +3043,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	STAT *pstat, PROPTAG_ARRAY *pproptags, STRINGS_ARRAY *pstrs,
     MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
-	int i, j;
+	int j;
 	int base_id;
 	char *ptoken;
 	AB_BASE *pbase;
@@ -3129,22 +3124,22 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	
 	if (0 == pstat->container_id) {
-		for (i=0; i<pstrs->count; i++) {
+		for (unsigned int i = 0; i < pstrs->cvalues; ++i) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
 				goto EXIT_RESOLVE_NAMESW;
 			}
-			if (NULL == pstrs->ppstrings[i]) {
+			if (pstrs->ppstr[i] == nullptr) {
 				*pproptag = MID_UNRESOLVED;
 				continue;
 			}
 			/* =SMTP:user@company.com */
-			ptoken = strchr(pstrs->ppstrings[i], ':');
+			ptoken = strchr(pstrs->ppstr[i], ':');
 			if (NULL != ptoken) {
 				ptoken ++;
 			} else {
-				ptoken = pstrs->ppstrings[i];
+				ptoken = pstrs->ppstr[i];
 			}
 			pnode = nsp_interface_resolve_gal(&pbase->gal_list,
 						pstat->codepage, ptoken, &b_ambiguous);
@@ -3152,16 +3147,14 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				if (TRUE == b_ambiguous) {
 					*pproptag = MID_AMBIGUOUS;
 				} else {
-					if (0 == strncasecmp(pstrs->ppstrings[i],
-						"=SMTP:", 6)) {
+					if (strncasecmp(pstrs->ppstr[i], "=SMTP:", 6) == 0) {
 						prow = common_util_proprowset_enlarge(*pprows);
 						if (NULL == prow || NULL ==
 							common_util_propertyrow_init(prow)) {
 							result = ecMAPIOOM;
 							goto EXIT_RESOLVE_NAMESW;
 						}
-						result = nsp_interface_fetch_smtp_row(
-							pstrs->ppstrings[i] + 6, pproptags, prow);
+						result = nsp_interface_fetch_smtp_row(pstrs->ppstr[i] + 6, pproptags, prow);
 						if (result != ecSuccess)
 							goto EXIT_RESOLVE_NAMESW;
 						*pproptag = MID_RESOLVED;
@@ -3191,22 +3184,22 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		}
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &last_row, &total);
-		for (i=0; i<pstrs->count; i++) {
+		for (unsigned int i = 0; i < pstrs->cvalues; ++i) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
 				goto EXIT_RESOLVE_NAMESW;
 			}
-			if (NULL == pstrs->ppstrings[i]) {
+			if (pstrs->ppstr[i] == nullptr) {
 				*pproptag = MID_UNRESOLVED;
 				continue;
 			}
 			/* =SMTP:user@company.com */
-			ptoken = strchr(pstrs->ppstrings[i], ':');
+			ptoken = strchr(pstrs->ppstr[i], ':');
 			if (NULL != ptoken) {
 				ptoken ++;
 			} else {
-				ptoken = pstrs->ppstrings[i];
+				ptoken = pstrs->ppstr[i];
 			}
 			*pproptag = MID_UNRESOLVED;
 			for (j=0,pnode1=simple_tree_node_get_child(pnode);

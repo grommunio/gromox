@@ -292,31 +292,28 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_ulong(pndr, &size));
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->count));
-		if (r->count > 100000) {
+		TRY(ndr_pull_uint32(pndr, &r->cvalues));
+		if (r->cvalues > 100000)
 			return NDR_ERR_RANGE;
-		}
-		if (r->count != size) {
+		if (r->cvalues != size)
 			return NDR_ERR_ARRAY_SIZE;
-		}
-		r->ppstrings = ndr_stack_anew<char *>(NDR_STACK_IN, size);
-		if (NULL == r->ppstrings) {
+		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
+		if (r->ppstr == nullptr)
 			return NDR_ERR_ALLOC;
-		}
 		for (cnt=0; cnt<size; cnt++) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
-				r->ppstrings[cnt] = (char*)(long)ptr;
+				r->ppstr[cnt] = reinterpret_cast<char *>(static_cast<uintptr_t>(ptr));
 			} else {
-				r->ppstrings[cnt] = NULL;
+				r->ppstr[cnt] = NULL;
 			}
 		}
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		for (cnt=0; cnt<r->count; cnt++) {
-			if (NULL != r->ppstrings[cnt]) {
+		for (cnt = 0; cnt < r->cvalues; ++cnt) {
+			if (r->ppstr[cnt] != nullptr) {
 				TRY(ndr_pull_ulong(pndr, &size1));
 				TRY(ndr_pull_ulong(pndr, &offset));
 				TRY(ndr_pull_ulong(pndr, &length1));
@@ -324,11 +321,10 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 					return NDR_ERR_ARRAY_SIZE;
 				}
 				TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
-				r->ppstrings[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
-				if (NULL == r->ppstrings[cnt]) {
+				r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
+				if (r->ppstr[cnt] == nullptr)
 					return NDR_ERR_ALLOC;
-				}
-				TRY(ndr_pull_string(pndr, r->ppstrings[cnt], length1));
+				TRY(ndr_pull_string(pndr, r->ppstr[cnt], length1));
 			}
 		}
 	}
@@ -465,31 +461,28 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_ulong(pndr, &size));
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->count));
-		if (r->count > 100000) {
+		TRY(ndr_pull_uint32(pndr, &r->cvalues));
+		if (r->cvalues > 100000)
 			return NDR_ERR_RANGE;
-		}
-		if (r->count != size) {
+		if (r->cvalues != size)
 			return NDR_ERR_ARRAY_SIZE;
-		}
-		r->ppstrings = ndr_stack_anew<char *>(NDR_STACK_IN, size);
-		if (NULL == r->ppstrings) {
+		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
+		if (r->ppstr == nullptr)
 			return NDR_ERR_ALLOC;
-		}
 		for (cnt=0; cnt<size; cnt++) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
-				r->ppstrings[cnt] = (char*)(long)ptr;
+				r->ppstr[cnt] = reinterpret_cast<char *>(static_cast<uintptr_t>(ptr));
 			} else {
-				r->ppstrings[cnt] = NULL;
+				r->ppstr[cnt] = nullptr;
 			}
 		}
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		for (cnt=0; cnt<r->count; cnt++) {
-			if (NULL != r->ppstrings[cnt]) {
+		for (cnt = 0; cnt < r->cvalues; ++cnt) {
+			if (r->ppstr[cnt] != nullptr) {
 				TRY(ndr_pull_ulong(pndr, &size1));
 				TRY(ndr_pull_ulong(pndr, &offset));
 				TRY(ndr_pull_ulong(pndr, &length1));
@@ -504,12 +497,11 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 					return NDR_ERR_ALLOC;
 				}
 				TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1));
-				r->ppstrings[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
-				if (NULL == r->ppstrings[cnt]) {
+				r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
+				if (r->ppstr[cnt] == nullptr)
 					return NDR_ERR_ALLOC;
-				}
 				if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
-				    sizeof(uint16_t) * length1, r->ppstrings[cnt],
+				    sizeof(uint16_t) * length1, r->ppstr[cnt],
 				    2 * sizeof(uint16_t) * length1))
 					return NDR_ERR_CHARCNV;
 			}
