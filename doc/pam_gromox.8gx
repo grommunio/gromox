@@ -26,36 +26,36 @@ with an initial deny policy, so at least one module needs to be called to make
 the PAM request succeed. For this reason, if there are no other "account"
 modules listed, pam_permit.so should be used.)
 .SH Configuration directives in /etc/gromox/pam.cfg
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories in which further configuration files,
 especially those used by plugin instances, will be searched.
-.PP
+.br
 Default: \fI/etc/gromox/pam:/etc/gromox\fP
-.SS pam_prompt
-.PP
+.TP
+\fBpam_prompt\fP
 If pam_gromox detects the absence of a password but presence of a PAM
 conversation function, it will attempt to retrieve the password that way, and
 in doing so, will show this label just ahead of the nonechoing password prompt.
-.PP
+.br
 Default: \fIPassword: \fP
-.SS service_plugin_ignore_errors
-.PP
+.TP
+\fBservice_plugin_ignore_errors\fP
 If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS service_plugin_list
-.PP
+.TP
+\fBservice_plugin_list\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
-.PP
+.br
 Default: (unspecified)
-.SS service_plugin_path
-.PP
+.TP
+\fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
+.br
 Default: \fI/usr/lib/gromox\fP
 .SH See also
 .PP

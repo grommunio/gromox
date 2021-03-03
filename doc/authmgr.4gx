@@ -9,14 +9,14 @@ selects the authentication backend per user account. The
 libgxs_mysql_adaptor.so and/or libgxs_ldap_adaptor.so plugins need to be
 loaded in advance (this is the case by default).
 .SH Configuration file directives
-.SS auth_backend_selection
-.PP
+.TP
+\fBauth_backend_selection\fP
 This controls how authmgr picks the backend. Once \fBalways_ldap\fP or
 \fBexternid\fP is set, ldap_adaptor(4gx) becomes mandatory, as does its
 configuration, i.e. LDAP search base and access credentials need to be valid.
-.PP
+.br
 Available: \fIalways_mysql\fP, \fIalways_ldap\fP, \fIexternid\fP
-.PP
+.br
 Default: \fIalways_mysql\fP
 .SH See also
 .PP

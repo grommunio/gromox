@@ -3,17 +3,17 @@
 .PP
 midb_agent \(em Service plugin for conversing with midb(8gx)
 .SH Configuration file directives
-.SS connection_num
-.PP
+.TP
+\fBconnection_num\fP
 The number of connections to keep open towards every midb target.
-.PP
+.br
 Default: \fI5\fP
-.SS context_average_mem
-.PP
+.TP
+\fBcontext_average_mem\fP
 Enables and sets the size of a memory pool (in object count; the actual size is
 256 bytes * context_num * context_average_mem). imap(8gx) and pop3(8gx) require
 this to be non-zero for full functionality.
-.PP
+.br
 Default: \fI1024\fP
 .SH Multiserver map
 .PP

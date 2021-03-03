@@ -40,208 +40,207 @@ RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
 These requests can, similarly to HTTP CONNECT, be very long-lived. The RPC data
 stream is handled by the included exchange_emsmdb(4gx) plugin.
 .SH Configuration file directives
-.SS block_interval_auths
-.PP
+.TP
+\fBblock_interval_auths\fP
 The amount of time a user is blocked from connecting to the service after too
 many failed logins.
-.PP
+.br
 Default: \fI1 minute\fP
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
 configuration files, especially those used by plugin instances.
-.PP
+.br
 Default: \fI/etc/gromox/http:/etc/gromox\fP
-.SS console_server_ip
-.PP
+.TP
+\fBconsole_server_ip\fP
 An IPv6 address (or v4-mapped address) to expose the management console
 frontend on.
-.PP
+.br
 Default: \fI::1\fP
-.SS console_server_port
-.PP
+.TP
+\fBconsole_server_port\fP
 The TCP port number to expose the management console frontend on.
-.PP
+.br
 Default: \fI8899\fP
-.SS context_average_mem
-.PP
+.TP
+\fBcontext_average_mem\fP
 Default: \fI256K\fP
-.SS context_num
-.PP
+.TP
+\fBcontext_num\fP
 Default: \fI400\fP
-.SS data_file_path
-.PP
+.TP
+\fBdata_file_path\fP
 Colon-separated list of directories which will be scanned when locating data
 files.
-.PP
+.br
 Default: \fI/usr/share/gromox/http\fP
-.SS default_domain
-.PP
+.TP
+\fBdefault_domain\fP
 Default: (inherited from system)
-.SS fastcgi_cache_size
-.PP
+.TP
+\fBfastcgi_cache_size\fP
 If the HTTP request to a CGI endpoint uses Chunked Transfer Encoding and the
 Content-Length field contains a larger value than this limit, the data is
 buffered in a file \fI/tmp/http-\fP%d (%d replaced by internal context id).
-.PP
+.br
 Default: \fI256K\fP
-.SS fastcgi_exec_timeout
-.PP
+.TP
+\fBfastcgi_exec_timeout\fP
 Maximum execution time for CGI scripts.
-.PP
+.br
 Default: \fI10 minutes\fP
-.SS fastcgi_max_size
-.PP
+.TP
+\fBfastcgi_max_size\fP
 If the Content-Length of a HTTP request to a CGI endpoint is larger than this
 value, the request is rejected.
-.PP
+.br
 Default: \fI4M\fP
-.SS host_id
-.PP
+.TP
+\fBhost_id\fP
 The hostname that the server uses to identify itself (e.g. Server: header in
 HTTP responses).
-.PP
+.br
 Default: (inherited from system)
-.SS hpm_cache_size
-.PP
+.TP
+\fBhpm_cache_size\fP
 If the HTTP request to a HPM endpoint uses Chunked Transfer Encoding and the
 Content-Length field contains a larger value than this limit, the data is
 buffered in a file \fI/tmp/http-\fP%d (%d replaced by internal context id).
-.PP
+.br
 Default: \fI512K\fP
-.SS hpm_max_size
-.PP
+.TP
+\fBhpm_max_size\fP
 If the Content-Length of a HTTP request to a HPM endpoint is larger than this
 value, the request is rejected.
-.PP
+.br
 Default: \fI4M\fP
-.SS hpm_plugin_ignore_errors
-.PP
+.TP
+\fBhpm_plugin_ignore_errors\fP
 If set to yes, HPM plugins that fail to load on startup are ignored. If set to
 no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS hpm_plugin_list
-.PP
+.TP
+\fBhpm_plugin_list\fP
 Path to a text file which lists the filenames of HPM plugins to load, one per
 line.
-.PP
+.br
 Default: (unspecified)
-.SS http_auth_times
-.PP
+.TP
+\fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
-.PP
+.br
 Default: \fI10\fP
-.SS http_certificate_passwd
-.PP
+.TP
+\fBhttp_certificate_passwd\fP
 The password to unlock TLS certificates.
-.PP
+.br
 Default: (unset)
-.SS http_certificate_path
-.PP
+.TP
+\fBhttp_certificate_path\fP
 Filesystem path to a certificate file for use with encrypted connection. The
 complete certificate chain should be present (as there is no other config
 directive to pull CA certs in).
-.PP
+.br
 Default: (unset)
-.SS http_conn_timeout
-.PP
+.TP
+\fBhttp_conn_timeout\fP
 If a HTTP connection stalls for the given period, the connection is terminated.
-.PP
+.br
 Default: \fI3 minutes\fP
-.SS http_private_key_path
-.PP
+.TP
+\fBhttp_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
-.PP
+.br
 Default: (unset)
-.SS http_support_ssl
-.PP
+.TP
+\fBhttp_support_ssl\fP
 This flag controls whether (or not) the server offers TLS at all. The default
 is false because you need a certificate for this first.
-.PP
+.br
 Default: \fIfalse\fP
-.SS listen_port
-.PP
+.TP
+\fBlisten_port\fP
 The TCP port to expose the HTTP protocol service on. (The IP address is fixed
 to the wildcard address.)
-.PP
+.br
 Default: \fI80\fP
-.SS listen_ssl_port
-.PP
+.TP
+\fBlisten_ssl_port\fP
 The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on. (The IP
 address is fixed to the wildcard address.)
-.PP
+.br
 Default: (unset)
-.SS proc_plugin_ignore_errors
-.PP
+.TP
+\fBproc_plugin_ignore_errors\fP
 If set to yes, processor plugins that fail to load on startup are ignored. If
 set to no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS proc_plugin_list
-.PP
+.TP
+\fBproc_plugin_list\fP
 Path to a text file which lists the filenames of processor plugins to load, one
 per line.
-.PP
+.br
 Default: (unspecified)
-.SS proc_plugin_path
-.PP
+.TP
+\fBproc_plugin_path\fP
 Filesystem path for processor plugins.
-.PP
+.br
 Default: \fI/usr/libexec/gromox\fP
-.SS request_max_mem
-.PP
+.TP
+\fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed, as
 per the DCERPC 1.1 specification section 12.6.3.7 and the MS-RPCE specification
 section 2.2.2.6 (in version 17).
-.SS running_identity
-.PP
+.TP
+\fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
-.PP
-Default: \fIgromox\fP
-.PP
 To inhibit the switch, assign the empty value.
-.SS service_plugin_ignore_errors
-.PP
+.br
+Default: \fIgromox\fP
+.TP
+\fBservice_plugin_ignore_errors\fP
 If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS service_plugin_list
-.PP
+.TP
+\fBservice_plugin_list\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
-.PP
+.br
 Default: (unspecified)
-.SS service_plugin_path
-.PP
+.TP
+\fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
+.br
 Default: \fI/usr/lib/gromox\fP
-.SS state_path
-.PP
+.TP
+\fBstate_path\fP
 Directory for runtime variadic data.
-.PP
+.br
 Default: \fI/var/lib/gromox\fP
-.SS tcp_mss_size
-.PP
+.TP
+\fBtcp_mss_size\fP
 Sets the TCP_MAXSEG socket option with the given MSS value for the listening
 socket(s), cf. tcp(7).
-.PP
+.br
 Default: 0 (do not limit the MSS)
-.SS thread_charge_num
-.PP
+.TP
+\fBthread_charge_num\fP
 The maximum number of connections that each thread is allowed to process.
-.PP
+.br
 Default: \fI20\fP
-.SS thread_init_num
-.PP
+.TP
+\fBthread_init_num\fP
 The minimum number of client processing threads to keep around.
-.PP
+.br
 Default: \fI5\fP
-.SS user_default_lang
-.PP
+.TP
+\fBuser_default_lang\fP
 Default: \fIen\fP
 .SH Files
 .IP \(bu 4

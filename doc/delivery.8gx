@@ -18,101 +18,101 @@ Display option summary.
 The delivery daemon can be extended by a number of plugins. In Gromox, their
 filenames begin with libmtahook_.
 .SH Configuration file directives
-.SS admin_mailbox
-.PP
+.TP
+\fBadmin_mailbox\fP
 Default: (unspecified)
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories in which further configuration files,
 especially those used by plugin instances, will be searched.
-.PP
+.br
 Default: \fI/etc/gromox/delivery:/etc/gromox\fP
-.SS console_server_ip
-.PP
+.TP
+\fBconsole_server_ip\fP
 An IPv6 address (or v4-mapped address) to expose the management console
 frontend on.
-.PP
+.br
 Default: \fI::1\fP
-.SS console_server_port
-.PP
+.TP
+\fBconsole_server_port\fP
 The TCP port number to expose the management console frontend on.
-.PP
+.br
 Default: \fI6677\fP
-.SS data_file_path
-.PP
+.TP
+\fBdata_file_path\fP
 Colon-separated list of directories in which static data files will be
 searched.
-.PP
+.br
 Default: \fI/usr/share/gromox/delivery\fP
-.SS default_domain
-.PP
+.TP
+\fBdefault_domain\fP
 Default: (system domainname)
-.SS dequeue_max_mem
-.PP
+.TP
+\fBdequeue_max_mem\fP
 Default: \fI1024M\fP
-.SS dequeue_path
-.PP
+.TP
+\fBdequeue_path\fP
 Default: \fI/var/lib/gromox/queue\fP
-.SS domain_list_valid
-.PP
+.TP
+\fBdomain_list_valid\fP
 Default: \fItrue\fP
-.SS free_context_num
-.PP
+.TP
+\fBfree_context_num\fP
 Default: \fI512\fP
-.SS host_id
-.PP
+.TP
+\fBhost_id\fP
 Default: (system hostname)
-.SS mpc_plugin_ignore_errors
-.PP
+.TP
+\fBmpc_plugin_ignore_errors\fP
 If set to yes, MPC plugins that fail to load on startup are ignored. If set to
 no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS mpc_plugin_list
-.PP
+.TP
+\fBmpc_plugin_list\fP
 Path to a text file which lists the filenames of MPC plugins to load, one per
 line.
-.PP
+.br
 Default: (unspecified)
-.SS mpc_plugin_path
-.PP
+.TP
+\fBmpc_plugin_path\fP
 Path to a secondary directory where MPC plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
+.br
 Default: \fI/usr/lib/gromox\fP
-.SS running_identity
-.PP
+.TP
+\fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
-.PP
+.br
 Default: \fIgromox\fP
-.SS service_plugin_ignore_errors
-.PP
+.TP
+\fBservice_plugin_ignore_errors\fP
 If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS service_plugin_list
-.PP
+.TP
+\fBservice_plugin_list\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
-.PP
+.br
 Default: (unspecified)
-.SS service_plugin_path
-.PP
+.TP
+\fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
+.br
 Default: \fI/usr/lib/gromox\fP
-.SS state_path
-.PP
+.TP
+\fBstate_path\fP
 Directory for runtime variadic data.
-.PP
+.br
 Default: \fI/var/lib/gromox\fP
-.SS work_threads_max
-.PP
+.TP
+\fBwork_threads_max\fP
 Default: \fI32\fP
-.SS work_threads_min
-.PP
+.TP
+\fBwork_threads_min\fP
 Default: \fI16\fP
 .SH Files
 .IP \(bu 4

@@ -4,69 +4,70 @@
 exmdb_provider is a service plugin for http(8gx). It listens on (by default)
 port 5000 for exmdb RPCs, a Gromox-specific protocol.
 .SH Configuration file directives
-.SS cache_interval
-.PP
+.TP
+\fBcache_interval\fP
 Default: \fI2 hours\fP
-.SS listen_ip
-.PP
+.TP
+\fBlisten_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the timer service on.
-.PP
+.br
 Default: \fI::1\fP
-.SS listen_port
-.PP
+.TP
+\fBlisten_port\fP
 The TCP port number for exposing the timer service on.
-.PP
+.br
 Default: \fI5000\fP
-.SS max_ext_rule_number
-.PP
+.TP
+\fBmax_ext_rule_number\fP
 Default: \fI20\fP
-.SS max_router_connections
-.PP
+.TP
+\fBmax_router_connections\fP
 Default: \fI50\fP
-.SS max_rpc_stub_threads
-.PP
+.TP
+\fBmax_rpc_stub_threads\fP
 Default: \fI50\fP
-.SS max_rule_number
-.PP
+.TP
+\fBmax_rule_number\fP
 Default: \fI1000\fP
-.SS max_store_message_count
-.PP
+.TP
+\fBmax_store_message_count\fP
 Default: \fI200000\fP
-.SS notify_stub_threads_num
-.PP
+.TP
+\fBnotify_stub_threads_num\fP
 Default: \fI4\fP
-.SS populating_threads_num
-.PP
+.TP
+\fBpopulating_threads_num\fP
 Default: \fI4\fP
-.SS rpc_proxy_connection_num
-.PP
+.TP
+\fBrpc_proxy_connection_num\fP
 Default: \fI10\fP
-.SS separator_for_bounce
-.PP
+.TP
+\fBseparator_for_bounce\fP
 Default: \fI;\fP
-.SS sqlite_mmap_size
-.PP
+.TP
+\fBsqlite_mmap_size\fP
 See https://www.sqlite.org/pragma.html#pragma_mmap_size for details.
-.PP
+.br
 Default: \fI0\fP (use SQLite default)
-.SS sqlite_synchronous
-.PP
+.TP
+\fBsqlite_synchronous\fP
 Enables/disables synchronous mode for SQLite databases. See
 https://www.sqlite.org/pragma.html#pragma_synchronous for details.
-.PP
+.br
 Default: \fIoff\fP
-.SS sqlite_wal_mode
-.PP
+.TP
+\fBsqlite_wal_mode\fP
 Selects the particular journal mode for SQLite databases; \fBoff\fP selects
 DELETE mode, \fBon\fP selects WAL mode. See
 https://www.sqlite.org/pragma.html#pragma_journal_mode for details.
-.PP
+.br
 Default: \fIon\fP
-.SS table_size
-.PP
+.TP
+\fBtable_size\fP
 Default: \fI5000\fP
-.SS x500_org_name
-.PP
+.TP
+\fBx500_org_name\fP
+.br
 Default: (unspecified)
 .SH Multiserver selection map
 .PP

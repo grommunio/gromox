@@ -21,40 +21,40 @@ The plugin supports temporary modification of the string table as it exists in
 memory through the telnet console mechanism. A reload of the table from disk
 purges these modifications.
 .SH Configuration file directives
-.SS add_service_name
-.PP
+.TP
+\fBadd_service_name\fP
 The plugin instance will expose its function through this service function
 name. You should not generally this, because other plugins rely on certain
 fixed values.
-.PP
+.br
 Default: \fIinstance_name\fP_add
-.SS growing_num
-.PP
+.TP
+\fBgrowing_num\fP
 The maximum number of additional string table entries on top of what the
 on-disk table file has supplied. So when the table file contains 40 entries and
 growing_num is 100, the in-memory copy of the table can hold up to 140 entries
 total.
-.PP
+.br
 Default: \fI100\fP
-.SS is_case_sensitive
-.PP
+.TP
+\fBis_case_sensitive\fP
 Flag which determines whether matches should treat uppercase and lowercase
 differently or not.
-.PP
+.br
 Default: \fIfalse\fP
-.SS query_service_name
-.PP
+.TP
+\fBquery_service_name\fP
 The plugin instance will expose its function through this service function
 name. You should not generally this, because other plugins rely on certain
 fixed values.
-.PP
+.br
 Default: \fIinstance_name\fP_query
-.SS remove_service_name
-.PP
+.TP
+\fBremove_service_name\fP
 The plugin instance will expose its function through this service function
 name. You should not generally this, because other plugins rely on certain
 fixed values.
-.PP
+.br
 Default: \fIinstance_name\fP_remove
 .SH Files
 .IP \(bu 4

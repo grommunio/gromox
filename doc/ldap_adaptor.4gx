@@ -4,46 +4,46 @@
 ldap_adaptor is a service plugin that facilitates querying an LDAP directory
 server.
 .SH Configuration file directives
-.SS auth_connections
-.PP
+.TP
+\fBauth_connections\fP
 Maximum number of LDAP connections to utilize for authentication requests.
 (Authentication cannot be run on the metadata connections.) This parameter
 has fixed value and is currently not settable.
-.PP
+.br
 Default: (same as data_connections)
-.SS data_connections
-.PP
+.TP
+\fBdata_connections\fP
 Number of LDAP connections to keep active to the server for metadata lookup.
-.PP
+.br
 Default: \fI4\fP
-.SS ldap_bind_user
-.PP
+.TP
+\fBldap_bind_user\fP
 Specifies the default bind DN to use when performing general LDAP operations,
 i.e. searches. The bind DN must be specified as a Distinguished Name in LDAP
 format.
-.PP
+.br
 Default: (unset)
-.SS ldap_bind_pass
-.PP
+.TP
+\fBldap_bind_pass\fP
 Password for Simple Authentication of ldap_bind_user.
-.PP
+.br
 Default: (unset)
-.SS ldap_host
-.PP
+.TP
+\fBldap_host\fP
 Whitespace-separated RFC 2255-style set of LDAP URIs that specify protocol
 and host.
-.PP
+.br
 Default: (libldap default, see ldap.conf(5))
-.SS ldap_mail_attr
-.PP
+.TP
+\fBldap_mail_attr\fP
 Default: \fImail\fP
-.SS ldap_search_base
-.PP
+.TP
+\fBldap_search_base\fP
 Default: (libldap default)
-.SS ldap_start_tls
-.PP
+.TP
+\fBldap_start_tls\fP
 Enable TLS on ldap:// connections.
-.PP
+.br
 Default: \fIoff\fP
 .SH See also
 .PP

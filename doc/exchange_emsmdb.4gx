@@ -5,50 +5,50 @@ exchange_emsmdb is a processing plugin for http(8gx) which handles the Wire
 Format Protocol (Outlook/Exchange RPCs). See the MS-OXCRPC specification for
 details.
 .SH Config file directives
-.SS async_threads_num
-.PP
+.TP
+\fBasync_threads_num\fP
 Default: \fI4\fP
-.SS average_handles
-.PP
+.TP
+\fBaverage_handles\fP
 Default: \fI1000\fP
-.SS average_mem
-.PP
+.TP
+\fBaverage_mem\fP
 Default: \fI4K\fP
-.SS mailbox_ping_interval
-.PP
+.TP
+\fBmailbox_ping_interval\fP
 Default: \fI5 minutes\fP
-.SS mail_max_length
-.PP
+.TP
+\fBmail_max_length\fP
 Default: \fI64M\fP
-.SS max_ext_rule_length
-.PP
+.TP
+\fBmax_ext_rule_length\fP
 Default: \fI510K\fP
-.SS max_mail_num
-.PP
+.TP
+\fBmax_mail_num\fP
 Default: \fI1000000\fP
-.SS max_rcpt_num
-.PP
+.TP
+\fBmax_rcpt_num\fP
 The maximum number of recipients that an e-mail is allowed to have.
-.PP
+.br
 Default: \fI256\fP
-.SS separator_for_bounce
-.PP
+.TP
+\fBseparator_for_bounce\fP
 Default: \fI;\fP
-.SS smtp_server_ip
-.PP
+.TP
+\fBsmtp_server_ip\fP
 SMTP server hostname or address to contact for outgoing mail.
-.PP
+.br
 Default: \fI::1\fP
-.SS smtp_server_port
-.PP
+.TP
+\fBsmtp_server_port\fP
 SMTP server TCP port number to connect to for outgoing mail.
-.PP
+.br
 Default: \fI25\fP
-.SS submit_command
-.PP
+.TP
+\fBsubmit_command\fP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
-.SS x500_org_name
-.PP
+.TP
+\fBx500_org_name\fP
 Default: (unspecified)
 .SH Files
 .IP \(bu 4

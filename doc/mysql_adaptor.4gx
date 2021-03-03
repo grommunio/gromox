@@ -4,42 +4,43 @@
 mysql_adaptor is a service plugin for integrating mail accounts from
 a MySQL/MariaDB database.
 .SH Configuration file directives
-.SS connection_num
-.PP
+.TP
+\fBconnection_num\fP
 Number of SQL connections to keep active.
-.PP
+.br
 Default: \fI8\fP
-.SS mysql_dbname
-.PP
+.TP
+\fBmysql_dbname\fP
 Default: \fIarchive\fP
-.SS mysql_host
-.PP
+.TP
+\fBmysql_host\fP
 The hostname/IP address for contacting the SQL server.
-.PP
+.br
 Default: \fIlocalhost\fP
-.SS mysql_password
-.PP
+.TP
+\fBmysql_password\fP
 Default: (unset)
-.SS mysql_port
-.PP
+.TP
+\fBmysql_port\fP
 The TCP port number for contacting the SQL server.
-.PP
+.br
 Default: \fI3306\fP
-.SS mysql_rdwr_timeout
-.PP
+.TP
+\fBmysql_rdwr_timeout\fP
 This sets the MYSQL_OPT_READ_TIMEOUT and MYSQL_OPT_WRITE_TIMEOUT option values
 on the MySQL connection.
-.PP
+.br
 Default: \fI0\fP (no timeout)
-.SS mysql_username
-.PP
+.TP
+\fBmysql_username\fP
 Default: \fIroot\fP
-.SS scan_interval
-.PP
+.TP
+\fBscan_interval\fP
 Default: \fI1 minute\fP
-.SS schema_upgrades
-.PP
+.TP
+\fBschema_upgrades\fP
 This controls what to do when a database schema update is available.
+.RS
 .TP
 \fBautoupdate\fP
 Do perform automatic schema upgrades when mysql_adaptor is started. This option
@@ -57,6 +58,7 @@ the program terminates. Schema upgrades can be done manually with
 gromox\-dbop(8gx).
 .PP
 Default: \fIabort\fP
+.RE
 .SH Files
 .IP \(bu 4
 \fIstate_path\fP/uncheck_domains.txt

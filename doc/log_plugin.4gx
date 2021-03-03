@@ -11,23 +11,23 @@ event happens.
 To make use of log_plugin, you need to set and override
 \fBservice_plugin_list\fP in the respective daemon's configuration.
 .SH Configuration file directives
-.SS files_num
-.PP
+.TP
+\fBfiles_num\fP
 The maximum number of days to keep past log files for.
-.PP
+.br
 Default: \fI30\fP
-.SS log_cache_size
-.PP
+.TP
+\fBlog_cache_size\fP
 Default: \fI1M\fP
-.SS log_file_name
-.PP
+.TP
+\fBlog_file_name\fP
 The basic filename for the log file. The rotated files will have a name derived
 from this, in form the style of xyz.txt => xyz-YYYYMMDD.txt.
 You should always specify an absolute path here.
-.PP
+.br
 Default: \fIlog.txt\fP
-.SS log_level
-.PP
+.TP
+\fBlog_level\fP
 Default: \fI0\fP
 .SH See also
 .PP

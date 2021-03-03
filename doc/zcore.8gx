@@ -77,133 +77,133 @@ various bounce notifications.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH Configuration file directives
-.SS address_cache_internal
-.PP
+.TP
+\fBaddress_cache_internal\fP
 Default: \fI5 minutes\fP
-.SS address_item_num
-.PP
+.TP
+\fBaddress_item_num\fP
 Default: \fI100000\fP
-.SS address_table_size
-.PP
+.TP
+\fBaddress_table_size\fP
 Default: \fI3000\fP
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
 configuration files, especially those used by plugin instances.
-.PP
+.br
 Default: \fI/etc/gromox/zcore:/etc/gromox\fP
-.SS console_server_ip
-.PP
+.TP
+\fBconsole_server_ip\fP
 An IPv6 address (or v4-mapped address) to expose the management console
 frontend on.
-.PP
+.br
 Default: \fI::1\fP
-.SS console_server_port
-.PP
+.TP
+\fBconsole_server_port\fP
 The TCP port number to expose the management console frontend on.
-.PP
+.br
 Default: \fI3344\fP
-.SS data_file_path
-.PP
+.TP
+\fBdata_file_path\fP
 Colon-separated list of directories which will be scanned when locating data
 files.
-.PP
+.br
 Default: \fI/usr/share/gromox/zcore\fP
-.SS default_charset
-.PP
+.TP
+\fBdefault_charset\fP
 Default: \fIwindows-1252\fP
-.SS default_timezone
-.PP
+.TP
+\fBdefault_timezone\fP
 Default: (unspecified)
-.SS freebusy_tool_path
-.PP
+.TP
+\fBfreebusy_tool_path\fP
 Default: \fI/usr/libexec/gromox/freebusy\fP
-.SS host_id
-.PP
+.TP
+\fBhost_id\fP
 Default: (system hostname)
-.SS mailbox_ping_interval
-.PP
+.TP
+\fBmailbox_ping_interval\fP
 Default: \fI5 minutes\fP
-.SS mail_max_length
-.PP
+.TP
+\fBmail_max_length\fP
 Default: \fI64M\fP
-.SS max_ext_rule_length
-.PP
+.TP
+\fBmax_ext_rule_length\fP
 Default: \fI510K\fP
-.SS max_mail_num
-.PP
+.TP
+\fBmax_mail_num\fP
 Default: \fI1000000\fP
-.SS max_rcpt_num
-.PP
+.TP
+\fBmax_rcpt_num\fP
 The maximum number of recipients that an e-mail is allowed to have.
-.PP
+.br
 Default: \fI256\fP
-.SS notify_stub_threads_num
-.PP
+.TP
+\fBnotify_stub_threads_num\fP
 Default: \fI10\fP
-.SS rpc_proxy_connection_num
-.PP
+.TP
+\fBrpc_proxy_connection_num\fP
 Default: \fI10\fP
-.SS separator_for_bounce
-.PP
+.TP
+\fBseparator_for_bounce\fP
 Default: \fI;\fP
-.SS service_plugin_ignore_errors
-.PP
+.TP
+\fBservice_plugin_ignore_errors\fP
 If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
-.PP
+.br
 Default: \fIno\fP
-.SS service_plugin_list
-.PP
+.TP
+\fBservice_plugin_list\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
-.PP
+.br
 Default: (unspecified)
-.SS service_plugin_path
-.PP
+.TP
+\fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
+.br
 Default: \fI/usr/lib/gromox\fP
-.SS smtp_server_ip
-.PP
+.TP
+\fBsmtp_server_ip\fP
 SMTP server hostname or address to contact for outgoing mail.
-.PP
+.br
 Default: \fI::1\fP
-.SS smtp_server_port
-.PP
+.TP
+\fBsmtp_server_port\fP
 SMTP server TCP port number to contact for outgoing mail.
-.PP
+.br
 Default: \fI25\fP
-.SS state_path
-.PP
+.TP
+\fBstate_path\fP
 Directory for runtime variadic data.
-.PP
+.br
 Default: \fI/var/lib/gromox\fP
-.SS submit_command
-.PP
+.TP
+\fBsubmit_command\fP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
-.SS user_cache_interval
-.PP
+.TP
+\fBuser_cache_interval\fP
 Default: \fI1 hour\fP
-.SS user_table_size
-.PP
+.TP
+\fBuser_table_size\fP
 Default: \fI5000\fP
-.SS x500_org_name
-.PP
+.TP
+\fBx500_org_name\fP
 Default: (unspecified)
-.SS zarafa_mime_number
-.PP
+.TP
+\fBzarafa_mime_number\fP
 Default: \fI4096\fP
-.SS zarafa_threads_num
-.PP
+.TP
+\fBzarafa_threads_num\fP
 The minimum number of client processing threads to keep around.
-.PP
+.br
 Default: \fI100\fP
-.SS zcore_listen
-.PP
+.TP
+\fBzcore_listen\fP
 The named path for the AF_LOCAL socket that zcore will listen on.
-.PP
+.br
 Default: \fI/run/gromox/zcore.sock\fP
 .SH Files
 .IP \(bu 4

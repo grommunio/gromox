@@ -27,26 +27,26 @@ Display option summary.
 v4-mapped) per line of allowed clients. In its absence, ::1 is
 default-whitelisted.
 .SH Configuration file directives
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
 configuration files.
-.PP
+.br
 Default: \fI/etc/gromox/event:/etc/gromox\fP
-.SS event_listen_ip
-.PP
+.TP
+\fBevent_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the event service on.
-.PP
+.br
 Default: \fI::1\fP
-.SS event_listen_port
-.PP
+.TP
+\fBevent_listen_port\fP
 The TCP port number for exposing the event service on.
-.PP
+.br
 Default: \fI33333\fP
-.SS event_threads_num
-.PP
+.TP
+\fBevent_threads_num\fP
 The minimum number of client processing threads to keep around.
-.PP
+.br
 Default: \fI50\fP
 .SH Event protocol
 .PP

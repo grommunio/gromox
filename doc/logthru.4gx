@@ -11,13 +11,13 @@ care of capture, storage and periodic log rotation.
 .PP
 logthru is the default logging plugin for all Gromox services.
 .SH Configuration file directives
-.SS log_level
-.PP
+.TP
+\fBlog_level\fP
 Controls which messages will be shown. Messages with a equal or higher severity
 (lower numeric value) will pass, messages with lower severity (higher numeric
 value) will be suppressed. The levels used in practice are: critical (2),
 error (3), warning (4), notice/info (5), debug (6).
-.PP
+.br
 Default: \fI4\fP
 .SH See also
 .PP

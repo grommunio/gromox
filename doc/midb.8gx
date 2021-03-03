@@ -14,102 +14,103 @@ Output version information and exit.
 \fB\-?\fP
 Display option summary.
 .SH Configuration file directives
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
 configuration files, especially those used by plugin instances.
-.PP
+.br
 Default: \fI/etc/gromox/midb:/etc/gromox\fP
-.SS console_server_ip
-.PP
+.TP
+\fBconsole_server_ip\fP
 An IPv6 address (or v4-mapped address) to expose the management console
 frontend on.
-.PP
+.br
 Default: \fI::1\fP
-.SS console_server_port
-.PP
+.TP
+\fBconsole_server_port\fP
 The TCP port number to expose the management console frontend on.
-.PP
+.br
 Default: \fI9900\fP
-.SS data_file_path
-.PP
+.TP
+\fBdata_file_path\fP
 Colon-separated list of directories which will be scanned when locating data
 files.
-.PP
+.br
 Default: \fI/usr/share/gromox/midb\fP
-.SS default_charset
-.PP
+.TP
+\fBdefault_charset\fP
 Default: \fIwindows-1252\fP
-.SS default_timezone
-.PP
+.TP
+\fBdefault_timezone\fP
 Default: (unspecified)
-.SS midb_cache_interval
-.PP
+.TP
+\fBmidb_cache_interval\fP
 Default: \fI30minutes\fP
-.SS midb_listen_ip
-.PP
+.TP
+\fBmidb_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the event service on.
-.PP
+.br
 Default: \fI::1\fP
-.SS midb_listen_port
-.PP
+.TP
+\fBmidb_listen_port\fP
 The TCP port number for exposing the event service on.
-.PP
+.br
 Default: \fI5555\fP
-.SS midb_mime_number
-.PP
+.TP
+\fBmidb_mime_number\fP
 Default: \fI4096\fP
-.SS midb_table_size
-.PP
+.TP
+\fBmidb_table_size\fP
 Default: \fI5000\fP
-.SS midb_threads_num
-.PP
+.TP
+\fBmidb_threads_num\fP
 The minimum number of client processing threads to keep around.
-.PP
+.br
 Default: \fI100\fP
-.SS notify_stub_threads_num
-.PP
+.TP
+\fBnotify_stub_threads_num\fP
 Default: \fI10\fP
-.SS rpc_proxy_connection_num
-.PP
+.TP
+\fBrpc_proxy_connection_num\fP
+.br
 Default: \fI10\fP
-.SS service_plugin_list
-.PP
+.TP
+\fBservice_plugin_list\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
-.PP
+.br
 Default: (unspecified)
-.SS service_plugin_path
-.PP
+.TP
+\fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
+.br
 Default: \fI/usr/lib/gromox\fP
-.SS sqlite_mmap_size
-.PP
+.TP
+\fBsqlite_mmap_size\fP
 See https://www.sqlite.org/pragma.html#pragma_mmap_size for details.
-.PP
+.br
 Default: \fI0\fP (use SQLite default)
-.SS sqlite_synchronous
-.PP
+.TP
+\fBsqlite_synchronous\fP
 Enables/disables synchronous mode for SQLite databases. See
 https://www.sqlite.org/pragma.html#pragma_synchronous for details.
-.PP
+.br
 Default: \fIoff\fP
-.SS sqlite_wal_mode
-.PP
+.TP
+\fBsqlite_wal_mode\fP
 Selects the particular journal mode for SQLite databases; \fBoff\fP selects
 DELETE mode, \fBon\fP selects WAL mode. See
 https://www.sqlite.org/pragma.html#pragma_journal_mode for details.
-.PP
+.br
 Default: \fIon\fP
-.SS state_path
-.PP
+.TP
+\fBstate_path\fP
 Directory for runtime variadic data.
-.PP
+.br
 Default: \fI/var/lib/gromox\fP
-.SS x500_org_name
-.PP
+.TP
+\fBx500_org_name\fP
 Default: (unspecified)
 .SH Files
 .IP \(bu 4

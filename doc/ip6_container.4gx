@@ -8,11 +8,11 @@ ip6_container is used by one or more daemons to keep track of the number of
 connections made by every source address, and to block them from exceeding a
 connection limit.
 .SH Configuration file directives
-.SS connection_max_num
-.PP
+.TP
+\fBconnection_max_num\fP
 The maximum number of concurrent connections any one source address is allowed
 to make.
-.PP
+.br
 Default: \fI200\fP
 .SH See also
 .PP

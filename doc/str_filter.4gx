@@ -1,54 +1,54 @@
 .TH filter 4gx "" "Gromox" "Gromox admin reference"
 .SH Configuration file directives
-.SS add_service_name
-.PP
+.TP
+\fBadd_service_name\fP
 The plugin instance will expose its function through this service function
 name. You should not generally this, because other plugins rely on certain
 fixed values.
-.PP
+.br
 Default: \fIinstance_name\fP_add (e.g. user_filter_add for libgxs_user_filter.so)
-.SS audit_interval
-.PP
+.TP
+\fBaudit_interval\fP
 Default: \fI1minute\fP
-.SS audit_max_num
-.PP
+.TP
+\fBaudit_max_num\fP
 Default: \fI0\fP
-.SS audit_times
-.PP
+.TP
+\fBaudit_times\fP
 Default: \fI10\fP
-.SS grey_growing_num
-.PP
+.TP
+\fBgrey_growing_num\fP
 Default: \fI0\fP
-.SS growing_num
-.PP
+.TP
+\fBgrowing_num\fP
 The maximum number of additional string table entries on top of what the
 on-disk table file has supplied. So when the table file contains 40 entries and
 growing_num is 100, the in-memory copy of the table can hold up to 140 entries
 total.
-.PP
+.br
 Default: \fI0\fP
-.SS is_case_sensitive
-.PP
+.TP
+\fBis_case_sensitive\fP
 Flag which determines whether matches should treat uppercase and lowercase
 differently or not.
-.PP
+.br
 Default: \fIfalse\fP
-.SS judge_service_name
-.PP
+.TP
+\fBjudge_service_name\fP
 The plugin instance will expose its function through this service function
 name. You should not generally this, because other plugins rely on certain
 fixed values.
-.PP
+.br
 Default: \fIinstance_name\fP_judge
-.SS query_service_name
-.PP
+.TP
+\fBquery_service_name\fP
 The plugin instance will expose its function through this service function
 name. You should not generally this, because other plugins rely on certain
 fixed values.
-.PP
+.br
 Default: \fIinstance_name\fP_query
-.SS temp_list_size
-.PP
+.TP
+\fBtemp_list_size\fP
 Default: \fI2000\fP
 .SH Files
 .IP \(bu 4

@@ -11,20 +11,20 @@ and rescind, respectively, jobs for later execution.
 In practice, this is used by exchange_emsmdb(4gx) and zcore(8gx) to implement
 delayed sending of messages.
 .SH Configuration file directives
-.SS connection_num
-.PP
+.TP
+\fBconnection_num\fP
 Number of connections to keep active.
-.PP
+.br
 Default: \fI8\fP
-.SS timer_host
-.PP
+.TP
+\fBtimer_host\fP
 The hostname/IP address for contacting the timer daemon.
-.PP
+.br
 Default: \fI::1\fP
-.SS timer_port
-.PP
+.TP
+\fBtimer_port\fP
 The TCP port number for contacting the timer daemon.
-.PP
+.br
 Default: \fI6666\fP
 .SH See also
 .PP

@@ -32,29 +32,29 @@ default-whitelisted.
 /var/lib/gromox/timer.txt: This file is used to save the state of timer(8gx)
 and persist them across restarts.
 .SH Configuration file directives
-.SS config_file_path
-.PP
+.TP
+\fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
 configuration files, especially those used by plugin instances.
-.PP
+.br
 Default: \fI/etc/gromox/timer:/etc/gromox\fP
-.SS timer_listen_ip
-.PP
+.TP
+\fBtimer_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the timer service on.
-.PP
+.br
 Default: \fI::1\fP
-.SS timer_listen_port
-.PP
+.TP
+\fBtimer_listen_port\fP
 The TCP port number for exposing the timer service on.
-.PP
+.br
 Default: \fI6666\fP
-.SS timer_state_path
-.PP
+.TP
+\fBtimer_state_path\fP
 Default: \fI/var/lib/gromox/timer.txt\fP
-.SS timer_threads_num
-.PP
+.TP
+\fBtimer_threads_num\fP
 The minimum number of client processing threads to keep around.
-.PP
+.br
 Default: \fI50\fP
 .SH Timer protocol
 .PP
