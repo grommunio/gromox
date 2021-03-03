@@ -1173,8 +1173,9 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 int common_util_problem_compare(const void *pproblem1,
 	const void *pproblem2)
 {
-	return ((PROPERTY_PROBLEM*)pproblem1)->index -
-			((PROPERTY_PROBLEM*)pproblem2)->index;
+	auto a = static_cast<const PROPERTY_PROBLEM *>(pproblem1)->index;
+	auto b = static_cast<const PROPERTY_PROBLEM *>(pproblem2)->index;
+	return a == b ? 0 : a < b ? -1 : 1;
 }
 
 BOOL common_util_propvals_to_row(

@@ -133,7 +133,7 @@ static int oxcical_cmp_tzrule(const void *prule1, const void *prule2)
 {
 	auto a = static_cast<const TZRULE *>(prule1);
 	auto b = static_cast<const TZRULE *>(prule2);
-	return a->year - b->year;
+	return a->year == b->year ? 0 : a->year < b->year ? -1 : 1;
 }
 
 static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_component,
@@ -2015,7 +2015,9 @@ static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ICAL_LINE> piline,
 
 static int oxcical_cmp_date(const void *pdate1, const void *pdate2)
 {
-	return *(uint32_t*)pdate1 - *(uint32_t*)pdate2;
+	auto a = *static_cast<const uint32_t *>(pdate1);
+	auto b = *static_cast<const uint32_t *>(pdate2);
+	return a == b ? 0 : a < b ? -1 : 1;
 }
 
 static BOOL oxcical_parse_appointment_recurrence(
@@ -2103,7 +2105,8 @@ static int oxcical_cmp_exception(
 {
 	auto a = static_cast<const EXCEPTIONINFO *>(pexception1);
 	auto b = static_cast<const EXCEPTIONINFO *>(pexception2);
-	return a->startdatetime - b->startdatetime;
+	return a->startdatetime == b->startdatetime ? 0 :
+	       a->startdatetime < b->startdatetime ? -1 : 1;
 }
 
 static int oxcical_cmp_ext_exception(
@@ -2111,7 +2114,8 @@ static int oxcical_cmp_ext_exception(
 {
 	auto a = static_cast<const EXTENDEDEXCEPTION *>(pext_exception1);
 	auto b = static_cast<const EXTENDEDEXCEPTION *>(pext_exception2);
-	return a->startdatetime - b->startdatetime;
+	return a->startdatetime == b->startdatetime ? 0 :
+	       a->startdatetime < b->startdatetime ? -1 : 1;
 }
 
 static void oxcical_replace_propid(
