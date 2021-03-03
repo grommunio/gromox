@@ -59,10 +59,13 @@ The hostname of the Autodiscover server. This is used by the Autodiscovery
 handler to issue HTTP->HTTPS upgrades. Default: (system hostname).
 .TP
 \fBmapihttp\fP
-This setting controls the framing method presented in Autodiscover responses.
-Either DCERPC-in-HTTP (a.k.a. RPCH, RPCHTTP, OutlookAnywhere) or just HTTP
-framing (a.k.a. MOH, MAPI-over-HTTP) can be selected. MOH is only supported in
-Outlook >= 2016. \fI0\fP selects RPCH, \fI1\fP selects MOH. Default: \fI0\fP.
+This setting controls which server types the Autodiscover handler should
+respond with. The two options are MAPI-in-DCERPC-in-HTTP (a.k.a. RPCH,
+RPC/HTTP, Outlook Anywhere) and simply MAPI-in-HTTP (a.k.a. MOH,
+MAPI-over-HTTP). MOH is supported from Outlook >= 2013 SP1 onwards. \fI0\fP
+selects RPC/HTTP, \fI1\fP selects MAPI/HTTP.
+.br
+Default: \fI0\fP.
 .SS [default]
 .TP
 \fBtimezone\fP
@@ -87,6 +90,11 @@ Default:
 /var/lib/gromox/domain/ = (system hostname)
 .fi
 .RE
+.SH Normative references
+.IP \(bu 4
+MS-OXDISCO: Autodiscover HTTP Service Protocol
+.IP \(bu 4
+MS-OXDSCLI: Autodiscover Publishing and Lookup Protocol
 .SH See also
 .PP
 \fBgromox\fP(7)

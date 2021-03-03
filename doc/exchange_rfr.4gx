@@ -2,11 +2,14 @@
 .SH Description
 .PP
 exchange_rfr is a processing plugin for http(8gx) which handles the Address
-Book Name Service Provider Interface Referral Protocol. See the MS-OXABREF
-specification for details.
+Book Name Service Provider Interface Referral Protocol.
 .SH Configuration file directives
 .PP
 This plugin has no directives.
+.SH Normative references
+.PP
+MS-OXABREF: Address Book Name Service Provider Interface (NSPI) Referral
+Protocol
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

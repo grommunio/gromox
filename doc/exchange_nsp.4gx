@@ -3,8 +3,7 @@
 .PP
 exchange_nsp is a processing plugin for http(8gx) which handles the Exchange
 Server Name Service Provider Interface Protocol, in essence providing the
-Address Book for the EMSMDB connector. See the MS-OXNSPI specification for
-details.
+Address Book for the EMSMDB connector.
 .SH Config file directives
 .TP
 \fBcache_interval\fP
@@ -40,6 +39,9 @@ PT_MV_UNICODE/STRING8.
 .PP
 Multi-valued properties are only supported up to 1 element due to current
 limitations in the SQL schema.
+.SH Normative references
+.IP \(bu 4
+MS-OXNSPI: Exchange Server Name Service Provider Interface (NSPI) Protocol
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

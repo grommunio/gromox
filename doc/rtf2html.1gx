@@ -4,9 +4,9 @@
 \fBrtf2html\fP \(em RTFCP to HTML converter
 .SH Description
 .PP
-rtf2html decodes an MS-OXRTFCP file from standard input and converts the
-included RTF text to HTML, which is emitted on standard output. This utility
-does not support headerless RTF as emitted by e.g. LibreOffice.
+rtf2html decodes an RTFCP file from standard input and converts the included
+RTF text to HTML, which is emitted on standard output. This utility does not
+support headerless RTF as emitted by word processors such as LibreOffice.
 .SH Options
 .TP
 \fB\-\-version\fP
@@ -17,6 +17,9 @@ Display option summary.
 .SH Files
 .IP \(bu 4
 \fI/usr/share/gromox/cpid.txt\fP: codepage number <-> name definition table
+.SH Normative references
+.IP \(bu 4
+MS-OXRTFCP: Rich Text Format (RTF) Compression Algorithm
 .SH See also
 .PP
 \fBgromox\fP(7)

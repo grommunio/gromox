@@ -1,7 +1,7 @@
 Gromox is the central groupware server component of grammm. It is capable of
 serving as a replacement for Microsoft Exchange and compatibles. Connectivity
-options include Outlook Anywhere (RPC-over-HTTP), IMAP/POP3, an SMTP-speaking
-LDA, and a PHP module with a Z-MAPI function subset.
+options include RPC/HTTP (Outlook Anywhere), IMAP, POP3, an
+SMTP-speaking LDA, and a PHP module with a Z-MAPI function subset.
 
 Gromox relies on other components to provide a sensibly complete mail system,
 such as Postfix as a mail transfer agent, and grammm-admin for user management.

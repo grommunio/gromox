@@ -1,9 +1,10 @@
 .TH exchange_emsmdb 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
-exchange_emsmdb is a processing plugin for http(8gx) which handles the Wire
-Format Protocol (Outlook/Exchange RPCs). See the MS-OXCRPC specification for
-details.
+exchange_emsmdb is a processing plugin for http(8gx) which handles the remote
+procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, as well as
+the remote operations (ROPs) as issued by the EcDoRpcExt2 call or the MAPIHTTP
+EXECUTE call.
 .SH Config file directives
 .TP
 \fBasync_threads_num\fP
@@ -56,6 +57,9 @@ Default: (unspecified)
 delivered
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
+.SH Normative references
+.PP
+MS-OXCRPC: Wire Format Protocol
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

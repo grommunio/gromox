@@ -191,9 +191,8 @@ Filesystem path for processor plugins.
 Default: \fI/usr/libexec/gromox\fP
 .TP
 \fBrequest_max_mem\fP
-The maximum hint size for fragmented RPC PDU requests that will be allowed, as
-per the DCERPC 1.1 specification section 12.6.3.7 and the MS-RPCE specification
-section 2.2.2.6 (in version 17).
+The maximum hint size for fragmented RPC PDU requests that will be allowed
+(C706 §12.6.3.7, RPCE §2.2.2.6).
 .TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
@@ -249,6 +248,12 @@ Default: \fIen\fP
 /usr/lib/gromox/libgxp_*.so: PDU processing plugins
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
+.SH Normative references
+.IP \(bu 4
+MS-RPCE: Remote Procedure Call Protocol Extensions
+.IP \(bu 4
+DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open
+Group, 1997
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmod_cache\fP(4gx), \fBmod_fastcgi\fP(4gx),

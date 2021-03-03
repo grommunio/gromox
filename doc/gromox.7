@@ -5,11 +5,17 @@ gromox \(em overview of the Gromox groupware server
 .SH Overview
 .PP
 Gromox is a groupware server capable of serving as a replacement for Microsoft
-Exchange. Connectivity options include Outlook Anywhere (RPC-over-HTTP),
-IMAP/POP3, an SMTP-speaking LDA, and a PHP module with a Z-MAPI function
-subset. Gromox is preferably used in conjunction with a proven httpd, MTA and
-spam solution (e.g. nginx, Postfix, rspamd) to form a comprehensive mail
-system.
+Exchange. Connectivity options include RPC/HTTP (Outlook Anywhere),
+IMAP, POP3, an SMTP-speaking LDA, and a PHP module with a Z-MAPI function
+subset.
+.PP
+Gromox relies on other components to provide a sensibly complete mail system,
+such as Postfix as a mail transfer agent, and grammm-admin for user management.
+A web interface is available with grammm-web. The grammm distribution ships
+these essentials and has a ready-to-run installation of Gromox. system.
+.SH Synopsis
+.PP
+gromox \(em overview of the Gromox groupware server
 .SH Configuration files
 .PP
 Program configuration files reside within /etc/gromox. Most of the programs
