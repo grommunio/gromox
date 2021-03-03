@@ -101,6 +101,19 @@ static const char tbl_classes_0[] =
 "  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_configs_71[] =
+"CREATE TABLE `configs` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `service` varchar(200) NOT NULL,"
+"  `file` varchar(200) NOT NULL,"
+"  `key` varchar(200) NOT NULL,"
+"  `value` varchar(255) NOT NULL DEFAULT '',"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `path` (`service`,`file`,`key`),"
+"  KEY `service` (`service`),"
+"  KEY `file` (`file`)"
+") DEFAULT CHARSET=utf8mb4";
+
 static const char tbl_domains_0[] =
 "CREATE TABLE `domains` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -433,6 +446,7 @@ static const char tbl_uprops_top[] =
 static const struct tbl_init tbl_init_top[] = {
 	{"admin_roles", tbl_admroles_41},
 	{"associations", tbl_assoc_top},
+	{"configs", tbl_configs_71},
 	{"domains", tbl_domains_top},
 	{"forwards", tbl_forwards_top},
 	{"groups", tbl_groups_top},
@@ -563,6 +577,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{68, "TRUNCATE `classes`"},
 	{69, "ALTER TABLE `classes` ADD COLUMN `domain_id` int(10) unsigned NOT NULL"},
 	{70, "ALTER TABLE `classes` ADD CONSTRAINT FOREIGN KEY (`domain_id`) REFERENCES domains (`id`)"},
+	{71, tbl_configs_71},
 	{0, nullptr},
 };
 
