@@ -81,7 +81,7 @@ corresponding HTTP server, quite similar to exmdb_list.txt.
 .PP
 Default:
 .PP
-.RS 4
+.RS
 .nf
 /var/lib/gromox/user/ = (system hostname)
 /var/lib/gromox/domain/ = (system hostname)

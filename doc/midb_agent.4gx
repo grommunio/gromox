@@ -34,7 +34,7 @@ The IPv6 (or v4-mapped) address of the midb server to use for this prefix.
 The port number.
 .PP
 In the absence of midb_list.txt, an implicit default entry is used:
-.RS 4
+.RS
 .PP
 .nf
 / ::1 5555
