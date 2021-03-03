@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -467,7 +468,11 @@ void *service_query(const char *service_name, const char *module, const std::typ
 		}
 	}
 	if (NULL == pnode) {
-		if (strcmp(service_name, "ndr_stack_alloc") != 0)
+		static constexpr const char *excl[] =
+			{"ip_container_add", "ip_container_remove",
+			"ip_filter_judge", "ndr_stack_alloc"};
+		if (std::none_of(excl, &excl[GX_ARRAY_SIZE(excl)],
+		    [&](const char *s) { return strcmp(service_name, s) == 0; }))
 			printf("[service]: dlname \"%s\" not found\n", service_name);
 		return NULL;
 	}
