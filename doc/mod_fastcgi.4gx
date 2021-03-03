@@ -49,7 +49,7 @@ If the file is absent however, a set of default entries will be used.
 * /web /usr/share/grammm-webapp php index.php | /run/gromox/php-fpm.sock
 .fi
 .SH Files
-.PP
+.IP \(bu 4
 \fIconfig_file_path\fP/fastcgi.txt: URI map specifying which paths this plugin
 shall handle.
 .SH See also

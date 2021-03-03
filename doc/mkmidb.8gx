@@ -15,6 +15,7 @@ config file.
 \fB\-?\fP
 Display option summary.
 .SH Files
+.IP \(bu 4
 \fIdata_file_path\fP/sqlite3_midb.txt: SQLite instructions to generate a
 message index database.
 .SH See also

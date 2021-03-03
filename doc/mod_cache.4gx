@@ -32,7 +32,7 @@ served this way.
 * / /srv/www/htdocs
 .fi
 .SH Files
-.PP
+.IP \(bu 4
 \fIconfig_file_path\fP/cache.txt: URI map specifying which paths this plugin
 shall handle.
 .SH See also

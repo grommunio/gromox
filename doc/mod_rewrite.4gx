@@ -37,7 +37,7 @@ If the file is absent however, a set of default entries will be used.
 \\(/.well-known/autoconfig/mail/config-v1.1.xml\\) => \\1/well-known/autoconfig-mail.php
 .fi
 .SH Files
-.PP
+.IP \(bu 4
 \fIconfig_file_path\fP/rewrite.txt: Rewrite map specifying which paths this
 plugin shall handle.
 .SH See also
