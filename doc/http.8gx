@@ -228,7 +228,7 @@ Default: \fI/var/lib/gromox\fP
 Sets the TCP_MAXSEG socket option with the given MSS value for the listening
 socket(s), cf. tcp(7).
 .br
-Default: 0 (do not limit the MSS)
+Default: \fI0\fP (do not limit the MSS)
 .TP
 \fBthread_charge_num\fP
 The maximum number of connections that each thread is allowed to process.
