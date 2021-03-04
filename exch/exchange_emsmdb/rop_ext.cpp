@@ -2481,7 +2481,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		}
 		return rop_ext_pull_getpropertiesall_request(pext,
 		       static_cast<GETPROPERTIESALL_REQUEST *>(r->ppayload));
-	case ropGetPropertiesLIst:
+	case ropGetPropertiesList:
 		return EXT_ERR_SUCCESS;
 	case ropSetProperties:
 		r->ppayload = pext->anew<SETPROPERTIES_REQUEST>();
@@ -3086,7 +3086,7 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropGetPropertiesAll:
 		return rop_ext_push_getpropertiesall_response(pext,
 		       static_cast<GETPROPERTIESALL_RESPONSE *>(r->ppayload));
-	case ropGetPropertiesLIst:
+	case ropGetPropertiesList:
 		return rop_ext_push_getpropertieslist_response(pext,
 		       static_cast<GETPROPERTIESLIST_RESPONSE *>(r->ppayload));
 	case ropSetProperties:

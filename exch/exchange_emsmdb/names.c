@@ -15,7 +15,7 @@ static const char *const rop_names[] = {
 	E(ropCreateMessage),
 	E(ropGetPropertiesSpecific),
 	E(ropGetPropertiesAll),
-	E(ropGetPropertiesLIst),
+	E(ropGetPropertiesList),
 	E(ropSetProperties),
 	E(ropDeleteProperties),
 	E(ropSaveChangesMessage),

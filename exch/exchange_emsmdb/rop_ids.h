@@ -9,7 +9,7 @@ enum {
 	ropCreateMessage = 0x06,
 	ropGetPropertiesSpecific = 0x07,
 	ropGetPropertiesAll = 0x08,
-	ropGetPropertiesLIst = 0x09,
+	ropGetPropertiesList = 0x09,
 	ropSetProperties = 0x0A,
 	ropDeleteProperties = 0x0B,
 	ropSaveChangesMessage = 0x0C,

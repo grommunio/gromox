@@ -1117,7 +1117,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
-	case ropGetPropertiesLIst: {
+	case ropGetPropertiesList: {
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESLIST_RESPONSE>();
 		if (NULL == (*ppresponse)->ppayload) {
