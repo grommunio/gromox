@@ -50,3 +50,4 @@ Makefile.in
 /tests/abktconv
 /tests/bodyconv
 /tests/icalparse
+/tests/zendfake

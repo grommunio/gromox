@@ -6,6 +6,7 @@ AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
+noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_rpc.ldd libgromox_mapi.ldd
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
@@ -268,20 +269,23 @@ rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la
 timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
-mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
-mapi_la_SOURCES = php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/zarafa_client.cpp php_mapi/zarafa_rpc.cpp
+libphp_mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
+libphp_mapi_la_SOURCES = php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/zarafa_client.cpp php_mapi/zarafa_rpc.cpp
+libphp_mapi_la_LIBADD = ${HX_LIBS} libgromox_common.la
+mapi_la_SOURCES =
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
-mapi_la_LIBADD = ${HX_LIBS} libgromox_common.la
+mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 # tests
-noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/icalparse
+noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/icalparse tests/zendfake
 tests_abktconv_SOURCES = tests/abktconv.cpp
 tests_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 tests_icalparse_SOURCES = tests/icalparse.cpp
 tests_icalparse_LDADD = libgromox_common.la libgromox_email.la libgromox_mapi.la
+tests_zendfake_LDADD = libphp_mapi.la
 
 # doc
 man_MANS = \
