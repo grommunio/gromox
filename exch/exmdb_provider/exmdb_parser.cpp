@@ -898,88 +898,76 @@ static void *thread_work_func(void *pparam)
 		pbuff = NULL;
 		if (EXT_ERR_SUCCESS != status) {
 			tmp_byte = exmdb_response::PULL_ERROR;
-		} else {
-			if (FALSE == is_connected) {
-				if (request.call_id == exmdb_callid::CONNECT) {
-					if (FALSE == exmdb_parser_check_local(
-						request.payload.connect.prefix, &b_private)) {
-						tmp_byte = exmdb_response::MISCONFIG_PREFIX;
-					} else {
-						if (b_private != request.payload.connect.b_private) {
-							tmp_byte = exmdb_response::MISCONFIG_MODE;
-						} else {
-							strcpy(pconnection->remote_id,
-								request.payload.connect.remote_id);
-							exmdb_server_free_environment();
-							exmdb_server_set_remote_id(pconnection->remote_id);
-							is_connected = TRUE;
-							if (5 != write(pconnection->sockd, resp_buff, 5)) {
-								break;
-							}
-							offset = 0;
-							buff_len = 0;
-							continue;
-						}
-					}
-				} else if (request.call_id == exmdb_callid::LISTEN_NOTIFICATION) {
-					prouter = me_alloc<ROUTER_CONNECTION>();
-					if (NULL == prouter) {
-						tmp_byte = exmdb_response::LACK_MEMORY;
-					} else {
-						if (0 != g_max_routers && double_list_get_nodes_num(
-							&g_router_list) >= g_max_routers) {
-							free(prouter);
-							tmp_byte = exmdb_response::MAX_REACHED;
-						} else {
-							strcpy(prouter->remote_id,
-								request.payload.listen_notification.remote_id);
-							exmdb_server_free_environment();
-							if (5 != write(pconnection->sockd, resp_buff, 5)) {
-								free(prouter);
-								break;
-							} else {
-								prouter->node.pdata = prouter;
-								prouter->b_stop = FALSE;
-								prouter->thr_id = pconnection->thr_id;
-								prouter->sockd = pconnection->sockd;
-								time(&prouter->last_time);
-								pthread_mutex_init(&prouter->lock, NULL);
-								pthread_mutex_init(&prouter->cond_mutex, NULL);
-								pthread_cond_init(&prouter->waken_cond, NULL);
-								double_list_init(&prouter->datagram_list);
-								pthread_mutex_lock(&g_router_lock);
-								double_list_append_as_tail(
-									&g_router_list, &prouter->node);
-								pthread_mutex_unlock(&g_router_lock);
-								pthread_mutex_lock(&g_connection_lock);
-								double_list_remove(&g_connection_list,
-													&pconnection->node);
-								pthread_mutex_unlock(&g_connection_lock);
-								free(pconnection);
-								notification_agent_thread_work(prouter);
-							}
-						}
-					}
+		} else if (!is_connected) {
+			if (request.call_id == exmdb_callid::CONNECT) {
+				if (FALSE == exmdb_parser_check_local(
+					request.payload.connect.prefix, &b_private)) {
+					tmp_byte = exmdb_response::MISCONFIG_PREFIX;
+				} else if (b_private != request.payload.connect.b_private) {
+					tmp_byte = exmdb_response::MISCONFIG_MODE;
 				} else {
-					tmp_byte = exmdb_response::CONNECT_INCOMPLETE;
+					strcpy(pconnection->remote_id,
+						request.payload.connect.remote_id);
+					exmdb_server_free_environment();
+					exmdb_server_set_remote_id(pconnection->remote_id);
+					is_connected = TRUE;
+					if (5 != write(pconnection->sockd, resp_buff, 5)) {
+						break;
+					}
+					offset = 0;
+					buff_len = 0;
+					continue;
+				}
+			} else if (request.call_id == exmdb_callid::LISTEN_NOTIFICATION) {
+				prouter = me_alloc<ROUTER_CONNECTION>();
+				if (NULL == prouter) {
+					tmp_byte = exmdb_response::LACK_MEMORY;
+				} else if (0 != g_max_routers && double_list_get_nodes_num(&g_router_list) >= g_max_routers) {
+					free(prouter);
+					tmp_byte = exmdb_response::MAX_REACHED;
+				} else {
+					strcpy(prouter->remote_id,
+						request.payload.listen_notification.remote_id);
+					exmdb_server_free_environment();
+					if (5 != write(pconnection->sockd, resp_buff, 5)) {
+						free(prouter);
+						break;
+					} else {
+						prouter->node.pdata = prouter;
+						prouter->b_stop = FALSE;
+						prouter->thr_id = pconnection->thr_id;
+						prouter->sockd = pconnection->sockd;
+						time(&prouter->last_time);
+						pthread_mutex_init(&prouter->lock, NULL);
+						pthread_mutex_init(&prouter->cond_mutex, NULL);
+						pthread_cond_init(&prouter->waken_cond, NULL);
+						double_list_init(&prouter->datagram_list);
+						pthread_mutex_lock(&g_router_lock);
+						double_list_append_as_tail(
+							&g_router_list, &prouter->node);
+						pthread_mutex_unlock(&g_router_lock);
+						pthread_mutex_lock(&g_connection_lock);
+						double_list_remove(&g_connection_list,
+											&pconnection->node);
+						pthread_mutex_unlock(&g_connection_lock);
+						free(pconnection);
+						notification_agent_thread_work(prouter);
+					}
 				}
 			} else {
-				if (FALSE == exmdb_parser_dispatch(&request, &response)) {
-					tmp_byte = exmdb_response::DISPATCH_ERROR;
-				} else {
-					if (EXT_ERR_SUCCESS != exmdb_ext_push_response(
-						&response, &tmp_bin)) {
-						tmp_byte = exmdb_response::PUSH_ERROR;
-					} else {
-						exmdb_server_free_environment();
-						offset = 0;
-						pbuff = tmp_bin.pb;
-						buff_len = tmp_bin.cb;
-						is_writing = TRUE;
-						continue;
-					}
-				}
+				tmp_byte = exmdb_response::CONNECT_INCOMPLETE;
 			}
+		} else if (!exmdb_parser_dispatch(&request, &response)) {
+			tmp_byte = exmdb_response::DISPATCH_ERROR;
+		} else if (EXT_ERR_SUCCESS != exmdb_ext_push_response(&response, &tmp_bin)) {
+			tmp_byte = exmdb_response::PUSH_ERROR;
+		} else {
+			exmdb_server_free_environment();
+			offset = 0;
+			pbuff = tmp_bin.pb;
+			buff_len = tmp_bin.cb;
+			is_writing = TRUE;
+			continue;
 		}
 		exmdb_server_free_environment();
 		write(pconnection->sockd, &tmp_byte, 1);
