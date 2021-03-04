@@ -93,7 +93,7 @@ static void pop3_parser_ssl_locking(int mode,
 
 static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
 {
-	CRYPTO_THREADID_set_numeric(id, reinterpret_cast(uintptr_t, pthread_self()));
+	CRYPTO_THREADID_set_numeric(id, (uintptr_t)pthread_self());
 }
 #endif
 
