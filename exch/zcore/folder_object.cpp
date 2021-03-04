@@ -1093,7 +1093,7 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 	BOOL b_delegate;
 	char *pprovider;
 	char temp_path[256];
-	RULE_ACTIONS *pactions;
+	RULE_ACTIONS *pactions = nullptr;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE) {
 		if (FALSE == exmdb_client_empty_folder_rule(

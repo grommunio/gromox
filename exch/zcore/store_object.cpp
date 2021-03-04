@@ -188,6 +188,7 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	proptag = PROP_TAG_STORERECORDKEY;
 	if (FALSE == exmdb_client_get_store_properties(
 		dir, 0, &proptags, &propvals)) {
+		printf("get_store_properties %s: failed\n", dir);
 		return NULL;	
 	}
 	pvalue = common_util_get_propvals(

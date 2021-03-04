@@ -366,7 +366,7 @@ BOOL container_object_load_user_table(
 	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
-	BINARY *pparent_entryid;
+	BINARY *pparent_entryid = nullptr;
 	LONG_ARRAY *pminid_array;
 	TPROPVAL_ARRAY *ppropvals;
 	uint32_t proptag_buff[25];

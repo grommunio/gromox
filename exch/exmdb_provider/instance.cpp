@@ -1435,7 +1435,7 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	INSTANCE_NODE *pinstance;
 	INSTANCE_NODE *pinstance1;
 	MESSAGE_CONTENT *pmsgctnt;
-	ATTACHMENT_CONTENT *pattachment;
+	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
@@ -2071,7 +2071,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 	DB_ITEM *pdb;
 	INSTANCE_NODE *pinstance;
 	MESSAGE_CONTENT *pmsgctnt;
-	ATTACHMENT_CONTENT *pattachment;
+	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
@@ -2181,7 +2181,7 @@ static BOOL instance_get_message_display_recipients(
 	int offset;
 	void *pvalue;
 	char tmp_buff[64*1024];
-	uint32_t recipient_type;
+	uint32_t recipient_type = 0;
 	static uint8_t fake_empty;
 
 	fake_empty = 0;

@@ -1901,7 +1901,7 @@ static BOOL common_util_get_message_display_recipients(
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	char tmp_buff[64*1024];
-	uint32_t recipient_type;
+	uint32_t recipient_type = 0;
 	static const uint8_t fake_empty = 0;
 	
 	switch (proptag) {

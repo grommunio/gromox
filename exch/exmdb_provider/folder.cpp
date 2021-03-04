@@ -1048,10 +1048,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 	uint64_t *pnormal_size, uint64_t *pfai_size,
 	uint32_t *pmessage_count, uint32_t *pfolder_count)
 {
-	BOOL b_check;
-	BOOL b_owner;
-	BOOL b_private;
-	BOOL b_partial;
+	BOOL b_check = true, b_owner, b_private, b_partial;
 	int is_deleted;
 	uint64_t fid_val;
 	int is_associated;
@@ -2008,11 +2005,7 @@ static BOOL folder_copy_folder_internal(
 	BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_partial,
 	uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pfolder_count)
 {
-	BOOL b_check;
-	BOOL b_owner;
-	BOOL b_result;
-	BOOL b_private;
-	BOOL b_partial;
+	BOOL b_check = true, b_owner, b_result, b_private, b_partial;
 	uint64_t fid_val;
 	uint64_t src_fid1;
 	int is_associated;
@@ -3052,7 +3045,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	uint64_t fid_val;
 	uint64_t member_id;
 	char username[256];
-	uint32_t permission;
+	uint32_t permission = 0;
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
 	char sql_string[128];

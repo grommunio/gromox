@@ -4675,9 +4675,8 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	int idx;
 	BOOL b_asc;
 	int temp_len;
-	int sort_field;
+	int sort_field, total_mail = 0;
 	IDB_ITEM *pidb;
-	int total_mail;
 	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char temp_buff[1024];
@@ -5218,8 +5217,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	BOOL b_asc;
 	int buff_len;
 	int temp_len;
-	int flags_len;
-	int total_mail;
+	int flags_len, total_mail = 0;
 	int sort_field;
 	IDB_ITEM *pidb;
 	uint64_t folder_id;
@@ -5547,8 +5545,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	int last;
 	int first;
 	BOOL b_asc;
-	int temp_len;
-	int total_mail;
+	int temp_len, total_mail = 0;
 	int sort_field;
 	IDB_ITEM *pidb;
 	uint64_t folder_id;

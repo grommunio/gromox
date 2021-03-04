@@ -1385,8 +1385,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	GUID uuid;
 	BOOL b_ndr64;
 	BOOL b_found;
-	uint32_t result;
-	uint32_t reason;
+	uint32_t result = 0, reason = 0;
 	char uuid_str[64];
 	uint32_t if_version;
 	uint32_t context_id;
@@ -1394,7 +1393,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t extra_flags;
 	DCERPC_NCACN_PACKET pkt;
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_CONTEXT *pcontext;
+	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
 	DCERPC_INTERFACE *pinterface;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
@@ -2181,11 +2180,9 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	int async_id;
 	BOOL b_cancel;
 	DOUBLE_LIST *plist;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	DCERPC_CONTEXT *pcontext;
-	ASYNC_NODE *pasync_node;
-	ASYNC_NODE **ppasync_node;
+	DOUBLE_LIST_NODE *pnode, *pnode1 = nullptr;
+	DCERPC_CONTEXT *pcontext = nullptr;
+	ASYNC_NODE *pasync_node = nullptr, **ppasync_node;
 	
 	async_id = 0;
 	b_cancel = FALSE;

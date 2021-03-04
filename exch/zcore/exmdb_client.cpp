@@ -95,7 +95,7 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 {
 	int tv_msec;
 	int read_len;
-	uint32_t offset;
+	uint32_t offset = 0;
 	uint8_t resp_buff[5];
 	struct pollfd pfd_read;
 	
@@ -338,9 +338,8 @@ static void *thread_work_func(void *pparam)
 	int tv_msec;
 	int read_len;
 	BINARY tmp_bin;
-	uint32_t offset;
 	uint8_t resp_code;
-	uint32_t buff_len;
+	uint32_t offset = 0, buff_len;
 	uint8_t buff[0x8000];
 	AGENT_THREAD *pagent;
 	struct pollfd pfd_read;

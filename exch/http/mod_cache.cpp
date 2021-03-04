@@ -648,7 +648,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	CACHE_ITEM **ppitem;
 	char tmp_buff[8192];
 	struct stat node_stat;
-	DIRECTORY_NODE *pdnode;
+	DIRECTORY_NODE *pdnode = nullptr;
 	char request_uri[8192];
 	DOUBLE_LIST_NODE *pnode;
 	CACHE_CONTEXT *pcontext;

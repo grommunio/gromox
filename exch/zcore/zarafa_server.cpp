@@ -2375,10 +2375,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	const BINARY_ARRAY *pentryids, uint32_t flags)
 {
 	int i;
-	BOOL b_done;
-	BOOL b_copy;
-	BOOL b_guest;
-	BOOL b_owner;
+	BOOL b_done, b_copy, b_guest = TRUE, b_owner;
 	EID_ARRAY ids;
 	BOOL b_partial;
 	BOOL b_private;
@@ -3744,7 +3741,7 @@ uint32_t zarafa_server_queryrows(
 	uint8_t table_type;
 	TARRAY_SET tmp_set;
 	TABLE_OBJECT *ptable;
-	uint32_t *pobject_type;
+	uint32_t *pobject_type = nullptr;
 	TAGGED_PROPVAL *ppropvals;
 	static const uint32_t object_type_store = OBJECT_STORE;
 	static const uint32_t object_type_folder = OBJECT_FOLDER;

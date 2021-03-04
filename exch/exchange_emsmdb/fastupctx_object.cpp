@@ -393,15 +393,14 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 	TARRAY_SET tmp_rcpts;
 	MARKER_NODE *pmarker;
 	uint32_t last_marker;
-	TPROPVAL_ARRAY *prcpt;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
-	MESSAGE_CONTENT *pmsgctnt;
-	TPROPVAL_ARRAY *pproplist;
+	MESSAGE_CONTENT *pmsgctnt = nullptr;
+	TPROPVAL_ARRAY *pproplist, *prcpt = nullptr;
 	PROBLEM_ARRAY tmp_problems;
 	ATTACHMENT_LIST *pattachments;
-	ATTACHMENT_CONTENT *pattachment;
+	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	pnode = double_list_get_tail(&pctx->marker_stack);
 	if (NULL == pnode) {

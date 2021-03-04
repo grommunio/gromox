@@ -1088,7 +1088,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	char *ptoken;
 	int domain_id;
 	BOOL b_remote;
-	AB_BASE *pbase;
+	AB_BASE *pbase = nullptr;
 	AB_NODE *pabnode;
 	char username[324];
 	char hex_string[32];
@@ -1147,9 +1147,8 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 			pabnode = (AB_NODE*)pnode;
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
-			if (TRUE == b_remote) {
+			if (pbase != nullptr && b_remote)
 				ab_tree_put_base(pbase);
-			}
 			return FALSE;
 		}
 		domain_id = pabnode->id;
@@ -1495,7 +1494,7 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address)
 {
 	BOOL b_remote;
-	AB_BASE *pbase;
+	AB_BASE *pbase = nullptr;
 	AB_NODE *pabnode;
 	SIMPLE_TREE_NODE **ppnode;
 	
@@ -1526,9 +1525,8 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 		strcpy(str_name, obj->title.c_str());
 	if (str_address != nullptr)
 		strcpy(str_address, obj->address.c_str());
-	if (TRUE == b_remote) {
+	if (pbase != nullptr && b_remote)
 		ab_tree_put_base(pbase);
-	}
 }
 
 void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)

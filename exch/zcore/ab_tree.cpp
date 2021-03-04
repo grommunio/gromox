@@ -1128,7 +1128,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	char *ptoken;
 	int domain_id;
 	BOOL b_remote;
-	AB_BASE *pbase;
+	AB_BASE *pbase = nullptr;
 	AB_NODE *pabnode;
 	char username[324];
 	char hex_string[32];
@@ -1439,7 +1439,7 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address)
 {
 	BOOL b_remote;
-	AB_BASE *pbase;
+	AB_BASE *pbase = nullptr;
 	AB_NODE *pabnode;
 	SIMPLE_TREE_NODE **ppnode;
 	

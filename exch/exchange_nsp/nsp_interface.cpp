@@ -791,8 +791,8 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	uint32_t total;
 	AB_BASE *pbase;
 	uint32_t last_row;
-	SINGLE_LIST *pgal_list;
-	SIMPLE_TREE_NODE *pnode;
+	SINGLE_LIST *pgal_list = nullptr;
+	SIMPLE_TREE_NODE *pnode = nullptr;
 	
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		return ecNotSupported;
@@ -893,9 +893,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	uint32_t last_row;
 	uint32_t start_pos, total;
 	PROPERTY_ROW *prow;
-	SINGLE_LIST *pgal_list;
-	SIMPLE_TREE_NODE *pnode;
-	SIMPLE_TREE_NODE *pnode1;
+	SINGLE_LIST *pgal_list = nullptr;
+	SIMPLE_TREE_NODE *pnode = nullptr, *pnode1 = nullptr;
 	SINGLE_LIST_NODE *psnode;
 	
 	
@@ -1109,9 +1108,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	PROPERTY_ROW *prow;
 	uint32_t tmp_minid;
 	char temp_name[1024];
-	SINGLE_LIST *pgal_list;
-	SIMPLE_TREE_NODE *pnode;
-	SIMPLE_TREE_NODE *pnode1;
+	SINGLE_LIST *pgal_list = nullptr;
+	SIMPLE_TREE_NODE *pnode = nullptr, *pnode1;
 	SINGLE_LIST_NODE *psnode;
 	
 	
@@ -3057,9 +3055,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t start_pos, total;
 	uint32_t *pproptag;
 	PROPERTY_ROW *prow;
-	SIMPLE_TREE_NODE *pnode;
-	SIMPLE_TREE_NODE *pnode1;
-	SIMPLE_TREE_NODE *pnode2;
+	SIMPLE_TREE_NODE *pnode, *pnode1, *pnode2 = nullptr;
 	
 	if (CODEPAGE_UNICODE == pstat->codepage) {
 		*ppmids = NULL;

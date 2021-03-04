@@ -728,12 +728,10 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 {
 	int i, j;
 	int depth;
-	int sql_len;
+	int sql_len, tag_count = 0, multi_index = 0;
 	void *pvalue;
 	uint16_t type;
-	int tag_count;
 	BOOL b_search;
-	int multi_index;
 	uint64_t row_id;
 	uint64_t prev_id;
 	sqlite3 *psqlite;
@@ -752,7 +750,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	const char *remote_id;
 	DOUBLE_LIST value_list;
 	uint32_t tmp_proptags[16];
-	RESTRICTION_PROPERTY *pres;
+	RESTRICTION_PROPERTY *pres = nullptr;
 	
 	b_conversation = FALSE;
 	if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {

@@ -667,7 +667,7 @@ static void *thread_work_func(void *param)
 	DB_ITEM *pdb;
 	int table_num;
 	TABLE_NODE *ptable;
-	uint32_t *ptable_ids;
+	uint32_t *ptable_ids = nullptr;
 	EID_ARRAY *pfolder_ids;
 	DOUBLE_LIST_NODE *pnode;
 	POPULATING_NODE *psearch;
@@ -1328,9 +1328,7 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 {
 	int i;
 	uint16_t type;
-	uint64_t row_id;
-	uint64_t prev_id;
-	uint64_t inst_id;
+	uint64_t row_id = 0, prev_id = 0, inst_id;
 	ROWINFO_NODE *prnode;
 	
 	if (0 != before_row_id) {
@@ -1516,9 +1514,7 @@ static void db_engine_notify_content_table_add_row(
 {
 	int i, j;
 	int result;
-	BOOL b_fai;
-	BOOL b_read;
-	BOOL b_break;
+	BOOL b_fai, b_read = false, b_break;
 	void *pvalue;
 	uint32_t idx;
 	uint16_t type;
@@ -1550,15 +1546,13 @@ static void db_engine_notify_content_table_add_row(
 	DB_NOTIFY_DATAGRAM datagram;
 	DB_NOTIFY_DATAGRAM datagram1;
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
-	DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *padded_row;
-	DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *padded_row1;
+	DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *padded_row = nullptr, *padded_row1 = nullptr;
 	
 	pstmt = NULL;
 	pstmt1 = NULL;
 	pstmt2 = NULL;
 	pstmt3 = NULL;
 	pstmt4 = NULL;
-	padded_row = NULL;
 	pread_byte = NULL;
 	if (FALSE == common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		message_id, 0, pdb->psqlite, PROP_TAG_ASSOCIATED, &pvalue)) {
@@ -3135,7 +3129,7 @@ static void db_engine_notify_content_table_delete_row(
 	DB_NOTIFY_DATAGRAM datagram;
 	DB_NOTIFY_DATAGRAM datagram1;
 	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
-	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
+	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
 	
 	pdeleted_row = NULL;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -3986,19 +3980,14 @@ static void db_engine_notify_content_table_modify_row(
 	int row_type;
 	BOOL b_error;
 	uint32_t idx;
-	void *pvalue;
-	void *pvalue1;
+	void *pvalue, *pvalue1 = nullptr;
 	uint16_t type;
 	void *pmultival;
 	int64_t prev_id;
-	uint64_t row_id;
-	uint64_t row_id1;
-	uint64_t inst_id;
-	uint64_t inst_id1;
+	uint64_t row_id, row_id1, inst_id = 0, inst_id1 = 0;
 	uint8_t read_byte;
-	uint32_t inst_num;
+	uint32_t inst_num, multi_num = 0;
 	uint64_t parent_id;
-	uint32_t multi_num;
 	TABLE_NODE *ptable;
 	TABLE_NODE *ptnode;
 	int8_t unread_delta;

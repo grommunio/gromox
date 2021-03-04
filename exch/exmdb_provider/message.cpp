@@ -304,9 +304,8 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	int is_associated;
 	uint64_t fai_size;
 	uint32_t del_count;
-	uint64_t change_num;
+	uint64_t change_num, parent_fid = 0;
 	uint32_t permission;
-	uint64_t parent_fid;
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
 	char sql_string[256];
@@ -2545,8 +2544,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	int i;
 	BOOL b_cn;
 	XID tmp_xid;
-	int tmp_int;
-	int tmp_int1;
+	int tmp_int, tmp_int1, is_associated = 0;
 	void *pvalue;
 	BOOL b_exist;
 	BOOL b_result;
@@ -2554,7 +2552,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	uint64_t tmp_id;
 	uint64_t nt_time;
 	uint8_t tmp_byte;
-	int is_associated;
 	uint64_t change_num;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
@@ -4276,7 +4273,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	EXT_MOVECOPY_ACTION *pextmvcp;
 	FORWARDDELEGATE_ACTION *pfwddlgt;
 	NAMEDPROPERTY_INFOMATION propname_info;
-	EXT_FORWARDDELEGATE_ACTION *pextfwddlgt;
+	EXT_FORWARDDELEGATE_ACTION *pextfwddlgt = nullptr;
 	
 	double_list_init(&dam_list);
 	double_list_init(&rule_list);

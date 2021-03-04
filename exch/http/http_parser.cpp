@@ -455,8 +455,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	char response_buff[1024];
     int actual_read, ssl_errno;
     struct timeval current_time;
-	RPC_IN_CHANNEL *pchannel_in;
-	RPC_OUT_CHANNEL *pchannel_out;
+	RPC_IN_CHANNEL *pchannel_in = nullptr;
+	RPC_OUT_CHANNEL *pchannel_out = nullptr;
 	VIRTUAL_CONNECTION *pvconnection;
 	
 
