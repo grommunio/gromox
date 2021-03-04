@@ -44,7 +44,7 @@
 #define THROW_EXCEPTION \
 	do { \
 		if (MAPI_G(exceptions_enabled)) \
-			zend_throw_exception(MAPI_G(exception_ce), "MAPI error ", MAPI_G(hr)); \
+			zend_throw_exception(MAPI_G(exception_ce), mapi_strerror(MAPI_G(hr)), MAPI_G(hr)); \
 		RETVAL_FALSE; \
 		return; \
 	} while (false)
