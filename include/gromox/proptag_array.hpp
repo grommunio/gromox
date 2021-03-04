@@ -3,7 +3,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 
-extern PROPTAG_ARRAY *proptag_array_init(void);
+extern PROPTAG_ARRAY *proptag_array_init();
 void proptag_array_free_internal(PROPTAG_ARRAY *pproptags);
 
 void proptag_array_free(PROPTAG_ARRAY *pproptags);

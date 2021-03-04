@@ -3077,7 +3077,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	return GXERR_SUCCESS;
 }
 
-const uint8_t *common_util_get_muidecsab(void)
+const uint8_t *common_util_get_muidecsab()
 {
 	static const uint8_t MUIDECSAB[] = {
 		0xAC, 0x21, 0xA9, 0x50, 0x40, 0xD3, 0xEE, 0x48,
@@ -3086,7 +3086,7 @@ const uint8_t *common_util_get_muidecsab(void)
 	return MUIDECSAB;
 }
 
-const uint8_t *common_util_get_muidzcsab(void)
+const uint8_t *common_util_get_muidzcsab()
 {
 	static const uint8_t MUIDZCSAB[] = {
 		0x72, 0x7F, 0x04, 0x30, 0xE3, 0x92, 0x4F, 0xDA,

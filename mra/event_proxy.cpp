@@ -44,7 +44,7 @@ static DOUBLE_LIST g_lost_list;
 static void* scan_work_func(void *param);
 
 static int read_line(int sockd, char *buff, int length);
-static int connect_event(void);
+static int connect_event();
 static void broadcast_event(const char *event);
 
 static void broadcast_select(const char *username, const char *folder);

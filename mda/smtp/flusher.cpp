@@ -49,11 +49,11 @@ struct PLUG_ENTITY {
 };
 
 static BOOL flusher_load_plugin(char* path);
-static BOOL flusher_unload_plugin(void);
+static BOOL flusher_unload_plugin();
 static void *flusher_queryservice(const char *service, const std::type_info &);
-static int flusher_get_queue_length(void);
-static const char *flusher_get_host_ID(void);
-static FLUSH_ENTITY *flusher_get_from_queue(void);
+static int flusher_get_queue_length();
+static const char *flusher_get_host_ID();
+static FLUSH_ENTITY *flusher_get_from_queue();
 static BOOL flusher_feedback_entity(FLUSH_ENTITY *pentity);
 
 static int flusher_get_extra_num(int context_ID);
@@ -63,12 +63,12 @@ static const char* flusher_get_extra_tag(int context_ID, int pos);
 static const char* flusher_get_extra_value(int context_ID, int pos);
 
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func);
-static const char *flusher_get_plugin_name(void);
-static const char *flusher_get_config_path(void);
-static const char *flusher_get_data_path(void);
+static const char *flusher_get_plugin_name();
+static const char *flusher_get_config_path();
+static const char *flusher_get_data_path();
 static const char *flusher_get_state_path();
-static BOOL flusher_is_domainlist_valid(void);
-static int flusher_increase_max_ID(void);
+static BOOL flusher_is_domainlist_valid();
+static int flusher_increase_max_ID();
 static BOOL flusher_set_flush_ID(int ID);
 	
 static PLUG_ENTITY *g_flusher_plug;
@@ -409,7 +409,7 @@ static const char* flusher_get_extra_value(int context_ID, int pos)
 	return smtp_parser_get_extra_value(pcontext, pos);
 }
 
-static const char *flusher_get_host_ID(void)
+static const char *flusher_get_host_ID()
 {
 	return resource_get_string("HOST_ID");
 }

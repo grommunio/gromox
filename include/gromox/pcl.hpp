@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <gromox/mapi_types.hpp>		
 
-extern PCL *pcl_init(void);
+extern PCL *pcl_init();
 void pcl_free(PCL *ppcl);
 
 BOOL pcl_append(PCL *ppcl, const SIZED_XID *pxid);

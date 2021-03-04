@@ -221,18 +221,17 @@ extern bool (*common_util_verify_cpid)(uint32_t cpid);
 extern int (*common_util_add_timer)(const char *command, int interval);
 
 extern BOOL (*common_util_cancel_timer)(int timer_id);
-
-LIB_BUFFER *common_util_get_allocator(void);
+extern LIB_BUFFER *common_util_get_allocator();
 void common_util_init(const char *org_name, int average_blocks,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *submit_command);
-extern int common_util_run(void);
-extern int common_util_stop(void);
-extern void common_util_free(void);
+extern int common_util_run();
+extern int common_util_stop();
+extern void common_util_free();
 unsigned int common_util_get_param(int param);
 
 void common_util_set_param(int param, unsigned int value);
-extern const char *common_util_get_submit_command(void);
-extern uint32_t common_util_get_ftstream_id(void);
-extern MIME_POOL *common_util_get_mime_pool(void);
+extern const char *common_util_get_submit_command();
+extern uint32_t common_util_get_ftstream_id();
+extern MIME_POOL *common_util_get_mime_pool();

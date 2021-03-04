@@ -7,23 +7,23 @@
 
 extern void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
-extern void exmdb_server_init(void);
-extern int exmdb_server_run(void);
-extern int exmdb_server_stop(void);
-extern void exmdb_server_free(void);
+extern void exmdb_server_init();
+extern int exmdb_server_run();
+extern int exmdb_server_stop();
+extern void exmdb_server_free();
 void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir);
-extern void exmdb_server_free_environment(void);
+extern void exmdb_server_free_environment();
 void exmdb_server_set_remote_id(const char *remote_id);
-extern const char *exmdb_server_get_remote_id(void);
+extern const char *exmdb_server_get_remote_id();
 void exmdb_server_set_public_username(const char *username);
-extern const char *exmdb_server_get_public_username(void);
-extern ALLOC_CONTEXT *exmdb_server_get_alloc_context(void);
-extern BOOL exmdb_server_check_private(void);
-extern const char *exmdb_server_get_dir(void);
+extern const char *exmdb_server_get_public_username();
+extern ALLOC_CONTEXT *exmdb_server_get_alloc_context();
+extern BOOL exmdb_server_check_private();
+extern const char *exmdb_server_get_dir();
 void exmdb_server_set_dir(const char *dir);
-extern int exmdb_server_get_account_id(void);
-extern const GUID *exmdb_server_get_handle(void);
+extern int exmdb_server_get_account_id();
+extern const GUID *exmdb_server_get_handle();
 BOOL exmdb_server_ping_store(const char *dir);
 
 BOOL exmdb_server_get_all_named_propids(

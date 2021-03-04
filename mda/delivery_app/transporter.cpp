@@ -140,8 +140,8 @@ static pthread_mutex_t	 g_mpc_list_lock;
 static pthread_mutex_t	 g_count_lock;
 static bool g_ign_loaderr;
 
-static void transporter_collect_resource(void);
-static void transporter_collect_hooks(void);
+static void transporter_collect_resource();
+static void transporter_collect_hooks();
 static void* thread_work_func(void* arg);
 
 static void* scan_work_func(void* arg);
@@ -151,24 +151,23 @@ static BOOL transporter_register_local(HOOK_FUNCTION func);
 static BOOL transporter_register_talk(TALK_MAIN talk);
 static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data); 
-static void transporter_clean_up_unloading(void);
-static const char *transporter_get_plugin_name(void);
-static const char *transporter_get_host_ID(void);
-static const char *transporter_get_default_domain(void);
-static const char *transporter_get_admin_mailbox(void);
-static const char *transporter_get_config_path(void);
-static const char *transporter_get_data_path(void);
-static const char *transporter_get_queue_path(void);
-static int transporter_get_threads_num(void);
-static int transporter_get_context_num(void);
-static MESSAGE_CONTEXT *transporter_get_context(void);
-
+static void transporter_clean_up_unloading();
+static const char *transporter_get_plugin_name();
+static const char *transporter_get_host_ID();
+static const char *transporter_get_default_domain();
+static const char *transporter_get_admin_mailbox();
+static const char *transporter_get_config_path();
+static const char *transporter_get_data_path();
+static const char *transporter_get_queue_path();
+static int transporter_get_threads_num();
+static int transporter_get_context_num();
+static MESSAGE_CONTEXT *transporter_get_context();
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext);
 
 static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext); 
 
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
-static MESSAGE_CONTEXT *transporter_dequeue_context(void);
+static MESSAGE_CONTEXT *transporter_dequeue_context();
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 
 /*

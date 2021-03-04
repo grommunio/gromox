@@ -9,8 +9,8 @@
 #define EXMDB_MAILBOX_FULL		5
 
 extern void exmdb_client_init(int conn_num);
-extern int exmdb_client_run(void);
-extern int exmdb_client_stop(void);
+extern int exmdb_client_run();
+extern int exmdb_client_stop();
 int exmdb_client_delivery_message(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,

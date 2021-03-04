@@ -3,7 +3,7 @@
 #include <gromox/simple_tree.hpp>
 
 void nsp_interface_init(BOOL b_check);
-extern int nsp_interface_run(void);
+extern int nsp_interface_run();
 extern int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *, FLATUID *server_guid, NSPI_HANDLE *);
 uint32_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved);
 

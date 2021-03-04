@@ -3,7 +3,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 
-extern TPROPVAL_ARRAY *tpropval_array_init(void);
+extern TPROPVAL_ARRAY *tpropval_array_init();
 void tpropval_array_free(TPROPVAL_ARRAY *parray);
 extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
 void tpropval_array_free_internal(TPROPVAL_ARRAY *parray);

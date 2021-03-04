@@ -265,13 +265,13 @@ void common_util_init(const char *org_name, const char *hostname,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *freebusy_path, const char *submit_command);
 extern int common_util_run(const char *data_path);
-extern int common_util_stop(void);
-extern void common_util_free(void);
+extern int common_util_stop();
+extern void common_util_free();
 unsigned int common_util_get_param(int param);
 
 void common_util_set_param(int param, unsigned int value);
-extern const char *common_util_get_hostname(void);
-extern const char *common_util_get_freebusy_path(void);
+extern const char *common_util_get_hostname();
+extern const char *common_util_get_freebusy_path();
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
@@ -338,15 +338,15 @@ void common_util_exmdb_locinfo_to_string(
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid);
-extern BOOL common_util_build_environment(void);
-extern void common_util_free_environment(void);
+extern BOOL common_util_build_environment();
+extern void common_util_free_environment();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
 template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
 template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
 template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 void common_util_set_clifd(int clifd);
-extern int common_util_get_clifd(void);
+extern int common_util_get_clifd();
 char* common_util_dup(const char *pstr);
 
 ZNOTIFICATION* common_util_dup_znotification(
@@ -416,8 +416,8 @@ BOOL common_util_load_file(const char *path, BINARY *pbin);
 BOOL common_util_convert_to_zrule_data(STORE_OBJECT *, TPROPVAL_ARRAY *);
 extern gxerr_t common_util_remote_copy_message(STORE_OBJECT *s0, uint64_t message_id, STORE_OBJECT *s1, uint64_t folder_id1);
 extern gxerr_t common_util_remote_copy_folder(STORE_OBJECT *s0, uint64_t folder_id, STORE_OBJECT *s1, uint64_t folder_id1, const char *new_name);
-extern const uint8_t *common_util_get_muidecsab(void);
-extern const uint8_t *common_util_get_muidzcsab(void);
+extern const uint8_t *common_util_get_muidecsab();
+extern const uint8_t *common_util_get_muidzcsab();
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
 
 BOOL common_util_send_message(STORE_OBJECT *pstore,
@@ -438,7 +438,7 @@ extern BOOL common_util_message_to_vcf(MESSAGE_OBJECT *, BINARY *vcfout);
 MESSAGE_CONTENT* common_util_vcf_to_message(
 	STORE_OBJECT *pstore, const BINARY *pvcf_bin);
 const char* common_util_i18n_to_lang(const char *i18n);
-extern const char *common_util_get_default_timezone(void);
-extern const char *common_util_get_submit_command(void);
+extern const char *common_util_get_default_timezone();
+extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(unsigned int i);

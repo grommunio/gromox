@@ -46,9 +46,9 @@ static pthread_mutex_t g_buffer_lock;
 static pthread_mutex_t g_redirect_lock;
 
 static void log_plugin_cache_log(const char *log, int length);
-static BOOL log_plugin_flush_log(void);
+static BOOL log_plugin_flush_log();
 static int log_plugin_open_redirect(const char *filename);
-static int log_plugin_close_redirect(void);
+static int log_plugin_close_redirect();
 static void* thread_work_func(void *arg);
 
 /*

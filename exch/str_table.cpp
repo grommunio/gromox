@@ -29,7 +29,7 @@ enum{
 };
 
 static void str_table_echo(const char *, ...);
-static int str_table_refresh(void);
+static int str_table_refresh();
 
 static STR_HASH_TABLE *g_string_list_table;
 static pthread_rwlock_t g_refresh_lock;

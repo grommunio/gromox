@@ -8,8 +8,8 @@ enum{
 
 };
 
-extern int system_services_run(void);
-extern int system_services_stop(void);
+extern int system_services_run();
+extern int system_services_stop();
 
 extern BOOL (*system_services_judge_ip)(const char*);
 extern BOOL (*system_services_add_ip_into_temp_list)(const char *, int);

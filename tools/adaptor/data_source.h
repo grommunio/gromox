@@ -18,7 +18,7 @@ struct DATA_COLLECT {
 	DOUBLE_LIST_NODE *pnode;
 };
 
-extern DATA_COLLECT *data_source_collect_init(void);
+extern DATA_COLLECT *data_source_collect_init();
 void data_source_collect_free(DATA_COLLECT *pcollect);
 
 void data_source_collect_clear(DATA_COLLECT *pcollect);

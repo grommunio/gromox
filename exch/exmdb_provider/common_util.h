@@ -1389,10 +1389,9 @@ extern BOOL (*common_util_get_id_from_homedir)(
 
 extern BOOL (*common_util_send_mail)(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
-extern MIME_POOL *(*common_util_get_mime_pool)(void);
+extern MIME_POOL *(*common_util_get_mime_pool)();
 extern void (*common_util_log_info)(int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
-extern const GUID *(*common_util_get_handle)(void);
-
+extern const GUID *(*common_util_get_handle)();
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 
@@ -1412,13 +1411,13 @@ void common_util_pass_service(int service_id, void *func);
 
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
-extern int common_util_run(void);
-extern int common_util_stop(void);
-extern void common_util_free(void);
-extern void common_util_build_tls(void);
+extern int common_util_run();
+extern int common_util_stop();
+extern void common_util_free();
+extern void common_util_build_tls();
 void common_util_set_tls_var(const void *pvar);
-extern const void *common_util_get_tls_var(void);
-extern int common_util_sequence_ID(void);
+extern const void *common_util_get_tls_var();
+extern int common_util_sequence_ID();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
 template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
@@ -1449,7 +1448,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
 
 BOOL common_util_begin_message_optimize(sqlite3 *psqlite);
-extern void common_util_end_message_optimize(void);
+extern void common_util_end_message_optimize();
 BOOL common_util_get_property(int table_type, uint64_t id,
 	uint32_t cpid, sqlite3 *psqlite, uint32_t proptag,
 	void **ppvalue);

@@ -76,13 +76,13 @@ struct FOLDER_CHANGES {
 	TPROPVAL_ARRAY *pfldchgs;
 };
 
-extern ATTACHMENT_CONTENT *attachment_content_init(void);
+extern ATTACHMENT_CONTENT *attachment_content_init();
 extern void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *, MESSAGE_CONTENT *embed);
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
 
 ATTACHMENT_CONTENT* attachment_content_dup(
 	ATTACHMENT_CONTENT *pattachment);
-extern ATTACHMENT_LIST *attachment_list_init(void);
+extern ATTACHMENT_LIST *attachment_list_init();
 void attachment_list_free(ATTACHMENT_LIST *plist);
 
 void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index);
@@ -91,7 +91,7 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment);
 
 ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist);
-extern FOLDER_CONTENT *folder_content_init(void);
+extern FOLDER_CONTENT *folder_content_init();
 void folder_content_free(FOLDER_CONTENT *pfldctnt);
 
 BOOL folder_content_append_subfolder_internal(
@@ -104,7 +104,7 @@ void folder_content_append_failist_internal(
 
 void folder_content_append_normallist_internal(
 	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist);
-extern MESSAGE_CONTENT *message_content_init(void);
+extern MESSAGE_CONTENT *message_content_init();
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);
 
 TPROPVAL_ARRAY* message_content_get_proplist(MESSAGE_CONTENT *pmsgctnt);

@@ -11,8 +11,8 @@ struct service_init_param {
 };
 
 extern void service_init(const struct service_init_param &);
-extern int service_run(void);
-extern int service_stop(void);
+extern int service_run();
+extern int service_stop();
 int service_load_library(const char *path);
 
 int service_unload_library(const char *path);

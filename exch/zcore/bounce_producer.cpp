@@ -345,7 +345,7 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 	free(presource);
 }
 
-void bounce_producer_stop(void)
+void bounce_producer_stop()
 {
 	bounce_producer_unload_list(&g_resource_list);
 	pthread_rwlock_destroy(&g_list_lock);

@@ -11,12 +11,12 @@ enum {
 
 void audit_filter_init(BOOL case_sensitive, int audit_num, int audit_interval, 
     int audit_times);
-extern int audit_filter_run(void);
-extern int audit_filter_stop(void);
+extern int audit_filter_run();
+extern int audit_filter_stop();
 int audit_filter_set_param(int tpye, int value);
 
 int audit_filter_get_param(int type);
-extern void audit_filter_free(void);
+extern void audit_filter_free();
 BOOL audit_filter_query(const char *str);
 
 BOOL audit_filter_judge(const char *str);

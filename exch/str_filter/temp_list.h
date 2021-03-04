@@ -4,9 +4,9 @@
 #include <ctime>
 
 void temp_list_init(BOOL case_sensive, int size);
-extern int temp_list_run(void);
-extern int temp_list_stop(void);
-extern void temp_list_free(void);
+extern int temp_list_run();
+extern int temp_list_stop();
+extern void temp_list_free();
 BOOL temp_list_add_string(const char *str, int interval);
 
 BOOL temp_list_query(const char *str);

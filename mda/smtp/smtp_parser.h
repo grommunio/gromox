@@ -182,10 +182,10 @@ extern void smtp_parser_init(int context_num, int threads_num,
 	size_t timeout,  size_t auth_times, size_t blktime_auths,
 	BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path);
-extern int smtp_parser_run(void);
+extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
-extern int smtp_parser_stop(void);
-extern void smtp_parser_free(void);
+extern int smtp_parser_stop();
+extern void smtp_parser_free();
 long smtp_parser_get_param(int param);
 
 int smtp_parser_set_param(int param, long value);
@@ -195,13 +195,13 @@ int smtp_parser_get_context_socket(SMTP_CONTEXT *pcontext);
 struct timeval smtp_parser_get_context_timestamp(SMTP_CONTEXT *pcontext);
 
 BOOL smtp_parser_validate_domainlist(BOOL b_valid);
-extern BOOL smtp_parser_domainlist_valid(void);
+extern BOOL smtp_parser_domainlist_valid();
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
 
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
-extern SMTP_CONTEXT *smtp_parser_get_contexts_list(void);
+extern SMTP_CONTEXT *smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 
 void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);

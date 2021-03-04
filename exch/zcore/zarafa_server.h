@@ -33,11 +33,11 @@ struct USER_INFO {
 
 void zarafa_server_init(int table_size,
 	int cache_interval, int ping_interval);
-extern int zarafa_server_run(void);
-extern int zarafa_server_stop(void);
-extern void zarafa_server_free(void);
+extern int zarafa_server_run();
+extern int zarafa_server_stop();
+extern void zarafa_server_free();
 int zarafa_server_get_param(int param);
-extern USER_INFO *zarafa_server_get_info(void);
+extern USER_INFO *zarafa_server_get_info();
 uint32_t zarafa_server_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession);
 

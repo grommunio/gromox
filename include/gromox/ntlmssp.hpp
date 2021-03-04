@@ -46,7 +46,7 @@ typedef bool (*NTLMSSP_GET_PASSWORD)(const char *, char *);
 
 extern GX_EXPORT NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name, const char *dns_domain, bool b_lm_key, uint32_t net_flags, NTLMSSP_GET_PASSWORD);
 extern GX_EXPORT bool ntlmssp_update(NTLMSSP_CTX *, DATA_BLOB *);
-extern size_t ntlmssp_sig_size(void);
+extern size_t ntlmssp_sig_size();
 uint32_t ntlmssp_expected_state(NTLMSSP_CTX *pntlmssp);
 extern GX_EXPORT bool ntlmssp_sign_packet(NTLMSSP_CTX *, const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
 extern GX_EXPORT bool ntlmssp_check_packet(NTLMSSP_CTX *, const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);

@@ -25,9 +25,9 @@ extern BOOL (*exmdb_local_check_same_org2)(
 extern BOOL (*exmdb_local_lang_to_charset)(
 	const char *lang, char *charset);
 extern void exmdb_local_init(const char *org_name, const char *default_charset, const char *default_timezone);
-extern int exmdb_local_run(void);
-extern int exmdb_local_stop(void);
-extern void exmdb_local_free(void);
+extern int exmdb_local_run();
+extern int exmdb_local_stop();
+extern void exmdb_local_free();
 BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext);
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);

@@ -5,8 +5,8 @@
 #include <gromox/double_list.hpp>
 #include <gromox/single_list.hpp>
 
-extern int system_services_run(void);
-extern int system_services_stop(void);
+extern int system_services_run();
+extern int system_services_stop();
 
 extern BOOL (*system_services_get_user_lang)(const char*, char*);
 extern BOOL (*system_services_get_timezone)(const char*, char *);

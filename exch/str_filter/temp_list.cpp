@@ -11,13 +11,13 @@
 #include <cstring>
 #include <pthread.h>
 
+static int temp_list_collect_string_entry();
+
 /* private global variable */
 static STR_HASH_TABLE *g_string_hash;
 static pthread_mutex_t	g_string_mutex_lock;
 static int				g_size;
 static BOOL				g_case_sensitive;
-
-static int temp_list_collect_string_entry(void);
 
 void temp_list_init(BOOL case_sensitive, int size)
 {

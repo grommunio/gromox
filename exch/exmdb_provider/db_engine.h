@@ -105,9 +105,9 @@ struct DB_ITEM {
 
 void db_engine_init(int table_size, int cache_interval,
 	BOOL b_async, BOOL b_wal, uint64_t mmap_size, int threads_num);
-extern int db_engine_run(void);
-extern int db_engine_stop(void);
-extern void db_engine_free(void);
+extern int db_engine_run();
+extern int db_engine_stop();
+extern void db_engine_free();
 DB_ITEM* db_engine_get_db(const char *path);
 
 void db_engine_put_db(DB_ITEM *pdb);

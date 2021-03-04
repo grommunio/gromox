@@ -57,15 +57,14 @@ static pthread_t		g_thread_id;
 static BOOL g_notify_stop;
 static int				g_dequeued_num;
 
-static BOOL message_dequeue_check(void);
+static BOOL message_dequeue_check();
 static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size);
 
 static void message_dequeue_put_to_free(MESSAGE *pmessage);
 
 static void message_dequeue_put_to_used(MESSAGE *pmessage);
 static void message_dequeue_load_from_mess(int mess);
-static void message_dequeue_collect_resource(void);
-
+static void message_dequeue_collect_resource();
 static void* thread_work_func(void* arg);
 
 /* 
@@ -135,7 +134,7 @@ static BOOL message_dequeue_check()
 /*
  *	collect the global resources system allocated
  */
-static void message_dequeue_collect_resource(void)
+static void message_dequeue_collect_resource()
 {
 	if (NULL != g_message_ptr) {
 		free(g_message_ptr);

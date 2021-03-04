@@ -31,7 +31,7 @@ static STR_HASH_TABLE *g_address_hash;
 static pthread_rwlock_t g_address_lock;
 static char g_address_path[256];
 
-static int address_table_refresh(void);
+static int address_table_refresh();
 static BOOL address_table_query(const char *aliasname, char *mainname);
 
 static void console_talk(int argc, char **argv, char *result, int length);

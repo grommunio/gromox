@@ -1314,20 +1314,20 @@ struct DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify;
 };
 
-extern void common_util_init(void);
-extern int common_util_run(void);
-extern int common_util_stop(void);
-extern void common_util_free(void);
+extern void common_util_init();
+extern int common_util_run();
+extern int common_util_stop();
+extern void common_util_free();
 BOOL common_util_build_environment(const char *maildir);
-extern void common_util_free_environment(void);
+extern void common_util_free_environment();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
 template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
 template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
 template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
-extern BOOL common_util_switch_allocator(void);
+extern BOOL common_util_switch_allocator();
 void common_util_set_maildir(const char *maildir);
-extern const char* common_util_get_maildir(void);
+extern const char* common_util_get_maildir();
 char* common_util_dup(const char *pstr);
 void* common_util_get_propvals(
 	const TPROPVAL_ARRAY *parray, uint32_t proptag);

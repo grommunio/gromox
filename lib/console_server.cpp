@@ -140,7 +140,7 @@ int console_server_run()
  *  @return
  *		0				OK
  */
-int console_server_stop(void)
+int console_server_stop()
 {
 	if (NULL != g_console_buff) {
 		free(g_console_buff);

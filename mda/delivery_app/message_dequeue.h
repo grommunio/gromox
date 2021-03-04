@@ -38,10 +38,10 @@ struct MESSAGE {
 };
 
 extern void message_dequeue_init(const char *path, size_t max_memory);
-extern int message_dequeue_run(void);
-extern int message_dequeue_stop(void);
-extern void message_dequeue_free(void);
-extern MESSAGE *message_dequeue_get(void);
+extern int message_dequeue_run();
+extern int message_dequeue_stop();
+extern void message_dequeue_free();
+extern MESSAGE *message_dequeue_get();
 void message_dequeue_put(MESSAGE *pmessage);
 
 int message_dequeue_get_param(int param);

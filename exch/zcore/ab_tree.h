@@ -55,8 +55,8 @@ struct AB_BASE {
 
 void ab_tree_init(const char *org_name, int base_size,
 	int cache_interval, int file_blocks);
-extern int ab_tree_run(void);
-extern int ab_tree_stop(void);
+extern int ab_tree_run();
+extern int ab_tree_stop();
 AB_BASE* ab_tree_get_base(int base_id);
 
 void ab_tree_put_base(AB_BASE *pbase);

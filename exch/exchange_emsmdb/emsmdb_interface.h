@@ -20,10 +20,10 @@ typedef CONTEXT_HANDLE CXH;
 typedef CONTEXT_HANDLE ACXH;
 
 extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
-extern void emsmdb_interface_init(void);
-extern int emsmdb_interface_run(void);
-extern int emsmdb_interface_stop(void);
-extern void emsmdb_interface_free(void);
+extern void emsmdb_interface_init();
+extern int emsmdb_interface_run();
+extern int emsmdb_interface_stop();
+extern void emsmdb_interface_free();
 int emsmdb_interface_disconnect(CXH *pcxh);
 
 int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
@@ -56,10 +56,10 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 
 BOOL emsmdb_interface_check_notify(ACXH *pacxh);
 extern void emsmdb_interface_touch_handle(CXH *);
-extern const GUID *emsmdb_interface_get_handle(void);
-extern EMSMDB_INFO *emsmdb_interface_get_emsmdb_info(void);
-extern DOUBLE_LIST *emsmdb_interface_get_notify_list(void);
-extern void emsmdb_interface_put_notify_list(void);
+extern const GUID *emsmdb_interface_get_handle();
+extern EMSMDB_INFO *emsmdb_interface_get_emsmdb_info();
+extern DOUBLE_LIST *emsmdb_interface_get_notify_list();
+extern void emsmdb_interface_put_notify_list();
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr);
 
 BOOL emsmdb_interface_alloc_hanlde_number(uint32_t *pnum);

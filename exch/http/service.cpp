@@ -46,11 +46,11 @@ struct SERVICE_ENTRY {
 
 static void *service_query_service(const char *service, const std::type_info &);
 static BOOL service_register_talk(TALK_MAIN talk);
-static const char *service_get_plugin_name(void);
-static const char *service_get_config_path(void);
-static const char *service_get_data_path(void);
-static int service_get_context_num(void);
-static const char *service_get_host_ID(void);
+static const char *service_get_plugin_name();
+static const char *service_get_config_path();
+static const char *service_get_data_path();
+static int service_get_context_num();
+static const char *service_get_host_ID();
 
 static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static DOUBLE_LIST      g_list_plug;

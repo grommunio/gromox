@@ -30,14 +30,14 @@ struct LIST_ITEM {
 	char    interval[32];
 };
 
+static void grey_list_flush();
+
 static STR_HASH_TABLE *g_grey_table;
 static pthread_rwlock_t  g_refresh_lock;
 static char g_list_path[256]; 
 static BOOL g_case_sensitive;
 static int g_growing_num;
 static int g_hash_cap;
-
-static void grey_list_flush(void);
 
 /*
  *	grey list's construct function

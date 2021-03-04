@@ -27,8 +27,8 @@ struct FASTCGI_CONTEXT {
 struct HTTP_CONTEXT;
 
 extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, int exec_timeout);
-extern int mod_fastcgi_run(void);
-extern void mod_fastcgi_stop(void);
+extern int mod_fastcgi_run();
+extern void mod_fastcgi_stop();
 BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp);
 
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp);

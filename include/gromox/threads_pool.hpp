@@ -28,11 +28,11 @@ typedef int (*THREADS_EVENT_PROC)(int);
 
 void threads_pool_init(int init_pool_num,
 	int (*process_func)(SCHEDULE_CONTEXT*));
-extern int threads_pool_run(void);
-extern int threads_pool_stop(void);
-extern void threads_pool_free(void);
+extern int threads_pool_run();
+extern int threads_pool_stop();
+extern void threads_pool_free();
 int threads_pool_get_param(int type);
 
 THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc);
-extern void threads_pool_wakeup_thread(void);
-extern void threads_pool_wakeup_all_threads(void);
+extern void threads_pool_wakeup_thread();
+extern void threads_pool_wakeup_all_threads();

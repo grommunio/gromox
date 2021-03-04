@@ -9,7 +9,7 @@ struct MSG_UNIT {
 };
 
 void units_allocator_init(size_t blocks);
-extern int units_allocator_run(void);
-extern int units_allocator_stop(void);
-extern void units_allocator_free(void);
-extern LIB_BUFFER *units_allocator_get_allocator(void);
+extern int units_allocator_run();
+extern int units_allocator_stop();
+extern void units_allocator_free();
+extern LIB_BUFFER *units_allocator_get_allocator();

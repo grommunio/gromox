@@ -33,9 +33,9 @@ struct HPM_PLUGIN {
 };
 
 extern void hpm_processor_init(int context_num, const char *plugins_path, const char *const *names, uint64_t cache_size, uint64_t max_size, bool ignerr);
-extern int hpm_processor_run(void);
-extern int hpm_processor_stop(void);
-extern void hpm_processor_free(void);
+extern int hpm_processor_run();
+extern int hpm_processor_stop();
+extern void hpm_processor_free();
 int hpm_processor_console_talk(int argc, char **argv, char *result, int length);
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp);
 

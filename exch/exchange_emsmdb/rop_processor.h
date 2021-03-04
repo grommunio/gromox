@@ -17,13 +17,13 @@
 #define OBJECT_TYPE_ICSUPCTX				10
 #define OBJECT_TYPE_SUBSCRIPTION			11
 
-extern void *rop_processor_create_logmap(void);
+extern void *rop_processor_create_logmap();
 void rop_processor_release_logmap(void *plogmap);
 
 void rop_processor_init(int average_handles, int scan_interval);
-extern int rop_processor_run(void);
-extern int rop_processor_stop(void);
-extern void rop_processor_free(void);
+extern int rop_processor_run();
+extern int rop_processor_stop();
+extern void rop_processor_free();
 uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out);
 

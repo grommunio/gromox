@@ -103,12 +103,12 @@ enum {
 	IMAP_CODE_2200010
 };
 
-extern void resource_init(void);
-extern void resource_free(void);
-extern int resource_run(void);
-extern int resource_stop(void);
+extern void resource_init();
+extern void resource_free();
+extern int resource_run();
+extern int resource_stop();
 extern const char *resource_get_imap_code(int code_type, int n, int *len);
-extern BOOL resource_refresh_imap_code_table(void);
+extern BOOL resource_refresh_imap_code_table();
 char** resource_get_folder_strings(const char*lang);
 
 const char* resource_get_default_charset(const char *lang);

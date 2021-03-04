@@ -16,7 +16,7 @@ struct EXMDB_RESPONSE;
 int exmdb_client_get_param(int param);
 extern void exmdb_client_init(int conn_num, int threads_num);
 extern int exmdb_client_run(const char *configdir);
-extern int exmdb_client_stop(void);
+extern int exmdb_client_stop();
 BOOL exmdb_client_get_named_propid(const char *dir,
 	BOOL b_create, const PROPERTY_NAME *ppropname,
 	uint16_t *ppropid);

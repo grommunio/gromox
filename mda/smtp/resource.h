@@ -89,11 +89,11 @@ enum {
     SMTP_CODE_COUNT
 };
 
-extern void resource_init(void);
-extern void resource_free(void);
-extern int resource_run(void);
-extern int resource_stop(void);
+extern void resource_init();
+extern void resource_free();
+extern int resource_run();
+extern int resource_stop();
 char* resource_get_smtp_code(int code_type, int n, int *len);
-extern BOOL resource_refresh_smtp_code_table(void);
+extern BOOL resource_refresh_smtp_code_table();
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;

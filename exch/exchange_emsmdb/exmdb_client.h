@@ -4,11 +4,10 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/element_data.hpp>
 
-extern void exmdb_client_init(void);
-extern int exmdb_client_run(void);
-extern int exmdb_client_stop(void);
-extern void exmdb_client_free(void);
-
+extern void exmdb_client_init();
+extern int exmdb_client_run();
+extern int exmdb_client_stop();
+extern void exmdb_client_free();
 extern BOOL (*exmdb_client_ping_store)(const char *dir);
 
 extern BOOL (*exmdb_client_get_all_named_propids)(

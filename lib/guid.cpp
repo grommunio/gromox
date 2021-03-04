@@ -116,7 +116,7 @@ BOOL guid_from_string(GUID *guid, const char *guid_string)
 	return FALSE;
 }
 
-GUID guid_random_new(void)
+GUID guid_random_new()
 {
 	GUID guid;
 	int urand_fd;

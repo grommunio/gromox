@@ -209,7 +209,7 @@ int mod_fastcgi_run()
 	return 0;
 }
 
-void mod_fastcgi_stop(void)
+void mod_fastcgi_stop()
 {
 	free(g_context_list);
 	g_context_list = NULL;
