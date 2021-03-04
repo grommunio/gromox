@@ -75,7 +75,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	char *psearch;
 	int table_size;
 	int listen_port;
-	int max_threads;
 	int threads_num;
 	int max_ext_rule;
 	int max_msg_count;
