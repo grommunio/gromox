@@ -1443,8 +1443,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 	const char *pvalue2;
 	ICAL_TIME itime_standard;
 	ICAL_TIME itime_daylight;
-	const char *standard_offset;
-	const char *daylight_offset;
+	const char *standard_offset = nullptr, *daylight_offset = nullptr;
 	
 	b_standard = FALSE;
 	b_daylight = FALSE;

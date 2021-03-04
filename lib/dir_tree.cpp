@@ -108,7 +108,7 @@ static void dir_tree_clear(DIR_TREE *ptree)
 DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
 {
 	int len;
-	DIR_NODE *pdir;
+	DIR_NODE *pdir = nullptr;
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
 	SIMPLE_TREE_NODE *pnode;

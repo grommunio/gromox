@@ -219,10 +219,8 @@ void mjson_free(MJSON *pjson)
 BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
 	int length, const char *path)
 {
-	int bcount;
-	int scount;
-	BOOL b_none;
-	BOOL b_quota;
+	int bcount = 0, scount = 0;
+	BOOL b_none, b_quota = false;
 	int i, rstat;
 	int last_pos;
 	int token_type;
@@ -944,8 +942,7 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 {
 	int rstat;
-	int i, bcount;
-	int last_pos;
+	int i, bcount, last_pos = 0;
 	BOOL b_quota;
 	
 	rstat = PARSE_STAT_NONE;
@@ -1021,8 +1018,7 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 {
 	int offset;
-	int i, rstat;
-	int j, last_pos;
+	int i, rstat, j, last_pos = 0;
 	size_t temp_len;
 	BOOL b_digit;
 	char temp_tag[128];

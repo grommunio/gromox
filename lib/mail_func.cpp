@@ -1195,9 +1195,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 {
 	int argc;
 	char *ptr;
-	int length;
-	int b_count;
-	int s_count;
+	int length, b_count = 0, s_count = 0;
 	BOOL is_quoted;
 	char *last_space;
 	char *last_square;
@@ -1763,9 +1761,8 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
 	int i = 0;
-	char is_xml = 0;
+	char is_xml = 0, lc = 0, *tp;
 	int depth = 0, in_q = 0;
-	char *tp, lc;
 	
 	auto rbuf = std::make_unique<char[]>(len + 1);
 	if (rbuf == nullptr)

@@ -322,7 +322,7 @@ BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg_file)
 	struct stat node_stat;
 	char *ptr, *psearch;
 	char *plf, *psharp;
-	char *pequal, *plf2;
+	char *pequal = nullptr, *plf2 = nullptr;
 
 	for (i=0; i<cfg_file->num_entries; i++) {
 		if (TRUE == cfg_file->config_table[i].is_touched) {

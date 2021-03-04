@@ -3057,7 +3057,7 @@ int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
 int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 	uint16_t type, const FLAGGED_PROPVAL *r)
 {
-	void *pvalue;
+	void *pvalue = nullptr;
 	
 	if (type == PT_UNSPECIFIED) {
 		if (FLAGGED_PROPVAL_FLAG_UNAVAILABLE == r->flag) {

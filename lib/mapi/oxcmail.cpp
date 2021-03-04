@@ -5383,9 +5383,8 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
 	MIME *phead)
 {
-	int i;
+	int i, tmp_len = 0;
 	GUID guid;
-	int tmp_len;
 	uint32_t lid;
 	void *pvalue;
 	void *pvalue1;

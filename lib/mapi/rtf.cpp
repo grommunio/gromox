@@ -2969,14 +2969,13 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	int ret_val;
 	char *string;
 	BINARY tmp_bin;
-	const char *pext;
 	char cid_name[64];
 	uint32_t tmp_int32;
 	CMD_PROC_FUNC func;
 	int paragraph_align;
 	char picture_name[64];
 	EXT_PUSH picture_push;
-	const char *img_ctype;
+	const char *img_ctype = nullptr, *pext = nullptr;
 	TAGGED_PROPVAL propval;
 	bool b_paragraph_begun = false, b_hyperlinked = false;
 	SIMPLE_TREE_NODE *pchild;

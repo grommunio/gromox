@@ -538,7 +538,7 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_child;
 	SIMPLE_TREE_NODE *pnode_parent;
 	SIMPLE_TREE_NODE *pnode_temp;
-	SIMPLE_TREE_NODE *pnode_last;
+	SIMPLE_TREE_NODE *pnode_last = nullptr;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree_dst || NULL == pnode_dst ||

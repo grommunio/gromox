@@ -1144,8 +1144,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	TNEF_PROPVAL *ptnef_propval;
 	TNEF_PROPLIST *ptnef_proplist;
 	ATTACHMENT_LIST *pattachments;
-	ATTACHMENT_CONTENT *pattachment;
-	
+	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	ext_buffer_pull_init(&ext_pull, pbuff,
 		length, alloc, EXT_FLAG_UTF16);

@@ -311,7 +311,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	ICAL_TIME itime1;
 	ICAL_RRULE irrule;
 	const char *pvalue;
-	uint32_t patterntype;
+	uint32_t patterntype = 0;
 	ICAL_TIME itime_base;
 	ICAL_TIME itime_first;
 	const ICAL_TIME *pitime;
@@ -2611,9 +2611,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	uint32_t deleted_dates[1024];
 	uint32_t modified_dates[1024];
 	std::shared_ptr<ICAL_COMPONENT> ptz_component;
-	ATTACHMENT_LIST *pattachments;
+	ATTACHMENT_LIST *pattachments = nullptr;
 	EXCEPTIONINFO exceptions[1024];
-	ATTACHMENT_CONTENT *pattachment;
+	ATTACHMENT_CONTENT *pattachment = nullptr;
 	EXTENDEDEXCEPTION ext_exceptions[1024];
 	APPOINTMENTRECURRENCEPATTERN apprecurr;
 	
@@ -4816,9 +4816,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	struct tm tmp_tm;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
-	BOOL b_recurrence;
 	time_t start_time;
-	BOOL b_exceptional;
+	BOOL b_exceptional, b_recurrence = false;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];

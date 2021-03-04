@@ -543,8 +543,7 @@ int ndr_push_array_uint8(NDR_PUSH *pndr, const uint8_t *data, uint32_t n)
  */
 int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 {
-	int status;
-	int length;
+	int status, length = 0;
 	char buff[8];
 	
 	if (pndr->flags & NDR_FLAG_REMAINING) {

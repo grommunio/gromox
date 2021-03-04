@@ -159,7 +159,7 @@ static bool binhex_init_read_stat(READ_STAT *pstat,
 
 static bool binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
 {
-	uint8_t c;
+	uint8_t c = '\0';
 	
 	while (pstat->offset < pstat->length) {
 		c = pstat->pbuff[pstat->offset];
@@ -183,7 +183,7 @@ static bool binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
 
 static bool binhex_decode_char(READ_STAT *pstat, uint8_t *pb)
 {
-	uint8_t c, c2, ch;
+	uint8_t c, c2, ch = '\0';
 
 	if (!binhex_read_char(pstat, &c))
 		return false;
