@@ -93,6 +93,9 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 	BOOL b_return;
 	
 	presponse->call_id = prequest->call_id;
+	if (access(prequest->dir, R_OK | X_OK) < 0)
+		printf("exmdb rpc %s accessing %s: %s\n", exmdb_rpc_idtoname(prequest->call_id),
+		       prequest->dir, strerror(errno));
 	exmdb_server_set_dir(prequest->dir);
 	switch (prequest->call_id) {
 	case exmdb_callid::PING_STORE:
