@@ -97,6 +97,7 @@ enum {
 };
 
 extern GX_EXPORT unsigned int gxerr_to_hresult(gxerr_t);
+extern GX_EXPORT const char *mapi_strerror(unsigned int);
 
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
 #undef roundup /* you naughty glibc */
