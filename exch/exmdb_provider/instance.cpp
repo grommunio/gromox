@@ -2180,7 +2180,6 @@ static BOOL instance_get_message_display_recipients(
 	int i;
 	int offset;
 	void *pvalue;
-	BOOL b_unicode;
 	char tmp_buff[64*1024];
 	uint32_t recipient_type;
 	static uint8_t fake_empty;
@@ -2188,28 +2187,16 @@ static BOOL instance_get_message_display_recipients(
 	fake_empty = 0;
 	switch (proptag) {
 	case PROP_TAG_DISPLAYTO:
-		recipient_type = RECIPIENT_TYPE_TO;
-		b_unicode = TRUE;
-		break;
 	case PROP_TAG_DISPLAYTO_STRING8:
 		recipient_type = RECIPIENT_TYPE_TO;
-		b_unicode = FALSE;
 		break;
 	case PROP_TAG_DISPLAYCC:
-		recipient_type = RECIPIENT_TYPE_CC;
-		b_unicode = TRUE;
-		break;
 	case PROP_TAG_DISPLAYCC_STRING8:
 		recipient_type = RECIPIENT_TYPE_CC;
-		b_unicode = FALSE;
 		break;
 	case PROP_TAG_DISPLAYBCC:
-		recipient_type = RECIPIENT_TYPE_BCC;
-		b_unicode = TRUE;
-		break;
 	case PROP_TAG_DISPLAYBCC_STRING8:
 		recipient_type = RECIPIENT_TYPE_BCC;
-		b_unicode = FALSE;
 		break;
 	}
 	offset = 0;
@@ -2248,15 +2235,9 @@ static BOOL instance_get_message_display_recipients(
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	if (TRUE == b_unicode) {
-		*ppvalue = common_util_dup(tmp_buff);
-	} else {
-		*ppvalue = common_util_convert_copy(FALSE, cpid, tmp_buff);
-	}
-	if (NULL == *ppvalue) {
-		return FALSE;
-	}
-	return TRUE;
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(tmp_buff) :
+	           common_util_convert_copy(FALSE, cpid, tmp_buff);
+	return *ppvalue != nullptr ? TRUE : false;
 }
 
 static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)

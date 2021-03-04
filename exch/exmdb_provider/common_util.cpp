@@ -1897,7 +1897,6 @@ static BOOL common_util_get_message_display_recipients(
 {
 	int offset;
 	void *pvalue;
-	BOOL b_unicode;
 	uint64_t rcpt_id;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
@@ -1907,28 +1906,16 @@ static BOOL common_util_get_message_display_recipients(
 	
 	switch (proptag) {
 	case PROP_TAG_DISPLAYTO:
-		recipient_type = RECIPIENT_TYPE_TO;
-		b_unicode = TRUE;
-		break;
 	case PROP_TAG_DISPLAYTO_STRING8:
 		recipient_type = RECIPIENT_TYPE_TO;
-		b_unicode = FALSE;
 		break;
 	case PROP_TAG_DISPLAYCC:
-		recipient_type = RECIPIENT_TYPE_CC;
-		b_unicode = TRUE;
-		break;
 	case PROP_TAG_DISPLAYCC_STRING8:
 		recipient_type = RECIPIENT_TYPE_CC;
-		b_unicode = FALSE;
 		break;
 	case PROP_TAG_DISPLAYBCC:
-		recipient_type = RECIPIENT_TYPE_BCC;
-		b_unicode = TRUE;
-		break;
 	case PROP_TAG_DISPLAYBCC_STRING8:
 		recipient_type = RECIPIENT_TYPE_BCC;
-		b_unicode = FALSE;
 		break;
 	}
 	sprintf(sql_string, "SELECT recipient_id FROM"
@@ -1978,15 +1965,9 @@ static BOOL common_util_get_message_display_recipients(
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	if (TRUE == b_unicode) {
-		*ppvalue = common_util_dup(tmp_buff);
-	} else {
-		*ppvalue = common_util_convert_copy(FALSE, cpid, tmp_buff);
-	}
-	if (NULL == *ppvalue) {
-		return FALSE;
-	}
-	return TRUE;
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(tmp_buff) :
+	           common_util_convert_copy(false, cpid, tmp_buff);
+	return *ppvalue != nullptr ? TRUE : false;
 }
 
 static void *common_util_get_message_body(sqlite3 *psqlite,
