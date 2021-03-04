@@ -75,7 +75,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	char *psearch;
 	int table_size;
 	int listen_port;
-	int max_routers;
 	int max_threads;
 	int threads_num;
 	int max_ext_rule;
@@ -155,32 +154,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			"threads number is %d\n", threads_num);
 		
 		str_value = config_file_get_value(pconfig, "MAX_RPC_STUB_THREADS");
-		if (NULL == str_value) {
-			max_threads = 50;
-		} else {
-			max_threads = atoi(str_value);
-			if (max_threads < 0) {
-				max_threads = 0;
-			}
-		}
-		if (0 != max_threads) {
-			printf("[exmdb_provider]: exmdb maximum rpc "
-				"stub threads number is %d\n", max_threads);
-		}
-		
+		size_t max_threads = str_value != nullptr ? strtoull(str_value, nullptr, 0) : SIZE_MAX;
 		str_value = config_file_get_value(pconfig, "MAX_ROUTER_CONNECTIONS");
-		if (NULL == str_value) {
-			max_routers = 50;
-		} else {
-			max_routers = atoi(str_value);
-			if (max_routers < 0) {
-				max_routers = 0;
-			}
-		}
-		if (0 != max_routers) {
-			printf("[exmdb_provider]: exmdb maximum router "
-				"connections number is %d\n", max_routers);
-		}
+		size_t max_routers = str_value != nullptr ? strtoull(str_value, nullptr, 0) : SIZE_MAX;
 		
 		str_value = config_file_get_value(pconfig, "TABLE_SIZE");
 		if (NULL == str_value) {

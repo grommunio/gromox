@@ -28,9 +28,7 @@
 #include <cstdio>
 #include <poll.h>
 
-
-static int g_max_threads;
-static int g_max_routers;
+static size_t g_max_threads, g_max_routers;
 static std::vector<EXMDB_ITEM> g_local_list;
 static DOUBLE_LIST g_router_list;
 static DOUBLE_LIST g_connection_list;
@@ -46,7 +44,7 @@ int exmdb_parser_get_param(int param)
 	return -1;
 }
 
-void exmdb_parser_init(int max_threads, int max_routers)
+void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;

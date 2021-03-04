@@ -22,10 +22,10 @@ Default: \fI5000\fP
 Default: \fI20\fP
 .TP
 \fBmax_router_connections\fP
-Default: \fI50\fP
+Default: unlimited
 .TP
 \fBmax_rpc_stub_threads\fP
-Default: \fI50\fP
+Default: unlimited
 .TP
 \fBmax_rule_number\fP
 Default: \fI1000\fP

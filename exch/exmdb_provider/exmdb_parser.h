@@ -30,7 +30,7 @@ struct ROUTER_CONNECTION {
 };
 
 int exmdb_parser_get_param(int param);
-extern void exmdb_parser_init(int max_threads, int max_routers);
+extern void exmdb_parser_init(size_t max_threads, size_t max_routers);
 extern int exmdb_parser_run(const char *config_path);
 extern int exmdb_parser_stop();
 extern void exmdb_parser_free();
