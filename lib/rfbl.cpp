@@ -66,7 +66,7 @@ int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 {
 	auto ret = vsnprintf(buf, sz, fmt, args);
 	if (ret >= sz) {
-		fprintf(stderr, "gx_snprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
+		fprintf(stderr, "gx_vsnprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
 		        file, line, ret, sz);
 		return strlen(buf);
 	} else if (ret < 0) {
@@ -83,6 +83,14 @@ int gx_snprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 	va_start(args, fmt);
 	auto ret = gx_vsnprintf1(buf, sz, file, line, fmt, args);
 	va_end(args);
+	if (ret >= sz) {
+		fprintf(stderr, "gx_snprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
+		        file, line, ret, sz);
+		return strlen(buf);
+	} else if (ret < 0) {
+		*buf = '\0';
+		return ret;
+	}
 	return ret;
 }
 
