@@ -122,7 +122,7 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 {
 	fd_set myset;
 	int read_len;
-	uint32_t offset;
+	uint32_t offset = 0;
 	struct timeval tv;
 	uint8_t resp_buff[5];
 	

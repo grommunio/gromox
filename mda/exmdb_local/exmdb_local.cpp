@@ -405,7 +405,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	MESSAGE_CONTENT *pmsg;
 	TAGGED_PROPVAL propval;
 	uint32_t suppress_mask;
-	BOOL b_bounce_delivered;
+	BOOL b_bounce_delivered = false;
 	ALLOC_CONTEXT alloc_ctx;
 	char temp_buff[MAX_DIGLEN];
 	MESSAGE_CONTEXT *pcontext1;

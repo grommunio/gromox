@@ -1175,7 +1175,7 @@ static BOOL imap_cmd_parser_covert_imaptime(
 
 static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 {
-	int type;
+	int type = 0;
 	BOOL icase;
 	const char *ma = mask;
 	const char *na = data;
@@ -3102,8 +3102,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int string_length;
 	int string_length1;
 	char* temp_argv[5];
-	char *str_received;
-	char *flags_string;
+	char *str_received = nullptr, *flags_string = nullptr;
 	char flag_buff[16];
 	char file_name[128];
 	char temp_path[256];
@@ -3302,8 +3301,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int i, fd, len;
 	char buff[1024];
 	int string_length;
-	char *str_received;
-	char *flags_string;
+	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
 	char temp_name[1024];

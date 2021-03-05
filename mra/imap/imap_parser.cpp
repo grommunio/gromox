@@ -413,7 +413,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 	int written_len;
 	size_t total_len;
 	int string_length;
-	const char *host_ID, *imap_reply_str, *imap_reply_str2;
+	const char *host_ID, *imap_reply_str = nullptr, *imap_reply_str2;
 	char* argv[128];
 	char temp_buff[4096];
 	char reply_buff[1024];

@@ -244,7 +244,7 @@ static int cache_queue_increase_mess_ID()
 static void* thread_work_func(void* arg)
 {
 	DIR *dirp;
-	int i, times, size, bounce_type;
+	int i, times, size, bounce_type = 0;
 	int scan_interval, fd, mess_len;
 	time_t scan_begin, scan_end, original_time;
     struct dirent *direntp;

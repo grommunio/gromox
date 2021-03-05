@@ -47,7 +47,7 @@ static int zarafa_client_connect()
 static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 {
 	int read_len;
-	uint32_t offset;
+	uint32_t offset = 0;
 	uint8_t resp_buff[5];
 	
 	pbin->pb = NULL;

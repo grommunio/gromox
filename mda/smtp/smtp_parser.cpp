@@ -302,7 +302,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	const char *host_ID;
 	char *smtp_reply_str;
 	char *smtp_reply_str2;
-	char *pbuff;
+	char *pbuff = nullptr;
 	int len, string_length;
 	BOOL b_should_flush = FALSE;
 
