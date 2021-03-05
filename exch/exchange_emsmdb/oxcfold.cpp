@@ -481,7 +481,6 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	const LONGLONG_ARRAY *pfolder_ids, uint32_t search_flags,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	BOOL b_result;
 	int object_type;
 	EMSMDB_INFO *pinfo;
@@ -547,7 +546,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			return ecSuccess;
 		}
 	}
-	for (i=0; i<pfolder_ids->count; i++) {
+	for (size_t i = 0; i < pfolder_ids->count; ++i) {
 		if (1 != rop_util_get_replid(pfolder_ids->pll[i])) {
 			return ecSearchFolderScopeViolation;
 		}
@@ -1075,7 +1074,6 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	uint8_t *ppartial_completion, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	BOOL b_owner;
 	void *pvalue;
 	EID_ARRAY ids;
@@ -1147,7 +1145,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	if (NULL == ids.pids) {
 		return ecError;
 	}
-	for (i=0; i<pmessage_ids->count; i++) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (NULL != username) {
 			if (FALSE == exmdb_client_check_message_owner(
 				logon_object_get_dir(plogon), pmessage_ids->pll[i],

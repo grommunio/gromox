@@ -350,7 +350,6 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	int object_type;
 	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
@@ -382,7 +381,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	if (NULL == prows->prows) {
 		return ecMAPIOOM;
 	}
-	for (i=0; i<class_table.count; i++) {
+	for (size_t i = 0; i < class_table.count; ++i) {
 		if (FALSE == common_util_propvals_to_row(
 			class_table.pparray[i], &columns, prows->prows + i)) {
 			return ecMAPIOOM;

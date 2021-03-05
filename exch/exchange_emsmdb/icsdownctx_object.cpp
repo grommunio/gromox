@@ -119,7 +119,6 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 
 static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 {
-	int i, j;
 	IDSET *pseen;
 	IDSET *pread;
 	BOOL b_ordered;
@@ -195,7 +194,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	}
 	
 	idset_clear(pctx->pstate->pgiven);
-	for (i=0; i<given_messages.count; i++) {
+	for (size_t i = 0; i < given_messages.count; ++i) {
 		if (FALSE == idset_append(pctx->pstate->pgiven,
 			given_messages.pids[i])) {
 			return FALSE;	
@@ -256,7 +255,8 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	
 	if ((pctx->sync_flags & SYNC_FLAG_FAI) ||
 		(pctx->sync_flags & SYNC_FLAG_NORMAL)) {
-		for (i=0; i<pctx->pmessages->count; i++) {
+		for (size_t i = 0; i < pctx->pmessages->count; ++i) {
+			size_t j;
 			for (j=0; j<updated_messages.count; j++) {
 				if (updated_messages.pids[j] == pctx->pmessages->pids[i]) {
 					break;
@@ -305,6 +305,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	pctx->progress_steps = 0;
 	pctx->next_progress_steps = 0;
 	pctx->total_steps = total_normal + total_fai;
+	size_t i;
 	for (i=0; i<64; i++) {
 		if ((pctx->total_steps >> i) <= 0xFFFF) {
 			break;
@@ -317,19 +318,17 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 	const PROPTAG_ARRAY *pproptags, BOOL b_exclude)
 {
-	int i, j;
-	
 	if (TRUE == b_exclude) {
-		for (i=0; i<pfldchgs->count; i++) {
-			for (j=0; j<pproptags->count; j++) {
+		for (size_t i = 0; i < pfldchgs->count; ++i) {
+			for (size_t j = 0; j < pproptags->count; ++j) {
 				common_util_remove_propvals(
 					pfldchgs->pfldchgs + i,
 					pproptags->pproptag[j]);
 			}
 		}
 	} else {
-		for (i=0; i<pfldchgs->count; i++) {
-			j = 0;
+		for (size_t i = 0; i < pfldchgs->count; ++i) {
+			size_t j = 0;
 			while (j < pfldchgs->pfldchgs[i].count) {
 				if (!proptag_array_check(pproptags,
 				    pfldchgs->pfldchgs[i].ppropval[j].proptag)) {
@@ -345,7 +344,6 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 
 static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 {
-	int i;
 	BINARY *pbin;
 	void *pvalue;
 	IDSET *pidset;
@@ -388,13 +386,13 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		return FALSE;
 	}
 	idset_clear(pctx->pstate->pgiven);
-	for (i=0; i<given_folders.count; i++) {
+	for (size_t i = 0; i < given_folders.count; ++i) {
 		if (FALSE == idset_append(pctx->pstate->pgiven,
 			given_folders.pids[i])) {
 			return FALSE;	
 		}
 	}
-	for (i=0; i<fldchgs.count; i++) {
+	for (size_t i = 0; i < fldchgs.count; ++i) {
 		common_util_remove_propvals(
 			fldchgs.pfldchgs + i,
 			PROP_TAG_FOLDERPATHNAME);
@@ -734,7 +732,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			if (NULL == pidset) {
 				return FALSE;
 			}
-			for (i=0; i<deleted_folders.count; i++) {
+			for (size_t i = 0; i < deleted_folders.count; ++i) {
 				if (FALSE == idset_append(pidset,
 					deleted_folders.pids[i])) {
 					idset_free(pidset);
@@ -1479,7 +1477,6 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 /* only be called under content sync */
 static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 {
-	int i;
 	BINARY *pbin1;
 	BINARY *pbin2;
 	IDSET *pidset;
@@ -1495,7 +1492,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 		if (NULL == pidset) {
 			return FALSE;
 		}
-		for (i=0; i<pctx->pdeleted_messages->count; i++) {
+		for (size_t i = 0; i < pctx->pdeleted_messages->count; ++i) {
 			if (FALSE == idset_append(pidset,
 				pctx->pdeleted_messages->pids[i])) {
 				idset_free(pidset);
@@ -1521,7 +1518,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 			}
 			return FALSE;
 		}
-		for (i=0; i<pctx->pnolonger_messages->count; i++) {
+		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
 			if (FALSE == idset_append(pidset,
 				pctx->pnolonger_messages->pids[i])) {
 				idset_free(pidset);
@@ -1570,7 +1567,6 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 static BOOL icsdownctx_object_write_readstate_changes(
 	ICSDOWNCTX_OBJECT *pctx)
 {
-	int i;
 	BINARY *pbin1;
 	BINARY *pbin2;
 	IDSET *pidset;
@@ -1586,7 +1582,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 		if (NULL == pidset) {
 			return FALSE;
 		}
-		for (i=0; i<pctx->pread_messags->count; i++) {
+		for (size_t i = 0; i < pctx->pread_messags->count; ++i) {
 			if (FALSE == idset_append(pidset,
 				pctx->pread_messags->pids[i])) {
 				idset_free(pidset);
@@ -1611,7 +1607,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 			}
 			return FALSE;
 		}
-		for (i=0; i<pctx->punread_messags->count; i++) {
+		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
 			if (FALSE == idset_append(pidset,
 				pctx->punread_messags->pids[i])) {
 				idset_free(pidset);

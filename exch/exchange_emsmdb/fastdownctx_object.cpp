@@ -45,9 +45,7 @@ static BOOL fastdownctx_object_record_flow_node(
 static BOOL fastdownctx_object_record_messagelist(
 	DOUBLE_LIST *pflow_list, EID_ARRAY *pmsglst)
 {
-	int i;
-	
-	for (i=0; i<pmsglst->count; i++) {
+	for (size_t i = 0; i < pmsglst->count; ++i) {
 		if (FALSE == fastdownctx_object_record_flow_node(
 			pflow_list, FUNC_ID_MESSAGE, pmsglst->pids + i)) {
 			return FALSE;	
@@ -111,8 +109,6 @@ static BOOL fastdownctx_object_record_foldermessagesnodelprops(
 static BOOL fastdownctx_object_record_foldercontent(
 	DOUBLE_LIST *pflow_list, const FOLDER_CONTENT *pfldctnt)
 {
-	int i;
-	
 	if (NULL != common_util_get_propvals(
 		(TPROPVAL_ARRAY*)&pfldctnt->proplist,
 		META_TAG_NEWFXFOLDER)) {
@@ -136,7 +132,7 @@ static BOOL fastdownctx_object_record_foldercontent(
 		FUNC_ID_UINT32, (void*)PROP_TAG_CONTAINERHIERARCHY)) {
 		return FALSE;
 	}
-	for (i=0; i<pfldctnt->count; i++) {
+	for (size_t i = 0; i < pfldctnt->count; ++i) {
 		if (FALSE == fastdownctx_object_record_subfolder(
 			pflow_list, pfldctnt->psubflds + i)) {
 			return FALSE;	
@@ -148,8 +144,6 @@ static BOOL fastdownctx_object_record_foldercontent(
 static BOOL fastdownctx_object_record_foldercontentnodelprops(
 	DOUBLE_LIST *pflow_list, const FOLDER_CONTENT *pfldctnt)
 {
-	int i;
-	
 	if (FALSE == fastdownctx_object_record_flow_node(
 		pflow_list, FUNC_ID_PROPLIST, (void*)&pfldctnt->proplist)) {
 		return FALSE;
@@ -158,7 +152,7 @@ static BOOL fastdownctx_object_record_foldercontentnodelprops(
 		pflow_list, &pfldctnt->fldmsgs)) {
 		return FALSE;
 	}
-	for (i=0; i<pfldctnt->count; i++) {
+	for (size_t i = 0; i < pfldctnt->count; ++i) {
 		if (FALSE == fastdownctx_object_record_subfoldernodelprops(
 			pflow_list, pfldctnt->psubflds + i)) {
 			return FALSE;
@@ -252,7 +246,6 @@ BOOL fastdownctx_object_make_foldercontent(
 	FASTDOWNCTX_OBJECT *pctx,
 	BOOL b_subfolders, FOLDER_CONTENT *pfldctnt)
 {
-	int i;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == fastdownctx_object_record_flow_node(
@@ -275,7 +268,7 @@ BOOL fastdownctx_object_make_foldercontent(
 			(void*)PROP_TAG_CONTAINERHIERARCHY)) {
 			return FALSE;
 		}
-		for (i=0; i<pfldctnt->count; i++) {
+		for (size_t i = 0; i < pfldctnt->count; ++i) {
 			if (FALSE == fastdownctx_object_record_subfolder(
 				&pctx->flow_list, pfldctnt->psubflds + i)) {
 				return FALSE;	

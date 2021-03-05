@@ -144,7 +144,7 @@ static BOOL msgchg_grouping_append_info_list(INFO_NODE *pinfo_node)
 
 static BOOL msgchg_grouping_veryfy_group_list(INFO_NODE *pinfo_node)
 {
-	int i;
+	size_t i;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (i=0,pnode=double_list_get_head(&pinfo_node->group_list); NULL!=pnode;

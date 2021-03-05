@@ -1653,14 +1653,12 @@ static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval)
 {
-	int i;
-	int len;
 	char *pstring;
 	
 	if (TRUE == to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
-		case PT_STRING8:
-			len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
+		case PT_STRING8: {
+			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
 			pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
@@ -1672,10 +1670,11 @@ BOOL common_util_convert_tagged_propval(
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
+		}
 		case PT_MV_STRING8: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (i = 0; i < sa->count; ++i) {
-				len = 2 * strlen(sa->ppstr[i]) + 1;
+			for (size_t i = 0; i < sa->count; ++i) {
+				auto len = 2 * strlen(sa->ppstr[i]) + 1;
 				pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
@@ -1700,8 +1699,8 @@ BOOL common_util_convert_tagged_propval(
 		}
 	} else {
 		switch (PROP_TYPE(ppropval->proptag)) {
-		case PT_UNICODE:
-			len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
+		case PT_UNICODE: {
+			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
 			pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
@@ -1712,10 +1711,11 @@ BOOL common_util_convert_tagged_propval(
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
+		}
 		case PT_MV_UNICODE: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (i = 0; i < sa->count; ++i) {
-				len = 2 * strlen(sa->ppstr[i]) + 1;
+			for (size_t i = 0; i < sa->count; ++i) {
+				auto len = 2 * strlen(sa->ppstr[i]) + 1;
 				pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
@@ -1745,12 +1745,10 @@ BOOL common_util_convert_tagged_propval(
 /* only for being invoked in rop environment */
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 {
-	int i;
-	
 	switch (pres->rt) {
 	case RES_AND:
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!common_util_convert_restriction(to_unicode, &pres->andor->pres[i]))
 				return FALSE;	
 		break;
@@ -1787,7 +1785,7 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 		break;
 	case RES_COMMENT: {
 		auto rcom = pres->comment;
-		for (i = 0; i < rcom->count; ++i)
+		for (size_t i = 0; i < rcom->count; ++i)
 			if (!common_util_convert_tagged_propval(to_unicode, &rcom->ppropval[i]))
 				return FALSE;	
 		if (rcom->pres != nullptr)
@@ -2297,9 +2295,7 @@ static BOOL common_util_get_propname(
 BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	uint64_t message_id, BOOL b_submit)
 {
-	int i;
 	MAIL imail;
-	int tmp_len;
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_delete;
@@ -2378,7 +2374,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	double_list_init(&temp_list);
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
@@ -2425,7 +2421,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 					"to smtp address when sending message %llu", LLU(message_id));
 				return FALSE;	
 			}
-			tmp_len = strlen(username) + 1;
+			auto tmp_len = strlen(username) + 1;
 			pnode->pdata = common_util_alloc(tmp_len);
 			if (NULL == pnode->pdata) {
 				return FALSE;
@@ -2449,7 +2445,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 				}
 				if (!common_util_essdn_to_username(static_cast<char *>(pvalue), username))
 					goto CONVERT_ENTRYID;
-				tmp_len = strlen(username) + 1;
+				auto tmp_len = strlen(username) + 1;
 				pnode->pdata = common_util_alloc(tmp_len);
 				if (NULL == pnode->pdata) {
 					return FALSE;

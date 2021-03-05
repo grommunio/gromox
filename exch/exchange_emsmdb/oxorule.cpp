@@ -125,7 +125,6 @@ uint32_t rop_updatedeferredactionmessages(
 	const BINARY *pclient_entry_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	uint64_t *pmid;
 	uint8_t tmp_byte;
 	uint32_t table_id;
@@ -200,7 +199,7 @@ uint32_t rop_updatedeferredactionmessages(
 	propval_buff[1].pvalue = &tmp_byte;
 	tmp_byte = 1;
 	
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pmid = static_cast<uint64_t *>(common_util_get_propvals(
 		       tmp_set.pparray[i], PROP_TAG_MID));
 		if (NULL == pmid) {

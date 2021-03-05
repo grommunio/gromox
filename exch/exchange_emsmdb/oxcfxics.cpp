@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -27,7 +28,6 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	LOGON_OBJECT *plogon, uint64_t folder_id,
 	const char *username, BOOL b_fai)
 {
-	int i;
 	uint64_t *pmid;
 	uint32_t table_id;
 	uint32_t row_count;
@@ -71,7 +71,7 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	if (NULL == pmessage_ids) {
 		return NULL;
 	}
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pmid = static_cast<uint64_t *>(common_util_get_propvals(
 		       tmp_set.pparray[i], PROP_TAG_MID));
 		if (NULL == pmid) {
@@ -90,7 +90,6 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	LOGON_OBJECT *plogon, uint64_t folder_id,
 	BOOL b_fai, BOOL b_normal, BOOL b_sub)
 {
-	int i;
 	BOOL b_found;
 	BINARY *pbin;
 	uint16_t replid;
@@ -147,7 +146,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		return NULL;
 	}
 	pproplist = folder_content_get_proplist(pfldctnt);
-	for (i=0; i<tmp_propvals.count; i++) {
+	for (size_t i = 0; i < tmp_propvals.count; ++i) {
 		if (!tpropval_array_set_propval(pproplist,
 		    tmp_propvals.ppropval + i)) {
 			folder_content_free(pfldctnt);
@@ -229,7 +228,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		}
 		exmdb_client_unload_table(
 			logon_object_get_dir(plogon), table_id);
-		for (i=0; i<tmp_set.count; i++) {
+		for (size_t i = 0; i < tmp_set.count; ++i) {
 			pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
 			             tmp_set.pparray[i], PROP_TAG_FOLDERID));
 			if (NULL == pfolder_id) {
@@ -262,7 +261,6 @@ uint32_t rop_fasttransferdestconfigure(
 	void *pobject;
 	int object_type;
 	int root_element;
-	int64_t max_quota;
 	uint32_t total_mail;
 	uint64_t total_size;
 	LOGON_OBJECT *plogon;
@@ -330,12 +328,8 @@ uint32_t rop_fasttransferdestconfigure(
 		}
 		pvalue = common_util_get_propvals(&tmp_propvals,
 							PROP_TAG_PROHIBITSENDQUOTA);
-		if (NULL == pvalue) {
-			max_quota = -1;
-		} else {
-			max_quota = *(uint32_t*)pvalue;
-			max_quota *= 1024;
-		}
+		uint64_t max_quota = pvalue == nullptr ? ULLONG_MAX :
+		                     1024 * *static_cast<uint32_t *>(pvalue);
 		pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_MESSAGESIZEEXTENDED);
 		if (NULL == pvalue) {
@@ -343,9 +337,8 @@ uint32_t rop_fasttransferdestconfigure(
 		} else {
 			total_size = *(uint64_t*)pvalue;
 		}
-		if (max_quota > 0 && total_size > max_quota) {
+		if (total_size > max_quota)
 			return ecQuotaExceeded;
-		}
 		total_mail = 0;
 		pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_ASSOCIATEDCONTENTCOUNT);
@@ -541,7 +534,6 @@ uint32_t rop_fasttransfersourcecopymessages(
 	uint8_t send_options, void *plogmap, uint8_t logon_id,
 	uint32_t hin, uint32_t *phout)
 {
-	int i;
 	BOOL b_owner;
 	BOOL b_chginfo;
 	int object_type;
@@ -586,7 +578,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		}
 		if (0 == (PERMISSION_READANY & permission) &&
 			0 == (PERMISSION_FOLDEROWNER & permission)) {
-			for (i=0; i<pmessage_ids->count; i++) {
+			for (size_t i = 0; i < pmessage_ids->count; ++i) {
 				if (FALSE == exmdb_client_check_message_owner(
 					logon_object_get_dir(plogon), pmessage_ids->pll[i],
 					rpc_info.username, &b_owner)) {
@@ -1701,7 +1693,6 @@ uint32_t rop_syncimportdeletes(
 	uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_hard;
 	void *pvalue;
@@ -1781,7 +1772,7 @@ uint32_t rop_syncimportdeletes(
 			return ecMAPIOOM;
 		}
 	}
-	for (i=0; i<pbins->count; i++) {
+	for (size_t i = 0; i < pbins->count; ++i) {
 		if (22 != pbins->pbin[i].cb) {
 			return ecInvalidParam;
 		}

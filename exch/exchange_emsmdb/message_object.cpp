@@ -950,15 +950,13 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 
 BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset)
 {
-	int i, j;
-	
 	if (FALSE == exmdb_client_update_message_instance_rcpts(
 		logon_object_get_dir(pmessage->plogon),
 		pmessage->instance_id, pset)) {
 		return FALSE;	
 	}
-	for (i=0; i<pset->count; i++) {
-		for (j=0; j<pset->pparray[i]->count; j++) {
+	for (size_t i = 0; i < pset->count; ++i) {
+		for (size_t j = 0; j < pset->pparray[i]->count; ++j) {
 			switch (pset->pparray[i]->ppropval[j].proptag) {
 			case PROP_TAG_RESPONSIBILITY:
 			case PROP_TAG_ADDRESSTYPE:

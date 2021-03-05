@@ -289,7 +289,6 @@ uint32_t rop_queryrows(uint8_t flags,
 	uint8_t *pseek_pos, uint16_t *pcount, EXT_PUSH *pext,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	BOOL b_forward;
 	int object_type;
 	TARRAY_SET tmp_set;
@@ -327,6 +326,7 @@ uint32_t rop_queryrows(uint8_t flags,
 	if (0 == tmp_set.count) {
 		*pcount = 0;
 	} else {
+		size_t i;
 		for (i=0; i<tmp_set.count; i++) {
 			if (FALSE == common_util_propvals_to_row(tmp_set.pparray[i],
 				table_object_get_columns(ptable), &tmp_row)) {
@@ -757,7 +757,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	uint16_t *pcount, EXT_PUSH *pext, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	int i;
+	size_t i;
 	BOOL b_found;
 	int object_type;
 	int32_t position;
@@ -805,7 +805,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 		return ecError;
 	}
 	table_object_set_position(ptable, old_position);
-	for (i=0; i<tmp_set.count; i++) {
+	for (i = 0; i < tmp_set.count; ++i) {
 		if (FALSE == common_util_propvals_to_row(tmp_set.pparray[i],
 			table_object_get_columns(ptable), &tmp_row)) {
 			return ecMAPIOOM;
@@ -858,7 +858,7 @@ uint32_t rop_collapserow(uint64_t category_id,
 		return ecSuccess;
 	}
 	table_position = table_object_get_position(ptable);
-	if (table_position > position) {
+	if (table_position > static_cast<uint32_t>(position)) {
 		table_position -= *pcollapsed_count;
 		table_object_set_position(ptable, table_position);	
 	}

@@ -356,7 +356,6 @@ static int ftstream_parser_read_element(
 	FTSTREAM_PARSER *pstream, uint32_t *pmarker,
 	TAGGED_PROPVAL *ppropval)
 {
-	int i;
 	uint32_t count;
 	BOOL b_continue;
 	uint16_t propid;
@@ -590,7 +589,7 @@ static int ftstream_parser_read_element(
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_parser_read_uint16(pstream,
 				((SHORT_ARRAY*)ppropval->pvalue)->ps + i)) {
 				return FTSTREAM_PARSER_READ_FAIL;	
@@ -622,7 +621,7 @@ static int ftstream_parser_read_element(
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_parser_read_uint32(pstream,
 				((LONG_ARRAY*)ppropval->pvalue)->pl + i)) {
 				return FTSTREAM_PARSER_READ_FAIL;	
@@ -654,7 +653,7 @@ static int ftstream_parser_read_element(
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_parser_read_uint64(pstream,
 				((LONGLONG_ARRAY*)ppropval->pvalue)->pll + i)) {
 				return FTSTREAM_PARSER_READ_FAIL;	
@@ -683,7 +682,7 @@ static int ftstream_parser_read_element(
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			((STRING_ARRAY*)ppropval->pvalue)->ppstr[i] =
 				ftstream_parser_read_string(pstream, &b_continue);
 			if (NULL == ((STRING_ARRAY*)
@@ -727,7 +726,7 @@ static int ftstream_parser_read_element(
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			((STRING_ARRAY*)ppropval->pvalue)->ppstr[i] =
 				ftstream_parser_read_wstring(pstream, &b_continue);
 			if (NULL == ((STRING_ARRAY*)
@@ -773,7 +772,7 @@ static int ftstream_parser_read_element(
 				return FTSTREAM_PARSER_READ_FAIL;
 			}
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_parser_read_guid(pstream,
 				((GUID_ARRAY*)ppropval->pvalue)->pguid + i)) {
 				return FTSTREAM_PARSER_READ_FAIL;	
@@ -801,7 +800,7 @@ static int ftstream_parser_read_element(
 			if (ba->pbin == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
 		}
-		for (i=0; i<count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			if (!ftstream_parser_read_binary(pstream,
 			    ba->pbin + i, &b_continue)) {
 				if (TRUE == b_continue) {

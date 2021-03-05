@@ -335,9 +335,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecError;
 	}
 	mail_length = *(uint32_t*)pvalue;
-	if (max_length > 0 && mail_length > max_length) {
+	if (max_length > 0 && mail_length > static_cast<uint32_t>(max_length))
 		return EC_EXCEEDED_SIZE;
-	}
 	pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_MESSAGEFLAGS);
 	if (NULL == pvalue) {

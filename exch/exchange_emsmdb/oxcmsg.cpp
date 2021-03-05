@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdint>
 #include <gromox/defs.h>
 #include "rops.h"
@@ -25,7 +26,6 @@ uint32_t rop_openmessage(uint16_t cpid,
 	uint8_t *prow_count, OPENRECIPIENT_ROW **pprecipient_row,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int i;
 	BOOL b_del;
 	int rop_num;
 	BOOL b_exist;
@@ -207,7 +207,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 			return ecMAPIOOM;
 		}
 	}
-	for (i=0; i<rcpts.count; i++) {
+	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (FALSE == common_util_propvals_to_openrecipient(
 			cpid, rcpts.pparray[i], pcolumns,
 			(*pprecipient_row) + i)) {
@@ -232,7 +232,6 @@ uint32_t rop_createmessage(uint16_t cpid,
 	BOOL b_fai;
 	void *pvalue;
 	int object_type;
-	int64_t max_quota;
 	EMSMDB_INFO *pinfo;
 	uint32_t total_mail;
 	uint64_t total_size;
@@ -297,12 +296,8 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_PROHIBITSENDQUOTA);
-	if (NULL == pvalue) {
-		max_quota = -1;
-	} else {
-		max_quota = *(uint32_t*)pvalue;
-		max_quota *= 1024;
-	}
+	uint64_t max_quota = pvalue == nullptr ? ULLONG_MAX :
+	                     1024 * *static_cast<uint32_t *>(pvalue);
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_MESSAGESIZEEXTENDED);
 	if (NULL == pvalue) {
@@ -310,9 +305,8 @@ uint32_t rop_createmessage(uint16_t cpid,
 	} else {
 		total_size = *(uint64_t*)pvalue;
 	}
-	if (max_quota > 0 && total_size > max_quota) {
+	if (total_size > max_quota)
 		return ecQuotaExceeded;
-	}
 	total_mail = 0;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_ASSOCIATEDCONTENTCOUNT);
@@ -520,7 +514,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	uint16_t reserved, uint8_t *pcount, EXT_PUSH *pext,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
+	size_t i;
 	int object_type;
 	TARRAY_SET tmp_set;
 	uint32_t last_offset;
@@ -541,7 +535,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	if (0 == tmp_set.count) {
 		return ecNotFound;
 	}
-	for (i=0; i<tmp_set.count; i++) {
+	for (i = 0; i < tmp_set.count; ++i) {
 		if (FALSE == common_util_propvals_to_readrecipient(
 			message_object_get_cpid(pmessage), tmp_set.pparray[i],
 			message_object_get_rcpt_columns(pmessage), &tmp_row)) {
@@ -568,7 +562,6 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	OPENRECIPIENT_ROW **pprecipient_row, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	void *pvalue;
 	int object_type;
 	TARRAY_SET rcpts;
@@ -635,7 +628,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	if (NULL == *pprecipient_row) {
 		return ecMAPIOOM;
 	}
-	for (i=0; i<rcpts.count; i++) {
+	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (FALSE == common_util_propvals_to_openrecipient(
 			message_object_get_cpid(pmessage), rcpts.pparray[i],
 			pcolumns, *pprecipient_row + i)) {
@@ -870,7 +863,6 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 	uint8_t *ppartial_completion, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	BOOL b_partial;
 	int object_type;
 	LOGON_OBJECT *plogon;
@@ -887,8 +879,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 		return ecNotSupported;
 	}
 	b_partial = FALSE;
-	
-	for (i=0; i<pmessage_ids->count; i++) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (FALSE == oxcmsg_setreadflag(plogon,
 			pmessage_ids->pll[i], read_flags)) {
 			b_partial = TRUE;	
@@ -1113,7 +1104,6 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	uint8_t *prow_count, OPENRECIPIENT_ROW **pprecipient_row,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int i;
 	void *pvalue;
 	int object_type;
 	TARRAY_SET rcpts;
@@ -1271,7 +1261,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		message_object_free(pmessage);
 		return ecMAPIOOM;
 	}
-	for (i=0; i<rcpts.count; i++) {
+	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (FALSE == common_util_propvals_to_openrecipient(
 			message_object_get_cpid(pmessage), rcpts.pparray[i],
 			pcolumns, *pprecipient_row + i)) {

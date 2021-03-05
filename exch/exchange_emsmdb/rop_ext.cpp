@@ -1153,7 +1153,6 @@ static int rop_ext_pull_abortsubmit_request(
 static int rop_ext_push_getaddresstypes_response(
 	EXT_PUSH *pext, const GETADDRESSTYPES_RESPONSE *r)
 {
-	int i;
 	uint16_t size;
 	uint32_t offset;
 	uint32_t offset1;
@@ -1161,9 +1160,8 @@ static int rop_ext_push_getaddresstypes_response(
 	TRY(ext_buffer_push_uint16(pext, r->address_types.count));
 	offset = pext->offset;
 	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
-	for (i=0; i<r->address_types.count; i++) {
+	for (size_t i = 0; i < r->address_types.count; ++i)
 		TRY(ext_buffer_push_string(pext, r->address_types.ppstr[i]));
-	}
 	size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
 	pext->offset = offset;
@@ -1835,7 +1833,6 @@ static int rop_ext_pull_syncuploadstatestreamcontinue_request(
 static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 	EXT_PULL *pext, SETLOCALREPLICAMIDSETDELETED_REQUEST *r)
 {
-	int i;
 	uint32_t offset;
 	uint16_t data_size;
 	
@@ -1849,9 +1846,8 @@ static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 	if (NULL == r->prange) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_long_term_id_rang(pext, r->prange + i));
-	}
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
 	}
