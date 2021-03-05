@@ -1190,11 +1190,10 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	
 	temp_len = gx_snprintf(prefix_string, GX_ARRAY_SIZE(prefix_string), "/o=%s/ou=Exchange "
 			"Administrative Group (FYDIBOHF23SPDLT)", g_org_name);
-	if (0 != strncasecmp(pdn, prefix_string, temp_len)) {
+	if (temp_len < 0 || strncasecmp(pdn, prefix_string, temp_len) != 0)
 		return NULL;
-	}
 	if (strncasecmp(pdn + temp_len, "/cn=Configuration/cn=Servers/cn=", 32) == 0 &&
-	    strlen(pdn) >= temp_len + 60) {
+	    strlen(pdn) >= static_cast<size_t>(temp_len) + 60) {
 		/* Reason for 60: see DN format in ab_tree_get_server_dn */
 		id = decode_hex_int(pdn + temp_len + 60);
 		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, id);
@@ -1585,7 +1584,7 @@ int ab_tree_get_guid_base_id(GUID guid)
 	return base_id;
 }
 
-int ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
+ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
     unsigned int proptag, PROPERTY_VALUE *prop)
 {
 	auto node_type = ab_tree_get_node_type(node);

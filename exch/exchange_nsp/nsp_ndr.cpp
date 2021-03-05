@@ -34,7 +34,7 @@ static int nsp_ndr_to_utf16(int ndr_flag, const char *src, char *dst, size_t len
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
 	} else {
@@ -57,7 +57,7 @@ static BOOL nsp_ndr_to_utf8(int ndr_flag, const char *src,
 	pin = (char*)src;
 	pout = dst;
 	memset(dst, 0, len);
-	if (-1 == iconv(conv_id, &pin, &src_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
 	} else {
@@ -909,7 +909,8 @@ static int nsp_ndr_push_filetime_array(NDR_PUSH *pndr, int flag, const FILETIME_
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PROP_VAL_UNION *r)
+static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag,
+    uint32_t *ptype, PROP_VAL_UNION *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -918,7 +919,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_union_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, reinterpret_cast<uint32_t *>(ptype)));
+		TRY(ndr_pull_uint32(pndr, ptype));
 		TRY(ndr_pull_union_align(pndr, 5));
 		switch (*ptype) {
 		case PT_SHORT:
@@ -1222,9 +1223,8 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 
 static int nsp_ndr_pull_property_value(NDR_PULL *pndr, int flag, PROPERTY_VALUE *r)
 {
-	int type;
-	
 	if (flag & FLAG_HEADER) {
+		uint32_t type;
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(ndr_pull_uint32(pndr, &r->proptag));
 		TRY(ndr_pull_uint32(pndr, &r->reserved));
@@ -1235,7 +1235,7 @@ static int nsp_ndr_pull_property_value(NDR_PULL *pndr, int flag, PROPERTY_VALUE 
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		type = PROP_TYPE(r->proptag);
+		uint32_t type = PROP_TYPE(r->proptag);
 		TRY(nsp_ndr_pull_prop_val_union(pndr, FLAG_CONTENT, &type, &r->value));
 	}
 	return NDR_ERR_SUCCESS;
@@ -1676,11 +1676,12 @@ static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, int flag, const RESTRICT
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag, int *ptype, RESTRICTION_UNION *r)
+static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag,
+    uint32_t *ptype, RESTRICTION_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_union_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, reinterpret_cast<uint32_t *>(ptype)));
+		TRY(ndr_pull_uint32(pndr, ptype));
 		TRY(ndr_pull_union_align(pndr, 5));
 		switch (*ptype) {
 		case RES_AND:
@@ -1833,9 +1834,8 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag, int type, co
 
 static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, RESTRICTION *r)
 {
-	int type;
-	
 	if (flag & FLAG_HEADER) {
+		uint32_t type;
 		TRY(ndr_pull_align(pndr, 4));
 		TRY(ndr_pull_uint32(pndr, &r->res_type));
 		TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_HEADER, &type, &r->res));
@@ -1846,7 +1846,7 @@ static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, RESTRICTION *r)
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		type = r->res_type;
+		uint32_t type = r->res_type;
 		TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_CONTENT, &type, &r->res));
 	}
 	return NDR_ERR_SUCCESS;

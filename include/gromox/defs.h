@@ -40,7 +40,7 @@ typedef enum {
 	GXERR_OVER_QUOTA,
 } gxerr_t;
 
-enum {
+enum ec_error_t {
 	ecSuccess = 0,
 	ecUnknownUser = 0x000003EB,
 	ecServerOOM = 0x000003F0,

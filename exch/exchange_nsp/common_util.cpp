@@ -66,7 +66,7 @@ int common_util_from_utf8(uint32_t codepage,
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
 	} else {
@@ -94,7 +94,7 @@ int common_util_to_utf8(uint32_t codepage,
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
 	} else {
@@ -266,10 +266,9 @@ PROPROW_SET* common_util_proprowset_init()
 
 PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset)
 {
-	int count;
 	PROPERTY_ROW *prows;
 	
-	count = (pset->crows/100 + 1) * 100;
+	size_t count = (pset->crows / 100 + 1) * 100;
 	if (pset->crows + 1 >= count) {
 		count += 100;
 		prows = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT, count);
@@ -301,10 +300,9 @@ PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow)
 
 PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
 {
-	int count;
 	PROPERTY_VALUE *pprops;
 	
-	count = (prow->cvalues/40 + 1) * 40;
+	size_t count = (prow->cvalues / 40 + 1) * 40;
 	if (prow->cvalues + 1 >= count) {
 		count += 40;
 		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
@@ -335,10 +333,9 @@ PROPTAG_ARRAY* common_util_proptagarray_init()
 
 uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags)
 {
-	int count;
 	uint32_t *pproptag;
 	
-	count = (pproptags->cvalues/100 + 1) * 100;
+	size_t count = (pproptags->cvalues / 100 + 1) * 100;
 	if (pproptags->cvalues + 1 >= count) {
 		count += 100;
 		pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
