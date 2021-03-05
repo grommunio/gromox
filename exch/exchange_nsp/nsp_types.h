@@ -3,11 +3,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/rpc_types.hpp>
 #include <gromox/proptags.hpp>
-
-#define PROPVAL_TYPE_EMBEDDEDTABLE			0x000d
-#define PROPVAL_TYPE_FLATUID				0x0048
-#define PROPVAL_TYPE_FLATUID_ARRAY			0x1048
-
 #define MOD_FLAG_DELETE						0x000000001
 
 #define MAPI_E_UNBINDSUCCESS 0x000000001

@@ -9,7 +9,7 @@
  * (i.e. the operator should have returned unsigned all the time)
  */
 #define PROP_TAG(type, tag) ((((unsigned int)tag) << 16) | (type))
-enum {
+enum { /* MS-OAUT */
 	PT_UNSPECIFIED = 0x0000, /* VT_EMPTY */
 	PT_NULL = 0x0001, /* VT_NULL */
 	PT_SHORT = 0x0002, /* VT_I2, PT_I2 */
@@ -20,7 +20,7 @@ enum {
 	PT_APPTIME = 0x0007, /* VT_DATE */
 	PT_ERROR = 0x000A, /* VT_ERROR */
 	PT_BOOLEAN = 0x000B, /* VT_BOOL */
-	PT_OBJECT = 0x000D, /* VT_OBJECT */
+	PT_OBJECT = 0x000D, /* VT_UNKNOWN */
 	PT_I8 = 0x0014, /* VT_I8 */
 	PT_STRING8 = 0x001E, /* VT_LPSTR */
 	PT_UNICODE = 0x001F, /* VT_LPWSTR */

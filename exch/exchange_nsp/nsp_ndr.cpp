@@ -925,7 +925,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			TRY(ndr_pull_uint16(pndr, &r->s));
 			break;
 		case PT_LONG:
-		case PROPVAL_TYPE_EMBEDDEDTABLE:
+		case PT_OBJECT:
 			TRY(ndr_pull_uint32(pndr, &r->l));
 			break;
 		case PT_BOOLEAN:
@@ -943,7 +943,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_BINARY:
 			TRY(nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->bin));
 			break;
-		case PROPVAL_TYPE_FLATUID:
+		case PT_CLSID:
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
 				r->pguid = (FLATUID*)(long)ptr;
@@ -969,7 +969,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_MV_BINARY:
 			TRY(nsp_ndr_pull_binary_array(pndr, FLAG_HEADER, &r->bin_array));
 			break;
-		case PROPVAL_TYPE_FLATUID_ARRAY:
+		case PT_MV_CLSID:
 			TRY(nsp_ndr_pull_flatuid_array(pndr, FLAG_HEADER, &r->guid_array));
 			break;
 		case PT_MV_UNICODE:
@@ -991,8 +991,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_SHORT:
 			break;
 		case PT_LONG:
-		case PROPVAL_TYPE_EMBEDDEDTABLE:
-			break;
+		case PT_OBJECT:
 		case PT_BOOLEAN:
 			break;
 		case PT_STRING8:
@@ -1040,7 +1039,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_BINARY:
 			TRY(nsp_ndr_pull_binary(pndr, FLAG_CONTENT, &r->bin));
 			break;
-		case PROPVAL_TYPE_FLATUID:
+		case PT_CLSID:
 			if (NULL != r->pguid) {
 				TRY(nsp_ndr_pull_flatuid(pndr, r->pguid));
 			}
@@ -1061,7 +1060,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_MV_BINARY:
 			TRY(nsp_ndr_pull_binary_array(pndr, FLAG_CONTENT, &r->bin_array));
 			break;
-		case PROPVAL_TYPE_FLATUID_ARRAY:
+		case PT_MV_CLSID:
 			TRY(nsp_ndr_pull_flatuid_array(pndr, FLAG_CONTENT, &r->guid_array));
 			break;
 		case PT_MV_UNICODE:
@@ -1092,7 +1091,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 			TRY(ndr_push_uint16(pndr, r->s));
 			break;
 		case PT_LONG:
-		case PROPVAL_TYPE_EMBEDDEDTABLE:
+		case PT_OBJECT:
 			TRY(ndr_push_uint32(pndr, r->l));
 			break;
 		case PT_BOOLEAN:
@@ -1105,7 +1104,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_BINARY:
 			TRY(nsp_ndr_push_binary(pndr, FLAG_HEADER, &r->bin));
 			break;
-		case PROPVAL_TYPE_FLATUID:
+		case PT_CLSID:
 			TRY(ndr_push_unique_ptr(pndr, r->pguid));
 			break;
 		case PT_SYSTIME:
@@ -1126,7 +1125,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_MV_BINARY:
 			TRY(nsp_ndr_push_binary_array(pndr, FLAG_HEADER, &r->bin_array));
 			break;
-		case PROPVAL_TYPE_FLATUID_ARRAY:
+		case PT_MV_CLSID:
 			TRY(nsp_ndr_push_flatuid_array(pndr, FLAG_HEADER, &r->guid_array));
 			break;
 		case PT_MV_UNICODE:
@@ -1148,8 +1147,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_SHORT:
 			break;
 		case PT_LONG:
-		case PROPVAL_TYPE_EMBEDDEDTABLE:
-			break;
+		case PT_OBJECT:
 		case PT_BOOLEAN:
 			break;
 		case PT_STRING8:
@@ -1183,7 +1181,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_BINARY:
 			TRY(nsp_ndr_push_binary(pndr, FLAG_CONTENT, &r->bin));
 			break;
-		case PROPVAL_TYPE_FLATUID:
+		case PT_CLSID:
 			if (NULL != r->pguid) {
 				TRY(nsp_ndr_push_flatuid(pndr, r->pguid));
 			}
@@ -1204,7 +1202,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_MV_BINARY:
 			TRY(nsp_ndr_push_binary_array(pndr, FLAG_CONTENT, &r->bin_array));
 			break;
-		case PROPVAL_TYPE_FLATUID_ARRAY:
+		case PT_MV_CLSID:
 			TRY(nsp_ndr_push_flatuid_array(pndr, FLAG_CONTENT, &r->guid_array));
 			break;
 		case PT_MV_UNICODE:
