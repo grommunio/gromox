@@ -8,14 +8,13 @@
 struct LIST_FILE {
 	~LIST_FILE();
 	void *get_list() { return pfile; }
-	int get_size() { return item_num; }
+	size_t get_size() const { return item_num; }
 
 	std::unique_ptr<FILE, gromox::file_deleter> file_ptr;
     char        format[32];
     int         type_size[32];
     int         type_num;
-    int         item_size;
-    int         item_num;
+	size_t item_size = 0, item_num = 0;
     void*       pfile;
 };
 
