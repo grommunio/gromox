@@ -91,7 +91,6 @@ system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
 
-# LIBRARY
 BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
@@ -115,7 +114,6 @@ libgromox_rpc_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/crc32.cpp lib/rpc/hmacmd5.cpp lib/rpc/ndr.cpp lib/rpc/ntlmdes.cpp lib/rpc/ntlmssp.cpp
 libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la
 
-# MTA_SYSTEM
 delivery_SOURCES = exch/http/service.cpp lib/console_server.cpp mda/delivery_app/console_cmd_handler.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 smtp_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
@@ -141,7 +139,6 @@ libgxs_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_domain_list_la_DEPENDENCIES = ${default_sym}
 
-# MRA_SYSTEM
 pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/pop3/console_cmd_handler.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp mra/pop3/units_allocator.cpp
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/imap/console_cmd_handler.cpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/listener.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
@@ -159,7 +156,6 @@ libgxs_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_midb_agent_la_DEPENDENCIES = ${default_sym}
 
-# exch
 http_SOURCES = exch/http/blocks_allocator.cpp exch/http/console_cmd_handler.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp lib/console_server.cpp
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la
 midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/console_cmd_handler.cpp exch/midb/exmdb_client.cpp exch/midb/exmdb_ext.cpp exch/midb/exmdb_rpc.cpp exch/midb/listener.cpp exch/midb/mail_engine.cpp exch/midb/main.cpp exch/midb/system_services.cpp lib/console_server.cpp
@@ -277,7 +273,6 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
-# tests
 noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/icalparse tests/zendfake
 tests_abktconv_SOURCES = tests/abktconv.cpp
 tests_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
@@ -287,7 +282,6 @@ tests_icalparse_SOURCES = tests/icalparse.cpp
 tests_icalparse_LDADD = libgromox_common.la libgromox_email.la libgromox_mapi.la
 tests_zendfake_LDADD = libphp_mapi.la
 
-# doc
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx doc/delivery.8gx \
@@ -343,3 +337,12 @@ install-data-local:
 %.service: ${top_builddir}/config.status
 .tps.service:
 	${AM_V_GEN}${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
+
+.PHONY: tarball
+tarball:
+	tmpdir=$$(mktemp -dtu); \
+	mkdir $$tmpdir && \
+	pushd ${top_srcdir} && git archive --prefix=${PACKAGE_NAME}-${PACKAGE_VERSION}/ HEAD | tar -C $$tmpdir -x && popd; \
+	pushd $$tmpdir/${PACKAGE_NAME}-${PACKAGE_VERSION} && autoreconf -fi && popd; \
+	tar --use=zstd -C $$tmpdir -cf ${PACKAGE_NAME}-${PACKAGE_VERSION}.tar.zst --owner=root --group=root ${PACKAGE_NAME}-${PACKAGE_VERSION}/; \
+	rm -Rf $$tmpdir

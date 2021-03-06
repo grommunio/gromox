@@ -1,3 +1,18 @@
+0.17 (2021-03-06)
+=================
+Enhancements:
+* http: Raise max_router_connections & max_rpc_stub_threads limits
+  to cope with reconnect storms from midb and zcore.
+* doc: manpage for autodiscover
+Changes:
+* all daemons: Disabled the ip6_container and ip6_filter plugins
+  for now; the default settings block too many connections.
+Fixes:
+* http: fix crash when user_default_lang is unset
+* imap: advertise STARTTLS when indeed supported
+* all daemons: avoid rejecting IPv6 connections from long addresses
+
+
 0.16
 ====
 * Configuration that lived in ${datadir} was moved to /etc/gromox:
