@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -422,7 +423,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	int32_t original_position;
+	uint32_t original_position;
 	
 	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
 	              logon_id, hin, &object_type));
@@ -441,43 +442,45 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 			return ecInvalidParam;
 		}
 		original_position = 0;
-		if (offset > table_object_get_total(ptable)) {
-			*phas_soughtless = 1;
-		} else {
-			*phas_soughtless = 0;
-		}
+		*phas_soughtless = static_cast<uint32_t>(offset) > table_object_get_total(ptable);
 		table_object_set_position(ptable, offset);
 		break;
-	case SEEK_POS_END:
+	case SEEK_POS_END: {
 		if (offset > 0) {
 			return ecInvalidParam;
 		}
 		original_position = table_object_get_total(ptable);
-		if (table_object_get_total(ptable) + offset < 0) {
+		/* underflow safety check for s32t */
+		uint32_t dwoff = offset != INT32_MIN ? -offset :
+		                 static_cast<uint32_t>(INT32_MIN) + 1;
+		*phas_soughtless = dwoff > original_position;
+		table_object_set_position(ptable, *phas_soughtless ? 0 : original_position - dwoff);
+		break;
+	}
+	case SEEK_POS_CURRENT: {
+		original_position = table_object_get_position(ptable);
+		if (offset < 0) {
+			/* underflow safety check for s32t */
+			uint32_t dwoff = offset != INT32_MIN ? -offset :
+			                 static_cast<uint32_t>(INT32_MIN) + 1;
+			*phas_soughtless = dwoff > original_position;
+			table_object_set_position(ptable, *phas_soughtless ? 0 : original_position - dwoff);
+			break;
+		}
+		auto upoff = static_cast<uint32_t>(offset);
+		if (original_position > static_cast<uint32_t>(UINT32_MAX) - upoff) {
+			/* overflow safety check for u32t+u32t */
 			*phas_soughtless = 1;
-			table_object_set_position(ptable, 0);
+			table_object_set_position(ptable, UINT32_MAX);
+		} else if (original_position + upoff > table_object_get_total(ptable)) {
+			*phas_soughtless = 1;
+			table_object_set_position(ptable, original_position + upoff);
 		} else {
 			*phas_soughtless = 0;
-			table_object_set_position(ptable,
-				table_object_get_total(ptable) + offset);
+			table_object_set_position(ptable, original_position + upoff);
 		}
 		break;
-	case SEEK_POS_CURRENT:
-		original_position = table_object_get_position(ptable);
-		if (original_position + offset < 0) {
-			*phas_soughtless = 1;
-			table_object_set_position(ptable, 0);
-		} else {
-			if (original_position + offset >
-				table_object_get_total(ptable)) {
-				*phas_soughtless = 1;
-			} else {
-				*phas_soughtless = 0;
-			}
-			table_object_set_position(ptable,
-				original_position + offset);
-		}
-		break;
+	}
 	default:
 		return ecInvalidParam;
 	}
