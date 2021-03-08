@@ -21,10 +21,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 BOOL stream_object_check(STREAM_OBJECT *pstream);
 
 uint32_t stream_object_get_max_length(STREAM_OBJECT *pstream);
-
-uint16_t stream_object_read(STREAM_OBJECT *pstream,
-	void *pbuff, uint16_t buf_len);
-
+extern uint32_t stream_object_read(STREAM_OBJECT *pstream, void *pbuff, uint32_t buf_len);
 uint16_t stream_object_write(STREAM_OBJECT *pstream,
 	void *pbuff, uint16_t buf_len);
 
@@ -40,10 +37,7 @@ uint32_t stream_object_get_length(STREAM_OBJECT *pstream);
 
 BOOL stream_object_set_length(
 	STREAM_OBJECT *pstream, uint32_t length);
-
-BOOL stream_object_seek(STREAM_OBJECT *pstream,
-	uint8_t opt, int32_t offset);
-
+extern BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset);
 uint32_t stream_object_get_seek_position(STREAM_OBJECT *pstream);
 
 BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,

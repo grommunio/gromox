@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -1223,6 +1224,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	}
 	if (0xBABE == byte_count) {
 		buffer_size = max_byte_count;
+		// if (max_byte_count > static_cast<uint32_t>(INT32_MAX) + 1) return ecRpcFormat;
 	} else {
 		buffer_size = byte_count;
 	}
@@ -1330,9 +1332,9 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 {
 	int object_type;
 	
-	if (stream_size > 0x80000000) {
+	if (stream_size > static_cast<uint64_t>(INT32_MAX) + 1)
+		/* That weird +1 is specified in MS-OXCPRPT §2.2.19 and §2.2.20 */
 		return ecInvalidParam;
-	}
 	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
@@ -1364,9 +1366,10 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 	default:
 		return ecInvalidParam;
 	}
-	if (offset > 0x7FFFFFFF || offset < -0x7FFFFFFF) {
+	if (offset < INT32_MIN)
 		return StreamSeekError;
-	}
+	if (offset > 0 && static_cast<uint64_t>(offset) > static_cast<uint64_t>(INT32_MAX) + 1)
+		return StreamSeekError;
 	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {

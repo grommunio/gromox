@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <gromox/util.hpp>
 #include <gromox/mapidefs.h>
@@ -163,19 +165,12 @@ uint32_t stream_object_get_max_length(STREAM_OBJECT *pstream)
 	return pstream->max_length;
 }
 
-uint16_t stream_object_read(STREAM_OBJECT *pstream,
-	void *pbuff, uint16_t buf_len)
+uint32_t stream_object_read(STREAM_OBJECT *pstream, void *pbuff, uint32_t buf_len)
 {
-	uint16_t length;
-	
 	if (pstream->content_bin.cb <= pstream->seek_ptr) {
 		return 0;
 	}
-	if (pstream->seek_ptr + buf_len > pstream->content_bin.cb) {
-		length = pstream->content_bin.cb - pstream->seek_ptr;
-	} else {
-		length = buf_len;
-	}
+	auto length = std::min(buf_len, pstream->content_bin.cb - pstream->seek_ptr);
 	memcpy(pbuff, pstream->content_bin.pb + pstream->seek_ptr, length);
 	pstream->seek_ptr += length;
 	return length;
@@ -191,6 +186,9 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 		pstream->seek_ptr >= pstream->content_bin.cb) {
 		return 0;
 	}
+	if (pstream->seek_ptr > static_cast<uint32_t>(UINT32_MAX) - buf_len)
+		/* overflow safety check for u32t+u32t (seekp+buflen>UINT32_MAX) */
+		return 0;
 	if (pstream->seek_ptr + buf_len > pstream->content_bin.cb) {
 		if (FALSE == stream_object_set_length(pstream,
 			pstream->seek_ptr + buf_len)) {
@@ -284,8 +282,7 @@ BOOL stream_object_set_length(
 	return TRUE;
 }
 
-BOOL stream_object_seek(STREAM_OBJECT *pstream,
-	uint8_t opt, int32_t offset)
+BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
 {	
 	switch (opt) {
 	case SEEK_POS_BEGIN:
@@ -293,7 +290,7 @@ BOOL stream_object_seek(STREAM_OBJECT *pstream,
 			pstream->seek_ptr = 0;
 			return TRUE;
 		}
-		if (offset > pstream->content_bin.cb) {
+		if (static_cast<uint64_t>(offset) > pstream->content_bin.cb) {
 			if (FALSE == stream_object_set_length(
 				pstream, offset)) {
 				return FALSE;
@@ -301,36 +298,54 @@ BOOL stream_object_seek(STREAM_OBJECT *pstream,
 		}
 		pstream->seek_ptr = offset;
 		return TRUE; 
-	case SEEK_POS_CURRENT:
+	case SEEK_POS_CURRENT: {
 		if (offset < 0) {
-			if (pstream->seek_ptr + offset < 0) {
+			/* underflow safety check for s64t */
+			uint64_t dwoff = offset != INT64_MIN ? -offset :
+			                 static_cast<uint64_t>(INT64_MIN);
+			if (dwoff > pstream->seek_ptr) {
 				pstream->seek_ptr = 0;
 				return TRUE;
 			}
-			pstream->seek_ptr += offset;
+			pstream->seek_ptr -= dwoff;
 			return TRUE;
 		}
-		if (offset + pstream->seek_ptr >
-			pstream->content_bin.cb) {
+		auto upoff = static_cast<uint64_t>(offset);
+		if (pstream->seek_ptr > static_cast<uint64_t>(UINT64_MAX) - upoff)
+			/* overflow safety check for u64t+u64t */
+			return false;
+		if (pstream->seek_ptr + upoff > pstream->content_bin.cb) {
 			if (FALSE == stream_object_set_length(
 				pstream, pstream->seek_ptr + offset)) {
 				return FALSE;
 			}
 		}
-		pstream->seek_ptr += offset;
+		pstream->seek_ptr += upoff;
 		return TRUE;
-	case SEEK_POS_END:
-		if (offset > 0) {
-			if (FALSE == stream_object_set_length(
-				pstream, pstream->content_bin.cb + offset)) {
-				return FALSE;
-			}
+	}
+	case SEEK_POS_END: {
+		if (offset <= 0) {
+			/* underflow safety check for s64t */
+			uint64_t dwoff = offset != INT64_MIN ? -offset :
+			                 static_cast<uint64_t>(INT64_MIN);
+			pstream->seek_ptr = dwoff > pstream->seek_ptr ? 0 :
+			                    pstream->content_bin.cb - dwoff;
+			return TRUE;
+		}
+		auto upoff = static_cast<uint64_t>(offset);
+		if (pstream->content_bin.cb > UINT64_MAX - upoff) {
+			/* overflow safety check for u64t+u64t (cb+upoff>UINT64_MAX) */
+			/* don't bother trying to call set_length(pstream,UINT64_MAX), it'll never complete */
+			return false;
+		} else if (pstream->content_bin.cb + upoff > static_cast<uint64_t>(INT32_MAX) + 1) {
+			/* OXCPRPT leaves this unspecified */
+			return false;
+		} else if (!stream_object_set_length(pstream, pstream->content_bin.cb + offset)) {
+			return FALSE;
 		}
 		pstream->seek_ptr = pstream->content_bin.cb + offset;
-		if (pstream->seek_ptr < 0) {
-			pstream->seek_ptr = 0;
-		}
 		return TRUE;
+	}
 	}
 	return FALSE;
 }
