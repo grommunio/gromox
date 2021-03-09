@@ -726,9 +726,9 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
-	int i, j;
 	int depth;
-	int sql_len, tag_count = 0, multi_index = 0;
+	int sql_len, multi_index = 0;
+	size_t tag_count = 0;
 	void *pvalue;
 	uint16_t type;
 	BOOL b_search;
@@ -887,7 +887,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		sql_len = sprintf(sql_string, "CREATE"
 			" TABLE stbl (message_id INTEGER");
 		tag_count = 0;
-		for (i=0; i<psorts->count; i++) {
+		for (size_t i = 0; i < psorts->count; ++i) {
 			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (TABLE_SORT_MAXIMUM_CATEGORY ==
 				psorts->psort[i].table_sort ||
@@ -898,14 +898,13 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			tmp_proptags[tag_count] = tmp_proptag;
 			/* check if proptag is already in the field list */
 			if (i >= psorts->ccategories) {
-				for (j=tag_count-1; j>=0; j--) {
+				size_t j;
+				for (j = 0; j < tag_count; ++j)
 					if (tmp_proptags[j] == tmp_proptag) {
 						break;
 					}
-				}
-				if (j >= 0) {
+				if (j < tag_count)
 					continue;
-				}
 			}
 			tag_count ++;
 			type = psorts->psort[i].type;
@@ -967,10 +966,11 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			sql_string, NULL, NULL, NULL)) {
 			goto LOAD_CONTENT_FAIL;
 		}
-		for (i=0; i<tag_count; i++) {
+		for (size_t i = 0; i < tag_count; ++i) {
 			tmp_proptag = tmp_proptags[i];
-			sprintf(sql_string, "CREATE INDEX stbl_%d"
-					" ON stbl (v%x)", i, tmp_proptag);
+			snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			         "CREATE INDEX stbl_%zu ON stbl (v%x)",
+			         i, tmp_proptag);
 			if (SQLITE_OK != sqlite3_exec(psqlite,
 				sql_string, NULL, NULL, NULL)) {
 				goto LOAD_CONTENT_FAIL;
@@ -988,10 +988,9 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			goto LOAD_CONTENT_FAIL;
 		}
 		sql_len = sprintf(sql_string, "INSERT INTO stbl VALUES (?");
-		for (i=0; i<tag_count; i++) {
+		for (size_t i = 0; i < tag_count; ++i)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
-		}
 		if (psorts->ccategories > 0) {
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
@@ -1141,7 +1140,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		}
 		sqlite3_bind_int64(pstmt1, 1, mid_val);
 		if (NULL != psorts) {
-			for (i=0; i<tag_count; i++) {
+			for (size_t i = 0; i < tag_count; ++i) {
 				tmp_proptag = tmp_proptags[i];
 				if (tmp_proptag == ptnode->instance_tag) {
 					continue;
@@ -1195,7 +1194,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					auto sa = static_cast<SHORT_ARRAY *>(pvalue);
 					if (sa->count == 0)
 						goto BIND_NULL_INSTANCE;
-					for (i = 0; i < sa->count; ++i) {
+					for (size_t i = 0; i < sa->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_SHORT, &sa->ps[i]))
 							goto LOAD_CONTENT_FAIL;
@@ -1212,7 +1211,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					auto la = static_cast<LONG_ARRAY *>(pvalue);
 					if (la->count == 0)
 						goto BIND_NULL_INSTANCE;
-					for (i = 0; i < la->count; ++i) {
+					for (size_t i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_LONG, &la->pl[i]))
 							goto LOAD_CONTENT_FAIL;
@@ -1229,7 +1228,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					auto la = static_cast<LONGLONG_ARRAY *>(pvalue);
 					if (la->count == 0)
 						goto BIND_NULL_INSTANCE;
-					for (i = 0; i < la->count; ++i) {
+					for (size_t i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_I8, &la->pll[i]))
 							goto LOAD_CONTENT_FAIL;
@@ -1247,7 +1246,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					auto sa = static_cast<STRING_ARRAY *>(pvalue);
 					if (sa->count == 0)
 						goto BIND_NULL_INSTANCE;
-					for (i = 0; i < sa->count; ++i) {
+					for (size_t i = 0; i < sa->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_STRING8, &sa->ppstr[i]))
 							goto LOAD_CONTENT_FAIL;
@@ -1264,7 +1263,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					auto ga = static_cast<GUID_ARRAY *>(pvalue);
 					if (ga->count == 0)
 						goto BIND_NULL_INSTANCE;
-					for (i = 0; i < ga->count; ++i) {
+					for (size_t i = 0; i < ga->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_CLSID, &ga->pguid[i]))
 							goto LOAD_CONTENT_FAIL;
@@ -1281,7 +1280,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					auto ba = static_cast<BINARY_ARRAY *>(pvalue);
 					if (ba->count == 0)
 						goto BIND_NULL_INSTANCE;
-					for (i = 0; i < ba->count; ++i) {
+					for (size_t i = 0; i < ba->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_BINARY, ba->pbin + i))
 							goto LOAD_CONTENT_FAIL;
@@ -1354,14 +1353,13 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					"idx=? WHERE row_id=?", table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 				goto LOAD_CONTENT_FAIL;
-			i = 1;
+			size_t i = 1;
 			prev_id = 0;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
 				if (0 != prev_id &&
 					depth < sqlite3_column_int64(pstmt, 3) &&
-					prev_id != sqlite3_column_int64(pstmt, 4)) {
+				    gx_sql_col_uint64(pstmt, 4) != prev_id)
 					continue;
-				}
 				row_id = sqlite3_column_int64(pstmt, 0);
 				if (CONTENT_ROW_HEADER == sqlite3_column_int64(pstmt, 1)) {
 					if (0 == sqlite3_column_int64(pstmt, 2)) {
@@ -1665,8 +1663,6 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	uint64_t rule_id, const RESTRICTION *pres)
 {
-	int i;
-	int len;
 	void *pvalue;
 	void *pvalue1;
 	uint32_t val_size;
@@ -1674,7 +1670,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	switch (pres->rt) {
 	case RES_OR:
 	case RES_AND:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!table_evaluate_rule_restriction(psqlite,
 			    rule_id, &pres->andor->pres[i]))
 				return FALSE;
@@ -1719,8 +1715,8 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 					return TRUE;
 			}
 			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+		case FL_PREFIX: {
+			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue),
@@ -1735,6 +1731,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 				return FALSE;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	}
@@ -2718,21 +2715,19 @@ static BOOL table_evaluate_row_restriction(
 	const RESTRICTION *pres, void *pparam,
 	TABLE_GET_ROW_PROPERTY get_property)
 {
-	int i;
-	int len;
 	void *pvalue;
 	void *pvalue1;
 	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_AND:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!table_evaluate_row_restriction(&pres->andor->pres[i],
 			    pparam, get_property))
 				return FALSE;
 		return TRUE;
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (table_evaluate_row_restriction(&pres->andor->pres[i],
 			    pparam, get_property))
 				return TRUE;
@@ -2777,8 +2772,8 @@ static BOOL table_evaluate_row_restriction(
 					return TRUE;
 			}
 			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+		case FL_PREFIX: {
+			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue),
@@ -2793,6 +2788,7 @@ static BOOL table_evaluate_row_restriction(
 				return FALSE;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	}
@@ -4152,7 +4148,7 @@ BOOL exmdb_server_collapse_table(const char *dir,
 		row_id = sqlite3_column_int64(pstmt, 0);
 		if (0 != prev_id &&
 			(depth > sqlite3_column_int64(pstmt, 1) ||
-			prev_id == sqlite3_column_int64(pstmt, 2))) {
+		    gx_sql_col_uint64(pstmt, 2) == prev_id)) {
 			if (0 == *prow_count) {
 				break;
 			}
@@ -4490,7 +4486,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		if (ptnode->psorts->ccategories == depth) {
 			continue;	
 		}
-		if (inst_id1 == sqlite3_column_int64(pstmt, 1)) {
+		if (gx_sql_col_uint64(pstmt, 1) == inst_id1) {
 			last_id = sqlite3_last_insert_rowid(psqlite);
 			sprintf(sql_string, "UPDATE state_info SET header_id=%llu,"
 				" header_stat=%llu WHERE state_id=%u", LLU(last_id + 1),
@@ -4681,7 +4677,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	message_id = sqlite3_column_int64(pstmt, 3);
 	inst_num = sqlite3_column_int64(pstmt, 4);
-	if (ptnode->folder_id != sqlite3_column_int64(pstmt, 0) ||
+	if (gx_sql_col_uint64(pstmt, 0) != ptnode->folder_id ||
 		ptnode->table_flags != sqlite3_column_int64(pstmt, 1)) {
 		sqlite3_finalize(pstmt);
 		goto RESTORE_POSITION;
@@ -4699,9 +4695,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			sqlite3_finalize(pstmt);
 			goto RESTORE_POSITION;
 		}
-		if (ext_push.offset != sqlite3_column_bytes(pstmt, 2)
-			|| 0 != memcmp(sqlite3_column_blob(pstmt, 2),
-			ext_push.data, ext_push.offset)) {
+		if (static_cast<unsigned int>(sqlite3_column_bytes(pstmt, 2)) != ext_push.offset ||
+		    memcmp(sqlite3_column_blob(pstmt, 2), ext_push.data, ext_push.offset) != 0) {
 			sqlite3_finalize(pstmt);
 			goto RESTORE_POSITION;
 		}

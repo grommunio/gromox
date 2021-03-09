@@ -387,8 +387,6 @@ static BOOL db_engine_search_folder(const char *dir,
 	uint32_t cpid, uint64_t search_fid, uint64_t scope_fid,
 	const RESTRICTION *prestriction)
 {
-	int i;
-	int count;
 	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
@@ -444,7 +442,7 @@ static BOOL db_engine_search_folder(const char *dir,
 	}
 	sqlite3_finalize(pstmt);
 	exmdb_server_build_environment(FALSE, TRUE, dir);
-	for (i=0,count=0; i<pmessage_ids->count; i++,count++) {
+	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (TRUE == g_notify_stop) {
 			break;
 		}
@@ -663,7 +661,6 @@ static void db_engine_notify_search_completion(
 
 static void *thread_work_func(void *param)
 {
-	int i;
 	DB_ITEM *pdb;
 	int table_num;
 	TABLE_NODE *ptable;
@@ -695,7 +692,7 @@ static void *thread_work_func(void *param)
 			db_engine_free_populating_node(psearch);
 			goto NEXT_SEARCH;	
 		}
-		for (i=0; i<psearch->folder_ids.count; i++) {
+		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
 			    psearch->folder_ids.pll[i])) {
 				eid_array_free(pfolder_ids);
@@ -713,7 +710,7 @@ static void *thread_work_func(void *param)
 				goto NEXT_SEARCH;
 			}
 		}
-		for (i=0; i<pfolder_ids->count; i++) {
+		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			if (TRUE == g_notify_stop) {
 				break;
 			}
@@ -1018,7 +1015,6 @@ void db_engine_delete_dynamic(DB_ITEM *pdb, uint64_t folder_id)
 void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
-	int i;
 	BOOL b_exist;
 	BOOL b_included;
 	BOOL b_included1;
@@ -1040,7 +1036,7 @@ void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid,
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
 		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
-		for (i=0; i<pdynamic->folder_ids.count; i++) {
+		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
 			if (DYNAMIC_EVENT_MOVE_FOLDER == event_type) {
 				if (pdynamic->search_flags & SEARCH_FLAG_RECURSIVE) {
 					if (!common_util_check_descendant(pdb->psqlite,
@@ -1512,7 +1508,6 @@ static BOOL db_engine_check_new_header(
 static void db_engine_notify_content_table_add_row(
 	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
 {
-	int i, j;
 	int result;
 	BOOL b_fai, b_read = false, b_break;
 	void *pvalue;
@@ -1683,7 +1678,7 @@ static void db_engine_notify_content_table_add_row(
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
-			for (i=0; i<ptable->psorts->count; i++) {
+			for (size_t i = 0; i < ptable->psorts->count; ++i) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (FALSE == common_util_get_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
@@ -1708,7 +1703,7 @@ static void db_engine_notify_content_table_add_row(
 				row_id1 = sqlite3_column_int64(pstmt, 0);
 				inst_id1 = sqlite3_column_int64(pstmt, 1);
 				idx = sqlite3_column_int64(pstmt, 2);
-				for (i=0; i<ptable->psorts->count; i++) {
+				for (size_t i = 0; i < ptable->psorts->count; ++i) {
 					if (FALSE == common_util_get_property(
 						MESSAGE_PROPERTIES_TABLE, inst_id1,
 						ptable->cpid, pdb->psqlite,
@@ -1850,7 +1845,7 @@ static void db_engine_notify_content_table_add_row(
 					b_read = TRUE;
 				}
 			}
-			for (i=0; i<ptable->psorts->count; i++) {
+			for (size_t i = 0; i < ptable->psorts->count; ++i) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
 					multi_index = i;
@@ -1970,7 +1965,7 @@ static void db_engine_notify_content_table_add_row(
 			}
 			b_resorted = FALSE;
 			double_list_init(&notify_list);
-			for (j=0; j<multi_num; j++) {
+			for (size_t j = 0; j < multi_num; ++j) {
 				if (NULL != pmultival) {
 					inst_num = j + 1;
 					type = ptable->psorts->psort[multi_index].type & ~MV_INSTANCE;
@@ -2008,6 +2003,7 @@ static void db_engine_notify_content_table_add_row(
 				row_id1 = 0;
 				parent_id = 0;
 				b_break = FALSE;
+				size_t i;
 				for (i=0; i<ptable->psorts->ccategories; i++) {
 					type = ptable->psorts->psort[i].type;
 					if ((type & MVI_FLAG) == MVI_FLAG)
@@ -2025,7 +2021,7 @@ static void db_engine_notify_content_table_add_row(
 							goto MATCH_SUB_HEADER;
 						}
 						if (0 == ptable->extremum_tag ||
-							i != ptable->psorts->ccategories - 1) {
+						    i != static_cast<size_t>(ptable->psorts->ccategories) - 1) {
 							if (TABLE_SORT_ASCEND ==
 								ptable->psorts->psort[i].table_sort) {
 								if (result < 0) {
@@ -2223,7 +2219,7 @@ static void db_engine_notify_content_table_add_row(
 				sqlite3_reset(pstmt);
 				sqlite3_bind_int64(pstmt, 1, prev_id);
 				while (SQLITE_ROW == sqlite3_step(pstmt)) {
-					if (sqlite3_column_int64(pstmt, 0) != row_id
+					if (gx_sql_col_uint64(pstmt, 0) != row_id
 						&& 0 != row_id1 && row_id != row_id1) {
 						prev_id = row_id1;
 					}
@@ -3042,7 +3038,7 @@ static void db_engine_update_prev_id(DOUBLE_LIST *plist,
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		pdelnode = (ROWDEL_NODE*)pnode->pdata;
-		if (original_prev_id == pdelnode->prev_id) {
+		if (original_prev_id == static_cast<uint64_t>(pdelnode->prev_id)) {
 			pdelnode->prev_id = prev_id;
 			break;
 		}
@@ -3452,10 +3448,9 @@ static void db_engine_notify_content_table_delete_row(
 			b_break = FALSE;
 			sqlite3_bind_int64(pstmt4, 1, prev_id);
 			while (SQLITE_ROW == sqlite3_step(pstmt4)) {
-				if (sqlite3_column_int64(pstmt4, 0) != row_id
-					&& 0 != row_id1 && row_id != row_id1) {
+				if (gx_sql_col_uint64(pstmt4, 0) != row_id &&
+				    row_id1 != 0 && row_id != row_id1)
 					prev_id = row_id1;
-				}
 				row_id1 = sqlite3_column_int64(pstmt4, 0);
 				if (row_id1 != row_id) {
 					pvalue = common_util_column_sqlite_statement(
@@ -3975,7 +3970,6 @@ void db_engine_notify_folder_deletion(DB_ITEM *pdb,
 static void db_engine_notify_content_table_modify_row(
 	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
 {
-	int i, j;
 	int result;
 	int row_type;
 	BOOL b_error;
@@ -4098,6 +4092,7 @@ static void db_engine_notify_content_table_modify_row(
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
+			size_t i;
 			for (i=0; i<ptable->psorts->count; i++) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (FALSE == common_util_get_property(
@@ -4324,6 +4319,7 @@ static void db_engine_notify_content_table_modify_row(
 			} else {
 				multi_num = 1;
 			}
+			size_t i;
 			for (i=0; i<ptable->psorts->count; i++) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
@@ -4381,7 +4377,7 @@ static void db_engine_notify_content_table_modify_row(
 				row_id = sqlite3_column_int64(pstmt, 0);
 				parent_id = row_id;
 				sqlite3_reset(pstmt);
-				for (j=ptable->psorts->ccategories-1; j>=0; j--) {
+				for (ssize_t j = ptable->psorts->ccategories - 1; j >= 0; --j) {
 					sqlite3_bind_int64(pstmt, 1, row_id);
 					if (SQLITE_ROW != sqlite3_step(pstmt)) {
 						b_error = TRUE;

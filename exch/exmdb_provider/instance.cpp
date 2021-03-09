@@ -930,7 +930,6 @@ static BOOL instance_read_message(
 	const MESSAGE_CONTENT *pmsgctnt1,
 	MESSAGE_CONTENT *pmsgctnt)
 {
-	int i, j;
 	void *pbuff;
 	BINARY *pbin;
 	uint64_t cid;
@@ -950,6 +949,7 @@ static BOOL instance_read_message(
 	} else {
 		pmsgctnt->proplist.ppropval = NULL;
 	}
+	size_t i;
 	for (i=0; i<pmsgctnt1->proplist.count; i++) {
 		switch (pmsgctnt1->proplist.ppropval[i].proptag) {
 		case ID_TAG_BODY:
@@ -1114,7 +1114,7 @@ static BOOL instance_read_message(
 				continue;
 			}
 			pproplist->count = 0;
-			for (j=0; j<pproplist1->count; j++) {
+			for (size_t j = 0; j < pproplist1->count; ++j) {
 				pproplist->ppropval[pproplist->count] =
 								pproplist1->ppropval[j];
 				pproplist->count ++;
@@ -2177,8 +2177,6 @@ static BOOL instance_get_message_display_recipients(
 	TARRAY_SET *prcpts, uint32_t cpid, uint32_t proptag,
 	void **ppvalue)
 {
-	int i;
-	int offset;
 	void *pvalue;
 	char tmp_buff[64*1024];
 	uint32_t recipient_type = 0;
@@ -2199,8 +2197,8 @@ static BOOL instance_get_message_display_recipients(
 		recipient_type = RECIPIENT_TYPE_BCC;
 		break;
 	}
-	offset = 0;
-	for (i=0; i<prcpts->count; i++) {
+	size_t offset = 0;
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		pvalue = tpropval_array_get_propval(
 			prcpts->pparray[i], PROP_TAG_RECIPIENTTYPE);
 		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
@@ -3509,7 +3507,6 @@ BOOL exmdb_server_get_message_instance_rcpts_num(
 BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 	const char *dir, uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
-	int i, j;
 	DB_ITEM *pdb;
 	TARRAY_SET *prcpts;
 	INSTANCE_NODE *pinstance;
@@ -3542,16 +3539,14 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 		return FALSE;
 	}
 	prcpts = pmsgctnt->children.prcpts;
-	for (i=0; i<prcpts->count; i++) {
-		for (j=0; j<prcpts->pparray[i]->count; j++) {
+	for (size_t i = 0; i < prcpts->count; ++i)
+		for (size_t j = 0; j < prcpts->pparray[i]->count; ++j)
 			if (!proptag_array_append(pproptags1,
 			    prcpts->pparray[i]->ppropval[j].proptag)) {
 				db_engine_put_db(pdb);
 				proptag_array_free(pproptags1);
 				return FALSE;
 			}
-		}
-	}
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
@@ -3570,9 +3565,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	const char *dir, uint32_t instance_id, uint32_t row_id,
 	uint16_t need_count, TARRAY_SET *pset)
 {
-	int i;
 	DB_ITEM *pdb;
-	int begin_pos;
 	uint32_t *prow_id;
 	TARRAY_SET *prcpts;
 	INSTANCE_NODE *pinstance;
@@ -3599,6 +3592,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 		return TRUE;
 	}
 	prcpts = pmsgctnt->children.prcpts;
+	size_t i;
 	for (i=0; i<prcpts->count; i++) {
 		prow_id = static_cast<uint32_t *>(tpropval_array_get_propval(
 		          prcpts->pparray[i], PROP_TAG_ROWID));
@@ -3612,7 +3606,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 		db_engine_put_db(pdb);
 		return TRUE;
 	}
-	begin_pos = i;
+	auto begin_pos = i;
 	if (begin_pos + need_count > prcpts->count) {
 		need_count = prcpts->count - begin_pos;
 	}
@@ -3647,7 +3641,6 @@ BOOL exmdb_server_get_message_instance_rcpts(
 BOOL exmdb_server_update_message_instance_rcpts(
 	const char *dir, uint32_t instance_id, const TARRAY_SET *pset)
 {
-	int i, j;
 	DB_ITEM *pdb;
 	uint32_t row_id;
 	uint32_t *prow_id;
@@ -3676,13 +3669,14 @@ BOOL exmdb_server_update_message_instance_rcpts(
 			return FALSE;
 		}
 	}
-	for (i=0; i<pset->count; i++) {
+	for (size_t i = 0; i < pset->count; ++i) {
 		prow_id = static_cast<uint32_t *>(tpropval_array_get_propval(
 		          pset->pparray[i], PROP_TAG_ROWID));
 		if (NULL == prow_id) {
 			continue;
 		}
 		row_id = *prow_id;
+		size_t j;
 		for (j=0; j<pmsgctnt->children.prcpts->count; j++) {
 			prow_id = static_cast<uint32_t *>(tpropval_array_get_propval(
 				pmsgctnt->children.prcpts->pparray[j],

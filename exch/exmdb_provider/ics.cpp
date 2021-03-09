@@ -20,7 +20,7 @@ struct ENUM_PARAM {
 };
 
 struct REPLID_ARRAY {
-	int count;
+	unsigned int count;
 	uint16_t replids[1024];
 };
 
@@ -900,7 +900,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	const IDSET *pseen, FOLDER_CHANGES *pfldchgs, uint64_t *plast_cn,
 	EID_ARRAY *pgiven_fids, EID_ARRAY *pdeleted_fids)
 {
-	int i, j;
 	int count;
 	DB_ITEM *pdb;
 	sqlite3 *psqlite;
@@ -1028,7 +1027,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
-	for (i=0; i<pfldchgs->count; i++) {
+	for (size_t i = 0; i < pfldchgs->count; ++i) {
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_finalize(pstmt);
@@ -1047,7 +1046,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			return FALSE;
 		}
 		count = 0;
-		for (j=0; j<proptags.count; j++) {
+		for (size_t j = 0; j < proptags.count; ++j) {
 			if (PROP_TAG_HASRULES == proptags.pproptag[j] ||
 				PROP_TAG_CHANGENUMBER == proptags.pproptag[j] ||
 				PROP_TAG_LOCALCOMMITTIME == proptags.pproptag[j] ||
@@ -1135,7 +1134,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
-	for (i=0; i<replids.count; i++) {
+	for (size_t i = 0; i < replids.count; ++i) {
 		if (FALSE == idset_enum_repl((IDSET*)pgiven,
 			replids.replids[i], &enum_param,
 			(REPLICA_ENUM)ics_enum_hierarchy_idset)) {

@@ -18,15 +18,13 @@ struct DATAGRAM_NODE {
 void notification_agent_backward_notify(
 	const char *remote_id, DB_NOTIFY_DATAGRAM *pnotify)
 {
-	int i;
 	DATAGRAM_NODE *pdnode;
 	ROUTER_CONNECTION *prouter;
 	
 	if (NULL == remote_id) {
-		for (i=0; i<pnotify->id_array.count; i++) {
+		for (size_t i = 0; i < pnotify->id_array.count; ++i)
 			exmdb_server_event_proc(pnotify->dir, pnotify->b_table,
 				pnotify->id_array.pl[i], &pnotify->db_notify);
-		}
 		return;
 	}
 	prouter = exmdb_parser_get_router(remote_id);

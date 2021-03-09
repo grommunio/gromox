@@ -286,7 +286,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	const char *username, uint64_t src_fid, uint64_t dst_fid,
 	BOOL b_copy, const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
 {
-	int i;
 	XID tmp_xid;
 	DB_ITEM *pdb;
 	void *pvalue;
@@ -394,7 +393,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	fai_size = 0;
 	del_count = 0;
 	normal_size = 0;
-	for (i=0; i<pmessage_ids->count; i++) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
 		sqlite3_bind_int64(pstmt, 1, tmp_val);
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -581,7 +580,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	uint64_t folder_id, const EID_ARRAY *pmessage_ids,
 	BOOL b_hard, BOOL *pb_partial)
 {
-	int i;
 	XID tmp_xid;
 	DB_ITEM *pdb;
 	void *pvalue;
@@ -682,7 +680,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	fai_size = 0;
 	del_count = 0;
 	normal_size = 0;
-	for (i=0; i<pmessage_ids->count; i++) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
 		sqlite3_bind_int64(pstmt, 1, tmp_val);
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -1636,9 +1634,8 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (sqlite3_column_int64(pstmt, 0) <= cn_val) {
+		if (gx_sql_col_uint64(pstmt, 0) <= cn_val)
 			continue;
-		}
 		if (sqlite3_column_bytes(pstmt, 1) > 0) {
 			ext_buffer_pull_init(&ext_pull,
 				sqlite3_column_blob(pstmt, 1),
@@ -2541,7 +2538,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	uint64_t parent_id, const MESSAGE_CONTENT *pmsgctnt,
 	uint64_t *pmessage_id)
 {
-	int i;
 	BOOL b_cn;
 	XID tmp_xid;
 	int tmp_int, tmp_int1, is_associated = 0;
@@ -2674,7 +2670,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 					return TRUE;
 				}
 			} else {
-				if (parent_id != sqlite3_column_int64(pstmt, 0)) {
+				if (gx_sql_col_uint64(pstmt, 0) != parent_id) {
 					sqlite3_finalize(pstmt);
 					*pmessage_id = 0;
 					return TRUE;
@@ -2807,7 +2803,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		          "(message_id) VALUES (%llu)", LLU(*pmessage_id));
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 			return FALSE;
-		for (i=0; i<pmsgctnt->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -2827,7 +2823,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		          " (message_id) VALUES (%llu)", LLU(*pmessage_id));
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 			return FALSE;
-		for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -3022,9 +3018,7 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 static BOOL message_load_folder_ext_rules(BOOL b_oof,
 	sqlite3 *psqlite, uint64_t folder_id, DOUBLE_LIST *plist)
 {
-	int count;
 	void *pvalue;
-	int ext_count;
 	uint32_t state;
 	uint32_t sequence;
 	RULE_NODE *prnode;
@@ -3045,8 +3039,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
-	count = 0;
-	ext_count = 0;
+	size_t count = 0, ext_count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		count ++;
 		if (count > MAX_FAI_COUNT) {
@@ -3179,13 +3172,12 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 	NAMEDPROPERTY_INFOMATION *ppropname_info, RESTRICTION *pres)
 {
-	int i;
 	BOOL b_replaced;
 	
 	switch (pres->rt) {
 	case RES_AND:
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!message_replace_restriction_propid(psqlite,
 			    ppropname_info, &pres->andor->pres[i]))
 				return FALSE;
@@ -3247,7 +3239,7 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 		break;
 	case RES_COMMENT: {
 		auto rcom = pres->comment;
-		for (i = 0; i < rcom->count; ++i)
+		for (size_t i = 0; i < rcom->count; ++i)
 			if (!message_get_real_propid(psqlite, ppropname_info,
 			    &rcom->ppropval[i].proptag, &b_replaced))
 				return FALSE;
@@ -3271,10 +3263,9 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 	NAMEDPROPERTY_INFOMATION *ppropname_info, EXT_RULE_ACTIONS *pactions)
 {
-	int i;
 	BOOL b_replaced;
 	
-	for (i=0; i<pactions->count; i++) {
+	for (size_t i = 0; i < pactions->count; ++i)
 		if (ACTION_TYPE_OP_TAG == pactions->pblock[i].type) {
 			if (FALSE == message_get_real_propid(
 				psqlite, ppropname_info, &((TAGGED_PROPVAL*)
@@ -3283,7 +3274,6 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 				return FALSE;
 			}
 		}
-	}
 	return TRUE;
 }
 
@@ -3757,7 +3747,6 @@ static BOOL message_bounce_message(const char *from_address,
 static BOOL message_recipient_blocks_to_list(uint32_t count,
 	RECIPIENT_BLOCK *pblock, DOUBLE_LIST *prcpt_list)
 {
-	int i;
 	TARRAY_SET rcpts;
 	
 	double_list_init(prcpt_list);
@@ -3766,7 +3755,7 @@ static BOOL message_recipient_blocks_to_list(uint32_t count,
 	if (NULL == rcpts.pparray) {
 		return FALSE;
 	}
-	for (i=0; i<count; i++) {
+	for (size_t i = 0; i < count; ++i) {
 		rcpts.pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == rcpts.pparray[i]) {
 			return FALSE;
@@ -3780,7 +3769,6 @@ static BOOL message_recipient_blocks_to_list(uint32_t count,
 static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 	EXT_RECIPIENT_BLOCK *pblock, DOUBLE_LIST *prcpt_list)
 {
-	int i;
 	TARRAY_SET rcpts;
 	
 	double_list_init(prcpt_list);
@@ -3789,7 +3777,7 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 	if (NULL == rcpts.pparray) {
 		return FALSE;
 	}
-	for (i=0; i<count; i++) {
+	for (size_t i = 0; i < count; ++i) {
 		rcpts.pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == rcpts.pparray[i]) {
 			return FALSE;
@@ -4224,7 +4212,6 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	uint64_t message_id, const char *pdigest,
 	DOUBLE_LIST *pfolder_list, DOUBLE_LIST *pmsg_list)
 {
-	int i;
 	BOOL b_del;
 	int tmp_id;
 	int tmp_id1;
@@ -4310,7 +4297,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		if (NULL == pactions) {
 			continue;
 		}
-		for (i=0; i<pactions->count; i++) {
+		for (size_t i = 0; i < pactions->count; ++i) {
 			switch (pactions->pblock[i].type) {
 			case ACTION_TYPE_OP_MOVE:
 			case ACTION_TYPE_OP_COPY:
@@ -4737,7 +4724,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			psqlite, &propname_info, &ext_actions)) {
 			return FALSE;
 		}
-		for (i=0; i<ext_actions.count; i++) {
+		for (size_t i = 0; i < ext_actions.count; ++i) {
 			switch (ext_actions.pblock[i].type) {
 			case ACTION_TYPE_OP_MOVE:
 			case ACTION_TYPE_OP_COPY:
@@ -5158,7 +5145,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult)
 {
-	int i, fd;
+	int fd;
 	BOOL b_oof;
 	BOOL b_to_me;
 	BOOL b_cc_me;
@@ -5189,7 +5176,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	b_to_me = FALSE;
 	b_cc_me = FALSE;
 	if (NULL != pmsg->children.prcpts) {
-		for (i=0; i<pmsg->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
 			pvalue = common_util_get_propvals(
 				pmsg->children.prcpts->pparray[i],
 				PROP_TAG_RECIPIENTTYPE);

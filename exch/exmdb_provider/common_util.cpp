@@ -371,8 +371,6 @@ char* common_util_convert_copy(BOOL to_utf8,
 STRING_ARRAY *common_util_convert_copy_string_array(
 	BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *parray)
 {
-	int i;
-	
 	auto parray1 = cu_alloc<STRING_ARRAY>();
 	if (NULL == parray1) {
 		return NULL;
@@ -386,7 +384,7 @@ STRING_ARRAY *common_util_convert_copy_string_array(
 	} else {
 		parray1->ppstr = NULL;
 	}
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < parray->count; ++i) {
 		parray1->ppstr[i] = common_util_convert_copy(
 					to_utf8, cpid, parray->ppstr[i]);
 		if (NULL == parray1->ppstr[i]) {
@@ -725,13 +723,12 @@ static sqlite3_stmt* common_util_get_optimize_stmt(
 BOOL common_util_get_proptags(int table_type, uint64_t id,
 	sqlite3 *psqlite, PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	BOOL b_subject;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	uint32_t proptags[0x8000];
-	
-	i = 0;
+	size_t i = 0;
+
 	switch (table_type) {
 	case STORE_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM store_properties");
@@ -2203,7 +2200,6 @@ BOOL common_util_get_properties(int table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	int i, j;
 	void *pvalue;
 	char *pstring;
 	BOOL b_optimize;
@@ -2221,7 +2217,7 @@ BOOL common_util_get_properties(int table_type,
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	for (i=0; i<pproptags->count; i++) {
+	for (size_t i = 0; i < pproptags->count; ++i) {
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != pproptags->pproptag[i])) {
@@ -3231,7 +3227,7 @@ BOOL common_util_get_properties(int table_type,
 						return FALSE;
 					}
 					if (proptype == PT_MV_STRING8) {
-						for (j = 0; j < sa->count; ++j) {
+						for (size_t j = 0; j < sa->count; ++j) {
 							pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
 							if (NULL == pstring) {
 								if (FALSE == b_optimize) {
@@ -3663,7 +3659,6 @@ BOOL common_util_set_properties(int table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
-	int i, j;
 	int s_result;
 	char *pstring;
 	uint64_t tmp_id;
@@ -3704,7 +3699,7 @@ BOOL common_util_set_properties(int table_type,
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
-	for (i=0; i<ppropvals->count; i++) {
+	for (size_t i = 0; i < ppropvals->count; ++i) {
 		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PT_OBJECT &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != ppropvals->ppropval[i].proptag)) {
@@ -4187,7 +4182,7 @@ BOOL common_util_set_properties(int table_type,
 					sqlite3_finalize(pstmt);
 					return FALSE;
 				}
-				for (j=0; j<tmp_strings.count; j++) {
+				for (size_t j = 0; j < tmp_strings.count; ++j) {
 					tmp_strings.ppstr[j] = common_util_convert_copy(
 						TRUE, cpid, ((STRING_ARRAY*)
 						ppropvals->ppropval[i].pvalue)->ppstr[j]);
@@ -5324,17 +5319,15 @@ static BOOL common_util_evaluate_subobject_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres)
 {
-	int i;
-	
 	switch (pres->rt) {
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (common_util_evaluate_subobject_restriction(psqlite,
 			    cpid, message_id, proptag, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!common_util_evaluate_subobject_restriction(psqlite,
 			    cpid, message_id, proptag, &pres->andor->pres[i]))
 				return FALSE;
@@ -5363,21 +5356,19 @@ static BOOL common_util_evaluate_subobject_restriction(
 BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	uint64_t folder_id, const RESTRICTION *pres)
 {
-	int i;
-	int len;
 	void *pvalue;
 	void *pvalue1;
 	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (common_util_evaluate_folder_restriction(psqlite,
 			    folder_id, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!common_util_evaluate_folder_restriction(psqlite,
 			    folder_id, &pres->andor->pres[i]))
 				return FALSE;
@@ -5423,8 +5414,8 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 					return TRUE;
 			}
 			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+		case FL_PREFIX: {
+			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
@@ -5437,6 +5428,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 				return FALSE;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	}
@@ -5522,21 +5514,19 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, const RESTRICTION *pres)
 {
-	int i;
-	int len;
 	void *pvalue;
 	void *pvalue1;
 	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (common_util_evaluate_message_restriction(psqlite,
 			    cpid, message_id, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!common_util_evaluate_message_restriction(psqlite,
 			    cpid, message_id, &pres->andor->pres[i]))
 				return FALSE;
@@ -5583,8 +5573,8 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 					return TRUE;
 			}
 			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+		case FL_PREFIX: {
+			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
@@ -5597,6 +5587,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 				return FALSE;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	}
@@ -6436,11 +6427,10 @@ unsigned int common_util_get_param(int param)
 BOOL common_util_recipients_to_list(
 	TARRAY_SET *prcpts, DOUBLE_LIST *plist)
 {
-	int i;
 	void *pvalue;
 	DOUBLE_LIST_NODE *pnode;
 	
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
@@ -6846,7 +6836,6 @@ static uint32_t common_util_get_cid_length(uint64_t cid)
 uint32_t common_util_calculate_message_size(
 	const MESSAGE_CONTENT *pmsgctnt)
 {
-	int i, j;
 	uint32_t tmp_len;
 	uint32_t message_size;
 	TAGGED_PROPVAL *ppropval;
@@ -6854,7 +6843,7 @@ uint32_t common_util_calculate_message_size(
 	
 	/* PROP_TAG_ASSOCIATED, PROP_TAG_MID, PROP_TAG_CHANGENUMBER */
 	message_size = sizeof(uint8_t) + 2*sizeof(uint64_t);
-	for (i=0; i<pmsgctnt->proplist.count; i++) {
+	for (size_t i = 0; i < pmsgctnt->proplist.count; ++i) {
 		ppropval = pmsgctnt->proplist.ppropval + i;
 		switch (ppropval->proptag) {
 		case PROP_TAG_ASSOCIATED:
@@ -6894,8 +6883,8 @@ uint32_t common_util_calculate_message_size(
 		}
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
-		for (i=0; i<pmsgctnt->children.prcpts->count; i++) {
-			for (j=0; j<pmsgctnt->children.prcpts->pparray[i]->count; j++) {
+		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
+			for (size_t j = 0; j < pmsgctnt->children.prcpts->pparray[i]->count; ++j) {
 				ppropval = pmsgctnt->children.prcpts->pparray[i]->ppropval + j;
 				if (PROP_TAG_ROWID == ppropval->proptag) {
 					continue;
@@ -6905,9 +6894,9 @@ uint32_t common_util_calculate_message_size(
 		}
 	}
 	if (NULL != pmsgctnt->children.pattachments) {
-		for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
 			pattachment = pmsgctnt->children.pattachments->pplist[i];
-			for (j=0; j<pattachment->proplist.count; j++) {
+			for (size_t j = 0; j < pattachment->proplist.count; ++j) {
 				ppropval = pattachment->proplist.ppropval + j;
 				switch (ppropval->proptag) {
 				case PROP_TAG_ATTACHNUMBER:
