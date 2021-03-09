@@ -907,8 +907,7 @@ static void *thread_work_func(void *pparam)
 				} else if (b_private != request.payload.connect.b_private) {
 					tmp_byte = exmdb_response::MISCONFIG_MODE;
 				} else {
-					strcpy(pconnection->remote_id,
-						request.payload.connect.remote_id);
+					HX_strlcpy(pconnection->remote_id, request.payload.connect.remote_id, GX_ARRAY_SIZE(pconnection->remote_id));
 					exmdb_server_free_environment();
 					exmdb_server_set_remote_id(pconnection->remote_id);
 					is_connected = TRUE;
@@ -927,8 +926,7 @@ static void *thread_work_func(void *pparam)
 					free(prouter);
 					tmp_byte = exmdb_response::MAX_REACHED;
 				} else {
-					strcpy(prouter->remote_id,
-						request.payload.listen_notification.remote_id);
+					HX_strlcpy(prouter->remote_id, request.payload.listen_notification.remote_id, GX_ARRAY_SIZE(prouter->remote_id));
 					exmdb_server_free_environment();
 					if (5 != write(pconnection->sockd, resp_buff, 5)) {
 						free(prouter);

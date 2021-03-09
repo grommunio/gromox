@@ -560,7 +560,7 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 			strcpy(log_file_name, "log.txt");
 			config_file_set_value(pfile, "LOG_FILE_NAME", "log.txt");
 		} else {
-			strcpy(log_file_name, str_value);
+			HX_strlcpy(log_file_name, str_value, GX_ARRAY_SIZE(log_file_name));
 		}
 		printf("[log_plugin]: log file name is %s\n", log_file_name);
 		log_plugin_init(log_file_name, log_level, files_num,

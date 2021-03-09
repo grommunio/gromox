@@ -6,6 +6,7 @@
 #include <memory>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -100,7 +101,7 @@ int main(int argc, const char **argv)
 		strcpy(service_path, PKGLIBDIR);
 		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);
 	} else {
-		strcpy(service_path, str_value);
+		HX_strlcpy(service_path, str_value, GX_ARRAY_SIZE(service_path));
 	}
 	printf("[system]: service plugin path is %s\n", service_path);
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
@@ -118,7 +119,7 @@ int main(int argc, const char **argv)
 		strcpy(config_path, PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR);
 		config_file_set_value(pconfig, "config_file_path", config_path);
 	} else {
-		strcpy(config_path, str_value);
+		HX_strlcpy(config_path, str_value, GX_ARRAY_SIZE(config_path));
 	}
 	printf("[system]: config path is %s\n", config_path);
 	
@@ -126,7 +127,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		strcpy(data_path, PKGDATADIR "/midb:" PKGDATADIR);
 	} else {
-		strcpy(data_path, str_value);
+		HX_strlcpy(data_path, str_value, GX_ARRAY_SIZE(data_path));
 	}
 	printf("[system]: data path is %s\n", data_path);
 	
@@ -243,7 +244,7 @@ int main(int argc, const char **argv)
 		HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
 		config_file_set_value(pconfig, "X500_ORG_NAME", org_name);
 	} else {
-		strcpy(org_name, str_value);
+		HX_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
 	}
 	printf("[system]: x500 org name is \"%s\"\n", org_name);
 	
@@ -252,7 +253,7 @@ int main(int argc, const char **argv)
 		strcpy(charset, "windows-1252");
 		config_file_set_value(pconfig, "DEFAULT_CHARSET", charset);
 	} else {
-		strcpy(charset, str_value);
+		HX_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
 	}
 	printf("[system]: default charset is \"%s\"\n", charset);
 
@@ -261,7 +262,7 @@ int main(int argc, const char **argv)
 		strcpy(timezone, "Asia/Shanghai");
 		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", timezone);
 	} else {
-		strcpy(timezone, str_value);
+		HX_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
 	}
 	printf("[system]: default timezone is \"%s\"\n", timezone);
 	

@@ -104,14 +104,11 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		}
 		
 		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
-		strcpy(separator, str_value == nullptr ? ";" : str_value);
+		HX_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
 
 		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
-		if (NULL == str_value || '\0' == str_value[0]) {
-			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
-		} else {
-			strcpy(org_name, str_value);
-		}
+		HX_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
+			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
 		
 		str_value = config_file_get_value(pconfig, "LISTEN_IP");

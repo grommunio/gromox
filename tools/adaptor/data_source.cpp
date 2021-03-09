@@ -108,14 +108,14 @@ void data_source_init(const char *host, int port, const char *user,
 {
 	HX_strlcpy(g_host, host, GX_ARRAY_SIZE(g_host));
 	g_port = port;
-	strcpy(g_user, user);
+	HX_strlcpy(g_user, user, GX_ARRAY_SIZE(g_user));
 	if (NULL == password || '\0' == password[0]) {
 		g_password = NULL;
 	} else {
-		strcpy(g_password_buff, password);
+		HX_strlcpy(g_password_buff, password, GX_ARRAY_SIZE(g_password_buff));
 		g_password = g_password_buff;
 	}
-	strcpy(g_db_name, db_name);
+	HX_strlcpy(g_db_name, db_name, GX_ARRAY_SIZE(g_db_name));
 }
 
 BOOL data_source_get_domain_list(DATA_COLLECT *pcollect)

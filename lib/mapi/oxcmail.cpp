@@ -2971,11 +2971,8 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pcontent[content_len] = '\0';
 			if (FALSE == oxcmail_get_content_param(
 				pmime, "charset", mime_charset, 32)) {
-				if (FALSE == utf8_check(pcontent)) {
-					strcpy(mime_charset, pmime_enum->charset);
-				} else {
-					strcpy(mime_charset, "utf-8");
-				}
+				HX_strlcpy(mime_charset, !utf8_check(pcontent) ?
+					pmime_enum->charset : "utf-8", GX_ARRAY_SIZE(mime_charset));
 			}
 			if (TRUE == string_to_utf8(
 				mime_charset, pcontent,

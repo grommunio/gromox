@@ -85,17 +85,11 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			return FALSE;
 		}
 		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
-		if (NULL == str_value) {
-			strcpy(separator, " ");
-		} else {
-			strcpy(separator, str_value);
-		}
+		HX_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
+
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
-		if (NULL == str_value || '\0' == str_value[0]) {
-			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
-		} else {
-			strcpy(org_name, str_value);
-		}
+		HX_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
+			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exchange_emsmdb]: x500 org name is \"%s\"\n", org_name);
 		str_value = config_file_get_value(pfile, "AVERAGE_HANDLES");
 		if (NULL == str_value) {
@@ -204,10 +198,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
-		if (str_value == nullptr)
-			strcpy(submit_command, "/usr/bin/php " PKGDATADIR "/sa/submit.php");
-		else
-			strcpy(submit_command, str_value);
+		HX_strlcpy(submit_command, str_value != nullptr ? str_value :
+			"/usr/bin/php " PKGDATADIR "/sa/submit.php", GX_ARRAY_SIZE(submit_command));
+
 		str_value = config_file_get_value(pfile, "ASYNC_THREADS_NUM");
 		if (NULL == str_value) {
 			async_num = 4;

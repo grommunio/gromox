@@ -624,9 +624,9 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *freebusy_path, const char *submit_command)
 {
 	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
-	strcpy(g_hostname, hostname);
-	strcpy(g_default_charset, default_charset);
-	strcpy(g_default_zone, default_zone);
+	HX_strlcpy(g_hostname, hostname, GX_ARRAY_SIZE(g_hostname));
+	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	HX_strlcpy(g_default_zone, default_zone, GX_ARRAY_SIZE(g_default_zone));
 	g_mime_num = mime_num;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
@@ -634,7 +634,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	g_max_rule_len = max_rule_len;
 	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	strcpy(g_freebusy_path, freebusy_path);
+	HX_strlcpy(g_freebusy_path, freebusy_path, GX_ARRAY_SIZE(g_freebusy_path));
 	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);

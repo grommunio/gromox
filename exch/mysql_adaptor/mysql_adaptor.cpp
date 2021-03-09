@@ -236,7 +236,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		return false;
 	}
 
-	strncpy(encrypt_passwd, myrow[0], encrypt_size);
+	HX_strlcpy(encrypt_passwd, myrow[0], encrypt_size);
 	strcpy(maildir, myrow[4]);
 	if (NULL != lang) {
 		strcpy(lang, myrow[5]);
@@ -414,7 +414,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	pdomain ++;
 	
 	pthread_mutex_lock(&g_crypt_lock);
-	strcpy(encrypt_passwd, md5_crypt_wrapper(new_password));
+	HX_strlcpy(encrypt_passwd, md5_crypt_wrapper(new_password), GX_ARRAY_SIZE(encrypt_passwd));
 	pthread_mutex_unlock(&g_crypt_lock);
 
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s'"

@@ -561,7 +561,7 @@ int main(int argc, const char **argv)
 			continue;
 		}
 		for (j=0; j<RES_TOTAL_NUM; j++) {
-			strcpy(folder_lang[j], pline + 1088*i + 64*(j + 1));
+			HX_strlcpy(folder_lang[j], pline + 1088 * i + 64 * (j + 1), GX_ARRAY_SIZE(folder_lang[j]));
 		}
 		break;
 	}

@@ -74,7 +74,7 @@ int main(int argc, const char **argv)
 		HX_strlcpy(log_path, PKGLOGDIR "/sa.log", sizeof(log_path));
 		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
-		strcpy(log_path, str_value);
+		HX_strlcpy(log_path, str_value, GX_ARRAY_SIZE(log_path));
 	}
 	printf("[system]: log path is %s\n", log_path);
 

@@ -113,7 +113,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		gethostname(host_name, 256);
 	} else {
-		strcpy(host_name, str_value);
+		HX_strlcpy(host_name, str_value, GX_ARRAY_SIZE(host_name));
 	}
 	printf("[system]: hostname is %s\n", host_name);
 	
@@ -122,7 +122,7 @@ int main(int argc, const char **argv)
 		HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
 		config_file_set_value(pconfig, "X500_ORG_NAME", org_name);
 	} else {
-		strcpy(org_name, str_value);
+		HX_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
 	}
 	printf("[system]: x500 org name is \"%s\"\n", org_name);
 	
@@ -131,7 +131,7 @@ int main(int argc, const char **argv)
 		strcpy(charset, "windows-1252");
 		config_file_set_value(pconfig, "DEFAULT_CHARSET", charset);
 	} else {
-		strcpy(charset, str_value);
+		HX_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
 	}
 	printf("[system]: default charset is \"%s\"\n", charset);
 
@@ -140,7 +140,7 @@ int main(int argc, const char **argv)
 		strcpy(timezone, "Asia/Shanghai");
 		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", timezone);
 	} else {
-		strcpy(timezone, str_value);
+		HX_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
 	}
 	printf("[system]: default timezone is \"%s\"\n", timezone);
 	
@@ -149,7 +149,7 @@ int main(int argc, const char **argv)
 		strcpy(service_path, PKGLIBDIR);
 		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);
 	} else {
-		strcpy(service_path, str_value);
+		HX_strlcpy(service_path, str_value, GX_ARRAY_SIZE(service_path));
 	}
 	printf("[system]: service plugin path is %s\n", service_path);
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
@@ -167,7 +167,7 @@ int main(int argc, const char **argv)
 		strcpy(config_path, PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR);
 		config_file_set_value(pconfig, "config_file_path", config_path);
 	} else {
-		strcpy(config_path, str_value);
+		HX_strlcpy(config_path, str_value, GX_ARRAY_SIZE(config_path));
 	}
 	printf("[system]: config path is %s\n", config_path);
 	
@@ -175,7 +175,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		strcpy(data_path, PKGDATADIR "/zcore:" PKGDATADIR);
 	} else {
-		strcpy(data_path, str_value);
+		HX_strlcpy(data_path, str_value, GX_ARRAY_SIZE(data_path));
 	}
 	printf("[system]: data path is %s\n", data_path);
 
@@ -232,11 +232,7 @@ int main(int argc, const char **argv)
 	ab_tree_init(org_name, table_size, cache_interval, max_item_num);
 	
 	str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
-	if (NULL == str_value) {
-		strcpy(separator, ";");
-	} else {
-		strcpy(separator, str_value);
-	}
+	HX_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
 	
 	bounce_producer_init(separator);
 	str_value = config_file_get_value(pconfig, "ZARAFA_MIME_NUMBER");
@@ -323,10 +319,8 @@ int main(int argc, const char **argv)
 	printf("[system]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 	
 	str_value = config_file_get_value(pconfig, "SUBMIT_COMMAND");
-	if (str_value == nullptr)
-		strcpy(submit_command, "/usr/bin/php " PKGDATADIR "/sa/submit.php");
-	else
-		strcpy(submit_command, str_value);
+	HX_strlcpy(submit_command, str_value != nullptr ? str_value :
+		"/usr/bin/php " PKGDATADIR "/sa/submit.php", GX_ARRAY_SIZE(submit_command));
 	
 	str_value = config_file_get_value(pconfig, "FREEBUSY_TOOL_PATH");
 	if (NULL == str_value) {

@@ -134,7 +134,7 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlis
 	auto cfg = config_file_alloc(EXT_ENTRY_NUM);
 	if (cfg == NULL)
 		return nullptr;
-	strcpy(cfg->file_name, fb);
+	HX_strlcpy(cfg->file_name, fb, GX_ARRAY_SIZE(cfg->file_name));
 	return cfg;
 }
 
@@ -229,7 +229,7 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line
 		return;
 	}
 #endif
-	strcpy(temp_buf, line);
+	HX_strlcpy(temp_buf, line, GX_ARRAY_SIZE(temp_buf));
 	cr_ptr = strchr(temp_buf, '\r');
 	if (NULL != cr_ptr) {
 		*cr_ptr = '\0';
