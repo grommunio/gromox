@@ -367,7 +367,7 @@ static int console_server_parse_line(const char* cmdline, char** argv)
 		/* back slash should be treated as transferred meaning */
 		if (('\\' == *ptr && '\"' == *(ptr + 1)) ||
 			('\\' == *ptr && '\\' == *(ptr + 1))) {
-			strcpy(ptr, ptr + 1);
+			memmove(ptr, ptr + 1, strlen(ptr + 1) + 1);
 			ptr ++;
 		}
 		if ('\"' == *ptr) {
