@@ -2549,29 +2549,24 @@ BOOL common_util_get_properties(int table_type,
 					rop_util_make_eid_ex(1, tmp_id);
 				ppropvals->count ++;
 				continue;
-			case PROP_TAG_INSTANCESVREID:
+			case PROP_TAG_INSTANCESVREID: {
 				if (FALSE == common_util_get_message_parent_folder(
 					psqlite, id, &tmp_id) || 0 == tmp_id) {
 					return FALSE;	
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<SVREID>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+				auto se = cu_alloc<SVREID>();
+				ppropvals->ppropval[ppropvals->count].pvalue = se;
+				if (se == nullptr)
 					return FALSE;
-				}
-				((SVREID*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->pbin = NULL;
-				((SVREID*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->folder_id =
-					rop_util_make_eid_ex(1, tmp_id);
-				((SVREID*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->message_id =
-					rop_util_make_eid_ex(1, id);
-				((SVREID*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->instance = 0;
+				se->pbin = nullptr;
+				se->folder_id = rop_util_make_eid_ex(1, tmp_id);
+				se->message_id = rop_util_make_eid_ex(1, id);
+				se->instance = 0;
 				ppropvals->count ++;
 				continue;
+			}
 			case PROP_TAG_PARENTDISPLAY:
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
@@ -3221,35 +3216,35 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_MV_STRING8:
-			case PT_MV_UNICODE:
-				pvalue = cu_alloc<STRING_ARRAY>();
-				if (NULL != pvalue) {
+			case PT_MV_UNICODE: {
+				auto sa = cu_alloc<STRING_ARRAY>();
+				pvalue = sa;
+				if (sa != nullptr) {
 					ext_buffer_pull_init(&ext_pull,
 						sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_wstring_array(&ext_pull,
-					    static_cast<STRING_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_buffer_pull_wstring_array(&ext_pull, sa) != EXT_ERR_SUCCESS) {
 						if (FALSE == b_optimize) {
 							sqlite3_finalize(pstmt);
 						}
 						return FALSE;
 					}
 					if (proptype == PT_MV_STRING8) {
-						for (j=0; j<((STRING_ARRAY*)pvalue)->count; j++) {
-							pstring = common_util_convert_copy(FALSE, cpid,
-										((STRING_ARRAY*)pvalue)->ppstr[j]);
+						for (j = 0; j < sa->count; ++j) {
+							pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
 							if (NULL == pstring) {
 								if (FALSE == b_optimize) {
 									sqlite3_finalize(pstmt);
 								}
 								return FALSE;
 							}
-							((STRING_ARRAY*)pvalue)->ppstr[j] = pstring;
+							sa->ppstr[j] = pstring;
 						}
 					}
 				}
 				break;
+			}
 			case PT_MV_CLSID:
 				pvalue = cu_alloc<GUID_ARRAY>();
 				if (NULL != pvalue) {

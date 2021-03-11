@@ -2420,15 +2420,12 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			if (NULL != pvalue) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
-				if (NULL == ppropvals->ppropval[
-					ppropvals->count].pvalue) {
+				auto tp = cu_alloc<TYPED_PROPVAL>();
+				ppropvals->ppropval[ppropvals->count].pvalue = tp;
+				if (tp == nullptr)
 					return FALSE;	
-				}
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->type = PT_UNICODE;
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->pvalue =	pvalue;
+				tp->type = PT_UNICODE;
+				tp->pvalue = pvalue;
 			} else {
 				proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
 				pvalue = tpropval_array_get_propval(
@@ -2436,15 +2433,12 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				if (NULL != pvalue) {
 					ppropvals->ppropval[ppropvals->count].proptag =
 											pproptags->pproptag[i];
-					ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					auto tp = cu_alloc<TYPED_PROPVAL>();
+					ppropvals->ppropval[ppropvals->count].pvalue = tp;
+					if (tp == nullptr)
 						return FALSE;	
-					}
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->type = PT_UNICODE;
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->pvalue =	pvalue;
+					tp->type = PT_UNICODE;
+					tp->pvalue = pvalue;
 				}
 			}
 		}
@@ -2455,12 +2449,11 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 		switch (pproptags->pproptag[i]) {
 		case PROP_TAG_MID:
 			if (NULL != pmessage_id) {
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+				auto pv = cu_alloc<uint64_t>();
+				ppropvals->ppropval[ppropvals->count].pvalue = pv;
+				if (pv == nullptr)
 					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-									rop_util_make_eid_ex(1, *pmessage_id);
+				*pv = rop_util_make_eid_ex(1, *pmessage_id);
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
 				ppropvals->count ++;
@@ -2527,15 +2520,12 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			if (NULL != pbin) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
-				if (NULL == ppropvals->ppropval[
-					ppropvals->count].pvalue) {
+				auto tp = cu_alloc<TYPED_PROPVAL>();
+				ppropvals->ppropval[ppropvals->count].pvalue = tp;
+				if (tp == nullptr)
 					return FALSE;	
-				}
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->type = proptype;
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->pvalue =	pbin;
+				tp->type = proptype;
+				tp->pvalue = pbin;
 				ppropvals->count ++;
 				continue;
 			}
