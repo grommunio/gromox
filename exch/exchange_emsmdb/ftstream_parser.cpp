@@ -564,11 +564,11 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_SHORT:
-		ppropval->pvalue = cu_alloc<SHORT_ARRAY>();
-		if (NULL == ppropval->pvalue) {
+	case PT_MV_SHORT: {
+		auto sa = cu_alloc<SHORT_ARRAY>();
+		ppropval->pvalue = sa;
+		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -580,27 +580,25 @@ static int ftstream_parser_read_element(
 			pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((SHORT_ARRAY*)ppropval->pvalue)->count = count;
+		sa->count = count;
 		if (0 == count) {
-			((SHORT_ARRAY*)ppropval->pvalue)->ps = NULL;
+			sa->ps = nullptr;
 		} else {
-			static_cast<SHORT_ARRAY *>(ppropval->pvalue)->ps = cu_alloc<uint16_t>(count);
-			if (NULL == ((SHORT_ARRAY*)ppropval->pvalue)->ps) {
+			sa->ps = cu_alloc<uint16_t>(count);
+			if (sa->ps == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_parser_read_uint16(pstream,
-				((SHORT_ARRAY*)ppropval->pvalue)->ps + i)) {
+			if (!ftstream_parser_read_uint16(pstream, &sa->ps[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_LONG:
-		ppropval->pvalue = cu_alloc<LONG_ARRAY>();
-		if (NULL == ppropval->pvalue) {
+	}
+	case PT_MV_LONG: {
+		auto la = cu_alloc<LONG_ARRAY>();
+		ppropval->pvalue = la;
+		if (la == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -612,27 +610,25 @@ static int ftstream_parser_read_element(
 			pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((LONG_ARRAY*)ppropval->pvalue)->count = count;
+		la->count = count;
 		if (0 == count) {
-			((LONG_ARRAY*)ppropval->pvalue)->pl = NULL;
+			la->pl = nullptr;
 		} else {
-			static_cast<LONG_ARRAY *>(ppropval->pvalue)->pl = cu_alloc<uint32_t>(count);
-			if (NULL == ((LONG_ARRAY*)ppropval->pvalue)->pl) {
+			la->pl = cu_alloc<uint32_t>(count);
+			if (la->pl == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_parser_read_uint32(pstream,
-				((LONG_ARRAY*)ppropval->pvalue)->pl + i)) {
+			if (!ftstream_parser_read_uint32(pstream, &la->pl[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_I8:
-		ppropval->pvalue = cu_alloc<LONGLONG_ARRAY>();
-		if (NULL == ppropval->pvalue) {
+	}
+	case PT_MV_I8: {
+		auto la = cu_alloc<LONGLONG_ARRAY>();
+		ppropval->pvalue = la;
+		if (la == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -644,27 +640,25 @@ static int ftstream_parser_read_element(
 			pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((LONGLONG_ARRAY*)ppropval->pvalue)->count = count;
+		la->count = count;
 		if (0 == count) {
-			((LONGLONG_ARRAY*)ppropval->pvalue)->pll = NULL;
+			la->pll = nullptr;
 		} else {
-			static_cast<LONGLONG_ARRAY *>(ppropval->pvalue)->pll = cu_alloc<uint64_t>(count);
-			if (NULL == ((LONGLONG_ARRAY*)ppropval->pvalue)->pll) {
+			la->pll = cu_alloc<uint64_t>(count);
+			if (la->pll == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_parser_read_uint64(pstream,
-				((LONGLONG_ARRAY*)ppropval->pvalue)->pll + i)) {
+			if (!ftstream_parser_read_uint64(pstream, &la->pll[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_STRING8:
-		ppropval->pvalue = cu_alloc<STRING_ARRAY>();
-		if (NULL == ppropval->pvalue) {
+	}
+	case PT_MV_STRING8: {
+		auto sa = cu_alloc<STRING_ARRAY>();
+		ppropval->pvalue = sa;
+		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -672,21 +666,17 @@ static int ftstream_parser_read_element(
 		if (pstream->st_size == pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((STRING_ARRAY*)ppropval->pvalue)->count = count;
+		sa->count = count;
 		if (0 == count) {
-			((STRING_ARRAY*)ppropval->pvalue)->ppstr = NULL;
+			sa->ppstr = nullptr;
 		} else {
-			static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr = cu_alloc<char *>(count);
-			if (NULL == ((STRING_ARRAY*)
-				ppropval->pvalue)->ppstr) {
+			sa->ppstr = cu_alloc<char *>(count);
+			if (sa->ppstr == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (size_t i = 0; i < count; ++i) {
-			((STRING_ARRAY*)ppropval->pvalue)->ppstr[i] =
-				ftstream_parser_read_string(pstream, &b_continue);
-			if (NULL == ((STRING_ARRAY*)
-				ppropval->pvalue)->ppstr[i]) {
+			sa->ppstr[i] = ftstream_parser_read_string(pstream, &b_continue);
+			if (sa->ppstr[i] == nullptr) {
 				if (TRUE == b_continue) {
 					if (pstream->offset - origin_offset > 0x10000) {
 						return FTSTREAM_PARSER_READ_FAIL;
@@ -704,11 +694,12 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_UNICODE:
-		ppropval->pvalue = cu_alloc<STRING_ARRAY>();
-		if (NULL == ppropval->pvalue) {
+	}
+	case PT_MV_UNICODE: {
+		auto sa = cu_alloc<STRING_ARRAY>();
+		ppropval->pvalue = sa;
+		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -716,21 +707,17 @@ static int ftstream_parser_read_element(
 		if (pstream->st_size == pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((STRING_ARRAY*)ppropval->pvalue)->count = count;
+		sa->count = count;
 		if (0 == count) {
-			((STRING_ARRAY*)ppropval->pvalue)->ppstr = NULL;
+			sa->ppstr = nullptr;
 		} else {
-			static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr = cu_alloc<char *>(count);
-			if (NULL == ((STRING_ARRAY*)
-				ppropval->pvalue)->ppstr) {
+			sa->ppstr = cu_alloc<char *>(count);
+			if (sa->ppstr == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (size_t i = 0; i < count; ++i) {
-			((STRING_ARRAY*)ppropval->pvalue)->ppstr[i] =
-				ftstream_parser_read_wstring(pstream, &b_continue);
-			if (NULL == ((STRING_ARRAY*)
-				ppropval->pvalue)->ppstr[i]) {
+			sa->ppstr[i] = ftstream_parser_read_wstring(pstream, &b_continue);
+			if (sa->ppstr[i] == nullptr) {
 				if (TRUE == b_continue) {
 					if (pstream->offset - origin_offset > 0x10000) {
 						return FTSTREAM_PARSER_READ_FAIL;
@@ -748,11 +735,12 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_CLSID:
-		ppropval->pvalue = cu_alloc<GUID_ARRAY>();
-		if (NULL == ppropval->pvalue) {
+	}
+	case PT_MV_CLSID: {
+		auto ga = cu_alloc<GUID_ARRAY>();
+		ppropval->pvalue = ga;
+		if (ga == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -763,28 +751,25 @@ static int ftstream_parser_read_element(
 		if (pstream->st_size < 16*count + pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((GUID_ARRAY*)ppropval->pvalue)->count = count;
+		ga->count = count;
 		if (0 == count) {
-			((GUID_ARRAY*)ppropval->pvalue)->pguid = NULL;
+			ga->pguid = nullptr;
 		} else {
-			static_cast<GUID_ARRAY *>(ppropval->pvalue)->pguid = cu_alloc<GUID>(count);
-			if (NULL == ((GUID_ARRAY*)ppropval->pvalue)->pguid) {
+			ga->pguid = cu_alloc<GUID>(count);
+			if (ga->pguid == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_parser_read_guid(pstream,
-				((GUID_ARRAY*)ppropval->pvalue)->pguid + i)) {
+			if (!ftstream_parser_read_guid(pstream, &ga->pguid[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
+	}
 	case PT_MV_BINARY: {
-		ppropval->pvalue = cu_alloc<BINARY_ARRAY>();
-		auto ba = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
-		if (NULL == ppropval->pvalue) {
+		auto ba = cu_alloc<BINARY_ARRAY>();
+		ppropval->pvalue = ba;
+		if (ba == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, &count)) {
 			return FTSTREAM_PARSER_READ_FAIL;
