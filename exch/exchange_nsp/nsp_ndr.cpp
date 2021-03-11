@@ -21,13 +21,9 @@ static int nsp_ndr_to_utf16(int ndr_flag, const char *src, char *dst, size_t len
 	size_t in_len;
 	size_t out_len;
 	char *pin, *pout;
-	iconv_t conv_id;
-
-	if (ndr_flag & NDR_FLAG_BIGENDIAN) {
-		conv_id = iconv_open("UTF-16", "UTF-8");
-	} else {
-		conv_id = iconv_open("UTF-16LE", "UTF-8");
-	}
+	iconv_t conv_id = (ndr_flag & NDR_FLAG_BIGENDIAN) ?
+	                  iconv_open("UTF-16", "UTF-8") :
+	                  iconv_open("UTF-16LE", "UTF-8");
 	
 	pin = (char*)src;
 	pout = dst;
@@ -47,13 +43,10 @@ static BOOL nsp_ndr_to_utf8(int ndr_flag, const char *src,
 	size_t src_len, char *dst, size_t len)
 {
 	char *pin, *pout;
-	iconv_t conv_id;
+	iconv_t conv_id = (ndr_flag & NDR_FLAG_BIGENDIAN) ?
+	                  iconv_open("UTF-8", "UTF-16") :
+	                  iconv_open("UTF-8", "UTF-16LE");
 
-	if (ndr_flag & NDR_FLAG_BIGENDIAN) {
-		conv_id = iconv_open("UTF-8", "UTF-16");
-	} else {
-		conv_id = iconv_open("UTF-8", "UTF-16LE");
-	}
 	pin = (char*)src;
 	pout = dst;
 	memset(dst, 0, len);
@@ -200,11 +193,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->ppstr = (char**)(long)ptr;
-		} else {
-			r->ppstr = NULL;
-		}
+		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -222,11 +211,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 		}
 		for (cnt=0; cnt<size; cnt++) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
-			if (0 != ptr) {
-				r->ppstr[cnt] = (char*)(long)ptr;
-			} else {
-				r->ppstr[cnt] = NULL;
-			}
+			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
 		for (cnt=0; cnt<size; cnt++) {
 			if (NULL != r->ppstr[cnt]) {
@@ -302,11 +287,7 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 			return NDR_ERR_ALLOC;
 		for (cnt=0; cnt<size; cnt++) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
-			if (0 != ptr) {
-				r->ppstr[cnt] = reinterpret_cast<char *>(static_cast<uintptr_t>(ptr));
-			} else {
-				r->ppstr[cnt] = NULL;
-			}
+			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
@@ -348,11 +329,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->ppstr = (char**)(long)ptr;
-		} else {
-			r->ppstr = NULL;
-		}
+		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -370,11 +347,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 		}
 		for (cnt=0; cnt<size; cnt++) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
-			if (0 != ptr) {
-				r->ppstr[cnt] = (char*)(long)ptr;
-			} else {
-				r->ppstr[cnt] = NULL;
-			}
+			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
 		for (cnt=0; cnt<size; cnt++) {
 			if (NULL != r->ppstr[cnt]) {
@@ -471,11 +444,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 			return NDR_ERR_ALLOC;
 		for (cnt=0; cnt<size; cnt++) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
-			if (0 != ptr) {
-				r->ppstr[cnt] = reinterpret_cast<char *>(static_cast<uintptr_t>(ptr));
-			} else {
-				r->ppstr[cnt] = nullptr;
-			}
+			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
@@ -522,11 +491,7 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, int flag, BINARY *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->pb = (uint8_t*)(long)ptr;
-		} else {
-			r->pb = NULL;
-		}
+		r->pb = ptr != 0 ? reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -593,11 +558,7 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, int flag, SHORT_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->ps = (uint16_t*)(long)ptr;
-		} else {
-			r->ps = NULL;
-		}
+		r->ps = ptr != 0 ? reinterpret_cast<uint16_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -654,11 +615,7 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, int flag, LONG_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->pl = (uint32_t*)(long)ptr;
-		} else {
-			r->pl = NULL;
-		}
+		r->pl = ptr != 0 ? reinterpret_cast<uint32_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -716,11 +673,7 @@ static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, int flag, BINARY_ARRAY *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->pbin = (BINARY*)(long)ptr;
-		} else {
-			r->pbin = NULL;
-		}
+		r->pbin = ptr != 0 ? reinterpret_cast<BINARY *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -783,11 +736,7 @@ static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, int flag, FLATUID_ARRAY *r
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->ppguid = (FLATUID**)(long)ptr;
-		} else {
-			r->ppguid = NULL;
-		}
+		r->ppguid = ptr != 0 ? reinterpret_cast<FLATUID **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -862,11 +811,7 @@ static int nsp_ndr_pull_filetime_array(NDR_PULL *pndr, int flag, FILETIME_ARRAY 
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->pftime = (FILETIME*)(long)ptr;
-		} else {
-			r->pftime = NULL;
-		}
+		r->pftime = ptr != 0 ? reinterpret_cast<FILETIME *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	if (flag & FLAG_CONTENT) {
@@ -935,22 +880,14 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag,
 		case PT_STRING8:
 		case PT_UNICODE:
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
-			if (0 != ptr) {
-				r->pstr = (char*)(long)ptr;
-			} else {
-				r->pstr = NULL;
-			}
+			r->pstr = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 			break;
 		case PT_BINARY:
 			TRY(nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->bin));
 			break;
 		case PT_CLSID:
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
-			if (0 != ptr) {
-				r->pguid = (FLATUID*)(long)ptr;
-			} else {
-				r->pguid = NULL;
-			}
+			r->pguid = ptr != 0 ? reinterpret_cast<FLATUID *>(static_cast<uintptr_t>(ptr)) : nullptr;
 			break;
 		case PT_SYSTIME:
 			TRY(nsp_ndr_pull_filetime(pndr, &r->ftime));
@@ -1272,11 +1209,7 @@ static int nsp_ndr_pull_property_row(NDR_PULL *pndr, int flag, PROPERTY_ROW *r)
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->pprops = (PROPERTY_VALUE*)(long)ptr;
-		} else {
-			r->pprops = NULL;
-		}
+		r->pprops = ptr != 0 ? reinterpret_cast<PROPERTY_VALUE *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -1363,11 +1296,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		if (0 != ptr) {
-			r->pres = (RESTRICTION*)(long)ptr;
-		} else {
-			r->pres = NULL;
-		}
+		r->pres = ptr != 0 ? reinterpret_cast<RESTRICTION *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	

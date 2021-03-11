@@ -113,11 +113,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PROP_TAG_ADDRESSBOOKCONTAINERID:
 		pnode = simple_tree_node_get_parent(pnode);
-		if (NULL == pnode) {
-			pprop->value.l = 0;
-		} else {
-			pprop->value.l = ab_tree_get_node_minid(pnode);
-		}
+		pprop->value.l = pnode == nullptr ? 0 : ab_tree_get_node_minid(pnode);
 		return ecSuccess;
 	case PROP_TAG_ADDRESSTYPE:
 	case PROP_TAG_ADDRESSTYPE_STRING8:
@@ -139,29 +135,17 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
 	case PROP_TAG_OBJECTTYPE:
-		if (NODE_TYPE_MLIST == node_type) {
-			pprop->value.l = OT_DISTLIST;
-		} else if (NODE_TYPE_FOLDER == node_type) {
-			pprop->value.l = OT_FOLDER;
-		} else {
-			pprop->value.l = OT_MAILUSER;
-		}
+		pprop->value.l = node_type == NODE_TYPE_MLIST ? OT_DISTLIST :
+		                 node_type == NODE_TYPE_FOLDER ? OT_FOLDER :
+		                 OT_MAILUSER;
 		return ecSuccess;
 	case PROP_TAG_DISPLAYTYPE:
-		if (NODE_TYPE_MLIST == node_type) {
-			pprop->value.l = DT_DISTLIST;
-		} else {
-			pprop->value.l = DT_MAILUSER;
-		}
+		pprop->value.l = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		return ecSuccess;
 	case PROP_TAG_DISPLAYTYPEEX:
-		if (NODE_TYPE_ROOM == node_type) {
-			pprop->value.l = DT_ROOM;
-		} else if (NODE_TYPE_EQUIPMENT == node_type) {
-			pprop->value.l = DT_EQUIPMENT;
-		} else {
-			pprop->value.l = DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
-		}
+		pprop->value.l = node_type == NODE_TYPE_ROOM ? DT_ROOM :
+		                 node_type == NODE_TYPE_EQUIPMENT ? DT_EQUIPMENT :
+		                 DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
 		return ecSuccess;
 	case PROP_TAG_MAPPINGSIGNATURE:
 		pprop->value.bin.cb = 16;
@@ -177,11 +161,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		memcpy(pprop->value.bin.pb, pguid, 16);
 		return ecSuccess;
 	case PROP_TAG_TEMPLATEID:
-		if (NODE_TYPE_MLIST == node_type) {
-			display_type = DT_DISTLIST;
-		} else {
-			display_type = DT_MAILUSER;
-		}
+		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
 		if (FALSE == common_util_set_permanententryid(
@@ -194,11 +174,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ENTRYID:
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_ORIGINALENTRYID:
-		if (NODE_TYPE_MLIST == node_type) {
-			display_type = DT_DISTLIST;
-		} else {
-			display_type = DT_MAILUSER;
-		}
+		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		if (FALSE == b_ephid) {
 			if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 				return ecNotFound;
@@ -581,7 +557,6 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
     FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {
 	int org_id;
-	int base_id;
 	int domain_id;
 	AB_BASE *pbase;
 	DCERPC_INFO rpc_info;
@@ -612,11 +587,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 		return ecError;
 	}
 	phandle->handle_type = HANDLE_EXCHANGE_NSP;
-	if (0 == org_id) {
-		base_id = domain_id * (-1);
-	} else {
-		base_id = org_id;
-	}
+	int base_id = org_id == 0 ? -domain_id : org_id;
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase) {
 		memset(&phandle->guid, 0, sizeof(GUID));
@@ -659,15 +630,10 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 	BOOL b_found;
 	uint32_t row;
 	uint32_t minid;
-	uint32_t last_row;
 	SINGLE_LIST_NODE *pnode;
 
 	*pcount = single_list_get_nodes_num(plist);
-	if (*pcount > 0) {
-		last_row = *pcount - 1;
-	} else {
-		last_row = 0;
-	}
+	uint32_t last_row = *pcount > 0 ? *pcount - 1 : 0;
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
 		row = pstat->num_pos * (last_row + 1) / pstat->total_rec;
@@ -711,14 +677,9 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 	BOOL b_found;
 	uint32_t row;
 	uint32_t minid;
-	uint32_t last_row;
 
 	*pcount = ab_tree_get_leaves_num(pnode);
-	if (*pcount > 0) {
-		last_row = *pcount - 1;
-	} else {
-		last_row = 0;
-	}
+	uint32_t last_row = *pcount > 0 ? *pcount - 1 : 0;
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
 		row = pstat->num_pos * (last_row + 1) / pstat->total_rec;
@@ -838,11 +799,9 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	} else if (0 == row) {
 		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 	} else {
-		if (0 == pstat->container_id) {
-			pstat->cur_rec = nsp_interface_minid_in_list(pgal_list, row);
-		} else {
-			pstat->cur_rec = nsp_interface_minid_in_table(pnode, row);
-		}
+		pstat->cur_rec = pstat->container_id == 0 ?
+		                 nsp_interface_minid_in_list(pgal_list, row) :
+		                 nsp_interface_minid_in_table(pnode, row);
 		if (0 == pstat->cur_rec) {
 			row = 0;
 			pstat->cur_rec = MID_BEGINNING_OF_TABLE;
@@ -879,7 +838,6 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
     const LPROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
 {
 	int base_id;
-	BOOL b_ephid;
 	AB_BASE *pbase;
 	uint32_t result;
 	uint32_t last_row;
@@ -888,13 +846,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	SINGLE_LIST *pgal_list = nullptr;
 	SIMPLE_TREE_NODE *pnode = nullptr, *pnode1 = nullptr;
 	SINGLE_LIST_NODE *psnode;
+	BOOL b_ephid = (flags & FLAG_EPHID) ? TRUE : false;
 	
-	
-	if (FLAG_EPHID & flags) {
-		b_ephid = TRUE;
-	} else {
-		b_ephid = FALSE;
-	}
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*pprows = NULL;
 		return ecNotSupported;
@@ -2038,7 +1991,6 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t mid, uint32_t codepage, PROPTAG_ARRAY **ppproptags)
 {
 	int base_id;
-	BOOL b_unicode;
 	AB_BASE *pbase;
 	char temp_buff[1024];
 	PROPERTY_VALUE prop_val;
@@ -2053,11 +2005,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		*ppproptags = NULL;
 		return ecInvalidObject;
 	}
-	if (CODEPAGE_UNICODE == codepage) {
-		b_unicode = TRUE;
-	} else {
-		b_unicode = FALSE;
-	}
+	BOOL b_unicode = codepage == CODEPAGE_UNICODE ? TRUE : false;
 	*ppproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppproptags) {
 		return ecMAPIOOM;
@@ -2102,11 +2050,9 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, const PROPTAG_ARRAY *pproptags, PROPERTY_ROW **pprows)
 {
 	int base_id;
-	BOOL b_ephid;
 	uint32_t row;
 	uint32_t total;
 	AB_BASE *pbase;
-	BOOL b_unicode;
 	BOOL b_proptags;
 	uint32_t result;
 	uint32_t last_row;
@@ -2120,21 +2066,13 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		*pprows = NULL;
 		return ecNotSupported;
 	}
-	if (flags & FLAG_EPHID) {
-		b_ephid = TRUE;
-	} else {
-		b_ephid = FALSE;
-	}
+	BOOL b_ephid = (flags & FLAG_EPHID) ? TRUE : false;
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*pprows = NULL;
 		return ecError;
 	}
-	if (CODEPAGE_UNICODE == pstat->codepage) {
-		b_unicode = TRUE;
-	} else {
-		b_unicode = FALSE;
-	}
+	BOOL b_unicode = pstat->codepage == CODEPAGE_UNICODE ? TRUE : false;
 	if (TRUE == b_unicode && NULL != pproptags) {
 		for (size_t i = 0; i < pproptags->cvalues; ++i) {
 			if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
@@ -2169,11 +2107,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 				     psnode != NULL && i < row; ++i)
 					psnode = single_list_get_after(pgal_list, psnode);
 			}
-			if (NULL == psnode) {
-				pnode1 = NULL;
-			} else {
-				pnode1 = static_cast<decltype(pnode1)>(psnode->pdata);
-			}
+			pnode1 = psnode == nullptr ? nullptr :
+			         static_cast<decltype(pnode1)>(psnode->pdata);
 		} else {
 			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 			if (NULL == pnode) {
@@ -2367,11 +2302,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	
 	
 	prow->reserved = 0x0;
-	if (0 == depth) {
-		prow->cvalues = 6;
-	} else {
-		prow->cvalues = 7;
-	}
+	prow->cvalues = depth == 0 ? 6 : 7;
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, prow->cvalues);
 	if (NULL == prow->pprops) {
 		return FALSE;
@@ -2389,12 +2320,8 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	/* PROP_TAG_CONTAINERFLAGS */
 	prow->pprops[1].proptag = PROP_TAG_CONTAINERFLAGS;
 	prow->pprops[1].reserved = 0;
-	if (FALSE == has_child) {
-		prow->pprops[1].value.l = AB_RECIPIENTS | AB_UNMODIFIABLE;
-	} else {
-		prow->pprops[1].value.l = AB_RECIPIENTS
-			| AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-	}
+	prow->pprops[1].value.l = !has_child ? AB_RECIPIENTS | AB_UNMODIFIABLE :
+	                          AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 	
 	/* PROP_TAG_DEPTH */
 	prow->pprops[2].proptag = PROP_TAG_DEPTH;
@@ -2408,11 +2335,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	
 	/* PROP_TAG_DISPLAYNAME PROP_TAG_DISPLAYNAME_STRING8 */
 	prow->pprops[4].reserved = 0;
-	if (TRUE == b_unicode) {
-		prow->pprops[4].proptag = PROP_TAG_DISPLAYNAME;
-	} else {
-		prow->pprops[4].proptag = PROP_TAG_DISPLAYNAME_STRING8;
-	}
+	prow->pprops[4].proptag = b_unicode ? PROP_TAG_DISPLAYNAME : PROP_TAG_DISPLAYNAME_STRING8;
 	if (NULL == str_dname) {
 		prow->pprops[4].value.pstr = NULL;
 	} else {
@@ -2539,10 +2462,8 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, uint32_t *pversion, PROPROW_SET **pprows)
 {
 	int base_id;
-	BOOL b_unicode;
 	AB_BASE *pbase;
 	uint32_t result;
-	uint32_t codepage;
 	PROPERTY_ROW *prow;
 	DOMAIN_NODE *pdomain;
 	SINGLE_LIST_NODE *pnode;
@@ -2554,19 +2475,8 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		/* creation of templates table */
 		return ecSuccess;
 	}
-
-	if (flags & FLAG_UNICODESTRINGS) {
-		b_unicode = TRUE;
-	} else {
-		b_unicode = FALSE;
-	}
-	
-	if (NULL == pstat) {
-		codepage = 1252;
-	} else {
-		codepage = pstat->codepage;
-	}
-	
+	BOOL b_unicode = (flags & FLAG_UNICODESTRINGS) ? TRUE : false;
+	uint32_t codepage = pstat == nullptr ? 1252 : pstat->codepage;
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
 	if (FALSE == b_unicode && CODEPAGE_UNICODE == codepage) {
 		*pprows = NULL;
@@ -2786,14 +2696,9 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t flags, PROPTAG_ARRAY **ppcolumns)
 {
-	BOOL b_unicode;
 	PROPTAG_ARRAY *pcolumns;
+	BOOL b_unicode = (flags & FLAG_UNICODEPROPTYPES) ? TRUE : false;
 	
-	if (flags & FLAG_UNICODEPROPTYPES) {
-		b_unicode = TRUE;
-	} else {
-		b_unicode = FALSE;
-	}
 	pcolumns = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pcolumns) {
 		*ppcolumns = NULL;
