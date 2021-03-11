@@ -234,11 +234,8 @@ static BOOL attachment_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == pattachment->b_writable) {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_MODIFY;
-		} else {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_READ_ONLY;
-		}
+		*static_cast<uint32_t *>(*ppvalue) = pattachment->b_writable ?
+			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
 	case PROP_TAG_OBJECTTYPE:
 		*ppvalue = cu_alloc<uint32_t>();

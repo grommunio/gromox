@@ -50,13 +50,9 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	const BINARY *pstate_bin, const RESTRICTION *prestriction,
 	uint16_t sync_flags, BOOL *pb_changed, uint32_t *pmsg_count)
 {
-	IDSET *pseen;
-	IDSET *pread;
-	IDSET *pseen_fai;
 	USER_INFO *pinfo;
 	uint32_t count_fai;
 	uint64_t total_fai;
-	const char *username;
 	uint64_t total_normal;
 	uint32_t count_normal;
 	EID_ARRAY chg_messages;
@@ -75,26 +71,10 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (sync_flags & SYNC_FLAG_READSTATE) {
-		pread = pctx->pstate->pread;
-	} else {
-		pread = NULL;
-	}
-	if (sync_flags & SYNC_FLAG_FAI) {
-		pseen_fai = pctx->pstate->pseen_fai;
-	} else {
-		pseen_fai = NULL;
-	}
-	if (sync_flags & SYNC_FLAG_NORMAL) {
-		pseen = pctx->pstate->pseen;
-	} else {
-		pseen = NULL;
-	}
-	if (FALSE == store_object_check_private(pctx->pstore)) {
-		username = pinfo->username;
-	} else {
-		username = NULL;
-	}
+	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
+	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
+	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
+	auto username = !store_object_check_private(pctx->pstore) ? pinfo->username : nullptr;
 	if (FALSE == exmdb_client_get_content_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,
 		username, pctx->pstate->pgiven, pseen, pseen_fai,
@@ -182,7 +162,6 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 {
 	void *pvalue;
 	USER_INFO *pinfo;
-	const char *username;
 	FOLDER_CHANGES fldchgs;
 	EID_ARRAY given_folders;
 	EID_ARRAY deleted_folders;
@@ -195,11 +174,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (TRUE == store_object_check_owner_mode(pctx->pstore)) {
-		username = NULL;
-	} else {
-		username = pinfo->username;
-	}
+	auto username = store_object_check_owner_mode(pctx->pstore) ? nullptr : pinfo->username;
 	if (FALSE == exmdb_client_get_hierarchy_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,
 		username, pctx->pstate->pgiven, pctx->pstate->pseen,

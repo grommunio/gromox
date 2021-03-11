@@ -265,17 +265,12 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 static BINARY* container_object_folder_to_addressbook_entryid(
 	BOOL b_private, int db_id, uint64_t folder_id)
 {
-	uint8_t type;
 	BINARY *pbin;
 	char x500dn[128];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
+	uint8_t type = b_private ? LOC_TYPE_PRIVATE_FOLDER : LOC_TYPE_PUBLIC_FOLDER;
 	
-	if (TRUE == b_private) {
-		type = LOC_TYPE_PRIVATE_FOLDER;
-	} else {
-		type = LOC_TYPE_PUBLIC_FOLDER;
-	}
 	memcpy(x500dn, "/exmdb=", 7);
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, folder_id, x500dn + 7);
@@ -305,17 +300,12 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	BOOL b_private, int db_id, uint64_t message_id, int num)
 {
 	int len;
-	uint8_t type;
 	BINARY *pbin;
 	char x500dn[128];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
+	uint8_t type = b_private ? LOC_TYPE_PRIVATE_MESSAGE : LOC_TYPE_PUBLIC_MESSAGE;
 	
-	if (TRUE == b_private) {
-		type = LOC_TYPE_PRIVATE_MESSAGE;
-	} else {
-		type = LOC_TYPE_PUBLIC_MESSAGE;
-	}
 	memcpy(x500dn, "/exmdb=", 7);
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, message_id, x500dn + 7);
@@ -695,11 +685,8 @@ BOOL container_object_fetch_special_property(
 									ab_entryid.provider_uid);
 		ab_entryid.version = 1;
 		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
-		if (SPECIAL_CONTAINER_GAL == special_type) {
-			ab_entryid.px500dn = deconst("");
-		} else {
-			ab_entryid.px500dn = deconst("/");
-		}
+		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?
+		                     deconst("") : deconst("/");
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr)
 			return FALSE;
@@ -730,11 +717,9 @@ BOOL container_object_fetch_special_property(
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_DISPLAYNAME:
-		if (SPECIAL_CONTAINER_GAL == special_type) {
-			*ppvalue = deconst("Global Address List");
-		} else {
-			*ppvalue = deconst("Gromox Contact Folders");
-		}
+		*ppvalue = special_type == SPECIAL_CONTAINER_GAL ?
+		           deconst("Global Address List") :
+		           deconst("Gromox Contact Folders");
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:
 		pvalue = cu_alloc<uint8_t>();
@@ -783,7 +768,6 @@ static BOOL container_object_fetch_folder_properties(
 {
 	int i;
 	int count;
-	BOOL b_sub;
 	void *pvalue;
 	USER_INFO *pinfo;
 	uint64_t folder_id;
@@ -842,27 +826,21 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
-		case PROP_TAG_CONTAINERFLAGS:
+		case PROP_TAG_CONTAINERFLAGS: {
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_SUBFOLDERS);
-			if (NULL == pvalue || 0 == *(uint32_t*)pvalue) {
-				b_sub = FALSE;
-			} else {
-				b_sub = TRUE;
-			}
+			BOOL b_sub = pvalue == nullptr || *static_cast<uint32_t *>(pvalue) == 0 ? false : TRUE;
 			pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			if (TRUE == b_sub) {
-				*(uint32_t*)pvalue = AB_RECIPIENTS | AB_UNMODIFIABLE;
-			} else {
-				*(uint32_t*)pvalue = AB_RECIPIENTS |
-					AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-			}
+			*static_cast<uint32_t *>(pvalue) = b_sub ?
+				AB_RECIPIENTS | AB_UNMODIFIABLE :
+				AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
+		}
 		case PROP_TAG_DEPTH: {
 			auto pc = static_cast<char *>(common_util_get_propvals(
 			          ppropvals, PROP_TAG_FOLDERPATHNAME));

@@ -1630,12 +1630,9 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (FALSE == ab_tree_has_child(pnode)) {
-			*(uint32_t*)pvalue = AB_RECIPIENTS | AB_UNMODIFIABLE;
-		} else {
-			*(uint32_t*)pvalue = AB_RECIPIENTS |
-				AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-		}
+		*static_cast<uint32_t *>(pvalue) = !ab_tree_has_child(pnode) ?
+			AB_RECIPIENTS | AB_UNMODIFIABLE :
+			AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_DEPTH:

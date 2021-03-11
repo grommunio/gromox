@@ -391,12 +391,8 @@ static void *thread_work_func(void *pparam)
 				tmp_bin.cb = buff_len;
 				tmp_bin.pb = buff;
 				common_util_build_environment();
-				if (EXT_ERR_SUCCESS == exmdb_ext_pull_db_notify(
-					&tmp_bin, &notify)) {
-					resp_code = exmdb_response::SUCCESS;
-				} else {
-					resp_code = exmdb_response::PULL_ERROR;
-				}
+				resp_code = exmdb_ext_pull_db_notify(&tmp_bin, &notify) == EXT_ERR_SUCCESS ?
+				            exmdb_response::SUCCESS : exmdb_response::PULL_ERROR;
 				if (1 != write(pagent->sockd, &resp_code, 1)) {
 					close(pagent->sockd);
 					pagent->sockd = -1;
@@ -641,11 +637,7 @@ BOOL exmdb_client_get_folder_property(const char *dir,
 		&tmp_propvals)) {
 		return FALSE;	
 	}
-	if (0 == tmp_propvals.count) {
-		*ppval = NULL;
-	} else {
-		*ppval = tmp_propvals.ppropval->pvalue;
-	}
+	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;
 }
 
@@ -662,11 +654,7 @@ BOOL exmdb_client_get_message_property(const char *dir,
 		username, cpid, message_id, &tmp_proptags, &tmp_propvals)) {
 		return FALSE;	
 	}
-	if (0 == tmp_propvals.count) {
-		*ppval = NULL;
-	} else {
-		*ppval = tmp_propvals.ppropval->pvalue;
-	}
+	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;
 }
 
@@ -683,11 +671,7 @@ BOOL exmdb_client_delete_message(const char *dir,
 		cpid, NULL, folder_id, &message_ids, b_hard, &b_partial)) {
 		return FALSE;	
 	}
-	if (FALSE == b_partial) {
-		*pb_done = TRUE;
-	} else {
-		*pb_done = FALSE;
-	}
+	*pb_done = !b_partial ? TRUE : false;
 	return TRUE;
 }
 
@@ -704,11 +688,7 @@ BOOL exmdb_client_get_instance_property(
 		0, instance_id, &tmp_proptags, &tmp_propvals)) {
 		return FALSE;	
 	}
-	if (0 == tmp_propvals.count) {
-		*ppval = NULL;
-	} else {
-		*ppval = tmp_propvals.ppropval->pvalue;
-	}
+	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;
 }
 
@@ -725,11 +705,7 @@ BOOL exmdb_client_set_instance_property(
 		instance_id, &tmp_propvals, &tmp_problems)) {
 		return FALSE;	
 	}
-	if (0 == tmp_problems.count) {
-		*presult = 0;
-	} else {
-		*presult = tmp_problems.pproblem->err;
-	}
+	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
 	return TRUE;
 }
 
@@ -745,11 +721,7 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 		dir, instance_id, &tmp_proptags, &tmp_problems)) {
 		return FALSE;	
 	}
-	if (0 == tmp_problems.count) {
-		*presult = 0;
-	} else {
-		*presult = tmp_problems.pproblem->err;
-	}
+	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
 	return TRUE;
 }
 
@@ -795,11 +767,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		*pb_owner = false;
 		return TRUE;
 	}
-	if (0 == strcasecmp(username, tmp_name)) {
-		*pb_owner = TRUE;
-	} else {
-		*pb_owner = FALSE;
-	}
+	*pb_owner = strcasecmp(username, tmp_name) == 0 ? TRUE : false;
 	return TRUE;
 }
 

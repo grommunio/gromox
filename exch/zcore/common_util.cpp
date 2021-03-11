@@ -808,17 +808,12 @@ static BINARY* common_util_dup_binary(const BINARY *pbin)
 ZNOTIFICATION* common_util_dup_znotification(
 	ZNOTIFICATION *pnotification, BOOL b_temp)
 {
-	ZNOTIFICATION *pnotification1;
 	OBJECT_ZNOTIFICATION *pobj_notify;
 	OBJECT_ZNOTIFICATION *pobj_notify1;
 	NEWMAIL_ZNOTIFICATION *pnew_notify;
 	NEWMAIL_ZNOTIFICATION *pnew_notify1;
+	ZNOTIFICATION *pnotification1 = !b_temp ? me_alloc<ZNOTIFICATION>() : cu_alloc<ZNOTIFICATION>();
 	
-	if (FALSE == b_temp) {
-		pnotification1 = me_alloc<ZNOTIFICATION>();
-	} else {
-		pnotification1 = cu_alloc<ZNOTIFICATION>();
-	}
 	if (NULL == pnotification) {
 		return NULL;
 	}
@@ -1091,11 +1086,8 @@ int common_util_convert_string(BOOL to_utf8,
 	USER_INFO *pinfo;
 	
 	pinfo = zarafa_server_get_info();
-	if (TRUE == to_utf8) {
-		return common_util_mb_to_utf8(pinfo->cpid, src, dst, len);
-	} else {
-		return common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
-	}
+	return to_utf8 ? common_util_mb_to_utf8(pinfo->cpid, src, dst, len) :
+	       common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
 }
 
 BOOL common_util_addressbook_entryid_to_username(
@@ -1290,11 +1282,8 @@ BOOL common_util_username_to_entryid(const char *username,
 						oneoff_entry.provider_uid);
 	oneoff_entry.version = 0;
 	oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
-	if (NULL != pdisplay_name && '\0' != pdisplay_name[0]) {
-		oneoff_entry.pdisplay_name = (char*)pdisplay_name;
-	} else {
-		oneoff_entry.pdisplay_name = (char*)username;
-	}
+	oneoff_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
+	                             deconst(pdisplay_name) : deconst(username);
 	oneoff_entry.paddress_type = deconst("SMTP");
 	oneoff_entry.pmail_address = (char*)username;
 	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
@@ -2202,11 +2191,7 @@ static BOOL common_util_get_propname(
 		common_util_get_dir(), &propids, &propnames)) {
 		return FALSE;
 	}
-	if (1 != propnames.count) {
-		*pppropname = NULL;
-	} else {
-		*pppropname = propnames.ppropname;
-	}
+	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
 	return TRUE;
 }
 
@@ -2217,8 +2202,6 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_delete;
-	BOOL b_resend;
-	uint32_t cpid;
 	int body_type;
 	EID_ARRAY ids;
 	BOOL b_private;
@@ -2236,11 +2219,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	
 	
 	pinfo = zarafa_server_get_info();
-	if (NULL == pinfo) {
-		cpid = 1252;
-	} else {
-		cpid = pinfo->cpid;
-	}
+	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_get_message_property(
 		store_object_get_dir(pstore), NULL, 0,
 		message_id, PROP_TAG_PARENTFOLDERID,
@@ -2272,12 +2251,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 		return FALSE;
 	}
 	message_flags = *(uint32_t*)pvalue;
-	if (message_flags & MESSAGE_FLAG_RESEND) {
-		b_resend = TRUE;
-	} else {
-		b_resend = FALSE;
-	}
-	
+	BOOL b_resend = (message_flags & MESSAGE_FLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		return FALSE;
@@ -2438,7 +2412,6 @@ void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief)
 {
 	MAIL imail;
-	int bounce_type;
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST rcpt_list;
 	
@@ -2450,11 +2423,7 @@ void common_util_notify_receipt(const char *username,
 	double_list_init(&rcpt_list);
 	double_list_append_as_tail(&rcpt_list, &node);
 	mail_init(&imail, g_mime_pool);
-	if (NOTIFY_RECEIPT_READ == type) {
-		bounce_type = BOUNCE_NOTIFY_READ;
-	} else {
-		bounce_type = BOUNCE_NOTIFY_NON_READ;
-	}
+	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
 	if (FALSE == bounce_producer_make(username,
 		pbrief, bounce_type, &imail)) {
 		mail_free(&imail);
@@ -2713,16 +2682,11 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	BINARY *pbin1;
 	USER_INFO *pinfo;
 	uint64_t change_num;
-	const char *username;
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	pinfo = zarafa_server_get_info();
-	if (TRUE == store_object_check_private(pstore)) {
-		username = NULL;
-	} else {
-		username = pinfo->username;
-	}
+	auto username = store_object_check_private(pstore) ? nullptr : pinfo->username;
 	if (FALSE == exmdb_client_read_message(
 		store_object_get_dir(pstore), username,
 		pinfo->cpid, message_id, &pmsgctnt)) {
@@ -2772,13 +2736,9 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	if (TRUE == store_object_check_private(pstore)) {
-		tmp_xid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pstore));
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(
-			store_object_get_account_id(pstore));
-	}
+	tmp_xid.guid = store_object_check_private(pstore) ?
+	               rop_util_make_user_guid(store_object_get_account_id(pstore)) :
+	               rop_util_make_domain_guid(store_object_get_account_id(pstore));
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -2871,13 +2831,9 @@ static BOOL common_util_create_folder(
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
-	if (TRUE == store_object_check_private(pstore)) {
-		tmp_xid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pstore));
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(
-			store_object_get_account_id(pstore));
-	}
+	tmp_xid.guid = store_object_check_private(pstore) ?
+	               rop_util_make_user_guid(store_object_get_account_id(pstore)) :
+	               rop_util_make_domain_guid(store_object_get_account_id(pstore));
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -3037,11 +2993,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		if (err != GXERR_SUCCESS)
 			return err;
 	}
-	if (FALSE == store_object_check_owner_mode(pstore)) {	
-		username = pinfo->username;
-	} else {
-		username = NULL;
-	}
+	username = !store_object_check_owner_mode(pstore) ? pinfo->username : nullptr;
 	if (FALSE == exmdb_client_load_hierarchy_table(
 		store_object_get_dir(pstore), folder_id,
 		username, TABLE_FLAG_NONOTIFICATIONS, NULL,
@@ -3098,7 +3050,6 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	MAIL imail;
 	void *pvalue;
 	int body_type;
-	uint32_t cpid;
 	size_t mail_len;
 	USER_INFO *pinfo;
 	STREAM tmp_stream;
@@ -3117,11 +3068,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 		return common_util_load_file(tmp_path, peml_bin);
 	}
 	pinfo = zarafa_server_get_info();
-	if (NULL == pinfo) {
-		cpid = 1252;
-	} else {
-		cpid = pinfo->cpid;
-	}
+	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_read_message(
 		store_object_get_dir(pstore), NULL, cpid,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {
@@ -3229,17 +3176,12 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *pical_bin)
 {
 	ICAL ical;
-	uint32_t cpid;
 	USER_INFO *pinfo;
 	char tmp_buff[1024*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	pinfo = zarafa_server_get_info();
-	if (NULL == pinfo) {
-		cpid = 1252;
-	} else {
-		cpid = pinfo->cpid;
-	}
+	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_read_message(
 		store_object_get_dir(pstore), NULL, cpid,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {
@@ -3297,16 +3239,11 @@ BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 	STORE_OBJECT *pstore = message_object_get_store(pmessage);
 	uint64_t message_id = message_object_get_id(pmessage);
 	VCARD vcard;
-	uint32_t cpid;
 	USER_INFO *pinfo;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	pinfo = zarafa_server_get_info();
-	if (NULL == pinfo) {
-		cpid = 1252;
-	} else {
-		cpid = pinfo->cpid;
-	}
+	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_read_message(
 		store_object_get_dir(pstore), NULL, cpid,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {

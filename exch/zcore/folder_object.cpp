@@ -713,13 +713,9 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 		(void**)&pbin_pcl) || NULL == pbin_pcl) {
 		return FALSE;
 	}
-	if (TRUE == store_object_check_private(pfolder->pstore)) {
-		tmp_xid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pfolder->pstore));
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(
-			store_object_get_account_id(pfolder->pstore));
-	}
+	tmp_xid.guid = store_object_check_private(pfolder->pstore) ?
+	               rop_util_make_user_guid(store_object_get_account_id(pfolder->pstore)) :
+	               rop_util_make_domain_guid(store_object_get_account_id(pfolder->pstore));
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
@@ -804,13 +800,9 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	}
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	if (TRUE == store_object_check_private(pfolder->pstore)) {
-		tmp_xid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pfolder->pstore));
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(
-			store_object_get_account_id(pfolder->pstore));
-	}
+	tmp_xid.guid = store_object_check_private(pfolder->pstore) ?
+	               rop_util_make_user_guid(store_object_get_account_id(pfolder->pstore)) :
+	               rop_util_make_domain_guid(store_object_get_account_id(pfolder->pstore));
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
@@ -836,7 +828,6 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	PERMISSION_SET *pperm_set)
 {
-	uint32_t flags;
 	const char *dir;
 	uint32_t row_num;
 	uint32_t *prights;
@@ -850,13 +841,9 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	};
 	
 	dir = store_object_get_dir(pfolder->pstore);
-	if (FALSE == store_object_check_private(pfolder->pstore)
-		&& rop_util_get_gc_value(pfolder->folder_id) ==
-		PRIVATE_FID_CALENDAR) {
-		flags = PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY;
-	} else {
-		flags = 0;
-	}
+	uint32_t flags = !store_object_check_private(pfolder->pstore) &&
+	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
+		         PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
 	if (FALSE == exmdb_client_load_permission_table(dir,
 		pfolder->folder_id, flags, &table_id, &row_num)) {
 		return FALSE;
@@ -898,7 +885,6 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	const PERMISSION_SET *pperm_set)
 {
-	BOOL b_freebusy;
 	const char *dir;
 	BINARY *pentryid;
 	uint32_t row_num;
@@ -1021,13 +1007,9 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		}
 		count ++;
 	}
-	if (FALSE == store_object_check_private(pfolder->pstore)
-		&& rop_util_get_gc_value(pfolder->folder_id) ==
-		PRIVATE_FID_CALENDAR) {
-		b_freebusy = TRUE;	
-	} else {
-		b_freebusy = FALSE;
-	}
+	BOOL b_freebusy = !store_object_check_private(pfolder->pstore) &&
+	                  rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
+	                  TRUE : false;
 	return exmdb_client_update_folder_permission(dir,
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }

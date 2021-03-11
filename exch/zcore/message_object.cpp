@@ -162,17 +162,8 @@ BOOL message_object_check_orignal_touched(
 		    pmessage->instance_id, &pchange_num))
 			return FALSE;	
 	}
-	if (NULL == pchange_num) {
-		/* if cannot find PROP_TAG_CHANGENUMBER, it
-			means message does not exist any more */
-		*pb_touched = TRUE;
-	} else {
-		if (*pchange_num == pmessage->change_num) {
-			*pb_touched = FALSE;
-		} else {
-			*pb_touched = TRUE;
-		}
-	}
+	/* if it cannot find PROP_TAG_CHANGENUMBER, it means message does not exist any more */
+	*pb_touched = pchange_num == nullptr || *pchange_num != pmessage->change_num ? TRUE : false;
 	return TRUE;
 }
 
@@ -290,11 +281,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	if (FALSE == b_fai) {
-		*(uint8_t*)pvalue = 0;
-	} else {
-		*(uint8_t*)pvalue = 1;
-	}
+	*static_cast<uint8_t *>(pvalue) = !!b_fai;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -416,7 +403,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 {
 	int i;
 	BOOL b_new;
-	BOOL b_fai;
 	XID tmp_xid;
 	void *pvalue;
 	const char *dir;
@@ -450,11 +436,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		&pvalue)) {
 		return GXERR_CALL_FAILED;
 	}
-	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-		b_fai = FALSE;
-	} else {
-		b_fai = TRUE;
-	}
+	BOOL b_fai = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (NULL == tmp_propvals.ppropval) {
@@ -1053,11 +1035,8 @@ static BOOL message_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == pmessage->b_writable) {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_MODIFY;
-		} else {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_READ_ONLY;
-		}
+		*static_cast<uint32_t *>(*ppvalue) = pmessage->b_writable ?
+			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
 	case PROP_TAG_ENTRYID:
 		if (0 == pmessage->message_id) {
@@ -1272,24 +1251,9 @@ static BOOL message_object_set_properties_internal(
 				propval_buff[2].proptag =
 					PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 				propval_buff[2].pvalue = &tmp_bytes[2];
-				if (0 == ((*(uint32_t*)ppropvals->ppropval[i].pvalue)
-					& MESSAGE_FLAG_READ)) {
-					tmp_bytes[0] = 0;	
-				} else {
-					tmp_bytes[0] = 1;
-				}
-				if (0 == ((*(uint32_t*)ppropvals->ppropval[i].pvalue)
-					& MESSAGE_FLAG_NOTIFYREAD)) {
-					tmp_bytes[1] = 0;	
-				} else {
-					tmp_bytes[1] = 1;
-				}
-				if (0 == ((*(uint32_t*)ppropvals->ppropval[i].pvalue)
-					& MESSAGE_FLAG_NOTIFYUNREAD)) {
-					tmp_bytes[2] = 0;	
-				} else {
-					tmp_bytes[2] = 1;
-				}
+				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_READ);
+				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_NOTIFYREAD);
+				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_NOTIFYUNREAD);
 				if (FALSE == exmdb_client_set_instance_properties(
 					store_object_get_dir(pmessage->pstore),
 					pmessage->instance_id, &tmp_propvals1,

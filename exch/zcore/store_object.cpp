@@ -327,11 +327,8 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 			pindex_map[i] = i;
 			continue;
 		}
-		if (NULL != pstore->ppropid_hash) {
-			pname = static_cast<PROPERTY_NAME *>(int_hash_query(pstore->ppropid_hash, ppropids->ppropid[i]));
-		} else {
-			pname = NULL;
-		}
+		pname = pstore->ppropid_hash == nullptr ? nullptr :
+		        static_cast<PROPERTY_NAME *>(int_hash_query(pstore->ppropid_hash, ppropids->ppropid[i]));
 		if (NULL != pname) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;
@@ -466,11 +463,8 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 			pindex_map[i] = i;
 			continue;
 		}
-		if (NULL != pstore->ppropname_hash) {
-			pid = static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash, tmp_string));
-		} else {
-			pid = NULL;
-		}
+		pid = pstore->ppropname_hash == nullptr ? nullptr :
+		      static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash, tmp_string));
 		if (NULL != pid) {
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;
@@ -812,11 +806,10 @@ static void* store_object_get_oof_property(
 	}
 	case PROP_TAG_OOFINTERNALREPLY:
 	case PROP_TAG_OOFEXTERNALREPLY:
-		if (PROP_TAG_OOFINTERNALREPLY == proptag) {
-			sprintf(temp_path, "%s/config/internal-reply", maildir);
-		} else {
-			sprintf(temp_path, "%s/config/external-reply", maildir);
-		}
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+		         proptag == PROP_TAG_OOFINTERNALREPLY ?
+		         "%s/config/internal-reply" : "%s/config/external-reply",
+		         maildir);
 		if (0 != stat(temp_path, &node_stat)) {
 			return NULL;
 		}
@@ -839,11 +832,10 @@ static void* store_object_get_oof_property(
 		return strstr(pbuff, "\r\n\r\n");
 	case PROP_TAG_OOFINTERNALSUBJECT:
 	case PROP_TAG_OOFEXTERNALSUBJECT:
-		if (PROP_TAG_OOFINTERNALSUBJECT == proptag) {
-			sprintf(temp_path, "%s/config/internal-reply", maildir);
-		} else {
-			sprintf(temp_path, "%s/config/external-reply", maildir);
-		}
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+		         proptag == PROP_TAG_OOFINTERNALSUBJECT ?
+		         "%s/config/internal-reply" : "%s/config/external-reply",
+		         maildir);
 		if (0 != stat(temp_path, &node_stat)) {
 			return NULL;
 		}
@@ -889,11 +881,8 @@ static void* store_object_get_oof_property(
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (PROP_TAG_OOFBEGIN == proptag) {
-			str_value = config_file_get_value(pconfig, "START_TIME");
-		} else {
-			str_value = config_file_get_value(pconfig, "END_TIME");
-		}
+		str_value = config_file_get_value(pconfig,
+		            proptag == PROP_TAG_OOFBEGIN ? "START_TIME" : "END_TIME");
 		if (NULL == str_value) {
 			return NULL;
 		}
@@ -907,16 +896,11 @@ static void* store_object_get_oof_property(
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
-		if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
-			str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
-		} else {
-			str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
-		}
-		if (NULL == str_value || 0 == atoi(str_value)) {
-			pvalue = deconst(&fake_false);
-		} else {
-			pvalue = deconst(&fake_true);
-		}
+		str_value = config_file_get_value(pconfig,
+		            proptag == PROP_TAG_OOFALLOWEXTERNAL ?
+		            "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE");
+		pvalue = str_value == nullptr || atoi(str_value) == 0 ?
+		         deconst(&fake_false) : deconst(&fake_true);
 		return pvalue;
 	}
 	}
@@ -996,11 +980,7 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_owner_mode(pstore)) {
-			*(uint8_t*)(*ppvalue) = 1;
-		} else {
-			*(uint8_t*)(*ppvalue) = 0;
-		}
+		*static_cast<uint8_t *>(*ppvalue) = !!store_object_check_owner_mode(pstore);
 		return TRUE;
 	case PROP_TAG_ACCESS:
 		*ppvalue = cu_alloc<uint8_t>();
@@ -1223,13 +1203,9 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_IPMFAVORITESENTRYID:
-		if (TRUE == store_object_check_private(pstore)) {
-			*ppvalue = common_util_to_folder_entryid(pstore,
-				rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS));
-		} else {
-			*ppvalue = common_util_to_folder_entryid(pstore,
-				rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE));
-		}
+		*ppvalue = common_util_to_folder_entryid(pstore,
+		           rop_util_make_eid_ex(1, store_object_check_private(pstore) ?
+		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1494,11 +1470,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return FALSE;
 		}
 		sprintf(temp_buff, "%lu", rop_util_nttime_to_unix(*(uint64_t*)pvalue));
-		if (PROP_TAG_OOFBEGIN == proptag) {
-			config_file_set_value(pconfig, "START_TIME", temp_buff);
-		} else {
-			config_file_set_value(pconfig, "END_TIME", temp_buff);
-		}
+		config_file_set_value(pconfig, proptag == PROP_TAG_OOFBEGIN ?
+		                      "START_TIME" : "END_TIME", temp_buff);
 		if (FALSE == config_file_save(pconfig)) {
 			return FALSE;
 		}
@@ -1506,11 +1479,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PROP_TAG_OOFINTERNALREPLY:
 	case PROP_TAG_OOFEXTERNALREPLY: {
-		if (PROP_TAG_OOFINTERNALREPLY == proptag) {
-			sprintf(temp_path, "%s/config/internal-reply", maildir);
-		} else {
-			sprintf(temp_path, "%s/config/external-reply", maildir);
-		}
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+		         proptag == PROP_TAG_OOFINTERNALREPLY ?
+		         "%s/config/internal-reply" : "%s/config/external-reply",
+		         maildir);
 		wrapfd fd = open(temp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
@@ -1544,11 +1516,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PROP_TAG_OOFINTERNALSUBJECT:
 	case PROP_TAG_OOFEXTERNALSUBJECT:
-		if (PROP_TAG_OOFINTERNALSUBJECT == proptag) {
-			sprintf(temp_path, "%s/config/internal-reply", maildir);
-		} else {
-			sprintf(temp_path, "%s/config/external-reply", maildir);
-		}
+		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
+		         proptag == PROP_TAG_OOFINTERNALSUBJECT ?
+		         "%s/config/internal-reply" : "%s/config/external-reply",
+		         maildir);
 		if (0 != stat(temp_path, &node_stat)) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
@@ -1605,19 +1576,9 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (NULL == pconfig) {
 			return FALSE;
 		}
-		if (0 == *(uint8_t*)pvalue) {
-			if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
-				config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "0");
-			} else {
-				config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "0");
-			}
-		} else {
-			if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
-				config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "1");
-			} else {
-				config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "1");
-			}
-		}
+		config_file_set_value(pconfig, proptag == PROP_TAG_OOFALLOWEXTERNAL ?
+		                      "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE",
+		                      *static_cast<const uint8_t *>(pvalue) == 0 ? "0" : "1");
 		if (FALSE == config_file_save(pconfig)) {
 			return FALSE;
 		}
@@ -1920,15 +1881,11 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
-	uint64_t folder_id;
 	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
+	uint64_t folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
+	                     PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE);
 	
-	if (TRUE == pstore->b_private) {
-		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE);
-	} else {
-		folder_id = rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE);
-	}
 	if (FALSE == exmdb_client_load_hierarchy_table(
 		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
 		NULL, &table_id, &row_num)) {

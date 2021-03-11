@@ -48,11 +48,7 @@ BOOL table_object_check_loaded(TABLE_OBJECT *ptable)
 		STORE_TABLE == ptable->table_type) {
 		return TRUE;
 	}
-	if (0 == ptable->table_id) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	return ptable->table_id == 0 ? false : TRUE;
 }
 
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
@@ -80,11 +76,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	switch (ptable->table_type) {
 	case HIERARCHY_TABLE:
 		pinfo = zarafa_server_get_info();
-		if (TRUE == store_object_check_owner_mode(ptable->pstore)) {
-			username = NULL;
-		} else {
-			username = pinfo->username;
-		}
+		username = store_object_check_owner_mode(ptable->pstore) ? nullptr : pinfo->username;
 		table_flags = TABLE_FLAG_NONOTIFICATIONS;
 		if (ptable->table_flags & FLAG_SOFT_DELETE) {
 			table_flags |= TABLE_FLAG_SOFTDELETES;
@@ -311,11 +303,9 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	BINARY *pentryid;
 	uint64_t tmp_eid;
 	uint8_t mapi_type;
-	int32_t row_needed;
 	int idx, idx1, idx2;
 	TARRAY_SET rcpt_set;
 	TARRAY_SET temp_set;
-	const char *username;
 	STORE_OBJECT *pstore;
 	uint32_t *ppermission;
 	uint32_t *ptag_access;
@@ -349,11 +339,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	if (row_count > row_num) {
 		row_count = row_num;
 	}
-	if (TRUE == b_forward) {
-		row_needed = row_count;
-	} else {
-		row_needed = -1 * row_count;
-	}
+	int32_t row_needed = b_forward == TRUE ? row_count : -row_count; /* XXX */
 	if (ATTACHMENT_TABLE == ptable->table_type) {
 		return message_object_query_attachment_table(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
@@ -363,11 +349,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		    0, 0xFFFF, &rcpt_set))
 			return FALSE;	
 		if (TRUE == b_forward) {
-			if (ptable->position + row_needed > rcpt_set.count) {
-				end_pos = rcpt_set.count;
-			} else {
-				end_pos = ptable->position + row_needed;
-			}
+			end_pos = ptable->position + row_needed > rcpt_set.count ?
+			          rcpt_set.count : ptable->position + row_needed;
 			pset->count = 0;
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
 			if (NULL == pset->pparray) {
@@ -537,11 +520,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		return TRUE;
 	}
-	if (FALSE == store_object_check_private(ptable->pstore)) {
-		username = pinfo->username;
-	} else {
-		username = NULL;
-	}
+	auto username = !store_object_check_private(ptable->pstore) ?
+	                pinfo->username : nullptr;
 	if ((CONTENT_TABLE == ptable->table_type ||
 		HIERARCHY_TABLE == ptable->table_type)) {
 		idx = common_util_index_proptags(
@@ -564,11 +544,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			memcpy(tmp_columns.pproptag, pcolumns->pproptag,
 						sizeof(uint32_t)*pcolumns->count);
 			if (idx >= 0) {
-				if (CONTENT_TABLE == ptable->table_type) {
-					tmp_columns.pproptag[idx] = PROP_TAG_MID;
-				} else {
-					tmp_columns.pproptag[idx] = PROP_TAG_FOLDERID;
-				}
+				tmp_columns.pproptag[idx] = ptable->table_type == CONTENT_TABLE ?
+				                            PROP_TAG_MID : PROP_TAG_FOLDERID;
 			}
 			if (idx1 >= 0) {
 				tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
@@ -1241,7 +1218,6 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	int32_t *pposition)
 {
 	USER_INFO *pinfo;
-	const char *username;
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[2];
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1250,11 +1226,8 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 		return FALSE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (FALSE == store_object_check_private(ptable->pstore)) {
-		username = pinfo->username;
-	} else {
-		username = NULL;
-	}
+	auto username = !store_object_check_private(ptable->pstore) ?
+	                pinfo->username : nullptr;
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_INSTID;
@@ -1271,17 +1244,13 @@ BOOL table_object_read_row(TABLE_OBJECT *ptable,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	USER_INFO *pinfo;
-	const char *username;
 	
 	if (NULL == ptable->pcolumns || 0 == ptable->table_id) {
 		return FALSE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (FALSE == store_object_check_private(ptable->pstore)) {
-		username = pinfo->username;
-	} else {
-		username = NULL;
-	}
+	auto username = !store_object_check_private(ptable->pstore) ?
+	                pinfo->username : nullptr;
 	return exmdb_client_read_table_row(
 		store_object_get_dir(ptable->pstore),
 		username, pinfo->cpid, ptable->table_id,
