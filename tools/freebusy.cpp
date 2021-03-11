@@ -693,11 +693,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 	}
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
@@ -706,11 +702,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
@@ -848,11 +840,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			return NULL;
 	}
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
@@ -861,11 +849,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
@@ -1495,31 +1479,11 @@ static void output_event(time_t start_time, time_t end_time,
 		         tmp_buff, sizeof(tmp_buff), &tmp_len);
 		printf("\"Location\":\"%s\", ", tmp_buff);
 	}
-	if (TRUE == b_meeting) {
-		printf("\"IsMeeting\":true, ");
-	} else {
-		printf("\"IsMeeting\":false, ");
-	}
-	if (TRUE == b_recurring) {
-		printf("\"IsRecurring\":true, ");
-	} else {
-		printf("\"IsRecurring\":false, ");
-	}
-	if (TRUE == b_exception) {
-		printf("\"IsException\":true, ");
-	} else {
-		printf("\"IsException\":false, ");
-	}
-	if (TRUE == b_reminder) {
-		printf("\"IsReminderSet\":true, ");
-	} else {
-		printf("\"IsReminderSet\":false, ");
-	}
-	if (TRUE == b_private) {
-		printf("\"IsPrivate\":true}");
-	} else {
-		printf("\"IsPrivate\":false}");
-	}
+	printf(b_meeting ? "\"IsMeeting\":true, " : "\"IsMeeting\":false, ");
+	printf(b_recurring ? "\"IsRecurring\":true, " : "\"IsRecurring\":false, ");
+	printf(b_exception ? "\"IsException\":true, " : "\"IsException\":false, ");
+	printf(b_reminder ? "\"IsReminderSet\":true, " : "\"IsReminderSet\":false, ");
+	printf(b_private ? "\"IsPrivate\":true}" : "\"IsPrivate\":false}");
 }
 
 static BOOL get_freebusy(const char *dir)
@@ -1528,15 +1492,10 @@ static BOOL get_freebusy(const char *dir)
 	int sockd;
 	void *pvalue;
 	BOOL b_first;
-	BOOL b_private;
-	BOOL b_meeting;
 	char *psubject;
 	BOOL b_private1 = false, b_meeting1;
-	char *psubject1;
-	BOOL b_reminder;
 	char *plocation;
 	BOOL b_reminder1;
-	char *plocation1;
 	uint8_t tmp_true;
 	uint32_t lids[13];
 	uint32_t table_id;
@@ -1545,7 +1504,6 @@ static BOOL get_freebusy(const char *dir)
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t busy_type;
-	uint32_t busy_type1;
 	EVENT_NODE *pevnode;
 	uint64_t end_nttime;
 	uint32_t permission;
@@ -1864,12 +1822,8 @@ static BOOL get_freebusy(const char *dir)
 		return FALSE;	
 	}
 	printf("{\"dir\":\"%s\", \"permission\":", dir);
-	if ((permission & PERMISSION_FREEBUSYDETAILED) ||
-		(permission & PERMISSION_READANY)) {
-		printf("\"detailed\", ");
-	} else {
-		printf("\"simple\", ");
-	}
+	printf((permission & (PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY)) ?
+	       "\"detailed\", " : "\"simple\", ");
 	printf("\"events\":[");
 	b_first = FALSE;
 	for (i=0; i<tmp_set.count; i++) {
@@ -1895,18 +1849,10 @@ static BOOL get_freebusy(const char *dir)
 		            tmp_set.pparray[i], pidlidlocation));
 		pvalue = tpropval_array_get_propval(
 			tmp_set.pparray[i], pidlidreminderset);
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-			b_reminder = FALSE;
-		} else {
-			b_reminder = TRUE;
-		}
+		BOOL b_reminder = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 		pvalue = tpropval_array_get_propval(
 			tmp_set.pparray[i], pidlidprivate);
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-			b_private = FALSE;
-		} else {
-			b_private = TRUE;
-		}
+		BOOL b_private = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 		pvalue = tpropval_array_get_propval(
 			tmp_set.pparray[i], pidlidbusystatus);
 		if (NULL == pvalue) {
@@ -1919,15 +1865,8 @@ static BOOL get_freebusy(const char *dir)
 		}
 		pvalue = tpropval_array_get_propval(
 			tmp_set.pparray[i], pidlidappointmentstateflags);
-		if (NULL == pvalue) {
-			b_meeting = FALSE;
-		} else {
-			if ((*(uint32_t*)pvalue) & 0x00000001) {
-				b_meeting = TRUE;
-			} else {
-				b_meeting = FALSE;
-			}
-		}
+		BOOL b_meeting = pvalue == nullptr ? false :
+		                 (*static_cast<uint32_t *>(pvalue) & 1) ? TRUE : false;
 		pvalue = tpropval_array_get_propval(
 			tmp_set.pparray[i], pidlidrecurring);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -1971,42 +1910,22 @@ static BOOL get_freebusy(const char *dir)
 					NULL != pevnode->pex_exception) {
 					if (pevnode->pexception->overrideflags &
 						OVERRIDEFLAG_MEETINGTYPE) {
-						if (pevnode->pexception->meetingtype & 0x00000001) {
-							b_meeting1 = TRUE;
-						} else {
-							b_meeting1 = FALSE;
-						}
+						b_meeting1 = (pevnode->pexception->meetingtype & 1) ? TRUE : false;
 					} else {
 						b_meeting1 = b_meeting;
 					}
 					if (pevnode->pexception->overrideflags &
 						OVERRIDEFLAG_REMINDER) {
-						if (0 == pevnode->pexception->reminderset) {
-							b_reminder1 = FALSE;
-						} else {
-							b_reminder1 = TRUE;
-						}
+						b_reminder1 = pevnode->pexception->reminderset == 0 ? false : TRUE;
 					} else {
 						b_reminder1 = b_reminder;
 					}
-					if (pevnode->pexception->overrideflags &
-						OVERRIDEFLAG_BUSYSTATUS) {
-						busy_type1 = pevnode->pexception->busystatus;
-					} else {
-						busy_type1 = busy_type;
-					}
-					if (pevnode->pexception->overrideflags &
-						OVERRIDEFLAG_SUBJECT) {
-						psubject1 = pevnode->pex_exception->subject;	
-					} else {
-						psubject1 = psubject;
-					}
-					if (pevnode->pexception->overrideflags &
-						OVERRIDEFLAG_LOCATION) {
-						plocation1 = pevnode->pex_exception->location;	
-					} else {
-						plocation1 = plocation;
-					}
+					uint32_t busy_type1 = (pevnode->pexception->overrideflags & OVERRIDEFLAG_BUSYSTATUS) ?
+					                      pevnode->pexception->busystatus : busy_type;
+					auto psubject1  = (pevnode->pexception->overrideflags & OVERRIDEFLAG_SUBJECT) ?
+					                  pevnode->pex_exception->subject : psubject;
+					auto plocation1 = (pevnode->pexception->overrideflags & OVERRIDEFLAG_LOCATION) ?
+					                  pevnode->pex_exception->location : plocation;
 					if (TRUE == b_first) {
 						printf(",");
 					}
@@ -2186,11 +2105,7 @@ int main(int argc, const char **argv)
 	tzstruct.bias = atoi(pbias);
 	tzstruct.standardbias = atoi(pstdbias);
 	tzstruct.daylightbias = atoi(pdtlbias);
-	if (NULL == pstdyear) {
-		tzstruct.standarddate.year = 0;
-	} else {
-		tzstruct.standarddate.year = atoi(pstdyear);
-	}
+	tzstruct.standarddate.year = pstdyear == nullptr ? 0 : atoi(pstdyear);
 	tzstruct.standardyear = tzstruct.standarddate.year;
 	tzstruct.standarddate.month = atoi(pstdmonth);
 	if (0 == strcasecmp(pstddayofweek, "Sunday")) {
@@ -2227,11 +2142,7 @@ int main(int argc, const char **argv)
 	tzstruct.standarddate.hour = atoi(tmp_buff);
 	tzstruct.standarddate.minute = atoi(ptoken);
 	tzstruct.standarddate.second = atoi(ptoken1);
-	if (NULL == pdtlyear) {
-		tzstruct.daylightdate.year = 0;
-	} else {
-		tzstruct.daylightdate.year = atoi(pdtlyear);
-	}
+	tzstruct.daylightdate.year = pdtlyear == nullptr ? 0 : atoi(pdtlyear);
 	tzstruct.daylightyear = tzstruct.daylightdate.year;
 	tzstruct.daylightdate.month = atoi(pdtlmonth);
 	if (0 == strcasecmp(pdtldayofweek, "Sunday")) {
