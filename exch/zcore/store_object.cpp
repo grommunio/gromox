@@ -1841,7 +1841,6 @@ static BOOL store_object_get_folder_permissions(
 	STORE_OBJECT *pstore, uint64_t folder_id,
 	PERMISSION_SET *pperm_set)
 {
-	int i, j;
 	BINARY *pentryid;
 	uint32_t row_num;
 	uint32_t table_id;
@@ -1868,7 +1867,7 @@ static BOOL store_object_get_folder_permissions(
 	}
 	exmdb_client_unload_table(pstore->dir, table_id);
 	max_count = (pperm_set->count/100)*100;
-	for (i=0; i<permission_set.count; i++) {
+	for (size_t i = 0; i < permission_set.count; ++i) {
 		if (max_count == pperm_set->count) {
 			max_count += 100;
 			pperm_row = cu_alloc<PERMISSION_ROW>(max_count);
@@ -1888,6 +1887,7 @@ static BOOL store_object_get_folder_permissions(
 		if (NULL == pentryid || 0 == pentryid->cb) {
 			continue;
 		}
+		size_t j;
 		for (j=0; j<pperm_set->count; j++) {
 			if (pperm_set->prows[j].entryid.cb ==
 				pentryid->cb && 0 == memcmp(
@@ -1917,7 +1917,6 @@ static BOOL store_object_get_folder_permissions(
 BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	PERMISSION_SET *pperm_set)
 {
-	int i;
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
@@ -1944,7 +1943,7 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	}
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		if (0 == tmp_set.pparray[i]->count) {
 			continue;
 		}

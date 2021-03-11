@@ -392,21 +392,17 @@ static int bounce_producer_get_mail_parts(
 static int bounce_producer_get_rcpts(
 	TARRAY_SET *prcpts, char *rcpts)
 {
-	int i;
-	int offset;
-	int tmp_len;
 	void *pvalue;
 	BOOL b_first;
-	
-	offset = 0;
+	size_t offset = 0;
 	b_first = FALSE;
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		pvalue = common_util_get_propvals(
 			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}
-		tmp_len = strlen(static_cast<char *>(pvalue));
+		auto tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
 			if (TRUE == b_first) {
 				strcpy(rcpts + offset, g_separator);

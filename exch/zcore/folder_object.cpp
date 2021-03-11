@@ -836,7 +836,6 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	PERMISSION_SET *pperm_set)
 {
-	int i;
 	uint32_t flags;
 	const char *dir;
 	uint32_t row_num;
@@ -875,7 +874,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	if (NULL == pperm_set->prows) {
 		return FALSE;
 	}
-	for (i=0; i<permission_set.count; i++) {
+	for (size_t i = 0; i < permission_set.count; ++i) {
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
 		pentry_id = static_cast<BINARY *>(common_util_get_propvals(
 		            permission_set.pparray[i], PROP_TAG_ENTRYID));
@@ -899,8 +898,6 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	const PERMISSION_SET *pperm_set)
 {
-	int i, j;
-	uint16_t count;
 	BOOL b_freebusy;
 	const char *dir;
 	BINARY *pentryid;
@@ -932,9 +929,10 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	if (NULL == pperm_data) {
 		return FALSE;
 	}
-	count = 0;
-	for (i=0; i<pperm_set->count; i++) {
+	uint16_t count = 0;
+	for (size_t i = 0; i < pperm_set->count; ++i) {
 		if (pperm_set->prows[i].flags & (RIGHT_NEW | RIGHT_MODIFY)) {
+			size_t j;
 			for (j=0; j<permission_set.count; j++) {
 				pentryid = static_cast<BINARY *>(common_util_get_propvals(
 							permission_set.pparray[j],
@@ -987,6 +985,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 			pperm_data[count].propvals.ppropval[1].pvalue =
 						&pperm_set->prows[i].member_rights;
 		} else if (pperm_set->prows[i].flags & RIGHT_DELETED) {
+			size_t j;
 			for (j=0; j<permission_set.count; j++) {
 				pentryid = static_cast<BINARY *>(common_util_get_propvals(
 							permission_set.pparray[j],

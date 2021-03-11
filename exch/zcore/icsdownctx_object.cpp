@@ -180,7 +180,6 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	const BINARY *pstate, uint16_t sync_flags, BOOL *pb_changed,
 	uint32_t *pfld_count)
 {
-	int i;
 	void *pvalue;
 	USER_INFO *pinfo;
 	const char *username;
@@ -231,7 +230,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	if (NULL == pctx->pchg_eids) {
 		return FALSE;
 	}
-	for (i=0; i<fldchgs.count; i++) {
+	for (size_t i = 0; i < fldchgs.count; ++i) {
 		pvalue = common_util_get_propvals(
 			fldchgs.pfldchgs + i, PROP_TAG_FOLDERID);
 		if (NULL == pvalue) {
@@ -249,13 +248,11 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 
 BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 {
-	int i;
-	
 	if (NULL != pctx->pgiven_eids && NULL != pctx->pchg_eids
 		&& pctx->eid_pos >= pctx->pchg_eids->count && NULL ==
 		pctx->pdeleted_eids && NULL == pctx->pnolonger_messages) {
 		idset_clear(pctx->pstate->pgiven);
-		for (i=0; i<pctx->pgiven_eids->count; i++) {
+		for (size_t i = 0; i < pctx->pgiven_eids->count; ++i) {
 			if (FALSE == idset_append(pctx->pstate->pgiven,
 				pctx->pgiven_eids->pids[i])) {
 				return nullptr;
@@ -511,7 +508,6 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 	uint32_t flags, BINARY_ARRAY *pbins)
 {
-	int i;
 	BINARY *pbin;
 	
 	if (0 == (flags & SYNC_SOFT_DELETE)) {
@@ -531,7 +527,7 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 		if (NULL == pbins->pbin) {
 			return FALSE;
 		}
-		for (i=0; i<pctx->pdeleted_eids->count; i++) {
+		for (size_t i = 0; i < pctx->pdeleted_eids->count; ++i) {
 			if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
 				pbin = common_util_calculate_message_sourcekey(
 					pctx->pstore, pctx->pdeleted_eids->pids[i]);
@@ -567,7 +563,7 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 		if (NULL == pbins->pbin) {
 			return FALSE;
 		}
-		for (i=0; i<pctx->pnolonger_messages->count; i++) {
+		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
 			pbin = common_util_calculate_message_sourcekey(
 				pctx->pstore, pctx->pnolonger_messages->pids[i]);
 			if (NULL == pbin) {
@@ -587,7 +583,6 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 BOOL icsdownctx_object_sync_readstates(
 	ICSDOWNCTX_OBJECT *pctx, STATE_ARRAY *pstates)
 {
-	int i;
 	BINARY *pbin;
 	
 	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
@@ -610,7 +605,7 @@ BOOL icsdownctx_object_sync_readstates(
 			return FALSE;
 		}
 		pstates->count = 0;
-		for (i=0; i<pctx->pread_messags->count; i++) {
+		for (size_t i = 0; i < pctx->pread_messags->count; ++i) {
 			pbin = common_util_calculate_message_sourcekey(
 				pctx->pstore, pctx->pread_messags->pids[i]);
 			if (NULL == pbin) {
@@ -621,7 +616,7 @@ BOOL icsdownctx_object_sync_readstates(
 											MESSAGE_FLAG_READ;
 			pstates->count ++;
 		}
-		for (i=0; i<pctx->punread_messags->count; i++) {
+		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
 			pbin = common_util_calculate_message_sourcekey(
 				pctx->pstore, pctx->punread_messags->pids[i]);
 			if (NULL == pbin) {

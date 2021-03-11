@@ -159,7 +159,6 @@ void table_object_unload(TABLE_OBJECT *ptable)
 static BOOL table_object_get_store_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	USER_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags1;
 	PROPTAG_ARRAY tmp_proptags2;
@@ -201,7 +200,7 @@ static BOOL table_object_get_store_table_all_proptags(
 	memcpy(pproptags->pproptag, tmp_proptags1.pproptag,
 				sizeof(uint32_t)*tmp_proptags1.count);
 	pproptags->count = tmp_proptags1.count;
-	for (i=0; i<tmp_proptags2.count; i++) {
+	for (size_t i = 0; i < tmp_proptags2.count; ++i) {
 		if (common_util_index_proptags(&tmp_proptags1,
 			tmp_proptags2.pproptag[i]) >= 0) {
 			continue;	
@@ -210,7 +209,7 @@ static BOOL table_object_get_store_table_all_proptags(
 					tmp_proptags2.pproptag[i];
 		pproptags->count ++;
 	}
-	for (i=0; i<sizeof(proptag_buff)/sizeof(uint32_t); i++) {
+	for (size_t i = 0; i < GX_ARRAY_SIZE(proptag_buff); ++i) {
 		if (common_util_index_proptags(&tmp_proptags1,
 			proptag_buff[i]) >= 0 ||
 			common_util_index_proptags(&tmp_proptags2,
@@ -304,7 +303,6 @@ static uint32_t table_object_get_folder_permission_rights(
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
 {
-	int i, j;
 	void *pvalue;
 	uint32_t handle;
 	uint32_t row_num;
@@ -375,12 +373,12 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
-			for (i=ptable->position; i<end_pos; i++) {
+			for (size_t i = ptable->position; i < end_pos; ++i) {
 				pset->pparray[pset->count] = rcpt_set.pparray[i];
 				pset->count ++;
 			}
 		} else {
-			if (ptable->position <= row_needed) {
+			if (row_needed >= 0 && static_cast<uint32_t>(row_needed) >= ptable->position) {
 				end_pos = 0;
 			} else {
 				end_pos = ptable->position - row_needed + 1;
@@ -390,7 +388,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
-			for (i=ptable->position; i>=end_pos; i--) {
+			for (ssize_t i = ptable->position; i >= end_pos; --i) {
 				pset->pparray[pset->count] = rcpt_set.pparray[i];
 				pset->count ++;
 			}
@@ -398,7 +396,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		if (common_util_index_proptags(pcolumns, PROP_TAG_ENTRYID) < 0) {
 			return TRUE;	
 		}
-		for (i=0; i<pset->count; i++) {
+		for (size_t i = 0; i < pset->count; ++i) {
 			if (NULL != common_util_get_propvals(
 				pset->pparray[i], PROP_TAG_ENTRYID)) {
 				continue;
@@ -455,7 +453,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			pset)) {
 			return FALSE;
 		}
-		for (i=0; i<pset->count; i++) {
+		for (size_t i = 0; i < pset->count; ++i) {
 			if (FALSE == common_util_convert_to_zrule_data(
 				ptable->pstore, pset->pparray[i])) {
 				return FALSE;	
@@ -473,7 +471,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
-			for (i=ptable->position; i<=end_pos; i++) {
+			for (size_t i = ptable->position; i <= end_pos; ++i) {
 				if (0 != i && 1 != i) {
 					continue;
 				}
@@ -509,7 +507,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
-			for (i=ptable->position; i>=end_pos; i--) {
+			for (ssize_t i = ptable->position; i >= end_pos; --i) {
 				if (0 != i && 1 != i) {
 					continue;
 				}
@@ -585,8 +583,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				return FALSE;	
 			}
 			if (CONTENT_TABLE == ptable->table_type) {
-				for (i=0; i<temp_set.count; i++) {
-					for (j=0; j<temp_set.pparray[i]->count; j++) {
+				for (size_t i = 0; i < temp_set.count; ++i) {
+					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 						if (PROP_TAG_MID == 
 							temp_set.pparray[i]->ppropval[j].proptag) {
 							tmp_eid = *(uint64_t*)
@@ -606,8 +604,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				}
 			} else {
 				if (idx >= 0) {
-					for (i=0; i<temp_set.count; i++) {
-						for (j=0; j<temp_set.pparray[i]->count; j++) {
+					for (size_t i = 0; i < temp_set.count; ++i) {
+						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 							if (PROP_TAG_FOLDERID == 
 								temp_set.pparray[i]->ppropval[j].proptag) {
 								tmp_eid = *(uint64_t*)
@@ -627,8 +625,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 					}
 				}
 				if (idx1 >= 0) {
-					for (i=0; i<temp_set.count; i++) {
-						for (j=0; j<temp_set.pparray[i]->count; j++) {
+					for (size_t i = 0; i < temp_set.count; ++i) {
+						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 							if (PROP_TAG_FOLDERID == 
 								temp_set.pparray[i]->ppropval[j].proptag) {
 								tmp_eid = *(uint64_t*)
@@ -650,8 +648,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 					}
 				}
 				if (idx2 >= 0) {
-					for (i=0; i<temp_set.count; i++) {
-						for (j=0; j<temp_set.pparray[i]->count; j++) {
+					for (size_t i = 0; i < temp_set.count; ++i) {
+						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 							if (PROP_TAG_FOLDERID == 
 								temp_set.pparray[i]->ppropval[j].proptag) {
 								tmp_eid = *(uint64_t*)
@@ -688,7 +686,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pentryid) {
 				return FALSE;
 			}
-			for (i=0; i<temp_set.count; i++) {
+			for (size_t i = 0; i < temp_set.count; ++i) {
 				ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == ppropvals) {
 					return FALSE;
@@ -1028,21 +1026,19 @@ void table_object_reset(TABLE_OBJECT *ptable)
 static BOOL table_object_evaluate_restriction(
 	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pres)
 {
-	int i;
-	int len;
 	void *pvalue;
 	void *pvalue1;
 	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (table_object_evaluate_restriction(ppropvals,
 			    &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
-		for (i = 0; i < pres->andor->count; ++i)
+		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!table_object_evaluate_restriction(ppropvals,
 			    &pres->andor->pres[i]))
 				return FALSE;
@@ -1087,8 +1083,8 @@ static BOOL table_object_evaluate_restriction(
 					return TRUE;
 			}
 			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+		case FL_PREFIX: {
+			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue),
@@ -1103,6 +1099,7 @@ static BOOL table_object_evaluate_restriction(
 				return FALSE;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	}
@@ -1188,7 +1185,6 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 	uint32_t count, const RESTRICTION *pres,
 	const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset)
 {
-	int i;
 	TARRAY_SET tmp_set;
 	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
@@ -1229,7 +1225,7 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
-	for (i=0; i<tmp_set.count&&pset->count<count; i++) {
+	for (size_t i = 0; i < tmp_set.count && pset->count < count; ++i) {
 		if (FALSE == table_object_evaluate_restriction(
 			tmp_set.pparray[i], pres)) {
 			continue;	

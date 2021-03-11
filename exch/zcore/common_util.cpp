@@ -1681,10 +1681,9 @@ BINARY* common_util_calculate_message_sourcekey(
 BOOL common_util_recipients_to_list(
 	TARRAY_SET *prcpts, DOUBLE_LIST *plist)
 {
-	int i;
 	void *pvalue;
 	
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
@@ -2214,7 +2213,6 @@ static BOOL common_util_get_propname(
 BOOL common_util_send_message(STORE_OBJECT *pstore,
 	uint64_t message_id, BOOL b_submit)
 {
-	int i;
 	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
@@ -2285,7 +2283,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 		return FALSE;
 	}
 	double_list_init(&temp_list);
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
@@ -2931,7 +2929,6 @@ static EID_ARRAY* common_util_load_folder_messages(
 	STORE_OBJECT *pstore, uint64_t folder_id,
 	const char *username)
 {
-	int i;
 	uint64_t *pmid;
 	uint32_t table_id;
 	uint32_t row_count;
@@ -2966,7 +2963,7 @@ static EID_ARRAY* common_util_load_folder_messages(
 	if (NULL == pmessage_ids->pids) {
 		return NULL;
 	}
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pmid = static_cast<uint64_t *>(common_util_get_propvals(
 		       tmp_set.pparray[i], PROP_TAG_MID));
 		if (NULL == pmid) {
@@ -2981,7 +2978,6 @@ static EID_ARRAY* common_util_load_folder_messages(
 gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
     STORE_OBJECT *pstore1, uint64_t folder_id1, const char *new_name)
 {
-	int i;
 	uint64_t new_fid;
 	USER_INFO *pinfo;
 	uint32_t table_id;
@@ -3035,7 +3031,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	if (NULL == pmessage_ids) {
 		return GXERR_CALL_FAILED;
 	}
-	for (i=0; i<pmessage_ids->count; i++) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		gxerr_t err = common_util_remote_copy_message(pstore,
 		              pmessage_ids->pids[i], pstore1, new_fid);
 		if (err != GXERR_SUCCESS)
@@ -3063,7 +3059,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	}
 	exmdb_client_unload_table(
 		store_object_get_dir(pstore), table_id);
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
 		             tmp_set.pparray[i], PROP_TAG_FOLDERID));
 		if (NULL == pfolder_id) {
@@ -3394,7 +3390,7 @@ const char* common_util_get_submit_command()
 
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 {
-	int i, j;
+	size_t i;
 	
 	auto line_num = g_folderlang_list->get_size();
 	auto pline = static_cast<char *>(g_folderlang_list->get_list());
@@ -3402,9 +3398,8 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 		if (0 != strcasecmp(pline + 1088*i, lang)) {
 			continue;
 		}
-		for (j=0; j<RES_TOTAL_NUM; j++) {
+		for (size_t j = 0; j < RES_TOTAL_NUM; ++j)
 			ppfolder_lang[j] = pline + 1088*i + 64*(j + 1);
-		}
 		break;
 	}
 	if (i >= line_num) {

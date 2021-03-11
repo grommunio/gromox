@@ -428,7 +428,6 @@ void object_tree_remove_zarafa_store_propval(
 TPROPVAL_ARRAY* object_tree_get_profile_sec(
 	OBJECT_TREE *pobjtree, GUID sec_guid)
 {
-	int i;
 	GUID *pguid;
 	ROOT_OBJECT *prootobj;
 	TAGGED_PROPVAL propval;
@@ -440,7 +439,7 @@ TPROPVAL_ARRAY* object_tree_get_profile_sec(
 		return NULL;
 	}
 	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
-	for (i=0; i<prootobj->pprof_set->count; i++) {
+	for (size_t i = 0; i < prootobj->pprof_set->count; ++i) {
 		pguid = static_cast<GUID *>(tpropval_array_get_propval(
 			prootobj->pprof_set->pparray[i],
 			PROP_TAG_PROPFILESECLSID));

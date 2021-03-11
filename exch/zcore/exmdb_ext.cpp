@@ -2516,8 +2516,6 @@ static int exmdb_ext_pull_get_content_sync_response(
 static int exmdb_ext_pull_get_hierarchy_sync_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &ppayload->get_hierarchy_sync.fldchgs.count));
 	if (0 == ppayload->get_hierarchy_sync.fldchgs.count) {
 		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = NULL;
@@ -2526,9 +2524,8 @@ static int exmdb_ext_pull_get_hierarchy_sync_response(
 		if (NULL == ppayload->get_hierarchy_sync.fldchgs.pfldchgs) {
 			return EXT_ERR_ALLOC;
 		}
-		for (i=0; i<ppayload->get_hierarchy_sync.fldchgs.count; i++) {
+		for (size_t i = 0; i < ppayload->get_hierarchy_sync.fldchgs.count; ++i)
 			TRY(ext_buffer_pull_tpropval_array(pext, ppayload->get_hierarchy_sync.fldchgs.pfldchgs + i));
-		}
 	}
 	TRY(ext_buffer_pull_uint64(pext, &ppayload->get_hierarchy_sync.last_cn));
 	TRY(ext_buffer_pull_eid_array(pext, &ppayload->get_hierarchy_sync.given_fids));

@@ -1530,7 +1530,7 @@ BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode)
 	return FALSE;
 }
 
-static int ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
+static ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
     unsigned int proptag, void **prop)
 {
 	auto node_type = ab_tree_get_node_type(node);

@@ -1536,7 +1536,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 uint32_t zarafa_server_resolvename(GUID hsession,
 	const TARRAY_SET *pcond_set, TARRAY_SET *presult_set)
 {
-	int i;
 	int base_id;
 	char *pstring;
 	AB_BASE *pbase;
@@ -1561,7 +1560,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		return ecError;
 	}
 	single_list_init(&result_list);
-	for (i=0; i<pcond_set->count; i++) {
+	for (size_t i = 0; i < pcond_set->count; ++i) {
 		pstring = static_cast<char *>(common_util_get_propvals(
 		          pcond_set->pparray[i], PROP_TAG_DISPLAYNAME));
 		if (NULL == pstring) {
@@ -2151,7 +2150,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	} else {
 		total_size = *(uint64_t*)pvalue;
 	}
-	if (max_quota > 0 && total_size > max_quota) {
+	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota)) {
 		zarafa_server_put_user_info(pinfo);
 		return ecQuotaExceeded;
 	}
@@ -2209,7 +2208,6 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 	uint32_t hfolder, const BINARY_ARRAY *pentryids,
 	uint32_t flags)
 {
-	int i;
 	BOOL b_hard;
 	BOOL b_owner;
 	void *pvalue;
@@ -2278,7 +2276,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	for (i=0; i<pentryids->count; i++) {
+	for (size_t i = 0; i < pentryids->count; ++i) {
 		if (FALSE == common_util_from_message_entryid(
 			pentryids->pbin[i], &b_private, &account_id,
 			&folder_id, &message_id)) {
@@ -2312,7 +2310,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	for (i=0; i<ids.count; i++) {
+	for (size_t i = 0; i < ids.count; ++i) {
 		if (NULL != username) {
 			if (FALSE == exmdb_client_check_message_owner(
 				store_object_get_dir(pstore), ids.pids[i],
@@ -2374,7 +2372,6 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	uint32_t hsrcfolder, uint32_t hdstfolder,
 	const BINARY_ARRAY *pentryids, uint32_t flags)
 {
-	int i;
 	BOOL b_done, b_copy, b_guest = TRUE, b_owner;
 	EID_ARRAY ids;
 	BOOL b_partial;
@@ -2459,7 +2456,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 				return ecAccessDenied;
 			}
 		}
-		for (i=0; i<pentryids->count; i++) {
+		for (size_t i = 0; i < pentryids->count; ++i) {
 			if (FALSE == common_util_from_message_entryid(
 				pentryids->pbin[i], &b_private, &account_id,
 				&folder_id, &message_id)) {
@@ -2510,7 +2507,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	for (i=0; i<pentryids->count; i++) {
+	for (size_t i = 0; i < pentryids->count; ++i) {
 		if (FALSE == common_util_from_message_entryid(
 			pentryids->pbin[i], &b_private, &account_id,
 			&folder_id, &message_id)) {
@@ -2559,7 +2556,6 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	uint32_t hfolder, const BINARY_ARRAY *pentryids,
 	uint32_t flags)
 {
-	int i;
 	void *pvalue;
 	BOOL b_private;
 	BOOL b_changed;
@@ -2650,7 +2646,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 				zarafa_server_put_user_info(pinfo);
 				return ecError;
 			}
-			for (i=0; i<tmp_set.count; i++) {
+			for (size_t i = 0; i < tmp_set.count; ++i) {
 				if (1 != tmp_set.pparray[i]->count) {
 					continue;
 				}
@@ -2661,7 +2657,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			pentryids = &tmp_bins;
 		}
 	}
-	for (i=0; i<pentryids->count; i++) {
+	for (size_t i = 0; i < pentryids->count; ++i) {
 		if (FALSE == common_util_from_message_entryid(
 			pentryids->pbin[i], &b_private, &account_id,
 			&folder_id, &message_id)) {
@@ -3733,7 +3729,6 @@ uint32_t zarafa_server_queryrows(
 	uint32_t count, const RESTRICTION *prestriction,
 	const PROPTAG_ARRAY *pproptags, TARRAY_SET *prowset)
 {
-	int i;
 	uint32_t row_num;
 	int32_t position;
 	USER_INFO *pinfo;
@@ -3859,7 +3854,7 @@ uint32_t zarafa_server_queryrows(
 		pobject_type = deconst(&object_type_attachment);
 		break;
 	}
-	for (i=0; i<prowset->count; i++) {
+	for (size_t i = 0; i < prowset->count; ++i) {
 		ppropvals = cu_alloc<TAGGED_PROPVAL>(prowset->pparray[i]->count + 1);
 		if (NULL == ppropvals) {
 			return ecError;
@@ -4415,7 +4410,6 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	uint32_t hmessage, uint32_t flags, const TARRAY_SET *prcpt_list)
 {
-	int i, j;
 	BOOL b_found;
 	BINARY *pbin;
 	USER_INFO *pinfo;
@@ -4457,10 +4451,10 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	if (MODRECIP_MODIFY == flags) {
 		message_object_empty_rcpts(pmessage);
 	} else if (MODRECIP_REMOVE == flags) {
-		for (i=0; i<prcpt_list->count; i++) {
+		for (size_t i = 0; i < prcpt_list->count; ++i) {
 			prcpt = prcpt_list->pparray[i];
 			b_found = FALSE;
-			for (j=0; j<prcpt->count; j++) {
+			for (size_t j = 0; j < prcpt->count; ++j) {
 				if (PROP_TAG_ROWID == prcpt->ppropval[j].proptag) {
 					prcpt->count = 1;
 					prcpt->ppropval = prcpt->ppropval + j;
@@ -4484,7 +4478,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	for (i=0; i<prcpt_list->count; i++,last_rowid++) {
+	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (NULL == common_util_get_propvals(
 			prcpt_list->pparray[i], PROP_TAG_ENTRYID) &&
 			NULL == common_util_get_propvals(
@@ -4663,7 +4657,6 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	uint8_t mapi_type;
 	uint16_t rcpt_num;
 	char username[256];
-	int32_t max_length;
 	const char *account;
 	uint32_t permission;
 	uint32_t mail_length;
@@ -4770,7 +4763,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE);
-	max_length = -1;
+	ssize_t max_length = -1;
 	if (NULL != pvalue) {
 		max_length = *(int32_t*)pvalue;
 	}
@@ -4794,7 +4787,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecError;
 	}
 	mail_length = *(uint32_t*)pvalue;
-	if (max_length > 0 && mail_length > max_length) {
+	if (max_length > 0 && mail_length > static_cast<size_t>(max_length)) {
 		zarafa_server_put_user_info(pinfo);
 		return EC_EXCEEDED_SIZE;
 	}
@@ -6871,7 +6864,6 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 uint32_t zarafa_server_importdeletion(GUID hsession,
 	uint32_t hctx, uint32_t flags, const BINARY_ARRAY *pbins)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_hard;
 	void *pvalue;
@@ -6948,7 +6940,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 			return ecError;
 		}
 	}
-	for (i=0; i<pbins->count; i++) {
+	for (size_t i = 0; i < pbins->count; ++i) {
 		if (22 != pbins->pbin[i].cb) {
 			zarafa_server_put_user_info(pinfo);
 			return ecInvalidParam;
@@ -7097,7 +7089,6 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 uint32_t zarafa_server_importreadstates(GUID hsession,
 	uint32_t hctx, const STATE_ARRAY *pstates)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_owner;
 	void *pvalue;
@@ -7148,7 +7139,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			username = pinfo->username;
 		}
 	}
-	for (i=0; i<pstates->count; i++) {
+	for (size_t i = 0; i < pstates->count; ++i) {
 		if (FALSE == common_util_binary_to_xid(
 			&pstates->pstate[i].source_key, &tmp_xid)) {
 			zarafa_server_put_user_info(pinfo);
@@ -7232,7 +7223,6 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 	uint32_t hfolder, BINARY_ARRAY *pfolder_array,
 	RESTRICTION **pprestriction, uint32_t *psearch_stat)
 {
-	int i;
 	BINARY *pbin;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
@@ -7278,7 +7268,7 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	for (i=0; i<folder_ids.count; i++) {
+	for (size_t i = 0; i < folder_ids.count; ++i) {
 		pbin = common_util_to_folder_entryid(
 				pstore, folder_ids.pll[i]);
 		if (NULL == pbin) {
@@ -7296,7 +7286,6 @@ uint32_t zarafa_server_setsearchcriteria(
 	const BINARY_ARRAY *pfolder_array,
 	const RESTRICTION *prestriction)
 {
-	int i;
 	int db_id;
 	BOOL b_result;
 	BOOL b_private;
@@ -7374,7 +7363,7 @@ uint32_t zarafa_server_setsearchcriteria(
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	for (i=0; i<pfolder_array->count; i++) {
+	for (size_t i = 0; i < pfolder_array->count; ++i) {
 		if (FALSE == common_util_from_folder_entryid(
 			pfolder_array->pbin[i], &b_private,
 			&db_id, &folder_ids.pll[i])) {
@@ -7765,7 +7754,7 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNullObject;
 	}
-	if (account_id != pinfo->user_id) {
+	if (pinfo->user_id < 0 || static_cast<unsigned int>(pinfo->user_id) != account_id) {
 		zarafa_server_put_user_info(pinfo);
 		return ecAccessDenied;
 	}

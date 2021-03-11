@@ -390,8 +390,6 @@ static BOOL rpc_ext_pull_message_state(
 static BOOL rpc_ext_pull_state_array(
 	EXT_PULL *pext, STATE_ARRAY *r)
 {
-	int i;
-	
 	QRF(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pstate = NULL;
@@ -401,12 +399,11 @@ static BOOL rpc_ext_pull_state_array(
 	if (NULL == r->pstate) {
 		return FALSE;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (TRUE != rpc_ext_pull_message_state(
 			pext, &r->pstate[i])) {
 			return FALSE;
 		}
-	}
 	return TRUE;
 }
 
@@ -627,15 +624,12 @@ static BOOL rpc_ext_push_tpropval_array(
 static BOOL rpc_ext_push_tarray_set(
 	EXT_PUSH *pext, const TARRAY_SET *r)
 {
-	int i;
-	
 	QRF(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (FALSE == rpc_ext_push_tpropval_array(
 			pext, r->pparray[i])) {
 			return FALSE;
 		}
-	}
 	return TRUE;
 }
 
@@ -674,15 +668,12 @@ static BOOL rpc_ext_push_message_state(
 static BOOL rpc_ext_push_state_array(
 	EXT_PUSH *pext, const STATE_ARRAY *r)
 {
-	int i;
-	
 	QRF(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (TRUE != rpc_ext_push_message_state(
 			pext, &r->pstate[i])) {
 			return FALSE;
 		}
-	}
 	return TRUE;
 }
 

@@ -793,7 +793,6 @@ BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 BOOL message_object_get_rowid_begin(
 	MESSAGE_OBJECT *pmessage, uint32_t *pbegin_id)
 {
-	int i;
 	int last_rowid;
 	TARRAY_SET tmp_set;
 	
@@ -803,7 +802,7 @@ BOOL message_object_get_rowid_begin(
 		return FALSE;	
 	}
 	last_rowid = -1;
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto prow_id = static_cast<int32_t *>(common_util_get_propvals(
 		               tmp_set.pparray[i], PROP_TAG_ROWID));
 		if (NULL != prow_id && *prow_id > last_rowid) {

@@ -57,17 +57,16 @@ void container_object_free(CONTAINER_OBJECT *pcontainer)
 static BOOL container_object_match_contact_message(
 	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pfilter)
 {
-	int i, len;
 	void *pvalue;
 	
 	switch (pfilter->rt) {
 	case RES_AND:
-		for (i = 0; i < pfilter->andor->count; ++i)
+		for (size_t i = 0; i < pfilter->andor->count; ++i)
 			if (!container_object_match_contact_message(ppropvals, &pfilter->andor->pres[i]))
 				return FALSE;
 		return TRUE;
 	case RES_OR:
-		for (i = 0; i < pfilter->andor->count; ++i)
+		for (size_t i = 0; i < pfilter->andor->count; ++i)
 			if (container_object_match_contact_message(ppropvals, &pfilter->andor->pres[i]))
 				return TRUE;
 		return FALSE;
@@ -108,8 +107,8 @@ static BOOL container_object_match_contact_message(
 					return TRUE;
 			}
 			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+		case FL_PREFIX: {
+			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
 				    static_cast<char *>(rcon->propval.pvalue),
@@ -122,6 +121,7 @@ static BOOL container_object_match_contact_message(
 					return TRUE;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	}
@@ -347,7 +347,6 @@ BOOL container_object_load_user_table(
 	CONTAINER_OBJECT *pcontainer,
 	const RESTRICTION *prestriction)
 {
-	int i, j, k;
 	void *pvalue;
 	char *paddress;
 	AB_BASE *pbase;
@@ -508,8 +507,8 @@ BOOL container_object_load_user_table(
 	if (NULL == pcontainer->contents.prow_set) {
 		return FALSE;
 	}
-	for (i=0; i<tmp_set.count; i++) {
-		for (j=0; j<3; j++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
+		for (unsigned int j = 0; j < 3; ++j) {
 			pdisplayname = static_cast<char *>(common_util_get_propvals(
 			               tmp_set.pparray[i], proptags.pproptag[3*j]));
 			if (NULL == pdisplayname) {
@@ -578,7 +577,7 @@ BOOL container_object_load_user_table(
 					return FALSE;
 				}
 			}
-			for (k=0; k<sizeof(tmp_proptags)/sizeof(uint32_t); k++) {
+			for (size_t k = 0; k < GX_ARRAY_SIZE(tmp_proptags); ++k) {
 				propval.proptag = tmp_proptags[k];
 				propval.pvalue = common_util_get_propvals(
 					tmp_set.pparray[i], propval.proptag);
@@ -1051,7 +1050,6 @@ static BOOL container_object_query_folder_hierarchy(
 	uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
 	BOOL b_depth, TARRAY_SET *pset)
 {
-	int i;
 	void *pvalue;
 	uint32_t count;
 	uint32_t row_num;
@@ -1077,7 +1075,7 @@ static BOOL container_object_query_folder_hierarchy(
 		}
 	}
 	exmdb_client_unload_table(pinfo->maildir, table_id);
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pvalue = common_util_get_propvals(
 			tmp_set.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -1116,7 +1114,6 @@ BOOL container_object_query_container_table(
 	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
 	TARRAY_SET *pset)
 {
-	int i, end_pos;
 	AB_BASE *pbase;
 	USER_INFO *pinfo;
 	TARRAY_SET tmp_set;
@@ -1236,12 +1233,12 @@ BOOL container_object_query_container_table(
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
-	end_pos = start_pos + row_needed;
+	ssize_t end_pos = start_pos + row_needed;
 	if (row_needed > 0) {
 		if (end_pos > tmp_set.count) {
 			end_pos = tmp_set.count;
 		}
-		for (i=start_pos; i<end_pos; i++) {
+		for (ssize_t i = start_pos; i < end_pos; ++i) {
 			pset->pparray[pset->count] = tmp_set.pparray[i];
 			pset->count ++;
 		}
@@ -1249,7 +1246,7 @@ BOOL container_object_query_container_table(
 		if (end_pos < -1) {
 			end_pos = -1;
 		}
-		for (i=start_pos; i>end_pos; i--) {
+		for (ssize_t i = start_pos; i > end_pos; --i) {
 			pset->pparray[pset->count] = tmp_set.pparray[i];
 			pset->count ++;
 		}
@@ -1353,7 +1350,6 @@ BOOL container_object_query_user_table(
 	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
-	int i;
 	AB_BASE *pbase;
 	BOOL b_forward;
 	uint32_t first_pos;
@@ -1397,8 +1393,8 @@ BOOL container_object_query_user_table(
 			return FALSE;
 		}
 		if (NULL != pcontainer->contents.pminid_array) {
-			for (i=first_pos; i<first_pos+row_count&&
-				i<pcontainer->contents.pminid_array->count; i++) {
+			for (size_t i = first_pos; i < first_pos+row_count &&
+			     i < pcontainer->contents.pminid_array->count; ++i) {
 				ptnode = ab_tree_minid_to_node(pbase,
 					pcontainer->contents.pminid_array->pl[i]);
 				if (NULL == ptnode) {
@@ -1418,8 +1414,10 @@ BOOL container_object_query_user_table(
 			}
 		} else {
 			if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
-				for (i=0,psnode=single_list_get_head(&pbase->gal_list); NULL!=psnode;
-					psnode=single_list_get_after(&pbase->gal_list, psnode),i++) {
+				size_t i = 0;
+				for (psnode = single_list_get_head(&pbase->gal_list);
+				     psnode != nullptr;
+				     psnode = single_list_get_after(&pbase->gal_list, psnode), ++i) {
 					if (i < first_pos) {
 						continue;
 					}
@@ -1449,7 +1447,7 @@ BOOL container_object_query_user_table(
 					ab_tree_put_base(pbase);
 					return TRUE;
 				}
-				i = 0;
+				size_t i = 0;
 				do {
 					if (ab_tree_get_node_type(ptnode) > 0x80) {
 						continue;
@@ -1484,7 +1482,7 @@ BOOL container_object_query_user_table(
 			}
 		}
 		if (pcontainer->contents.prow_set != nullptr) {
-			for (i = first_pos;
+			for (size_t i = first_pos;
 			     i < pcontainer->contents.prow_set->count &&
 			     i < first_pos+row_count; ++i) {
 				pset->pparray[pset->count] =
@@ -1494,7 +1492,7 @@ BOOL container_object_query_user_table(
 		}
 	}
 	if (FALSE == b_forward) {
-		for (i=0; i<pset->count/2; i++) {
+		for (size_t i = 0; i < pset->count / 2; ++i) {
 			ppropvals = pset->pparray[i];
 			pset->pparray[i] = pset->pparray[pset->count - 1 - i];
 			pset->pparray[pset->count - 1 - i] = ppropvals;

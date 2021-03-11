@@ -334,9 +334,7 @@ static void *scan_work_func(void *pparam)
 
 static void *thread_work_func(void *pparam)
 {
-	int i;
 	int tv_msec;
-	int read_len;
 	BINARY tmp_bin;
 	uint8_t resp_code;
 	uint32_t offset = 0, buff_len;
@@ -382,7 +380,7 @@ static void *thread_work_func(void *pparam)
 				offset = 0;
 				continue;
 			}
-			read_len = read(pagent->sockd, buff + offset, buff_len - offset);
+			auto read_len = read(pagent->sockd, buff + offset, buff_len - offset);
 			if (read_len <= 0) {
 				close(pagent->sockd);
 				pagent->sockd = -1;
@@ -406,11 +404,10 @@ static void *thread_work_func(void *pparam)
 					break;
 				}
 				if (resp_code == exmdb_response::SUCCESS) {
-					for (i=0; i<notify.id_array.count; i++) {
+					for (size_t i = 0; i < notify.id_array.count; ++i)
 						exmdb_client_event_proc(notify.dir,
 							notify.b_table, notify.id_array.pl[i],
 							&notify.db_notify);
-					}
 				}
 				common_util_free_environment();
 				buff_len = 0;
