@@ -12,7 +12,7 @@ struct CONNECTION {
 
 using MIDB_CMD_HANDLER = int (*)(int argc, char **argv, int sockd);
 
-void cmd_parser_init(int threads_num, int timeout);
+extern void cmd_parser_init(size_t threads_num, int timeout);
 extern int cmd_parser_run();
 extern int cmd_parser_stop();
 extern void cmd_parser_free();

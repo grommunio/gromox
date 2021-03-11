@@ -26,7 +26,7 @@ struct COMMAND_ENTRY {
 };
 
 static int g_cmd_num;
-static int g_threads_num;
+static size_t g_threads_num;
 static BOOL g_notify_stop;
 static int g_timeout_interval;
 static pthread_t *g_thread_ids;
@@ -44,7 +44,7 @@ static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
 
 static int cmd_parser_ping(int argc, char **argv, int sockd);
 
-void cmd_parser_init(int threads_num, int timeout)
+void cmd_parser_init(size_t threads_num, int timeout)
 {
 	g_cmd_num = 0;
 	g_threads_num = threads_num;
@@ -97,7 +97,7 @@ void cmd_parser_put_connection(CONNECTION *pconnection)
 
 int cmd_parser_run()
 {
-	int i;
+	size_t i;
 	pthread_attr_t thr_attr;
 
 
@@ -115,7 +115,7 @@ int cmd_parser_run()
 			goto FAILURE_EXIT;
 		}
 		char buf[32];
-		snprintf(buf, sizeof(buf), "cmd_parser/%u", i);
+		snprintf(buf, sizeof(buf), "cmd_parser/%zu", i);
 		pthread_setname_np(g_thread_ids[i], buf);
 	}
 
@@ -124,10 +124,8 @@ int cmd_parser_run()
 	return 0;
 
  FAILURE_EXIT:
-	for (i-=1; i>=0; i--) {
-		pthread_cancel(g_thread_ids[i]);
-	}
-
+	while (i > 0)
+		pthread_cancel(g_thread_ids[--i]);
 	pthread_attr_destroy(&thr_attr);
 	return -1;
 }
@@ -136,7 +134,6 @@ int cmd_parser_run()
 
 int cmd_parser_stop()
 {
-	int i;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION *pconnection;
 
@@ -155,10 +152,8 @@ int cmd_parser_stop()
 	}
 	pthread_mutex_unlock(&g_connection_lock);
 
-	for (i=0; i<g_threads_num; i++) {
+	for (size_t i = 0; i < g_threads_num; ++i)
 		pthread_join(g_thread_ids[i], NULL);
-	}
-
 	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
 		pconnection = (CONNECTION*)pnode->pdata;
 		if (-1 != pconnection->sockd) {

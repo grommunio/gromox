@@ -65,7 +65,6 @@ int main(int argc, const char **argv)
 	int stub_num;
 	int mime_num;
 	int proxy_num;
-	int table_size;
 	int listen_port;
 	int threads_num;
 	struct rlimit rl;
@@ -193,7 +192,8 @@ int main(int argc, const char **argv)
 		}
 	}
 	printf("[system]: connection threads number is %d\n", threads_num);
-	
+
+	size_t table_size;
 	str_value = config_file_get_value(pconfig, "MIDB_TABLE_SIZE");
 	if (NULL == str_value) {
 		table_size = 5000;
@@ -208,7 +208,7 @@ int main(int argc, const char **argv)
 			config_file_set_value(pconfig, "MIDB_TABLE_SIZE", "50000");
 		}
 	}
-	printf("[system]: hash table size is %d\n", table_size);
+	printf("[system]: hash table size is %zu\n", table_size);
 
 	str_value = config_file_get_value(pconfig, "MIDB_CACHE_INTERVAL");
 	if (NULL == str_value) {
@@ -339,7 +339,7 @@ int main(int argc, const char **argv)
 			if (0 != setrlimit(RLIMIT_NOFILE, &rl)) {
 				printf("[system]: fail to set file limitation\n");
 			} else {
-				printf("[system]: set file limitation to %d\n", 5*table_size);
+				printf("[system]: set file limitation to %zu\n", 5 * table_size);
 			}
 		}
 	}
