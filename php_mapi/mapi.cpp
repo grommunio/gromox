@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <gromox/defs.h>
@@ -414,43 +415,49 @@ static zend_bool stream_object_seek(STREAM_OBJECT *pstream,
 			pstream->seek_offset = 0;
 			return 1;
 		}
-		if (offset > pstream->content_bin.cb) {
+		if (static_cast<uint32_t>(offset) > pstream->content_bin.cb)
 			if (!stream_object_set_length(pstream, offset)) {
 				return 0;
 			}
-		}
 		pstream->seek_offset = offset;
 		return 1; 
-	case STREAM_SEEK_CUR:
+	case STREAM_SEEK_CUR: {
 		if (offset < 0) {
-			if (pstream->seek_offset + offset < 0) {
-				pstream->seek_offset = 0;
-				return 1;
-			}
-			pstream->seek_offset += offset;
+			/* underflow safety check for s32t */
+			uint32_t dwoff = offset != INT32_MIN ? -offset :
+			                 static_cast<uint32_t>(INT32_MIN) + 1;
+			pstream->seek_offset = dwoff > pstream->seek_offset ? 0 :
+			                       pstream->seek_offset - dwoff;
 			return 1;
 		}
-		if (offset + pstream->seek_offset
-			> pstream->content_bin.cb) {
-			if (!stream_object_set_length(pstream,
-				pstream->seek_offset + offset)) {
+		auto upoff = static_cast<uint32_t>(offset);
+		if (pstream->seek_offset > static_cast<uint32_t>(UINT32_MAX) - upoff)
+			/* overflow safety check for u32t+u32t */
+			return 0;
+		if (pstream->seek_offset + upoff > pstream->content_bin.cb)
+			if (!stream_object_set_length(pstream, pstream->seek_offset + upoff))
 				return 0;
-			}
-		}
-		pstream->seek_offset += offset;
+		pstream->seek_offset += upoff;
 		return 1;
-	case STREAM_SEEK_END:
+	}
+	case STREAM_SEEK_END: {
 		if (offset > 0) {
-			if (!stream_object_set_length(pstream,
-				pstream->content_bin.cb + offset)) {
+			auto upoff = static_cast<uint32_t>(offset);
+			if (pstream->content_bin.cb > static_cast<uint32_t>(UINT32_MAX) - upoff)
+				/* overflow safety check for u32t+u32t */
 				return 0;
-			}
+			if (!stream_object_set_length(pstream, pstream->content_bin.cb + upoff))
+				return 0;
+			pstream->seek_offset = pstream->content_bin.cb + offset;
+			return 1;
 		}
-		pstream->seek_offset = pstream->content_bin.cb + offset;
-		if (pstream->seek_offset < 0) {
-			pstream->seek_offset = 0;
-		}
+		/* underflow safety check for s32t */
+		uint32_t dwoff = offset != INT32_MIN ? -offset :
+		                 static_cast<uint32_t>(INT32_MIN) + 1;
+		pstream->seek_offset = dwoff <= pstream->content_bin.cb ?
+		                       pstream->content_bin.cb - dwoff : 0;
 		return 1;
+	}
 	}
 	return 0;
 }
