@@ -176,10 +176,6 @@ uint32_t zarafa_client_getpropval(GUID hsession,
 				hobject, &proptags, &propvals);
 	if (result != ecSuccess)
 		return result;
-	if (0 == propvals.count) {
-		*ppvalue = NULL;
-	} else {
-		*ppvalue = propvals.ppropval[0].pvalue;
-	}
+	*ppvalue = propvals.count == 0 ? nullptr : propvals.ppropval[0].pvalue;
 	return ecSuccess;
 }

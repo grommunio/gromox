@@ -491,18 +491,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			pblock->type = zval_get_long(data_entry);
 			/* option field user defined flags, default 0 */
 			data_entry = zend_hash_find(paction_hash, str_flags.get());
-			if (data_entry != nullptr) {
-				pblock->flags = zval_get_long(data_entry);
-			} else {
-				pblock->flags = 0;
-			}
+			pblock->flags = data_entry != nullptr ? zval_get_long(data_entry) : 0;
 			/* option field used with OP_REPLAY and OP_FORWARD, default 0 */
 			data_entry = zend_hash_find(paction_hash, str_flavor.get());
-			if (data_entry != nullptr) {
-				pblock->flavor = zval_get_long(data_entry);
-			} else {
-				pblock->flavor = 0;
-			}
+			pblock->flavor = data_entry != nullptr ? zval_get_long(data_entry) : 0;
 			switch (pblock->type) {
 			case ACTION_TYPE_OP_MOVE:
 			case ACTION_TYPE_OP_COPY: {
@@ -1515,17 +1507,12 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 {
 	int i;
 	zval *guidentry;
-	HashTable *pguidhash;
 	HashTable *pnameshash;
 	static const GUID guid_appointment = {0x00062002, 0x0000, 0x0000,
 			{0xC0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
 	
 	pnameshash = Z_ARRVAL_P(pzval_names);
-	if (NULL != pzval_guids) {
-		pguidhash = Z_ARRVAL_P(pzval_guids);
-	} else {
-		pguidhash = NULL;
-	}
+	auto pguidhash = pzval_guids != nullptr ? Z_ARRVAL_P(pzval_guids) : nullptr;
 	ppropnames->count = zend_hash_num_elements(pnameshash);
 	if (NULL != pguidhash && ppropnames->count !=
 		zend_hash_num_elements(pguidhash)) {
