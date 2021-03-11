@@ -6,6 +6,7 @@
 #include <iconv.h>
 #include <cstdint>
 #include "ext.hpp"
+#define BTRY(expr) do { if (!(expr)) return 0; } while (false)
 #define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf, pos) (((uint8_t *)(buf))[pos])
 #define PVAL(buf, pos) (CVAL(buf,pos))
@@ -158,18 +159,10 @@ zend_bool ext_pack_pull_bytes(PULL_CTX *pctx, uint8_t *data, uint32_t n)
 
 zend_bool ext_pack_pull_guid(PULL_CTX *pctx, GUID *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->time_low)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->time_mid)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->time_hi_and_version)) {
-		return 0;
-	}
-	if (!ext_pack_pull_bytes(pctx, r->clock_seq, 2)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->time_low));
+	BTRY(ext_pack_pull_uint16(pctx, &r->time_mid));
+	BTRY(ext_pack_pull_uint16(pctx, &r->time_hi_and_version));
+	BTRY(ext_pack_pull_bytes(pctx, r->clock_seq, 2));
 	return ext_pack_pull_bytes(pctx, r->node, 6);
 }
 
@@ -227,9 +220,7 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 
 zend_bool ext_pack_pull_binary(PULL_CTX *pctx, BINARY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->cb)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->cb));
 	if (0 == r->cb) {
 		r->pb = NULL;
 		return 1;
@@ -242,9 +233,7 @@ zend_bool ext_pack_pull_binary(PULL_CTX *pctx, BINARY *r)
 
 zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->ps = NULL;
 		return 1;
@@ -254,17 +243,13 @@ zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_uint16(pctx, &r->ps[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint16(pctx, &r->ps[i]));
 	return 1;
 }
 
 zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pl = NULL;
 		return 1;
@@ -274,17 +259,13 @@ zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_uint32(pctx, &r->pl[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint32(pctx, &r->pl[i]));
 	return 1;
 }
 
 zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pll = NULL;
 		return 1;
@@ -294,17 +275,13 @@ zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_uint64(pctx, &r->pll[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint64(pctx, &r->pll[i]));
 	return 1;
 }
 
 zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pbin = NULL;
 		return 1;
@@ -314,17 +291,13 @@ zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_binary(pctx, &r->pbin[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_binary(pctx, &r->pbin[i]));
 	return 1;
 }
 
 zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->ppstr = NULL;
 		return 1;
@@ -334,17 +307,13 @@ zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_string(pctx, &r->ppstr[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_string(pctx, &r->ppstr[i]));
 	return 1;
 }
 
 zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pguid = NULL;
 		return 1;
@@ -354,18 +323,14 @@ zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_guid(pctx, &r->pguid[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_guid(pctx, &r->pguid[i]));
 	return 1;
 }
 
 static zend_bool ext_pack_pull_restriction_and_or(
 	PULL_CTX *pctx, RESTRICTION_AND_OR *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pres = NULL;
 		return 1;
@@ -375,9 +340,7 @@ static zend_bool ext_pack_pull_restriction_and_or(
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_restriction(pctx, &r->pres[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_restriction(pctx, &r->pres[i]));
 	return 1;
 }
 
@@ -390,12 +353,8 @@ static zend_bool ext_pack_pull_restriction_not(
 static zend_bool ext_pack_pull_restriction_content(
 	PULL_CTX *pctx, RESTRICTION_CONTENT *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->fuzzy_level)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->fuzzy_level));
+	BTRY(ext_pack_pull_uint32(pctx, &r->proptag));
 	return ext_pack_pull_tagged_propval(pctx, &r->propval);
 }
 
@@ -403,13 +362,9 @@ static zend_bool ext_pack_pull_restriction_property(
 	PULL_CTX *pctx, RESTRICTION_PROPERTY *r)
 {
 	uint8_t relop;
-	if (!ext_pack_pull_uint8(pctx, &relop)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &relop));
 	r->relop = static_cast<enum relop>(relop);
-	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->proptag));
 	return ext_pack_pull_tagged_propval(pctx, &r->propval);
 }
 
@@ -417,13 +372,9 @@ static zend_bool ext_pack_pull_restriction_propcompare(
 	PULL_CTX *pctx, RESTRICTION_PROPCOMPARE *r)
 {
 	uint8_t relop;
-	if (!ext_pack_pull_uint8(pctx, &relop)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &relop));
 	r->relop = static_cast<enum relop>(relop);
-	if (!ext_pack_pull_uint32(pctx, &r->proptag1)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->proptag1));
 	return ext_pack_pull_uint32(pctx, &r->proptag2);
 }
 
@@ -431,13 +382,9 @@ static zend_bool ext_pack_pull_restriction_bitmask(
 	PULL_CTX *pctx, RESTRICTION_BITMASK *r)
 {
 	uint8_t relop;
-	if (!ext_pack_pull_uint8(pctx, &relop)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &relop));
 	r->bitmask_relop = static_cast<enum bm_relop>(relop);
-	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->proptag));
 	return ext_pack_pull_uint32(pctx, &r->mask);
 }
 
@@ -445,13 +392,9 @@ static zend_bool ext_pack_pull_restriction_size(
 	PULL_CTX *pctx, RESTRICTION_SIZE *r)
 {
 	uint8_t relop;
-	if (!ext_pack_pull_uint8(pctx, &relop)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &relop));
 	r->relop = static_cast<enum relop>(relop);
-	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->proptag));
 	return ext_pack_pull_uint32(pctx, &r->size);
 }
 
@@ -464,9 +407,7 @@ static zend_bool ext_pack_pull_restriction_exist(
 static zend_bool ext_pack_pull_restriction_subobj(
 	PULL_CTX *pctx, RESTRICTION_SUBOBJ *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->subobject)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->subobject));
 	return ext_pack_pull_restriction(pctx, &r->res);
 }
 
@@ -476,9 +417,7 @@ static zend_bool ext_pack_pull_restriction_comment(
 	int i;
 	uint8_t res_present;
 	
-	if (!ext_pack_pull_uint8(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &r->count));
 	if (0 == r->count) {
 		return 0;
 	}
@@ -487,13 +426,9 @@ static zend_bool ext_pack_pull_restriction_comment(
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_tagged_propval(pctx, &r->ppropval[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_tagged_propval(pctx, &r->ppropval[i]));
 	}
-	if (!ext_pack_pull_uint8(pctx, &res_present)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &res_present));
 	if (0 != res_present) {
 		r->pres = st_malloc<RESTRICTION>();
 		if (NULL == r->pres) {
@@ -508,18 +443,14 @@ static zend_bool ext_pack_pull_restriction_comment(
 static zend_bool ext_pack_pull_restriction_count(
 	PULL_CTX *pctx, RESTRICTION_COUNT *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	return ext_pack_pull_restriction(pctx, &r->sub_res);
 }
 
 zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r)
 {
 	uint8_t rt;
-	if (!ext_pack_pull_uint8(pctx, &rt)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &rt));
 	r->rt = static_cast<enum res_type>(rt);
 	switch (r->rt) {
 	case RES_AND:
@@ -599,17 +530,13 @@ zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r)
 
 static zend_bool ext_pack_pull_movecopy_action(PULL_CTX *pctx, MOVECOPY_ACTION *r)
 {
-	if (!ext_pack_pull_binary(pctx, &r->store_eid)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_binary(pctx, &r->store_eid));
 	return ext_pack_pull_binary(pctx, &r->folder_eid);
 }
 
 static zend_bool ext_pack_pull_reply_action(PULL_CTX *pctx, REPLY_ACTION *r)
 {
-	if (!ext_pack_pull_binary(pctx, &r->message_eid)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_binary(pctx, &r->message_eid));
 	return ext_pack_pull_guid(pctx, &r->template_guid);
 }
 
@@ -617,12 +544,8 @@ static zend_bool ext_pack_pull_recipient_block(PULL_CTX *pctx, RECIPIENT_BLOCK *
 {
 	int i;
 	
-	if (!ext_pack_pull_uint8(pctx, &r->reserved)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &r->reserved));
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		return 0;
 	}
@@ -631,9 +554,7 @@ static zend_bool ext_pack_pull_recipient_block(PULL_CTX *pctx, RECIPIENT_BLOCK *
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_tagged_propval(pctx, &r->ppropval[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_tagged_propval(pctx, &r->ppropval[i]));
 	}
 	return 1;
 }
@@ -643,9 +564,7 @@ static zend_bool ext_pack_pull_forwarddelegate_action(
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		return 0;
 	}
@@ -654,9 +573,7 @@ static zend_bool ext_pack_pull_forwarddelegate_action(
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_recipient_block(pctx, &r->pblock[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_recipient_block(pctx, &r->pblock[i]));
 	}
 	return 1;
 }
@@ -665,18 +582,10 @@ static zend_bool ext_pack_pull_action_block(PULL_CTX *pctx, ACTION_BLOCK *r)
 {
 	uint16_t tmp_len;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->length)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint8(pctx, &r->type)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint32(pctx, &r->flavor)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint32(pctx, &r->flags)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->length));
+	BTRY(ext_pack_pull_uint8(pctx, &r->type));
+	BTRY(ext_pack_pull_uint32(pctx, &r->flavor));
+	BTRY(ext_pack_pull_uint32(pctx, &r->flags));
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
@@ -736,9 +645,7 @@ zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r)
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		return 0;
 	}
@@ -747,9 +654,7 @@ zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r)
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_action_block(pctx, &r->pblock[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_action_block(pctx, &r->pblock[i]));
 	}
 	return 1;
 }
@@ -870,9 +775,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 
 zend_bool ext_pack_pull_tagged_propval(PULL_CTX *pctx, TAGGED_PROPVAL *r)
 {	
-	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->proptag));
 	return ext_pack_pull_propval(pctx, PROP_TYPE(r->proptag), &r->pvalue);
 }
 
@@ -880,9 +783,7 @@ zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r)
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		r->pproptag = NULL;
 		return 1;
@@ -892,9 +793,7 @@ zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r)
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_uint32(pctx, &r->pproptag[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint32(pctx, &r->pproptag[i]));
 	}
 	return 1;
 }
@@ -904,12 +803,8 @@ zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r)
 	uint32_t offset;
 	uint8_t name_size;
 	
-	if (!ext_pack_pull_uint8(pctx, &r->kind)) {
-		return 0;
-	}
-	if (!ext_pack_pull_guid(pctx, &r->guid)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &r->kind));
+	BTRY(ext_pack_pull_guid(pctx, &r->guid));
 	r->plid = NULL;
 	r->pname = NULL;
 	if (r->kind == MNID_ID) {
@@ -917,20 +812,14 @@ zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r)
 		if (NULL == r->plid) {
 			return 0;
 		}
-		if (!ext_pack_pull_uint32(pctx, r->plid)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint32(pctx, r->plid));
 	} else if (r->kind == MNID_STRING) {
-		if (!ext_pack_pull_uint8(pctx, &name_size)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint8(pctx, &name_size));
 		if (name_size < 2) {
 			return 0;
 		}
 		offset = pctx->offset + name_size;
-		if (!ext_pack_pull_string(pctx, &r->pname)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_string(pctx, &r->pname));
 		if (pctx->offset > offset) {
 			return 0;
 		}
@@ -943,9 +832,7 @@ zend_bool ext_pack_pull_propname_array(PULL_CTX *pctx, PROPNAME_ARRAY *r)
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		r->ppropname = NULL;
 		return 1;
@@ -955,9 +842,7 @@ zend_bool ext_pack_pull_propname_array(PULL_CTX *pctx, PROPNAME_ARRAY *r)
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_property_name(pctx, r->ppropname + i)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_property_name(pctx, r->ppropname + i));
 	}
 	return 1;
 }
@@ -966,9 +851,7 @@ zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r)
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		r->ppropid = NULL;
 		return 1;
@@ -978,9 +861,7 @@ zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r)
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_uint16(pctx, r->ppropid + i)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_uint16(pctx, r->ppropid + i));
 	}
 	return 1;
 }
@@ -989,9 +870,7 @@ zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r)
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		r->ppropval = NULL;
 		return 1;
@@ -1001,18 +880,14 @@ zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r)
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_tagged_propval(pctx, r->ppropval + i)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_tagged_propval(pctx, r->ppropval + i));
 	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pparray = NULL;
 		return 1;
@@ -1026,9 +901,7 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 		if (NULL == r->pparray[i]) {
 			return 0;
 		}
-		if (!ext_pack_pull_tpropval_array(pctx, r->pparray[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_tpropval_array(pctx, r->pparray[i]));
 	}
 	return 1;
 }
@@ -1036,12 +909,8 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 static zend_bool ext_pack_pull_permission_row(
 	PULL_CTX *pctx, PERMISSION_ROW *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->flags)) {
-		return 0;
-	}
-	if (!ext_pack_pull_binary(pctx, &r->entryid)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->flags));
+	BTRY(ext_pack_pull_binary(pctx, &r->entryid));
 	return ext_pack_pull_uint32(pctx, &r->member_rights);
 }
 
@@ -1049,67 +918,43 @@ zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r)
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	r->prows = sta_malloc<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_permission_row(pctx, &r->prows[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_permission_row(pctx, &r->prows[i]));
 	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_oneoff_entryid(PULL_CTX *pctx, ONEOFF_ENTRYID *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->flags)) {
-		return 0;
-	}
-	if (!ext_pack_pull_bytes(pctx, r->provider_uid, 16)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->version)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->ctrl_flags)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->flags));
+	BTRY(ext_pack_pull_bytes(pctx, r->provider_uid, 16));
+	BTRY(ext_pack_pull_uint16(pctx, &r->version));
+	BTRY(ext_pack_pull_uint16(pctx, &r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
-		if (!ext_pack_pull_wstring(pctx, &r->pdisplay_name)) {
-			return 0;
-		}
-		if (!ext_pack_pull_wstring(pctx, &r->paddress_type)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_wstring(pctx, &r->pdisplay_name));
+		BTRY(ext_pack_pull_wstring(pctx, &r->paddress_type));
 		return ext_pack_pull_wstring(pctx, &r->pmail_address);
 	} else {
-		if (!ext_pack_pull_string(pctx, &r->pdisplay_name)) {
-			return 0;
-		}
-		if (!ext_pack_pull_string(pctx, &r->paddress_type)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_string(pctx, &r->pdisplay_name));
+		BTRY(ext_pack_pull_string(pctx, &r->paddress_type));
 		return ext_pack_pull_string(pctx, &r->pmail_address);
 	}
 }
 
 static zend_bool ext_pack_pull_message_state(PULL_CTX *pctx, MESSAGE_STATE *r)
 {
-	if (!ext_pack_pull_binary(pctx, &r->source_key)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_binary(pctx, &r->source_key));
 	return ext_pack_pull_uint32(pctx, &r->message_flags);
 }
 
 zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->count));
 	if (0 == r->count) {
 		r->pstate = NULL;
 		return 1;
@@ -1119,27 +964,17 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_pull_message_state(pctx, &r->pstate[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_message_state(pctx, &r->pstate[i]));
 	return 1;
 }
 
 static zend_bool ext_pack_pull_newmail_znotification(
 	PULL_CTX *pctx, NEWMAIL_ZNOTIFICATION *r)
 {
-	if (!ext_pack_pull_binary(pctx, &r->entryid)) {
-		return 0;
-	}
-	if (!ext_pack_pull_binary(pctx, &r->parentid)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint32(pctx, &r->flags)) {
-		return 0;
-	}
-	if (!ext_pack_pull_string(pctx, &r->message_class)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_binary(pctx, &r->entryid));
+	BTRY(ext_pack_pull_binary(pctx, &r->parentid));
+	BTRY(ext_pack_pull_uint32(pctx, &r->flags));
+	BTRY(ext_pack_pull_string(pctx, &r->message_class));
 	return ext_pack_pull_uint32(pctx, &r->message_flags);
 }
 
@@ -1148,12 +983,8 @@ static zend_bool ext_pack_pull_object_znotification(
 {
 	uint8_t tmp_byte;
 	
-	if (!ext_pack_pull_uint32(pctx, &r->object_type)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint8(pctx, &tmp_byte)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->object_type));
+	BTRY(ext_pack_pull_uint8(pctx, &tmp_byte));
 	if (0 == tmp_byte) {
 		r->pentryid = NULL;
 	} else {
@@ -1161,13 +992,9 @@ static zend_bool ext_pack_pull_object_znotification(
 		if (NULL == r->pentryid) {
 			return 0;
 		}
-		if (!ext_pack_pull_binary(pctx, r->pentryid)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_binary(pctx, r->pentryid));
 	}
-	if (!ext_pack_pull_uint8(pctx, &tmp_byte)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &tmp_byte));
 	if (0 == tmp_byte) {
 		r->pparentid = NULL;
 	} else {
@@ -1175,13 +1002,9 @@ static zend_bool ext_pack_pull_object_znotification(
 		if (NULL == r->pparentid) {
 			return 0;
 		}
-		if (!ext_pack_pull_binary(pctx, r->pparentid)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_binary(pctx, r->pparentid));
 	}
-	if (!ext_pack_pull_uint8(pctx, &tmp_byte)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &tmp_byte));
 	if (0 == tmp_byte) {
 		r->pold_entryid = NULL;
 	} else {
@@ -1189,13 +1012,9 @@ static zend_bool ext_pack_pull_object_znotification(
 		if (NULL == r->pold_entryid) {
 			return 0;
 		}
-		if (!ext_pack_pull_binary(pctx, r->pold_entryid)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_binary(pctx, r->pold_entryid));
 	}
-	if (!ext_pack_pull_uint8(pctx, &tmp_byte)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &tmp_byte));
 	if (0 == tmp_byte) {
 		r->pold_parentid = NULL;
 	} else {
@@ -1203,13 +1022,9 @@ static zend_bool ext_pack_pull_object_znotification(
 		if (NULL == r->pold_parentid) {
 			return 0;
 		}
-		if (!ext_pack_pull_binary(pctx, r->pold_parentid)) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_binary(pctx, r->pold_parentid));
 	}
-	if (!ext_pack_pull_uint8(pctx, &tmp_byte)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint8(pctx, &tmp_byte));
 	if (0 == tmp_byte) {
 		r->pproptags = NULL;
 		return 1;
@@ -1225,9 +1040,7 @@ static zend_bool ext_pack_pull_object_znotification(
 static zend_bool ext_pack_pull_znotification(
 	PULL_CTX *pctx, ZNOTIFICATION *r)
 {
-	if (!ext_pack_pull_uint32(pctx, &r->event_type)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint32(pctx, &r->event_type));
 	switch (r->event_type) {
 	case EVENT_TYPE_NEWMAIL:
 		r->pnotification_data = emalloc(sizeof(NEWMAIL_ZNOTIFICATION));
@@ -1259,9 +1072,7 @@ zend_bool ext_pack_pull_znotification_array(
 {
 	int i;
 	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	if (0 == r->count) {
 		r->ppnotification = NULL;
 		return 1;
@@ -1275,10 +1086,7 @@ zend_bool ext_pack_pull_znotification_array(
 		if (NULL == r->ppnotification[i]) {
 			return 0;
 		}
-		if (!ext_pack_pull_znotification(
-			pctx, r->ppnotification[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_pull_znotification(pctx, r->ppnotification[i]));
 	}
 	return 1;
 }
@@ -1323,18 +1131,14 @@ static zend_bool ext_pack_push_check_overflow(PUSH_CTX *pctx, uint32_t extra_siz
 
 zend_bool ext_pack_push_advance(PUSH_CTX *pctx, uint32_t size)
 {
-	if (!ext_pack_push_check_overflow(pctx, size)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, size));
 	pctx->offset += size;
 	return 1;
 }
 
 zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n)
 {
-	if (!ext_pack_push_check_overflow(pctx, n)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, n));
 	memcpy(static_cast<char *>(pctx->data) + pctx->offset, pdata, n);
 	pctx->offset += n;
 	return 1;
@@ -1342,9 +1146,7 @@ zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n)
 
 zend_bool ext_pack_push_uint8(PUSH_CTX *pctx, uint8_t v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(uint8_t))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint8_t)));
 	SCVAL(pctx->data, pctx->offset, v);
 	pctx->offset += sizeof(uint8_t);
 	return 1;
@@ -1352,9 +1154,7 @@ zend_bool ext_pack_push_uint8(PUSH_CTX *pctx, uint8_t v)
 
 zend_bool ext_pack_push_uint16(PUSH_CTX *pctx, uint16_t v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(uint16_t))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint16_t)));
 	SSVAL(pctx->data, pctx->offset, v);
 	pctx->offset += sizeof(uint16_t);
 	return 1;
@@ -1362,9 +1162,7 @@ zend_bool ext_pack_push_uint16(PUSH_CTX *pctx, uint16_t v)
 
 zend_bool ext_pack_push_uint32(PUSH_CTX *pctx, uint32_t v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(uint32_t))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint32_t)));
 	SIVAL(pctx->data, pctx->offset, v);
 	pctx->offset += sizeof(uint32_t);
 	return 1;
@@ -1372,9 +1170,7 @@ zend_bool ext_pack_push_uint32(PUSH_CTX *pctx, uint32_t v)
 
 zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(int32_t))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(int32_t)));
 	SIVALS(pctx->data, pctx->offset, v);
 	pctx->offset += sizeof(int32_t);
 	return 1;
@@ -1382,9 +1178,7 @@ zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v)
 
 zend_bool ext_pack_push_uint64(PUSH_CTX *pctx, uint64_t v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(uint64_t))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint64_t)));
 	SIVAL(pctx->data, pctx->offset, (v & 0xFFFFFFFF));
 	SIVAL(pctx->data, pctx->offset+4, (v>>32));
 	pctx->offset += sizeof(uint64_t);
@@ -1393,9 +1187,7 @@ zend_bool ext_pack_push_uint64(PUSH_CTX *pctx, uint64_t v)
 
 zend_bool ext_pack_push_float(PUSH_CTX *pctx, float v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(float))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(float)));
 	memcpy(static_cast<char *>(pctx->data) + pctx->offset, &v, 4);
 	pctx->offset += sizeof(float);
 	return 1;
@@ -1403,9 +1195,7 @@ zend_bool ext_pack_push_float(PUSH_CTX *pctx, float v)
 
 zend_bool ext_pack_push_double(PUSH_CTX *pctx, double v)
 {
-	if (!ext_pack_push_check_overflow(pctx, sizeof(double))) {
-		return 0;
-	}
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(double)));
 	memcpy(static_cast<char *>(pctx->data) + pctx->offset, &v, 8);
 	pctx->offset += sizeof(double);
 	return 1;
@@ -1413,9 +1203,7 @@ zend_bool ext_pack_push_double(PUSH_CTX *pctx, double v)
 
 zend_bool ext_pack_push_binary(PUSH_CTX *pctx, const BINARY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->cb)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->cb));
 	if (0 == r->cb) {
 		return 1;
 	}
@@ -1424,18 +1212,10 @@ zend_bool ext_pack_push_binary(PUSH_CTX *pctx, const BINARY *r)
 
 zend_bool ext_pack_push_guid(PUSH_CTX *pctx, const GUID *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->time_low)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->time_mid)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->time_hi_and_version)) {
-		return 0;
-	}
-	if (!ext_pack_push_bytes(pctx, r->clock_seq, 2)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->time_low));
+	BTRY(ext_pack_push_uint16(pctx, r->time_mid));
+	BTRY(ext_pack_push_uint16(pctx, r->time_hi_and_version));
+	BTRY(ext_pack_push_bytes(pctx, r->clock_seq, 2));
 	return ext_pack_push_bytes(pctx, r->node, 6);
 }
 
@@ -1468,86 +1248,58 @@ zend_bool ext_pack_push_wstring(PUSH_CTX *pctx, const char *pstr)
 
 zend_bool ext_pack_push_short_array(PUSH_CTX *pctx, const SHORT_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_uint16(pctx, r->ps[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint16(pctx, r->ps[i]));
 	return 1;
 }
 
 zend_bool ext_pack_push_long_array(PUSH_CTX *pctx, const LONG_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_uint32(pctx, r->pl[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint32(pctx, r->pl[i]));
 	return 1;
 }
 
 zend_bool ext_pack_push_longlong_array(PUSH_CTX *pctx, const LONGLONG_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_uint64(pctx, r->pll[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint64(pctx, r->pll[i]));
 	return 1;
 }
 
 zend_bool ext_pack_push_binary_array(PUSH_CTX *pctx, const BINARY_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_binary(pctx, &r->pbin[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_binary(pctx, &r->pbin[i]));
 	return 1;
 }
 
 zend_bool ext_pack_push_string_array(PUSH_CTX *pctx, const STRING_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_string(pctx, r->ppstr[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_string(pctx, r->ppstr[i]));
 	return 1;
 }
 
 zend_bool ext_pack_push_guid_array(PUSH_CTX *pctx, const GUID_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_guid(pctx, &r->pguid[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_guid(pctx, &r->pguid[i]));
 	return 1;
 }
 
 static zend_bool ext_pack_push_restriction_and_or(
 	PUSH_CTX *pctx, const RESTRICTION_AND_OR *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;	
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_restriction(pctx, &r->pres[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_restriction(pctx, &r->pres[i]));
 	return 1;
 }
 
@@ -1560,60 +1312,40 @@ static zend_bool ext_pack_push_restriction_not(
 static zend_bool ext_pack_push_restriction_content(
 	PUSH_CTX *pctx, const RESTRICTION_CONTENT *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->fuzzy_level)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->fuzzy_level));
+	BTRY(ext_pack_push_uint32(pctx, r->proptag));
 	return ext_pack_push_tagged_propval(pctx, &r->propval);
 }
 
 static zend_bool ext_pack_push_restriction_property(
 	PUSH_CTX *pctx, const RESTRICTION_PROPERTY *r)
 {
-	if (!ext_pack_push_uint8(pctx, r->relop)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->relop));
+	BTRY(ext_pack_push_uint32(pctx, r->proptag));
 	return ext_pack_push_tagged_propval(pctx, &r->propval);
 }
 
 static zend_bool ext_pack_push_restriction_propcompare(
 	PUSH_CTX *pctx, const RESTRICTION_PROPCOMPARE *r)
 {
-	if (!ext_pack_push_uint8(pctx, r->relop)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->proptag1)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->relop));
+	BTRY(ext_pack_push_uint32(pctx, r->proptag1));
 	return ext_pack_push_uint32(pctx, r->proptag2);
 }
 
 static zend_bool ext_pack_push_restriction_bitmask(
 	PUSH_CTX *pctx, const RESTRICTION_BITMASK *r)
 {
-	if (!ext_pack_push_uint8(pctx, r->bitmask_relop)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->bitmask_relop));
+	BTRY(ext_pack_push_uint32(pctx, r->proptag));
 	return ext_pack_push_uint32(pctx, r->mask);
 }
 
 static zend_bool ext_pack_push_restriction_size(
 	PUSH_CTX *pctx, const RESTRICTION_SIZE *r)
 {
-	if (!ext_pack_push_uint8(pctx, r->relop)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->relop));
+	BTRY(ext_pack_push_uint32(pctx, r->proptag));
 	return ext_pack_push_uint32(pctx, r->size);
 }
 
@@ -1626,9 +1358,7 @@ static zend_bool ext_pack_push_restriction_exist(
 static zend_bool ext_pack_push_restriction_subobj(
 	PUSH_CTX *pctx, const RESTRICTION_SUBOBJ *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->subobject)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->subobject));
 	return ext_pack_push_restriction(pctx, &r->res);
 }
 
@@ -1640,18 +1370,12 @@ static zend_bool ext_pack_push_restriction_comment(
 	if (0 == r->count) {
 		return 0;
 	}
-	if (!ext_pack_push_uint8(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_tagged_propval(pctx, &r->ppropval[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_tagged_propval(pctx, &r->ppropval[i]));
 	}
 	if (NULL != r->pres) {
-		if (!ext_pack_push_uint8(pctx, 1)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint8(pctx, 1));
 		return ext_pack_push_restriction(pctx, r->pres);
 	}
 	return ext_pack_push_uint8(pctx, 0);
@@ -1660,17 +1384,13 @@ static zend_bool ext_pack_push_restriction_comment(
 static zend_bool ext_pack_push_restriction_count(
 	PUSH_CTX *pctx, const RESTRICTION_COUNT *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	return ext_pack_push_restriction(pctx, &r->sub_res);
 }
 
 zend_bool ext_pack_push_restriction(PUSH_CTX *pctx, const RESTRICTION *r)
 {
-	if (!ext_pack_push_uint8(pctx, r->rt)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->rt));
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
@@ -1704,18 +1424,14 @@ zend_bool ext_pack_push_restriction(PUSH_CTX *pctx, const RESTRICTION *r)
 static zend_bool ext_pack_push_movecopy_action(PUSH_CTX *pctx,
     const MOVECOPY_ACTION *r)
 {
-	if (!ext_pack_push_binary(pctx, &r->store_eid)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_binary(pctx, &r->store_eid));
 	return ext_pack_push_binary(pctx, &r->folder_eid);
 }
 
 static zend_bool ext_pack_push_reply_action(
 	PUSH_CTX *pctx, const REPLY_ACTION *r)
 {	
-	if (!ext_pack_push_binary(pctx, &r->message_eid)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_binary(pctx, &r->message_eid));
 	return ext_pack_push_guid(pctx, &r->template_guid);
 }
 
@@ -1727,16 +1443,10 @@ static zend_bool ext_pack_push_recipient_block(
 	if (0 == r->count) {
 		return 0;
 	}
-	if (!ext_pack_push_uint8(pctx, r->reserved)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->reserved));
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_tagged_propval(pctx, &r->ppropval[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_tagged_propval(pctx, &r->ppropval[i]));
 	}
 	return 1;
 }
@@ -1749,13 +1459,9 @@ static zend_bool ext_pack_push_forwarddelegate_action(
 	if (0 == r->count) {
 		return 0;
 	}
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_recipient_block(pctx, &r->pblock[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_recipient_block(pctx, &r->pblock[i]));
 	}
 	return 1;
 }
@@ -1768,52 +1474,32 @@ static zend_bool ext_pack_push_action_block(
 	uint16_t tmp_len;
 	
 	offset = pctx->offset;
-	if (!ext_pack_push_advance(pctx, sizeof(uint16_t))) {
-		return 0;
-	}
-	if (!ext_pack_push_uint8(pctx, r->type)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->flavor)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx, r->flags)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_advance(pctx, sizeof(uint16_t)));
+	BTRY(ext_pack_push_uint8(pctx, r->type));
+	BTRY(ext_pack_push_uint32(pctx, r->flavor));
+	BTRY(ext_pack_push_uint32(pctx, r->flags));
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		if (!ext_pack_push_movecopy_action(pctx,
-		    static_cast<MOVECOPY_ACTION *>(r->pdata)))
-			return 0;
+		BTRY(ext_pack_push_movecopy_action(pctx, static_cast<MOVECOPY_ACTION *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		if (!ext_pack_push_reply_action(pctx,
-		    static_cast<REPLY_ACTION *>(r->pdata)))
-			return 0;
+		BTRY(ext_pack_push_reply_action(pctx, static_cast<REPLY_ACTION *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		if (!ext_pack_push_bytes(pctx, r->pdata, tmp_len)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_bytes(pctx, r->pdata, tmp_len));
 		break;
 	case ACTION_TYPE_OP_BOUNCE:
-		if (!ext_pack_push_uint32(pctx, *(uint32_t*)r->pdata)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint32(pctx, *static_cast<uint32_t *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		if (!ext_pack_push_forwarddelegate_action(pctx,
-		    static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)))
-			return 0;
+		BTRY(ext_pack_push_forwarddelegate_action(pctx, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)));
 		break;
 	case ACTION_TYPE_OP_TAG:
-		if (!ext_pack_push_tagged_propval(pctx,
-		    static_cast<TAGGED_PROPVAL *>(r->pdata)))
-			return 0;
+		BTRY(ext_pack_push_tagged_propval(pctx, static_cast<TAGGED_PROPVAL *>(r->pdata)));
 	case ACTION_TYPE_OP_DELETE:
 	case ACTION_TYPE_OP_MARK_AS_READ:
 		break;
@@ -1823,9 +1509,7 @@ static zend_bool ext_pack_push_action_block(
 	tmp_len = pctx->offset - (offset + sizeof(uint16_t));
 	offset1 = pctx->offset;
 	pctx->offset = offset;
-	if (!ext_pack_push_uint16(pctx, tmp_len)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, tmp_len));
 	pctx->offset = offset1;
 	return 1;
 }
@@ -1838,13 +1522,9 @@ zend_bool ext_pack_push_rule_actions(
 	if (0 == r->count) {
 		return 0;
 	}
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_action_block(pctx, &r->pblock[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_action_block(pctx, &r->pblock[i]));
 	}
 	return 1;
 }
@@ -1914,9 +1594,7 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 zend_bool ext_pack_push_tagged_propval(
 	PUSH_CTX *pctx, const TAGGED_PROPVAL *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->proptag)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->proptag));
 	return ext_pack_push_propval(pctx, PROP_TYPE(r->proptag), r->pvalue);
 }
 
@@ -1925,13 +1603,9 @@ zend_bool ext_pack_push_proptag_array(
 {
 	int i;
 	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_uint32(pctx, r->pproptag[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint32(pctx, r->pproptag[i]));
 	}
 	return 1;
 }
@@ -1943,30 +1617,18 @@ zend_bool ext_pack_push_property_name(
 	uint32_t offset1;
 	uint8_t name_size;
 	
-	if (!ext_pack_push_uint8(pctx, r->kind)) {
-		return 0;
-	}
-	if (!ext_pack_push_guid(pctx, &r->guid)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->kind));
+	BTRY(ext_pack_push_guid(pctx, &r->guid));
 	if (r->kind == MNID_ID) {
-		if (!ext_pack_push_uint32(pctx, *r->plid)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint32(pctx, *r->plid));
 	} else if (r->kind == MNID_STRING) {
 		offset = pctx->offset;
-		if (!ext_pack_push_advance(pctx, sizeof(uint8_t))) {
-			return 0;
-		}
-		if (!ext_pack_push_string(pctx, r->pname)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_advance(pctx, sizeof(uint8_t)));
+		BTRY(ext_pack_push_string(pctx, r->pname));
 		name_size = pctx->offset - (offset + sizeof(uint8_t));
 		offset1 = pctx->offset;
 		pctx->offset = offset;
-		if (!ext_pack_push_uint8(pctx, name_size)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint8(pctx, name_size));
 		pctx->offset = offset1;
 	}
 	return 1;
@@ -1977,13 +1639,9 @@ zend_bool ext_pack_push_propname_array(
 {
 	int i;
 	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_property_name(pctx, r->ppropname + i)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_property_name(pctx, r->ppropname + i));
 	}
 	return 1;
 }
@@ -1993,13 +1651,9 @@ zend_bool ext_pack_push_propid_array(
 {
 	int i;
 	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_uint16(pctx, r->ppropid[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_uint16(pctx, r->ppropid[i]));
 	}
 	return 1;
 }
@@ -2009,26 +1663,18 @@ zend_bool ext_pack_push_tpropval_array(
 {
 	int i;
 	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_tagged_propval(pctx, r->ppropval + i)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_tagged_propval(pctx, r->ppropval + i));
 	}
 	return 1;
 }
 
 zend_bool ext_pack_push_tarray_set(PUSH_CTX *pctx, const TARRAY_SET *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_tpropval_array(pctx, r->pparray[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_tpropval_array(pctx, r->pparray[i]));
 	return 1;
 }
 
@@ -2037,12 +1683,8 @@ zend_bool ext_pack_push_sort_order(PUSH_CTX *pctx, const SORT_ORDER *r)
 	if ((r->type & MVI_FLAG) == MV_FLAG)
 		/* MV_FLAG set without MV_INSTANCE */
 		return 0;
-	if (!ext_pack_push_uint16(pctx, r->type)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->propid)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->type));
+	BTRY(ext_pack_push_uint16(pctx, r->propid));
 	return ext_pack_push_uint8(pctx, r->table_sort);
 }
 
@@ -2055,19 +1697,11 @@ zend_bool ext_pack_push_sortorder_set(
 		r->cexpanded > r->ccategories) {
 		return 0;
 	}
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->ccategories)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->cexpanded)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
+	BTRY(ext_pack_push_uint16(pctx, r->ccategories));
+	BTRY(ext_pack_push_uint16(pctx, r->cexpanded));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_sort_order(pctx, r->psort + i)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_sort_order(pctx, r->psort + i));
 	}
 	return 1;
 }
@@ -2075,12 +1709,8 @@ zend_bool ext_pack_push_sortorder_set(
 static zend_bool ext_pack_push_permission_row(
 	PUSH_CTX *pctx, const PERMISSION_ROW *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->flags)) {
-		return 0;
-	}
-	if (!ext_pack_push_binary(pctx, &r->entryid)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->flags));
+	BTRY(ext_pack_push_binary(pctx, &r->entryid));
 	return ext_pack_push_uint32(pctx, r->member_rights);
 }
 
@@ -2089,13 +1719,9 @@ zend_bool ext_pack_push_permission_set(
 {
 	int i;
 	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_permission_row(pctx, &r->prows[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_permission_row(pctx, &r->prows[i]));
 	}
 	return 1;
 }
@@ -2103,9 +1729,7 @@ zend_bool ext_pack_push_permission_set(
 zend_bool ext_pack_push_rule_data(
 	PUSH_CTX *pctx, const RULE_DATA *r)
 {
-	if (!ext_pack_push_uint8(pctx, r->flags)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint8(pctx, r->flags));
 	return ext_pack_push_tpropval_array(pctx, &r->propvals);
 }
 
@@ -2114,13 +1738,9 @@ zend_bool ext_pack_push_rule_list(
 {
 	int i;
 	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint16(pctx, r->count));
 	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_rule_data(pctx, &r->prule[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_rule_data(pctx, &r->prule[i]));
 	}
 	return 1;
 }
@@ -2128,33 +1748,17 @@ zend_bool ext_pack_push_rule_list(
 zend_bool ext_pack_push_oneoff_entryid(PUSH_CTX *pctx,
 	const ONEOFF_ENTRYID *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->flags)) {
-		return 0;
-	}
-	if (!ext_pack_push_bytes(pctx, r->provider_uid, 16)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->version)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint16(pctx, r->ctrl_flags)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->flags));
+	BTRY(ext_pack_push_bytes(pctx, r->provider_uid, 16));
+	BTRY(ext_pack_push_uint16(pctx, r->version));
+	BTRY(ext_pack_push_uint16(pctx, r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
-		if (!ext_pack_push_wstring(pctx, r->pdisplay_name)) {
-			return 0;
-		}
-		if (!ext_pack_push_wstring(pctx, r->paddress_type)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_wstring(pctx, r->pdisplay_name));
+		BTRY(ext_pack_push_wstring(pctx, r->paddress_type));
 		return ext_pack_push_wstring(pctx, r->pmail_address);
 	} else {
-		if (!ext_pack_push_string(pctx, r->pdisplay_name)) {
-			return 0;
-		}
-		if (!ext_pack_push_string(pctx, r->paddress_type)) {
-			return 0;
-		}
+		BTRY(ext_pack_push_string(pctx, r->pdisplay_name));
+		BTRY(ext_pack_push_string(pctx, r->paddress_type));
 		return ext_pack_push_string(pctx, r->pmail_address);
 	}
 }
@@ -2162,21 +1766,15 @@ zend_bool ext_pack_push_oneoff_entryid(PUSH_CTX *pctx,
 static zend_bool ext_pack_push_message_state(
 	PUSH_CTX *pctx, const MESSAGE_STATE *r)
 {
-	if (!ext_pack_push_binary(pctx, &r->source_key)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_binary(pctx, &r->source_key));
 	return ext_pack_push_uint32(pctx, r->message_flags);
 }
 
 zend_bool ext_pack_push_state_array(
 	PUSH_CTX *pctx, const STATE_ARRAY *r)
 {
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
+	BTRY(ext_pack_push_uint32(pctx, r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (!ext_pack_push_message_state(pctx, &r->pstate[i])) {
-			return 0;
-		}
+		BTRY(ext_pack_push_message_state(pctx, &r->pstate[i]));
 	return 1;
 }
