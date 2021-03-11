@@ -46,12 +46,8 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 		return ecNotSupported;
 	}
 	if (PROPIDS_FROM_NAMES_FLAG_GETORCREATE == flags) {
-		if (TRUE == logon_object_check_private(plogon) &&
-			LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
-			b_create = FALSE;
-		} else {
-			b_create = TRUE;
-		}
+		b_create = logon_object_check_private(plogon) &&
+		           logon_object_get_mode(plogon) == LOGON_MODE_GUEST ? false : TRUE;
 	} else if (PROPIDS_FROM_NAMES_FLAG_GETONLY == flags) {
 		b_create = FALSE;
 	} else {
@@ -110,7 +106,6 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	int i;
 	uint32_t cpid;
 	void *pobject;
-	BOOL b_unicode;
 	int object_type;
 	uint32_t tmp_size;
 	uint16_t proptype;
@@ -126,11 +121,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
-	if (0 == want_unicode) {
-		b_unicode = FALSE;
-	} else {
-		b_unicode = TRUE;
-	}
+	BOOL b_unicode = want_unicode == 0 ? false : TRUE;
 	ptmp_proptags = common_util_trim_proptags(pproptags);
 	if (NULL == ptmp_proptags) {
 		return ecMAPIOOM;
@@ -899,13 +890,9 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
 	int i;
-	BOOL b_fai;
 	BOOL b_sub;
-	BOOL b_guest;
-	BOOL b_force;
 	BOOL b_cycle;
 	int dst_type;
-	BOOL b_normal;
 	BOOL b_collid;
 	void *pobject;
 	BOOL b_partial;
@@ -948,11 +935,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		(COPY_FLAG_MOVE & copy_flags)) {
 		return ecNotSupported;
 	}
-	if (copy_flags & COPY_FLAG_NOOVERWRITE) {
-		b_force = FALSE;
-	} else {
-		b_force = TRUE;
-	}
+	BOOL b_force = (copy_flags & COPY_FLAG_NOOVERWRITE) ? false : TRUE;
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER: {
 		auto fldsrc = static_cast<FOLDER_OBJECT *>(pobject);
@@ -998,18 +981,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		} else {
 			b_sub = FALSE;
 		}
-		if (common_util_index_proptags(pexcluded_proptags,
-			PROP_TAG_CONTAINERCONTENTS) < 0) {
-			b_normal = TRUE;
-		} else {
-			b_normal = FALSE;
-		}
-		if (common_util_index_proptags(pexcluded_proptags,
-			PROP_TAG_FOLDERASSOCIATEDCONTENTS) < 0) {
-			b_fai = TRUE;	
-		} else {
-			b_fai = FALSE;
-		}
+		BOOL b_normal = common_util_index_proptags(pexcluded_proptags, PROP_TAG_CONTAINERCONTENTS) < 0 ? TRUE : false;
+		BOOL b_fai    = common_util_index_proptags(pexcluded_proptags, PROP_TAG_FOLDERASSOCIATEDCONTENTS) < 0 ? TRUE : false;
 		if (!folder_object_get_all_proptags(fldsrc, &proptags))
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);
@@ -1037,11 +1010,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			return ecError;
 		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 			pinfo = emsmdb_interface_get_emsmdb_info();
-			if (NULL == username) {
-				b_guest = FALSE;
-			} else {
-				b_guest = TRUE;
-			}
+			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client_copy_folder_internal(logon_object_get_dir(plogon),
 			    logon_object_get_account_id(plogon), pinfo->cpid,
 			    b_guest, rpc_info.username, folder_object_get_id(fldsrc),
@@ -1105,7 +1074,6 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	uint32_t *pstream_size, void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	BOOL b_write;
 	void *pobject;
 	int object_type;
 	uint32_t max_length;
@@ -1128,12 +1096,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
-	if (OPENSTREAM_FLAG_CREATE == flags ||
-		OPENSTREAM_FLAG_READWRITE == flags) {
-		b_write = TRUE;
-	} else {
-		b_write = FALSE;
-	}
+	BOOL b_write = flags == OPENSTREAM_FLAG_CREATE || flags == OPENSTREAM_FLAG_READWRITE ? TRUE : false;
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER:
 		if (FALSE == logon_object_check_private(plogon) &&
@@ -1172,11 +1135,9 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			return ecNotSupported;
 		}
 		if (TRUE == b_write) {
-			if (OBJECT_TYPE_MESSAGE == object_type) {
-				tag_access = message_object_get_tag_access(static_cast<MESSAGE_OBJECT *>(pobject));
-			} else {
-				tag_access = attachment_object_get_tag_access(static_cast<ATTACHMENT_OBJECT *>(pobject));
-			}
+			tag_access = object_type == OBJECT_TYPE_MESSAGE ?
+			             message_object_get_tag_access(static_cast<MESSAGE_OBJECT *>(pobject)) :
+			             attachment_object_get_tag_access(static_cast<ATTACHMENT_OBJECT *>(pobject));
 			if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 				return ecAccessDenied;
 			}

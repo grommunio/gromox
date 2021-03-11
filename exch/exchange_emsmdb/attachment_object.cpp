@@ -322,11 +322,9 @@ static BOOL attachment_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pattachment->open_flags & OPEN_MODE_FLAG_READWRITE) {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_MODIFY;
-		} else {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_READ_ONLY;
-		}
+		*static_cast<uint32_t *>(*ppvalue) =
+			(pattachment->open_flags & OPEN_MODE_FLAG_READWRITE) ?
+			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
 	case PROP_TAG_OBJECTTYPE:
 		*ppvalue = cu_alloc<uint32_t>();

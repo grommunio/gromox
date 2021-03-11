@@ -31,16 +31,11 @@ struct POINT_NODE {
 static void ftstream_producer_try_recode_nbp(
 	FTSTREAM_PRODUCER *pstream)
 {
-	uint32_t last_seek;
 	POINT_NODE *ppoint;
 	DOUBLE_LIST_NODE *pnode;
 	
 	pnode = double_list_get_tail(&pstream->bp_list);
-	if (NULL == pnode) {
-		last_seek = 0;
-	} else {
-		last_seek = ((POINT_NODE*)pnode->pdata)->offset;
-	}
+	uint32_t last_seek = pnode == nullptr ? 0 : static_cast<POINT_NODE *>(pnode->pdata)->offset;
 	if (pstream->offset - last_seek >=
 		FTSTREAM_PRODUCER_POINT_LENGTH) {
 		ppoint = me_alloc<POINT_NODE>();
@@ -767,14 +762,8 @@ BOOL ftstream_producer_write_message(
 	FTSTREAM_PRODUCER *pstream,
 	const MESSAGE_CONTENT *pmessage)
 {
-	uint32_t marker;
-	
 	auto pbool = static_cast<uint8_t *>(common_util_get_propvals(&pmessage->proplist, PROP_TAG_ASSOCIATED));
-	if (NULL == pbool || 0 == *pbool) {
-		marker = STARTMESSAGE;
-	} else {
-		marker = STARTFAIMSG;
-	}
+	uint32_t marker = pbool == nullptr || *pbool == 0 ? STARTMESSAGE : STARTFAIMSG;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
 		return FALSE;
@@ -1092,7 +1081,6 @@ BOOL ftstream_producer_write_progresspermessage(
 	FTSTREAM_PRODUCER *pstream,
 	const PROGRESS_MESSAGE *pprogmsg)
 {
-	uint16_t b_fai;
 	uint32_t marker;
 	
 	marker = INCRSYNCPROGRESSPERMSG;
@@ -1108,11 +1096,7 @@ BOOL ftstream_producer_write_progresspermessage(
 	}
 	if (!ftstream_producer_write_uint32(pstream, PT_BOOLEAN))
 		return FALSE;
-	if (TRUE == pprogmsg->b_fai) {
-		b_fai = 1;
-	} else {
-		b_fai = 0;
-	}
+	uint16_t b_fai = !!pprogmsg->b_fai;
 	if (FALSE == ftstream_producer_write_uint16(
 		pstream, b_fai)) {
 		return FALSE;
@@ -1296,11 +1280,7 @@ BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 		}
 		cur_offset = 0;
 	} else {
-		if (-1 != pstream->fd) {
-			cur_offset = lseek(pstream->fd, 0, SEEK_CUR);
-		} else {
-			cur_offset = pstream->read_offset;
-		}
+		cur_offset = pstream->fd != -1 ? lseek(pstream->fd, 0, SEEK_CUR) : pstream->read_offset;
 	}
 	for (pnode=double_list_get_head(&pstream->bp_list); NULL!=pnode;
 		pnode=double_list_get_after(&pstream->bp_list, pnode)) {

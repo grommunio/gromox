@@ -385,14 +385,11 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 {
 	uint32_t tmp_id;
 	uint32_t tmp_num;
-	uint8_t tmp_byte;
 	TARRAY_SET *prcpts;
-	uint64_t parent_id;
 	uint64_t folder_id;
 	uint32_t instance_id;
 	TARRAY_SET tmp_rcpts;
 	MARKER_NODE *pmarker;
-	uint32_t last_marker;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
@@ -403,13 +400,9 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	pnode = double_list_get_tail(&pctx->marker_stack);
-	if (NULL == pnode) {
-		last_marker = 0;
-	} else {
-		last_marker = ((MARKER_NODE*)pnode->pdata)->marker;
-	}
+	uint32_t last_marker = pnode == nullptr ? 0 : static_cast<MARKER_NODE *>(pnode->pdata)->marker;
 	switch (last_marker) {
-	case STARTSUBFLD:
+	case STARTSUBFLD: {
 		if (NULL == pctx->pproplist) {
 			break;
 		}
@@ -417,11 +410,9 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 			return GXERR_CALL_FAILED;
 		}
 		pnode1 = double_list_get_before(&pctx->marker_stack, pnode);
-		if (NULL == pnode1) {
-			parent_id = folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject));
-		} else {
-			parent_id = ((MARKER_NODE*)pnode1->pdata)->data.folder_id;
-		}
+		uint64_t parent_id = pnode1 == nullptr ?
+		                     folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)) :
+		                     static_cast<MARKER_NODE *>(pnode1->pdata)->data.folder_id;
 		if (FALSE == fastupctx_object_create_folder(pctx,
 			parent_id, pctx->pproplist, &folder_id)) {
 			return GXERR_CALL_FAILED;
@@ -430,6 +421,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		pctx->pproplist = NULL;
 		((MARKER_NODE*)pnode->pdata)->data.folder_id = folder_id;
 		break;
+	}
 	case STARTTOPFLD:
 		if (NULL == pctx->pproplist) {
 			break;
@@ -509,7 +501,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		return GXERR_SUCCESS;
 	case STARTFAIMSG:
-	case STARTMESSAGE:
+	case STARTMESSAGE: {
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGELIST:
 			if (0 != last_marker) {
@@ -547,12 +539,8 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 					pctx->pmsgctnt, pattachments);
 		pproplist = message_content_get_proplist(pctx->pmsgctnt);
 		propval.proptag = PROP_TAG_ASSOCIATED;
+		uint8_t tmp_byte = marker == STARTFAIMSG;
 		propval.pvalue = &tmp_byte;
-		if (STARTFAIMSG == marker) {
-			tmp_byte = 1;
-		} else {
-			tmp_byte = 0;
-		}
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return GXERR_CALL_FAILED;
 		pmarker = me_alloc<MARKER_NODE>();
@@ -563,6 +551,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		pmarker->marker = marker;
 		pmarker->data.pelement = pctx->pmsgctnt;
 		break;
+	}
 	case ENDMESSAGE: {
 		if (STARTMESSAGE != last_marker &&
 			STARTFAIMSG != last_marker) {
@@ -840,16 +829,11 @@ static BOOL fastupctx_object_del_props(
 	FASTUPCTX_OBJECT *pctx, uint32_t marker)
 {
 	int instance_id;
-	uint32_t last_marker;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	pnode = double_list_get_tail(&pctx->marker_stack);
-	if (NULL == pnode) {
-		last_marker = 0;
-	} else {
-		last_marker = ((MARKER_NODE*)pnode->pdata)->marker;
-	}
+	uint32_t last_marker = pnode == nullptr ? 0 : static_cast<MARKER_NODE *>(pnode->pdata)->marker;
 	switch (marker) {
 	case PROP_TAG_MESSAGERECIPIENTS:
 		switch (pctx->root_element) {
@@ -966,7 +950,6 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
     const TAGGED_PROPVAL *ppropval)
 {
 	uint32_t b_result;
-	uint32_t last_marker;
 	DOUBLE_LIST_NODE *pnode;
 	
 	switch (ppropval->proptag) {
@@ -1002,11 +985,7 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 		return GXERR_CALL_FAILED;
 	}
 	pnode = double_list_get_tail(&pctx->marker_stack);
-	if (NULL != pnode) {
-		last_marker = ((MARKER_NODE*)pnode->pdata)->marker;
-	} else {
-		last_marker = 0;
-	}
+	uint32_t last_marker = pnode != nullptr ? static_cast<MARKER_NODE *>(pnode->pdata)->marker : 0;
 	if (PROP_TYPE(ppropval->proptag) == PT_OBJECT) {
 		if (NEWATTACH == last_marker || (0 == last_marker &&
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element)) {

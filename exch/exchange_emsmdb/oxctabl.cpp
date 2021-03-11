@@ -290,7 +290,6 @@ uint32_t rop_queryrows(uint8_t flags,
 	uint8_t *pseek_pos, uint16_t *pcount, EXT_PUSH *pext,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_forward;
 	int object_type;
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
@@ -310,11 +309,7 @@ uint32_t rop_queryrows(uint8_t flags,
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
-	if (0 == forward_read) {
-		b_forward = FALSE;
-	} else {
-		b_forward = TRUE;
-	}
+	BOOL b_forward = forward_read == 0 ? false : TRUE;
 	if (table_object_get_rop_id(ptable)
 		== ropGetContentsTable &&
 		row_count > MAXIMUM_CONTENT_ROWS) {
@@ -526,11 +521,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		ptable, *(uint32_t*)pbookmark->pb, &b_exist)) {
 		return ecInvalidBookmark;
 	}
-	if (FALSE == b_exist) {
-		*prow_invisible = 1;
-	} else {
-		*prow_invisible = 0;
-	}
+	*prow_invisible = !b_exist;
 	return rop_seekrow(SEEK_POS_CURRENT, offset, want_moved_count,
 	       phas_soughtless, reinterpret_cast<int32_t *>(poffset_sought), plogmap, logon_id, hin);
 }
@@ -624,7 +615,6 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	PROPTAG_ARRAY **ppcolumns, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_forward;
 	uint32_t result;
 	int object_type;
 	int32_t position;
@@ -654,11 +644,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
-	if (flags & FIND_ROW_FLAG_BACKWARD) {
-		b_forward = FALSE;
-	} else {
-		b_forward = TRUE;
-	}
+	BOOL b_forward = (flags & FIND_ROW_FLAG_BACKWARD) ? false : TRUE;
 	*pbookmark_invisible = 0;
 	switch (seek_pos) {
 	case SEEK_POS_CUSTOM:

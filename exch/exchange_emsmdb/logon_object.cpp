@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <libHX/string.h>
@@ -207,11 +208,7 @@ void logon_object_free(LOGON_OBJECT *plogon)
 
 BOOL logon_object_check_private(LOGON_OBJECT *plogon)
 {
-	if (plogon->logon_flags & LOGON_FLAG_PRIVATE) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
+	return (plogon->logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false;
 }
 
 int logon_object_get_mode(LOGON_OBJECT *plogon)
@@ -354,10 +351,7 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 	
 	rop_util_get_common_pset(PS_MAPI, &guid);
 	if (0 == guid_compare(&ppropname->guid, &guid)) {
-		if (ppropname->kind == MNID_ID)
-			*ppropid = *ppropname->plid;
-		else
-			*ppropid = 0;
+		*ppropid = ppropname->kind == MNID_ID ? *ppropname->plid : 0;
 		return TRUE;
 	}
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
@@ -424,10 +418,8 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 	}
 	for (i=0; i<ppropnames->count; i++) {
 		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
-			if (ppropnames->ppropname[i].kind == MNID_ID)
-				ppropids->ppropid[i] = *ppropnames->ppropname[i].plid;
-			else
-				ppropids->ppropid[i] = 0;
+			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
+					       *ppropnames->ppropname[i].plid : 0;
 			pindex_map[i] = i;
 			continue;
 		}
@@ -699,11 +691,7 @@ static BOOL logon_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		if (*(uint64_t*)pvalue > 0x7FFFFFFF) {
-			**(uint32_t**)ppvalue = 0x7FFFFFFF;
-		} else {
-			**(uint32_t**)ppvalue = *(uint64_t*)pvalue;
-		}
+		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -715,11 +703,7 @@ static BOOL logon_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		if (*(uint64_t*)pvalue > 0x7FFFFFFF) {
-			**(uint32_t**)ppvalue = 0x7FFFFFFF;
-		} else {
-			**(uint32_t**)ppvalue = *(uint64_t*)pvalue;
-		}
+		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_NORMALMESSAGESIZE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -731,11 +715,7 @@ static BOOL logon_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		if (*(uint64_t*)pvalue > 0x7FFFFFFF) {
-			**(uint32_t**)ppvalue = 0x7FFFFFFF;
-		} else {
-			**(uint32_t**)ppvalue = *(uint64_t*)pvalue;
-		}
+		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:

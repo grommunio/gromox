@@ -466,12 +466,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 	    static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;
 	*plen = len + len1;
-	if (0 == double_list_get_nodes_num(
-		&pctx->flow_list) && TRUE == b_last) {
-		*pb_last = TRUE;
-	} else {
-		*pb_last = FALSE;
-	}
+	*pb_last = double_list_get_nodes_num(&pctx->flow_list) == 0 && b_last ? TRUE : false;
 	return TRUE;
 }
 

@@ -51,11 +51,7 @@ BOOL table_object_check_loaded(TABLE_OBJECT *ptable)
 {
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
-	if (0 == ptable->table_id) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	return ptable->table_id == 0 ? false : TRUE;
 }
 
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
@@ -139,7 +135,6 @@ void table_object_unload(TABLE_OBJECT *ptable)
 BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
 {
-	int32_t row_needed;
 	EMSMDB_INFO *pinfo;
 	DCERPC_INFO rpc_info;
 	const char *username;
@@ -160,11 +155,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 		pset->count = 0;
 		return TRUE;
 	}
-	if (TRUE == b_forward) {
-		row_needed = row_count;
-	} else {
-		row_needed = -1 * row_count;
-	}
+	int32_t row_needed = b_forward ? row_count : -row_count; /* XXX */
 	if (ptable->rop_id == ropGetAttachmentTable) {
 		return message_object_query_attachment_table(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),

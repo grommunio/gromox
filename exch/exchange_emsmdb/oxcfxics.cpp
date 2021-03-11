@@ -33,17 +33,12 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t tmp_proptag;
-	uint8_t tmp_associated;
 	PROPTAG_ARRAY proptags;
 	RESTRICTION restriction;
 	EID_ARRAY *pmessage_ids;
 	RESTRICTION_PROPERTY res_prop;
+	uint8_t tmp_associated = !!b_fai;
 	
-	if (TRUE == b_fai) {
-		tmp_associated = 1;
-	} else {
-		tmp_associated = 0;
-	}
 	restriction.rt = RES_PROPERTY;
 	restriction.pres = &res_prop;
 	res_prop.relop = RELOP_EQ;
@@ -261,8 +256,6 @@ uint32_t rop_fasttransferdestconfigure(
 	void *pobject;
 	int object_type;
 	int root_element;
-	uint32_t total_mail;
-	uint64_t total_size;
 	LOGON_OBJECT *plogon;
 	FASTUPCTX_OBJECT *pctx;
 	uint32_t proptag_buff[4];
@@ -332,19 +325,12 @@ uint32_t rop_fasttransferdestconfigure(
 		                     1024 * *static_cast<uint32_t *>(pvalue);
 		pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_MESSAGESIZEEXTENDED);
-		if (NULL == pvalue) {
-			total_size = 0;
-		} else {
-			total_size = *(uint64_t*)pvalue;
-		}
+		uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 		if (total_size > max_quota)
 			return ecQuotaExceeded;
-		total_mail = 0;
 		pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_ASSOCIATEDCONTENTCOUNT);
-		if (NULL != pvalue) {
-			total_mail += *(uint32_t*)pvalue;
-		}
+		uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
 		pvalue = common_util_get_propvals(&tmp_propvals,
 								PROP_TAG_CONTENTCOUNT);
 		if (NULL != pvalue) {
@@ -404,7 +390,6 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_last;
-	uint16_t len;
 	void *pobject;
 	int object_type;
 	uint16_t max_rop;
@@ -428,11 +413,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	if (max_rop > 0x7b00) {
 		max_rop = 0x7b00;
 	}
-	if (0xBABE == buffer_size) {
-		len = max_buffer_size;
-	} else {
-		len = buffer_size;
-	}
+	uint16_t len = buffer_size == 0xBABE ? max_buffer_size : buffer_size;
 	if (len > max_rop) {
 		len = max_rop;
 	}
@@ -455,11 +436,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	if (0xBABE != buffer_size && len > max_rop) {
 		return ecBufferTooSmall;
 	}
-	if (FALSE == b_last) {
-		*ptransfer_status = TRANSFER_STATUS_PARTIAL;
-	} else {
-		*ptransfer_status = TRANSFER_STATUS_DONE;
-	}
+	*ptransfer_status = !b_last ? TRANSFER_STATUS_PARTIAL : TRANSFER_STATUS_DONE;
 	ptransfer_data->cb = len;
 	return ecSuccess;
 }
@@ -535,7 +512,6 @@ uint32_t rop_fasttransfersourcecopymessages(
 	uint32_t hin, uint32_t *phout)
 {
 	BOOL b_owner;
-	BOOL b_chginfo;
 	int object_type;
 	EID_ARRAY *pmids;
 	uint32_t permission;
@@ -599,11 +575,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		eid_array_free(pmids);
 		return ecMAPIOOM;
 	}
-	if (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) {
-		b_chginfo = TRUE;
-	} else {
-		b_chginfo = FALSE;
-	}
+	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
 	pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		eid_array_free(pmids);
@@ -1045,7 +1017,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	BOOL b_new;
-	BOOL b_fai;
 	XID tmp_xid;
 	BOOL b_exist;
 	BOOL b_owner;
@@ -1227,11 +1198,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 			return ecError;
 		}
 	} else {
-		if (IMPORT_FLAG_ASSOCIATED & import_flags) {
-			b_fai = TRUE;
-		} else {
-			b_fai = FALSE;
-		}
+		BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
 		if (FALSE == message_object_init_message(
 			pmessage, b_fai, pinfo->cpid)) {
 			return ecError;
@@ -1694,7 +1661,6 @@ uint32_t rop_syncimportdeletes(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	XID tmp_xid;
-	BOOL b_hard;
 	void *pvalue;
 	BOOL b_exist;
 	BOOL b_found;
@@ -1732,11 +1698,7 @@ uint32_t rop_syncimportdeletes(
 		return ecNotSupported;
 	}
 	sync_type = icsupctx_object_get_sync_type(pctx);
-	if (SYNC_DELETES_FLAG_HARDDELETE & flags) {
-		b_hard = TRUE;
-	} else {
-		b_hard = FALSE;
-	}
+	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
 	if (SYNC_DELETES_FLAG_HIERARCHY & flags) {
 		if (SYNC_TYPE_CONTENTS == sync_type) {
 			return ecNotSupported;
@@ -1905,14 +1867,12 @@ uint32_t rop_syncimportmessagemove(
 	const BINARY *pchange_number, uint64_t *pmessage_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_fai;
 	XID xid_src;
 	XID xid_dst;
 	XID xid_fsrc;
 	void *pvalue;
 	BOOL b_exist;
 	BOOL b_owner;
-	BOOL b_newer;
 	BOOL b_result;
 	GUID tmp_guid;
 	uint32_t result;
@@ -2023,11 +1983,7 @@ uint32_t rop_syncimportmessagemove(
 	if (NULL == pvalue) {
 		return ecNotFound;
 	}
-	if (0 != *(uint8_t*)pvalue) {
-		b_fai = TRUE;
-	} else {
-		b_fai = FALSE;
-	}
+	BOOL b_fai = *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0, src_mid,
 		PROP_TAG_PREDECESSORCHANGELIST, &pvalue)) {
@@ -2038,11 +1994,7 @@ uint32_t rop_syncimportmessagemove(
 	}
 	if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue), pchange_list, &result))
 		return ecError;
-	if (PCL_INCLUDED == result){
-		b_newer = TRUE;
-	} else {
-		b_newer = FALSE;
-	}
+	BOOL b_newer = result == PCL_INCLUDED ? TRUE : false;
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_message(
 		logon_object_get_dir(plogon),
@@ -2063,11 +2015,8 @@ uint32_t rop_syncimportmessagemove(
 		PROP_TAG_CHANGENUMBER, &pvalue) || NULL == pvalue) {
 		return ecError;
 	}
-	if (TRUE == b_fai) {
-		idset_append(pctx->pstate->pseen_fai, *(uint64_t*)pvalue);
-	} else {
-		idset_append(pctx->pstate->pseen, *(uint64_t*)pvalue);
-	}
+	idset_append(b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen,
+	             *static_cast<uint64_t *>(pvalue));
 	idset_append(pctx->pstate->pgiven, dst_mid);
 	*pmessage_id = 0;
 	if (TRUE == b_newer) {
@@ -2080,7 +2029,6 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
-	uint8_t sync_type;
 	LOGON_OBJECT *plogon;
 	ICSUPCTX_OBJECT *pctx;
 	
@@ -2096,11 +2044,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (0 == is_content_collector) {
-		sync_type = SYNC_TYPE_HIERARCHY;
-	} else {
-		sync_type = SYNC_TYPE_CONTENTS;
-	}
+	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
 	pctx = icsupctx_object_create(plogon, pfolder, sync_type);
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx);

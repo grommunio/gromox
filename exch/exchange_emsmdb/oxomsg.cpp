@@ -202,8 +202,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	int timer_id;
 	void *pvalue;
 	BOOL b_marked;
-	BOOL b_unsent;
-	BOOL b_delete;
 	int object_type;
 	time_t cur_time;
 	uint32_t tmp_num;
@@ -312,12 +310,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	if (NULL != pvalue) {
 		max_length = *(int32_t*)pvalue;
 	}
-	
-	if (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) {
-		tmp_proptags.count = 2;
-	} else {
-		tmp_proptags.count = 6;
-	}
+	tmp_proptags.count = (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MESSAGESIZE;
 	proptag_buff[1] = PROP_TAG_MESSAGEFLAGS;
@@ -346,18 +339,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	if (MESSAGE_FLAG_SUBMITTED & message_flags) {
 		return ecAccessDenied;
 	}
-	if (message_flags & MESSAGE_FLAG_UNSENT) {
-		b_unsent = TRUE;
-	} else {
-		b_unsent = FALSE;
-	}
+	BOOL b_unsent = (message_flags & MESSAGE_FLAG_UNSENT) ? TRUE : false;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_DELETEAFTERSUBMIT);
-	b_delete = FALSE;
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		b_delete = TRUE;
-	}
-	
+	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	/* we don't use spool queue, so disable the whole functionality */
 #if 0
 	/* check if it is alread in spooler queue */

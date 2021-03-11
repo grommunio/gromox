@@ -153,11 +153,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 
 BOOL stream_object_check(STREAM_OBJECT *pstream)
 {
-	if (NULL != pstream->content_bin.pb) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
+	return pstream->content_bin.pb != nullptr ? TRUE : false;
 }
 
 uint32_t stream_object_get_max_length(STREAM_OBJECT *pstream)

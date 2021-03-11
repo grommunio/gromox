@@ -217,17 +217,8 @@ BOOL message_object_check_orignal_touched(
 		    pmessage->instance_id, &pchange_num))
 			return FALSE;	
 	}
-	if (NULL == pchange_num) {
-		/* if cannot find PROP_TAG_CHANGENUMBER, it
-			means message does not exist any more */
-		*pb_touched = TRUE;
-	} else {
-		if (*pchange_num == pmessage->change_num) {
-			*pb_touched = FALSE;
-		} else {
-			*pb_touched = TRUE;
-		}
-	}
+	/* if it cannot find PROP_TAG_CHANGENUMBER, it means message does not exist any more */
+	*pb_touched = pchange_num == nullptr || *pchange_num != pmessage->change_num ? TRUE : false;
 	return TRUE;
 }
 
@@ -350,11 +341,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	if (FALSE == b_fai) {
-		*(uint8_t*)pvalue = 0;
-	} else {
-		*(uint8_t*)pvalue = 1;
-	}
+	*static_cast<uint8_t *>(pvalue) = !!b_fai;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -474,7 +461,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 {
 	int i;
 	BOOL b_new;
-	BOOL b_fai;
 	XID tmp_xid;
 	void *pvalue;
 	uint32_t result;
@@ -487,7 +473,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	INDEX_ARRAY *pindices;
 	BINARY *pbin_changekey;
 	INDEX_ARRAY tmp_indices;
-	uint32_t resolve_method;
 	MESSAGE_CONTENT *pmsgctnt;
 	PROBLEM_ARRAY tmp_problems;
 	TAGGED_PROPVAL tmp_propval;
@@ -513,12 +498,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue)) {
 		return GXERR_CALL_FAILED;
 	}
-	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-		b_fai = FALSE;
-	} else {
-		b_fai = TRUE;
-	}
-		
+	BOOL b_fai = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (FALSE == pmessage->b_new) {
 			if (FALSE == exmdb_client_get_instance_property(
@@ -543,11 +523,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 					pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &pvalue)) {
 					return GXERR_CALL_FAILED;
 				}
-				if (NULL == pvalue) {
-					resolve_method = RESOLVE_METHOD_DEFAULT;
-				} else {
-					resolve_method = *(uint32_t*)pvalue;
-				}
+				uint32_t resolve_method = pvalue == nullptr ? RESOLVE_METHOD_DEFAULT :
+				                          *static_cast<uint32_t *>(pvalue);
 				if (FALSE == b_fai &&
 					RESOLVE_METHOD_DEFAULT == resolve_method) {
 					if (TRUE == logon_object_check_private(pmessage->plogon)) {
@@ -1271,11 +1248,8 @@ static BOOL message_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE) {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_MODIFY;
-		} else {
-			*(uint32_t*)(*ppvalue) = ACCESS_LEVEL_READ_ONLY;
-		}
+		*static_cast<uint32_t *>(*ppvalue) = (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE) ?
+			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
 	case PROP_TAG_ENTRYID:
 		if (0 == pmessage->message_id) {
@@ -1561,24 +1535,9 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				propval_buff[2].proptag =
 					PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 				propval_buff[2].pvalue = &tmp_bytes[2];
-				if (0 == ((*(uint32_t*)ppropvals->ppropval[i].pvalue)
-					& MESSAGE_FLAG_READ)) {
-					tmp_bytes[0] = 0;	
-				} else {
-					tmp_bytes[0] = 1;
-				}
-				if (0 == ((*(uint32_t*)ppropvals->ppropval[i].pvalue)
-					& MESSAGE_FLAG_NOTIFYREAD)) {
-					tmp_bytes[1] = 0;	
-				} else {
-					tmp_bytes[1] = 1;
-				}
-				if (0 == ((*(uint32_t*)ppropvals->ppropval[i].pvalue)
-					& MESSAGE_FLAG_NOTIFYUNREAD)) {
-					tmp_bytes[2] = 0;	
-				} else {
-					tmp_bytes[2] = 1;
-				}
+				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_READ);
+				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_NOTIFYREAD);
+				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_NOTIFYUNREAD);
 				if (FALSE == exmdb_client_set_instance_properties(
 					logon_object_get_dir(pmessage->plogon),
 					pmessage->instance_id, &tmp_propvals1,

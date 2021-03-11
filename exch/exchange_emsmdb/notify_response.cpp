@@ -71,11 +71,7 @@ static BOOL notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 	pnotify->notification_data.pmessage_flags = &pmemory->message_flags;
 	pmemory->message_flags = message_flags;
 	pnotify->notification_data.punicode_flag = &pmemory->unicode_flag;
-	if (TRUE == b_unicode) {
-		pmemory->unicode_flag = 1;
-	} else {
-		pmemory->unicode_flag = 0;
-	}
+	pmemory->unicode_flag = !!b_unicode;
 	pnotify->notification_data.pstr_class = strdup(pmessage_class);
 	if (NULL == pnotify->notification_data.pstr_class) {
 		return FALSE;
@@ -91,12 +87,9 @@ static BOOL notify_response_specify_folder_created(
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTCREATED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	if (0 == (folder_id & 0xFF00000000000000ULL)) {
-		pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
-	} else {
-		pmemory->folder_id = rop_util_make_eid_ex(folder_id >> 48,
-								folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->folder_id = (folder_id & 0xFF00000000000000ULL) == 0 ?
+	                     rop_util_make_eid_ex(1, folder_id) :
+	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
 	pnotify->notification_data.pproptags = &pmemory->proptags;
@@ -178,12 +171,9 @@ static BOOL notify_response_specify_folder_deleted(
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTDELETED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	if (0 == (folder_id & 0xFF00000000000000ULL)) {
-		pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
-	} else {
-		pmemory->folder_id = rop_util_make_eid_ex(folder_id >> 48,
-								folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->folder_id = (folder_id & 0xFF00000000000000ULL) == 0 ?
+	                     rop_util_make_eid_ex(1, folder_id) :
+	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
 	return TRUE;
@@ -228,12 +218,9 @@ static BOOL notify_response_specify_folder_modified(
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTMODIFIED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	if (0 == (folder_id & 0xFF00000000000000ULL)) {
-		pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
-	} else {
-		pmemory->folder_id = rop_util_make_eid_ex(folder_id >> 48,
-								folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->folder_id = (folder_id & 0xFF00000000000000ULL) == 0 ?
+	                     rop_util_make_eid_ex(1, folder_id) :
+	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & 0x00FFFFFFFFFFFFFFULL);
 	if (NULL != ptotal) {
 		pnotify->notification_data.notification_flags |=
 								NOTIFICATION_FLAG_MOST_TOTAL;
@@ -297,21 +284,15 @@ static BOOL notify_response_specify_folder_mvcp(
 	pnotify->notification_data.notification_flags =
 								notification_flags;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	if (0 == (folder_id & 0xFF00000000000000ULL)) {
-		pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
-	} else {
-		pmemory->folder_id = rop_util_make_eid_ex(folder_id >> 48,
-								folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->folder_id = (folder_id & 0xFF00000000000000ULL) == 0 ?
+	                     rop_util_make_eid_ex(1, folder_id) :
+	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
 	pnotify->notification_data.pold_folder_id = &pmemory->old_folder_id;
-	if (0 == (old_folder_id & 0xFF00000000000000ULL)) {
-		pmemory->old_folder_id = rop_util_make_eid_ex(1, old_folder_id);
-	} else {
-		pmemory->old_folder_id = rop_util_make_eid_ex(old_folder_id >> 48,
-								old_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->old_folder_id = (old_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                         rop_util_make_eid_ex(1, old_folder_id) :
+	                         rop_util_make_eid_ex(old_folder_id >> 48, old_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pold_parent_id = &pmemory->old_parent_id;
 	pmemory->old_parent_id = rop_util_make_eid_ex(1, old_parent_id);
 	return TRUE;
@@ -392,24 +373,17 @@ static BOOL notify_response_specify_hierarchy_table_row_added(
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_ADDED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
-	if (0 == (row_folder_id & 0xFF00000000000000ULL)) {
-		pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
-	} else {
-		pmemory->row_folder_id = rop_util_make_eid_ex(row_folder_id >> 48,
-								row_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_folder_id = (row_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                         rop_util_make_eid_ex(1, row_folder_id) :
+	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & 0x00FFFFFFFFFFFFFFULL);
+	pmemory->row_folder_id = (row_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                         rop_util_make_eid_ex(1, row_folder_id) :
+	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
-	if (0 == (after_folder_id & 0xFF00000000000000ULL)) {
-		if (0 == after_folder_id) {
-			pmemory->after_folder_id = 0;
-		} else {
-			pmemory->after_folder_id = rop_util_make_eid_ex(
-										1, after_folder_id);
-		}
-	} else {
-		pmemory->after_folder_id = rop_util_make_eid_ex(after_folder_id >> 48,
-								after_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->after_folder_id = after_folder_id == 0 ? 0 :
+	                           (after_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                           rop_util_make_eid_ex(1, after_folder_id) :
+	                           rop_util_make_eid_ex(after_folder_id >> 48, after_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	return TRUE;
 }
 
@@ -427,31 +401,19 @@ static BOOL notify_response_specify_content_table_row_added(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	if (0 == (row_message_id & 0xFF00000000000000ULL)) {
-		pmemory->row_message_id = rop_util_make_eid_ex(1, row_message_id);
-	} else {
-		pmemory->row_message_id = rop_util_make_eid_ex(
-			2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_message_id = (row_message_id & 0xFF00000000000000ULL) == 0 ?
+	                          rop_util_make_eid_ex(1, row_message_id) :
+	                          rop_util_make_eid_ex(2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
-	if (0 == after_folder_id) {
-		pmemory->after_folder_id = 0;
-	} else {
-		pmemory->after_folder_id = rop_util_make_eid_ex(1, after_folder_id);
-	}
+	pmemory->after_folder_id = after_folder_id == 0 ? 0 :
+	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
-	if (0 == after_row_id) {
-		pmemory->after_row_id = 0;
-	} else {
-		if (0 == (after_row_id & 0xFF00000000000000ULL)) {
-			pmemory->after_row_id = rop_util_make_eid_ex(1, after_row_id);
-		} else {
-			pmemory->after_row_id = rop_util_make_eid_ex(
-				2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
-		}
-	}
+	pmemory->after_row_id = after_row_id == 0 ? 0 :
+	                        (after_row_id & 0xFF00000000000000ULL) == 0 ?
+	                        rop_util_make_eid_ex(1, after_row_id) :
+	                        rop_util_make_eid_ex(2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -473,31 +435,19 @@ static BOOL notify_response_specify_search_table_row_added(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	if (0 == (row_message_id & 0xFF00000000000000ULL)) {
-		pmemory->row_message_id = rop_util_make_eid_ex(1, row_message_id);
-	} else {
-		pmemory->row_message_id = rop_util_make_eid_ex(
-			2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_message_id = (row_message_id & 0xFF00000000000000ULL) == 0 ?
+	                          rop_util_make_eid_ex(1, row_message_id) :
+	                          rop_util_make_eid_ex(2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
-	if (0 == after_folder_id) {
-		pmemory->after_folder_id = 0;
-	} else {
-		pmemory->after_folder_id = rop_util_make_eid_ex(1, after_folder_id);
-	}
+	pmemory->after_folder_id = after_folder_id == 0 ? 0 :
+	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
-	if (0 == after_row_id) {
-		pmemory->after_row_id = 0;
-	} else {
-		if (0 == (after_row_id & 0xFF00000000000000ULL)) {
-			pmemory->after_row_id = rop_util_make_eid_ex(1, after_row_id);
-		} else {
-			pmemory->after_row_id = rop_util_make_eid_ex(
-				2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
-		}
-	}
+	pmemory->after_row_id = after_row_id == 0 ? 0 :
+	                        (after_row_id & 0xFF00000000000000ULL) == 0 ?
+	                        rop_util_make_eid_ex(1, after_row_id) :
+	                        rop_util_make_eid_ex(2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -512,12 +462,9 @@ static BOOL notify_response_specify_hierarchy_table_row_deleted(
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_DELETED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
-	if (0 == (row_folder_id & 0xFF00000000000000ULL)) {
-		pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
-	} else {
-		pmemory->row_folder_id = rop_util_make_eid_ex(row_folder_id >> 48,
-								row_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_folder_id = (row_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                         rop_util_make_eid_ex(1, row_folder_id) :
+	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	return TRUE;
 }
 
@@ -533,12 +480,9 @@ static BOOL notify_response_specify_content_table_row_deleted(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	if (0 == (row_message_id & 0xFF00000000000000ULL)) {
-		pmemory->row_message_id = rop_util_make_eid_ex(1, row_message_id);
-	} else {
-		pmemory->row_message_id = rop_util_make_eid_ex(
-			2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_message_id = (row_message_id & 0xFF00000000000000ULL) == 0 ?
+	                          rop_util_make_eid_ex(1, row_message_id) :
+	                          rop_util_make_eid_ex(2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	return TRUE;
@@ -558,12 +502,9 @@ static BOOL notify_response_specify_search_table_row_deleted(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	if (0 == (row_message_id & 0xFF00000000000000ULL)) {
-		pmemory->row_message_id = rop_util_make_eid_ex(1, row_message_id);
-	} else {
-		pmemory->row_message_id = rop_util_make_eid_ex(
-			2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_message_id = (row_message_id & 0xFF00000000000000ULL) == 0 ?
+	                          rop_util_make_eid_ex(1, row_message_id) :
+	                          rop_util_make_eid_ex(2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	return TRUE;
@@ -579,24 +520,14 @@ static BOOL notify_response_specify_hierarchy_table_row_modified(
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_MODIFIED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
-	if (0 == (row_folder_id & 0xFF00000000000000ULL)) {
-		pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
-	} else {
-		pmemory->row_folder_id = rop_util_make_eid_ex(row_folder_id >> 48,
-								row_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_folder_id = (row_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                         rop_util_make_eid_ex(1, row_folder_id) :
+	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
-	if (0 == (after_folder_id & 0xFF00000000000000ULL)) {
-		if (0 == after_folder_id) {
-			pmemory->after_folder_id = 0;
-		} else {
-			pmemory->after_folder_id = rop_util_make_eid_ex(
-										1, after_folder_id);
-		}
-	} else {
-		pmemory->after_folder_id = rop_util_make_eid_ex(after_folder_id >> 48,
-									after_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->after_folder_id = after_folder_id == 0 ? 0 :
+	                           (after_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                           rop_util_make_eid_ex(1, after_folder_id) :
+	                           rop_util_make_eid_ex(after_folder_id >> 48, after_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	return TRUE;
 }
 	
@@ -614,31 +545,19 @@ static BOOL notify_response_specify_content_table_row_modified(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	if (0 == (row_message_id & 0xFF00000000000000ULL)) {
-		pmemory->row_message_id = rop_util_make_eid_ex(1, row_message_id);
-	} else {
-		pmemory->row_message_id = rop_util_make_eid_ex(
-			2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_message_id = (row_message_id & 0xFF00000000000000ULL) == 0 ?
+	                          rop_util_make_eid_ex(1, row_message_id) :
+	                          rop_util_make_eid_ex(2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
-	if (0 == after_folder_id) {
-		pmemory->after_folder_id = 0;
-	} else {
-		pmemory->after_folder_id = rop_util_make_eid_ex(1, after_folder_id);
-	}
+	pmemory->after_folder_id = after_folder_id == 0 ? 0 :
+	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
-	if (0 == after_row_id) {
-		pmemory->after_row_id = 0;
-	} else {
-		if (0 == (after_row_id & 0xFF00000000000000ULL)) {
-			pmemory->after_row_id = rop_util_make_eid_ex(1, after_row_id);
-		} else {
-			pmemory->after_row_id = rop_util_make_eid_ex(
-				2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
-		}
-	}
+	pmemory->after_row_id = after_row_id == 0 ? 0 :
+	                        (after_row_id & 0xFF00000000000000ULL) == 0 ?
+	                        rop_util_make_eid_ex(1, after_row_id) :
+	                        rop_util_make_eid_ex(2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -660,31 +579,19 @@ static BOOL notify_response_specify_search_table_row_modified(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	if (0 == (row_message_id & 0xFF00000000000000ULL)) {
-		pmemory->row_message_id = rop_util_make_eid_ex(1, row_message_id);
-	} else {
-		pmemory->row_message_id = rop_util_make_eid_ex(
-			2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
-	}
+	pmemory->row_message_id = (row_message_id & 0xFF00000000000000ULL) == 0 ?
+	                          rop_util_make_eid_ex(1, row_message_id) :
+	                          rop_util_make_eid_ex(2, row_message_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
-	if (0 == after_folder_id) {
-		pmemory->after_folder_id = 0;
-	} else {
-		pmemory->after_folder_id = rop_util_make_eid_ex(1, after_folder_id);
-	}
+	pmemory->after_folder_id = after_folder_id == 0 ? 0 :
+	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
-	if (0 == after_row_id) {
-		pmemory->after_row_id = 0;
-	} else {
-		if (0 == (after_row_id & 0xFF00000000000000ULL)) {
-			pmemory->after_row_id = rop_util_make_eid_ex(1, after_row_id);
-		} else {
-			pmemory->after_row_id = rop_util_make_eid_ex(
-				2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
-		}
-	}
+	pmemory->after_row_id = after_row_id == 0 ? 0 :
+	                        (after_row_id & 0xFF00000000000000ULL) == 0 ?
+		                rop_util_make_eid_ex(1, after_row_id) :
+		                rop_util_make_eid_ex(2, after_row_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -746,11 +653,8 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	case DB_NOTIFY_TYPE_FOLDER_MOVED:
 	case DB_NOTIFY_TYPE_FOLDER_COPIED: {
 		auto x = static_cast<DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
-		if (DB_NOTIFY_TYPE_FOLDER_MOVED == pdb_notify->type) {
-			notification_flags = NOTIFICATION_FLAG_OBJECTMOVED;
-		} else {
-			notification_flags = NOTIFICATION_FLAG_OBJECTCOPIED;
-		}
+		notification_flags = pdb_notify->type == DB_NOTIFY_TYPE_FOLDER_MOVED ?
+		                     NOTIFICATION_FLAG_OBJECTMOVED : NOTIFICATION_FLAG_OBJECTCOPIED;
 		return notify_response_specify_folder_mvcp(pnotify,
 		       notification_flags, x->folder_id, x->parent_id,
 		       x->old_folder_id, x->old_parent_id);
@@ -758,11 +662,8 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	case DB_NOTIFY_TYPE_MESSAGE_MOVED:
 	case DB_NOTIFY_TYPE_MESSAGE_COPIED: {
 		auto x = static_cast<DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
-		if (DB_NOTIFY_TYPE_MESSAGE_MOVED == pdb_notify->type) {
-			notification_flags = NOTIFICATION_FLAG_OBJECTMOVED;
-		} else {
-			notification_flags = NOTIFICATION_FLAG_OBJECTCOPIED;
-		}
+		notification_flags = pdb_notify->type == DB_NOTIFY_TYPE_MESSAGE_MOVED ?
+		                     NOTIFICATION_FLAG_OBJECTMOVED : NOTIFICATION_FLAG_OBJECTCOPIED;
 		return notify_response_specify_message_mvcp(pnotify,
 		       notification_flags, x->folder_id, x->message_id,
 		       x->old_folder_id, x->old_message_id);

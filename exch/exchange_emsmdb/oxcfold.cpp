@@ -132,11 +132,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		PROP_TAG_HASRULES, &pvalue)) {
 		return ecError;
 	}
-	if (NULL == pvalue) {
-		*phas_rules = 0;
-	} else {
-		*phas_rules = *(uint8_t*)pvalue;
-	}
+	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
 	pfolder = folder_object_create(plogon,
 			folder_id, type, tag_access);
 	if (NULL == pfolder) {
@@ -359,13 +355,9 @@ uint32_t rop_deletefolder(uint8_t flags,
 	uint64_t folder_id, uint8_t *ppartial_completion,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_fai;
-	BOOL b_sub;
-	BOOL b_hard;
 	BOOL b_done;
 	void *pvalue;
 	BOOL b_exist;
-	BOOL b_normal;
 	BOOL b_partial;
 	int object_type;
 	EMSMDB_INFO *pinfo;
@@ -420,23 +412,10 @@ uint32_t rop_deletefolder(uint8_t flags,
 		*ppartial_completion = 0;
 		return ecSuccess;
 	}
-	if (flags & DELETE_FOLDER_FLAG_MESSAGES) {
-		b_normal = TRUE;
-		b_fai = TRUE;
-	} else {
-		b_normal = FALSE;
-		b_fai = FALSE;
-	}
-	if (flags & DELETE_FOLDER_FLAG_FOLDERS) {
-		b_sub = TRUE;
-	} else {
-		b_sub = FALSE;
-	}
-	if (flags & DELETE_FOLDER_FLAG_HARD_DELETE) {
-		b_hard = TRUE;
-	} else {
-		b_hard = FALSE;
-	}
+	BOOL b_normal = (flags & DELETE_FOLDER_FLAG_MESSAGES) ? TRUE : false;
+	BOOL b_fai    = b_normal;
+	BOOL b_sub    = (flags & DELETE_FOLDER_FLAG_FOLDERS) ? TRUE : false;
+	BOOL b_hard   = (flags & DELETE_FOLDER_FLAG_HARD_DELETE) ? TRUE : false;
 	if (TRUE == logon_object_check_private(plogon)) {
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(plogon), 0, folder_id,
@@ -469,11 +448,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		folder_id, b_hard, &b_done)) {
 		return ecError;
 	}
-	if (TRUE == b_done) {
-		*ppartial_completion = 0;
-	} else {
-		*ppartial_completion = 1;
-	}
+	*ppartial_completion = !b_done;
 	return ecSuccess;
 }
 
@@ -632,7 +607,6 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	uint8_t *ppartial_completion, void *plogmap,
 	uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
-	BOOL b_copy;
 	BOOL b_guest;
 	EID_ARRAY ids;
 	BOOL b_partial;
@@ -672,11 +646,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	}
 	ids.count = pmessage_ids->count;
 	ids.pids = pmessage_ids->pll;
-	if (0 == want_copy) {
-		b_copy = FALSE;
-	} else {
-		b_copy = TRUE;
-	}
+	BOOL b_copy = want_copy == 0 ? false : TRUE;
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
@@ -702,11 +672,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		b_copy, &ids, &b_partial)) {
 		return ecError;
 	}
-	if (TRUE == b_partial) {
-		*ppartial_completion = 1;
-	} else {
-		*ppartial_completion = 0;
-	}
+	*ppartial_completion = !!b_partial;
 	return ecSuccess;
 }
 
@@ -846,11 +812,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (TRUE == b_exist) {
 		return ecDuplicateName;
 	}
-	if (TRUE == b_partial) {
-		*ppartial_completion = 1;
-	} else {
-		*ppartial_completion = 0;
-	}
+	*ppartial_completion = !!b_partial;
 	nt_time = rop_util_current_nttime();
 	propvals.count = 4;
 	propvals.ppropval = propval_buff;
@@ -972,11 +934,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	if (TRUE == b_exist) {
 		return ecDuplicateName;
 	}
-	if (TRUE == b_partial) {
-		*ppartial_completion = 1;
-	} else {
-		*ppartial_completion = 0;
-	}
+	*ppartial_completion = !!b_partial;
 	return ecSuccess;
 }
 
@@ -984,7 +942,6 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	uint8_t want_delete_associated, uint8_t *ppartial_completion,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_fai;
 	BOOL b_partial;
 	int object_type;
 	uint64_t fid_val;
@@ -1007,11 +964,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (0 == want_delete_associated) {
-		b_fai = FALSE;
-	} else {
-		b_fai = TRUE;
-	}
+	BOOL b_fai = want_delete_associated == 0 ? false : TRUE;
 	rpc_info = get_rpc_info();
 	if (FALSE == logon_object_check_private(plogon)) {
 		/* just like exchange 2013 or later */
@@ -1043,11 +996,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 		b_hard, TRUE, b_fai, TRUE, &b_partial)) {
 		return ecError;
 	}
-	if (TRUE == b_partial) {
-		*ppartial_completion = 1;
-	} else {
-		*ppartial_completion = 0;
-	}
+	*ppartial_completion = !!b_partial;
 	return ecSuccess;
 }
 
@@ -1132,11 +1081,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 			b_hard, &b_partial)) {
 			return ecError;
 		}
-		if (TRUE == b_partial) {
-			*ppartial_completion = 1;
-		} else {
-			*ppartial_completion = 0;
-		}
+		*ppartial_completion = !!b_partial;
 		return ecSuccess;
 	}
 	b_partial = FALSE;
@@ -1195,11 +1140,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		&ids, b_hard, &b_partial1)) {
 		return ecError;
 	}
-	if (TRUE == b_partial || TRUE == b_partial1) {
-		*ppartial_completion = 1;
-	} else {
-		*ppartial_completion = 0;
-	}
+	*ppartial_completion = b_partial || b_partial1;
 	return ecSuccess;
 }
 
@@ -1227,7 +1168,6 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	uint32_t *prow_count, void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	BOOL b_depth;
 	int object_type;
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
@@ -1250,11 +1190,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (table_flags & TABLE_FLAG_DEPTH) {
-		b_depth = TRUE;
-	} else {
-		b_depth = FALSE;
-	}
+	BOOL b_depth = (table_flags & TABLE_FLAG_DEPTH) ? TRUE : false;
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
 		username = NULL;
@@ -1287,7 +1223,6 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	BOOL b_fai;
-	BOOL b_deleted;
 	int object_type;
 	uint32_t permission;
 	BOOL b_conversation;
@@ -1330,11 +1265,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	} else {
 		b_fai = FALSE;
 	}
-	if (table_flags & TABLE_FLAG_SOFTDELETES) {
-		b_deleted = TRUE;
-	} else {
-		b_deleted = FALSE;
-	}
+	BOOL b_deleted = (table_flags & TABLE_FLAG_SOFTDELETES) ? TRUE : false;
 	if (FALSE == b_conversation) {
 		rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {

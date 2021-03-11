@@ -139,11 +139,8 @@ static int aux_ext_push_aux_perf_clientinfo(
 	uint16_t machine_name_size;
 	uint16_t user_name_offset;
 	uint16_t user_name_size;
-	uint16_t client_ip_offset;
-	uint16_t client_ip_mask_offset;
 	uint16_t adapter_name_offset;
 	uint16_t adapter_name_size;
-	uint16_t mac_address_offset;
 	
 	TRY(ext_buffer_push_uint32(pext, r->adapter_speed));
 	TRY(ext_buffer_push_uint16(pext, r->client_id));
@@ -165,19 +162,12 @@ static int aux_ext_push_aux_perf_clientinfo(
 	}
 	TRY(ext_buffer_push_uint16(pext, user_name_offset));
 	TRY(ext_buffer_push_uint16(pext, r->client_ip_size));
-	if (NULL == r->client_ip) {
-		client_ip_offset = 0;
-	} else {
-		client_ip_offset = 32 + machine_name_size + user_name_size;
-	}
+	uint16_t client_ip_offset = r->client_ip == nullptr ? 0 :
+	                            32 + machine_name_size + user_name_size;
 	TRY(ext_buffer_push_uint16(pext, client_ip_offset));
 	TRY(ext_buffer_push_uint16(pext, r->client_ip_mask_size));
-	if (NULL == r->client_ip_mask) {
-		client_ip_mask_offset = 0;
-	} else {
-		client_ip_mask_offset = 32 + machine_name_size + user_name_size +
-								r->client_ip_size;
-	}
+	uint16_t client_ip_mask_offset = r->client_ip_mask == nullptr ? 0 :
+	                                 32 + machine_name_size + user_name_size + r->client_ip_size;
 	TRY(ext_buffer_push_uint16(pext, client_ip_mask_offset));
 	if (NULL == r->adapter_name) {
 		adapter_name_offset = 0;
@@ -189,13 +179,9 @@ static int aux_ext_push_aux_perf_clientinfo(
 	}
 	TRY(ext_buffer_push_uint16(pext, adapter_name_offset));
 	TRY(ext_buffer_push_uint16(pext, r->mac_address_size));
-	if (NULL == r->mac_address) {
-		mac_address_offset = 0;
-	} else {
-		mac_address_offset = 32 + machine_name_size + user_name_size +
-								r->client_ip_size + r->client_ip_mask_size +
-								adapter_name_size;
-	}
+	uint16_t mac_address_offset = r->mac_address == nullptr ? 0 :
+		32 + machine_name_size + user_name_size +
+		r->client_ip_size + r->client_ip_mask_size + adapter_name_size;
 	TRY(ext_buffer_push_uint16(pext, mac_address_offset));
 	TRY(ext_buffer_push_uint16(pext, r->client_mode));
 	TRY(ext_buffer_push_uint16(pext, r->reserved));
@@ -250,7 +236,6 @@ static int aux_ext_push_aux_perf_serverinfo(
 {
 	uint16_t server_dn_offset;
 	uint16_t server_dn_size;
-	uint16_t server_name_offset;
 	
 	TRY(ext_buffer_push_uint16(pext, r->server_id));
 	TRY(ext_buffer_push_uint16(pext, r->server_type));
@@ -262,11 +247,7 @@ static int aux_ext_push_aux_perf_serverinfo(
 		server_dn_size = strlen(r->server_dn) + 1;
 	}
 	TRY(ext_buffer_push_uint16(pext, server_dn_offset));
-	if (NULL == r->server_name) {
-		server_name_offset = 0;
-	} else {
-		server_name_offset = 12 + server_dn_size;
-	}
+	uint16_t server_name_offset = r->server_name == nullptr ? 0 : 12 + server_dn_size;
 	TRY(ext_buffer_push_uint16(pext, server_name_offset));
 	if (NULL != r->server_dn) {
 		TRY(ext_buffer_push_string(pext, r->server_dn));
@@ -300,16 +281,10 @@ static int aux_ext_pull_aux_perf_processinfo(
 static int aux_ext_push_aux_perf_processinfo(
 	EXT_PUSH *pext, AUX_PERF_PROCESSINFO *r)
 {
-	uint16_t process_name_offset;
-	
 	TRY(ext_buffer_push_uint16(pext, r->process_id));
 	TRY(ext_buffer_push_uint16(pext, r->reserved1));
 	TRY(ext_buffer_push_guid(pext, &r->process_guid));
-	if (NULL == r->process_name) {
-		process_name_offset = 0;
-	} else {
-		process_name_offset = 28;
-	}
+	uint16_t process_name_offset = r->process_name == nullptr ? 0 : 28;
 	TRY(ext_buffer_push_uint16(pext, process_name_offset));
 	TRY(ext_buffer_push_uint16(pext, r->reserved2));
 	if (NULL != r->process_name) {
@@ -620,14 +595,8 @@ static int aux_ext_pull_aux_client_connection_info(
 static int aux_ext_push_aux_client_connection_info(
 	EXT_PUSH *pext, AUX_CLIENT_CONNECTION_INFO *r)
 {
-	uint16_t offset_connection_context_info;
-	
 	TRY(ext_buffer_push_guid(pext, &r->connection_guid));
-	if (NULL != r->connection_context_info) {
-		offset_connection_context_info = 0;
-	} else {
-		offset_connection_context_info = 32;
-	}
+	uint16_t offset_connection_context_info = r->connection_context_info != nullptr ? 0 : 32;
 	TRY(ext_buffer_push_uint16(pext, offset_connection_context_info));
 	TRY(ext_buffer_push_uint16(pext, r->reserved));
 	TRY(ext_buffer_push_uint32(pext, r->connection_attempts));
@@ -658,13 +627,7 @@ static int aux_ext_pull_aux_server_session_info(
 static int aux_ext_push_aux_server_session_info(
 	EXT_PUSH *pext, AUX_SERVER_SESSION_INFO *r)
 {
-	uint16_t offset_server_session_context_info;
-	
-	if (NULL == r->server_session_context_info) {
-		offset_server_session_context_info = 0;
-	} else {
-		offset_server_session_context_info = 6;
-	}
+	uint16_t offset_server_session_context_info = r->server_session_context_info == nullptr ? 0 : 6;
 	TRY(ext_buffer_push_uint16(pext, offset_server_session_context_info));
 	if (NULL != r->server_session_context_info) {
 		TRY(ext_buffer_push_string(pext, r->server_session_context_info));

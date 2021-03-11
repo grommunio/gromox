@@ -205,11 +205,8 @@ int common_util_convert_string(BOOL to_utf8,
 	if (NULL == pinfo) {
 		return -1;
 	}
-	if (TRUE == to_utf8) {
-		return common_util_mb_to_utf8(pinfo->cpid, src, dst, len);
-	} else {
-		return common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
-	}
+	return to_utf8 ? common_util_mb_to_utf8(pinfo->cpid, src, dst, len) :
+	       common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
 }
 
 void common_util_obfuscate_data(uint8_t *data, uint32_t size)
@@ -994,12 +991,8 @@ BOOL common_util_check_message_class(const char *str_class)
 GUID common_util_get_mapping_guid(BOOL b_private, int account_id)
 {
 	account_id *= -1;
-	
-	if (TRUE == b_private) {
-		return rop_util_make_user_guid(account_id);
-	} else {
-		return rop_util_make_domain_guid(account_id);
-	}
+	return b_private ? rop_util_make_user_guid(account_id) :
+	       rop_util_make_domain_guid(account_id);
 }
 
 BOOL common_util_mapping_replica(BOOL to_guid,
@@ -1192,11 +1185,7 @@ BOOL common_util_propvals_to_row(
 			break;	
 		}
 	}
-	if (i < pcolumns->count) {
-		prow->flag = PROPERTY_ROW_FLAG_FLAGGED;
-	} else {
-		prow->flag = PROPERTY_ROW_FLAG_NONE;
-	}
+	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
 	if (NULL == prow->pppropval) {
 		return FALSE;
@@ -1273,11 +1262,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 			break;	
 		}
 	}
-	if (i < pcolumns->count) {
-		prow->flag = PROPERTY_ROW_FLAG_FLAGGED;
-	} else {
-		prow->flag = PROPERTY_ROW_FLAG_NONE;
-	}
+	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
 	if (NULL == prow->pppropval) {
 		return FALSE;
@@ -1451,30 +1436,17 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	void *pvalue;
-	BOOL b_unicode;
 	uint8_t fake_true = 1;
 	uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY tmp_columns;
+	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
-	if (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) {
-		b_unicode = TRUE;
-	} else {
-		b_unicode = FALSE;
-	}
 	propval.proptag = PROP_TAG_RESPONSIBILITY;
-	if (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) {	
-		propval.pvalue = &fake_true;
-	} else {
-		propval.pvalue = &fake_false;
-	}
+	propval.pvalue = (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &fake_true : &fake_false;
 	common_util_set_propvals(ppropvals, &propval);
 	propval.proptag = PROP_TAG_SENDRICHINFO;
-	if (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) {
-		propval.pvalue = &fake_true;
-	} else {
-		propval.pvalue = &fake_false;
-	}
+	propval.pvalue = (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &fake_true : &fake_false;
 	common_util_set_propvals(ppropvals, &propval);
 	if (NULL != prow->ptransmittable_name) {
 		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
@@ -1491,12 +1463,8 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	}
 	if (NULL != prow->pdisplay_name) {
 		propval.proptag = PROP_TAG_DISPLAYNAME;
-		if (TRUE == b_unicode) {
-			propval.pvalue = prow->pdisplay_name;
-		} else {
-			propval.pvalue = common_util_dup_mb_to_utf8(
-							cpid, prow->pdisplay_name);
-		}
+		propval.pvalue = b_unicode ? prow->pdisplay_name :
+		                 common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
 		if (NULL != propval.pvalue) {
 			common_util_set_propvals(ppropvals, &propval);
 		}
@@ -1572,11 +1540,7 @@ BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
 	void *pvalue;
 	
 	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RECIPIENTTYPE);
-	if (NULL == pvalue) {
-		prow->recipient_type = RECIPIENT_TYPE_NONE;
-	} else {
-		prow->recipient_type = *(uint32_t*)pvalue;
-	}
+	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *static_cast<uint32_t *>(pvalue);
 	prow->reserved = 0;
 	prow->cpid = cpid;
 	return common_util_propvals_to_recipient(cpid,
@@ -1595,11 +1559,7 @@ BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 	}
 	prow->row_id = *(uint32_t*)pvalue;
 	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RECIPIENTTYPE);
-	if (NULL == pvalue) {
-		prow->recipient_type = RECIPIENT_TYPE_NONE;
-	} else {
-		prow->recipient_type = *(uint32_t*)pvalue;
-	}
+	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *static_cast<uint32_t *>(pvalue);
 	prow->reserved = 0;
 	prow->cpid = cpid;
 	return common_util_propvals_to_recipient(cpid,
@@ -1881,7 +1841,6 @@ void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief)
 {
 	MAIL imail;
-	int bounce_type;
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST rcpt_list;
 	
@@ -1893,11 +1852,7 @@ void common_util_notify_receipt(const char *username,
 	double_list_init(&rcpt_list);
 	double_list_append_as_tail(&rcpt_list, &node);
 	mail_init(&imail, g_mime_pool);
-	if (NOTIFY_RECEIPT_READ == type) {
-		bounce_type = BOUNCE_NOTIFY_READ;
-	} else {
-		bounce_type = BOUNCE_NOTIFY_NON_READ;
-	}
+	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
 	if (FALSE == bounce_producer_make(username,
 		pbrief, bounce_type, &imail)) {
 		mail_free(&imail);
@@ -2284,11 +2239,7 @@ static BOOL common_util_get_propname(
 		common_util_get_dir(), &propids, &propnames)) {
 		return FALSE;
 	}
-	if (1 != propnames.count) {
-		*pppropname = NULL;
-	} else {
-		*pppropname = propnames.ppropname;
-	}
+	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
 	return TRUE;
 }
 
@@ -2299,8 +2250,6 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_delete;
-	BOOL b_resend;
-	uint32_t cpid;
 	int body_type;
 	EID_ARRAY ids;
 	BOOL b_partial;
@@ -2319,11 +2268,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 #define LLU(x) static_cast<unsigned long long>(x)
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
-		cpid = 1252;
-	} else {
-		cpid = pinfo->cpid;
-	}
+	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, PROP_TAG_PARENTFOLDERID,
@@ -2361,12 +2306,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	message_flags = *(uint32_t*)pvalue;
-	if (message_flags & MESSAGE_FLAG_RESEND) {
-		b_resend = TRUE;
-	} else {
-		b_resend = FALSE;
-	}
-	
+	BOOL b_resend = (message_flags & MESSAGE_FLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		log_err("Missing recipients"

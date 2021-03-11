@@ -32,7 +32,6 @@ uint32_t rop_openmessage(uint16_t cpid,
 	BOOL b_owner;
 	void *pvalue;
 	int object_type;
-	uint8_t rcpt_num;
 	TARRAY_SET rcpts;
 	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
@@ -158,11 +157,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
-	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-		*phas_named_properties = 1;
-	} else {
-		*phas_named_properties = 0;
-	}
+	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = common_util_get_propvals(&propvals,
 						PROP_TAG_SUBJECTPREFIX);
 	if (NULL == pvalue) {
@@ -189,11 +184,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	pcolumns = message_object_get_rcpt_columns(pmessage);
 	*precipient_columns = *pcolumns;
 	emsmdb_interface_get_rop_num(&rop_num);
-	if (1 == rop_num) {
-		rcpt_num = 0xFE;
-	} else {
-		rcpt_num = 5;
-	}
+	uint8_t rcpt_num = rop_num == 1 ? 0xFE : 5;
 	if (FALSE == message_object_read_recipients(
 		pmessage, 0, rcpt_num, &rcpts)) {
 		message_object_free(pmessage);
@@ -229,12 +220,9 @@ uint32_t rop_createmessage(uint16_t cpid,
 	uint64_t **ppmessage_id, void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	BOOL b_fai;
 	void *pvalue;
 	int object_type;
 	EMSMDB_INFO *pinfo;
-	uint32_t total_mail;
-	uint64_t total_size;
 	uint32_t tag_access;
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
@@ -300,19 +288,12 @@ uint32_t rop_createmessage(uint16_t cpid,
 	                     1024 * *static_cast<uint32_t *>(pvalue);
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_MESSAGESIZEEXTENDED);
-	if (NULL == pvalue) {
-		total_size = 0;
-	} else {
-		total_size = *(uint64_t*)pvalue;
-	}
+	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 	if (total_size > max_quota)
 		return ecQuotaExceeded;
-	total_mail = 0;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_ASSOCIATEDCONTENTCOUNT);
-	if (NULL != pvalue) {
-		total_mail += *(uint32_t*)pvalue;
-	}
+	uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 							PROP_TAG_CONTENTCOUNT);
 	if (NULL != pvalue) {
@@ -337,11 +318,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	if (NULL == pmessage) {
 		return ecMAPIOOM;
 	}
-	if (0 == associated_flag) {
-		b_fai = FALSE;
-	} else {
-		b_fai = TRUE;
-	}
+	BOOL b_fai = associated_flag == 0 ? false : TRUE;
 	if (FALSE == message_object_init_message(pmessage, b_fai, cpid)) {
 		message_object_free(pmessage);
 		return ecError;
@@ -590,11 +567,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	}
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
-	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-		*phas_named_properties = 1;
-	} else {
-		*phas_named_properties = 0;
-	}
+	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = common_util_get_propvals(&propvals,
 						PROP_TAG_SUBJECTPREFIX);
 	if (NULL == pvalue) {
@@ -731,7 +704,6 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	uint8_t tmp_byte;
 	EMSMDB_INFO *pinfo;
 	DCERPC_INFO rpc_info;
-	const char *username;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
@@ -740,11 +712,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	
 	rpc_info = get_rpc_info();
 	pinfo = emsmdb_interface_get_emsmdb_info();
-	if (TRUE == logon_object_check_private(plogon)) {
-		username = NULL;
-	} else {
-		username = rpc_info.username;
-	}
+	auto username = logon_object_check_private(plogon) ? nullptr : rpc_info.username;
 	b_notify = FALSE;
 	b_changed = FALSE;
 	switch (read_flag) {
@@ -885,11 +853,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 			b_partial = TRUE;	
 		}
 	}
-	if (TRUE == b_partial) {
-		*ppartial_completion = 1;
-	} else {
-		*ppartial_completion = 0;
-	}
+	*ppartial_completion = !!b_partial;
 	return ecSuccess;
 }
 
@@ -921,11 +885,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 		pmessage, read_flags, &b_changed)) {
 		return ecError;
 	}
-	if (FALSE == b_changed) {
-		*pread_change = 0;
-	} else {
-		*pread_change = 1;
-	}
+	*pread_change = !b_changed;
 	return ecSuccess;
 }
 
@@ -1220,11 +1180,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	*pmessage_id = *(uint64_t*)pvalue;
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
-	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-		*phas_named_properties = 1;
-	} else {
-		*phas_named_properties = 0;
-	}
+	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = common_util_get_propvals(&propvals,
 						PROP_TAG_SUBJECTPREFIX);
 	if (NULL == pvalue) {

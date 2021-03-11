@@ -9,13 +9,7 @@ ICSUPCTX_OBJECT* icsupctx_object_create(
 	LOGON_OBJECT *plogon, FOLDER_OBJECT *pfolder,
 	uint8_t sync_type)
 {
-	int state_type;
-	
-	if (SYNC_TYPE_CONTENTS == sync_type) {
-		state_type = ICS_STATE_CONTENTS_UP;
-	} else {
-		state_type = ICS_STATE_HIERARCHY_UP;
-	}
+	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_UP : ICS_STATE_HIERARCHY_UP;
 	auto pctx = me_alloc<ICSUPCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;

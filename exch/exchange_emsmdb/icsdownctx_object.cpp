@@ -58,13 +58,7 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 	uint16_t sync_flags, const RESTRICTION *prestriction,
 	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags)
 {
-	int state_type;
-	
-	if (SYNC_TYPE_CONTENTS == sync_type) {
-		state_type = ICS_STATE_CONTENTS_DOWN;
-	} else {
-		state_type = ICS_STATE_HIERARCHY_DOWN;
-	}
+	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_DOWN : ICS_STATE_HIERARCHY_DOWN;
 	auto pctx = me_alloc<ICSDOWNCTX_OBJECT>();
 	if (NULL == pctx) {
 		return NULL;
@@ -119,10 +113,6 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 
 static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 {
-	IDSET *pseen;
-	IDSET *pread;
-	BOOL b_ordered;
-	IDSET *pseen_fai;
 	uint32_t count_fai;
 	uint64_t total_fai;
 	EMSMDB_INFO *pinfo;
@@ -149,31 +139,10 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 			return FALSE;
 		}
 	}
-		
-	if (pctx->sync_flags & SYNC_FLAG_READSTATE) {
-		pread = pctx->pstate->pread;
-	} else {
-		pread = NULL;
-	}
-	
-	if (pctx->sync_flags & SYNC_FLAG_FAI) {
-		pseen_fai = pctx->pstate->pseen_fai;
-	} else {
-		pseen_fai = NULL;
-	}
-	
-	if (pctx->sync_flags & SYNC_FLAG_NORMAL) {
-		pseen = pctx->pstate->pseen;
-	} else {
-		pseen = NULL;
-	}
-	
-	if (SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME & pctx->extra_flags) {
-		b_ordered = TRUE;
-	} else {
-		b_ordered = FALSE;
-	}
-	
+	auto pread     = (pctx->sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
+	auto pseen_fai = (pctx->sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
+	auto pseen     = (pctx->sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
+	BOOL b_ordered = (pctx->extra_flags & SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME) ? TRUE : false;
 	if (FALSE == logon_object_check_private(pctx->pstream->plogon)) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
@@ -870,11 +839,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	if (0 == *(uint8_t*)pvalue) {
-		pprogmsg->b_fai = FALSE;
-	} else {
-		pprogmsg->b_fai = TRUE;
-	}
+	pprogmsg->b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 	pchgheader->ppropval[pchgheader->count].proptag =
 										PROP_TAG_ASSOCIATED;
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
@@ -1008,11 +973,9 @@ static BOOL icsdownctx_object_get_changepartial(
 		pgpnode->group_id = group_id;
 		double_list_append_as_tail(&pctx->group_list, &pgpnode->node);
 	}
-	if (0 == pproptags->count) {
-		pmsg->count = pindices->count;
-	} else {
-		pmsg->count = pindices->count + 1;
-	}
+	pmsg->count = pindices->count;
+	if (pproptags->count != 0)
+		++pmsg->count;
 	pmsg->pchanges = cu_alloc<CHANGE_PART>(pmsg->count);
 	if (NULL == pmsg->pchanges) {
 		return FALSE;
@@ -1292,20 +1255,12 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			pvalue = common_util_get_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGEFLAGS);
 			tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
-			if (NULL != pvalue && ((*(uint32_t*)pvalue)
-				& MESSAGE_FLAG_NOTIFYREAD)) {
-				tmp_propval.pvalue = deconst(&fake_true);
-			} else {
-				tmp_propval.pvalue = deconst(&fake_false);
-			}
+			tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYREAD) ?
+			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-			if (NULL != pvalue && ((*(uint32_t*)pvalue)
-				& MESSAGE_FLAG_NOTIFYUNREAD)) {
-				tmp_propval.pvalue = deconst(&fake_true);
-			} else {
-				tmp_propval.pvalue = deconst(&fake_false);
-			}
+			tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYUNREAD) ?
+			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			if (FALSE == ftstream_producer_write_messagechangefull(
 				pctx->pstream, &chgheader, pembedded)) {
@@ -1446,20 +1401,12 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		pvalue = common_util_get_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
 		tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
-		if (NULL != pvalue && ((*(uint32_t*)pvalue)
-			& MESSAGE_FLAG_NOTIFYREAD)) {
-			tmp_propval.pvalue = deconst(&fake_true);
-		} else {
-			tmp_propval.pvalue = deconst(&fake_false);
-		}
+		tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYREAD) ?
+		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
 		tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		if (NULL != pvalue && ((*(uint32_t*)pvalue)
-			& MESSAGE_FLAG_NOTIFYUNREAD)) {
-			tmp_propval.pvalue = deconst(&fake_true);
-		} else {
-			tmp_propval.pvalue = deconst(&fake_false);
-		}
+		tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYUNREAD) ?
+		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
 		if (FALSE == ftstream_producer_write_messagechangefull(
 			pctx->pstream, &chgheader, pmsgctnt)) {
@@ -1808,12 +1755,7 @@ static BOOL icsdownctx_object_get_buffer_internal(
 	    static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;	
 	*plen = len + len1;
-	if (0 == double_list_get_nodes_num(
-		&pctx->flow_list) && TRUE == b_last) {
-		*pb_last = TRUE;
-	} else {
-		*pb_last = FALSE;
-	}
+	*pb_last = double_list_get_nodes_num(&pctx->flow_list) == 0 && b_last ? TRUE : false;
 	return TRUE;
 }
 

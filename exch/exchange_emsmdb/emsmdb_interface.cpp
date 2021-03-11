@@ -549,11 +549,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	double_list_append_as_tail(&aux_out.aux_list, &node_cap);
 	
 	ext_buffer_push_init(&ext_push, pauxout, 0x1008, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != aux_ext_push_aux_info(&ext_push, &aux_out)) {
-		*pcb_auxout = 0;
-	} else {
-		*pcb_auxout = ext_push.offset;
-	}
+	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ? 0 : ext_push.offset;
 	double_list_free(&aux_out.aux_list);
 	
 	pdn_prefix[0] = '\0';
@@ -670,7 +666,6 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 {
 	int result;
 	uint16_t cxr;
-	BOOL b_wakeup;
 	AUX_INFO aux_in;
 	EXT_PULL ext_pull;
 	char username[256];
@@ -738,11 +733,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	result = rop_processor_proc(*pflags, pin, cb_in, pout, pcb_out);
 	strcpy(username, phandle->username);
 	cxr = phandle->cxr;
-	if (0 == double_list_get_nodes_num(&phandle->notify_list)) {
-		b_wakeup = FALSE;
-	} else {
-		b_wakeup = TRUE;
-	}
+	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
 	if (TRUE == b_wakeup) {
 		asyncemsmdb_interface_wakeup(username, cxr);
@@ -1048,20 +1039,13 @@ static BOOL emsmdb_interface_merge_hierarchy_row_modified(
 	const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *pmodified_row,
 	uint32_t obj_handle, uint8_t logon_id, DOUBLE_LIST *pnotify_list)
 {
-	uint64_t row_folder_id;
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
 	NOTIFICATION_DATA *pnotification_data;
+	uint64_t row_folder_id = (pmodified_row->row_folder_id & 0xFF00000000000000ULL) == 0 ?
+	                         rop_util_make_eid_ex(1, pmodified_row->row_folder_id) :
+	                         rop_util_make_eid_ex(pmodified_row->row_folder_id >> 48, pmodified_row->row_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	
-	if (0 == (pmodified_row->row_folder_id
-		& 0xFF00000000000000ULL)) {
-		row_folder_id = rop_util_make_eid_ex(
-			1, pmodified_row->row_folder_id);
-	} else {
-		row_folder_id = rop_util_make_eid_ex(
-			pmodified_row->row_folder_id >> 48,
-			pmodified_row->row_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
@@ -1125,20 +1109,13 @@ static BOOL emsmdb_interface_merge_folder_modified(
 	uint32_t obj_handle, uint8_t logon_id,
 	DOUBLE_LIST *pnotify_list)
 {
-	uint64_t folder_id;
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
 	NOTIFICATION_DATA *pnotification_data;
+	uint64_t folder_id = (pmodified_folder->folder_id & 0xFF00000000000000ULL) == 0 ?
+	                     rop_util_make_eid_ex(1, pmodified_folder->folder_id) :
+	                     rop_util_make_eid_ex(pmodified_folder->folder_id >> 48, pmodified_folder->folder_id & 0x00FFFFFFFFFFFFFFULL);
 	
-	if (0 == (pmodified_folder->folder_id
-		& 0xFF00000000000000ULL)) {
-		folder_id = rop_util_make_eid_ex(
-			1, pmodified_folder->folder_id);
-	} else {
-		folder_id = rop_util_make_eid_ex(
-			pmodified_folder->folder_id >> 48,
-			pmodified_folder->folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
@@ -1162,7 +1139,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 {
 	CXH cxh;
 	uint16_t cxr;
-	BOOL b_cache;
 	uint8_t logon_id;
 	BOOL b_processing;
 	char username[256];
@@ -1256,11 +1232,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		free(pnode);
 		return;
 	}
-	if (CLIENT_MODE_CACHED == phandle->info.client_mode) {
-		b_cache = TRUE;
-	} else {
-		b_cache = FALSE;
-	}
+	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
 	if (notify_response_retrieve(
 	    static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload),
 	    b_cache, pdb_notify)) {
