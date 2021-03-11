@@ -4484,7 +4484,6 @@ static zend_bool import_folder_deletion(zval *pztarget_obj,
 
 ZEND_FUNCTION(mapi_exportchanges_synchronize)
 {
-	int i;
 	uint32_t flags;
 	zend_bool b_new;
 	uint32_t result;
@@ -4551,7 +4550,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			}
 		}
 	}
-	for (i=0; i<pctx->sync_steps; i++,pctx->progress++) {
+	for (size_t i = 0; i < pctx->sync_steps; ++i, ++pctx->progress) {
 		if (ICS_TYPE_CONTENTS == pctx->ics_type) {
 			result = zarafa_client_syncmessagechange(
 				pctx->hsession, pctx->hobject, &b_new,
@@ -5258,7 +5257,6 @@ ZEND_FUNCTION(mapi_enable_exceptions)
 
 ZEND_FUNCTION(mapi_feature)
 {
-	int i;
 	size_t cbfeature = 0;
 	const char *szfeature;
 	static const char *const features[] =
@@ -5271,7 +5269,7 @@ ZEND_FUNCTION(mapi_feature)
 		NULL == szfeature || 0 == cbfeature) {
 		return;
 	}
-	for (i=0; i<sizeof(features)/sizeof(char*); i++) {
+	for (size_t i = 0; i < GX_ARRAY_SIZE(features); ++i) {
 		if (0 == strcasecmp(features[i], szfeature)) {
 			RETVAL_TRUE;
 			return;

@@ -3,6 +3,8 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "type_conversion.h"
 #include "ext.hpp"
@@ -106,14 +108,11 @@ zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 
 zend_bool binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 {
-	int i;
-	
 	array_init(pzval);
-	for (i=0; i<pbins->count; i++) {
+	for (size_t i = 0; i < pbins->count; ++i)
 		add_next_index_stringl(
 			pzval, reinterpret_cast<const char *>(pbins->pbin[i].pb),
 			pbins->pbin[i].cb);
-	}
 	return 1;
 }
 
@@ -1024,8 +1023,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 
 zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 {
-	int i;
-	char key[16];
+	char key[HXSIZEOF_Z64];
 	zval pzrops, pzentry, pzarray, pzrestriction;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -1035,8 +1033,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 	case RES_OR: {
 		auto andor = pres->andor;
 		array_init(&pzarray);
-		for (i = 0; i < andor->count; ++i) {
-			sprintf(key, "%i", i);
+		for (size_t i = 0; i < andor->count; ++i) {
+			snprintf(key, GX_ARRAY_SIZE(key), "%zu", i);
 			if (!restriction_to_php(&andor->pres[i], &pzentry))
 				return 0;
 			add_assoc_zval(&pzarray, key, &pzentry);
@@ -1058,11 +1056,11 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_VALUE);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);		
-		sprintf(key, "%i", IDX_PROPTAG);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rcon->proptag));
-		sprintf(key, "%i", IDX_FUZZYLEVEL);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_FUZZYLEVEL);
 		add_assoc_long(&pzarray, key, rcon->fuzzy_level);
 		break;
 	}
@@ -1073,51 +1071,51 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_VALUE);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);
-		sprintf(key, "%i", IDX_RELOP);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
 		add_assoc_long(&pzarray, key, rprop->relop);
-		sprintf(key, "%i", IDX_PROPTAG);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag));
 		break;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_RELOP);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
 		add_assoc_long(&pzarray, key, rprop->relop);
-		sprintf(key, "%i", IDX_PROPTAG1);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG1);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag1));
-		sprintf(key, "%i", IDX_PROPTAG2);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG2);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag2));
 		break;
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_TYPE);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_TYPE);
 		add_assoc_long(&pzarray, key, rbm->bitmask_relop);
-		sprintf(key, "%i", IDX_PROPTAG);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rbm->proptag));
-		sprintf(key, "%i", IDX_MASK);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_MASK);
 		add_assoc_long(&pzarray, key, rbm->mask);
 		break;
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_RELOP);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
 		add_assoc_long(&pzarray, key, rsize->relop);
-		sprintf(key, "%i", IDX_PROPTAG);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rsize->proptag));
-		sprintf(key, "%i", IDX_SIZE);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_SIZE);
 		add_assoc_long(&pzarray, key, rsize->size);
 		break;
 	}
 	case RES_EXIST: {
 		auto rex = pres->exist;
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_PROPTAG);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rex->proptag));
 		break;
 	}
@@ -1126,9 +1124,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!restriction_to_php(&rsub->res, &pzrestriction))
 			return 0;	
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_PROPTAG);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rsub->subobject));
-		sprintf(key, "%i", IDX_RESTRICTION);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RESTRICTION);
 		add_assoc_zval(&pzarray, key, &pzrestriction);
 		break;
 	}
@@ -1141,9 +1139,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!restriction_to_php(rcom->pres, &pzrestriction))
 			return 0;	
 		array_init(&pzarray);
-		sprintf(key, "%i", IDX_PROPVALS);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPVALS);
 		add_assoc_zval(&pzarray, key, &pzrops);
-		sprintf(key, "%i", IDX_RESTRICTION);
+		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RESTRICTION);
 		add_assoc_zval(&pzarray, key, &pzrestriction);
 		break;
 	}
@@ -1169,8 +1167,7 @@ zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
 
 zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 {
-	int i, j, k;
-	char key[16];
+	char key[HXSIZEOF_Z64];
 	zval pzmval, pzalist, pzactval, pzpropval, pzactarray;
 	RULE_ACTIONS *prule;
 	char proptag_string[16];
@@ -1178,7 +1175,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	array_init(pzret);
-	for (i=0; i<ppropvals->count; i++) {
+	for (size_t i = 0; i < ppropvals->count; ++i) {
 		ppropval = &ppropvals->ppropval[i];
 		/*
 		* PHP wants a string as array key. PHP will transform this to zval integer when possible.
@@ -1229,8 +1226,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_SHORT: {
 			array_init(&pzmval);
 			auto xs = static_cast<SHORT_ARRAY *>(ppropval->pvalue);
-			for (j = 0; j < xs->count; ++j) {
-				sprintf(key, "%i", j);
+			for (size_t j = 0; j < xs->count; ++j) {
+				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_long(&pzmval, key, xs->ps[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
@@ -1239,8 +1236,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_LONG: {
 			array_init(&pzmval);
 			auto xl = static_cast<LONG_ARRAY *>(ppropval->pvalue);
-			for (j = 0; j < xl->count; ++j) {
-				sprintf(key, "%i", j);
+			for (size_t j = 0; j < xl->count; ++j) {
+				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_long(&pzmval, key, xl->pl[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
@@ -1249,8 +1246,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_BINARY: {
 			array_init(&pzmval);
 			auto xb = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
-			for (j = 0; j < xb->count; ++j) {
-				sprintf(key, "%i", j);
+			for (size_t j = 0; j < xb->count; ++j) {
+				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_stringl(&pzmval, key,
 					reinterpret_cast<const char *>(xb->pbin[j].pb),
 					xb->pbin[j].cb);
@@ -1262,8 +1259,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_UNICODE: {
 			array_init(&pzmval);
 			auto xs = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (j = 0; j < xs->count; ++j) {
-				sprintf(key, "%i", j);
+			for (size_t j = 0; j < xs->count; ++j) {
+				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_string(&pzmval, key, xs->ppstr[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
@@ -1272,8 +1269,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_CLSID: {
 			array_init(&pzmval);
 			auto xb = static_cast<GUID_ARRAY *>(ppropval->pvalue);
-			for (j = 0; j < xb->count; ++j) {
-				sprintf(key, "%i", j);
+			for (size_t j = 0; j < xb->count; ++j) {
+				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_stringl(&pzmval, key,
 					reinterpret_cast<char *>(&xb->pguid[j]),
 					sizeof(GUID));
@@ -1284,7 +1281,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_ACTIONS:
 			prule = (RULE_ACTIONS*)ppropval->pvalue;
 			array_init(&pzactarray);
-			for (j=0; j<prule->count; j++) {
+			for (size_t j = 0; j < prule->count; ++j) {
 				array_init(&pzactval);
 				add_assoc_long(&pzactval, "action", prule->pblock[j].type);
 				add_assoc_long(&pzactval, "flags", prule->pblock[j].flags);
@@ -1326,7 +1323,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 				case ACTION_TYPE_OP_DELEGATE: {
 					array_init(&pzalist);
 					auto xq = static_cast<FORWARDDELEGATE_ACTION *>(prule->pblock[j].pdata);
-					for (k = 0; k < xq->count; ++k) {
+					for (size_t k = 0; k < xq->count; ++k) {
 						tmp_propvals.count = xq->pblock[k].count;
 						tmp_propvals.ppropval = xq->pblock[k].ppropval;
 						if (!tpropval_array_to_php(&tmp_propvals, &pzpropval))
@@ -1350,7 +1347,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 				default:
 					return 0;
 				};
-				sprintf(key, "%i", j);
+				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_zval(&pzactarray, key, &pzactval);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzactarray);
@@ -1367,11 +1364,10 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 
 zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 {
-	int i;
 	zval pzpropval;
 	
 	array_init(pret);
-	for (i=0; i<pset->count; i++) {
+	for (size_t i = 0; i < pset->count; ++i) {
 		tpropval_array_to_php(pset->pparray[i], &pzpropval);
 		zend_hash_next_index_insert(HASH_OF(pret), &pzpropval);
 	}
@@ -1380,11 +1376,10 @@ zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 
 zend_bool state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)
 {
-	int i;
 	zval pzval;
 	
 	array_init(pzret);
-	for (i=0; i<pstates->count; i++) {
+	for (size_t i = 0; i < pstates->count; ++i) {
 		array_init(&pzval);
 		add_assoc_stringl(&pzval, "sourcekey",
 			reinterpret_cast<const char *>(pstates->pstate[i].source_key.pb),

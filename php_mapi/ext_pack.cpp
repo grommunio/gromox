@@ -34,7 +34,7 @@ static int utf8_to_utf16le(const char *src, char *dst, size_t len)
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
 	} else {
@@ -53,7 +53,7 @@ static zend_bool utf16le_to_utf8(const char *src,
 	pin = (char*)src;
 	pout = dst;
 	memset(dst, 0, len);
-	if (-1 == iconv(conv_id, &pin, &src_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return 0;
 	} else {
@@ -175,12 +175,10 @@ zend_bool ext_pack_pull_guid(PULL_CTX *pctx, GUID *r)
 
 zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 {
-	int len;
-	
 	if (pctx->offset >= pctx->data_size) {
 		return 0;
 	}
-	len = strnlen(static_cast<const char *>(pctx->data) + pctx->offset, pctx->data_size - pctx->offset);
+	auto len = strnlen(static_cast<const char *>(pctx->data) + pctx->offset, pctx->data_size - pctx->offset);
 	if (len + 1 > pctx->data_size - pctx->offset) {
 		return 0;
 	}
@@ -244,8 +242,6 @@ zend_bool ext_pack_pull_binary(PULL_CTX *pctx, BINARY *r)
 
 zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -257,18 +253,15 @@ zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 	if (NULL == r->ps) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_uint16(pctx, &r->ps[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -280,18 +273,15 @@ zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 	if (NULL == r->pl) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_uint32(pctx, &r->pl[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -303,18 +293,15 @@ zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 	if (NULL == r->pll) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_uint64(pctx, &r->pll[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -326,18 +313,15 @@ zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 	if (NULL == r->pbin) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_binary(pctx, &r->pbin[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -349,18 +333,15 @@ zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 	if (NULL == r->ppstr) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_string(pctx, &r->ppstr[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -372,19 +353,16 @@ zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 	if (NULL == r->pguid) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_guid(pctx, &r->pguid[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 static zend_bool ext_pack_pull_restriction_and_or(
 	PULL_CTX *pctx, RESTRICTION_AND_OR *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -396,11 +374,10 @@ static zend_bool ext_pack_pull_restriction_and_or(
 	if (NULL == r->pres) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_restriction(pctx, &r->pres[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
@@ -1033,8 +1010,6 @@ zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r)
 
 zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -1046,7 +1021,7 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 	if (NULL == r->pparray) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i) {
 		r->pparray[i] = st_malloc<TPROPVAL_ARRAY>();
 		if (NULL == r->pparray[i]) {
 			return 0;
@@ -1132,8 +1107,6 @@ static zend_bool ext_pack_pull_message_state(PULL_CTX *pctx, MESSAGE_STATE *r)
 
 zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_pull_uint32(pctx, &r->count)) {
 		return 0;
 	}
@@ -1145,11 +1118,10 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 	if (NULL == r->pstate) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_pull_message_state(pctx, &r->pstate[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
@@ -1496,107 +1468,86 @@ zend_bool ext_pack_push_wstring(PUSH_CTX *pctx, const char *pstr)
 
 zend_bool ext_pack_push_short_array(PUSH_CTX *pctx, const SHORT_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_uint16(pctx, r->ps[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_push_long_array(PUSH_CTX *pctx, const LONG_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_uint32(pctx, r->pl[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_push_longlong_array(PUSH_CTX *pctx, const LONGLONG_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_uint64(pctx, r->pll[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_push_binary_array(PUSH_CTX *pctx, const BINARY_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_binary(pctx, &r->pbin[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_push_string_array(PUSH_CTX *pctx, const STRING_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_string(pctx, r->ppstr[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 zend_bool ext_pack_push_guid_array(PUSH_CTX *pctx, const GUID_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_guid(pctx, &r->pguid[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
 static zend_bool ext_pack_push_restriction_and_or(
 	PUSH_CTX *pctx, const RESTRICTION_AND_OR *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;	
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_restriction(pctx, &r->pres[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
@@ -2071,16 +2022,13 @@ zend_bool ext_pack_push_tpropval_array(
 
 zend_bool ext_pack_push_tarray_set(PUSH_CTX *pctx, const TARRAY_SET *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_tpropval_array(pctx, r->pparray[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
 
@@ -2223,15 +2171,12 @@ static zend_bool ext_pack_push_message_state(
 zend_bool ext_pack_push_state_array(
 	PUSH_CTX *pctx, const STATE_ARRAY *r)
 {
-	int i;
-	
 	if (!ext_pack_push_uint32(pctx, r->count)) {
 		return 0;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!ext_pack_push_message_state(pctx, &r->pstate[i])) {
 			return 0;
 		}
-	}
 	return 1;
 }
