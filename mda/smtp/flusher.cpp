@@ -38,7 +38,7 @@ struct SERVICE_NODE {
 	char			*service_name;
 };
 
-struct PLUG_ENTITY {
+struct FLH_PLUG_ENTITY {
 	void*           handle;
 	PLUGIN_MAIN     appmain;
 	CANCEL_FUNCTION flush_cancel;
@@ -71,7 +71,7 @@ static BOOL flusher_is_domainlist_valid();
 static int flusher_increase_max_ID();
 static BOOL flusher_set_flush_ID(int ID);
 	
-static PLUG_ENTITY *g_flusher_plug;
+static FLH_PLUG_ENTITY *g_flusher_plug;
 static LIB_BUFFER *g_allocator;
 static BOOL g_can_register;
 static size_t g_max_queue_len;
@@ -82,7 +82,7 @@ static unsigned int    g_current_ID;
 
 void flusher_init(const char* path, size_t queue_len)
 {
-	g_flusher_plug = static_cast<PLUG_ENTITY *>(malloc(sizeof(PLUG_ENTITY)));
+	g_flusher_plug = static_cast<FLH_PLUG_ENTITY *>(malloc(sizeof(FLH_PLUG_ENTITY)));
 	if (NULL == g_flusher_plug) {
 		return;
 	}

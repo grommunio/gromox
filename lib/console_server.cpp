@@ -38,7 +38,7 @@
 
 typedef struct sockaddr     SA;
 
-struct COMMAND_ENTRY {
+struct CCMD_ENTRY {
     char    cmd[MAX_CMD_LENGTH];
     COMMAND_HANDLER cmd_handler;
 };
@@ -61,7 +61,7 @@ static DOUBLE_LIST g_free_list;
 static DOUBLE_LIST g_console_list;
 static std::mutex g_list_lock, g_execute_lock;
 static pthread_key_t g_client_fd_key;
-static COMMAND_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
+static CCMD_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
 static void console_server_execve_command(char* cmdline);
 static int  console_server_parse_line(const char* cmdline, char** argv);

@@ -44,7 +44,7 @@ struct MESSAGE_CONTEXT {
 
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 
-struct PLUG_ENTITY {
+struct HOOK_PLUG_ENTITY {
     DOUBLE_LIST_NODE    node;
 	DOUBLE_LIST			list_reference;
     DOUBLE_LIST         list_hook;
@@ -60,7 +60,7 @@ struct HOOK_ENTRY {
     DOUBLE_LIST_NODE    node_hook;
     DOUBLE_LIST_NODE    node_lib;
     HOOK_FUNCTION       hook_addr;
-	PLUG_ENTITY *plib;
+	HOOK_PLUG_ENTITY *plib;
 	int					count;
 	BOOL				valid;
 };
@@ -132,7 +132,7 @@ static LIB_BUFFER		 *g_file_allocator;
 static MIME_POOL		 *g_mime_pool;
 static THREAD_DATA		 *g_data_ptr;
 static FREE_CONTEXT		 *g_free_ptr;
-static PLUG_ENTITY		 *g_cur_lib;
+static HOOK_PLUG_ENTITY *g_cur_lib;
 static CIRCLE_NODE		 *g_circles_ptr;
 static pthread_cond_t	 g_waken_cond;
 static pthread_mutex_t	 g_cond_mutex;
@@ -360,7 +360,7 @@ static void transporter_collect_hooks()
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
 		try {
-			stack.push_back(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name);
+			stack.push_back(static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata)->file_name);
 		} catch (...) {
 		}
     }
@@ -546,14 +546,13 @@ static void* thread_work_func(void* arg)
 	MESSAGE *pmessage;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTEXT *pcontext;
-	PLUG_ENTITY *plib;
 	
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	pthr_data = (THREAD_DATA*)arg;
 	pthread_setspecific(g_tls_key, (const void*) pthr_data);
 	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_lib_list, pnode)) {
-		plib = (PLUG_ENTITY*)(pnode->pdata);
+		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
 		((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_CREATE, NULL);
 	}
 	cannot_served_times = 0;
@@ -581,7 +580,7 @@ static void* thread_work_func(void* arg)
 						for (pnode=double_list_get_head(&g_lib_list);
 							NULL!=pnode;
 							pnode=double_list_get_after(&g_lib_list, pnode)) {
-							plib = (PLUG_ENTITY*)(pnode->pdata);
+							auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
 							((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_DESTROY,
 														  NULL);
 						}
@@ -646,7 +645,7 @@ static void* thread_work_func(void* arg)
 	}
 	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_lib_list, pnode)) {
-		plib = (PLUG_ENTITY*)(pnode->pdata);
+		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
 		((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_DESTROY, NULL);
 	}
 	return NULL;
@@ -718,7 +717,6 @@ int transporter_load_library(const char* path)
 	const char *fake_path = path;
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;
-    PLUG_ENTITY *plib;
 
 	transporter_clean_up_unloading();
 	/* check whether the plugin is same as local or remote plugin */
@@ -730,7 +728,7 @@ int transporter_load_library(const char* path)
     /* check whether the library is in unloading list */
     for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
          pnode=double_list_get_after(&g_unloading_list, pnode)) {
-		if (strcmp(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
+		if (strcmp(static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
 			printf("[transporter]: %s is already loaded in module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
@@ -738,7 +736,7 @@ int transporter_load_library(const char* path)
     /* check whether the library is already loaded */
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
-		if (strcmp(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
+		if (strcmp(static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
 			printf("[transporter]: %s is already loaded in module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
@@ -762,14 +760,14 @@ int transporter_load_library(const char* path)
         dlclose(handle);
         return PLUGIN_NO_MAIN;
     }
-    plib = (PLUG_ENTITY*)malloc(sizeof(PLUG_ENTITY));
+	auto plib = static_cast<HOOK_PLUG_ENTITY *>(malloc(sizeof(HOOK_PLUG_ENTITY)));
     if (NULL == plib) {
 		printf("[transporter]: Failed to allocate memory for %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
         dlclose(handle);
         return PLUGIN_FAIL_ALLOCNODE;
     }
-    memset(plib, 0, sizeof(PLUG_ENTITY));
+	memset(plib, 0, sizeof(*plib));
     /* make the node's pdata ponter point to the SHARELIB struct */
     plib->node.pdata = plib;
     double_list_init(&plib->list_reference);
@@ -811,7 +809,6 @@ int transporter_unload_library(const char* path)
 {
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;
-    PLUG_ENTITY *plib;
 
 	auto ptr = strrchr(path, '/');
     if (NULL != ptr) {
@@ -822,14 +819,13 @@ int transporter_unload_library(const char* path)
     /* first find the plugin node in lib list */
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)){
-        if (0 == strcmp(((PLUG_ENTITY*)(pnode->pdata))->file_name, ptr)) {
+		if (strcmp(static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata)->file_name, ptr) == 0)
             break;
-        }
     }
     if (NULL == pnode){
         return PLUGIN_NOT_FOUND;
     }
-    plib = (PLUG_ENTITY*)(pnode->pdata);
+	auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
     func = (PLUGIN_MAIN)plib->lib_main;
 	if (plib->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -850,14 +846,13 @@ int transporter_unload_library(const char* path)
 static void transporter_clean_up_unloading()
 {
 	DOUBLE_LIST_NODE *pnode, *pnode1;
-    PLUG_ENTITY *plib;
 	HOOK_ENTRY *phook;
 	BOOL can_clean;
 	std::vector<DOUBLE_LIST_NODE *> stack;
 
 	for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_unloading_list, pnode)) {
-		plib = (PLUG_ENTITY*)pnode->pdata;
+		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
 		can_clean = TRUE;
 		for (pnode1=double_list_get_head(&plib->list_hook); NULL!=pnode1;
 			pnode1=double_list_get_after(&plib->list_hook, pnode1)) {
@@ -1343,11 +1338,10 @@ static const char* transporter_get_queue_path()
 int transporter_console_talk(int argc, char** argv, char *result, int length)
 {
     DOUBLE_LIST_NODE *pnode;
-    PLUG_ENTITY *plib;
 
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
-        plib = (PLUG_ENTITY*)(pnode->pdata);
+		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
         if (0 == strncmp(plib->file_name, argv[0], 256)) {
             if (NULL != plib->talk_main) {
                 plib->talk_main(argc, argv, result, length);

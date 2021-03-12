@@ -22,7 +22,7 @@ struct REFERENCE_NODE {
 	int					ref_count;
 };
 
-struct PLUG_ENTITY {
+struct SVC_PLUG_ENTITY {
 	DOUBLE_LIST_NODE	node;
 	DOUBLE_LIST			list_service;
 	int					ref_count;
@@ -39,7 +39,7 @@ struct SERVICE_ENTRY {
 	DOUBLE_LIST_NODE	node_lib;
     char				service_name[256];
     void				*service_addr;
-	PLUG_ENTITY *plib;	
+	SVC_PLUG_ENTITY *plib;	
 	const std::type_info *type_info;
 	DOUBLE_LIST			list_reference;
 };
@@ -55,11 +55,11 @@ static const char *service_get_host_ID();
 static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
-static PLUG_ENTITY		*g_cur_plug;
+static SVC_PLUG_ENTITY *g_cur_plug;
 static int				g_context_num;
 static const char *const *g_plugin_names;
 static bool g_ign_loaderr;
-static PLUG_ENTITY g_system_image;
+static SVC_PLUG_ENTITY g_system_image;
 
 /*
  *  init the service module with the path specified where
@@ -111,7 +111,7 @@ int service_stop()
 	for (pnode = double_list_get_head(&g_list_plug); pnode != nullptr;
 	     pnode = double_list_get_after(&g_list_plug, pnode)) {
 		try {
-			stack.push_back(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name);
+			stack.push_back(static_cast<SVC_PLUG_ENTITY *>(pnode->pdata)->file_name);
 		} catch (...) {
 		}
 	}
@@ -146,12 +146,11 @@ int service_load_library(const char *path)
 	const char *fake_path = path;
 	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
-	PLUG_ENTITY *plib;
 
 	/* check whether the library is already loaded */
 	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
 		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		if (strcmp(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
+		if (strcmp(static_cast<SVC_PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
 			printf("[service]: %s is already loaded by service module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
@@ -175,14 +174,14 @@ int service_load_library(const char *path)
 		dlclose(handle);
 		return PLUGIN_NO_MAIN;
 	}
-	plib = (PLUG_ENTITY*)malloc(sizeof(PLUG_ENTITY));
+	auto plib = static_cast<SVC_PLUG_ENTITY *>(malloc(sizeof(SVC_PLUG_ENTITY)));
 	if (NULL == plib) {
 		printf("[service]: Failed to allocate memory for %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
 		return PLUGIN_FAIL_ALLOCNODE;
 	}
-	memset(plib, 0, sizeof(PLUG_ENTITY));
+	memset(plib, 0, sizeof(*plib));
 	/* make the node's pdata ponter point to the PLUG_ENTITY struct */
 	plib->node.pdata = plib;
 	/*  for all plugins, there's should be a read-write lock for controlling
@@ -233,7 +232,6 @@ int service_unload_library(const char *path)
 {
 	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
-	PLUG_ENTITY *plib;
 
 	auto ptr = strrchr(path, '/');
 	if (NULL != ptr) {
@@ -244,14 +242,13 @@ int service_unload_library(const char *path)
 	/* first find the plugin node in lib list */
 	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
 		 pnode=double_list_get_after(&g_list_plug, pnode)){
-		if (0 == strcmp(((PLUG_ENTITY*)(pnode->pdata))->file_name, ptr)) {
+		if (strcmp(static_cast<SVC_PLUG_ENTITY *>(pnode->pdata)->file_name, ptr) == 0)
 			break;
-		}
 	}
 	if(NULL == pnode){
 		return PLUGIN_NOT_FOUND;
 	}
-	plib = (PLUG_ENTITY*)(pnode->pdata);
+	auto plib = static_cast<SVC_PLUG_ENTITY *>(pnode->pdata);
 	if (plib->ref_count > 0) {
 		return PLUGIN_UNABLE_UNLOAD;
 	}
@@ -398,7 +395,7 @@ BOOL service_register_service(const char *func_name, void *addr, const std::type
 		return FALSE;
 	}
 	/*check if register service is invoked only in SVC_LibMain(PLUGIN_INIT,..)*/
-	PLUG_ENTITY *plug = g_cur_plug;
+	auto plug = g_cur_plug;
 	if (plug == nullptr)
 		plug = &g_system_image;
 
@@ -571,11 +568,10 @@ void service_release(const char *service_name, const char *module)
 int service_console_talk(int argc, char **argv, char *reason, int len)
 {
 	DOUBLE_LIST_NODE *pnode;
-	PLUG_ENTITY *plib;
 
 	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
 		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		plib = (PLUG_ENTITY*)(pnode->pdata);
+		auto plib = static_cast<SVC_PLUG_ENTITY *>(pnode->pdata);
 		if (0 == strncmp(plib->file_name, argv[0], 256)) {
 			if (NULL != plib->talk_main) {
 				plib->talk_main(argc, argv, reason, len);

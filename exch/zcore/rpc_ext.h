@@ -503,7 +503,7 @@ struct REQ_LINKMESSAGE {
 	BINARY message_entryid;
 };
 
-union REQUEST_PAYLOAD {
+union ZCORE_REQUEST_PAYLOAD {
 	REQ_LOGON logon;
 	REQ_CHECKSESSION checksession;
 	REQ_UINFO uinfo;
@@ -592,7 +592,7 @@ union REQUEST_PAYLOAD {
 
 struct RPC_REQUEST {
 	uint8_t call_id;
-	REQUEST_PAYLOAD payload;
+	ZCORE_REQUEST_PAYLOAD payload;
 };
 
 struct RESP_LOGON {
@@ -816,7 +816,7 @@ struct RESP_GETUSERAVAILABILITY {
 	char *result_string;
 };
 
-union RESPONSE_PAYLOAD {
+union ZCORE_RESPONSE_PAYLOAD {
 	RESP_LOGON logon;
 	RESP_UINFO uinfo;
 	RESP_OPENENTRY openentry;
@@ -873,7 +873,7 @@ union RESPONSE_PAYLOAD {
 struct RPC_RESPONSE {
 	uint8_t call_id;
 	uint32_t result;
-	RESPONSE_PAYLOAD payload;
+	ZCORE_RESPONSE_PAYLOAD payload;
 };
 
 BOOL rpc_ext_pull_request(const BINARY *pbin_in,

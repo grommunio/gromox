@@ -659,7 +659,7 @@ struct REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT {
 	uint64_t folder_id;
 };
 
-union REQUEST_PAYLOAD {
+union EXMDB_REQUEST_PAYLOAD {
 	REQ_CONNECT connect;
 	REQ_GET_NAMED_PROPIDS get_named_propids;
 	REQ_GET_NAMED_PROPNAMES get_named_propnames;
@@ -782,7 +782,7 @@ union REQUEST_PAYLOAD {
 struct EXMDB_REQUEST {
 	uint8_t call_id;
 	char *dir;
-	REQUEST_PAYLOAD payload;
+	EXMDB_REQUEST_PAYLOAD payload;
 };
 
 struct RESP_GET_ALL_NAMED_PROPIDS {
@@ -1202,7 +1202,7 @@ struct RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT {
 	uint32_t count;
 };
 
-union RESPONSE_PAYLOAD {
+union EXMDB_RESPONSE_PAYLOAD {
 	RESP_GET_ALL_NAMED_PROPIDS get_all_named_propids;
 	RESP_GET_NAMED_PROPIDS get_named_propids;
 	RESP_GET_NAMED_PROPNAMES get_named_propnames;
@@ -1302,7 +1302,7 @@ union RESPONSE_PAYLOAD {
 
 struct EXMDB_RESPONSE {
 	uint8_t call_id;
-	RESPONSE_PAYLOAD payload;
+	EXMDB_RESPONSE_PAYLOAD payload;
 };
 
 struct DB_NOTIFY_DATAGRAM {

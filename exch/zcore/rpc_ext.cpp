@@ -6,6 +6,8 @@
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #define QRF(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
+using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
+using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 
 static BOOL rpc_ext_pull_zmovecopy_action(
 	EXT_PULL *pext, ZMOVECOPY_ACTION *r)
