@@ -30,9 +30,7 @@
 #define MAX_CONTEXTS_PER_CONNECTION		100
 
 #define MAX_FRAGMENTED_CALLS			100
-
-#define MAX_AYNC_PER_CONTEXT			10
-
+#define MAX_SYNC_PER_CONTEXT			10
 
 /* this is only used when the client asks for an unknown interface */
 #define DUMMY_ASSOC_GROUP 0x0FFFFFFF
@@ -1880,8 +1878,7 @@ static uint32_t pdu_processor_apply_async_id()
 	if (NULL == pstack_root) {
 		return 0;
 	}
-	if (double_list_get_nodes_num(&pcall->pcontext->async_list) >=
-		MAX_AYNC_PER_CONTEXT) {
+	if (double_list_get_nodes_num(&pcall->pcontext->async_list) >= MAX_SYNC_PER_CONTEXT) {
 		debug_info("[pdu_processor]: maximum async contexts"
 			" number of connection reached\n");
 		return 0;
