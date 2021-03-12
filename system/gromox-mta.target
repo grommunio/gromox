@@ -1,7 +1,0 @@
-[Unit]
-Description=Gromox mail transfer agent service group
-Documentation=man:gromox-mta.target(8gx)
-Wants=gromox-delivery.service gromox-smtp.service
-
-[Install]
-WantedBy=multi-user.target

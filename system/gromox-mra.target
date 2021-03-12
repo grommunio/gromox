@@ -1,7 +1,0 @@
-[Unit]
-Description=Gromox mail retrieval agent service group
-Documentation=man:gromox-mra.target(8gx)
-Wants=gromox-imap.service gromox-pop3.service
-
-[Install]
-WantedBy=multi-user.target

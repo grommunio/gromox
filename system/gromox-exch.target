@@ -1,7 +1,0 @@
-[Unit]
-Description=Gromox exchange system service group
-Documentation=man:gromox-exch.target(8gx)
-Wants=gromox-http.service gromox-midb.service gromox-zcore.service
-
-[Install]
-WantedBy=multi-user.target

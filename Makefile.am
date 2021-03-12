@@ -24,9 +24,7 @@ phpini_DATA = php_mapi/mapi.ini
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 endif
-unit_services = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
-unit_targets = system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
-unit_DATA = ${unit_services} ${unit_targets}
+unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
 
 mta_system = delivery smtp
 mta_plugins = \
@@ -291,10 +289,7 @@ man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 \
-	doc/gromox-dbop.8gx \
-	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
-	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
-	doc/gromox-sa.target.8gx doc/http.8gx \
+	doc/gromox-dbop.8gx doc/gromox-mailq.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/log_plugin.4gx doc/logthru.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
