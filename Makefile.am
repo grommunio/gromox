@@ -83,7 +83,7 @@ noinst_DATA += \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_textmaps.ldd \
 	libgxs_user_filter.ldd
-agent_service_progs = digest freebusy rtf2html
+agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
@@ -233,8 +233,6 @@ libgxs_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
 
-digest_SOURCES = tools/digest.cpp
-digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = tools/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
@@ -283,7 +281,7 @@ tests_zendfake_LDADD = libphp_mapi.la
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx doc/delivery.8gx \
-	doc/digest.8gx doc/domain_list.4gx \
+	doc/domain_list.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
