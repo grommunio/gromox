@@ -607,22 +607,6 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_get_named_propname(const char *dir,
-	uint16_t propid, PROPERTY_NAME *ppropname)
-{
-	PROPID_ARRAY tmp_propids;
-	PROPNAME_ARRAY tmp_propnames;
-	
-	tmp_propids.count = 1;
-	tmp_propids.ppropid = &propid;
-	if (FALSE == exmdb_client_get_named_propnames(dir,
-		&tmp_propids, &tmp_propnames)) {
-		return FALSE;	
-	}
-	*ppropname = *tmp_propnames.ppropname;
-	return TRUE;
-}
-
 BOOL exmdb_client_get_folder_property(const char *dir,
 	uint32_t cpid, uint64_t folder_id,
 	uint32_t proptag, void **ppval)

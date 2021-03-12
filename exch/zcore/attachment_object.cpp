@@ -128,11 +128,6 @@ uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment)
 	return pattachment->pparent->tag_access;
 }
 
-uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
-{
-	return pattachment->pparent->cpid;
-}
-
 gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
 	uint64_t nt_time;
@@ -194,7 +189,7 @@ BOOL attachment_object_get_all_proptags(
 	return TRUE;
 }
 
-BOOL attachment_object_check_readonly_property(
+static BOOL attachment_object_check_readonly_property(
 	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT &&

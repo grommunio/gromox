@@ -29,6 +29,8 @@ struct BOOKMARK_NODE {
 	uint32_t position;
 };
 
+static void table_object_reset(TABLE_OBJECT *);
+
 static void table_object_set_table_id(
 	TABLE_OBJECT *ptable, uint32_t table_id)
 {
@@ -38,18 +40,6 @@ static void table_object_set_table_id(
 			ptable->table_id);
 	}
 	ptable->table_id = table_id;
-}
-
-BOOL table_object_check_loaded(TABLE_OBJECT *ptable)
-{
-	if (RECIPIENT_TABLE == ptable->table_type ||
-		ATTACHMENT_TABLE == ptable->table_type ||
-		CONTAINER_TABLE == ptable->table_type ||
-		USER_TABLE == ptable->table_type ||
-		STORE_TABLE == ptable->table_type) {
-		return TRUE;
-	}
-	return ptable->table_id == 0 ? false : TRUE;
 }
 
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
@@ -720,11 +710,6 @@ uint8_t table_object_get_table_type(TABLE_OBJECT *ptable)
 	return ptable->table_type;
 }
 
-uint32_t table_object_get_table_id(TABLE_OBJECT *ptable)
-{
-	return ptable->table_id;
-}
-
 const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable)
 {
 	return ptable->pcolumns;
@@ -985,7 +970,7 @@ void table_object_clear_bookmarks(TABLE_OBJECT *ptable)
 		free(pnode->pdata);
 }
 
-void table_object_reset(TABLE_OBJECT *ptable)
+static void table_object_reset(TABLE_OBJECT *ptable)
 {
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
@@ -1241,102 +1226,4 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 		pinfo->cpid, ptable->table_id, b_forward,
 		ptable->position, pres, &proptags, pposition,
 		&tmp_propvals);
-}
-
-BOOL table_object_read_row(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num,
-	TPROPVAL_ARRAY *ppropvals)
-{
-	USER_INFO *pinfo;
-	
-	if (NULL == ptable->pcolumns || 0 == ptable->table_id) {
-		return FALSE;
-	}
-	pinfo = zarafa_server_get_info();
-	auto username = !store_object_check_private(ptable->pstore) ?
-	                pinfo->username : nullptr;
-	return exmdb_client_read_table_row(
-		store_object_get_dir(ptable->pstore),
-		username, pinfo->cpid, ptable->table_id,
-		ptable->pcolumns, inst_id, inst_num,
-		ppropvals);
-}
-
-BOOL table_object_expand(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count)
-{
-	if (0 == ptable->table_id) {
-		return FALSE;
-	}
-	return exmdb_client_expand_table(
-			store_object_get_dir(ptable->pstore),
-			ptable->table_id, inst_id, pb_found,
-			pposition, prow_count);
-}
-
-BOOL table_object_collapse(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count)
-{
-	if (0 == ptable->table_id) {
-		return FALSE;
-	}
-	return exmdb_client_collapse_table(
-			store_object_get_dir(ptable->pstore),
-			ptable->table_id, inst_id, pb_found,
-			pposition, prow_count);
-}
-
-BOOL table_object_store_state(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num, uint32_t *pstate_id)
-{
-	if (0 == ptable->table_id) {
-		return FALSE;
-	}
-	return exmdb_client_store_table_state(
-			store_object_get_dir(ptable->pstore),
-			ptable->table_id, inst_id, inst_num, pstate_id);
-}
-
-BOOL table_object_restore_state(TABLE_OBJECT *ptable,
-	uint32_t state_id, uint32_t *pindex)
-{
-	int32_t position;
-	uint64_t inst_id;
-	uint32_t inst_num;
-	uint32_t tmp_type;
-	uint32_t new_position;
-	
-	if (0 == ptable->table_id) {
-		return FALSE;
-	}
-	if (FALSE == exmdb_client_mark_table(
-		store_object_get_dir(ptable->pstore),
-		ptable->table_id, ptable->position,
-		&inst_id, &inst_num, &tmp_type)) {
-		return FALSE;
-	}
-	if (FALSE == exmdb_client_restore_table_state(
-		store_object_get_dir(ptable->pstore),
-		ptable->table_id, state_id, &position)) {
-		return FALSE;	
-	}
-	if (FALSE == exmdb_client_locate_table(
-		store_object_get_dir(ptable->pstore),
-		ptable->table_id, inst_id, inst_num,
-	    reinterpret_cast<int32_t *>(&new_position), &tmp_type)) {
-		return FALSE;
-	}
-	if (position < 0) {
-		/* assign an invalid bookmark index */
-		*pindex = ptable->bookmark_index;
-		ptable->bookmark_index ++;
-		return TRUE;
-	}
-	ptable->position = position;
-	if (FALSE == table_object_create_bookmark(ptable, pindex)) {
-		ptable->position = new_position;
-		return FALSE;
-	}
-	ptable->position = new_position;
-	return TRUE;
 }

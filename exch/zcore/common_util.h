@@ -268,8 +268,6 @@ extern int common_util_run(const char *data_path);
 extern int common_util_stop();
 extern void common_util_free();
 unsigned int common_util_get_param(int param);
-
-void common_util_set_param(int param, unsigned int value);
 extern const char *common_util_get_hostname();
 extern const char *common_util_get_freebusy_path();
 BOOL common_util_verify_columns_and_sorts(
@@ -301,10 +299,6 @@ int common_util_index_proptags(
 
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor);
-
-BOOL common_util_mapping_replica(BOOL to_guid,
-	void *pparam, uint16_t *preplid, GUID *pguid);
-	
 BOOL common_util_essdn_to_username(const char *pessdn, char *username);
 
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
@@ -319,16 +313,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 
 BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);
-
-BOOL common_util_username_to_entryid(const char *username,
-	const char *pdisplay_name, BINARY *pbin, int *paddress_type);
-
-BINARY* common_util_public_to_addressbook_entryid(const char *domainname);
-
 BOOL common_util_username_to_essdn(const char *username, char *pessdn);
-
-BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
-
 BOOL common_util_public_to_essdn(const char *username, char *pessdn);
 
 void common_util_exmdb_locinfo_to_string(
@@ -353,15 +338,6 @@ ZNOTIFICATION* common_util_dup_znotification(
 	ZNOTIFICATION *pnotification, BOOL b_temp);
 
 void common_util_free_znotification(ZNOTIFICATION *pnotification);
-
-int common_util_mb_from_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len);
-	
-int common_util_mb_to_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len);
-	
-int common_util_convert_string(BOOL to_utf8,
-	const char *src, char *dst, size_t len);
 BOOL common_util_addressbook_entryid_to_username(
 	BINARY entryid_bin, char *username);
 
@@ -389,25 +365,13 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	
 BINARY* common_util_calculate_message_sourcekey(
 	STORE_OBJECT *pstore, uint64_t message_id);
-
-BOOL common_util_recipients_to_list(
-	TARRAY_SET *prcpts, DOUBLE_LIST *plist);
-
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
 
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 
 BINARY* common_util_guid_to_binary(GUID guid);
-
-BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,
-	const BINARY *pbin_pcl2, uint32_t *presult);
-
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-
-BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
-	const BINARY *pbin_pcl2);
-
 void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief);
 

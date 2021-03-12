@@ -46,11 +46,6 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	BOOL b_fai, uint32_t cpid);
 
 uint64_t message_object_get_id(MESSAGE_OBJECT *pmessage);
-
-uint32_t message_object_get_cpid(MESSAGE_OBJECT *pmessage);
-
-uint32_t message_object_get_tag_access(MESSAGE_OBJECT *pmessage);
-
 STORE_OBJECT* message_object_get_store(MESSAGE_OBJECT *pmessage);
 
 void message_object_free(MESSAGE_OBJECT *pmessage);
@@ -91,10 +86,6 @@ BOOL message_object_query_attachment_table(
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset);
 
 BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage);
-
-BOOL message_object_check_readonly_property(
-	MESSAGE_OBJECT *pmessage, uint32_t proptag);
-
 BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	PROPTAG_ARRAY *pproptags);
 
@@ -111,12 +102,5 @@ BOOL message_object_copy_to(
 	MESSAGE_OBJECT *pmessage, MESSAGE_OBJECT *pmessage_src,
 	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
 	BOOL *pb_cycle);
-
-BOOL message_object_copy_rcpts(MESSAGE_OBJECT *pmessage,
-	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result);
-	
-BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
-	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result);
-
 BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint8_t read_flag, BOOL *pb_changed);

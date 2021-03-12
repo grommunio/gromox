@@ -20,10 +20,6 @@ extern int exmdb_client_stop();
 BOOL exmdb_client_get_named_propid(const char *dir,
 	BOOL b_create, const PROPERTY_NAME *ppropname,
 	uint16_t *ppropid);
-
-BOOL exmdb_client_get_named_propname(const char *dir,
-	uint16_t propid, PROPERTY_NAME *ppropname);
-
 BOOL exmdb_client_get_folder_property(const char *dir,
 	uint32_t cpid, uint64_t folder_id,
 	uint32_t proptag, void **ppval);

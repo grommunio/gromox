@@ -29,15 +29,9 @@ uint32_t attachment_object_get_attachment_num(
 	ATTACHMENT_OBJECT *pattachment);
 
 uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment);
-
-uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment);
 extern gxerr_t attachment_object_save(ATTACHMENT_OBJECT *);
 BOOL attachment_object_get_all_proptags(
 	ATTACHMENT_OBJECT *pattachment, PROPTAG_ARRAY *pproptags);
-
-BOOL attachment_object_check_readonly_property(
-	ATTACHMENT_OBJECT *pattachment, uint32_t proptag);
-
 BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
 

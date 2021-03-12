@@ -144,23 +144,6 @@ int ab_tree_get_minid_value(uint32_t minid)
 	return minid & 0x1FFFFFFF;
 }
 
-uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode)
-{
-	uint32_t count;
-	
-	pnode = simple_tree_node_get_child(pnode);
-	if (NULL == pnode) {
-		return 0;
-	}
-	count = 0;
-	do {
-		if (ab_tree_get_node_type(pnode) < 0x80) {
-			count ++;
-		}
-	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
-	return count;
-}
-
 static SINGLE_LIST_NODE* ab_tree_get_snode()
 {
 	return new(std::nothrow) SINGLE_LIST_NODE;
@@ -1121,7 +1104,7 @@ static void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	pguid->clock_seq[1] = (dgt & 0xFF00000000000000ULL) >> 56;
 }
 
-BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
+static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 {
 	int id;
 	GUID guid;
@@ -1598,7 +1581,7 @@ static ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 }
 
 /* Returns: TRUE (success or notfound), FALSE (fatal error/enomem/etc.) */
-BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
+static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, uint32_t proptag, void **ppvalue)
 {
 	int minid;

@@ -359,7 +359,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
+static BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
 	BOOL b_create, const PROPERTY_NAME *ppropname,
 	uint16_t *ppropid)
 {

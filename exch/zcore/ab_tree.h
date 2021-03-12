@@ -60,11 +60,6 @@ extern int ab_tree_stop();
 AB_BASE* ab_tree_get_base(int base_id);
 
 void ab_tree_put_base(AB_BASE *pbase);
-
-uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
-
-BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
-
 uint32_t ab_tree_make_minid(uint8_t type, int value);
 
 uint8_t ab_tree_get_minid_type(uint32_t minid);
@@ -81,10 +76,6 @@ uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode);
 uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
 
 BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode);
-
-BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, uint32_t proptag, void **ppvalue);
-
 BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
 

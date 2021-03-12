@@ -384,16 +384,6 @@ uint64_t message_object_get_id(MESSAGE_OBJECT *pmessage)
 	return pmessage->message_id;
 }
 
-uint32_t message_object_get_cpid(MESSAGE_OBJECT *pmessage)
-{
-	return pmessage->cpid;
-}
-
-uint32_t message_object_get_tag_access(MESSAGE_OBJECT *pmessage)
-{
-	return pmessage->tag_access;
-}
-
 STORE_OBJECT* message_object_get_store(MESSAGE_OBJECT *pmessage)
 {
 	return pmessage->pstore;
@@ -971,7 +961,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	return TRUE;
 }
 
-BOOL message_object_check_readonly_property(
+static BOOL message_object_check_readonly_property(
 	MESSAGE_OBJECT *pmessage, uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -1496,38 +1486,6 @@ BOOL message_object_copy_to(
 	for (i=0; i<proptags.count; i++) {
 		proptag_array_append(pmessage->pchanged_proptags,
 			proptags.pproptag[i]);
-	}
-	return TRUE;
-}
-
-BOOL message_object_copy_rcpts(MESSAGE_OBJECT *pmessage,
-	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result)
-{
-	if (FALSE == exmdb_client_copy_instance_rcpts(
-		store_object_get_dir(pmessage->pstore), b_force,
-		pmessage_src->instance_id, pmessage->instance_id,
-		pb_result)) {
-		return FALSE;	
-	}
-	if (TRUE == *pb_result) {
-		proptag_array_append(pmessage->pchanged_proptags,
-							PROP_TAG_MESSAGEATTACHMENTS);
-	}
-	return TRUE;
-}
-	
-BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
-	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result)
-{
-	if (FALSE == exmdb_client_copy_instance_attachments(
-		store_object_get_dir(pmessage->pstore), b_force,
-		pmessage_src->instance_id, pmessage->instance_id,
-		pb_result)) {
-		return FALSE;	
-	}
-	if (TRUE == *pb_result) {
-		proptag_array_append(pmessage->pchanged_proptags,
-							PROP_TAG_MESSAGERECIPIENTS);
 	}
 	return TRUE;
 }

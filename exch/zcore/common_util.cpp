@@ -42,7 +42,6 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <fcntl.h>
-#include <iconv.h>
 #include <cstdio>
 
 enum {
@@ -400,58 +399,6 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	}
 }
 
-BOOL common_util_mapping_replica(BOOL to_guid,
-	void *pparam, uint16_t *preplid, GUID *pguid)
-{
-	BOOL b_found;
-	GUID tmp_guid;
-	STORE_OBJECT *pstore;
-	
-	pstore = *(STORE_OBJECT**)pparam;
-	if (TRUE == to_guid) {
-		if (TRUE == store_object_check_private(pstore)) {
-			if (1 != *preplid) {
-				return FALSE;
-			}
-			*pguid = rop_util_make_user_guid(
-				store_object_get_account_id(pstore));
-		} else {
-			if (1 == *preplid) {
-				*pguid = rop_util_make_domain_guid(
-					store_object_get_account_id(pstore));
-			} else {
-				if (FALSE == exmdb_client_get_mapping_guid(
-					store_object_get_dir(pstore), *preplid,
-					&b_found, pguid) || FALSE == b_found) {
-					return FALSE;
-				}
-			}
-		}
-	} else {
-		if (TRUE == store_object_check_private(pstore)) {
-			tmp_guid = rop_util_make_user_guid(
-				store_object_get_account_id(pstore));
-			if (0 != memcmp(pguid, &tmp_guid, sizeof(GUID))) {
-				return FALSE;
-			}
-			*preplid = 1;
-		} else {
-			tmp_guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pstore));
-			if (0 == memcmp(pguid, &tmp_guid, sizeof(GUID))) {
-				*preplid = 1;
-			} else {
-				if (FALSE == exmdb_client_get_mapping_replid(
-					store_object_get_dir(pstore), *pguid,
-					&b_found, preplid) || FALSE == b_found) {
-					return FALSE;
-				}
-			}
-		}
-	}
-	return TRUE;
-}
-
 BOOL common_util_essdn_to_username(const char *pessdn, char *username)
 {
 	char *pat;
@@ -553,12 +500,6 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 			g_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
-}
-
-BOOL common_util_essdn_to_public(const char *pessdn, char *domainname)
-{
-	//TODO
-	return FALSE;
 }
 
 BOOL common_util_public_to_essdn(const char *username, char *pessdn)
@@ -701,24 +642,6 @@ unsigned int common_util_get_param(int param)
 		return g_max_rule_len;
 	}
 	return 0;
-}
-
-void common_util_set_param(int param, unsigned int value)
-{
-	switch (param) {
-	case COMMON_UTIL_MAX_RCPT:
-		g_max_rcpt = value;
-		break;
-	case COMMON_UTIL_MAX_MESSAGE:
-		g_max_message = value;
-		break;
-	case COMMON_UTIL_MAX_MAIL_LENGTH:
-		g_max_mail_len = value;
-		break;
-	case COMMON_UTIL_MAX_EXTRULE_LENGTH:
-		g_max_rule_len = value;
-		break;
-	}
 }
 
 const char* common_util_get_hostname()
@@ -1028,68 +951,6 @@ void common_util_free_znotification(ZNOTIFICATION *pnotification)
 	free(pnotification);
 }
 
-int common_util_mb_from_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len)
-{
-	size_t in_len;
-	size_t out_len;
-	char *pin, *pout;
-	iconv_t conv_id;
-	const char *charset;
-	char temp_charset[256];
-	
-	charset = system_services_cpid_to_charset(cpid);
-	if (NULL == charset) {
-		return -1;
-	}
-	sprintf(temp_charset, "%s//IGNORE",
-		replace_iconv_charset(charset));
-	conv_id = iconv_open(temp_charset, "UTF-8");
-	pin = (char*)src;
-	pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	iconv(conv_id, &pin, &in_len, &pout, &len);
-	iconv_close(conv_id);
-	return out_len - len;
-}
-
-int common_util_mb_to_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len)
-{
-	size_t in_len;
-	size_t out_len;
-	char *pin, *pout;
-	iconv_t conv_id;
-	const char *charset;
-	
-	charset = system_services_cpid_to_charset(cpid);
-	if (NULL == charset) {
-		return -1;
-	}
-	conv_id = iconv_open("UTF-8//IGNORE",
-		replace_iconv_charset(charset));
-	pin = (char*)src;
-	pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	iconv(conv_id, &pin, &in_len, &pout, &len);	
-	iconv_close(conv_id);
-	return out_len - len;
-}
-
-int common_util_convert_string(BOOL to_utf8,
-	const char *src, char *dst, size_t len)
-{
-	USER_INFO *pinfo;
-	
-	pinfo = zarafa_server_get_info();
-	return to_utf8 ? common_util_mb_to_utf8(pinfo->cpid, src, dst, len) :
-	       common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
-}
-
 BOOL common_util_addressbook_entryid_to_username(
 	BINARY entryid_bin, char *username)
 {
@@ -1237,7 +1098,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	return TRUE;
 }
 
-BOOL common_util_username_to_entryid(const char *username,
+static BOOL common_util_username_to_entryid(const char *username,
 	const char *pdisplay_name, BINARY *pbin, int *paddress_type)
 {
 	int status;
@@ -1300,37 +1161,6 @@ BOOL common_util_username_to_entryid(const char *username,
 		*paddress_type = 0;
 	}
 	return TRUE;
-}
-
-BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
-{
-	char x500dn[1024];
-	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
-	
-	if (FALSE == common_util_public_to_essdn(domainname, x500dn)) {
-		return NULL;
-	}
-	tmp_entryid.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-							tmp_entryid.provider_uid);
-	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
-	tmp_entryid.px500dn = x500dn;
-	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
-		return NULL;
-	}
-	pbin->pv = common_util_alloc(1280);
-	if (pbin->pv == nullptr)
-		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;	
-	}
-	pbin->cb = ext_push.offset;
-	return pbin;
 }
 
 uint16_t common_util_get_messaging_entryid_type(BINARY bin)
@@ -1667,54 +1497,6 @@ BINARY* common_util_calculate_message_sourcekey(
 	return pbin;
 }
 
-BOOL common_util_recipients_to_list(
-	TARRAY_SET *prcpts, DOUBLE_LIST *plist)
-{
-	void *pvalue;
-	
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
-			return FALSE;
-		}
-		pnode->pdata = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
-		if (NULL != pnode->pdata) {
-			double_list_append_as_tail(plist, pnode);
-			continue;
-		}
-		pvalue = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
-		if (NULL == pvalue) {
- CONVERT_ENTRYID:
-			pvalue = common_util_get_propvals(
-				prcpts->pparray[i], PROP_TAG_ENTRYID);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			pnode->pdata = common_util_alloc(128);
-			if (NULL == pnode->pdata) {
-				return FALSE;
-			}
-			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-			    static_cast<char *>(pnode->pdata)))
-				return FALSE;
-		} else {
-			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = common_util_get_propvals(
-					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
-				if (NULL == pnode->pdata) {
-					goto CONVERT_ENTRYID;
-				}
-			} else {
-				goto CONVERT_ENTRYID;
-			}
-		}
-		double_list_append_as_tail(plist, pnode);
-	}
-	return TRUE;
-}
-
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
 	EXT_PUSH ext_push;
@@ -1765,33 +1547,6 @@ BINARY* common_util_guid_to_binary(GUID guid)
 	return pbin;
 }
 
-BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,
-	const BINARY *pbin_pcl2, uint32_t *presult)
-{
-	PCL *ppcl1;
-	PCL *ppcl2;
-	
-	ppcl1 = pcl_init();
-	if (NULL == ppcl1) {
-		return FALSE;
-	}
-	ppcl2 = pcl_init();
-	if (NULL == ppcl2) {
-		pcl_free(ppcl1);
-		return FALSE;
-	}
-	if (FALSE == pcl_deserialize(ppcl1, pbin_pcl1) ||
-		FALSE == pcl_deserialize(ppcl2, pbin_pcl2)) {
-		pcl_free(ppcl1);
-		pcl_free(ppcl2);
-		return FALSE;
-	}
-	*presult = pcl_compare(ppcl1, ppcl2);
-	pcl_free(ppcl1);
-	pcl_free(ppcl2);
-	return TRUE;
-}
-
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
@@ -1824,57 +1579,6 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	}
 	ptmp_bin = pcl_serialize(ppcl);
 	pcl_free(ppcl);
-	if (NULL == ptmp_bin) {
-		return NULL;
-	}
-	pbin->cb = ptmp_bin->cb;
-	pbin->pv = common_util_alloc(ptmp_bin->cb);
-	if (pbin->pv == nullptr) {
-		rop_util_free_binary(ptmp_bin);
-		return NULL;
-	}
-	memcpy(pbin->pv, ptmp_bin->pv, pbin->cb);
-	rop_util_free_binary(ptmp_bin);
-	return pbin;
-}
-
-BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
-	const BINARY *pbin_pcl2)
-{
-	PCL *ppcl1;
-	PCL *ppcl2;
-	BINARY *ptmp_bin;
-	
-	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
-		return NULL;
-	}
-	ppcl1 = pcl_init();
-	if (NULL == ppcl1) {
-		return NULL;
-	}
-	if (FALSE == pcl_deserialize(ppcl1, pbin_pcl1)) {
-		pcl_free(ppcl1);
-		return NULL;
-	}
-	ppcl2 = pcl_init();
-	if (NULL == ppcl2) {
-		pcl_free(ppcl1);
-		return NULL;
-	}
-	if (FALSE == pcl_deserialize(ppcl2, pbin_pcl2)) {
-		pcl_free(ppcl1);
-		pcl_free(ppcl2);
-		return NULL;
-	}
-	if (FALSE == pcl_merge(ppcl1, ppcl2)) {
-		pcl_free(ppcl1);
-		pcl_free(ppcl2);
-		return NULL;
-	}
-	ptmp_bin = pcl_serialize(ppcl1);
-	pcl_free(ppcl1);
-	pcl_free(ppcl2);
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}

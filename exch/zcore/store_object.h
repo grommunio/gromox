@@ -36,11 +36,6 @@ const char* store_object_get_dir(STORE_OBJECT *pstore);
 GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore);
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
-
-BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid);
-
 BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);

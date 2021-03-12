@@ -183,6 +183,7 @@ int main(int argc, const char **argv)
 	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	
 	msgchg_grouping_init(data_path);
+	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
 	service_init({service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
@@ -235,6 +236,7 @@ int main(int argc, const char **argv)
 	HX_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
 	
 	bounce_producer_init(separator);
+	auto cl_0a = make_scope_exit([&]() { bounce_producer_free(); });
 	str_value = config_file_get_value(pconfig, "ZARAFA_MIME_NUMBER");
 	if (NULL == str_value) {
 		mime_num = 4096;
@@ -329,6 +331,7 @@ int main(int argc, const char **argv)
 	common_util_init(org_name, host_name, charset, timezone, mime_num,
 		max_rcpt, max_mail, max_length, max_rule_len, smtp_ip, smtp_port,
 		str_value, submit_command);
+	auto cl_0b = make_scope_exit([&]() { common_util_free(); });
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {

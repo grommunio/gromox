@@ -50,11 +50,6 @@ uint8_t folder_object_get_type(FOLDER_OBJECT *pfolder)
 	return pfolder->type;
 }
 
-uint32_t folder_object_get_tag_access(FOLDER_OBJECT *pfolder)
-{
-	return pfolder->tag_access;
-}
-
 STORE_OBJECT* folder_object_get_store(FOLDER_OBJECT *pfolder)
 {
 	return pfolder->pstore;

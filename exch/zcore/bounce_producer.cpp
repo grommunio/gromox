@@ -61,6 +61,8 @@ struct TAG_ITEM {
 	int			length;
 };
 
+static BOOL bounce_producer_refresh(const char *);
+
 static char g_separator[16];
 static SINGLE_LIST g_resource_list;
 static RESOURCE_NODE *g_default_resource;
@@ -119,7 +121,7 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist)
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL bounce_producer_refresh(const char *data_path)
+static BOOL bounce_producer_refresh(const char *data_path)
 {
 	struct dirent *direntp;
 	SINGLE_LIST_NODE *pnode;
