@@ -77,8 +77,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	int listen_port;
 	int threads_num;
 	int max_ext_rule;
-	int max_msg_count;
-	uint64_t mmap_size;
 	char separator[16];
 	char temp_buff[64];
 	int cache_interval;
@@ -106,12 +104,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		}
 		
 		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
-		if (NULL == str_value) {
-			strcpy(separator, ";");
-		} else {
-			strcpy(separator, str_value);
-		}
-		
+		strcpy(separator, str_value == nullptr ? ";" : str_value);
+
 		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
 		if (NULL == str_value || '\0' == str_value[0]) {
 			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
@@ -186,11 +180,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		printf("[exmdb_provider]: cache interval is %s\n", temp_buff);
 		
 		str_value = config_file_get_value(pconfig, "MAX_STORE_MESSAGE_COUNT");
-		if (NULL == str_value) {
-			max_msg_count = 200000;
-		} else {
-			max_msg_count = atoi(str_value);
-		}
+		int max_msg_count = str_value == nullptr ? 200000 : atoi(str_value);
 		printf("[exmdb_provider]: maximum message "
 			"count per store is %d\n", max_msg_count);
 		
@@ -227,12 +217,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			b_async = FALSE;
 			config_file_set_value(pconfig, "SQLITE_SYNCHRONOUS", "OFF");
 		} else {
-			if (0 == strcasecmp(str_value, "OFF") ||
-				0 == strcasecmp(str_value, "FALSE")) {
-				b_async = FALSE;	
-			} else {
-				b_async = TRUE;
-			}
+			b_async = strcasecmp(str_value, "OFF") == 0 || strcasecmp(str_value, "FALSE") == 0 ? false : TRUE;
 		}
 		if (FALSE == b_async) {
 			printf("[exmdb_provider]: sqlite synchronous PRAGMA is OFF\n");
@@ -245,12 +230,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			b_wal = TRUE;
 			config_file_set_value(pconfig, "SQLITE_WAL_MODE", "ON");
 		} else {
-			if (0 == strcasecmp(str_value, "OFF") ||
-				0 == strcasecmp(str_value, "FALSE")) {
-				b_wal = FALSE;	
-			} else {
-				b_wal = TRUE;
-			}
+			b_wal = strcasecmp(str_value, "OFF") == 0 || strcasecmp(str_value, "FALSE") == 0 ? false : TRUE;
 		}
 		if (FALSE == b_wal) {
 			printf("[exmdb_provider]: sqlite journal mode is DELETE\n");
@@ -259,11 +239,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		}
 		
 		str_value = config_file_get_value(pconfig, "SQLITE_MMAP_SIZE");
-		if (NULL != str_value) {
-			mmap_size = atobyte(str_value);
-		} else {
-			mmap_size = 0;
-		}
+		uint64_t mmap_size = str_value != nullptr ? atobyte(str_value) : 0;
 		if (0 == mmap_size) {
 			printf("[exmdb_provider]: sqlite mmap_size is disabled\n");
 		} else {

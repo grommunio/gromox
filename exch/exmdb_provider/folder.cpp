@@ -74,12 +74,9 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	if (SQLITE_ROW == sqlite3_step(pstmt)) {
-		*pid = rop_util_make_eid_ex(1,
-			sqlite3_column_int64(pstmt, 0));
-	} else {
-		*pid = rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
-	}
+	*pid = sqlite3_step(pstmt) == SQLITE_ROW ?
+	       rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0)) :
+	       rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
 	sqlite3_finalize(pstmt);
 	str_explicit[0] = '\0';
 	db_engine_put_db(pdb);
@@ -510,15 +507,7 @@ BOOL exmdb_server_check_folder_deleted(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pb_del = TRUE;
-	} else {
-		if (0 == sqlite3_column_int64(pstmt, 0)) {
-			*pb_del = FALSE;
-		} else {
-			*pb_del = TRUE;
-		}
-	}
+	*pb_del = sqlite3_step(pstmt) != SQLITE_ROW || sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
 	return TRUE;
@@ -545,16 +534,10 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 		return FALSE;
 	}
 	db_engine_put_db(pdb);
-	if (0 == fid_val) {
-		*pfolder_id = 0;
-	} else {
-		if (fid_val & 0xFF00000000000000ULL) {
-			*pfolder_id = rop_util_make_eid_ex(fid_val >> 48,
-							fid_val & 0x00FFFFFFFFFFFFFFULL);
-		} else {
-			*pfolder_id = rop_util_make_eid_ex(1, fid_val);
-		}
-	}
+	*pfolder_id = fid_val == 0 ? 0 :
+	              (fid_val & 0xFF00000000000000ULL) == 0 ?
+	              rop_util_make_eid_ex(1, fid_val) :
+	              rop_util_make_eid_ex(fid_val >> 48, fid_val & 0x00FFFFFFFFFFFFFFULL);
 	return TRUE;
 }
 
@@ -1182,11 +1165,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			if (TRUE == b_private) {
-				is_deleted = 0;
-			} else {
-				is_deleted = sqlite3_column_int64(pstmt, 3);
-			}
+			is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 3);
 			if (FALSE == b_hard && 0 != is_deleted) {
 				continue;
 			}
@@ -1263,11 +1242,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 		}
 	} else {
 		if (TRUE == b_normal || TRUE == b_fai) {
-			if (TRUE == b_normal) {
-				is_associated = 0;
-			} else {
-				is_associated = 1;
-			}
+			is_associated = !b_normal ? TRUE : false;
 			if (TRUE == b_private) {
 				sprintf(sql_string, "SELECT message_id,"
 						" message_size FROM messages WHERE "
@@ -1282,11 +1257,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 			if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				if (TRUE == b_private) {
-					is_deleted = 0;
-				} else {
-					is_deleted = sqlite3_column_int64(pstmt, 2);
-				}
+				is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
 				if (FALSE == b_hard && 0 != is_deleted) {
 					continue;
 				}
@@ -1381,11 +1352,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 					*pb_partial = TRUE;
 					continue;
 				}
-				if (TRUE == b_private) {
-					is_deleted = 0;
-				} else {
-					is_deleted = sqlite3_column_int64(pstmt, 1);
-				}
+				is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
 				if (FALSE == b_hard && 0 != is_deleted) {
 					continue;
 				}
@@ -2117,12 +2084,7 @@ static BOOL folder_copy_folder_internal(
 				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
 			}
-			if ((permission & PERMISSION_FOLDEROWNER) ||
-				(permission & PERMISSION_READANY)) {
-				b_check	= FALSE;
-			} else {
-				b_check = TRUE;
-			}
+			b_check	= (permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)) ? false : TRUE;
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, dst_fid, username, &permission)) {
 				return FALSE;
@@ -2186,11 +2148,7 @@ static BOOL folder_copy_folder_internal(
 		sqlite3_finalize(pstmt);
 	} else {
 		if (TRUE == b_normal || TRUE == b_fai) {
-			if (TRUE == b_normal) {
-				is_associated = 0;
-			} else {
-				is_associated = 1;
-			}
+			is_associated = !b_normal;
 			if (TRUE == b_private) {
 				sprintf(sql_string, "SELECT message_id,"
 							" FROM messages WHERE parent_fid=%llu"
@@ -2942,11 +2900,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 			goto CRITERIA_FAILURE;
 		}
 	}
-	if (search_flags & SEARCH_FLAG_RECURSIVE) {
-		b_recursive = TRUE;
-	} else {
-		b_recursive = FALSE;
-	}
+	b_recursive = (search_flags & SEARCH_FLAG_RECURSIVE) ? TRUE : false;
 	b_update = FALSE;
 	b_populate = FALSE;
 	if (FALSE == folder_clear_search_folder(pdb, cpid, fid_val)) {
@@ -3399,11 +3353,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				          " FROM rules WHERE folder_id=%llu", LLU(fid_val));
 				if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1))
 					continue;
-				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-					seq_id = 0;
-				} else {
-					seq_id = sqlite3_column_int64(pstmt1, 0);
-				}
+				seq_id = sqlite3_step(pstmt1) != SQLITE_ROW ? 0 :
+				         sqlite3_column_int64(pstmt1, 0);
 				sqlite3_finalize(pstmt1);
 				seq_id ++;
 			} else {
@@ -3411,11 +3362,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			}
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_RULESTATE);
-			if (NULL == pvalue) {
-				state = 0;
-			} else {
-				state = *(uint32_t*)pvalue;
-			}
+			state = pvalue == nullptr ? 0 : *static_cast<uint32_t *>(pvalue);
 			plevel = static_cast<uint32_t *>(common_util_get_propvals(
 			         &prow[i].propvals, PROP_TAG_RULELEVEL));
 			puser_flags = static_cast<uint32_t *>(common_util_get_propvals(
@@ -3462,11 +3409,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			sqlite3_bind_text(pstmt, 2, pprovider, -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt, 3, seq_id);
 			sqlite3_bind_int64(pstmt, 4, state);
-			if (NULL != plevel) {
-				sqlite3_bind_int64(pstmt, 5, *plevel);
-			} else {
-				sqlite3_bind_int64(pstmt, 5, 0);
-			}
+			sqlite3_bind_int64(pstmt, 5, plevel != nullptr ? *plevel : 0);
 			if (NULL != puser_flags) {
 				sqlite3_bind_int64(pstmt, 6, *puser_flags);
 			} else {

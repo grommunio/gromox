@@ -157,15 +157,9 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 			          "FROM folders WHERE parent_id=%llu", LLU(folder_id));
 		}
 	} else {
-		if (table_flags & TABLE_FLAG_SOFTDELETES) {
-			sprintf(sql_string, "SELECT folder_id FROM"
-				" folders WHERE parent_id=%llu AND is_deleted=1",
-				LLU(folder_id));
-		} else {
-			sprintf(sql_string, "SELECT folder_id FROM"
-				" folders WHERE parent_id=%llu AND is_deleted=0",
-				LLU(folder_id));
-		}
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
+			" folders WHERE parent_id=%llu AND is_deleted=%u",
+			LLU(folder_id), !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		return FALSE;
@@ -377,30 +371,14 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (TRUE == exmdb_server_check_private()) {
-		if (FALSE == b_fai) {
-			sprintf(sql_string, "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu AND "
-				"is_associated=0", LLU(fid_val));
-		} else {
-			sprintf(sql_string, "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu AND "
-				"is_associated=1", LLU(fid_val));
-		}
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
+			" FROM messages WHERE parent_fid=%llu AND "
+			"is_associated=%u", LLU(fid_val), !!b_fai);
 	} else {
-		if (FALSE == b_fai) {
-			sprintf(sql_string, "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu AND "
-				"(is_associated=0 AND ", LLU(fid_val));
-		} else {
-			sprintf(sql_string, "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu AND "
-				"(is_associated=1 AND ", LLU(fid_val));
-		}
-		if (FALSE == b_deleted) {
-			strcat(sql_string, "is_deleted=0)");
-		} else {
-			strcat(sql_string, "is_deleted=1)");
-		}
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
+			" FROM messages WHERE parent_fid=%llu AND "
+			"(is_associated=%u AND is_deleted=%u)",
+			LLU(fid_val), !!b_fai, !!b_deleted);
 	}
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -654,11 +632,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		header_id = *pheader_id | 0x100000000000000ULL;
 		sqlite3_bind_int64(pstmt_insert, 1, header_id);
 		sqlite3_bind_int64(pstmt_insert, 2, CONTENT_ROW_HEADER);
-		if (depth < psorts->cexpanded) {
-			sqlite3_bind_int64(pstmt_insert, 3, 1);
-		} else {
-			sqlite3_bind_int64(pstmt_insert, 3, 0);
-		}
+		sqlite3_bind_int64(pstmt_insert, 3, depth < psorts->cexpanded);
 		sqlite3_bind_int64(pstmt_insert, 4, parent_id);
 		sqlite3_bind_int64(pstmt_insert, 5, depth);
 		/* total messages */
@@ -1064,53 +1038,29 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			if (TRUE == b_conversation) {
 				encode_hex_binary(((BINARY*)pres->propval.pvalue)->pb,
 									16, tmp_string, sizeof(tmp_string));
-				if (table_flags & TABLE_FLAG_SOFTDELETES) {
-					sql_len = sprintf(sql_string,
-						"SELECT message_properties.message_id "
-						"FROM message_properties JOIN messages ON "
-						"messages.message_id=message_properties.message_id"
-						" WHERE message_properties.proptag=%u AND"
-						" message_properties.propval=x'%s' AND "
-						"messages.is_deleted=1", PROP_TAG_CONVERSATIONID,
-						tmp_string);
-				} else {
-					sql_len = sprintf(sql_string,
-						"SELECT message_properties.message_id "
-						"FROM message_properties JOIN messages ON "
-						"messages.message_id=message_properties.message_id"
-						" WHERE message_properties.proptag=%u AND"
-						" message_properties.propval=x'%s' AND "
-						"messages.is_deleted=0", PROP_TAG_CONVERSATIONID,
-						tmp_string);
-				}
+				sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+				          "SELECT message_properties.message_id "
+				          "FROM message_properties JOIN messages ON "
+				          "messages.message_id=message_properties.message_id"
+				          " WHERE message_properties.proptag=%u AND"
+				          " message_properties.propval=x'%s' AND "
+				          "messages.is_deleted=%u", PROP_TAG_CONVERSATIONID,
+				          tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 			} else {
-				if (table_flags & TABLE_FLAG_SOFTDELETES) {
-					sql_len = sprintf(sql_string, "SELECT message_id"
-						" FROM messages WHERE parent_fid IS NOT NULL"
-						" AND is_associated=0 AND is_deleted=1");
-				} else {
-					sql_len = sprintf(sql_string, "SELECT message_id"
-						" FROM messages WHERE parent_fid IS NOT NULL"
-						" AND is_associated=0 AND is_deleted=0");
-				}
+				sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+				          "SELECT message_id"
+				          " FROM messages WHERE parent_fid IS NOT NULL"
+				          " AND is_associated=0 AND is_deleted=%u",
+				          !!(table_flags & TABLE_FLAG_SOFTDELETES));
 			}
 		} else {
-			sql_len = sprintf(sql_string, "SELECT message_id "
-			          "FROM messages WHERE parent_fid=%llu", LLU(fid_val));
-			if (table_flags & TABLE_FLAG_SOFTDELETES) {
-				sql_len += sprintf(sql_string + sql_len,
-								" AND is_deleted=1");
-			} else {
-				sql_len += sprintf(sql_string + sql_len,
-								" AND is_deleted=0");
-			}
-			if (table_flags & TABLE_FLAG_ASSOCIATED) {
-				sql_len += sprintf(sql_string + sql_len,
-								" AND is_associated=1");
-			} else {
-				sql_len += sprintf(sql_string + sql_len,
-								" AND is_associated=0");
-			}
+			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			          "SELECT message_id "
+			          "FROM messages WHERE parent_fid=%llu "
+			          " AND is_deleted=%u AND is_associated=%u",
+			          LLU(fid_val),
+			          !!(table_flags & TABLE_FLAG_SOFTDELETES),
+			          !!(table_flags & TABLE_FLAG_ASSOCIATED));
 		}
 	}
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
@@ -1165,11 +1115,8 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 					pdb->psqlite, PROP_TAG_READ, &pvalue)) {
 					goto LOAD_CONTENT_FAIL;
 				}
-				if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-					sqlite3_bind_int64(pstmt1, tag_count + 2, 0);
-				} else {
-					sqlite3_bind_int64(pstmt1, tag_count + 2, 1);
-				}
+				sqlite3_bind_int64(pstmt1, tag_count + 2,
+					pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1);
 			}
 			/* inssert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
@@ -2044,13 +1991,9 @@ static BOOL table_column_content_tmptbl(
 	case PROP_TAG_INSTID:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 3, PT_I8);
 		if (*ppvalue != NULL) {
-			if (CONTENT_ROW_MESSAGE == row_type) {
-				*(uint64_t*)*ppvalue = rop_util_make_eid_ex(
-									1, *(uint64_t*)*ppvalue);
-			} else {
-				*(uint64_t*)*ppvalue = rop_util_make_eid_ex(2,
-					*(uint64_t*)*ppvalue & 0x00FFFFFFFFFFFFFFULL);
-			}
+			*static_cast<uint64_t *>(*ppvalue) = row_type == CONTENT_ROW_MESSAGE ?
+				rop_util_make_eid_ex(1, *static_cast<uint64_t *>(*ppvalue)) :
+				rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & 0x00FFFFFFFFFFFFFFULL);
 		}
 		return TRUE;
 	case PROP_TAG_INSTANCENUM:
@@ -2065,19 +2008,11 @@ static BOOL table_column_content_tmptbl(
 		if (NULL == *ppvalue) {
 			return TRUE;
 		}
-		if (CONTENT_ROW_MESSAGE == row_type) {
-			*(uint32_t*)*ppvalue = ROW_TYPE_LEAF_ROW;
-		} else {
-			if (0 == sqlite3_column_int64(pstmt, 8)) {
-				*(uint32_t*)*ppvalue = ROW_TYPE_EMPTY_CATEGORY;
-			} else {
-				if (0 == sqlite3_column_int64(pstmt, 5)) {
-					*(uint32_t*)*ppvalue = ROW_TYPE_COLLAPSED_CATEGORY;
-				} else {
-					*(uint32_t*)*ppvalue = ROW_TYPE_EXPANDED_CATEGORY;
-				}
-			}
-		}
+		*static_cast<uint32_t *>(*ppvalue) =
+			row_type == CONTENT_ROW_MESSAGE ? ROW_TYPE_LEAF_ROW :
+			sqlite3_column_int64(pstmt, 8) == 0 ? ROW_TYPE_EMPTY_CATEGORY :
+			sqlite3_column_int64(pstmt, 5) == 0 ? ROW_TYPE_COLLAPSED_CATEGORY :
+			ROW_TYPE_EXPANDED_CATEGORY;
 		return TRUE;
 	case PROP_TAG_DEPTH:
 		if (NULL == psorts || 0 == psorts->ccategories) {
@@ -3235,11 +3170,9 @@ BOOL exmdb_server_locate_table(const char *dir,
 		          "WHERE folder_id=%llu", ptnode->table_id, LLU(inst_id));
 		break;
 	case TABLE_TYPE_CONTENT:
-		if (1 == rop_util_get_replid(inst_id)) {
-			inst_id = rop_util_get_gc_value(inst_id);
-		} else {
-			inst_id = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
-		}
+		inst_id = rop_util_get_replid(inst_id) == 1 ?
+		          rop_util_get_gc_value(inst_id) :
+		          rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 		sprintf(sql_string, "SELECT idx, row_type "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=%u",
 				ptnode->table_id, LLU(inst_id), inst_num);
@@ -3390,11 +3323,9 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		ppropvals->count = count;
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	} else if (TABLE_TYPE_CONTENT == ptnode->type) {
-		if (1 == rop_util_get_replid(inst_id)) {
-			inst_id = rop_util_get_gc_value(inst_id);
-		} else {
-			inst_id = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
-		}
+		inst_id = rop_util_get_replid(inst_id) == 1 ?
+		          rop_util_get_gc_value(inst_id) :
+		          rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 		sprintf(sql_string, "SELECT * FROM t%u"
 					" WHERE inst_id=%llu AND inst_num=%u",
 					table_id, LLU(inst_id), inst_num);
@@ -3565,20 +3496,14 @@ BOOL exmdb_server_mark_table(const char *dir,
 		*pinst_id = sqlite3_column_int64(pstmt, 0);
 		switch (ptnode->type) {
 		case TABLE_TYPE_HIERARCHY:
-			if (0 == (*pinst_id & 0xFF00000000000000ULL)) {
-				*pinst_id = rop_util_make_eid_ex(1, *pinst_id);
-			} else {
-				*pinst_id = rop_util_make_eid_ex(*pinst_id >> 48,
-							*pinst_id & 0x00FFFFFFFFFFFFFFULL);
-			}
+			*pinst_id = (*pinst_id & 0xFF00000000000000ULL) == 0 ?
+			            rop_util_make_eid_ex(1, *pinst_id) :
+			            rop_util_make_eid_ex(*pinst_id >> 48, *pinst_id & 0x00FFFFFFFFFFFFFFULL);
 			break;
 		case TABLE_TYPE_CONTENT:
-			if (0 == (*pinst_id & 0xFF00000000000000ULL)) {
-				*pinst_id = rop_util_make_eid_ex(1, *pinst_id);
-			} else {
-				*pinst_id = rop_util_make_eid_ex(
-					2, *pinst_id & 0x00FFFFFFFFFFFFFFULL);
-			}
+			*pinst_id = (*pinst_id & 0xFF00000000000000ULL) == 0 ?
+			            rop_util_make_eid_ex(1, *pinst_id) :
+			            rop_util_make_eid_ex(2, *pinst_id & 0x00FFFFFFFFFFFFFFULL);
 			*pinst_num = sqlite3_column_int64(pstmt, 1);
 			*prow_type = sqlite3_column_int64(pstmt, 2);
 			break;
@@ -4189,7 +4114,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	uint64_t row_id;
 	uint64_t last_id;
 	sqlite3 *psqlite;
-	uint64_t inst_id1;
 	EXT_PUSH ext_push;
 	char tmp_path[256];
 	TABLE_NODE *ptnode;
@@ -4476,11 +4400,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	if (2 == rop_util_get_replid(inst_id)) {
-		inst_id1 = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
-	} else {
-		inst_id1 = 0;
-	}
+	uint64_t inst_id1 = rop_util_get_replid(inst_id) == 2 ?
+	                    rop_util_get_gc_value(inst_id) | 0x100000000000000ULL : 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		depth = sqlite3_column_int64(pstmt, 3);
 		if (ptnode->psorts->ccategories == depth) {
@@ -4851,11 +4772,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			row_stat = header_stat;
 			row_id1 = row_id;
 		} else {
-			if (depth >= ptnode->psorts->cexpanded) {
-				row_stat = 1;
-			} else {
-				row_stat = 0;
-			}
+			row_stat = depth >= ptnode->psorts->cexpanded;
 		}
 		sqlite3_bind_int64(pstmt3, 1, row_stat);
 		sqlite3_bind_int64(pstmt3, 2, row_id);
@@ -4929,11 +4846,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 		db_engine_put_db(pdb);
-	if (SQLITE_ROW == sqlite3_step(pstmt)) {
-		*pposition = sqlite3_column_int64(pstmt, 0) - 1;
-	} else {
-		*pposition = -1;
-	}
+	*pposition = sqlite3_step(pstmt) == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) - 1 : -1;
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
 	return TRUE;

@@ -396,12 +396,8 @@ static void *thread_work_func(void *pparam)
 				tmp_bin.cb = buff_len;
 				tmp_bin.pb = buff;
 				exmdb_server_build_environment(false, pagent->pserver->type == EXMDB_ITEM::EXMDB_PRIVATE, nullptr);
-				if (EXT_ERR_SUCCESS == exmdb_ext_pull_db_notify(
-					&tmp_bin, &notify)) {
-					resp_code = exmdb_response::SUCCESS;
-				} else {
-					resp_code = exmdb_response::PULL_ERROR;
-				}
+				resp_code = exmdb_ext_pull_db_notify(&tmp_bin, &notify) == EXT_ERR_SUCCESS ?
+				            exmdb_response::SUCCESS : exmdb_response::PULL_ERROR;
 				if (1 != write(pagent->sockd, &resp_code, 1)) {
 					close(pagent->sockd);
 					pagent->sockd = -1;

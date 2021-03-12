@@ -1340,11 +1340,7 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		inst_id = *pheader_id | 0x100000000000000ULL;
 		sqlite3_bind_int64(pstmt_insert, 1, inst_id);
 		sqlite3_bind_int64(pstmt_insert, 2, CONTENT_ROW_HEADER);
-		if (i < psorts->cexpanded) {
-			sqlite3_bind_int64(pstmt_insert, 3, 1);
-		} else {
-			sqlite3_bind_int64(pstmt_insert, 3, 0);
-		}
+		sqlite3_bind_int64(pstmt_insert, 3, i < psorts->cexpanded);
 		sqlite3_bind_int64(pstmt_insert, 4, parent_id);
 		sqlite3_bind_int64(pstmt_insert, 5, i);
 		sqlite3_bind_int64(pstmt_insert, 6, 0);
@@ -1432,16 +1428,8 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 			return FALSE;
 		}
 	}
-	if (FALSE == b_read) {
-		sqlite3_bind_int64(pstmt_insert, 10, 0);
-	} else {
-		sqlite3_bind_int64(pstmt_insert, 10, 1);
-	}
-	if (0 == after_row_id) {
-		sqlite3_bind_int64(pstmt_insert, 11, (-1)*parent_id);
-	} else {
-		sqlite3_bind_int64(pstmt_insert, 11, after_row_id);
-	}
+	sqlite3_bind_int64(pstmt_insert, 10, !!b_read);
+	sqlite3_bind_int64(pstmt_insert, 11, after_row_id == 0 ? -parent_id : after_row_id);
 	if (SQLITE_DONE != sqlite3_step(pstmt_insert)) {
 		return FALSE;
 	}
@@ -1509,7 +1497,7 @@ static void db_engine_notify_content_table_add_row(
 	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
 {
 	int result;
-	BOOL b_fai, b_read = false, b_break;
+	BOOL b_read = false, b_break;
 	void *pvalue;
 	uint32_t idx;
 	uint16_t type;
@@ -1553,11 +1541,7 @@ static void db_engine_notify_content_table_add_row(
 		message_id, 0, pdb->psqlite, PROP_TAG_ASSOCIATED, &pvalue)) {
 		return;	
 	}
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		b_fai = TRUE;
-	} else {
-		b_fai = FALSE;
-	}
+	BOOL b_fai = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		ptable = (TABLE_NODE*)pnode->pdata;
@@ -1839,11 +1823,7 @@ static void db_engine_notify_content_table_add_row(
 					(void**)&pread_byte) || NULL == pread_byte) {
 					goto ADD_CONTENT_ROW_FAIL;
 				}
-				if (0 == *pread_byte) {
-					b_read = FALSE;
-				} else {
-					b_read = TRUE;
-				}
+				b_read = *pread_byte == 0 ? false : TRUE;
 			}
 			for (size_t i = 0; i < ptable->psorts->count; ++i) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
@@ -2059,12 +2039,7 @@ static void db_engine_notify_content_table_add_row(
 				}
 				row_id = 0;
 				row_id1 = 0;
-				if (ptable->psorts->count >
-					ptable->psorts->ccategories) {
-					b_break = FALSE;
-				} else {
-					b_break = TRUE;
-				}
+				b_break = ptable->psorts->count > ptable->psorts->ccategories ? false : TRUE;
 				sqlite3_reset(pstmt);
 				sqlite3_bind_int64(pstmt, 1, (-1)*parent_id);
 				while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3284,11 +3259,7 @@ static void db_engine_notify_content_table_delete_row(
 			pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
 			pdelnode->depth = sqlite3_column_int64(pstmt, 7);
 			pdelnode->inst_num = sqlite3_column_int64(pstmt, 10);
-			if (0 == sqlite3_column_int64(pstmt, 12)) {
-				pdelnode->b_read = FALSE;
-			} else {
-				pdelnode->b_read = TRUE;
-			}
+			pdelnode->b_read = sqlite3_column_int64(pstmt, 12) == 0 ? false : TRUE;
 			double_list_append_as_tail(&tmp_list, &pdelnode->node);
 		}
 		sqlite3_finalize(pstmt);
@@ -4132,11 +4103,8 @@ static void db_engine_notify_content_table_modify_row(
 				sqlite3_reset(pstmt);
 			}
 			sqlite3_bind_int64(pstmt, 1, idx + 1);
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
-				inst_id1 = 0;
-			} else {
-				inst_id1 = sqlite3_column_int64(pstmt, 0);
-			}
+			inst_id1 = sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+			           sqlite3_column_int64(pstmt, 0);
 			sqlite3_finalize(pstmt);
 			b_error = FALSE;
 			for (i=0; i<ptable->psorts->count; i++) {
@@ -4350,15 +4318,7 @@ static void db_engine_notify_content_table_modify_row(
 			b_error = FALSE;
 			double_list_init(&notify_list);
 			for (i=0; i<multi_num; i++) {
-				if (0 == ptable->instance_tag) {
-					inst_num = 0;
-				} else {
-					if (NULL == pmultival) {
-						inst_num = 0;
-					} else {
-						inst_num = i + 1;
-					}
-				}
+				inst_num = ptable->instance_tag == 0 || pmultival == nullptr ? 0 : i + 1;
 				sqlite3_bind_int64(pstmt1, 1, inst_num);
 				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 					b_error = TRUE;
@@ -4435,11 +4395,9 @@ static void db_engine_notify_content_table_modify_row(
 						}
 					}
 				}
-				if (0 == ptable->extremum_tag) {
-					i = ptable->psorts->ccategories;
-				} else {
-					i = ptable->psorts->ccategories + 1;
-				}
+				i = ptable->psorts->ccategories;
+				if (ptable->extremum_tag != 0)
+					++i;
 				if (ptable->psorts->count > i) {
 					if (prev_id <= 0) {
 						inst_id = 0;
@@ -4464,11 +4422,8 @@ static void db_engine_notify_content_table_modify_row(
 						b_error = TRUE;
 						break;
 					}
-					if (SQLITE_ROW != sqlite3_step(pstmt2)) {
-						inst_id1 = 0;
-					} else {
-						inst_id1 = sqlite3_column_int64(pstmt2, 0);
-					}
+					inst_id1 = sqlite3_step(pstmt2) != SQLITE_ROW ? 0 :
+					           sqlite3_column_int64(pstmt2, 0);
 					sqlite3_finalize(pstmt2);
 				}
 				for (; i<ptable->psorts->count; i++) {
@@ -4506,11 +4461,9 @@ static void db_engine_notify_content_table_modify_row(
 				if (TRUE == b_error) {
 					break;
 				}
-				if (0 == ptable->extremum_tag) {
-					i = ptable->psorts->ccategories;
-				} else {
-					i = ptable->psorts->ccategories + 1;
-				}
+				i = ptable->psorts->ccategories;
+				if (ptable->extremum_tag != 0)
+					++i;
 				for (; i<ptable->psorts->count; i++) {
 					if (0 != inst_id1) {
 						if (FALSE == common_util_get_property(
@@ -4668,12 +4621,8 @@ static void db_engine_notify_content_table_modify_row(
 					sqlite3_column_int64(pstmt1, 3);
 				pmodified_row->row_instance =
 					sqlite3_column_int64(pstmt1, 10);
-				if (CONTENT_ROW_MESSAGE ==
-					sqlite3_column_int64(pstmt1, 4)) {
-					pmodified_row->row_folder_id = row_folder_id;
-				} else {
-					pmodified_row->row_folder_id = folder_id;
-				}
+				pmodified_row->row_folder_id = sqlite3_column_int64(pstmt1, 4) == CONTENT_ROW_MESSAGE ?
+				                               row_folder_id : folder_id;
 				pmodified_row->after_row_id = inst_id;
 				if (0 == inst_id) {
 					pmodified_row->after_folder_id = 0;
@@ -5271,11 +5220,9 @@ void db_engine_notify_content_table_reload(
 	}
 	ptable = (TABLE_NODE*)pnode->pdata;
 	datagram.dir = (char*)exmdb_server_get_dir();
-	if (FALSE == ptable->b_search) {
-		datagram.db_notify.type = DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
-	} else {
-		datagram.db_notify.type = DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
-	}
+	datagram.db_notify.type = !ptable->b_search ?
+		DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED :
+		DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
 	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
 	datagram.id_array.count = 1;
@@ -5294,15 +5241,10 @@ void db_engine_commit_batch_mode(DB_ITEM *pdb)
 	int table_num;
 	const char *dir;
 	TABLE_NODE *ptable;
-	uint32_t *ptable_ids;
 	DOUBLE_LIST_NODE *pnode;
 	
 	table_num = double_list_get_nodes_num(&pdb->tables.table_list);
-	if (table_num > 0) {
-		ptable_ids = cu_alloc<uint32_t>(table_num);
-	} else {
-		ptable_ids = NULL;
-	}
+	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
 	table_num = 0;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {

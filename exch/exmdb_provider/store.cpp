@@ -481,7 +481,6 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	DB_ITEM *pdb;
 	uint16_t replid;
 	NSUB_NODE *pnsub;
-	uint32_t last_id;
 	const char *remote_id;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -494,11 +493,8 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 		return FALSE;
 	}
 	pnode = double_list_get_tail(&pdb->nsub_list);
-	if (NULL == pnode) {
-		last_id = 0;
-	} else {
-		last_id = ((NSUB_NODE*)pnode->pdata)->sub_id;
-	}
+	uint32_t last_id = pnode == nullptr ? 0 :
+	                   static_cast<NSUB_NODE *>(pnode->pdata)->sub_id;
 	pnsub = me_alloc<NSUB_NODE>();
 	if (NULL == pnsub) {
 		db_engine_put_db(pdb);
@@ -535,11 +531,8 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 			}
 		}
 	}
-	if (0 == message_id) {
-		pnsub->message_id = 0;
-	} else {
-		pnsub->message_id = rop_util_get_gc_value(message_id);
-	}
+	pnsub->message_id = message_id == 0 ? 0 :
+	                    rop_util_get_gc_value(message_id);
 	double_list_append_as_tail(&pdb->nsub_list, &pnsub->node);
 	db_engine_put_db(pdb);
 	*psub_id = last_id + 1;

@@ -237,11 +237,9 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals[0].pvalue = &tmp_cn;
-		if (TRUE == exmdb_server_check_private()) {
-			tmp_xid.guid = rop_util_make_user_guid(account_id);
-		} else {
-			tmp_xid.guid = rop_util_make_domain_guid(account_id);
-		}
+		tmp_xid.guid = exmdb_server_check_private() ?
+		               rop_util_make_user_guid(account_id) :
+		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
 		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -291,7 +289,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	void *pvalue;
 	BOOL b_check;
 	BOOL b_owner;
-	BOOL b_batch;
 	BOOL b_result;
 	BOOL b_update;
 	uint64_t tmp_cn;
@@ -339,23 +336,14 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
-			if ((PERMISSION_FOLDEROWNER & permission) ||
-				(PERMISSION_READANY & permission)) {
-				b_check = FALSE;
-			} else {
-				b_check = TRUE;
-			}
+			b_check = (permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)) ? false : TRUE;
 		} else {
 			b_check = TRUE;
 		}
 	} else {
 		b_check = FALSE;
 	}
-	if (pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM) {
-		b_batch = TRUE;
-	} else {
-		b_batch = FALSE;
-	}
+	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
 	if (TRUE == b_batch) {
 		db_engine_begin_batch_mode(pdb);
 	}
@@ -515,11 +503,9 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals[0].pvalue = &tmp_cn;
-		if (TRUE == exmdb_server_check_private()) {
-			tmp_xid.guid = rop_util_make_user_guid(account_id);
-		} else {
-			tmp_xid.guid = rop_util_make_domain_guid(account_id);
-		}
+		tmp_xid.guid = exmdb_server_check_private() ?
+		               rop_util_make_user_guid(account_id) :
+		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
 		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -583,7 +569,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	XID tmp_xid;
 	DB_ITEM *pdb;
 	void *pvalue;
-	BOOL b_batch;
 	BOOL b_check;
 	BOOL b_owner;
 	int del_count;
@@ -629,23 +614,14 @@ BOOL exmdb_server_delete_messages(const char *dir,
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
-			if ((PERMISSION_FOLDEROWNER & permission) ||
-				(PERMISSION_DELETEANY & permission)) {
-				b_check = FALSE;
-			} else {
-				b_check = TRUE;
-			}
+			b_check = (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) ? false : TRUE;
 		} else {
 			b_check = TRUE;
 		}
 	} else {
 		b_check = FALSE;
 	}
-	if (pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM) {
-		b_batch = TRUE;
-	} else {
-		b_batch = FALSE;
-	}
+	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
 	if (TRUE == b_batch) {
 		db_engine_begin_batch_mode(pdb);
 	}
@@ -813,11 +789,9 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	tmp_cn = rop_util_make_eid_ex(1, change_num);
 	tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals[0].pvalue = &tmp_cn;
-	if (TRUE == exmdb_server_check_private()) {
-		tmp_xid.guid = rop_util_make_user_guid(account_id);
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(account_id);
-	}
+	tmp_xid.guid = exmdb_server_check_private() ?
+	               rop_util_make_user_guid(account_id) :
+	               rop_util_make_domain_guid(account_id);
 	rop_util_value_to_gc(change_num, tmp_xid.local_id);
 	tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
 	tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -1113,11 +1087,7 @@ BOOL exmdb_server_check_message(const char *dir,
 	tmp_val = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
-	if (tmp_val == fid_val) {
-		*pb_exist = TRUE;
-	} else {
-		*pb_exist = FALSE;
-	}
+	*pb_exist = tmp_val == fid_val ? TRUE : false;
 	return TRUE;
 }
 
@@ -2620,11 +2590,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (FALSE == b_embedded) {
 		pvalue = common_util_get_propvals(
 			pproplist, PROP_TAG_ASSOCIATED);
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-			is_associated = 0;
-		} else {
-			is_associated = 1;
-		}
+		is_associated = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1;
 		if (TRUE == exmdb_server_check_private()) {
 			sprintf(sql_string, "SELECT is_search FROM "
 			          "folders WHERE folder_id=%llu", LLU(parent_id));
@@ -3466,11 +3432,7 @@ static BOOL message_get_propname(uint16_t propid,
 		psqlite, &propids, &propnames)) {
 		return FALSE;
 	}
-	if (1 != propnames.count) {
-		*pppropname = NULL;
-	} else {
-		*pppropname = propnames.ppropname;
-	}
+	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
 	return TRUE;
 }
 
@@ -3591,11 +3553,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			PROP_TAG_SENTREPRESENTINGSMTPADDRESS, &pvalue)) {
 			return FALSE;
 		}
-		if (NULL == pvalue) {
-			(*prcpts->pparray)->ppropval[0].pvalue = deconst(from_address);
-		} else {
-			(*prcpts->pparray)->ppropval[0].pvalue = pvalue;
-		}
+		(*prcpts->pparray)->ppropval[0].pvalue = pvalue == nullptr ?
+			deconst(from_address) : pvalue;
 		(*prcpts->pparray)->ppropval[1].proptag =
 							PROP_TAG_RECIPIENTTYPE;
 		pvalue = cu_alloc<uint32_t>();
@@ -3724,11 +3683,7 @@ static BOOL message_bounce_message(const char *from_address,
 		PROP_TAG_SENTREPRESENTINGSMTPADDRESS, &pvalue)) {
 		return FALSE;
 	}
-	if (NULL == pvalue) {
-		pnode->pdata = deconst(from_address);
-	} else {
-		pnode->pdata = pvalue;
-	}
+	pnode->pdata = pvalue == nullptr ? deconst(from_address) : pvalue;
 	mail_init(&imail, common_util_get_mime_pool());
 	if (FALSE == bounce_producer_make(from_address,
 		account, psqlite, message_id, bounce_type,
@@ -5233,11 +5188,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-			b_oof = FALSE;
-		} else {
-			b_oof = TRUE;
-		}
+		b_oof = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 		fid_val = PRIVATE_FID_INBOX;
 	} else {
 		b_oof = FALSE;
