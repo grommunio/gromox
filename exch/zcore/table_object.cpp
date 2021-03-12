@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdio>
 #include <gromox/mapidefs.h>
 #include <gromox/tarray_set.hpp>
 #include "object_tree.h"
@@ -135,6 +136,9 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			return FALSE;
 		}
 		break;
+	default:
+		fprintf(stderr, "%s - not calling table_object_set_table_id\n", __func__);
+		return TRUE;
 	}
 	table_object_set_table_id(ptable, table_id);
 	return TRUE;
@@ -855,7 +859,7 @@ TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	} else {
 		ptable->pparent_obj = pparent_obj;
 	}
-	ptable->table_type = table_type;
+	ptable->table_type = static_cast<zcore_table_type>(table_type);
 	ptable->table_flags = table_flags;
 	ptable->pcolumns = NULL;
 	ptable->psorts = NULL;

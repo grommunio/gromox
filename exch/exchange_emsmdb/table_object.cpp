@@ -122,6 +122,9 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		    ptable->table_flags, ptable->prestriction, &table_id, &row_num))
 			return FALSE;
 		break;
+	default:
+		fprintf(stderr, "%s - not calling table_object_set_table_id\n", __func__);
+		return TRUE;
 	}
 	table_object_set_table_id(ptable, table_id);
 	return TRUE;

@@ -2,21 +2,23 @@
 #include <cstdint>
 #include "store_object.h"
 #include <gromox/mapi_types.hpp>
-#define STORE_TABLE									1
-#define HIERARCHY_TABLE								2
-#define CONTENT_TABLE								3
-#define RULE_TABLE									4
-#define ATTACHMENT_TABLE							5
-#define RECIPIENT_TABLE								6
-#define CONTAINER_TABLE								7
-#define USER_TABLE									8
 
+enum zcore_table_type {
+	STORE_TABLE = 1,
+	HIERARCHY_TABLE = 2,
+	CONTENT_TABLE = 3,
+	RULE_TABLE = 4,
+	ATTACHMENT_TABLE = 5,
+	RECIPIENT_TABLE = 6,
+	CONTAINER_TABLE = 7,
+	USER_TABLE = 8,
+};
 
 struct TABLE_OBJECT {
 	STORE_OBJECT *pstore;
 	uint32_t handle;
 	void *pparent_obj;
-	uint8_t table_type;
+	enum zcore_table_type table_type;
 	uint32_t table_flags;
 	PROPTAG_ARRAY *pcolumns;
 	SORTORDER_SET *psorts;
