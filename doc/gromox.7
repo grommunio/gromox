@@ -52,9 +52,9 @@ Service Provider Interface Referral Protocol.
 .IP \(bu 4
 exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
 .IP \(bu 4
-http(8gx)
+freebusy(8gx) \(em C++ helper for the EWS Freebusy mechanism
 .IP \(bu 4
-midb(8gx)
+http(8gx)
 .IP \(bu 4
 mod_cache(4gx) \(em http(8gx) processing plugin for serving objects from a
 local filesystem
@@ -69,6 +69,11 @@ mod_rewrite(4gx) \(em http(8gx) processing plugin for altering HTTP request
 URIs before processing
 .IP \(bu 4
 .IP \(bu 4
+.IP \(bu 4
+timer(8gx) \(em deferred command executor
+.SH PHP-MAPI subsystem
+.IP \(bu 4
+rtf2html(1gx) \(em C++ helper for php_mapi's mapi_decompressrtf function
 .IP \(bu 4
 zcore(8gx)
 .SH Mail retrieval agent subsystem
@@ -93,7 +98,7 @@ smtp(8gx) \(em SMTP frontend for local delivery
 str_filter(4gx)
 .IP \(bu 4
 str_table(4gx) \(em string table match plugin
-.SH System administration
+.SH Auxiliary services
 .IP \(bu 4
 pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
 .IP \(bu 4
@@ -103,7 +108,8 @@ adaptor(8gx)
 .IP \(bu 4
 event(8gx)
 .IP \(bu 4
-freebusy(8gx) \(em C++ helper for the EWS Freebusy mechanism
+midb(8gx)
+.SH System administration
 .IP \(bu 4
 gromox\-dbop(8gx) \(em Database maintenance utility
 .IP \(bu 4
@@ -118,8 +124,6 @@ mkpublic(8gx)
 rebuild(8gx)
 .IP \(bu 4
 sa.cfg(5gx) \(em configuration file for system administration CGI programs
-.IP \(bu 4
-timer(8gx) \(em deferred command executor
 .SH Service plugins
 .IP \(bu 4
 at_client(4gx) \(em Service plugin for deferred command execution with at(1)
