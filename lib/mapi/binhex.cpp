@@ -3,7 +3,6 @@
 #include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/binhex.hpp>
-#include <gromox/endian_macro.hpp>
 #include <cstring>
 #include <cstdlib>
 #define HEADERMATCH					40
@@ -247,7 +246,8 @@ static bool binhex_read_crc(READ_STAT *pstat)
 	check = binhex_crc(g_zero, 2, pstat->crc);
 	if (!binhex_read_buffer(pstat, tmp_buff, 2))
 		return false;
-	pstat->crc = RSVAL(tmp_buff, 0);
+	memcpy(&pstat->crc, tmp_buff, sizeof(uint16_t));
+	pstat->crc = be16_to_cpu(pstat->crc);
 	if (pstat->crc != check) {
 		debug_info("[binhex]: CRC checksum error");
 	}
@@ -276,16 +276,19 @@ bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 		return false;
 	if (!binhex_read_buffer(&read_stat, tmp_buff, 2))
 		return false;
-	pbinhex->flags = RSVAL(tmp_buff, 0);
+	memcpy(&pbinhex->flags, tmp_buff, sizeof(uint16_t));
+	pbinhex->flags = be16_to_cpu(pbinhex->flags);
 	if (!binhex_read_buffer(&read_stat, tmp_buff, 4))
 		return false;
-	pbinhex->data_len = RIVAL(tmp_buff, 0);
+	memcpy(&pbinhex->data_len, tmp_buff, sizeof(uint32_t));
+	pbinhex->data_len = be32_to_cpu(pbinhex->data_len);
 	if (pbinhex->data_len >= length) {
 		return false;
 	}
 	if (!binhex_read_buffer(&read_stat, tmp_buff, 4))
 		return false;
-	pbinhex->res_len = RIVAL(tmp_buff, 0);
+	memcpy(&pbinhex->res_len, tmp_buff, sizeof(uint32_t));
+	pbinhex->res_len = be32_to_cpu(pbinhex->res_len);
 	if (pbinhex->res_len >= length) {
 		return false;
 	}

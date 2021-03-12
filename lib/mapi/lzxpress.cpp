@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <gromox/defs.h>
 #include <gromox/lzxpress.hpp>
-#include <gromox/endian_macro.hpp>
 #include <gromox/common_types.hpp>
 #include <cstring>
 #define WINDOWS_SIZE				0x20
@@ -23,7 +23,6 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 	uint32_t offset;
 	uint32_t length;
 	uint16_t *pdest;
-	uint16_t metadata;
 	uint32_t byte_left;
 	uint8_t *ptr_indic;
 	uint32_t indic_bit;
@@ -76,12 +75,14 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 			pdest = (uint16_t *)&compressed[compressed_pos];
 			if (length <= CLASSIC_MATCH_LENGTH) {
 				/* classical meta-data */
-				metadata = (uint16_t)(((match_offset - 1) << 3)|(length - 3));
-				SSVAL(pdest, metadata_size / sizeof(uint16_t), metadata);
+				uint16_t metadata = ((match_offset - 1) << 3) | (length - 3);
+				metadata = cpu_to_le16(metadata);
+				memcpy(&pdest[metadata_size/sizeof(uint16_t)], &metadata, sizeof(metadata));
 				metadata_size += sizeof(uint16_t);
 			} else {
-				metadata = (uint16_t)(((match_offset - 1) << 3) | 7);
-				SSVAL(pdest, metadata_size / sizeof(uint16_t), metadata);
+				uint16_t metadata = ((match_offset - 1) << 3) | 7;
+				metadata = cpu_to_le16(metadata);
+				memcpy(&pdest[metadata_size/sizeof(uint16_t)], &metadata, sizeof(metadata));
 				metadata_size += sizeof(uint16_t);
 				if (length <= MIDDLE_MATCH_LENGTH) {
 					/* shared byte */
@@ -143,7 +144,8 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 		}
 		indic_bit ++;
 		if ((indic_bit - 1) % 32 > (indic_bit % 32)) {
-			SIVAL(ptr_indic, 0, indic);
+			uint32_t enc4 = cpu_to_le32(indic);
+			memcpy(ptr_indic, &enc4, sizeof(enc4));
 			indic = 0;
 			ptr_indic = &compressed[compressed_pos];
 			compressed_pos += sizeof(uint32_t);
@@ -156,7 +158,8 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 		coding_pos ++;
 		compressed_pos ++;
 		if ((indic_bit - 1) % 32 > (indic_bit % 32)) {
-			SIVAL(ptr_indic, 0, indic);
+			uint32_t enc4 = cpu_to_le32(indic);
+			memcpy(ptr_indic, &enc4, sizeof(enc4));
 			indic = 0;
 			ptr_indic = &compressed[compressed_pos];
 			compressed_pos += sizeof(uint32_t);
@@ -164,7 +167,8 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 	} while (coding_pos < uncompressed_size);
 	
 	indic |= 1U << (32 - (indic_bit % 32 + 1));
-	SIVAL(ptr_indic, 0, indic);
+	indic = cpu_to_le32(indic);
+	memcpy(ptr_indic, &indic, sizeof(indic));
 	return compressed_pos;
 }
 
@@ -188,7 +192,8 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 	indicator_bit = 0;
 	do {
 		if (0 == indicator_bit) {
-			indicator = IVAL(input, input_index);
+			memcpy(&indicator, &input[input_index], sizeof(indicator));
+			indicator = le32_to_cpu(indicator);
 			input_index += sizeof(uint32_t);
 			indicator_bit = 32;
 		}
@@ -203,7 +208,9 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 			input_index += sizeof(uint8_t);
 			output_index += sizeof(uint8_t);
 		} else {
-			length = SVAL(input, input_index);
+			uint16_t enc2;
+			memcpy(&enc2, &input[input_index], sizeof(enc2));
+			length = le16_to_cpu(enc2);
 			input_index += sizeof(uint16_t);
 			offset = length / 8;
 			length = length % 8;
@@ -220,7 +227,9 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 					length = input[input_index];
 					input_index += sizeof(uint8_t);
 					if (255 == length) {
-						length = SVAL(input, input_index);
+						uint16_t enc2;
+						memcpy(&enc2, &input[input_index], sizeof(enc2));
+						length = le16_to_cpu(enc2);
 						input_index += sizeof(uint16_t);
 						length -= (15 + 7);
 					}

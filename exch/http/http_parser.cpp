@@ -16,7 +16,6 @@
 #include <gromox/lib_buffer.hpp>
 #include "mod_rewrite.h"
 #include "http_parser.h"
-#include <gromox/endian_macro.hpp>
 #include <gromox/threads_pool.hpp>
 #include "hpm_processor.h"
 #include "system_services.h"
@@ -1420,11 +1419,11 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		}
 		
 		if (0 == frag_length) {
-			if (CVAL(pbuff, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
-				frag_length = SVAL(pbuff, DCERPC_FRAG_LEN_OFFSET);
-			} else {
-				frag_length = RSVAL(pbuff, DCERPC_FRAG_LEN_OFFSET);
-			}
+			static_assert(std::is_same_v<decltype(frag_length), uint16_t>, "");
+			auto pbd = static_cast<uint8_t *>(pbuff);
+			memcpy(&frag_length, &pbd[DCERPC_FRAG_LEN_OFFSET], sizeof(uint16_t));
+			frag_length = (pbd[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
+			              le16_to_cpu(frag_length) : be16_to_cpu(frag_length);
 			if (CHANNEL_TYPE_IN == pcontext->channel_type) {
 				pchannel_in->frag_length = frag_length;
 			} else {

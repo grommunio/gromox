@@ -1,25 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
 #include "ext_pack.h"
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <iconv.h>
 #include <cstdint>
+#include <gromox/defs.h>
 #include "ext.hpp"
 #define BTRY(expr) do { if (!(expr)) return 0; } while (false)
-#define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
-#define CVAL_NC(buf, pos) (((uint8_t *)(buf))[pos])
-#define PVAL(buf, pos) (CVAL(buf,pos))
-#define SCVAL(buf, pos, val) (CVAL_NC(buf,pos) = (val))
-#define SVAL(buf, pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
-#define IVAL(buf, pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
-#define IVALS(buf, pos) ((int32_t)IVAL(buf,pos))
-#define SSVALX(buf, pos, val) (CVAL_NC(buf,pos)=(uint8_t)((val)&0xFF),CVAL_NC(buf,pos+1)=(uint8_t)((val)>>8))
-#define SIVALX(buf, pos, val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
-#define SSVAL(buf, pos, val) SSVALX((buf),(pos),((uint16_t)(val)))
-#define SIVAL(buf, pos, val) SIVALX((buf),(pos),((uint32_t)(val)))
-#define SIVALS(buf, pos, val) SIVALX((buf),(pos),((int32_t)(val)))
-
 #define GROWING_BLOCK_SIZE				0x1000
 
 static int utf8_to_utf16le(const char *src, char *dst, size_t len)
@@ -86,7 +75,7 @@ zend_bool ext_pack_pull_uint8(PULL_CTX *pctx, uint8_t *v)
 		pctx->offset + sizeof(uint8_t) > pctx->data_size) {
 		return 0;
 	}
-	*v = CVAL(pctx->data, pctx->offset);
+	*v = pctx->udata[pctx->offset];
 	pctx->offset += sizeof(uint8_t);
 	return 1;
 }
@@ -97,7 +86,8 @@ zend_bool ext_pack_pull_uint16(PULL_CTX *pctx, uint16_t *v)
 		pctx->offset + sizeof(uint16_t) > pctx->data_size) {
 		return 0;
 	}
-	*v = SVAL(pctx->data, pctx->offset);
+	memcpy(v, &pctx->udata[pctx->offset], sizeof(*v));
+	*v = le16_to_cpu(*v);
 	pctx->offset += sizeof(uint16_t);
 	return 1;
 }
@@ -108,7 +98,8 @@ zend_bool ext_pack_pull_uint32(PULL_CTX *pctx, uint32_t *v)
 		pctx->offset + sizeof(uint32_t) > pctx->data_size) {
 		return 0;
 	}
-	*v = IVAL(pctx->data, pctx->offset);
+	memcpy(v, &pctx->udata[pctx->offset], sizeof(*v));
+	*v = le32_to_cpu(*v);
 	pctx->offset += sizeof(uint32_t);
 	return 1;
 }
@@ -119,8 +110,8 @@ zend_bool ext_pack_pull_uint64(PULL_CTX *pctx, uint64_t *v)
 		pctx->offset + sizeof(uint64_t) > pctx->data_size) {
 		return 0;
 	}
-	*v = IVAL(pctx->data, pctx->offset);
-	*v |= (uint64_t)(IVAL(pctx->data, pctx->offset+4)) << 32;
+	memcpy(v, &pctx->udata[pctx->offset], sizeof(*v));
+	*v = le64_to_cpu(*v);
 	pctx->offset += sizeof(uint64_t);
 	return 1;
 }
@@ -131,7 +122,7 @@ zend_bool ext_pack_pull_float(PULL_CTX *pctx, float *v)
 		pctx->offset + sizeof(float) > pctx->data_size) {
 		return 0;
 	}
-	memcpy(v, static_cast<const char *>(pctx->data) + pctx->offset, sizeof(float));
+	memcpy(v, &pctx->udata[pctx->offset], sizeof(*v));
 	pctx->offset += sizeof(float);
 	return 1;
 }
@@ -142,7 +133,7 @@ zend_bool ext_pack_pull_double(PULL_CTX *pctx, double *v)
 		pctx->offset + sizeof(double) > pctx->data_size) {
 		return 0;
 	}
-	memcpy(v, static_cast<const char *>(pctx->data) + pctx->offset, sizeof(double));
+	memcpy(v, &pctx->udata[pctx->offset], sizeof(*v));
 	pctx->offset += sizeof(double);
 	return 1;
 }
@@ -152,7 +143,7 @@ zend_bool ext_pack_pull_bytes(PULL_CTX *pctx, uint8_t *data, uint32_t n)
 	if (pctx->data_size < n || pctx->offset + n > pctx->data_size) {
 		return 0;
 	}
-	memcpy(data, static_cast<const char *>(pctx->data) + pctx->offset, n);
+	memcpy(data, &pctx->udata[pctx->offset], n);
 	pctx->offset += n;
 	return 1;
 }
@@ -171,7 +162,7 @@ zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 	if (pctx->offset >= pctx->data_size) {
 		return 0;
 	}
-	auto len = strnlen(static_cast<const char *>(pctx->data) + pctx->offset, pctx->data_size - pctx->offset);
+	auto len = strnlen(&pctx->sdata[pctx->offset], pctx->data_size - pctx->offset);
 	if (len + 1 > pctx->data_size - pctx->offset) {
 		return 0;
 	}
@@ -180,7 +171,7 @@ zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 	if (NULL == *ppstr) {
 		return 0;
 	}
-	memcpy(*ppstr, static_cast<const char *>(pctx->data) + pctx->offset, len);
+	memcpy(*ppstr, &pctx->sdata[pctx->offset], len);
 	return ext_pack_pull_advance(pctx, len);
 }
 
@@ -209,7 +200,7 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 	auto pbuff = static_cast<char *>(malloc(len));
 	if (pbuff == nullptr)
 		return 0;
-	memcpy(pbuff, static_cast<const char *>(pctx->data) + pctx->offset, len);
+	memcpy(pbuff, &pctx->sdata[pctx->offset], len);
 	if (0 == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
 		free(pbuff);
 		return 0;
@@ -1139,56 +1130,60 @@ zend_bool ext_pack_push_advance(PUSH_CTX *pctx, uint32_t size)
 zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n)
 {
 	BTRY(ext_pack_push_check_overflow(pctx, n));
-	memcpy(static_cast<char *>(pctx->data) + pctx->offset, pdata, n);
+	memcpy(&pctx->udata[pctx->offset], pdata, n);
 	pctx->offset += n;
 	return 1;
 }
 
 zend_bool ext_pack_push_uint8(PUSH_CTX *pctx, uint8_t v)
 {
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint8_t)));
-	SCVAL(pctx->data, pctx->offset, v);
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(v)));
+	pctx->udata[pctx->offset] = v;
 	pctx->offset += sizeof(uint8_t);
 	return 1;
 }
 
 zend_bool ext_pack_push_uint16(PUSH_CTX *pctx, uint16_t v)
 {
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint16_t)));
-	SSVAL(pctx->data, pctx->offset, v);
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(v)));
+	v = cpu_to_le16(v);
+	memcpy(&pctx->udata[pctx->offset], &v, sizeof(v));
 	pctx->offset += sizeof(uint16_t);
 	return 1;
 }
 
 zend_bool ext_pack_push_uint32(PUSH_CTX *pctx, uint32_t v)
 {
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint32_t)));
-	SIVAL(pctx->data, pctx->offset, v);
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(v)));
+	v = cpu_to_le32(v);
+	memcpy(&pctx->udata[pctx->offset], &v, sizeof(v));
 	pctx->offset += sizeof(uint32_t);
 	return 1;
 }
 
 zend_bool ext_pack_push_uint64(PUSH_CTX *pctx, uint64_t v)
 {
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint64_t)));
-	SIVAL(pctx->data, pctx->offset, (v & 0xFFFFFFFF));
-	SIVAL(pctx->data, pctx->offset+4, (v>>32));
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(v)));
+	v = cpu_to_le64(v);
+	memcpy(&pctx->udata[pctx->offset], &v, sizeof(v));
 	pctx->offset += sizeof(uint64_t);
 	return 1;
 }
 
 zend_bool ext_pack_push_float(PUSH_CTX *pctx, float v)
 {
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(float)));
-	memcpy(static_cast<char *>(pctx->data) + pctx->offset, &v, 4);
+	static_assert(sizeof(v) == 4 && CHAR_BIT == 8, "");
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(v)));
+	memcpy(&pctx->udata[pctx->offset], &v, sizeof(v));
 	pctx->offset += sizeof(float);
 	return 1;
 }
 
 zend_bool ext_pack_push_double(PUSH_CTX *pctx, double v)
 {
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(double)));
-	memcpy(static_cast<char *>(pctx->data) + pctx->offset, &v, 8);
+	static_assert(sizeof(v) == 8 && CHAR_BIT == 8, "");
+	BTRY(ext_pack_push_check_overflow(pctx, sizeof(v)));
+	memcpy(&pctx->udata[pctx->offset], &v, sizeof(v));
 	pctx->offset += sizeof(double);
 	return 1;
 }

@@ -2,7 +2,6 @@
 #include <cstdint>
 #include "ftstream_parser.h"
 #include "rop_processor.h"
-#include <gromox/endian_macro.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
@@ -15,8 +14,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstdio>
-#define FSTREAM_SVAL(pdata)						SVAL(pdata,0)
-#define FSTREAM_IVAL(pdata)						IVAL(pdata,0)
 
 enum {
 	FTSTREAM_PARSER_READ_FAIL = -1,
@@ -34,7 +31,7 @@ static BOOL ftstream_parser_read_uint16(
 		&tmp_val, sizeof(uint16_t))) {
 		return FALSE;
 	}
-	*pv = FSTREAM_SVAL(&tmp_val);
+	*pv = le16_to_cpu(*pv);
 	pstream->offset += sizeof(uint16_t);
 	return TRUE;
 }
@@ -48,7 +45,7 @@ static BOOL ftstream_parser_read_uint32(
 		&tmp_val, sizeof(uint32_t))) {
 		return FALSE;
 	}
-	*pv = FSTREAM_IVAL(&tmp_val);
+	*pv = le32_to_cpu(*pv);
 	pstream->offset += sizeof(uint32_t);
 	return TRUE;
 }
@@ -62,8 +59,7 @@ static BOOL ftstream_parser_read_uint64(
 		&tmp_val, sizeof(uint64_t))) {
 		return FALSE;
 	}
-	*pv = FSTREAM_IVAL(&tmp_val);
-	*pv |= static_cast<uint64_t>(FSTREAM_IVAL(reinterpret_cast<char *>(&tmp_val) + 4)) << 32;
+	*pv = le64_to_cpu(*pv);
 	pstream->offset += sizeof(uint64_t);
 	return TRUE;
 }

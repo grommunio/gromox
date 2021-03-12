@@ -4,7 +4,6 @@
 #include "emsmdb_interface.h"
 #include "rop_processor.h"
 #include "logon_object.h"
-#include <gromox/endian_macro.hpp>
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include <gromox/ext_buffer.hpp>
@@ -3336,7 +3335,8 @@ void rop_ext_set_rhe_flag_last(uint8_t *pdata, uint32_t last_offset)
 {
 	uint16_t flags;
 	
-	flags = SVAL(pdata, last_offset + sizeof(uint16_t));
-	flags |= RHE_FLAG_LAST;
-	SSVAL(pdata, last_offset + sizeof(uint16_t), flags);
+	memcpy(&flags, &pdata[last_offset+sizeof(uint16_t)], sizeof(flags));
+	flags = le16_to_cpu(flags) | RHE_FLAG_LAST;
+	flags = cpu_to_le16(flags);
+	memcpy(&pdata[last_offset+sizeof(uint16_t)], &flags, sizeof(flags));
 }

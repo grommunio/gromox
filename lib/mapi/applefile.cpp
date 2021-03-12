@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/applefile.hpp>
-#include <gromox/endian_macro.hpp>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define applefile_push_int16(e, v) applefile_push_uint16((e), (v))
@@ -16,7 +15,8 @@ static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 		pext->offset + sizeof(uint16_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	*v = RSVAL(pext->data, pext->offset);
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	*v = be16_to_cpu(*v);
 	pext->offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -27,7 +27,8 @@ static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 		pext->offset + sizeof(uint32_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	*v = RIVAL(pext->data, pext->offset);
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	*v = be32_to_cpu(*v);
 	pext->offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -314,7 +315,8 @@ static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	RSSVAL(pext->data, pext->offset, v);
+	v = cpu_to_be16(v);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -324,7 +326,8 @@ static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint32_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	RSIVAL(pext->data, pext->offset, v);
+	v = cpu_to_be32(v);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }

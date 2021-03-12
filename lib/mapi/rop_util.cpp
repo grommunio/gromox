@@ -3,7 +3,6 @@
 #include <gromox/pcl.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/endian_macro.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -220,28 +219,28 @@ uint64_t rop_util_current_nttime()
 GUID rop_util_binary_to_guid(const BINARY *pbin)
 {
 	GUID guid;
-	uint32_t offset;
 	
-	offset = 0;
-	guid.time_low = IVAL(pbin->pb, offset);
-	offset += sizeof(uint32_t);
-	guid.time_mid = SVAL(pbin->pb, offset);
-	offset += sizeof(uint16_t);
-	guid.time_hi_and_version = SVAL(pbin->pb, offset);
-	offset += sizeof(uint16_t);
-	memcpy(guid.clock_seq, pbin->pb + offset, 2);
-	offset += 2;
-	memcpy(guid.node, pbin->pb + offset, 6);
+	memcpy(&guid.time_low, &pbin->pb[0], sizeof(uint32_t));
+	guid.time_low = le32_to_cpu(guid.time_low);
+	memcpy(&guid.time_mid, &pbin->pb[4], sizeof(uint16_t));
+	guid.time_mid = le16_to_cpu(guid.time_mid);
+	memcpy(&guid.time_hi_and_version, &pbin->pb[6], sizeof(uint16_t));
+	guid.time_hi_and_version = le16_to_cpu(guid.time_hi_and_version);
+	memcpy(guid.clock_seq, pbin->pb + 8, 2);
+	memcpy(guid.node, pbin->pb + 10, 6);
 	return guid;
 }
 
 void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 {
-	SIVAL(pbin->pb, pbin->cb, guid.time_low);
+	uint32_t enc4 = cpu_to_le32(guid.time_low);
+	memcpy(&pbin->pb[pbin->cb], &enc4, sizeof(enc4));
 	pbin->cb += sizeof(uint32_t);
-	SSVAL(pbin->pb, pbin->cb, guid.time_mid);
+	uint16_t enc2 = cpu_to_le16(guid.time_mid);
+	memcpy(&pbin->pb[pbin->cb], &enc2, sizeof(enc2));
 	pbin->cb += sizeof(uint16_t);
-	SSVAL(pbin->pb, pbin->cb, guid.time_hi_and_version);
+	enc2 = cpu_to_le16(guid.time_hi_and_version);
+	memcpy(&pbin->pb[pbin->cb], &enc2, sizeof(enc2));
 	pbin->cb += sizeof(uint16_t);
 	memcpy(pbin->pb + pbin->cb, guid.clock_seq, 2);
 	pbin->cb += 2;

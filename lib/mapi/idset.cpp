@@ -3,7 +3,6 @@
 #include <gromox/util.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/endian_macro.hpp>
 #include <cstdlib>
 #include <cstring>
 
@@ -643,18 +642,14 @@ static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 
 static BOOL idset_write_uint16(BINARY *pbin, uint16_t v)
 {
-	uint16_t tmp_value;
-	
-	SSVAL(&tmp_value, 0, v);
-	return idset_write_to_binary(pbin, &tmp_value, sizeof(uint16_t));
+	v = cpu_to_le16(v);
+	return idset_write_to_binary(pbin, &v, sizeof(v));
 }
 
 static BOOL idset_write_uint32(BINARY *pbin, uint32_t v)
 {
-	uint32_t tmp_value;
-	
-	SIVAL(&tmp_value, 0, v);
-	return idset_write_to_binary(pbin, &tmp_value, sizeof(uint32_t));
+	v = cpu_to_le32(v);
+	return idset_write_to_binary(pbin, &v, sizeof(v));
 }
 
 static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
@@ -899,11 +894,14 @@ static uint32_t idset_decoding_globset(
 static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 {
 	auto pb = static_cast<const uint8_t *>(pv);
-	pguid->time_low = IVAL(pb, offset);
+	memcpy(&pguid->time_low, &pb[offset], sizeof(uint32_t));
+	pguid->time_low = le32_to_cpu(pguid->time_low);
 	offset += sizeof(uint32_t);
-	pguid->time_mid = SVAL(pb, offset);
+	memcpy(&pguid->time_mid, &pb[offset], sizeof(uint16_t));
+	pguid->time_mid = le16_to_cpu(pguid->time_mid);
 	offset += sizeof(uint16_t);
-	pguid->time_hi_and_version = SVAL(pb, offset);
+	memcpy(&pguid->time_hi_and_version, &pb[offset], sizeof(uint16_t));
+	pguid->time_hi_and_version = le16_to_cpu(pguid->time_hi_and_version);
 	offset += sizeof(uint16_t);
 	memcpy(pguid->clock_seq, pb + offset, 2);
 	offset += 2;
@@ -931,7 +929,9 @@ BOOL idset_deserialize(IDSET *pset, const BINARY *pbin)
 				return FALSE;
 			}
 			preplid_node->node.pdata = preplid_node;
-			preplid_node->replid = SVAL(pbin->pb, offset);
+			uint16_t enc2;
+			memcpy(&enc2, &pbin->pb[offset], sizeof(enc2));
+			preplid_node->replid = le16_to_cpu(enc2);
 			offset += sizeof(uint16_t);
 			plist = &preplid_node->range_list;
 			pnode = &preplid_node->node;

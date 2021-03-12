@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <cstdint>
 #include <memory>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/endian_macro.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/util.hpp>
 #include <cstdlib>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
-#define EXT_SVAL(pext, ofs)			SVAL(pext->data,ofs)
-#define EXT_IVAL(pext, ofs)			IVAL(pext->data,ofs)
-#define EXT_IVALS(pext, ofs)		IVALS(pext->data,ofs)
-#define EXT_SSVAL(pext, ofs, v)		SSVAL(pext->data,ofs,v)
-#define EXT_SIVAL(pext, ofs, v)		SIVAL(pext->data,ofs,v)
-#define EXT_SIVALS(pext, ofs, v)	SIVALS(pext->data,ofs,v)
-
 #define GROWING_BLOCK_SIZE				0x80000
 
 void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
@@ -60,7 +54,7 @@ int ext_buffer_pull_uint8(EXT_PULL *pext, uint8_t *v)
 		pext->offset + sizeof(uint8_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	*v = CVAL(pext->data, pext->offset);
+	*v = pext->data[pext->offset];
 	pext->offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -76,7 +70,8 @@ int ext_buffer_pull_uint16(EXT_PULL *pext, uint16_t *v)
 		pext->offset + sizeof(uint16_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	*v = EXT_SVAL(pext, pext->offset);
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	*v = le16_to_cpu(*v);
 	pext->offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -92,7 +87,8 @@ int ext_buffer_pull_uint32(EXT_PULL *pext, uint32_t *v)
 		pext->offset + sizeof(uint32_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	*v = EXT_IVAL(pext, pext->offset);
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	*v = le32_to_cpu(*v);
 	pext->offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -108,8 +104,8 @@ int ext_buffer_pull_uint64(EXT_PULL *pext, uint64_t *v)
 		pext->offset + sizeof(uint64_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	*v = EXT_IVAL(pext, pext->offset);
-	*v |= (uint64_t)(EXT_IVAL(pext, pext->offset+4)) << 32;
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	*v = le64_to_cpu(*v);
 	pext->offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -120,7 +116,7 @@ int ext_buffer_pull_float(EXT_PULL *pext, float *v)
 		pext->offset + sizeof(float) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	memcpy(v, pext->data + pext->offset, sizeof(float));
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	pext->offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
 }
@@ -131,21 +127,18 @@ int ext_buffer_pull_double(EXT_PULL *pext, double *v)
 		pext->offset + sizeof(double) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	memcpy(v, pext->data + pext->offset, sizeof(double));
+	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	pext->offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_bool(EXT_PULL *pext, BOOL *v)
 {
-	uint8_t tmp_byte;
-	
 	if (pext->data_size < sizeof(uint8_t) ||
 		pext->offset + sizeof(uint8_t) > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	tmp_byte = CVAL(pext->data, pext->offset);
-	pext->offset += sizeof(uint8_t);
+	uint8_t tmp_byte = pext->data[pext->offset++];
 	if (0 == tmp_byte) {
 		*v = FALSE;
 	} else if (1 == tmp_byte) {
@@ -2226,7 +2219,7 @@ int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint8_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	SCVAL(pext->data, pext->offset, v);
+	pext->data[pext->offset] = v;
 	pext->offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2236,7 +2229,8 @@ int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	EXT_SSVAL(pext, pext->offset, v);
+	v = cpu_to_le16(v);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2246,7 +2240,8 @@ int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint32_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	EXT_SIVAL(pext, pext->offset, v);
+	v = cpu_to_le32(v);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2256,8 +2251,8 @@ int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint64_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	EXT_SIVAL(pext, pext->offset, (v & 0xFFFFFFFF));
-	EXT_SIVAL(pext, pext->offset+4, (v>>32));
+	v = cpu_to_le64(v);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2267,17 +2262,18 @@ int ext_buffer_push_float(EXT_PUSH *pext, float v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(float))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	memcpy(pext->data + pext->offset, &v, 4);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_double(EXT_PUSH *pext, double v)
 {
+	static_assert(sizeof(v) == 8 && CHAR_BIT == 8, "");
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(double))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	memcpy(pext->data + pext->offset, &v, 8);
+	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
 }
@@ -2296,7 +2292,7 @@ int ext_buffer_push_bool(EXT_PUSH *pext, BOOL v)
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint8_t))) {
 		return EXT_ERR_BUFSIZE;
 	}
-	SCVAL(pext->data, pext->offset, tmp_byte);
+	pext->data[pext->offset] = tmp_byte;
 	pext->offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 	

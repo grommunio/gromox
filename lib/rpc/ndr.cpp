@@ -2,22 +2,15 @@
 // SPDX-FileCopyrightText: 2003 Andrew Tridgell
 // This file is part of Gromox.
 #include <cassert>
+#include <climits>
 #include <cstdint>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
-#include <gromox/endian_macro.hpp>
+#include <gromox/defs.h>
 #include <gromox/ndr.hpp>
 #include <cstdlib>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
-
-#define NDR_SVAL(pndr, ofs) (NDR_BE(pndr)?RSVAL(pndr->data,ofs):SVAL(pndr->data,ofs))
-#define NDR_IVAL(pndr, ofs) (NDR_BE(pndr)?RIVAL(pndr->data,ofs):IVAL(pndr->data,ofs))
-#define NDR_IVALS(pndr, ofs) (NDR_BE(pndr)?RIVALS(pndr->data,ofs):IVALS(pndr->data,ofs))
-#define NDR_SSVAL(pndr, ofs, v) NDR_BE(pndr)?RSSVAL(pndr->data,ofs,v):SSVAL(pndr->data,ofs,v)
-#define NDR_SIVAL(pndr, ofs, v) NDR_BE(pndr)?RSIVAL(pndr->data,ofs,v):SIVAL(pndr->data,ofs,v)
-#define NDR_SIVALS(pndr, ofs, v) NDR_BE(pndr)?RSIVALS(pndr->data,ofs,v):SIVALS(pndr->data,ofs,v)
 
 struct PTR_NODE {
 	DOUBLE_LIST_NODE node;
@@ -166,7 +159,7 @@ int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v)
 	if (pndr->data_size < 1 || pndr->offset + 1 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	*v = CVAL(pndr->data, pndr->offset);
+	*v = pndr->data[pndr->offset];
 	pndr->offset += 1;
 	return NDR_ERR_SUCCESS;
 }
@@ -177,7 +170,8 @@ int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	*v = NDR_SVAL(pndr, pndr->offset);
+	memcpy(v, &pndr->data[pndr->offset], sizeof(*v));
+	*v = NDR_BE(pndr) ? be16_to_cpu(*v) : le16_to_cpu(*v);
 	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -193,7 +187,8 @@ int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	*v = NDR_IVAL(pndr, pndr->offset);
+	memcpy(v, &pndr->data[pndr->offset], sizeof(*v));
+	*v = NDR_BE(pndr) ? be32_to_cpu(*v) : le32_to_cpu(*v);
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -204,13 +199,8 @@ int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	if (NDR_BE(pndr)) {
-		*v = ((uint64_t)NDR_IVAL(pndr, pndr->offset)) << 32;
-		*v |= NDR_IVAL(pndr, pndr->offset+4);
-	} else {
-		*v = NDR_IVAL(pndr, pndr->offset);
-		*v |= (uint64_t)(NDR_IVAL(pndr, pndr->offset+4)) << 32;
-	}
+	memcpy(v, &pndr->data[pndr->offset], sizeof(*v));
+	*v = NDR_BE(pndr) ? be64_to_cpu(*v) : le64_to_cpu(*v);
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
@@ -221,7 +211,7 @@ int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v)
 	
 	if (pndr->flags & NDR_FLAG_NDR64) {
 		TRY(ndr_pull_uint64(pndr, &v64));
-		*v = (uint32_t)v64;
+		*v = v64;
 		if (v64 != *v) {
 			return NDR_ERR_NDR64;
 		}
@@ -418,7 +408,7 @@ int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v)
 {
 	if (!ndr_push_check_overflow(pndr, 1))
 		return NDR_ERR_BUFSIZE;
-	SCVAL(pndr->data, pndr->offset, v);
+	pndr->data[pndr->offset] = v;
 	pndr->offset += 1;
 	return NDR_ERR_SUCCESS;
 }
@@ -470,7 +460,8 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 	TRY(ndr_push_align(pndr, 2));
 	if (!ndr_push_check_overflow(pndr, 2))
 		return NDR_ERR_BUFSIZE;
-	NDR_SSVAL(pndr, pndr->offset, v);
+	v = NDR_BE(pndr) ? cpu_to_be16(v) : cpu_to_le16(v);
+	memcpy(&pndr->data[pndr->offset], &v, sizeof(v));
 	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -480,23 +471,20 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 	TRY(ndr_push_align(pndr, 4));
 	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
-	NDR_SIVAL(pndr, pndr->offset, v);
+	v = NDR_BE(pndr) ? cpu_to_be32(v) : cpu_to_le32(v);
+	memcpy(&pndr->data[pndr->offset], &v, sizeof(v));
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
 
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 {
+	static_assert(CHAR_BIT == 8, "");
 	TRY(ndr_push_align(pndr, 8));
 	if (!ndr_push_check_overflow(pndr, 8))
 		return NDR_ERR_BUFSIZE;
-	if (NDR_BE(pndr)) {
-		NDR_SIVAL(pndr, pndr->offset, (v>>32));
-		NDR_SIVAL(pndr, pndr->offset+4, (v & 0xFFFFFFFF));
-	} else {
-		NDR_SIVAL(pndr, pndr->offset, (v & 0xFFFFFFFF));
-		NDR_SIVAL(pndr, pndr->offset+4, (v>>32));
-	}
+	v = NDR_BE(pndr) ? cpu_to_be64(v) : cpu_to_le64(v);
+	memcpy(&pndr->data[pndr->offset], &v, sizeof(v));
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }

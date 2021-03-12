@@ -15,7 +15,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/element_data.hpp>
-#include <gromox/endian_macro.hpp>
 #include <gromox/tpropval_array.hpp>
 #include <cstdio>
 #include <iconv.h>

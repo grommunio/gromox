@@ -10,7 +10,6 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/endian_macro.hpp>
 #include <gromox/fileio.h>
 #include "exmdb_client.h"
 #include <gromox/double_list.hpp>
@@ -597,7 +596,8 @@ int exmdb_client_delivery_message(const char *dir,
 	if (5 + sizeof(uint32_t) != tmp_bin.cb ||
 	    tmp_buff[0] != exmdb_response::SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	result = IVAL(tmp_buff, 5);
+	memcpy(&result, &tmp_buff[5], sizeof(result));
+	result = le32_to_cpu(result);
 	if (0 == result) {
 		return EXMDB_RESULT_OK;
 	} else if (1 == result) {

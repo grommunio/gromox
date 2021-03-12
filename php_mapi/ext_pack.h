@@ -13,6 +13,7 @@ struct PULL_CTX {
 	union {
 		const void *data;
 		const char *sdata;
+		const uint8_t *udata;
 	};
 	uint32_t data_size;
 	uint32_t offset;
@@ -22,6 +23,7 @@ struct PUSH_CTX {
 	union {
 		void *data;
 		char *sdata;
+		uint8_t *udata;
 	};
 	uint32_t alloc_size;
 	uint32_t offset;

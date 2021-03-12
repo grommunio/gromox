@@ -3,7 +3,6 @@
 #include <gromox/mapidefs.h>
 #include "ftstream_producer.h"
 #include "emsmdb_interface.h"
-#include <gromox/endian_macro.hpp>
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include <gromox/util.hpp>
@@ -13,8 +12,6 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <cstdio>
-#define FSTREAM_SSVAL(pdata,v)					SSVAL(pdata,0,v)
-#define FSTREAM_SIVAL(pdata,v)					SIVAL(pdata,0,v)
 
 enum {
 	POINT_TYPE_NORMAL_BREAK,
@@ -178,13 +175,9 @@ static BOOL ftstream_producer_write_internal(
 static BOOL ftstream_producer_write_uint16(
 	FTSTREAM_PRODUCER *pstream, uint16_t v)
 {
-	uint16_t tmp_val;
-	
-	FSTREAM_SSVAL(&tmp_val, v);
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &tmp_val, sizeof(uint16_t))) {
+	v = cpu_to_le16(v);
+	if (!ftstream_producer_write_internal(pstream, &v, sizeof(v)))
 		return FALSE;	
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -192,13 +185,9 @@ static BOOL ftstream_producer_write_uint16(
 BOOL ftstream_producer_write_uint32(
 	FTSTREAM_PRODUCER *pstream, uint32_t v)
 {
-	uint32_t tmp_val;
-	
-	FSTREAM_SIVAL(&tmp_val, v);
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &tmp_val, sizeof(uint32_t))) {
+	v = cpu_to_le32(v);
+	if (!ftstream_producer_write_internal(pstream, &v, sizeof(v)))
 		return FALSE;
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -206,14 +195,9 @@ BOOL ftstream_producer_write_uint32(
 static BOOL ftstream_producer_write_uint64(
 	FTSTREAM_PRODUCER *pstream, uint64_t v)
 {
-	uint64_t tmp_val;
-	
-	FSTREAM_SIVAL(&tmp_val, (v&0xFFFFFFFF));
-	FSTREAM_SIVAL(reinterpret_cast<char *>(&tmp_val) + 4, v >> 32);
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &tmp_val, sizeof(uint64_t))) {
+	v = cpu_to_le64(v);
+	if (!ftstream_producer_write_internal(pstream, &v, sizeof(v)))
 		return FALSE;
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -350,12 +334,12 @@ static BOOL ftstream_producer_write_propdef(
 	char tmp_buff[1024];
 	PROPERTY_NAME propname;
 	
-	FSTREAM_SSVAL(&tmp_val, proptype);
+	tmp_val = cpu_to_le16(proptype);
 	if (FALSE == ftstream_producer_write_internal(
 		pstream, &tmp_val, sizeof(uint16_t))) {
 		return FALSE;
 	}
-	FSTREAM_SSVAL(&tmp_val, propid);
+	tmp_val = cpu_to_le16(propid);
 	if (FALSE == ftstream_producer_write_internal(
 		pstream, &tmp_val, sizeof(uint16_t))) {
 		return FALSE;

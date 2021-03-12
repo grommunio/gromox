@@ -9,7 +9,6 @@
 #include "pdu_processor.h"
 #include "hpm_processor.h"
 #include <gromox/alloc_context.hpp>
-#include <gromox/endian_macro.hpp>
 #include "http_parser.h"
 #include <gromox/lib_buffer.hpp>
 #include <gromox/int_hash.hpp>
@@ -537,20 +536,16 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 
 static void pdu_processor_set_frag_length(DATA_BLOB *pblob, uint16_t v)
 {
-	if (CVAL(pblob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
-		SSVAL(pblob->data, DCERPC_FRAG_LEN_OFFSET, v);
-	} else {
-		RSSVAL(pblob->data, DCERPC_FRAG_LEN_OFFSET, v);
-	}
+	v = (pblob->data[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
+	    cpu_to_le16(v) : cpu_to_be16(v);
+	memcpy(&pblob->data[DCERPC_FRAG_LEN_OFFSET], &v, sizeof(v));
 }
 
 static void pdu_processor_set_auth_length(DATA_BLOB *pblob, uint16_t v)
 {
-	if (CVAL(pblob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
-		SSVAL(pblob->data, DCERPC_AUTH_LEN_OFFSET, v);
-	} else {
-		RSSVAL(pblob->data, DCERPC_AUTH_LEN_OFFSET, v);
-	}
+	v = (pblob->data[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
+	    cpu_to_le16(v) : cpu_to_be16(v);
+	memcpy(&pblob->data[DCERPC_AUTH_LEN_OFFSET], &v, sizeof(v));
 }
 
 void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
@@ -2882,23 +2877,17 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	RPC_OUT_CHANNEL *pchannel_out;
 	
 	/* only rts pdu can be processed by this function */
-	if (DCERPC_PKT_RTS != CVAL(pbuff, DCERPC_PTYPE_OFFSET)) {
+	if (pbuff[DCERPC_PTYPE_OFFSET] != DCERPC_PKT_RTS)
 		return PDU_PROCESSOR_FORWARD;
-	}
-	
 	flags = 0;
-	
-	if (0 == (CVAL(pbuff, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+	if (!(pbuff[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE)) {
 		flags |= NDR_FLAG_BIGENDIAN;
 		b_bigendian = TRUE;
 	} else {
 		b_bigendian = FALSE;
 	}
-
-	if (CVAL(pbuff, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
+	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	}
-	
 	pcontext = http_parser_get_context();
 	if (NULL == pcontext) {
 		return PDU_PROCESSOR_ERROR;
@@ -3167,16 +3156,14 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	
 	flags = 0;
 	*ppcall = NULL;
-	if (0 == (CVAL(pbuff, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+	if (!(pbuff[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE)) {
 		flags |= NDR_FLAG_BIGENDIAN;
 		b_bigendian = TRUE;
 	} else {
 		b_bigendian = FALSE;
 	}
-	if (CVAL(pbuff, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
+	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	}
-	
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
 	
 	pcall = (DCERPC_CALL*)lib_buffer_get(g_call_allocator);
