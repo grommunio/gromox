@@ -1168,14 +1168,6 @@ zend_bool ext_pack_push_uint32(PUSH_CTX *pctx, uint32_t v)
 	return 1;
 }
 
-zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v)
-{
-	BTRY(ext_pack_push_check_overflow(pctx, sizeof(int32_t)));
-	SIVALS(pctx->data, pctx->offset, v);
-	pctx->offset += sizeof(int32_t);
-	return 1;
-}
-
 zend_bool ext_pack_push_uint64(PUSH_CTX *pctx, uint64_t v)
 {
 	BTRY(ext_pack_push_check_overflow(pctx, sizeof(uint64_t)));

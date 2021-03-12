@@ -4,20 +4,11 @@
 #include <gromox/endian_macro.hpp>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define applefile_push_int16(e, v) applefile_push_uint16((e), (v))
+#define applefile_push_int32(e, v) applefile_push_uint32((e), (v))
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080
-
-static int applefile_pull_int16(EXT_PULL *pext, int16_t *v)
-{
-	if (pext->data_size < sizeof(int16_t) ||
-		pext->offset + sizeof(int16_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = (int16_t)RSVAL(pext->data, pext->offset);
-	pext->offset += sizeof(int16_t);
-	return EXT_ERR_SUCCESS;
-}
 
 static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
@@ -30,17 +21,6 @@ static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_pull_int32(EXT_PULL *pext, int32_t *v)
-{
-	if (pext->data_size < sizeof(int32_t) ||
-		pext->offset + sizeof(int32_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = RIVALS(pext->data, pext->offset);
-	pext->offset += sizeof(int32_t);
-	return EXT_ERR_SUCCESS;
-}
-
 static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
 	if (pext->data_size < sizeof(uint32_t) ||
@@ -50,6 +30,16 @@ static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 	*v = RIVAL(pext->data, pext->offset);
 	pext->offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
+}
+
+static int applefile_pull_int16(EXT_PULL *pext, int16_t *v)
+{
+	return applefile_pull_uint16(pext, reinterpret_cast<uint16_t *>(v));
+}
+
+static int applefile_pull_int32(EXT_PULL *pext, int32_t *v)
+{
+	return applefile_pull_uint32(pext, reinterpret_cast<uint32_t *>(v));
 }
 
 static int applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
@@ -319,16 +309,6 @@ static int applefile_pull_entry(EXT_PULL *pext,
 	
 }
 
-static int applefile_push_int16(EXT_PUSH *pext, int16_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int16_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	RSSVAL(pext->data, pext->offset, (uint16_t)v);
-	pext->offset += sizeof(int16_t);
-	return EXT_ERR_SUCCESS;
-}
-
 static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
@@ -336,16 +316,6 @@ static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 	}
 	RSSVAL(pext->data, pext->offset, v);
 	pext->offset += sizeof(uint16_t);
-	return EXT_ERR_SUCCESS;
-}
-
-static int applefile_push_int32(EXT_PUSH *pext, int32_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int32_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	RSIVALS(pext->data, pext->offset, v);
-	pext->offset += sizeof(int32_t);
 	return EXT_ERR_SUCCESS;
 }
 

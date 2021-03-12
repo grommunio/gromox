@@ -184,13 +184,7 @@ int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 
 int ndr_pull_int32(NDR_PULL *pndr, int32_t *v)
 {
-	TRY(ndr_pull_align(pndr, 4));
-	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
-		return NDR_ERR_BUFSIZE;
-	}
-	*v = NDR_IVALS(pndr, pndr->offset);
-	pndr->offset += 4;
-	return NDR_ERR_SUCCESS;
+	return ndr_pull_uint32(pndr, reinterpret_cast<uint32_t *>(v));
 }
 
 int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
@@ -478,16 +472,6 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 		return NDR_ERR_BUFSIZE;
 	NDR_SSVAL(pndr, pndr->offset, v);
 	pndr->offset += 2;
-	return NDR_ERR_SUCCESS;
-}
-
-int ndr_push_int32(NDR_PUSH *pndr, int32_t v)
-{
-	TRY(ndr_push_align(pndr, 4));
-	if (!ndr_push_check_overflow(pndr, 4))
-		return NDR_ERR_BUFSIZE;
-	NDR_SIVALS(pndr, pndr->offset, v);
-	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
 

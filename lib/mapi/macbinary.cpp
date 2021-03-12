@@ -6,6 +6,7 @@
 #include <gromox/util.hpp>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define macbinary_push_int32(e, v) macbinary_push_uint32((e), (v))
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080
@@ -73,17 +74,6 @@ static int macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int macbinary_pull_int32(EXT_PULL *pext, int32_t *v)
-{
-	if (pext->data_size < sizeof(int32_t) ||
-		pext->offset + sizeof(int32_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = RIVALS(pext->data, pext->offset);
-	pext->offset += sizeof(int32_t);
-	return EXT_ERR_SUCCESS;
-}
-
 static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
 	if (pext->data_size < sizeof(uint32_t) ||
@@ -93,6 +83,11 @@ static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 	*v = RIVAL(pext->data, pext->offset);
 	pext->offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
+}
+
+static int macbinary_pull_int32(EXT_PULL *pext, int32_t *v)
+{
+	return macbinary_pull_uint32(pext, reinterpret_cast<uint32_t *>(v));
 }
 
 static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
@@ -160,16 +155,6 @@ static int macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
 	}
 	RSSVAL(pext->data, pext->offset, v);
 	pext->offset += sizeof(uint16_t);
-	return EXT_ERR_SUCCESS;
-}
-
-static int macbinary_push_int32(EXT_PUSH *pext, int32_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int32_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	RSIVALS(pext->data, pext->offset, v);
-	pext->offset += sizeof(int32_t);
 	return EXT_ERR_SUCCESS;
 }
 

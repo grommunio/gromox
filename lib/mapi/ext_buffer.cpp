@@ -51,13 +51,7 @@ int ext_buffer_pull_rpc_header_ext(EXT_PULL *pext, RPC_HEADER_EXT *r)
 
 int ext_buffer_pull_int8(EXT_PULL *pext, int8_t *v)
 {
-	if (pext->data_size < sizeof(int8_t) ||
-		pext->offset + sizeof(int8_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = (int8_t)CVAL(pext->data, pext->offset);
-	pext->offset += sizeof(int8_t);
-	return EXT_ERR_SUCCESS;
+	return ext_buffer_pull_uint8(pext, reinterpret_cast<uint8_t *>(v));
 }
 
 int ext_buffer_pull_uint8(EXT_PULL *pext, uint8_t *v)
@@ -73,13 +67,7 @@ int ext_buffer_pull_uint8(EXT_PULL *pext, uint8_t *v)
 
 int ext_buffer_pull_int16(EXT_PULL *pext, int16_t *v)
 {
-	if (pext->data_size < sizeof(int16_t) ||
-		pext->offset + sizeof(int16_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = (int16_t)EXT_SVAL(pext, pext->offset);
-	pext->offset += sizeof(int16_t);
-	return EXT_ERR_SUCCESS;
+	return ext_buffer_pull_uint16(pext, reinterpret_cast<uint16_t *>(v));
 }
 
 int ext_buffer_pull_uint16(EXT_PULL *pext, uint16_t *v)
@@ -95,13 +83,7 @@ int ext_buffer_pull_uint16(EXT_PULL *pext, uint16_t *v)
 
 int ext_buffer_pull_int32(EXT_PULL *pext, int32_t *v)
 {
-	if (pext->data_size < sizeof(int32_t) ||
-		pext->offset + sizeof(int32_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = EXT_IVALS(pext, pext->offset);
-	pext->offset += sizeof(int32_t);
-	return EXT_ERR_SUCCESS;
+	return ext_buffer_pull_uint32(pext, reinterpret_cast<uint32_t *>(v));
 }
 
 int ext_buffer_pull_uint32(EXT_PULL *pext, uint32_t *v)
@@ -117,14 +99,7 @@ int ext_buffer_pull_uint32(EXT_PULL *pext, uint32_t *v)
 
 int ext_buffer_pull_int64(EXT_PULL *pext, int64_t *v)
 {
-	if (pext->data_size < sizeof(int64_t) ||
-		pext->offset + sizeof(int64_t) > pext->data_size) {
-		return EXT_ERR_BUFSIZE;
-	}
-	*v = EXT_IVAL(pext, pext->offset);
-	*v |= (int64_t)(EXT_IVAL(pext, pext->offset+4)) << 32;
-	pext->offset += sizeof(int64_t);
-	return EXT_ERR_SUCCESS;
+	return ext_buffer_pull_uint64(pext, reinterpret_cast<uint64_t *>(v));
 }
 
 int ext_buffer_pull_uint64(EXT_PULL *pext, uint64_t *v)
@@ -2246,16 +2221,6 @@ int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_int8(EXT_PUSH *pext, int8_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int8_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	SCVAL(pext->data, pext->offset, (uint8_t)v);
-	pext->offset += sizeof(int8_t);
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
 {
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint8_t))) {
@@ -2266,16 +2231,6 @@ int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_int16(EXT_PUSH *pext, int16_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int16_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	EXT_SSVAL(pext, pext->offset, (uint16_t)v);
-	pext->offset += sizeof(int16_t);
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
@@ -2283,16 +2238,6 @@ int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
 	}
 	EXT_SSVAL(pext, pext->offset, v);
 	pext->offset += sizeof(uint16_t);
-	return EXT_ERR_SUCCESS;
-}
-
-int ext_buffer_push_int32(EXT_PUSH *pext, int32_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int32_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	EXT_SIVALS(pext, pext->offset, v);
-	pext->offset += sizeof(int32_t);
 	return EXT_ERR_SUCCESS;
 }
 

@@ -108,9 +108,7 @@ int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size);
 int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required);
 int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v);
 int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v);
-
-int ndr_push_int32(NDR_PUSH *pndr, int32_t v);
-
+#define ndr_push_int32(e, v) ndr_push_uint32((e), (v))
 int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v);
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v);
 int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v);

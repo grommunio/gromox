@@ -98,12 +98,8 @@ zend_bool ext_pack_push_advance(PUSH_CTX *pctx, uint32_t size);
 extern zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n);
 zend_bool ext_pack_push_uint8(PUSH_CTX *pctx, uint8_t v);
 zend_bool ext_pack_push_uint16(PUSH_CTX *pctx, uint16_t v);
-
-zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v);
-
+#define ext_pack_push_int32(e, v) ext_pack_push_uint32((e), (v))
 zend_bool ext_pack_push_uint32(PUSH_CTX *pctx, uint32_t v);
-
-zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v);
 zend_bool ext_pack_push_uint64(PUSH_CTX *pctx, uint64_t v);
 
 zend_bool ext_pack_push_float(PUSH_CTX *pctx, float v);
