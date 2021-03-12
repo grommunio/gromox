@@ -2152,7 +2152,7 @@ BOOL common_util_get_properties(int table_type,
 	uint32_t proptag;
 	uint16_t proptype;
 	EXT_PULL ext_pull;
-	sqlite3_stmt *pstmt;
+	sqlite3_stmt *pstmt = nullptr;
 	char sql_string[256];
 	TYPED_PROPVAL *ptyped;
 	

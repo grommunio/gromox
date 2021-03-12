@@ -1307,9 +1307,8 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
-			if (FALSE == system_services_get_lang(codepage, "mlist0", str_dname, 256)) {
-				strcpy(str_dname, "custom address list");
-			}
+			if (!system_services_get_lang(codepage, "mlist0", lang_string, GX_ARRAY_SIZE(lang_string)))
+				strcpy(lang_string, "custom address list");
 			snprintf(str_dname, 256, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
 		case MLIST_TYPE_GROUP:

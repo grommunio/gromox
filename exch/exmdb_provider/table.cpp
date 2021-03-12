@@ -720,7 +720,6 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	uint32_t tmp_proptag;
 	char tmp_string[128];
 	char sql_string[1024];
-	uint32_t unread_count;
 	const char *remote_id;
 	DOUBLE_LIST value_list;
 	uint32_t tmp_proptags[16];
@@ -1277,6 +1276,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 			goto LOAD_CONTENT_FAIL;
 		double_list_init(&value_list);
+		uint32_t unread_count = 0;
 		if (FALSE == table_load_content(pdb,
 			psqlite, psorts, 0, 0, &value_list, pstmt,
 			&ptnode->header_id, pstmt1, &unread_count)) {

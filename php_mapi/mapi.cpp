@@ -1712,7 +1712,7 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsr|sl",
 	    &pzvalsrcfolder, &entryid.pb, &eid_size, &pzvaldstfolder,
 		&pname, &name_len, &flags) == FAILURE || NULL == pzvalsrcfolder ||
-		NULL == entryid.pb || 0 == entryid.cb || NULL == pzvaldstfolder) {
+	    entryid.pb == nullptr || eid_size == 0 || pzvaldstfolder == nullptr) {
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
@@ -1836,16 +1836,13 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	zval *pzresource;
 	BINARY *pmessage_key;
 	MAPI_RESOURCE *pstore;
-	BINARY sourcekey_folder;
-	BINARY sourcekey_message;
+	BINARY sourcekey_folder{}, sourcekey_message{};
 	
-	sourcekey_message.cb = 0;
-	sourcekey_message.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|s",
 	    &pzresource, &sourcekey_folder.pb, &skey_size,
-	    &sourcekey_message.pb, &skmsg_size) == FAILURE
-		|| NULL == pzresource || NULL == sourcekey_folder.pb ||
-		0 == sourcekey_folder.cb) {
+	    &sourcekey_message.pb, &skmsg_size) == FAILURE ||
+	    pzresource == nullptr || sourcekey_folder.pb == nullptr ||
+	    skey_size == 0) {
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
@@ -4238,9 +4235,8 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsll",
-	    &pzresource, &entryid.pb, &eid_size, &starttime, &endtime)
-		== FAILURE || NULL == pzresource || NULL == entryid.pb ||
-		0 == entryid.cb) {
+	    &pzresource, &entryid.pb, &eid_size, &starttime, &endtime) == FAILURE ||
+	    pzresource == nullptr || entryid.pb == nullptr || eid_size == 0) {
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}

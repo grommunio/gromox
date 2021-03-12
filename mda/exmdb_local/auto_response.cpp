@@ -28,7 +28,7 @@ void auto_response_reply(const char *user_home,
 	char *pcontent;
 	BOOL b_internal;
 	time_t cur_time;
-	char charset[32];
+	char charset[32]{};
 	struct tm tm_buff;
 	int i, j, fd, len;
 	int parsed_length;

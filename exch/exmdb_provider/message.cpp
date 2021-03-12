@@ -5193,6 +5193,8 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	} else {
 		b_oof = FALSE;
 		//TODO get public folder id
+		fprintf(stderr, "%s - public folder not implemented\n", __func__);
+		return false;
 	}
 	double_list_init(&msg_list);
 	double_list_init(&folder_list);

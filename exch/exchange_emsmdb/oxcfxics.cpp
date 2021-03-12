@@ -910,7 +910,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		}
 		i = 0;
-		while (i < msgctnt.proplist.count) {
+		while (i < attctnt.proplist.count) {
 			if (-1 == common_util_index_proptags(pproptags,
 				attctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&attctnt.proplist,

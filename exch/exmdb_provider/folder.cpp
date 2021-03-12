@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <gromox/database.h>
 #include "exmdb_server.h"
@@ -25,7 +26,6 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 {
 	char *pdot;
 	DB_ITEM *pdb;
-	int class_len;
 	sqlite3_stmt *pstmt;
 	char tmp_class[256];
 	char sql_string[1024];
@@ -33,10 +33,7 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	class_len = strlen(tmp_class);
-	if (class_len > 255) {
-		class_len = 255;
-	}
+	auto class_len = std::min(strlen(str_class), static_cast<size_t>(255));
 	memcpy(tmp_class, str_class, class_len);
 	tmp_class[class_len] = '\0';
 	pdb = db_engine_get_db(dir);
@@ -1976,13 +1973,12 @@ static BOOL folder_copy_folder_internal(
 	uint64_t src_fid1;
 	int is_associated;
 	uint64_t message_id;
-	uint32_t permission;
 	sqlite3_stmt *pstmt;
 	uint64_t parent_fid;
 	uint64_t message_id1;
 	uint32_t folder_type;
 	char sql_string[256];
-	uint32_t message_size;
+	uint32_t message_size, permission = 0;
 	
 	*pb_partial = FALSE;
 	fid_val = src_fid;

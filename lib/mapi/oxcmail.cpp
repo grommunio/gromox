@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <climits>
 #include <cstdint>
 #include <string>
 #include <libHX/ctype_helper.h>
@@ -2087,6 +2088,10 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		tmp_bin.pc = pcontent;
 		propval.proptag = PROP_TAG_HTML;
 		propval.pvalue = &tmp_bin;
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
+			free(pcontent);
+			return false;
+		}
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
 		pcontent[length] = '\0';
 		if (TRUE == string_to_utf8(best_charset,
@@ -2098,6 +2103,10 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		} else {
 			propval.proptag = PROP_TAG_BODY_STRING8;
 			propval.pvalue = pcontent;
+		}
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
+			free(pcontent);
+			return false;
 		}
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
 		pcontent[length] = '\0';
@@ -2113,10 +2122,10 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		tmp_bin.pc = pcontent + length + 1;
 		propval.proptag = PROP_TAG_HTML;
 		propval.pvalue = &tmp_bin;
-	}
-	if (!tpropval_array_set_propval(pproplist, &propval)) {
-		free(pcontent);
-		return FALSE;
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
+			free(pcontent);
+			return false;
+		}
 	}
 	free(pcontent);
 	return TRUE;
@@ -5251,8 +5260,6 @@ static BOOL oxcmail_load_mime_skeleton(
 	int i;
 	char *pbuff;
 	BINARY *prtf;
-	size_t rtf_len;
-	size_t tmp_len;
 	uint32_t *pvalue;
 	ATTACHMENT_CONTENT *pattachment;
 	memset(pskeleton, 0, sizeof(MIME_SKELETON));
@@ -5302,13 +5309,14 @@ static BOOL oxcmail_load_mime_skeleton(
 					if (pbuff == nullptr)
 						return false;
 				}
+				size_t rtf_len = unc_size;
 				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
 					pskeleton->pattachments = attachment_list_init();
 					if (NULL == pskeleton->pattachments) {
 						free(pbuff);
 						return FALSE;
 					}
-					tmp_len -= rtf_len;
+					size_t tmp_len = SIZE_MAX;
 					char *htmlout = nullptr;
 					if (rtf_to_html(pbuff, rtf_len, pcharset, &htmlout,
 					    &tmp_len, pskeleton->pattachments)) {

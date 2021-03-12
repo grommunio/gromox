@@ -44,7 +44,6 @@ int main(int argc, const char **argv)
 	int read_len;
 	int buff_len;
 	BINARY rtf_bin;
-	size_t rtf_len;
 	size_t tmp_len;
 	ATTACHMENT_LIST *pattachments;
 	
@@ -85,6 +84,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "out of memory\n");
 		return 1;
 	}
+	size_t rtf_len = unc_size;
 	if (!rtfcp_uncompress(&rtf_bin, pbuff, &rtf_len)) {
 		fprintf(stderr, "fail to uncompress rtf\n");
 		return 2;

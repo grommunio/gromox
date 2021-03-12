@@ -1758,7 +1758,7 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 	char *ptr;
 	char *pline;
 	int line_len;
-	char buff[80];
+	char buff[80]{};
 	int c1, c2, c3;
 	int n, expected;
 	const char *pend;
