@@ -3906,8 +3906,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	TABLE_OBJECT *ptable;
-	int32_t original_position;
-	int32_t original_position1;
+	uint32_t original_position;
 	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -3934,31 +3933,43 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 			return ecInvalidParam;
 		}
 		original_position = 0;
-		table_object_set_position(ptable, seek_rows);
+		table_object_set_position(ptable, static_cast<uint32_t>(seek_rows));
 		break;
-	case SEEK_POS_END:
+	case SEEK_POS_END: {
 		if (seek_rows > 0) {
 			zarafa_server_put_user_info(pinfo);
 			return ecInvalidParam;
 		}
 		original_position = table_object_get_total(ptable);
-		if (table_object_get_total(ptable) + seek_rows < 0) {
+		/* underflow safety check for s32t */
+		uint32_t dwoff = seek_rows != INT32_MIN ? -seek_rows :
+		                 static_cast<uint32_t>(INT32_MIN) + 1;
+		if (dwoff > table_object_get_total(ptable))
 			table_object_set_position(ptable, 0);
-		} else {
-			table_object_set_position(ptable,
-				table_object_get_total(ptable) + seek_rows);
-		}
+		else
+			table_object_set_position(ptable, table_object_get_total(ptable) - dwoff);
 		break;
-	case SEEK_POS_CURRENT:
+	}
+	case SEEK_POS_CURRENT: {
 		original_position = table_object_get_position(ptable);
-		if (original_position + seek_rows < 0) {
-			table_object_set_position(ptable, 0);
-		} else {
-			table_object_set_position(ptable,
-				original_position + seek_rows);
+		if (seek_rows < 0) {
+			/* underflow safety check for s32t */
+			uint32_t dwoff = seek_rows != INT32_MIN ? -seek_rows :
+			                 static_cast<uint32_t>(INT32_MIN) + 1;
+			if (dwoff > original_position)
+				table_object_set_position(ptable, 0);
+			else
+				table_object_set_position(ptable, original_position - dwoff);
+			break;
 		}
+		auto upoff = static_cast<uint32_t>(seek_rows);
+		if (original_position > static_cast<uint32_t>(UINT32_MAX) - upoff)
+			/* overflow safety check for u32t+u32t */
+			return 0;
+		table_object_set_position(ptable, original_position + upoff);
 		break;
-	default:
+	}
+	default: {
 		original_position = table_object_get_position(ptable);
 		if (FALSE == table_object_retrieve_bookmark(
 			ptable, bookmark, &b_exist)) {
@@ -3969,14 +3980,24 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 			zarafa_server_put_user_info(pinfo);
 			return ecNotFound;
 		}
-		original_position1 = table_object_get_position(ptable);
-		if (original_position1 + seek_rows < 0) {
-			table_object_set_position(ptable, 0);
-		} else {
-			table_object_set_position(ptable,
-				original_position1 + seek_rows);
+		auto original_position1 = table_object_get_position(ptable);
+		if (seek_rows < 0) {
+			/* underflow safety check for s32t */
+			uint32_t dwoff = seek_rows != INT32_MIN ? -seek_rows :
+			                 static_cast<uint32_t>(INT32_MIN) + 1;
+			if (dwoff > original_position1)
+				table_object_set_position(ptable, 0);
+			else
+				table_object_set_position(ptable, original_position1 - dwoff);
+			break;
 		}
+		auto upoff = static_cast<uint32_t>(seek_rows);
+		if (original_position1 > static_cast<uint32_t>(UINT32_MAX) - upoff)
+			/* overflow check for u32t+u32t */
+			return 0;
+		table_object_set_position(ptable, original_position1 + upoff);
 		break;
+	}
 	}
 	*psought_rows = table_object_get_position(
 					ptable) - original_position;
