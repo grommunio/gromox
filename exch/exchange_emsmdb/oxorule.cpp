@@ -110,13 +110,14 @@ uint32_t rop_getrulestable(uint8_t flags,
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	if (hnd < 0) {
 		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, *phout);
+	table_object_set_handle(ptable, hnd);
+	*phout = hnd;
 	return ecSuccess;
 }
 

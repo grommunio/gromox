@@ -1156,12 +1156,13 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		stream_object_free(pstream);
 		return ecNotFound;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_STREAM, pstream);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_STREAM, pstream);
+	if (hnd < 0) {
 		stream_object_free(pstream);
 		return ecError;
 	}
+	*phout = hnd;
 	*pstream_size = stream_object_get_length(pstream);
 	return ecSuccess;
 }

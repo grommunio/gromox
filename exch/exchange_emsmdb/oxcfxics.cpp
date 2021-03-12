@@ -345,12 +345,13 @@ uint32_t rop_fasttransferdestconfigure(
 	if (NULL == pctx) {
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FASTUPCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FASTUPCTX, pctx);
+	if (hnd < 0) {
 		fastupctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -497,12 +498,13 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		folder_content_free(pfldctnt);
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	if (hnd < 0) {
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -587,12 +589,13 @@ uint32_t rop_fasttransfersourcecopymessages(
 		eid_array_free(pmids);
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	if (hnd < 0) {
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -749,12 +752,13 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		}
 		break;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	if (hnd < 0) {
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -926,12 +930,13 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		}
 		break;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	if (hnd < 0) {
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -1003,12 +1008,13 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	pctx = icsdownctx_object_create(plogon, pfolder,
 			sync_type, send_options, sync_flags,
 			pres, extra_flags, pproptags);
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_ICSDOWNCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_ICSDOWNCTX, pctx);
+	if (hnd < 0) {
 		icsdownctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -1213,12 +1219,13 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
+	if (hnd < 0) {
 		message_object_free(pmessage);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -2046,12 +2053,13 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 	}
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
 	pctx = icsupctx_object_create(plogon, pfolder, sync_type);
-	*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx);
+	if (hnd < 0) {
 		icsupctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -2091,12 +2099,13 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	if (hnd < 0) {
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 

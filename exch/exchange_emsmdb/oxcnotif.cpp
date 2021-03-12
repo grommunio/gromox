@@ -44,13 +44,14 @@ uint32_t rop_registernotification(
 	if (NULL == psub) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub);
+	if (hnd < 0) {
 		subscription_object_free(psub);
 		return ecError;
 	}
-	subscription_object_set_handle(psub, *phout);
+	subscription_object_set_handle(psub, hnd);
+	*phout = hnd;
 	return ecSuccess;
 }
 

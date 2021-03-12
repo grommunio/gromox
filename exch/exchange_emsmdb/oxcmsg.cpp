@@ -206,12 +206,13 @@ uint32_t rop_openmessage(uint16_t cpid,
 			return ecMAPIOOM;
 		}
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
+	if (hnd < 0) {
 		message_object_free(pmessage);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -323,12 +324,13 @@ uint32_t rop_createmessage(uint16_t cpid,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
+	if (hnd < 0) {
 		message_object_free(pmessage);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -928,12 +930,13 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		attachment_object_free(pattachment);
 		return ecNotFound;
 	}
-	*phout = rop_processor_add_object_handle(plogmap, logon_id,
-					hin, OBJECT_TYPE_ATTACHMENT, pattachment);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
+	           hin, OBJECT_TYPE_ATTACHMENT, pattachment);
+	if (hnd < 0) {
 		attachment_object_free(pattachment);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -975,12 +978,13 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 		attachment_object_free(pattachment);
 		return ecError;
 	}
-	*phout = rop_processor_add_object_handle(plogmap, logon_id,
-					hin, OBJECT_TYPE_ATTACHMENT, pattachment);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
+	           hin, OBJECT_TYPE_ATTACHMENT, pattachment);
+	if (hnd < 0) {
 		attachment_object_free(pattachment);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -1143,12 +1147,13 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 			return ecError;
 		}
 		*pmessage_id = *(uint64_t*)pvalue;
-		*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
-		if (*phout < 0) {
+		auto hnd = rop_processor_add_object_handle(plogmap,
+		           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
+		if (hnd < 0) {
 			message_object_free(pmessage);
 			return ecError;
 		}
+		*phout = hnd;
 		*phas_named_properties = 0;
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -1225,12 +1230,13 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 			return ecMAPIOOM;
 		}
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
+	if (hnd < 0) {
 		message_object_free(pmessage);
 		return ecError;
 	}
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -1258,13 +1264,14 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	if (hnd < 0) {
 		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, *phout);
+	table_object_set_handle(ptable, hnd);
+	*phout = hnd;
 	return ecSuccess;
 }
 

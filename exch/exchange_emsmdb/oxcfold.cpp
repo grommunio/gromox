@@ -138,12 +138,13 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	if (NULL == pfolder) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
+	if (hnd < 0) {
 		folder_object_free(pfolder);
 		return ecError;
 	}
+	*phout = hnd;
 	*ppghost = NULL;
 	return ecSuccess;
 }
@@ -338,12 +339,13 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	if (NULL == pfolder) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-		logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
+	if (hnd < 0) {
 		folder_object_free(pfolder);
 		return ecError;
 	}
+	*phout = hnd;
 	*pfolder_id = folder_id;
 	*pis_existing = 0; /* just like exchange 2010 or later */
 	/* no need to set value for "phas_rules" */
@@ -1208,13 +1210,14 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	if (hnd < 0) {
 		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, *phout);
+	table_object_set_handle(ptable, hnd);
+	*phout = hnd;
 	return ecSuccess;
 }
 
@@ -1294,12 +1297,13 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
-	*phout = rop_processor_add_object_handle(plogmap,
-			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
-	if (*phout < 0) {
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	if (hnd < 0) {
 		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, *phout);
+	table_object_set_handle(ptable, hnd);
+	*phout = hnd;
 	return ecSuccess;
 }
