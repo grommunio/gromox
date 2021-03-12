@@ -94,9 +94,7 @@ BOOL mime_to_file(MIME *pmime, int fd);
 BOOL mime_to_ssl(MIME *pmime, SSL *ssl);
 
 BOOL mime_check_dot(MIME *pmime);
-
-long mime_get_length(MIME *pmime);
-
+extern ssize_t mime_get_length(MIME *);
 int mime_get_type(MIME *pmime);
 
 BOOL mime_get_filename(MIME *pmime, char *file_name);

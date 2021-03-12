@@ -2047,7 +2047,6 @@ static BOOL oxcmail_parse_transport_message_header(
 static BOOL oxcmail_parse_message_body(const char *charset,
 	MIME *pmime, TPROPVAL_ARRAY *pproplist)
 {
-	size_t length;
 	BINARY tmp_bin;
 	uint32_t tmp_int32;
 	char best_charset[32];
@@ -2055,11 +2054,12 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	TAGGED_PROPVAL propval;
 	const char *content_type;
 	
-	length = mime_get_length(pmime);
-	if (length < 0) {
+	auto rdlength = mime_get_length(pmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return false;
 	}
+	size_t length = rdlength;
 	auto pcontent = static_cast<char *>(malloc(3 * length + 2));
 	if (NULL == pcontent) {
 		return FALSE;
@@ -2197,7 +2197,6 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	BINHEX binhex;
 	BINARY tmp_bin;
 	char tmp_buff[256];
-	size_t content_len;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
@@ -2207,11 +2206,12 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	tmp_bin.pb = MACBINARY_ENCODING;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	content_len = mime_get_length(pmime);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(pmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return false;
 	}
+	size_t content_len = rdlength;
 	auto pcontent = static_cast<char *>(malloc(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
@@ -2295,8 +2295,6 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	BINARY tmp_bin;
 	EXT_PULL ext_pull;
 	char tmp_buff[256];
-	size_t content_len;
-	size_t content_len1;
 	APPLEFILE applefile;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
@@ -2345,11 +2343,12 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
-	content_len = mime_get_length(phmime);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(phmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return false;
 	}
+	size_t content_len = rdlength;
 	auto pcontent = static_cast<char *>(malloc(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
@@ -2409,12 +2408,13 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 			}
 		}
 	}
-	content_len1 = mime_get_length(pdmime);
-	if (content_len1 < 0) {
+	rdlength = mime_get_length(pdmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		free(pcontent);
 		return false;
 	}
+	size_t content_len1 = rdlength;
 	auto pcontent1 = static_cast<char *>(malloc(content_len1));
 	if (NULL == pcontent1) {
 		free(pcontent);
@@ -2456,15 +2456,15 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	MACBINARY macbin;
 	EXT_PULL ext_pull;
 	char tmp_buff[64];
-	size_t content_len;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	content_len = mime_get_length(pmime);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(pmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return false;
 	}
+	size_t content_len = rdlength;
 	auto pcontent = static_cast<char *>(malloc(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
@@ -2548,16 +2548,16 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	BINARY tmp_bin;
 	EXT_PULL ext_pull;
 	char tmp_buff[256];
-	size_t content_len;
 	APPLEFILE applefile;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	content_len = mime_get_length(pmime);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(pmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return false;
 	}
+	size_t content_len = rdlength;
 	auto pcontent = static_cast<char *>(malloc(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
@@ -2666,7 +2666,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	uint64_t tmp_int64;
 	uint32_t tmp_int32;
 	BOOL b_description;
-	size_t content_len;
 	char extension[16];
 	char mode_buff[32];
 	char dir_buff[256];
@@ -2951,12 +2950,13 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		return;
 	}
 	if (0 == strcasecmp("text/directory",  mime_get_content_type(pmime))) {
-		content_len = mime_get_length(pmime);
-		if (content_len < 0) {
+		auto rdlength = mime_get_length(pmime);
+		if (rdlength < 0) {
 			printf("%s:mime_get_length:%u: unsuccessful\n", __func__, __LINE__);
 			pmime_enum->b_result = false;
 			return;
 		}
+		size_t content_len = rdlength;
 		if (content_len < VCARD_MAX_BUFFER_LEN) {
 			pcontent = static_cast<char *>(malloc(3 * content_len + 2));
 			if (NULL == pcontent) {
@@ -3016,12 +3016,13 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	}
 	if (0 == strcasecmp("message/rfc822", mime_get_content_type(pmime)) ||
 		(TRUE == b_filename && 0 == strcasecmp(".eml", extension))) {
-		content_len = mime_get_length(pmime);
-		if (content_len < 0) {
+		auto rdlength = mime_get_length(pmime);
+		if (rdlength < 0) {
 			printf("%s:mime_get_length:%u: unsuccessful\n", __func__, __LINE__);
 			pmime_enum->b_result = false;
 			return;
 		}
+		size_t content_len = rdlength;
 		pcontent = static_cast<char *>(malloc(content_len));
 		if (NULL == pcontent) {
 			pmime_enum->b_result = FALSE;
@@ -3162,12 +3163,13 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			}
 		}
 	}
-	content_len = mime_get_length(pmime);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(pmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length:%u: unsuccessful\n", __func__, __LINE__);
 		pmime_enum->b_result = false;
 		return;
 	}
+	size_t content_len = rdlength;
 	pcontent = static_cast<char *>(malloc(content_len));
 	if (NULL == pcontent) {
 		pmime_enum->b_result = FALSE;
@@ -3191,14 +3193,14 @@ static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
 	void *pcontent;
-	size_t content_len;
 	MESSAGE_CONTENT *pmsg;
 	
-	content_len = mime_get_length(pmime);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(pmime);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return nullptr;
 	}
+	size_t content_len = rdlength;
 	pcontent = malloc(content_len);
 	if (NULL == pcontent) {
 		return NULL;
@@ -4091,7 +4093,6 @@ static BOOL oxcmail_parse_smime_message(
 	size_t offset;
 	BINARY tmp_bin;
 	uint32_t tmp_int32;
-	size_t content_len;
 	TAGGED_PROPVAL propval;
 	const char *content_type;
 	ATTACHMENT_CONTENT *pattachment;
@@ -4100,11 +4101,12 @@ static BOOL oxcmail_parse_smime_message(
 	if (NULL == phead) {
 		return FALSE;
 	}
-	content_len = mime_get_length(phead);
-	if (content_len < 0) {
+	auto rdlength = mime_get_length(phead);
+	if (rdlength < 0) {
 		printf("%s:mime_get_length: unsuccessful\n", __func__);
 		return false;
 	}
+	size_t content_len = rdlength;
 	auto pcontent = static_cast<char *>(malloc(content_len + 1024));
 	if (NULL == pcontent) {
 		return FALSE;
@@ -4215,7 +4217,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	BINARY *phtml_bin;
 	TARRAY_SET *prcpts;
 	uint32_t tmp_int32;
-	size_t content_len;
 	char tmp_buff[256];
 	BOOL b_alternative;
 	PROPID_ARRAY propids;
@@ -4642,14 +4643,16 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return NULL;
 		}
 	}
+	size_t content_len = 0;
 	if (NULL != mime_enum.pcalendar) {
-		content_len = mime_get_length(mime_enum.pcalendar);
-		if (content_len < 0) {
+		auto rdlength = mime_get_length(mime_enum.pcalendar);
+		if (rdlength < 0) {
 			printf("%s:mime_get_length: unsuccessful\n", __func__);
 			int_hash_free(phash);
 			message_content_free(pmsg);
 			return nullptr;
 		}
+		content_len = rdlength;
 		pcontent = static_cast<char *>(malloc(3 * content_len + 2));
 		if (NULL == pcontent) {
 			int_hash_free(phash);

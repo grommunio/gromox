@@ -2094,7 +2094,7 @@ BOOL mime_check_dot(MIME *pmime)
  *	@return
  *		length of mime object
  */
-long mime_get_length(MIME *pmime)
+ssize_t mime_get_length(MIME *pmime)
 {
 	int		tag_len, val_len;
 	size_t	mime_len, tmp_len;
