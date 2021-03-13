@@ -6918,7 +6918,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 {
 	int i;
 	ICAL ical;
-	int tmp_len;
 	char *pbuff;
 	MIME *phead;
 	MIME *phtml;
@@ -7137,7 +7136,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		if (NULL == pbin || 0 == pbin->cb) {
 			goto EXPORT_FAILURE;
 		}
-		tmp_len = parse_mime_field(pbin->pc, pbin->cb, &mime_field);
+		auto tmp_len = parse_mime_field(pbin->pc, pbin->cb, &mime_field);
 		if (0 == tmp_len || 0 != strncmp(pbin->pc + tmp_len,
 			"\r\n", 2) || 12 != mime_field.field_name_len
 			|| 0 != strncasecmp( mime_field.field_name,

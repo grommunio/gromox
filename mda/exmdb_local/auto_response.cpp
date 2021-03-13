@@ -31,7 +31,6 @@ void auto_response_reply(const char *user_home,
 	char charset[32]{};
 	struct tm tm_buff;
 	int i, j, fd, len;
-	int parsed_length;
 	char subject[1024];
 	char buff[64*1024];
 	char date_buff[128];
@@ -153,7 +152,7 @@ void auto_response_reply(const char *user_home,
 	strcpy(content_type, "text/plain");
 	strcpy(subject, "auto response message");
 	while (i < j) {
-		parsed_length = parse_mime_field(new_buff + i, j - i, &mime_field);
+		auto parsed_length = parse_mime_field(new_buff + i, j - i, &mime_field);
 		i += parsed_length;
 		if (0 != parsed_length) {
 			if (0 == strncasecmp("Content-Type", mime_field.field_name, 12)) {

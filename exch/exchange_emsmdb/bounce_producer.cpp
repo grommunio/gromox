@@ -216,8 +216,7 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 	struct dirent *sub_direntp;
 	struct stat node_stat;
 	char dir_buff[256], sub_buff[256];
-	int fd, i, j, k;
-	int parsed_length, until_tag;
+	int fd, i, j, k, until_tag;
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
 
@@ -277,8 +276,8 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 		
 		j = 0;
 		while (j < node_stat.st_size) {
-			parsed_length = parse_mime_field(presource->content[i] + j,
-						node_stat.st_size - j, &mime_field);
+			auto parsed_length = parse_mime_field(presource->content[i] + j,
+			                     node_stat.st_size - j, &mime_field);
 			j += parsed_length;
 			if (0 != parsed_length) {
 				if (0 == strncasecmp("Content-Type", 

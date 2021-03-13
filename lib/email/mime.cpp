@@ -125,8 +125,7 @@ void mime_free(MIME *pmime)
 BOOL mime_retrieve(MIME *pmime_parent,
 	MIME *pmime, char* in_buff, size_t length)
 {
-
-	long current_offset = 0, parsed_length = 0;
+	long current_offset = 0;
 	MIME_FIELD mime_field;
 
 #ifdef _DEBUG_UMTA
@@ -148,8 +147,8 @@ BOOL mime_retrieve(MIME *pmime_parent,
 		return TRUE;
 	}
 	while (current_offset <= length) {
-		parsed_length = parse_mime_field(in_buff + current_offset,
-						length - current_offset, &mime_field);
+		auto parsed_length = parse_mime_field(in_buff + current_offset,
+		                     length - current_offset, &mime_field);
 		current_offset += parsed_length;
 		if (0 != parsed_length) {
 			/* 

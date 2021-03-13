@@ -659,11 +659,9 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
  *		  end of mime field information, including the last "\r\n", if the last
  *		  two byte in buff_in is "\r\n", it is also considered as a mime field 
  */
-int parse_mime_field(char *in_buff, long buff_len, MIME_FIELD *pmime_field)
+size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 {
-	int i;
 	BOOL meet_slash;
-	int value_length = 0;
 	char *tmp_ptr = NULL;
 	char *dest_ptr = NULL;
 	
@@ -674,7 +672,8 @@ int parse_mime_field(char *in_buff, long buff_len, MIME_FIELD *pmime_field)
 	/* parse the first line the get the field name and part of value*/
 	tmp_ptr = in_buff;
 	dest_ptr = (char*)&pmime_field->field_name;
-	i = 0;
+
+	size_t i = 0, value_length = 0;
 	while (*tmp_ptr != ':' && i < buff_len &&
 		i <= MIME_NAME_LEN && *tmp_ptr != '\r'
 		&& *tmp_ptr != '\n') {

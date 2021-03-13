@@ -544,8 +544,7 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	FILE * fp;
 	char *str_mime;
 	BOOL stat_head;
-	int head_offset;
-	int offset, len;
+	size_t head_offset = 0, offset = 0, len;
 	MIME_FIELD mime_field;
 	char head_buff[64*1024];
 	
@@ -554,7 +553,6 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	if (NULL == fp) {
 		return FALSE;
 	}
-	head_offset = 0;
 	while (NULL != fgets(head_buff + head_offset,
 		64*1024 - head_offset, fp)) {
 		len = strlen(head_buff + head_offset);
@@ -572,7 +570,6 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	if (FALSE == stat_head) {
 		return FALSE;
 	}
-	offset = 0;
 	auto tag_len = strlen(tag);
 	while ((len = parse_mime_field(head_buff + offset,
 	       head_offset - offset, &mime_field)) != 0) {

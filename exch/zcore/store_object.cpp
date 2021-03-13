@@ -773,7 +773,6 @@ static void* store_object_get_oof_property(
 	int buff_len;
 	void *pvalue;
 	const char *str_value;
-	int parsed_length;
 	char subject[1024];
 	char temp_path[256];
 	MIME_FIELD mime_field;
@@ -831,7 +830,7 @@ static void* store_object_get_oof_property(
 		pbuff[buff_len] = '\0';
 		return strstr(pbuff, "\r\n\r\n");
 	case PROP_TAG_OOFINTERNALSUBJECT:
-	case PROP_TAG_OOFEXTERNALSUBJECT:
+	case PROP_TAG_OOFEXTERNALSUBJECT: {
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
 		         proptag == PROP_TAG_OOFINTERNALSUBJECT ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
@@ -855,6 +854,7 @@ static void* store_object_get_oof_property(
 		}
 		close(fd);
 		offset = 0;
+		size_t parsed_length;
 		while ((parsed_length = parse_mime_field(pbuff + offset, buff_len - offset, &mime_field)) != 0) {
 			offset += parsed_length;
 			if (0 == strncasecmp("Subject", mime_field.field_name, 7)
@@ -870,6 +870,7 @@ static void* store_object_get_oof_property(
 			}
 		}
 		return NULL;
+	}
 	case PROP_TAG_OOFBEGIN:
 	case PROP_TAG_OOFUNTIL: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
