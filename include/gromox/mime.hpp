@@ -80,13 +80,8 @@ BOOL mime_get_content_param(MIME *pmime, const char *tag, char *value,
 	int length);
 
 BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value);
-
-int mime_get_mimes_digest(MIME *pmime, const char* id_string,
-	size_t *poffset, int *pcount, char *pbuff, int length);
-
-int mime_get_structure_digest(MIME *pmime, const char* id_string,
-	size_t *poffset, int *pcount, char *pbuff, int length);
-
+extern GX_EXPORT ssize_t mime_get_mimes_digest(MIME *, const char *, size_t *, size_t *, char *, size_t);
+extern GX_EXPORT ssize_t mime_get_structure_digest(MIME *, const char *, size_t *, size_t *, char *, size_t);
 BOOL mime_serialize(MIME *pmime, STREAM *pstream);
 
 BOOL mime_to_file(MIME *pmime, int fd);

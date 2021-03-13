@@ -519,8 +519,8 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	char *ptr;
 	MIME *pmime;
 	int priority;
-	int i, count;
-	int tmp_len, buff_len;
+	size_t count;
+	ssize_t gmd;
 	BOOL b_tags[TAG_NUM];
 	char temp_buff[1024];
 	char email_charset[64];
@@ -642,7 +642,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 		email_charset[0] = '\0';
 	}
 
-	buff_len = gx_snprintf(pbuff, length, "\"uid\":0,\"recent\":1,"
+	ssize_t buff_len = gx_snprintf(pbuff, length, "\"uid\":0,\"recent\":1,"
 				"\"read\":0,\"replied\":0,\"unsent\":0,\"forwarded\":0,"
 				"\"flag\":0,\"priority\":%d,\"msgid\":\"%s\",\"from\":"
 				"\"%s\",\"to\":\"%s\",\"cc\":\"%s\",\"subject\":\"%s\","
@@ -655,8 +655,8 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	
 	if ('\0' != email_charset[0] &&
 		TRUE == mail_check_ascii_printable(email_charset)) {
-		tmp_len = strlen(email_charset);
-		for (i=0; i<tmp_len; i++) {
+		auto tmp_len = strlen(email_charset);
+		for (size_t i = 0; i < tmp_len; ++i) {
 			if ('"' == email_charset[i] || '\\' == email_charset[i]) {
 				email_charset[i] = ' ';
 			}
@@ -729,12 +729,12 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	memcpy(pbuff + buff_len, ",\"structure\":[", 14);
 	buff_len += 14;
 	*poffset = 0;
-	tmp_len = mime_get_structure_digest(mail_get_head(pmail), "",
-				poffset, &count, pbuff + buff_len, length - buff_len);
-	if (-1 == tmp_len || buff_len + tmp_len > length - 2) {
+	gmd = mime_get_structure_digest(mail_get_head(pmail), "",
+	      poffset, &count, pbuff + buff_len, length - buff_len);
+	if (gmd < 0 || buff_len + gmd > length - 2) {
 		goto PARSE_FAILURE;
 	} else {
-		buff_len += tmp_len;
+		buff_len += gmd;
 		pbuff[buff_len] = ']';
 		buff_len ++;
 	}
@@ -743,12 +743,12 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	memcpy(pbuff + buff_len, ",\"mimes\":[", 10);
 	buff_len += 10;
 	*poffset = 0;
-	tmp_len = mime_get_mimes_digest(mail_get_head(pmail), "", poffset, &count,
-				pbuff + buff_len, length - buff_len);
-	if (-1 == tmp_len || buff_len + tmp_len > length - 20) {
+	gmd = mime_get_mimes_digest(mail_get_head(pmail), "", poffset, &count,
+	      pbuff + buff_len, length - buff_len);
+	if (gmd < 0 || buff_len + gmd > length - 20) {
 		goto PARSE_FAILURE;
 	} else {
-		buff_len += tmp_len;
+		buff_len += gmd;
 		buff_len += sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
 		return 1;
 	}

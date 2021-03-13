@@ -125,7 +125,7 @@ void mime_free(MIME *pmime)
 BOOL mime_retrieve(MIME *pmime_parent,
 	MIME *pmime, char* in_buff, size_t length)
 {
-	long current_offset = 0;
+	size_t current_offset = 0;
 	MIME_FIELD mime_field;
 
 #ifdef _DEBUG_UMTA
@@ -2301,8 +2301,8 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
  *  @return
  *      string length in pbuff
  */
-int mime_get_mimes_digest(MIME *pmime, const char* id_string,
-	size_t *poffset, int *pcount, char *pbuff, int length)
+ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
+    size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
 	int		count;
 	int		tag_len, val_len;
@@ -2538,12 +2538,12 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			} else {
 				snprintf(temp_id, 64, "%s.%d", id_string, count);
 			}
-			tmp_len = mime_get_mimes_digest(pmime_child, temp_id, poffset,
-						pcount, pbuff + buff_len, length - buff_len);
-			if (-1 == tmp_len || buff_len + tmp_len >= length - 1) {
+			auto gmd = mime_get_mimes_digest(pmime_child, temp_id, poffset,
+			           pcount, pbuff + buff_len, length - buff_len);
+			if (gmd < 0 || buff_len + gmd >= length - 1) {
 				return -1;
 			}
-			buff_len += tmp_len;
+			buff_len += gmd;
 			pnode = simple_tree_node_get_sibling(pnode);
 			count ++;
 		}
@@ -2578,12 +2578,11 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
  *  @return
  *      string length in pbuff
  */
-int mime_get_structure_digest(MIME *pmime, const char* id_string,
-	size_t *poffset, int *pcount, char *pbuff, int length)
+ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
+    size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
-	int		count;
 	int		tag_len, val_len;
-	size_t  i, buff_len, tmp_len;
+	size_t count = 0, i, buff_len, tmp_len;
 	size_t  head_offset;
 	MIME	*pmime_child;
 	BOOL	has_submime;
@@ -2704,16 +2703,15 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 			*poffset += pmime->boundary_len + 4;
 			pmime_child = (MIME*)pnode->pdata;
 			if ('\0' == id_string[0]) {
-				snprintf(temp_id, 64, "%d", count);
+				snprintf(temp_id, 64, "%zu", count);
 			} else {
-				snprintf(temp_id, 64, "%s.%d", id_string, count);
+				snprintf(temp_id, 64, "%s.%zu", id_string, count);
 			}
-			tmp_len = mime_get_structure_digest(pmime_child, temp_id, poffset,
-						pcount, pbuff + buff_len, length - buff_len);
-			if (-1 == tmp_len || buff_len + tmp_len >= length - 1) {
+			auto gsd = mime_get_structure_digest(pmime_child, temp_id, poffset,
+			           pcount, pbuff + buff_len, length - buff_len);
+			if (gsd < 0 || buff_len + gsd >= length - 1)
 				return -1;
-			}
-			buff_len += tmp_len;
+			buff_len += gsd;
 			pnode = simple_tree_node_get_sibling(pnode);
 			count ++;
 		}
