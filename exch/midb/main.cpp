@@ -350,9 +350,11 @@ int main(int argc, const char **argv)
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
 		threads_num});
 	common_util_init();
+	auto cl_0a = make_scope_exit([&]() { common_util_free(); });
 	
 	exmdb_client_init(proxy_num, stub_num);
 	listener_init(listen_ip, listen_port);
+	auto cl_0b = make_scope_exit([&]() { listener_free(); });
 	mail_engine_init(charset, timezone, org_name, table_size,
 		b_async, b_wal, mmap_size, cache_interval, mime_num);
 	auto cleanup_1 = make_scope_exit(mail_engine_free);

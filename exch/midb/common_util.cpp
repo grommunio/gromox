@@ -166,7 +166,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 	return pbin;
 }
 
-BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
+static BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 {
 	EXT_PULL ext_pull;
 

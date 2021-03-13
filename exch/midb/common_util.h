@@ -1333,9 +1333,6 @@ void* common_util_get_propvals(
 	const TPROPVAL_ARRAY *parray, uint32_t proptag);
 
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
-
-BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
-
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
 	
