@@ -3848,9 +3848,9 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (NULL == pmime) {
 		return NULL;
 	}
-	if (mime_get_length(pmime) > sizeof(tmp_buff)) {
+	auto mgl = mime_get_length(pmime);
+	if (mgl < 0 || static_cast<size_t>(mgl) > sizeof(tmp_buff))
 		return NULL;
-	}
 	content_len = sizeof(tmp_buff);
 	if (FALSE == mime_read_content(pmime, tmp_buff, &content_len)) {
 		return NULL;
@@ -4032,9 +4032,9 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (NULL == pmime) {
 		return NULL;
 	}
-	if (mime_get_length(pmime) > sizeof(tmp_buff)) {
+	auto mgl = mime_get_length(pmime);
+	if (mgl < 0 || static_cast<size_t>(mgl) > sizeof(tmp_buff))
 		return NULL;
-	}
 	content_len = sizeof(tmp_buff);
 	if (FALSE == mime_read_content(pmime, tmp_buff, &content_len)) {
 		return NULL;

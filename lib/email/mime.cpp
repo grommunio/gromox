@@ -1217,14 +1217,17 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 	void *ptr;
 	size_t offset, tmp_len;
 	unsigned int buff_size;
-	size_t tmp_size;
 	BOOL has_submime;
 	STREAM tmp_stream;
 	MIME *pmime_child;
 	SIMPLE_TREE_NODE *pnode;
 	LIB_BUFFER *pallocator;
 	
-	tmp_size = mime_get_length(pmime);
+	auto tmp_size = mime_get_length(pmime);
+	if (tmp_size < 0) {
+		*plength = 0;
+		return false;
+	}
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			tmp_size / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
@@ -2093,7 +2096,6 @@ BOOL mime_check_dot(MIME *pmime)
 ssize_t mime_get_length(MIME *pmime)
 {
 	int		tag_len, val_len;
-	size_t	mime_len, tmp_len;
 	MIME	*pmime_child;
 	BOOL	has_submime;
 	SIMPLE_TREE_NODE *pnode;
@@ -2107,7 +2109,7 @@ ssize_t mime_get_length(MIME *pmime)
 	if (NONE_MIME == pmime->mime_type) {
 		return -1;
 	}
-	mime_len = 0;
+	size_t mime_len = 0;
 	if (FALSE == pmime->head_touched){
 		/* the original buffer contains \r\n */
 		mime_len += pmime->head_length + 2;
@@ -2177,11 +2179,10 @@ ssize_t mime_get_length(MIME *pmime)
 			has_submime = TRUE;
 			mime_len += pmime->boundary_len + 4;
 			pmime_child = (MIME*)pnode->pdata;
-			tmp_len = mime_get_length(pmime_child);
-			if (-1 == tmp_len) {
+			auto mgl = mime_get_length(pmime_child);
+			if (mgl < 0)
 				return -1;
-			}
-			mime_len += tmp_len;
+			mime_len += mgl;
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
@@ -2191,7 +2192,7 @@ ssize_t mime_get_length(MIME *pmime)
 		if (NULL == pmime->last_boundary) {
 			mime_len += 4;
 		} else {
-			tmp_len = pmime->content_length - (pmime->last_boundary - 
+			auto tmp_len = pmime->content_length - (pmime->last_boundary -
 					  pmime->content_begin);
 			if (tmp_len > 0) {
 				mime_len += tmp_len;
@@ -2674,11 +2675,14 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 		}
 		HX_strrtrim(content_type);
 		HX_strltrim(content_type);
+		auto mgl = mime_get_length(pmime);
+		if (mgl < 0)
+			return -1;
 		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%zu,"
 						"\"begin\":%zu, \"length\":%zu}", id_string,
 						content_type, head_offset, *poffset,
-						head_offset + mime_get_length(pmime) - *poffset);
+						head_offset + mgl - *poffset);
 		if (buff_len >= length - 1) {
 			return -1;
 		}
