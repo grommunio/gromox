@@ -469,7 +469,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	struct tm time_buff;
 	int i, len, until_tag;
 	const struct state *sp;
-	int prev_pos, mail_len;
 	DSN_FIELDS *pdsn_fields;
 	SINGLE_LIST_NODE *pnode;
 	RESOURCE_NODE *presource;
@@ -519,7 +518,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	if (NULL == presource) {
 		presource = g_default_resource;
 	}
-	prev_pos = presource->format[bounce_type][TAG_BEGIN].position;
+	int prev_pos = presource->format[bounce_type][TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;
 	for (i=TAG_BEGIN+1; i<until_tag; i++) {
 		len = presource->format[bounce_type][i].position - prev_pos;
@@ -552,9 +551,9 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 			len = bounce_producer_get_mail_parts(pmail_original, ptr, mcharset);
 			ptr += len;
             break;
-    	case TAG_LENGTH:
-			mail_len = mail_get_length(pmail_original);
-			if (-1 == mail_len) {
+		case TAG_LENGTH: {
+			auto mail_len = mail_get_length(pmail_original);
+			if (mail_len < 0) {
 				printf("[exmdb_local]: fail to get mail length\n");
 				mail_len = 0;
 			}
@@ -562,6 +561,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 			len = strlen(ptr);
 			ptr += len;
 			break;
+		}
 		}
 	}
 	len = presource->format[bounce_type][TAG_END].position - prev_pos;

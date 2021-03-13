@@ -10,16 +10,13 @@
 #include <gromox/mail.hpp>
 #include <gromox/mime.hpp>
 #include <gromox/util.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
 #include <cstdio>
 
-extern BOOL mail_serialize(MAIL *, STREAM *);
-extern BOOL mail_to_file(MAIL *, int fd);
-extern long mail_get_length(MAIL *);
-extern BOOL mail_check_dot(MAIL *);
 static BOOL mime_parse_multiple(MIME *pmime);
 
 static void mime_produce_boundary(MIME *pmime);
@@ -1419,7 +1416,6 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	void *ptr;
 	int encoding_type;
 	char encoding[256], *pbuff;
-	size_t mail_len, size;
 	LIB_BUFFER *pallocator;
 	size_t i, offset, max_length, tmp_len;
 	unsigned int buff_size;
@@ -1449,7 +1445,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	
 	/* content is an email object */
 	if (0 == pmime->content_length) {
-		mail_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+		auto mail_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
 		if (mail_len <= 0) {
 			debug_info("[mime]: fail to get mail"
 				" length in mime_read_content");
@@ -1514,13 +1510,13 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		return FALSE;
 	}
 	
-	size = 0;
 	/* \r\n before boundary string or end of mail should not be inclued */
 	if (pmime->content_length < 2) {
 		tmp_len = 1;
 	} else {
 		tmp_len = pmime->content_length - 2;
 	}
+	size_t size = 0;
 	for (i=0; i<tmp_len; i++) {
 		if ('.' == pmime->content_begin[i]) {
 			if (0 == i) {
@@ -2160,11 +2156,10 @@ ssize_t mime_get_length(MIME *pmime)
 			if (0 != pmime->content_length) {
 				mime_len += pmime->content_length;
 			} else {
-				tmp_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
-				if (-1 == tmp_len) {
+				auto mgl = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+				if (mgl < 0)
 					return -1;
-				}
-				mime_len += tmp_len;
+				mime_len += mgl;
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
@@ -2431,12 +2426,11 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 				*poffset += pmime->content_length;
 				content_len = pmime->content_length;
 			} else {
-				tmp_len =mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
-				if (-1 == tmp_len) {
+				auto mgl = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+				if (mgl < 0)
 					return -1;
-				}
-				*poffset += tmp_len;
-				content_len = tmp_len;
+				*poffset += mgl;
+				content_len = mgl;
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
@@ -2653,11 +2647,10 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 			if (0 != pmime->content_length) {
 				*poffset += pmime->content_length;
 			} else {
-				tmp_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
-				if (-1 == tmp_len) {
+				auto mgl = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+				if (mgl < 0)
 					return -1;
-				}
-				*poffset += tmp_len;
+				*poffset += mgl;
 			}
 		} else {
 			/* if there's nothing, just append an empty line */

@@ -6653,7 +6653,6 @@ static BOOL oxcmail_export_attachment(
 	void *pvalue;
 	BOOL b_vcard;
 	size_t offset;
-	size_t mail_len;
 	time_t tmp_time;
 	uint64_t *pctime;
 	uint64_t *pmtime;
@@ -6859,7 +6858,11 @@ static BOOL oxcmail_export_attachment(
 			alloc, get_propids, get_propname)) {
 			return FALSE;
 		}
-		mail_len = mail_get_length(&imail);
+		auto mail_len = mail_get_length(&imail);
+		if (mail_len < 0) {
+			mail_free(&imail);
+			return false;
+		}
 		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 		if (NULL == pallocator) {

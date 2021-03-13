@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstring>
 #include <mutex>
 #include <unistd.h>
@@ -121,7 +123,7 @@ void cache_queue_free()
 int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	time_t original_time)
 {
-	int mess_id, len, temp_len;
+	int mess_id, temp_len;
 	char file_name[256];
 	int fd, times;
 
@@ -140,14 +142,15 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
 	}
 	/* at the begin of file, write the length of message */
-	len = mail_get_length(pcontext->pmail);
-	if (-1 == len) {
+	int32_t len = std::max(mail_get_length(pcontext->pmail), static_cast<ssize_t>(INT32_MAX));
+	if (len < 0) {
 		printf("[exmdb_local]: fail to get mail length\n");
 		close(fd);
         remove(file_name);
         return -1;
 	}
-	if (sizeof(int) != write(fd, &len, sizeof(int))) {
+	static_assert(sizeof(len) == sizeof(int32_t));
+	if (write(fd, &len, sizeof(len)) == sizeof(len)) {
 		close(fd);
         remove(file_name);
         return -1;

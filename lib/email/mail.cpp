@@ -351,7 +351,7 @@ BOOL mail_check_dot(MAIL *pmail)
  *	@return
  *		length of mail in bytes
  */
-long mail_get_length(MAIL *pmail)
+ssize_t mail_get_length(MAIL *pmail)
 {
 	SIMPLE_TREE_NODE *pnode;
 
@@ -754,15 +754,13 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	}
 	
  PARSE_FAILURE:
-	tmp_len = mail_get_length(pmail);
-	if (-1 == tmp_len) {
+	auto mgl = mail_get_length(pmail);
+	if (mgl < 0)
 		return -1;
-	} else {
-		snprintf(pbuff, length, "\"recent\":1,\"read\":0,\"replied\":0,"
-			"\"unsent\":0,\"forwarded\":0,\"flag\":0,\"size\":%d", tmp_len);
-		*poffset = tmp_len;
-		return 0;
-	}
+	snprintf(pbuff, length, "\"recent\":1,\"read\":0,\"replied\":0,"
+		"\"unsent\":0,\"forwarded\":0,\"flag\":0,\"size\":%zd", mgl);
+	*poffset = mgl;
+	return 0;
 }
 
 static void mail_enum_text_mime_charset(
@@ -937,7 +935,6 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 	char *pbuff;
 	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
-	size_t offset, mail_len;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pmail_dst || NULL == pmail_src) {
@@ -946,7 +943,9 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 	}
 #endif
 	mail_clear(pmail_dst);
-	mail_len = mail_get_length(pmail_src);
+	auto mail_len = mail_get_length(pmail_src);
+	if (mail_len < 0)
+		return false;
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			                mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
@@ -967,7 +966,7 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 		return FALSE;
 	}
 			
-	offset = 0;
+	size_t offset = 0;
 	size = STREAM_BLOCK_SIZE;
 	while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size))) {
 		memcpy(pbuff + offset, ptr, size);
@@ -997,7 +996,6 @@ BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst)
 	char *pbuff;
 	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
-	size_t offset, mail_len;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pmail_dst || NULL == pmail_src) {
@@ -1006,7 +1004,9 @@ BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst)
 	}
 #endif
 	mail_clear(pmail_dst);
-	mail_len = mail_get_length(pmail_src);
+	auto mail_len = mail_get_length(pmail_src);
+	if (mail_len < 0)
+		return false;
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			                mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
@@ -1027,7 +1027,7 @@ BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst)
 		return FALSE;
 	}
 	
-	offset = 0;
+	size_t offset = 0;
 	size = STREAM_BLOCK_SIZE;
 	while (STREAM_COPY_END != stream_copyline(&tmp_stream,
 		pbuff + offset, &size)) {

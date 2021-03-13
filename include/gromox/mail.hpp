@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include <gromox/mime.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/mime_pool.hpp>
@@ -30,9 +31,7 @@ BOOL mail_to_ssl(MAIL *pmail, SSL *ssl);
 BOOL mail_check_dot(MAIL *pmail);
 
 BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst);
-
-long mail_get_length(MAIL *pmail);
-
+extern GX_EXPORT ssize_t mail_get_length(MAIL *);
 void mail_free(MAIL *pmail);
 
 MIME* mail_add_head(MAIL *pmail);

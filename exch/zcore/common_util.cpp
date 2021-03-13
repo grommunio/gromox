@@ -2754,7 +2754,6 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	MAIL imail;
 	void *pvalue;
 	int body_type;
-	size_t mail_len;
 	USER_INFO *pinfo;
 	STREAM tmp_stream;
 	char tmp_path[256];
@@ -2811,7 +2810,11 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 		common_util_get_propids, common_util_get_propname)) {
 		return FALSE;	
 	}
-	mail_len = mail_get_length(&imail);
+	auto mail_len = mail_get_length(&imail);
+	if (mail_len < 0) {
+		mail_free(&imail);
+		return false;
+	}
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
