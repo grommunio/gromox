@@ -1431,7 +1431,7 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 	return (is_err) ? -1 : 0;
 }
 
-int qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
+ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
 {
 	auto output = static_cast<uint8_t *>(voutput);
 	size_t inpos, outpos, linelen;
@@ -1584,7 +1584,7 @@ static const unsigned char hex_tab[256] =
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10
 };
 
-int qp_decode(void *voutput, const char *input, size_t length)
+size_t qp_decode(void *voutput, const char *input, size_t length)
 {
 	auto output = static_cast<uint8_t *>(voutput);
 	int c;
@@ -1625,7 +1625,7 @@ int qp_decode(void *voutput, const char *input, size_t length)
 	return cnt;
 }
 
-int qp_decode_ex(void *voutput, size_t out_len, const char *input,
+ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
     size_t length)
 {
 	auto output = static_cast<uint8_t *>(voutput);

@@ -367,7 +367,6 @@ static char* mail_engine_ct_decode_mime(
 {
 	int i, buff_len;
 	int offset;
-	size_t tmp_len, decode_len;
 	int last_pos, begin_pos, end_pos;
 	ENCODE_STRING encode_string;
 	char *in_buff, *out_buff;
@@ -398,7 +397,7 @@ static char* mail_engine_ct_decode_mime(
 					free(ret_string);
 					return NULL;
 				}
-				tmp_len = strlen(tmp_string);
+				auto tmp_len = strlen(tmp_string);
 				memcpy(out_buff + offset, tmp_string, tmp_len);
 				free(tmp_string);
 				offset += tmp_len;
@@ -412,14 +411,14 @@ static char* mail_engine_ct_decode_mime(
 		if (-1 != begin_pos && -1 != end_pos) {
 			parse_mime_encode_string(in_buff + begin_pos, 
 				end_pos - begin_pos + 1, &encode_string);
-			tmp_len = strlen(encode_string.title);
+			auto tmp_len = strlen(encode_string.title);
 			if (0 == strcmp(encode_string.encoding, "base64")) {
-				decode_len = 0;
+				size_t decode_len = 0;
 				decode64(encode_string.title, tmp_len, temp_buff, &decode_len);
 				temp_buff[decode_len] = '\0';
 				tmp_string = mail_engine_ct_to_utf8(encode_string.charset, temp_buff);
 			} else if (0 == strcmp(encode_string.encoding, "quoted-printable")){
-				decode_len = qp_decode(temp_buff, encode_string.title, tmp_len);
+				auto decode_len = qp_decode(temp_buff, encode_string.title, tmp_len);
 				temp_buff[decode_len] = '\0';
 				tmp_string = mail_engine_ct_to_utf8(encode_string.charset, temp_buff);
 			} else {
@@ -447,7 +446,7 @@ static char* mail_engine_ct_decode_mime(
 			free(ret_string);
 			return NULL;
 		}
-		tmp_len = strlen(tmp_string);
+		auto tmp_len = strlen(tmp_string);
 		memcpy(out_buff + offset, tmp_string, tmp_len);
 		free(tmp_string);
 		offset += tmp_len;

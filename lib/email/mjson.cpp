@@ -1941,7 +1941,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 {
 	int fd;
 	MAIL imail;
-	int length;
 	char *pbuff;
 	size_t length1;
 	char *pbuff1;
@@ -1975,7 +1974,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		return;
 	}
 	
-	length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
+	auto length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
 	pbuff = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		close(fd);
@@ -1984,8 +1983,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	}
 	
 	lseek(fd, mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT), SEEK_SET);
-	
-	if (length != read(fd, pbuff, length)) {
+	auto rdlen = read(fd, pbuff, length);
+	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
 		close(fd);
 		free(pbuff);
 		pbuild->build_result = FALSE;
@@ -2017,12 +2016,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			return;
 		}
 		length = qp_decode_ex(pbuff1, length, pbuff, length);
-		if (-1 == length) {
-			free(pbuff);
-			free(pbuff1);
-			pbuild->build_result = FALSE;
-			return;
-		}
 		free(pbuff);
 		pbuff = pbuff1;
 	}

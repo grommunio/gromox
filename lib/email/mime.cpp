@@ -400,7 +400,7 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 			pmime->content_length = length;
 		}
 		return TRUE;
-	case MIME_ENCODING_QP:
+	case MIME_ENCODING_QP: {
 		buff_length = ((4 * length) / (64 * 1024) + 1) * 64 * 1024;
 		pbuff = static_cast<char *>(malloc(buff_length));
 		if (NULL == pbuff) {
@@ -411,8 +411,13 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 			free(pbuff);
 			return FALSE;
 		}
-		length = qp_encode_ex(pbuff, buff_length, pcontent, length);
-		if ('\n' != pbuff[length - 1]) {
+		auto qdlen = qp_encode_ex(pbuff, buff_length, pcontent, length);
+		if (qdlen < 0) {
+			free(pbuff);
+			return false;
+		}
+		length = qdlen;
+		if (length > 0 && pbuff[length-1] != '\n') {
 			memcpy(pbuff + length, "\r\n", 2);
 			length += 2;
 		}
@@ -435,6 +440,7 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 		pmime->content_length = j;
 		mime_set_field(pmime, "Content-Transfer-Encoding", "quoted-printable");
 		return TRUE;
+	}
 	case MIME_ENCODING_BASE64:
 		buff_length = ((2 * length) / (64 * 1024) + 1) * 64 * 1024;
 		pmime->content_begin = static_cast<char *>(malloc(buff_length));
@@ -1419,7 +1425,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	int encoding_type;
 	char encoding[256], *pbuff;
 	LIB_BUFFER *pallocator;
-	size_t i, offset, max_length, tmp_len;
+	size_t i, offset, max_length;
 	unsigned int buff_size;
 	
 #ifdef _DEBUG_UMTA
@@ -1513,11 +1519,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	}
 	
 	/* \r\n before boundary string or end of mail should not be inclued */
-	if (pmime->content_length < 2) {
-		tmp_len = 1;
-	} else {
-		tmp_len = pmime->content_length - 2;
-	}
+	size_t tmp_len = pmime->content_length < 2 ? 1 : pmime->content_length - 2;
 	size_t size = 0;
 	for (i=0; i<tmp_len; i++) {
 		if ('.' == pmime->content_begin[i]) {
@@ -1548,15 +1550,16 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		}
 		free(pbuff);
 		return TRUE;
-	case MIME_ENCODING_QP:
-		tmp_len = qp_decode_ex(out_buff, max_length, pbuff, size);
-		if (-1 == tmp_len) {
+	case MIME_ENCODING_QP: {
+		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff, size);
+		if (qdlen < 0) {
 			goto COPY_RAW_DATA;
 		} else {
-			*plength = tmp_len;
+			*plength = qdlen;
 			free(pbuff);
 			return TRUE;
 		}
+	}
 	case MIME_ENCODING_UUENCODE:
 		if (0 != uudecode(pbuff, size, NULL, NULL, out_buff, plength)) {
 			debug_info("[mime]: fail to decode uuencode mime content");
