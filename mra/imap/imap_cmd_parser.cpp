@@ -483,7 +483,6 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 {
 	int i;
 	BOOL b_hit;
-	int tag_len;
 	int tmp_argc;
 	int len, len1;
 	int buff_len, fd;
@@ -522,7 +521,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	       &mime_field)) != 0) {
 		b_hit = FALSE;
 		for (i=0; i<tmp_argc; i++) {
-			tag_len = strlen(tmp_argv[i]);
+			auto tag_len = strlen(tmp_argv[i]);
 			if (tag_len == mime_field.field_name_len
 				&& 0 == strncasecmp(tmp_argv[i],
 				mime_field.field_name, tag_len)) {

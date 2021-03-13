@@ -17,9 +17,8 @@ struct EMAIL_ADDR {
 };
 
 struct MIME_FIELD {
-    int  field_name_len;
+	unsigned int field_name_len, field_value_len;
     char field_name[MIME_NAME_LEN];
-    int  field_value_len;
     char field_value[MIME_FIELD_LEN];
 };
 

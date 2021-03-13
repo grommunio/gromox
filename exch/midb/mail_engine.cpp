@@ -542,7 +542,6 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	const char *file_path, const char *tag, const char *value)
 {
 	FILE * fp;
-	int tag_len;
 	char *str_mime;
 	BOOL stat_head;
 	int head_offset;
@@ -574,7 +573,7 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 		return FALSE;
 	}
 	offset = 0;
-	tag_len = strlen(tag);
+	auto tag_len = strlen(tag);
 	while ((len = parse_mime_field(head_buff + offset,
 	       head_offset - offset, &mime_field)) != 0) {
 		offset += len;
