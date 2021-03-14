@@ -196,13 +196,11 @@ static BOOL tnef_username_to_oneoff(const char *username,
 static uint16_t tnef_generate_checksum(
 	const uint8_t *pdata, uint32_t len)
 {
-	int i;
 	uint32_t mysum;
 
 	mysum = 0;
-	for ( i=0; i<len; i++ ) {
+	for (size_t i = 0; i < len; ++i)
 		mysum = (mysum + pdata[i]) & 0xFFFF;
-	}
 	return mysum;
 }
 
@@ -241,7 +239,6 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 
 static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 {
-	int i;
 	uint32_t offset;
 	uint32_t tmp_int;
 	uint16_t fake_byte;
@@ -400,7 +397,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (sa->ps == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_pull_uint16(pext, sa->ps + i));
 			TRY(ext_buffer_pull_advance(pext, 2));
 		}
@@ -422,9 +419,8 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (la->pl == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < la->count; ++i) {
+		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_pull_uint32(pext, la->pl + i));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_I8: {
@@ -443,9 +439,8 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (la->pll == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < la->count; ++i) {
+		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_pull_uint64(pext, la->pll + i));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_STRING8: {
@@ -464,7 +459,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (sa->ppstr == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 			offset = pext->offset + tmp_int;
 			TRY(ext_buffer_pull_string(pext, &sa->ppstr[i]));
@@ -492,7 +487,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (sa->ppstr == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 			offset = pext->offset + tmp_int;
 			TRY(ext_buffer_pull_wstring(pext, &sa->ppstr[i]));
@@ -520,9 +515,8 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (ga->pguid == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < ga->count; ++i) {
+		for (size_t i = 0; i < ga->count; ++i)
 			TRY(ext_buffer_pull_guid(pext, ga->pguid + i));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {
@@ -541,7 +535,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			if (ba->pbin == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < ba->count; ++i) {
+		for (size_t i = 0; i < ba->count; ++i) {
 			TRY(ext_buffer_pull_uint32(pext, &ba->pbin[i].cb));
 			if (ba->pbin[i].cb + pext->offset > pext->data_size)
 				return EXT_ERR_FORMAT;
@@ -564,7 +558,6 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 
 static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 {
-	int i, j;
 	DTR tmp_dtr;
 	uint32_t len;
 	uint32_t offset;
@@ -749,9 +742,8 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			if (tf->ppropval == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < tf->count; ++i) {
+		for (size_t i = 0; i < tf->count; ++i)
 			TRY(tnef_pull_propval(pext, tf->ppropval + i));
-		}
 		break;
 	}
 	case ATTRIBUTE_ID_RECIPTABLE: {
@@ -770,7 +762,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			if (tf->pplist == nullptr)
 				return EXT_ERR_ALLOC;
 		}
-		for (i = 0; i < tf->count; ++i) {
+		for (size_t i = 0; i < tf->count; ++i) {
 			tf->pplist[i] = pext->anew<TNEF_PROPLIST>();
 			if (tf->pplist[i] == nullptr)
 				return EXT_ERR_ALLOC;
@@ -784,9 +776,8 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 				if (tf->pplist[i]->ppropval == nullptr)
 					return EXT_ERR_ALLOC;
 			}
-			for (j = 0; j < tf->pplist[i]->count; ++j) {
+			for (size_t j = 0; j < tf->pplist[i]->count; ++j)
 				TRY(tnef_pull_propval(pext, tf->pplist[i]->ppropval + j));
-			}
 		}
 		break;
 	}
@@ -853,9 +844,8 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		la->pl = pext->anew<uint32_t>(la->count);
 		if (la->pl == nullptr)
 			return EXT_ERR_ALLOC;
-		for (i = 0; i < la->count; ++i) {
+		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_pull_uint32(pext, la->pl + i));
-		}
 		break;
 	}
 	}
@@ -1021,8 +1011,6 @@ static char *tnef_duplicate_string_to_unicode(const char *charset,
 static STRING_ARRAY *tnef_duplicate_string_array_to_unicode(const char *charset,
     STRING_ARRAY *parray)
 {
-	int i;
-	
 	auto parray_out = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
 	if (NULL == parray_out) {
 		return NULL;
@@ -1037,14 +1025,13 @@ static STRING_ARRAY *tnef_duplicate_string_array_to_unicode(const char *charset,
 	} else {
 		parray_out->ppstr = NULL;
 	}
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < parray->count; ++i) {
 		parray_out->ppstr[i] =
 			tnef_duplicate_string_to_unicode(
 			charset, parray->ppstr[i]);
 		if (NULL == parray_out->ppstr[i]) {
-			for (i-=1; i>=0; i--) {
+			while (i-- > 0)
 				free(parray_out->ppstr[i]);
-			}
 			free(parray_out->ppstr);
 			free(parray_out);
 			return NULL;
@@ -1085,7 +1072,6 @@ static void tnef_tpropval_array_to_unicode(
 static void tnef_message_to_unicode(
 	uint32_t cpid, MESSAGE_CONTENT *pmsg)
 {
-	int i;
 	const char *charset;
 	
 	charset = tnef_cpid_to_charset(cpid);
@@ -1094,16 +1080,14 @@ static void tnef_message_to_unicode(
 	}
 	tnef_tpropval_array_to_unicode(charset, &pmsg->proplist);
 	if (NULL != pmsg->children.prcpts) {
-		for (i=0; i<pmsg->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 			tnef_tpropval_array_to_unicode(charset,
 				pmsg->children.prcpts->pparray[i]);
-		}
 	}
 	if (NULL != pmsg->children.pattachments) {
-		for (i=0; i<pmsg->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
 			tnef_tpropval_array_to_unicode(charset,
 				&pmsg->children.pattachments->pplist[i]->proplist);
-		}
 	}
 }
 
@@ -1111,8 +1095,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t length, BOOL b_embedded, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid)
 {
-	int i, j;
-	int count;
 	char *psmtp;
 	BOOL b_props;
 	uint32_t cpid;
@@ -1225,11 +1207,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			return NULL;
 		}
 		switch (attribute.attr_id) {
-		case ATTRIBUTE_ID_MSGPROPS:
-			count = ((TNEF_PROPLIST*)attribute.pvalue)->count;
-			for (i=0; i<count; i++) {
-				ptnef_propval = ((TNEF_PROPLIST*)
-					attribute.pvalue)->ppropval + i;
+		case ATTRIBUTE_ID_MSGPROPS: {
+			auto tf = static_cast<TNEF_PROPLIST *>(attribute.pvalue);
+			auto count = tf->count;
+			for (size_t i = 0; i < count; ++i) {
+				ptnef_propval = &tf->ppropval[i];
 				if (NULL != ptnef_propval->ppropname) {
 					tnef_convert_from_propname(
 						ptnef_propval->ppropname,
@@ -1258,6 +1240,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			b_props = TRUE;
 			break;
+		}
 		case ATTRIBUTE_ID_OWNER:
 			powner = static_cast<ATTR_ADDR *>(attribute.pvalue);
 			break;
@@ -1462,7 +1445,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			}
 			break;
-		case ATTRIBUTE_ID_RECIPTABLE:
+		case ATTRIBUTE_ID_RECIPTABLE: {
 			if (NULL != pmsg->children.prcpts) {
 				debug_info("[tnef]: idRecipTable already met");
 				str_hash_free(phash);
@@ -1476,8 +1459,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			}
 			message_content_set_rcpts_internal(pmsg, prcpts);
-			for (i=0; i<((TNEF_PROPSET*)attribute.pvalue)->count; i++) {
-				ptnef_proplist = ((TNEF_PROPSET*)attribute.pvalue)->pplist[i];
+			auto tf = static_cast<TNEF_PROPSET *>(attribute.pvalue);
+			for (size_t i = 0; i < tf->count; ++i) {
+				ptnef_proplist = tf->pplist[i];
 				pproplist = tpropval_array_init();
 				if (NULL == pproplist) {
 					str_hash_free(phash);
@@ -1490,7 +1474,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					message_content_free(pmsg);
 					return NULL;
 				}
-				for (j=0; j<ptnef_proplist->count; j++) {
+				for (size_t j = 0; j < ptnef_proplist->count; ++j) {
 					ptnef_propval = ptnef_proplist->ppropval + j;
 					if (NULL != ptnef_propval->ppropname) {
 						tnef_convert_from_propname(
@@ -1542,6 +1526,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				}
 			}
 			break;
+		}
 		case ATTRIBUTE_ID_PARENTID:
 		case ATTRIBUTE_ID_CONVERSATIONID:
 			/* have been deprecated in Exchange Server */
@@ -1606,11 +1591,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			return NULL;
 		}
 		switch (attribute.attr_id) {
-		case ATTRIBUTE_ID_ATTACHMENT:
-			count = ((TNEF_PROPLIST*)attribute.pvalue)->count;
-			for (i=0; i<count; i++) {
-				ptnef_propval = ((TNEF_PROPLIST*)
-					attribute.pvalue)->ppropval + i;
+		case ATTRIBUTE_ID_ATTACHMENT: {
+			auto tf = static_cast<TNEF_PROPLIST *>(attribute.pvalue);
+			auto count = tf->count;
+			for (size_t i = 0; i < count; ++i) {
+				ptnef_propval = &tf->ppropval[i];
 				if (NULL != ptnef_propval->ppropname) {
 					tnef_convert_from_propname(
 						ptnef_propval->ppropname,
@@ -1657,6 +1642,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			b_props = TRUE;
 			break;
+		}
 		case ATTRIBUTE_ID_ATTACHDATA:
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = attribute.pvalue;
@@ -1814,20 +1800,17 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	for (i=0; i<propids.count; i++) {
+	for (size_t i = 0; i < propids.count; ++i)
 		int_hash_add(phash1, propids.ppropid[i], propids1.ppropid + i);
-	}
 	tnef_replace_propid(&pmsg->proplist, phash1);
 	if (NULL != pmsg->children.prcpts) {
-		for (i=0; i<pmsg->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
-		}
 	}
 	if (NULL != pmsg->children.pattachments) {
-		for (i=0; i<pmsg->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
 			tnef_replace_propid(
 				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
-		}
 	}
 	int_hash_free(phash1);
 	
@@ -1886,7 +1869,6 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
-	int i;
 	uint32_t offset;
 	uint32_t offset1;
 	uint32_t tmp_int;
@@ -1978,7 +1960,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_MV_SHORT: {
 		auto sa = static_cast<SHORT_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, sa->count));
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_push_uint16(pext, sa->ps[i]));
 			TRY(ext_buffer_push_bytes(pext, g_pad_bytes, 2));
 		}
@@ -1987,23 +1969,21 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_MV_LONG: {
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, la->count));
-		for (i = 0; i < la->count; ++i) {
+		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_push_uint32(pext, la->pl[i]));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_I8: {
 		auto la = static_cast<LONGLONG_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, la->count));
-		for (i = 0; i < la->count; ++i) {
+		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_push_uint64(pext, la->pll[i]));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_STRING8: {
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, sa->count));
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
 			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
 			TRY(ext_buffer_push_string(pext, sa->ppstr[i]));
@@ -2019,7 +1999,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_MV_UNICODE: {
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, sa->count));
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
 			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
 			TRY(ext_buffer_push_wstring(pext, sa->ppstr[i]));
@@ -2035,15 +2015,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_MV_CLSID: {
 		auto ga = static_cast<GUID_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, ga->count));
-		for (i = 0; i < ga->count; ++i) {
+		for (size_t i = 0; i < ga->count; ++i)
 			TRY(ext_buffer_push_guid(pext, ga->pguid + i));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {
 		auto ba = static_cast<BINARY_ARRAY *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, ba->count));
-		for (i = 0; i < ba->count; ++i) {
+		for (size_t i = 0; i < ba->count; ++i) {
 			TRY(ext_buffer_push_uint32(pext, ba->pbin[i].cb));
 			TRY(ext_buffer_push_bytes(pext, ba->pbin[i].pb, ba->pbin[i].cb));
 			TRY(ext_buffer_push_bytes(pext, g_pad_bytes,tnef_align(ba->pbin[i].cb)));
@@ -2057,7 +2036,6 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
-	int i, j;
 	DTR tmp_dtr;
 	uint32_t offset;
 	uint32_t offset1;
@@ -2129,20 +2107,20 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 		TRY(ext_buffer_push_bytes(pext, static_cast<char *>(r->pvalue), strlen(static_cast<char *>(r->pvalue))));
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
-	case ATTRIBUTE_ID_ATTACHMENT:
-		TRY(ext_buffer_push_uint32(pext, static_cast<TNEF_PROPLIST *>(r->pvalue)->count));
-		for (i=0; i<((TNEF_PROPLIST*)r->pvalue)->count; i++) {
-			TRY(tnef_push_propval(pext, static_cast<TNEF_PROPLIST *>(r->pvalue)->ppropval + i, alloc, get_propname));
-		}
+	case ATTRIBUTE_ID_ATTACHMENT: {
+		auto tf = static_cast<TNEF_PROPLIST *>(r->pvalue);
+		TRY(ext_buffer_push_uint32(pext, tf->count));
+		for (size_t i = 0; i < tf->count; ++i)
+			TRY(tnef_push_propval(pext, &tf->ppropval[i], alloc, get_propname));
 		break;
+	}
 	case ATTRIBUTE_ID_RECIPTABLE: {
 		auto tf = static_cast<TNEF_PROPSET *>(r->pvalue);
 		TRY(ext_buffer_push_uint32(pext, tf->count));
-		for (i = 0; i < tf->count; ++i) {
+		for (size_t i = 0; i < tf->count; ++i) {
 			TRY(ext_buffer_push_uint32(pext, tf->pplist[i]->count));
-			for (j = 0; j < tf->pplist[i]->count; ++j) {
+			for (size_t j = 0; j < tf->pplist[i]->count; ++j)
 				TRY(tnef_push_propval(pext, tf->pplist[i]->ppropval + j, alloc, get_propname));
-			}
 		}
 		break;
 	}
@@ -2173,11 +2151,12 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 		TRY(ext_buffer_push_bytes(pext, static_cast<BINARY *>(r->pvalue)->pb, static_cast<BINARY *>(r->pvalue)->cb));
 		break;
 	case ATTRIBUTE_ID_TNEFVERSION:
-	case ATTRIBUTE_ID_OEMCODEPAGE:
-		for (i=0; i<((LONG_ARRAY*)r->pvalue)->count; i++) {
-			TRY(ext_buffer_push_uint32(pext, static_cast<LONG_ARRAY *>(r->pvalue)->pl[i]));
-		}
+	case ATTRIBUTE_ID_OEMCODEPAGE: {
+		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
+		for (size_t i = 0; i < la->count; ++i)
+			TRY(ext_buffer_push_uint32(pext, la->pl[i]));
 		break;
+	}
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
@@ -2292,7 +2271,6 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	const MESSAGE_CONTENT *pmsg, EXT_BUFFER_ALLOC alloc,
 	GET_PROPNAME get_propname)
 {
-	int i, j;
 	BOOL b_key;
 	void *pvalue;
 	void *pvalue1;
@@ -2717,7 +2695,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				return FALSE;
 			}
 		}
-		for (i=0; i<pmsg->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
 			pvalue = tpropval_array_get_propval(
 				pmsg->children.prcpts->pparray[i],
 				PROP_TAG_RECIPIENTTYPE);
@@ -2749,7 +2727,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	if (NULL == tnef_proplist.ppropval) {
 		return FALSE;
 	}
-	for (i=0; i<pmsg->proplist.count; i++) {
+	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		if (proptag_array_check(&tmp_proptags,
 		    pmsg->proplist.ppropval[i].proptag))
 			continue;
@@ -2805,7 +2783,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		return TRUE;
 	}
 	
-	for (i=0; i<pmsg->children.pattachments->count; i++) {
+	for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
 		pattachment = pmsg->children.pattachments->pplist[i];
 		tmp_proptags.count = 0;
 		/* ATTRIBUTE_ID_ATTACHRENDDATA */
@@ -2963,7 +2941,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL == tnef_proplist.ppropval) {
 			return FALSE;
 		}
-		for (j=0; j<pattachment->proplist.count; j++) {
+		for (size_t j = 0; j < pattachment->proplist.count; ++j) {
 			if (proptag_array_check(&tmp_proptags,
 			    pattachment->proplist.ppropval[j].proptag))
 				continue;

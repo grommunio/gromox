@@ -90,22 +90,16 @@ EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 
 bool eid_array_check(const EID_ARRAY *parray, uint64_t eid)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < parray->count; ++i)
 		if (eid == parray->pids[i]) {
 			return true;
 		}
-	}
 	return false;
 }
 
 void eid_array_remove(EID_ARRAY *parray, uint64_t eid)
 {
-	int i;
-	
-	i = 0;
-	while (i < parray->count) {
+	for (size_t i = 0; i < parray->count; ) {
 		if (parray->pids[i] == eid) {
 			parray->count --;
 			if (i != parray->count) {

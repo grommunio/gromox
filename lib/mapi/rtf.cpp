@@ -1325,12 +1325,11 @@ static char* rtf_read_element(RTF_READER *preader)
 static bool rtf_optimize_element(DOUBLE_LIST *pcollection_list,
     const char *str_word)
 {
-	int i, len;
 	const char *text;
 	static const char* opt_tags[] = {"\\fs", "\\f"};
 	
-	for (i=0; i<sizeof(opt_tags)/sizeof(char*); i++) {	
-		len = strlen(opt_tags[i]);
+	for (size_t i = 0; i < GX_ARRAY_SIZE(opt_tags); ++i) {
+		auto len = strlen(opt_tags[i]);
 		if (0 == strncmp(opt_tags[i], str_word, len) &&
 		    (HX_isdigit(str_word[len]) || str_word[len] == '-')) {
 			text = rtf_get_from_collection(pcollection_list, i);
@@ -1560,11 +1559,9 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	int num;
 	int cpid;
 	int param;
-	int tmp_len;
 	char *ptoken;
 	char *string;
 	int tmp_cpid;
-	int tmp_offset;
 	int fcharsetcp;
 	char name[1024];
 	FONTENTRY tmp_entry;
@@ -1597,14 +1594,14 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		tmp_buff[0] = '\0';
 		cpid = -1;
 		fcharsetcp = -1;
-		tmp_offset = 0;
+		size_t tmp_offset = 0;
 		while ((pword2 = simple_tree_node_get_sibling(pword2)) != nullptr) {
 			if (NULL == pword2->pdata) {
 				continue;
 			}
 			string = static_cast<char *>(pword2->pdata);
 			if ('\\' != string[0]) {
-				tmp_len = strlen(string);
+				auto tmp_len = strlen(string);
 				if (tmp_len + tmp_offset > sizeof(tmp_buff) - 1) {
 					debug_info("[rtf]: invalid font name");
 					return false;
@@ -1641,7 +1638,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 							debug_info("[rtf]: invalid font name");
 							return false;
 						} else {
-							tmp_len = strlen(name);
+							auto tmp_len = strlen(name);
 							if (tmp_len + tmp_offset >
 								sizeof(tmp_buff) - 1) {
 								debug_info("[rtf]: invalid font name");
@@ -3407,7 +3404,6 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 
 bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
-	int i;
 	static const MAP_ITEM cmd_map[] ={
 		{"*",				rtf_cmd_maybe_ignore},
 		{"-",				rtf_cmd_optional_hyphen},
@@ -3525,8 +3521,7 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 	if (NULL == g_cmd_hash) {
 		return false;
 	}
-	for (i=0; i<sizeof(cmd_map)/sizeof(MAP_ITEM); i++) {
+	for (size_t i = 0; i < GX_ARRAY_SIZE(cmd_map); ++i)
 		str_hash_add(g_cmd_hash, cmd_map[i].tag, &cmd_map[i].func);
-	}
 	return true;
 }

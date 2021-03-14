@@ -875,9 +875,9 @@ MESSAGE_CONTENT* oxvcard_import(
 
 BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propids)
 {
-	int i;
 	BINARY *pbin;
 	const char *pvalue;
+	STRING_ARRAY *saval = nullptr;
 	size_t out_len;
 	uint16_t propid;
 	uint32_t proptag;
@@ -951,7 +951,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		goto EXPORT_FAILURE;
 	}
 	vcard_append_line(pvcard, pvline);
-	for (i=0; i<5; i++) {
+	for (size_t i = 0; i < 5; ++i) {
 		pvvalue = vcard_new_value();
 		if (NULL == pvvalue) {
 			goto EXPORT_FAILURE;
@@ -975,7 +975,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	for (i=0; i<3; i++) {
+	for (size_t i = 0; i < 3; ++i) {
 		propid = PROP_ID(g_email_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag));
@@ -1010,7 +1010,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_ATTACHMENTCONTACTPHOTO));
 	if (pvalue != nullptr && *reinterpret_cast<const uint8_t *>(pvalue) != 0 &&
 		NULL != pmsg->children.pattachments) {
-		for (i=0; i<pmsg->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
 			pattachment = pmsg->children.pattachments->pplist[i];
 			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHEXTENSION));
 			if (NULL == pvalue) {
@@ -1131,7 +1131,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (FALSE == vcard_append_paramval(pvparam, "WORK")) {
 		goto EXPORT_FAILURE;
 	}
-	for (i=0; i<6; i++) {
+	for (size_t i = 0; i < 6; ++i) {
 		pvvalue = vcard_new_value();
 		if (NULL == pvvalue) {
 			goto EXPORT_FAILURE;
@@ -1164,7 +1164,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (FALSE == vcard_append_paramval(pvparam, "HOME")) {
 		goto EXPORT_FAILURE;
 	}
-	for (i=0; i<6; i++) {
+	for (size_t i = 0; i < 6; ++i) {
 		pvvalue = vcard_new_value();
 		if (NULL == pvvalue) {
 			goto EXPORT_FAILURE;
@@ -1195,7 +1195,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (FALSE == vcard_append_paramval(pvparam, "POSTAL")) {
 		goto EXPORT_FAILURE;
 	}
-	for (i=0; i<6; i++) {
+	for (size_t i = 0; i < 6; ++i) {
 		pvvalue = vcard_new_value();
 		if (NULL == pvvalue) {
 			goto EXPORT_FAILURE;
@@ -1213,7 +1213,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	vcard_append_value(pvline, pvvalue);
 	
-	for (i=0; i<10; i++) {
+	for (size_t i = 0; i < 10; ++i) {
 		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, tel_proptags[i]));
 		if (NULL == pvalue) {
 			continue;
@@ -1303,8 +1303,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	
 	propid = PROP_ID(g_categories_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids.ppropid[propid - 0x8000]);
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag));
-	if (NULL != pvalue) {
+	saval = static_cast<STRING_ARRAY *>(tpropval_array_get_propval(&pmsg->proplist, proptag));
+	if (saval != nullptr) {
 		pvline = vcard_new_line("CATEGORIES");
 		if (NULL == pvline) {
 			goto EXPORT_FAILURE;
@@ -1315,12 +1315,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 		}
 		vcard_append_value(pvline, pvvalue);
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			if (FALSE == vcard_append_subval(pvvalue,
-				((STRING_ARRAY*)pvalue)->ppstr[i])) {
+		for (size_t i = 0; i < saval->count; ++i)
+			if (!vcard_append_subval(pvvalue, saval->ppstr[i]))
 				goto EXPORT_FAILURE;
-			}
-		}
 	}
 	
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_PROFESSION));
@@ -1393,11 +1390,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_CHILDRENSNAMES));
+	saval = static_cast<STRING_ARRAY *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_CHILDRENSNAMES));
 	if (NULL != pvalue) {
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			pvline = vcard_new_simple_line("X-MS-CHILD",
-					((STRING_ARRAY*)pvalue)->ppstr[i]);
+		for (size_t i = 0; i < saval->count; ++i) {
+			pvline = vcard_new_simple_line("X-MS-CHILD", saval->ppstr[i]);
 			if (NULL == pvline) {
 				goto EXPORT_FAILURE;
 			}
@@ -1405,7 +1401,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	for (i=0; i<4; i++) {
+	for (size_t i = 0; i < 4; ++i) {
 		propid = PROP_ID(g_ufld_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag));
@@ -1419,7 +1415,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	for (i=0; i<5; i++) {
+	for (size_t i = 0; i < 5; ++i) {
 		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, ms_tel_proptags[i]));
 		if (NULL == pvalue) {
 			continue;
@@ -1544,7 +1540,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_HOBBIES));
+	saval = static_cast<STRING_ARRAY *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_HOBBIES));
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("X-MS-INTERESTS");
 		if (NULL == pvline) {
@@ -1556,12 +1552,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 		}
 		vcard_append_value(pvline, pvvalue);
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			if (FALSE == vcard_append_subval(pvvalue,
-				((STRING_ARRAY*)pvalue)->ppstr[i])) {
+		for (size_t i = 0; i < saval->count; ++i)
+			if (!vcard_append_subval(pvvalue, saval->ppstr[i]))
 				goto EXPORT_FAILURE;
-			}
-		}
 	}
 	
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_USERX509CERTIFICATE));

@@ -172,12 +172,10 @@ int ext_buffer_pull_guid(EXT_PULL *pext, GUID *r)
 
 int ext_buffer_pull_string(EXT_PULL *pext, char **ppstr)
 {
-	int len;
-	
 	if (pext->offset >= pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	len = strnlen(pext->cdata + pext->offset, pext->data_size - pext->offset);
+	auto len = strnlen(pext->cdata + pext->offset, pext->data_size - pext->offset);
 	if (len + 1 > pext->data_size - pext->offset) {
 		return EXT_ERR_BUFSIZE;
 	}
@@ -298,8 +296,6 @@ int ext_buffer_pull_exbinary(EXT_PULL *pext, BINARY *r)
 
 int ext_buffer_pull_short_array(EXT_PULL *pext, SHORT_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->ps = NULL;
@@ -309,16 +305,13 @@ int ext_buffer_pull_short_array(EXT_PULL *pext, SHORT_ARRAY *r)
 	if (NULL == r->ps) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_uint16(pext, &r->ps[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_long_array(EXT_PULL *pext, LONG_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pl = NULL;
@@ -328,16 +321,13 @@ int ext_buffer_pull_long_array(EXT_PULL *pext, LONG_ARRAY *r)
 	if (NULL == r->pl) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_uint32(pext, &r->pl[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_longlong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pll = NULL;
@@ -347,15 +337,13 @@ int ext_buffer_pull_longlong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 	if (NULL == r->pll) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_uint64(pext, &r->pll[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_slonglong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 {
-	int i;
 	uint16_t count;
 	
 	TRY(ext_buffer_pull_uint16(pext, &count));
@@ -368,16 +356,13 @@ int ext_buffer_pull_slonglong_array(EXT_PULL *pext, LONGLONG_ARRAY *r)
 	if (NULL == r->pll) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_uint64(pext, &r->pll[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_binary_array(EXT_PULL *pext, BINARY_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pbin = NULL;
@@ -387,16 +372,13 @@ int ext_buffer_pull_binary_array(EXT_PULL *pext, BINARY_ARRAY *r)
 	if (NULL == r->pbin) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_binary(pext, &r->pbin[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_string_array(EXT_PULL *pext, STRING_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->ppstr = NULL;
@@ -406,16 +388,13 @@ int ext_buffer_pull_string_array(EXT_PULL *pext, STRING_ARRAY *r)
 	if (NULL == r->ppstr) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_string(pext, &r->ppstr[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_wstring_array(EXT_PULL *pext, STRING_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->ppstr = NULL;
@@ -425,16 +404,13 @@ int ext_buffer_pull_wstring_array(EXT_PULL *pext, STRING_ARRAY *r)
 	if (NULL == r->ppstr) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_wstring(pext, &r->ppstr[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_pull_guid_array(EXT_PULL *pext, GUID_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pguid = NULL;
@@ -444,16 +420,14 @@ int ext_buffer_pull_guid_array(EXT_PULL *pext, GUID_ARRAY *r)
 	if (NULL == r->pguid) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_guid(pext, &r->pguid[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_pull_restriction_and_or(
 	EXT_PULL *pext, RESTRICTION_AND_OR *r)
 {
-	int i;
 	uint16_t count;
 	
 	if (pext->flags & EXT_FLAG_WCOUNT) {
@@ -470,9 +444,8 @@ static int ext_buffer_pull_restriction_and_or(
 	if (NULL == r->pres) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_restriction(pext, &r->pres[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1128,8 +1101,6 @@ int ext_buffer_pull_tpropval_array(EXT_PULL *pext, TPROPVAL_ARRAY *r)
 
 int ext_buffer_pull_tarray_set(EXT_PULL *pext, TARRAY_SET *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pparray = NULL;
@@ -1139,7 +1110,7 @@ int ext_buffer_pull_tarray_set(EXT_PULL *pext, TARRAY_SET *r)
 	if (NULL == r->pparray) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i) {
 		r->pparray[i] = pext->anew<TPROPVAL_ARRAY>();
 		if (NULL == r->pparray[i]) {
 			return EXT_ERR_ALLOC;
@@ -1238,8 +1209,6 @@ static int ext_buffer_pull_ext_reply_action(
 static int ext_buffer_pull_ext_recipient_block(
 	EXT_PULL *pext, EXT_RECIPIENT_BLOCK *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint8(pext, &r->reserved));
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
@@ -1249,17 +1218,14 @@ static int ext_buffer_pull_ext_recipient_block(
 	if (NULL == r->ppropval) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	EXT_FORWARDDELEGATE_ACTION *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
@@ -1268,9 +1234,8 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	if (NULL == r->pblock) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_ext_recipient_block(pext, &r->pblock[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1335,8 +1300,6 @@ static int ext_buffer_pull_ext_action_block(
 
 int ext_buffer_pull_ext_rule_actions(EXT_PULL *pext, EXT_RULE_ACTIONS *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
@@ -1345,9 +1308,8 @@ int ext_buffer_pull_ext_rule_actions(EXT_PULL *pext, EXT_RULE_ACTIONS *r)
 	if (NULL == r->pblock) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_ext_action_block(pext, &r->pblock[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1645,7 +1607,6 @@ int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r)
 
 int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 {
-	int i;
 	uint32_t bytes;
 	uint8_t pad_len;
 	uint32_t offset;
@@ -1658,7 +1619,7 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 	}
 	TRY(ext_buffer_pull_uint32(pext, &bytes));
 	offset = pext->offset + bytes;
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i) {
 		TRY(ext_buffer_pull_uint32(pext, &bytes));
 		offset2 = pext->offset + bytes;
 		TRY(ext_buffer_pull_oneoff_entryid(pext, r->pentry_id + i));
@@ -1678,8 +1639,6 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 
 int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint32(pext, &r->count));
 	if (0 == r->count) {
 		r->pids = NULL;
@@ -1689,9 +1648,8 @@ int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r)
 	if (NULL == r->pids) {
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_uint64(pext, &r->pids[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1800,8 +1758,6 @@ static int ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 static int ext_buffer_pull_recurrencepattern(
 	EXT_PULL *pext, RECURRENCEPATTERN *r)
 {
-	int i;
-	
 	TRY(ext_buffer_pull_uint16(pext, &r->readerversion));
 	TRY(ext_buffer_pull_uint16(pext, &r->writerversion));
 	TRY(ext_buffer_pull_uint16(pext, &r->recurfrequency));
@@ -1823,9 +1779,8 @@ static int ext_buffer_pull_recurrencepattern(
 			return EXT_ERR_ALLOC;
 		}
 	}
-	for (i=0; i<r->deletedinstancecount; i++) {
+	for (size_t i = 0; i < r->deletedinstancecount; ++i)
 		TRY(ext_buffer_pull_uint32(pext, &r->pdeletedinstancedates[i]));
-	}
 	TRY(ext_buffer_pull_uint32(pext, &r->modifiedinstancecount));
 	if (0 == r->modifiedinstancecount) {
 		r->pmodifiedinstancedates = NULL;
@@ -1835,9 +1790,8 @@ static int ext_buffer_pull_recurrencepattern(
 			return EXT_ERR_ALLOC;
 		}
 	}
-	for (i=0; i<r->modifiedinstancecount; i++) {
+	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
 		TRY(ext_buffer_pull_uint32(pext, &r->pmodifiedinstancedates[i]));
-	}
 	TRY(ext_buffer_pull_uint32(pext, &r->startdate));
 	return ext_buffer_pull_uint32(pext, &r->enddate);
 }
@@ -2393,108 +2347,81 @@ int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
 
 int ext_buffer_push_short_array(EXT_PUSH *pext, const SHORT_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_uint16(pext, r->ps[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_long_array(EXT_PUSH *pext, const LONG_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_uint32(pext, r->pl[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_longlong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_uint64(pext, r->pll[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_slonglong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 {
-	int i;
-	
 	if (r->count > 0xFFFF) {
 		return EXT_ERR_FORMAT;
 	}
 	TRY(ext_buffer_push_uint16(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_uint64(pext, r->pll[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_binary_array(EXT_PUSH *pext, const BINARY_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_binary(pext, &r->pbin[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_string_array(EXT_PUSH *pext, const STRING_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_string(pext, r->ppstr[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_wstring_array(EXT_PUSH *pext, const STRING_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_wstring(pext, r->ppstr[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_guid_array(EXT_PUSH *pext, const GUID_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_guid(pext, &r->pguid[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_push_restriction_and_or(
 	EXT_PUSH *pext, const RESTRICTION_AND_OR *r)
 {
-	int i;
-	
 	if (pext->flags & EXT_FLAG_WCOUNT) {
 		TRY(ext_buffer_push_uint32(pext, r->count));
 	} else {
 		TRY(ext_buffer_push_uint16(pext, r->count));
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_restriction(pext, &r->pres[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2934,12 +2861,9 @@ int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
 
 int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_tpropval_array(pext, r->pparray[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3294,12 +3218,9 @@ int ext_buffer_push_persistdata_array(
 
 int ext_buffer_push_eid_array(EXT_PUSH *pext, const EID_ARRAY *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint32(pext, r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_uint64(pext, r->pids[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3394,8 +3315,6 @@ static int ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
 static int ext_buffer_push_recurrencepattern(
 	EXT_PUSH *pext, const RECURRENCEPATTERN *r)
 {
-	int i;
-	
 	TRY(ext_buffer_push_uint16(pext, r->readerversion));
 	TRY(ext_buffer_push_uint16(pext, r->writerversion));
 	TRY(ext_buffer_push_uint16(pext, r->recurfrequency));
@@ -3409,13 +3328,11 @@ static int ext_buffer_push_recurrencepattern(
 	TRY(ext_buffer_push_uint32(pext, r->occurrencecount));
 	TRY(ext_buffer_push_uint32(pext, r->firstdow));
 	TRY(ext_buffer_push_uint32(pext, r->deletedinstancecount));
-	for (i=0; i<r->deletedinstancecount; i++) {
+	for (size_t i = 0; i < r->deletedinstancecount; ++i)
 		TRY(ext_buffer_push_uint32(pext, r->pdeletedinstancedates[i]));
-	}
 	TRY(ext_buffer_push_uint32(pext, r->modifiedinstancecount));
-	for (i=0; i<r->modifiedinstancecount; i++) {
+	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
 		TRY(ext_buffer_push_uint32(pext, r->pmodifiedinstancedates[i]));
-	}
 	TRY(ext_buffer_push_uint32(pext, r->startdate));
 	return ext_buffer_push_uint32(pext, r->enddate);
 }

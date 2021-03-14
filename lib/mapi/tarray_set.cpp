@@ -21,13 +21,10 @@ TARRAY_SET* tarray_set_init()
 
 void tarray_set_free(TARRAY_SET *pset)
 {
-	int i;
-	
-	for (i=0; i<pset->count; i++) {
+	for (size_t i = 0; i < pset->count; ++i)
 		if (NULL != pset->pparray[i]) {
 			tpropval_array_free(pset->pparray[i]);
 		}
-	}
 	free(pset->pparray);
 	free(pset);
 }
@@ -72,7 +69,6 @@ bool tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
 
 TARRAY_SET* tarray_set_dup(TARRAY_SET *pset)
 {
-	int i;
 	TARRAY_SET *pset1;
 	TPROPVAL_ARRAY *pproplist;
 	
@@ -80,7 +76,7 @@ TARRAY_SET* tarray_set_dup(TARRAY_SET *pset)
 	if (NULL == pset1) {
 		return NULL;
 	}
-	for (i=0; i<pset->count; i++) {
+	for (size_t i = 0; i < pset->count; ++i) {
 		pproplist = tpropval_array_dup(pset->pparray[i]);
 		if (NULL == pproplist) {
 			tarray_set_free(pset1);

@@ -36,9 +36,8 @@ static uint8_t pcl_pull_sized_xid(const BINARY *pbin,
 	}
 	pxid->size = pbin->pb[offset];
 	if (pxid->size < 17 || pxid->size > 24 ||
-		offset + 1 + pxid->size > pbin->cb) {
+	    offset + 1U + pxid->size > pbin->cb)
 		return 0;
-	}
 	pcl_pull_xid(pbin, offset + 1, pxid->size, &pxid->xid);
 	return pxid->size + 1;
 }

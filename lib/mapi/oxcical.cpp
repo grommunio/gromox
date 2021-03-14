@@ -1271,7 +1271,6 @@ static BOOL oxcical_parse_subtype(INT_HASH_TABLE *phash,
 static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, uint32_t *pcount, uint32_t *pdates)
 {
-	int i;
 	bool b_utc;
 	ICAL_TIME itime;
 	time_t tmp_time;
@@ -1298,11 +1297,10 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			itime.second = 0;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
 			tmp_date = rop_util_unix_to_nttime(tmp_time)/600000000;
-			for (i=0; i<*pcount; i++) {
+			for (size_t i = 0; i < *pcount; ++i)
 				if (tmp_date == pdates[i]) {
 					return TRUE;
 				}
-			}
 			pdates[*pcount] = tmp_date;
 			(*pcount) ++;
 			if (*pcount >= 1024) {
@@ -1399,7 +1397,6 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	INT_HASH_TABLE *phash, uint16_t *plast_propid,
 	MESSAGE_CONTENT *pmsg)
 {
-	int tmp_len;
 	BINARY tmp_bin;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
@@ -1415,7 +1412,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	tmp_len = strlen(pvalue);
+	auto tmp_len = strlen(pvalue);
 	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0) {
 		if (TRUE == decode_hex_binary(pvalue, tmp_buff, 1024)) {
 			ext_buffer_pull_init(&ext_pull, tmp_buff, tmp_len/2, alloc, 0);
@@ -2147,7 +2144,6 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg,
 	INT_HASH_TABLE *phash, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids)
 {
-	int i, tmp_int;
 	INT_HASH_ITER *iter;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
@@ -2167,6 +2163,7 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg,
 	iter = int_hash_iter_init(phash);
 	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
+		int tmp_int;
 		ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(iter, &tmp_int));
 		propids.ppropid[propids.count] = tmp_int;
 		propnames.ppropname[propnames.count] = *ppropname;
@@ -2181,20 +2178,17 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg,
 	if (NULL == phash1) {
 		return FALSE;
 	}
-	for (i=0; i<propids.count; i++) {
+	for (size_t i = 0; i < propids.count; ++i)
 		int_hash_add(phash1, propids.ppropid[i], propids1.ppropid + i);
-	}
 	oxcical_replace_propid(&pmsg->proplist, phash1);
 	if (NULL != pmsg->children.prcpts) {
-		for (i=0; i<pmsg->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 			oxcical_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
-		}
 	}
 	if (NULL != pmsg->children.pattachments) {
-		for (i=0; i<pmsg->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
 			oxcical_replace_propid(
 				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
-		}
 	}
 	int_hash_free(phash1);
 	return TRUE;
@@ -2589,11 +2583,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
     ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
-	int i;
 	BOOL b_alarm;
 	BOOL b_allday;
 	long duration;
-	int tmp_count;
 	time_t tmp_time;
 	time_t end_time;
 	ICAL_TIME itime;
@@ -3118,7 +3110,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 			apprecurr.exceptioncount =
 				apprecurr.recurrencepattern.modifiedinstancecount;
-			for (i=0; i<apprecurr.exceptioncount; i++) {
+			for (size_t i = 0; i < apprecurr.exceptioncount; ++i) {
 				memset(exceptions + i, 0, sizeof(EXCEPTIONINFO));
 				memset(ext_exceptions + i, 0, sizeof(EXTENDEDEXCEPTION));
 				exceptions[i].startdatetime = modified_dates[i];
@@ -3196,6 +3188,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			}
 			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
+			size_t i;
 			for (i=0; i<apprecurr.recurrencepattern.
 				deletedinstancecount; i++) {
 				if (tmp_int32 == deleted_dates[i]) {
@@ -3248,7 +3241,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
-	tmp_count = 0;
+	size_t tmp_count = 0;
 	for (auto piline : pmain_event->line_list) {
 		if (strcasecmp(piline->name.c_str(), "ATTACH") != 0)
 			continue;
@@ -3938,7 +3931,6 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	EXT_BUFFER_ALLOC alloc, const char *partstat,
 	MESSAGE_CONTENT *pmsg)
 {
-	int i;
 	BOOL b_rsvp;
 	void *pvalue;
 	std::shared_ptr<ICAL_LINE> piline;
@@ -4000,7 +3992,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	} else {
 		b_rsvp = FALSE;
 	}
-	for (i=0; i<pmsg->children.prcpts->count; i++) {
+	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
 		pvalue = tpropval_array_get_propval(
 			pmsg->children.prcpts->pparray[i],
 			PROP_TAG_RECIPIENTFLAGS);
@@ -4568,14 +4560,11 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 static BOOL oxcical_check_exdate(
 	APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
-	int i, j;
-	int count;
 	BOOL b_found;
-	
-	count = 0;
-	for (i=0; i<papprecurr->recurrencepattern.deletedinstancecount; i++) {
+	size_t count = 0;
+	for (size_t i = 0; i < papprecurr->recurrencepattern.deletedinstancecount; ++i) {
 		b_found = FALSE;
-		for (j=0; j<papprecurr->exceptioncount; j++) {
+		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
 			if (papprecurr->recurrencepattern.pdeletedinstancedates[i]
 				== papprecurr->pexceptioninfo[j].originalstartdate &&
 				0 != papprecurr->pexceptioninfo[j].overrideflags) {
@@ -4597,7 +4586,6 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
     std::shared_ptr<ICAL_COMPONENT> pcomponent,
 	APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
-	int i, j;
 	BOOL b_found;
 	time_t tmp_time;
 	ICAL_TIME itime;
@@ -4648,9 +4636,9 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 				return FALSE;
 		}
 	}
-	for (i=0; i<papprecurr->recurrencepattern.deletedinstancecount; i++) {
+	for (size_t i = 0; i < papprecurr->recurrencepattern.deletedinstancecount; ++i) {
 		b_found = FALSE;
-		for (j=0; j<papprecurr->exceptioncount; j++) {
+		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
 			if (papprecurr->recurrencepattern.pdeletedinstancedates[i]
 				== papprecurr->pexceptioninfo[j].originalstartdate &&
 				0 != papprecurr->pexceptioninfo[j].overrideflags) {
@@ -4688,14 +4676,12 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 static BOOL oxcical_check_rdate(
 	APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
-	int i, j;
-	int count;
+	size_t count = 0;
 	BOOL b_found;
 	
-	count = 0;
-	for (i=0; i<papprecurr->recurrencepattern.modifiedinstancecount; i++) {
+	for (size_t i = 0; i < papprecurr->recurrencepattern.modifiedinstancecount; ++i) {
 		b_found = FALSE;
-		for (j=0; j<papprecurr->exceptioncount; j++) {
+		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
 			if (papprecurr->recurrencepattern.pmodifiedinstancedates[i]
 				== papprecurr->pexceptioninfo[j].startdatetime &&
 				0 != papprecurr->pexceptioninfo[j].overrideflags) {
@@ -4717,7 +4703,6 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
      std::shared_ptr<ICAL_COMPONENT> pcomponent,
 	APPOINTMENTRECURRENCEPATTERN *papprecurr)
 {
-	int i, j;
 	BOOL b_found;
 	time_t tmp_time;
 	ICAL_TIME itime;
@@ -4758,9 +4743,9 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 				return FALSE;
 		}
 	}
-	for (i=0; i<papprecurr->recurrencepattern.deletedinstancecount; i++) {
+	for (size_t i = 0; i < papprecurr->recurrencepattern.deletedinstancecount; ++i) {
 		b_found = FALSE;
-		for (j=0; j<papprecurr->exceptioncount; j++) {
+		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
 			if (papprecurr->recurrencepattern.pmodifiedinstancedates[i]
 				== papprecurr->pexceptioninfo[j].startdatetime &&
 				0 != papprecurr->pexceptioninfo[j].overrideflags) {
@@ -4802,7 +4787,6 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	LCID_TO_LTAG lcid_to_ltag, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids)
 {
-	int i;
 	int year;
 	GUID guid;
 	void *pvalue;
@@ -5647,10 +5631,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			if (!pivalue->append_subval(static_cast<STRING_ARRAY *>(pvalue)->ppstr[i]))
+		auto sa = static_cast<STRING_ARRAY *>(pvalue);
+		for (size_t i = 0; i < sa->count; ++i)
+			if (!pivalue->append_subval(sa->ppstr[i]))
 				return FALSE;
-		}
 	}
 	
 	pvalue = tpropval_array_get_propval(
@@ -6044,7 +6028,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (FALSE == b_exceptional && NULL != pmsg->children.pattachments) {
-		for (i=0; i<pmsg->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
 			if (NULL == pmsg->children.pattachments->pplist[i]->pembedded) {
 				continue;
 			}

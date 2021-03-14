@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <string>
@@ -1021,15 +1022,13 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 static BOOL oxcmail_parse_thread_index(
 	char *field,  TPROPVAL_ARRAY *pproplist)
 {
-	int i;
-	size_t len;
 	BINARY tmp_bin;
 	TAGGED_PROPVAL propval;
 	char tmp_buff[MIME_FIELD_LEN];
 	
 	/* remove space(s) produced by mime lib */
-	len = strlen(field);
-	for (i=0; i<len; i++) {
+	auto len = strlen(field);
+	for (size_t i = 0; i < len; ++i) {
 		if (' ' == field[i]) {
 			memmove(field + i, field + i + 1, len - i);
 			len --;
@@ -3253,7 +3252,6 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg,
 	INT_HASH_TABLE *phash, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids)
 {
-	int i, tmp_int;
 	INT_HASH_ITER *iter;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
@@ -3273,6 +3271,7 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg,
 	iter = int_hash_iter_init(phash);
 	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
+		int tmp_int;
 		ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(iter, &tmp_int));
 		propids.ppropid[propids.count] = tmp_int;
 		propnames.ppropname[propnames.count] = *ppropname;
@@ -3287,20 +3286,17 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg,
 	if (NULL == phash1) {
 		return FALSE;
 	}
-	for (i=0; i<propids.count; i++) {
+	for (size_t i = 0; i < propids.count; ++i)
 		int_hash_add(phash1, propids.ppropid[i], propids1.ppropid + i);
-	}
 	oxcmail_replace_propid(&pmsg->proplist, phash1);
 	if (NULL != pmsg->children.prcpts) {
-		for (i=0; i<pmsg->children.prcpts->count; i++) {
+		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 			oxcmail_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
-		}
 	}
 	if (NULL != pmsg->children.pattachments) {
-		for (i=0; i<pmsg->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
 			oxcmail_replace_propid(
 				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
-		}
 	}
 	int_hash_free(phash1);
 	return TRUE;
@@ -4007,7 +4003,6 @@ static bool oxcmail_enum_mdn(const char *tag,
 
 static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
-	int i;
 	DSN dsn;
 	MIME *pmime;
 	void *pvalue;
@@ -4062,10 +4057,9 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 	propval.proptag = PROP_TAG_REPORTTIME;
 	propval.pvalue = pvalue;
-	for (i=0; i<pmsg->children.prcpts->count; i++) {
+	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 		if (!tpropval_array_set_propval(pmsg->children.prcpts->pparray[i], &propval))
 			return NULL;
-	}
 	return pmime;
 }
 
@@ -4908,11 +4902,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	return pmsg;
 }
 
-static int oxcmail_encode_mime_string(const char *charset,
-	const char *pstring, char *pout_string, int max_length)
+static size_t oxcmail_encode_mime_string(const char *charset,
+    const char *pstring, char *pout_string, size_t max_length)
 {
-	int offset;
-	int string_len;
+	size_t offset;
 	size_t base64_len;
 	char tmp_buff[MIME_FIELD_LEN];
 	
@@ -4920,18 +4913,18 @@ static int oxcmail_encode_mime_string(const char *charset,
 		TRUE == oxcmail_check_crlf(pstring)) {
 		if (TRUE == string_from_utf8(
 			charset, pstring, tmp_buff)) {
-			string_len = strlen(tmp_buff);
-			offset = gx_snprintf(pout_string,
-				max_length, "=?%s?B?", charset);
+			auto string_len = strlen(tmp_buff);
+			offset = std::max(0, gx_snprintf(pout_string,
+				max_length, "=?%s?B?", charset));
 			if (0 != encode64(tmp_buff, string_len,
 				pout_string + offset, max_length - offset,
 				&base64_len)) {
 				return 0;
 			}
 		} else {
-			string_len = strlen(pstring);
-			offset = gx_snprintf(pout_string,
-				max_length, "=?utf-8?B?");
+			auto string_len = strlen(pstring);
+			offset = std::max(0, gx_snprintf(pout_string,
+				max_length, "=?utf-8?B?"));
 			if (0 != encode64(pstring, string_len,
 				pout_string + offset, max_length - offset,
 				&base64_len)) {
@@ -4945,7 +4938,7 @@ static int oxcmail_encode_mime_string(const char *charset,
 		memcpy(pout_string + offset, "?=", 3);
 		return offset + 2;
 	} else {
-		string_len = strlen(pstring);
+		auto string_len = strlen(pstring);
 		if (string_len >= max_length) {
 			return 0;
 		}
@@ -4996,16 +4989,13 @@ static BOOL oxcmail_export_addresses(
 	uint32_t rcpt_type, EXT_BUFFER_ALLOC alloc,
 	char *field)
 {
-	int i;
-	size_t offset;
-	int tmp_len;
+	size_t offset = 0;
 	void *pvalue;
 	char username[256];
 	char *pdisplay_name;
 	TPROPVAL_ARRAY *prcpt;
 	
-	offset = 0;
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		prcpt = prcpts->pparray[i];
 		pvalue = tpropval_array_get_propval(
 			prcpt, PROP_TAG_RECIPIENTTYPE);
@@ -5027,7 +5017,7 @@ static BOOL oxcmail_export_addresses(
 			if (offset >= MIME_FIELD_LEN) {
 				return FALSE;
 			}
-			tmp_len = oxcmail_encode_mime_string(
+			auto tmp_len = oxcmail_encode_mime_string(
 				charset, pdisplay_name, field + offset,
 				MIME_FIELD_LEN - offset);
 			if (0 == tmp_len) {
@@ -5063,8 +5053,6 @@ static BOOL oxcmail_export_addresses(
 static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 	const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
 {
-	int i;
-	int tmp_len;
 	EXT_PULL ext_pull;
 	STRING_ARRAY *pstrings;
 	ONEOFF_ARRAY address_array;
@@ -5086,7 +5074,7 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 		pstrings = NULL;
 	}
 	size_t offset = 0;
-	for (i=0; i<address_array.count; i++) {
+	for (size_t i = 0; i < address_array.count; ++i) {
 		if (0 != offset) {
 			memcpy(field + offset, ", ", 2);
 			offset += 2;
@@ -5100,7 +5088,7 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 			if (offset >= MIME_FIELD_LEN) {
 				return FALSE;
 			}
-			tmp_len = oxcmail_encode_mime_string(charset,
+			auto tmp_len = oxcmail_encode_mime_string(charset,
 					pstrings->ppstr[i], field + offset,
 					MIME_FIELD_LEN - offset);
 			if (0 == tmp_len) {
@@ -5390,7 +5378,6 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
 	MIME *phead)
 {
-	int i;
 	size_t tmp_len = 0;
 	GUID guid;
 	uint32_t lid;
@@ -5817,7 +5804,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	if (NULL != pvalue) {
 		tmp_len = 0;
 		auto sa = static_cast<STRING_ARRAY *>(pvalue);
-		for (i = 0; i < sa->count; ++i) {
+		for (size_t i = 0; i < sa->count; ++i) {
 			if (0 != tmp_len) {
 				memcpy(tmp_field, " ,", 2);
 				tmp_len += 2;
@@ -6203,7 +6190,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	
 	mime_set_field(phead, "X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
 	rop_util_get_common_pset(PS_INTERNET_HEADERS, &guid);
-	for (i=0; i<pmsg->proplist.count; i++) {
+	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		propid = PROP_ID(pmsg->proplist.ppropval[i].proptag);
 		if (0 == (propid & 0x8000)) {
 			continue;
@@ -6229,7 +6216,6 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, char *pdsn_content,
 	int max_length)
 {
-	int i;
 	DSN dsn;
 	int tmp_len;
 	void *pvalue;
@@ -6292,7 +6278,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 		goto SERIALIZE_DSN;
 	}
 	prcpts = pmsg->children.prcpts;
-	for (i=0; i<prcpts->count; i++) {
+	for (size_t i = 0; i < prcpts->count; ++i) {
 		pdsn_fields = dsn_new_rcpt_fields(&dsn);
 		if (NULL == pdsn_fields) {
 			dsn_free(&dsn);

@@ -186,10 +186,8 @@ FOLDER_CONTENT* folder_content_init()
 BOOL folder_content_append_subfolder_internal(
 	FOLDER_CONTENT *pfldctnt, FOLDER_CONTENT *psubfld)
 {
-	int count;
 	FOLDER_CONTENT *psubflds;
-	
-	count = (pfldctnt->count / 10 + 1) * 10;
+	auto count = (pfldctnt->count / 10 + 1) * 10;
 	if (pfldctnt->count + 1 >= count) {
 		count += 10;
 		psubflds = static_cast<FOLDER_CONTENT *>(realloc(pfldctnt->psubflds, count * sizeof(FOLDER_CONTENT)));
@@ -207,8 +205,6 @@ BOOL folder_content_append_subfolder_internal(
 
 static void folder_content_free_internal(FOLDER_CONTENT *pfldctnt)
 {
-	int i;
-	
 	tpropval_array_free_internal(&pfldctnt->proplist);
 	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
 		eid_array_free(pfldctnt->fldmsgs.pfai_msglst);
@@ -216,9 +212,8 @@ static void folder_content_free_internal(FOLDER_CONTENT *pfldctnt)
 	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
 		eid_array_free(pfldctnt->fldmsgs.pnormal_msglst);
 	}
-	for (i=0; i<pfldctnt->count; i++) {
+	for (size_t i = 0; i < pfldctnt->count; ++i)
 		folder_content_free_internal(pfldctnt->psubflds + i);
-	}
 	free(pfldctnt->psubflds);
 }
 
@@ -314,28 +309,26 @@ void message_content_free(MESSAGE_CONTENT *pmsgctnt)
 
 uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt)
 {
-	int i, j;
 	uint32_t message_size;
 	TAGGED_PROPVAL *ppropval;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	message_size = 0;
-	for (i=0; i<pmsgctnt->proplist.count; i++) {
+	for (size_t i = 0; i < pmsgctnt->proplist.count; ++i) {
 		ppropval = pmsgctnt->proplist.ppropval + i;
 		message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
-		for (i=0; i<pmsgctnt->children.prcpts->count; i++) {
-			for (j=0; j<pmsgctnt->children.prcpts->pparray[i]->count; j++) {
+		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i)
+			for (size_t j = 0; j < pmsgctnt->children.prcpts->pparray[i]->count; ++j) {
 				ppropval = pmsgctnt->children.prcpts->pparray[i]->ppropval + j;
 				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			}
-		}
 	}
 	if (NULL != pmsgctnt->children.pattachments) {
-		for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
+		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
 			pattachment = pmsgctnt->children.pattachments->pplist[i];
-			for (j=0; j<pattachment->proplist.count; j++) {
+			for (size_t j = 0; j < pattachment->proplist.count; ++j) {
 				ppropval = pattachment->proplist.ppropval + j;
 				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			}
@@ -434,26 +427,19 @@ BOOL property_groupinfo_append_internal(
 BOOL property_groupinfo_get_partial_index(PROPERTY_GROUPINFO *pgpinfo,
 	uint32_t proptag, uint32_t *pindex)
 {
-	int i, j;
-	
-	for (i=0; i<pgpinfo->count; i++) {
-		for (j=0; j<pgpinfo->pgroups[i].count; j++) {
+	for (size_t i = 0; i < pgpinfo->count; ++i)
+		for (size_t j = 0; j < pgpinfo->pgroups[i].count; ++j)
 			if (proptag == pgpinfo->pgroups[i].pproptag[j]) {
 				*pindex = i;
 				return TRUE;
 			}
-		}
-	}
 	return FALSE;
 }
 
 void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo)
 {
-	int i;
-	
-	for (i=0; i<pgpinfo->count; i++) {
+	for (size_t i = 0; i < pgpinfo->count; ++i)
 		proptag_array_free_internal(pgpinfo->pgroups + i);
-	}
 	free(pgpinfo->pgroups);
 }
 

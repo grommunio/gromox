@@ -42,17 +42,15 @@ void proptag_array_clear(PROPTAG_ARRAY *pproptags)
 
 bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 {
-	int i;
-	uint32_t count;
+	size_t count;
 	uint32_t *pproptag;
 	
-	for (i=0; i<pproptags->count; i++) {
+	for (size_t i = 0; i < pproptags->count; ++i)
 		if (pproptags->pproptag[i] == proptag) {
 			return true;
 		}
-	}
 	count = (pproptags->count / 100 + 1) * 100;
-	if (pproptags->count + 1 >= count) {
+	if (pproptags->count + 1U >= count) {
 		count += 100;
 		pproptag = static_cast<uint32_t *>(realloc(pproptags->pproptag, sizeof(uint32_t) * count));
 		if (NULL == pproptag) {

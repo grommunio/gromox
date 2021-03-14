@@ -58,7 +58,6 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
 
 BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
-	int i;
 	static const COLOR_ITEM color_map[] =
 		{{"black",				0x000000},
 		{"silver",				0xc0c0c0},
@@ -216,11 +215,10 @@ BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 		if (NULL == g_color_hash) {
 			return FALSE;
 		}
-		for (i=0; i<sizeof(color_map)/sizeof(COLOR_ITEM); i++) {
+		for (size_t i = 0; i < GX_ARRAY_SIZE(color_map); ++i)
 			str_hash_add(g_color_hash,
 				color_map[i].name,
 				&color_map[i].value);
-		}
 		g_conv_id = iconv_open("UTF-16LE", "UTF-8");
 		if ((iconv_t)-1 == g_conv_id) {
 			str_hash_free(g_color_hash);
@@ -570,10 +568,8 @@ static int html_convert_color(const char *value)
 	if (0 == strncasecmp(value, "rgb(", 4)) {
 		ptr = value + 4;
 		ptr1 = strchr(ptr, ',');
-		if (NULL == ptr1 || ptr1 - ptr >=
-			sizeof(tmp_buff)) {
+		if (ptr1 == nullptr || static_cast<size_t>(ptr1 - ptr) >= sizeof(tmp_buff))
 			return -1;
-		}
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
 		tmp_val = atoi(tmp_buff);
@@ -583,10 +579,8 @@ static int html_convert_color(const char *value)
 		color = tmp_val << 16;
 		ptr = ptr1;
 		ptr1 = strchr(ptr, ',');
-		if (NULL == ptr1 || ptr1 - ptr >=
-			sizeof(tmp_buff)) {
+		if (ptr1 == nullptr || static_cast<size_t>(ptr1 - ptr) >= sizeof(tmp_buff))
 			return -1;
-		}
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
 		tmp_val = atoi(tmp_buff);
@@ -596,10 +590,8 @@ static int html_convert_color(const char *value)
 		color |= tmp_val << 8;
 		ptr = ptr1;
 		ptr1 = strchr(ptr, ')');
-		if (NULL == ptr1 || ptr1 - ptr >=
-			sizeof(tmp_buff)) {
+		if (ptr1 == nullptr || static_cast<size_t>(ptr1 - ptr) >= sizeof(tmp_buff))
 			return -1;
-		}
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
 		tmp_val = atoi(tmp_buff);

@@ -12,7 +12,6 @@ static void restriction_free_by_type(uint8_t rt, void *prestriction);
 static RESTRICTION_AND_OR* restriction_dup_and_or(
 	const RESTRICTION_AND_OR *prestriction)
 {
-	int i;
 	auto pres = static_cast<RESTRICTION_AND_OR *>(malloc(sizeof(RESTRICTION_AND_OR)));
 	if (NULL == pres) {
 		return NULL;
@@ -23,15 +22,14 @@ static RESTRICTION_AND_OR* restriction_dup_and_or(
 		free(pres);
 		return NULL;
 	}
-	for (i=0; i<prestriction->count; i++) {
+	for (size_t i = 0; i < prestriction->count; ++i) {
 		pres->pres[i].rt = prestriction->pres[i].rt;
 		pres->pres[i].pres = restriction_dup_by_type(
 			prestriction->pres[i].rt, prestriction->pres[i].pres);
 		if (NULL == pres->pres[i].pres) {
-			for (i-=1; i>=0; i--) {
+			while (i-- > 0)
 				restriction_free_by_type(
 					pres->pres[i].rt, pres->pres[i].pres);
-			}
 			free(pres->pres);
 			free(pres);
 			return NULL;
@@ -42,12 +40,9 @@ static RESTRICTION_AND_OR* restriction_dup_and_or(
 
 static void restriction_free_and_or(RESTRICTION_AND_OR *prestriction)
 {
-	int i;
-	
-	for (i=0; i<prestriction->count; i++) {
+	for (size_t i = 0; i < prestriction->count; ++i)
 		restriction_free_by_type(prestriction->pres[i].rt,
 								prestriction->pres[i].pres);
-	}
 	if (NULL != prestriction->pres) {
 		free(prestriction->pres);
 	}
@@ -405,13 +400,11 @@ void restriction_free(RESTRICTION *prestriction)
 
 static uint32_t restriction_and_or_size(const RESTRICTION_AND_OR *r)
 {
-	int i;
 	uint32_t size;
 	
 	size = sizeof(uint16_t);
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		size += restriction_size(r->pres + i);
-	}
 	return size;
 }
 

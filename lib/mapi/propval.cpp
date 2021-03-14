@@ -12,8 +12,6 @@
 
 void* propval_dup(uint16_t type, void *pvi)
 {
-	int i;
-	
 	if (pvi == nullptr) {
 		debug_info("[propval]: cannot duplicate NULL propval");
 		return NULL;
@@ -222,10 +220,10 @@ void* propval_dup(uint16_t type, void *pvi)
 				free(preturn);
 				return NULL;
 			}
-			for (i = 0; i < psrc->count; ++i) {
+			for (size_t i = 0; i < psrc->count; ++i) {
 				preturn->ppstr[i] = strdup(psrc->ppstr[i]);
 				if (preturn->ppstr[i] == nullptr) {
-					for (i -= 1; i >= 0; --i)
+					while (i-- > 0)
 						free(preturn->ppstr[i]);
 					free(preturn->ppstr);
 					free(preturn);
@@ -269,7 +267,7 @@ void* propval_dup(uint16_t type, void *pvi)
 				free(preturn);
 				return NULL;
 			}
-			for (i = 0; i < psrc->count; ++i) {
+			for (size_t i = 0; i < psrc->count; ++i) {
 				preturn->pbin[i].cb = psrc->pbin[i].cb;
 				if (psrc->pbin[i].cb == 0) {
 					preturn->pbin[i].pb = NULL;
@@ -294,8 +292,6 @@ void* propval_dup(uint16_t type, void *pvi)
 
 void propval_free(uint16_t type, void *pvalue)
 {
-	int i;
-	
 	if (NULL == pvalue) {
 		debug_info("[propval] cannot free NULL propval");
 		return;
@@ -345,21 +341,23 @@ void propval_free(uint16_t type, void *pvalue)
 		free(((LONGLONG_ARRAY*)pvalue)->pll);
 		break;
 	case PT_MV_STRING8:
-	case PT_MV_UNICODE:
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			free(((STRING_ARRAY*)pvalue)->ppstr[i]);
-		}
-		free(((STRING_ARRAY*)pvalue)->ppstr);
+	case PT_MV_UNICODE: {
+		auto sa = static_cast<STRING_ARRAY *>(pvalue);
+		for (size_t i = 0; i < sa->count; ++i)
+			free(sa->ppstr[i]);
+		free(sa->ppstr);
 		break;
+	}
 	case PT_MV_CLSID:
 		free(((GUID_ARRAY*)pvalue)->pguid);
 		break;
-	case PT_MV_BINARY:
-		for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
-			free(((BINARY_ARRAY*)pvalue)->pbin[i].pb);
-		}
-		free(((BINARY_ARRAY*)pvalue)->pbin);
+	case PT_MV_BINARY: {
+		auto ba = static_cast<BINARY_ARRAY *>(pvalue);
+		for (size_t i = 0; i < ba->count; ++i)
+			free(ba->pbin[i].pb);
+		free(ba->pbin);
 		break;
+	}
 	}
 	free(pvalue);
 }
@@ -376,7 +374,6 @@ static uint32_t propval_utf16_len(const char *putf8_string)
 
 uint32_t propval_size(uint16_t type, void *pvalue)
 {
-	int i;
 	uint32_t length;
 	
 	switch (type) {
@@ -423,26 +420,29 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count;
 	case PT_MV_I8:
 		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
-	case PT_MV_STRING8:
+	case PT_MV_STRING8: {
 		length = 0;
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			length += strlen(((STRING_ARRAY*)pvalue)->ppstr[i]) + 1;
-		}
+		auto sa = static_cast<STRING_ARRAY *>(pvalue);
+		for (size_t i = 0; i < sa->count; ++i)
+			length += strlen(sa->ppstr[i]) + 1;
 		return length;
-	case PT_MV_UNICODE:
+	}
+	case PT_MV_UNICODE: {
 		length = 0;
-		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-			length += propval_utf16_len(((STRING_ARRAY*)pvalue)->ppstr[i]);
-		}
+		auto sa = static_cast<STRING_ARRAY *>(pvalue);
+		for (size_t i = 0; i < sa->count; ++i)
+			length += propval_utf16_len(sa->ppstr[i]);
 		return length;
+	}
 	case PT_MV_CLSID:
 		return 16*((GUID_ARRAY*)pvalue)->count;
-	case PT_MV_BINARY:
+	case PT_MV_BINARY: {
 		length = 0;
-		for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
-			length += ((BINARY_ARRAY*)pvalue)->pbin[i].cb;
-		}
+		auto ba = static_cast<BINARY_ARRAY *>(pvalue);
+		for (size_t i = 0; i < ba->count; ++i)
+			length += ba->pbin[i].cb;
 		return length;
+	}
 	}
 	return 0;
 }
@@ -450,8 +450,6 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 BOOL propval_compare_relop(uint8_t relop,
 	uint16_t proptype, void *pvalue1, void *pvalue2)
 {
-	int i;
-	
 	switch (proptype) {
 	case PT_SHORT:
 		switch (relop) {
@@ -922,14 +920,14 @@ BOOL propval_compare_relop(uint8_t relop,
 		case RELOP_EQ:
 			if (sa1->count != sa2->count)
 				return FALSE;
-			for (i = 0; i < sa1->count; ++i)
+			for (size_t i = 0; i < sa1->count; ++i)
 				if (strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) != 0)
 					return FALSE;	
 			return TRUE;
 		case RELOP_NE:
 			if (sa1->count != sa2->count)
 				return TRUE;
-			for (i = 0; i < sa1->count; ++i)
+			for (size_t i = 0; i < sa1->count; ++i)
 				if (strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) != 0)
 					return TRUE;	
 			return FALSE;
@@ -943,7 +941,7 @@ BOOL propval_compare_relop(uint8_t relop,
 		case RELOP_EQ:
 			if (bv1->count != bv2->count)
 				return FALSE;
-			for (i = 0; i < bv1->count; ++i) {
+			for (size_t i = 0; i < bv1->count; ++i) {
 				if (bv1->pbin[i].cb != bv2->pbin[i].cb)
 					return FALSE;	
 				if (memcmp(bv1->pbin[i].pv, bv2->pbin[i].pv, bv1->pbin[i].cb) != 0)
@@ -953,7 +951,7 @@ BOOL propval_compare_relop(uint8_t relop,
 		case RELOP_NE:
 			if (bv1->count != bv2->count)
 				return TRUE;
-			for (i = 0; i < bv1->count; ++i) {
+			for (size_t i = 0; i < bv1->count; ++i) {
 				if (bv1->pbin[i].cb != bv2->pbin[i].cb)
 					return TRUE;	
 				if (memcmp(bv1->pbin[i].pv, bv2->pbin[i].pv, bv1->pbin[i].cb) != 0)
