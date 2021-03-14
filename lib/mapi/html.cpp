@@ -361,12 +361,8 @@ static uint32_t html_utf8_to_wchar(const char *src, int length)
 	pout = (char*)&wchar;
 	in_len = length;
 	len = sizeof(uint16_t);
-	if (-1 == iconv(g_conv_id, &pin, &in_len,
-		&pout, &len) || 0 != len) {
-		return 0;
-	} else {
-		return wchar;
-	}
+	return iconv(g_conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1) ||
+	       len != 0 ? 0 : wchar;
 }
 
 static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)

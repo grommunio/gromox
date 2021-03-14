@@ -399,8 +399,7 @@ static bool rtf_flush_iconv_cache(RTF_READER *preader)
 	in_size = preader->iconv_push.offset;
 	out_buff = ptmp_buff;
 	out_size = tmp_len;
-	if (-1 == iconv(preader->conv_id, &in_buff,
-		&in_size, &out_buff, &out_size)) {
+	if (iconv(preader->conv_id, &in_buff, &in_size, &out_buff, &out_size) == static_cast<size_t>(-1)) {
 		free(ptmp_buff);
 		/* ignore the characters which can not be converted */
 		preader->iconv_push.offset = 0;
@@ -3397,7 +3396,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	}
 	pout = *pbuff_out;
 	size_t in_len = reader.ext_push.offset;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &out_len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return false;
 	}

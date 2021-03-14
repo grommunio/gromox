@@ -299,7 +299,7 @@ BOOL string_to_utf8(const char *charset,
 	pout = out_string;
 	in_len = length;
 	out_len = 2*length;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &out_len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
 	}
@@ -342,7 +342,7 @@ BOOL string_from_utf8(const char *charset,
 	pout = out_string;
 	in_len = length;
 	out_len = 2*length;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &out_len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
 	}
@@ -362,7 +362,7 @@ int utf8_to_utf16le(const char *src, void *dst, size_t len)
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
-	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
 	} else {
@@ -380,7 +380,7 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 	pin = (char*)src;
 	pout = dst;
 	memset(dst, 0, len);
-	if (-1 == iconv(conv_id, &pin, &src_len, &pout, &len)) {
+	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
 	} else {
