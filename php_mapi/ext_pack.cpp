@@ -217,8 +217,10 @@ zend_bool ext_pack_pull_binary(PULL_CTX *pctx, BINARY *r)
 		return 1;
 	}
 	r->pv = emalloc(r->cb);
-	if (r->pv == nullptr)
+	if (r->pv == nullptr) {
+		r->cb = 0;
 		return 0;
+	}
 	return ext_pack_pull_bytes(pctx, r->pb, r->cb);
 }
 
@@ -231,6 +233,7 @@ zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 	}
 	r->ps = sta_malloc<uint16_t>(r->count);
 	if (NULL == r->ps) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -247,6 +250,7 @@ zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 	}
 	r->pl = sta_malloc<uint32_t>(r->count);
 	if (NULL == r->pl) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -263,6 +267,7 @@ zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 	}
 	r->pll = sta_malloc<uint64_t>(r->count);
 	if (NULL == r->pll) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -279,6 +284,7 @@ zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 	}
 	r->pbin = sta_malloc<BINARY>(r->count);
 	if (NULL == r->pbin) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -295,6 +301,7 @@ zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 	}
 	r->ppstr = sta_malloc<char *>(r->count);
 	if (NULL == r->ppstr) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -311,6 +318,7 @@ zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 	}
 	r->pguid = sta_malloc<GUID>(r->count);
 	if (NULL == r->pguid) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -328,6 +336,7 @@ static zend_bool ext_pack_pull_restriction_and_or(
 	}
 	r->pres = sta_malloc<RESTRICTION>(r->count);
 	if (NULL == r->pres) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -414,6 +423,7 @@ static zend_bool ext_pack_pull_restriction_comment(
 	}
 	r->ppropval = sta_malloc<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -542,6 +552,7 @@ static zend_bool ext_pack_pull_recipient_block(PULL_CTX *pctx, RECIPIENT_BLOCK *
 	}
 	r->ppropval = sta_malloc<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -561,6 +572,7 @@ static zend_bool ext_pack_pull_forwarddelegate_action(
 	}
 	r->pblock = sta_malloc<RECIPIENT_BLOCK>(r->count);
 	if (NULL == r->pblock) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -642,6 +654,7 @@ zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r)
 	}
 	r->pblock = sta_malloc<ACTION_BLOCK>(r->count);
 	if (NULL == r->pblock) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -781,6 +794,7 @@ zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r)
 	}
 	r->pproptag = sta_malloc<uint32_t>(r->count);
 	if (NULL == r->pproptag) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -830,6 +844,7 @@ zend_bool ext_pack_pull_propname_array(PULL_CTX *pctx, PROPNAME_ARRAY *r)
 	}
 	r->ppropname = sta_malloc<PROPERTY_NAME>(r->count);
 	if (NULL == r->ppropname) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -849,6 +864,7 @@ zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r)
 	}
 	r->ppropid = sta_malloc<uint16_t>(r->count);
 	if (NULL == r->ppropid) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -868,6 +884,7 @@ zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r)
 	}
 	r->ppropval = sta_malloc<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -885,6 +902,7 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 	}
 	r->pparray = sta_malloc<TPROPVAL_ARRAY *>(r->count);
 	if (NULL == r->pparray) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i) {
@@ -912,6 +930,7 @@ zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r)
 	BTRY(ext_pack_pull_uint16(pctx, &r->count));
 	r->prows = sta_malloc<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
@@ -952,6 +971,7 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 	}
 	r->pstate = sta_malloc<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
+		r->count = 0;
 		return 0;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -1070,6 +1090,7 @@ zend_bool ext_pack_pull_znotification_array(
 	}
 	r->ppnotification = sta_malloc<ZNOTIFICATION *>(r->count);
 	if (NULL == r->ppnotification) {
+		r->count = 0;
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {

@@ -349,8 +349,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (bv->cb < 16 || bv->cb > pext->data_size - pext->offset)
 			return EXT_ERR_FORMAT;
 		bv->pv = pext->alloc(bv->cb);
-		if (bv->pv == nullptr)
+		if (bv->pv == nullptr) {
+			bv->cb = 0;
 			return EXT_ERR_ALLOC;
+		}
 		offset = pext->offset;
 		TRY(ext_buffer_pull_bytes(pext, bv->pv, bv->cb));
 		if (memcmp(bv->pv, IID_IMessage, 16) != 0 &&
@@ -374,8 +376,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (bv->cb + pext->offset > pext->data_size)
 			return EXT_ERR_FORMAT;
 		bv->pv = pext->alloc(bv->cb);
-		if (bv->pv == nullptr)
+		if (bv->pv == nullptr) {
+			bv->cb = 0;
 			return EXT_ERR_ALLOC;
+		}
 		offset = pext->offset;
 		TRY(ext_buffer_pull_bytes(pext, bv->pv, bv->cb));
 		return ext_buffer_pull_advance(pext,
@@ -394,8 +398,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			sa->ps = NULL;
 		} else {
 			sa->ps = pext->anew<uint16_t>(sa->count);
-			if (sa->ps == nullptr)
+			if (sa->ps == nullptr) {
+				sa->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_pull_uint16(pext, sa->ps + i));
@@ -416,8 +422,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			la->pl = nullptr;
 		} else {
 			la->pl = pext->anew<uint32_t>(la->count);
-			if (la->pl == nullptr)
+			if (la->pl == nullptr) {
+				la->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_pull_uint32(pext, la->pl + i));
@@ -436,8 +444,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			la->pll = nullptr;
 		} else {
 			la->pll = pext->anew<uint64_t>(la->count);
-			if (la->pll == nullptr)
+			if (la->pll == nullptr) {
+				la->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_pull_uint64(pext, la->pll + i));
@@ -456,8 +466,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			sa->ppstr = nullptr;
 		} else {
 			sa->ppstr = pext->anew<char *>(sa->count);
-			if (sa->ppstr == nullptr)
+			if (sa->ppstr == nullptr) {
+				sa->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_pull_uint32(pext, &tmp_int));
@@ -484,8 +496,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			sa->ppstr = nullptr;
 		} else {
 			sa->ppstr = pext->anew<char *>(sa->count);
-			if (sa->ppstr == nullptr)
+			if (sa->ppstr == nullptr) {
+				sa->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(ext_buffer_pull_uint32(pext, &tmp_int));
@@ -512,8 +526,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			ga->pguid = nullptr;
 		} else {
 			ga->pguid = pext->anew<GUID>(ga->count);
-			if (ga->pguid == nullptr)
+			if (ga->pguid == nullptr) {
+				ga->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < ga->count; ++i)
 			TRY(ext_buffer_pull_guid(pext, ga->pguid + i));
@@ -532,8 +548,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			ba->pbin = nullptr;
 		} else {
 			ba->pbin = pext->anew<BINARY>(ba->count);
-			if (ba->pbin == nullptr)
+			if (ba->pbin == nullptr) {
+				ba->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < ba->count; ++i) {
 			TRY(ext_buffer_pull_uint32(pext, &ba->pbin[i].cb));
@@ -543,8 +561,10 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				ba->pbin[i].pv = nullptr;
 			} else {
 				ba->pbin[i].pv = pext->alloc(ba->pbin[i].cb);
-				if (ba->pbin[i].pv == nullptr)
+				if (ba->pbin[i].pv == nullptr) {
+					ba->pbin[i].cb = 0;
 					return EXT_ERR_ALLOC;
+				}
 			}
 			offset = pext->offset;
 			TRY(ext_buffer_pull_bytes(pext, ba->pbin[i].pv, ba->pbin[i].cb));
@@ -739,8 +759,10 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			tf->ppropval = nullptr;
 		} else {
 			tf->ppropval = pext->anew<TNEF_PROPVAL>(tf->count);
-			if (tf->ppropval == nullptr)
+			if (tf->ppropval == nullptr) {
+				tf->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < tf->count; ++i)
 			TRY(tnef_pull_propval(pext, tf->ppropval + i));
@@ -759,8 +781,10 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			tf->pplist = nullptr;
 		} else {
 			tf->pplist = pext->anew<TNEF_PROPLIST *>(tf->count);
-			if (tf->pplist == nullptr)
+			if (tf->pplist == nullptr) {
+				tf->count = 0;
 				return EXT_ERR_ALLOC;
+			}
 		}
 		for (size_t i = 0; i < tf->count; ++i) {
 			tf->pplist[i] = pext->anew<TNEF_PROPLIST>();
@@ -773,8 +797,10 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 				tf->pplist[i]->ppropval = nullptr;
 			} else {
 				tf->pplist[i]->ppropval = pext->anew<TNEF_PROPVAL>(tf->pplist[i]->count);
-				if (tf->pplist[i]->ppropval == nullptr)
+				if (tf->pplist[i]->ppropval == nullptr) {
+					tf->pplist[i]->count = 0;
 					return EXT_ERR_ALLOC;
+				}
 			}
 			for (size_t j = 0; j < tf->pplist[i]->count; ++j)
 				TRY(tnef_pull_propval(pext, tf->pplist[i]->ppropval + j));
@@ -842,8 +868,10 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
 		la->count = len / sizeof(uint32_t);
 		la->pl = pext->anew<uint32_t>(la->count);
-		if (la->pl == nullptr)
+		if (la->pl == nullptr) {
+			la->count = 0;
 			return EXT_ERR_ALLOC;
+		}
 		for (size_t i = 0; i < la->count; ++i)
 			TRY(ext_buffer_pull_uint32(pext, la->pl + i));
 		break;

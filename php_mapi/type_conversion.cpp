@@ -84,6 +84,7 @@ zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 	}
 	pbins->pbin = sta_malloc<BINARY>(pbins->count);
 	if (NULL == pbins->pbin) {
+		pbins->count = 0;
 		return 0;
 	}
 
@@ -97,6 +98,7 @@ zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 		} else {
 			pbins->pbin[i].pb = sta_malloc<uint8_t>(pbins->pbin[i].cb);
 			if (NULL == pbins->pbin[i].pb) {
+				pbins->pbin[i].cb = 0;
 				return 0;
 			}
 			memcpy(pbins->pbin[i].pb, str->val, str->len);
@@ -138,6 +140,7 @@ zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 	}
 	pset->psort = sta_malloc<SORT_ORDER>(pset->count);
 	if (NULL == pset->psort) {
+		pset->count = 0;
 		return 0;
 	}
 
@@ -172,7 +175,10 @@ zend_bool php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
 		return 1;
 	}
 	pproptags->pproptag = sta_malloc<uint32_t>(pproptags->count);
-
+	if (pproptags->pproptag == nullptr) {
+		pproptags->count = 0;
+		return 0;
+	}
 	size_t i = 0;
 	zval *entry;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
@@ -271,8 +277,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			bin->pb = nullptr;
 		} else {
 			bin->pb = sta_malloc<uint8_t>(str->len);
-			if (bin->pb == nullptr)
+			if (bin->pb == nullptr) {
+				bin->cb = 0;
 				return NULL;
+			}
 			memcpy(bin->pb, str->val, str->len);
 		}
 		break;
@@ -315,8 +323,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xs->ps = sta_malloc<uint16_t>(xs->count);
-		if (xs->ps == nullptr)
+		if (xs->ps == nullptr) {
+			xs->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			xs->ps[j++] = zval_get_long(entry);
 		} ZEND_HASH_FOREACH_END();
@@ -338,8 +348,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xl->pl = sta_malloc<uint32_t>(xl->count);
-		if (xl->pl == nullptr)
+		if (xl->pl == nullptr) {
+			xl->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			xl->pl[j++] = zval_get_long(entry);
 		} ZEND_HASH_FOREACH_END();
@@ -361,8 +373,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xl->pll = sta_malloc<uint64_t>(xl->count);
-		if (xl->pll == nullptr)
+		if (xl->pll == nullptr) {
+			xl->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			xl->pll[j++] = zval_get_double(data_entry);
 		} ZEND_HASH_FOREACH_END();
@@ -385,8 +399,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xs->ppstr = sta_malloc<char *>(xs->count);
-		if (xs->ppstr == nullptr)
+		if (xs->ppstr == nullptr) {
+			xs->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
 			pstring = sta_malloc<char>(str->len + 1);
@@ -415,8 +431,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xb->pbin = sta_malloc<BINARY>(xb->count);
-		if (xb->pbin == nullptr)
+		if (xb->pbin == nullptr) {
+			xb->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
 			xb->pbin[j].cb = str->len;
@@ -448,8 +466,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xb->pguid = sta_malloc<GUID>(xb->count);
-		if (xb->pguid == nullptr)
+		if (xb->pguid == nullptr) {
+			xb->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
 			if (str->len != sizeof(GUID))
@@ -476,8 +496,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			break;
 		}
 		xr->pblock = sta_malloc<ACTION_BLOCK>(xr->count);
-		if (xr->pblock == nullptr)
+		if (xr->pblock == nullptr) {
+			xr->count = 0;
 			return NULL;
+		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			ZVAL_DEREF(data_entry);
 			paction_hash = HASH_OF(data_entry);
@@ -509,8 +531,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				zstrplus str1(zval_get_string(data_entry));
 				xq->store_eid.cb = str1->len;
 				xq->store_eid.pb = sta_malloc<uint8_t>(str1->len);
-				if (xq->store_eid.pb == nullptr)
+				if (xq->store_eid.pb == nullptr) {
+					xq->store_eid.cb = 0;
 					return NULL;
+				}
 				memcpy(xq->store_eid.pb, str1->val, str1->len);
 
 				data_entry = zend_hash_find(paction_hash, str_folderentryid.get());
@@ -536,8 +560,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 					return NULL;
 				xq->message_eid.cb = str1->len;
 				xq->message_eid.pb = sta_malloc<uint8_t>(str1->len);
-				if (xq->message_eid.pb == nullptr)
+				if (xq->message_eid.pb == nullptr) {
+					xq->message_eid.cb = 0;
 					return NULL;
+				}
 				memcpy(xq->message_eid.pb, str1->val, str1->len);
 
 				data_entry = zend_hash_find(paction_hash, str_replyguid.get());
@@ -591,8 +617,10 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				if (xq->count == 0)
 					return NULL;
 				xq->pblock = sta_malloc<RECIPIENT_BLOCK>(xq->count);
-				if (xq->pblock == nullptr)
+				if (xq->pblock == nullptr) {
+					xq->count = 0;
 					return NULL;
+				}
 				int k = 0;
 				ZEND_HASH_FOREACH_VAL(precipient_hash, data_entry) {
 					if (!php_to_tpropval_array(data_entry,
@@ -662,6 +690,7 @@ zend_bool php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 	}
 	ppropvals->ppropval = sta_malloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (NULL == ppropvals->ppropval) {
+		ppropvals->count = 0;
 		return 0;
 	}
 
@@ -700,6 +729,7 @@ zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset)
 	}
 	pset->pparray = sta_malloc<TPROPVAL_ARRAY *>(pset->count);
 	if (NULL == pset->pparray) {
+		pset->count = 0;
 		return 0;
 	}
 
@@ -742,6 +772,7 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
 	}
 	plist->prule = sta_malloc<RULE_DATA>(plist->count);
 	if (NULL == plist->prule) {
+		plist->count = 0;
 		return 0;
 	}
 
@@ -813,8 +844,10 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 			return 0;
 		andor->count = zend_hash_num_elements(pdata_hash);
 		andor->pres = sta_malloc<RESTRICTION>(andor->count);
-		if (andor->pres == nullptr)
+		if (andor->pres == nullptr) {
+			andor->count = 0;
 			return 0;
+		}
 		i = 0;
 		ZEND_HASH_FOREACH_VAL(pdata_hash, value_entry) {
 			if (!php_to_restriction(value_entry, &andor->pres[i++]))
@@ -1406,6 +1439,7 @@ zend_bool php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 	}
 	pstates->pstate = sta_malloc<MESSAGE_STATE>(pstates->count);
 	if (NULL == pstates->pstate) {
+		pstates->count = 0;
 		return 0;
 	}
 	i = 0;
@@ -1418,6 +1452,7 @@ zend_bool php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 		pstates->pstate[i].source_key.cb = str->len;
 		pstates->pstate[i].source_key.pb = sta_malloc<uint8_t>(str->len);
 		if (NULL == pstates->pstate[i].source_key.pb) {
+			pstates->pstate[i].source_key.cb = 0;
 			return 0;
 		}
 		memcpy(pstates->pstate[i].source_key.pb, str->val, str->len);
@@ -1524,6 +1559,7 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 	}
 	ppropnames->ppropname = sta_malloc<PROPERTY_NAME>(ppropnames->count);
 	if (NULL == ppropnames->ppropname) {
+		ppropnames->count = 0;
 		return 0;
 	}
 	zend_hash_internal_pointer_reset(pnameshash);

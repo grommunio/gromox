@@ -152,8 +152,10 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
 				pbin->pv = malloc(pbin->cb);
-				if (pbin->pv == nullptr)
+				if (pbin->pv == nullptr) {
+					pbin->cb = 0;
 					return FALSE;
+				}
 				memcpy(pbin->pv, resp_buff, 5);
 				offset = 5;
 				if (offset == pbin->cb) {

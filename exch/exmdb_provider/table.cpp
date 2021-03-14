@@ -3607,6 +3607,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
+			pproptags->count = 0;
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3686,6 +3687,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_CONTENTUNREADCOUNT;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
+			pproptags->count = 0;
 			db_engine_put_db(pdb);
 			return FALSE;
 		}

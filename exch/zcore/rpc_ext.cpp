@@ -40,6 +40,7 @@ static BOOL rpc_ext_pull_recipient_block(
 	}
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
@@ -59,6 +60,7 @@ static BOOL rpc_ext_pull_forwarddelegate_action(
 	}
 	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (NULL == r->pblock) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
@@ -146,6 +148,7 @@ static BOOL rpc_ext_pull_rule_actions(
 	}
 	r->pblock = pext->anew<ACTION_BLOCK>(r->count);
 	if (NULL == r->pblock) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
@@ -315,6 +318,7 @@ static BOOL rpc_ext_pull_tpropval_array(
 	}
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
@@ -345,6 +349,7 @@ static BOOL rpc_ext_pull_rule_list(
 	}
 	r->prule = pext->anew<RULE_DATA>(r->count);
 	if (NULL == r->prule) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
@@ -373,6 +378,7 @@ static BOOL rpc_ext_pull_permission_set(
 	QRF(ext_buffer_pull_uint16(pext, &r->count));
 	r->prows = pext->anew<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
@@ -402,6 +408,7 @@ static BOOL rpc_ext_pull_state_array(
 	}
 	r->pstate = pext->anew<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -1283,6 +1290,7 @@ static BOOL rpc_ext_pull_notifdequeue_request(
 	QRF(ext_buffer_pull_uint16(pext, &ppayload->notifdequeue.psink->count));
 	ppayload->notifdequeue.psink->padvise = pext->anew<ADVISE_INFO>(ppayload->notifdequeue.psink->count);
 	if (NULL == ppayload->notifdequeue.psink->padvise) {
+		ppayload->notifdequeue.psink->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<ppayload->notifdequeue.psink->count; i++) {

@@ -466,8 +466,10 @@ static BOOL folder_object_get_calculated_property(
 		}
 		ba->count = 5;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
-		if (ba->pbin == nullptr)
+		if (ba->pbin == nullptr) {
+			ba->count = 0;
 			return FALSE;
+		}
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (NULL == pbin) {
@@ -587,8 +589,10 @@ static BOOL folder_object_get_calculated_property(
 		}
 		ba->count = 4;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
-		if (ba->pbin == nullptr)
+		if (ba->pbin == nullptr) {
+			ba->count = 0;
 			return FALSE;
+		}
 		ba->pbin[0].cb = 0;
 		ba->pbin[0].pb = nullptr;
 		ba->pbin[1].cb = 0;

@@ -577,6 +577,7 @@ BOOL icsdownctx_object_sync_readstates(
 	} else {
 		pstates->pstate = cu_alloc<MESSAGE_STATE>(pstates->count);
 		if (NULL == pstates->pstate) {
+			pstates->count = 0;
 			return FALSE;
 		}
 		pstates->count = 0;

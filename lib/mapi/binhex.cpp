@@ -299,6 +299,7 @@ bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 	} else {
 		pbinhex->pdata = static_cast<uint8_t *>(malloc(pbinhex->data_len));
 		if (NULL == pbinhex->pdata) {
+			pbinhex->data_len = 0;
 			return false;
 		}
 	}
@@ -307,6 +308,7 @@ bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 	} else {
 		pbinhex->presource = static_cast<uint8_t *>(malloc(pbinhex->res_len));
 		if (NULL == pbinhex->presource) {
+			pbinhex->res_len = 0;
 			free(pbinhex->pdata);
 			return false;
 		}

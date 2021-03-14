@@ -69,6 +69,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
 				pbin->pb = sta_malloc<uint8_t>(pbin->cb);
 				if (NULL == pbin->pb) {
+					pbin->cb = 0;
 					return 0;
 				}
 				memcpy(pbin->pb, resp_buff, 5);

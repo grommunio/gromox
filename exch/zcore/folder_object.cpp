@@ -464,8 +464,10 @@ static BOOL folder_object_get_calculated_property(
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		ba->count = 5;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
-		if (ba->pbin == nullptr)
+		if (ba->pbin == nullptr) {
+			ba->count = 0;
 			return FALSE;
+		}
 		pbin = common_util_to_folder_entryid(pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (NULL == pbin) {
@@ -557,8 +559,10 @@ static BOOL folder_object_get_calculated_property(
 		}
 		bv->cb = ext_push.offset;
 		bv->pv = common_util_alloc(ext_push.offset);
-		if (bv->pv == nullptr)
+		if (bv->pv == nullptr) {
+			bv->cb = 0;
 			return FALSE;
+		}
 		memcpy(bv->pv, ext_push.data, ext_push.offset);
 		return TRUE;
 	}
@@ -589,8 +593,10 @@ static BOOL folder_object_get_calculated_property(
 		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
 		ba->count = 4;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
-		if (ba->pbin == nullptr)
+		if (ba->pbin == nullptr) {
+			ba->count = 0;
 			return FALSE;
+		}
 		ba->pbin[0].cb = 0;
 		ba->pbin[0].pb = NULL;
 		ba->pbin[1].cb = 0;

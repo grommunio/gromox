@@ -500,6 +500,7 @@ int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 	TRY(applefile_pull_uint16(pext, &r->count));
 	r->pentries = pext->anew<ENTRY_DATA>(r->count);
 	if (NULL == r->pentries) {
+		r->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {

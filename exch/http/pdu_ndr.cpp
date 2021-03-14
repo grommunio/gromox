@@ -24,17 +24,16 @@ static int pdu_ndr_pull_dcerpc_ctx_list(NDR_PULL *pndr, DCERPC_CTX_LIST *r)
 {
 	uint32_t i;
 	int status;
-	uint8_t num;
 	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint16(pndr, &r->context_id));
 	TRY(ndr_pull_uint8(pndr, &r->num_transfer_syntaxes));
 	TRY(ndr_pull_syntax_id(pndr, &r->abstract_syntax));
 	
-	num = r->num_transfer_syntaxes;
-	if (num > 0) {
-		r->transfer_syntaxes = (SYNTAX_ID*)malloc(sizeof(SYNTAX_ID)*num);
+	if (r->num_transfer_syntaxes > 0) {
+		r->transfer_syntaxes = static_cast<SYNTAX_ID *>(malloc(sizeof(SYNTAX_ID) * r->num_transfer_syntaxes));
 		if (NULL == r->transfer_syntaxes) {
+			r->num_transfer_syntaxes = 0;
 			return NDR_ERR_ALLOC;
 		}
 		
@@ -96,6 +95,7 @@ static int pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK *r)
 		if (r->num_versions > 0) {
 			r->versions = (uint32_t*)malloc(sizeof(uint32_t)*r->num_versions);
 			if (NULL == r->versions) {
+				r->num_versions = 0;
 				return NDR_ERR_ALLOC;
 			}
 			for (i=0; i<r->num_versions; i++) {
@@ -262,6 +262,7 @@ static int pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	if (r->selack_size > 0) {
 		r->selack = (uint32_t*)malloc(sizeof(uint32_t)*r->selack_size);
 		if (NULL == r->selack) {
+			r->selack_size = 0;
 			return NDR_ERR_ALLOC;
 		}
 		
@@ -324,6 +325,7 @@ static int pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
 		r->ctx_list =
 			(DCERPC_CTX_LIST*)malloc(sizeof(DCERPC_CTX_LIST)*r->num_contexts);
 		if (NULL == r->ctx_list) {
+			r->num_contexts = 0;
 			return NDR_ERR_ALLOC;
 		}
 		for (i=0; i<r->num_contexts; i++) {
@@ -415,6 +417,7 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 		r->ctx_list =
 			(DCERPC_ACK_CTX*)malloc(sizeof(DCERPC_ACK_CTX)*r->num_contexts);
 		if (NULL == r->ctx_list) {
+			r->num_contexts = 0;
 			ndr_free_data_blob(&r->pad);
 			return NDR_ERR_ALLOC;
 		}
@@ -720,20 +723,18 @@ static int pdu_ndr_pull_rts_cmd(NDR_PULL *pndr, RTS_CMD *r)
 
 static int pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 {
-	int i;
 	int status;
-	uint32_t size_commands;
 	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint16(pndr, &r->flags));
 	TRY(ndr_pull_uint16(pndr, &r->num));
-	size_commands = r->num;
-	if (size_commands > 0) {
-		r->commands = (RTS_CMD*)malloc(sizeof(RTS_CMD)*size_commands);
+	if (r->num > 0) {
+		r->commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD) * r->num));
 		if (NULL == r->commands) {
+			r->num = 0;
 			return NDR_ERR_ALLOC;
 		}
-		for (i=0; i<size_commands; i++) {
+		for (size_t i = 0; i < r->num; ++i) {
 			status = pdu_ndr_pull_rts_cmd(pndr, &r->commands[i]);
 			if (NDR_ERR_SUCCESS != status) {
 				free(r->commands);

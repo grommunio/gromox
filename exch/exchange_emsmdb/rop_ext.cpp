@@ -905,6 +905,7 @@ static int rop_ext_pull_modifyrecipients_request(
 	} else {
 		r->prow = pext->anew<MODIFYRECIPIENT_ROW>(r->count);
 		if (NULL == r->prow) {
+			r->count = 0;
 			return EXT_ERR_ALLOC;
 		}
 	}
@@ -1553,6 +1554,7 @@ static int rop_ext_pull_modifypermissions_request(
 	}
 	r->prow = pext->anew<PERMISSION_DATA>(r->count);
 	if (NULL == r->prow) {
+		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
@@ -1580,6 +1582,7 @@ static int rop_ext_pull_modifyrules_request(
 	}
 	r->prow = pext->anew<RULE_DATA>(r->count);
 	if (NULL == r->prow) {
+		r->count = 0;
 		return EXT_ERR_SUCCESS;
 	}
 	for (i=0; i<r->count; i++) {
@@ -1761,6 +1764,7 @@ static int rop_ext_pull_syncimportreadstatechanges_request(
 	}
 	r->pread_stat = pext->anew<MESSAGE_READ_STAT>(r->count);
 	if (NULL == r->pread_stat) {
+		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
 	memcpy(r->pread_stat, tmp_array, sizeof(MESSAGE_READ_STAT)*r->count);
@@ -1843,6 +1847,7 @@ static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 	}
 	r->prange = pext->anew<LONG_TERM_ID_RANGE>(r->count);
 	if (NULL == r->prange) {
+		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
@@ -3274,6 +3279,7 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	r->hnum = tmp_num;
 	r->phandles = pext->anew<uint32_t>(r->hnum);
 	if (NULL == r->phandles) {
+		r->hnum = 0;
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->hnum; i++) {

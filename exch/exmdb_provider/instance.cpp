@@ -2064,6 +2064,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 		}
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
+			pproptags->count = 0;
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -2115,6 +2116,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 		}
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
+			pproptags->count = 0;
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3581,6 +3583,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 			prcpts->pparray[begin_pos + i]->count;
 		pset->pparray[i]->ppropval = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count);
 		if (NULL == pset->pparray[i]->ppropval) {
+			pset->pparray[i]->count = 0;
 			db_engine_put_db(pdb);
 			return FALSE;
 		}

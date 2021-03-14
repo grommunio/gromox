@@ -571,8 +571,9 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				tmp_propval.pvalue = pvalue;
 				ba->count = 5;
 				ba->pbin = cu_alloc<BINARY>(ba->count);
-				if (ba->pbin == nullptr)
+				if (ba->pbin == nullptr) {
 					return FALSE;
+				}
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 							rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 				if (NULL == pbin) {
@@ -978,6 +979,7 @@ static BOOL icsdownctx_object_get_changepartial(
 		++pmsg->count;
 	pmsg->pchanges = cu_alloc<CHANGE_PART>(pmsg->count);
 	if (NULL == pmsg->pchanges) {
+		pmsg->count = 0;
 		return FALSE;
 	}
 	for (i=0; i<pindices->count; i++) {

@@ -327,6 +327,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	sqlite3_finalize(pstmt);
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(pset->count);
 	if (NULL == pset->pparray) {
+		pset->count = 0;
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -900,6 +901,7 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 		pproptags->count = tmp_proptags.count + 1;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
+			pproptags->count = 0;
 			db_engine_put_db(pdb);
 			return FALSE;
 		}

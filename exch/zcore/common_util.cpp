@@ -762,13 +762,16 @@ ZNOTIFICATION* common_util_dup_znotification(
 		if (FALSE == b_temp) {
 			pnew_notify->entryid.pv = malloc(pnew_notify->entryid.cb);
 			if (pnew_notify->entryid.pv == nullptr) {
+				pnew_notify->entryid.cb = 0;
 				common_util_free_znotification(pnotification1);
 				return NULL;
 			}
 		} else {
 			pnew_notify->entryid.pv = common_util_alloc(pnew_notify->entryid.cb);
-			if (pnew_notify->entryid.pv == nullptr)
+			if (pnew_notify->entryid.pv == nullptr) {
+				pnew_notify->entryid.cb = 0;
 				return NULL;
+			}
 		}
 		memcpy(pnew_notify->entryid.pv, pnew_notify1->entryid.pv,
 			pnew_notify->entryid.cb);
@@ -776,13 +779,16 @@ ZNOTIFICATION* common_util_dup_znotification(
 		if (FALSE == b_temp) {
 			pnew_notify->parentid.pv = malloc(pnew_notify->parentid.cb);
 			if (pnew_notify->parentid.pv == nullptr) {
+				pnew_notify->parentid.cb = 0;
 				common_util_free_znotification(pnotification1);
 				return NULL;
 			}
 		} else {
 			pnew_notify->parentid.pv = common_util_alloc(pnew_notify->parentid.cb);
-			if (pnew_notify->parentid.pv == nullptr)
+			if (pnew_notify->parentid.pv == nullptr) {
+				pnew_notify->parentid.cb = 0;
 				return NULL;
+			}
 		}
 		memcpy(pnew_notify->parentid.pv, pnew_notify1->parentid.pv,
 			pnew_notify->parentid.cb);

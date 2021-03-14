@@ -1920,8 +1920,9 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		sa->count = 1 + alias_list.size();
 		sa->ppstr = cu_alloc<char *>(sa->count);
-		if (sa->ppstr == nullptr)
+		if (sa->ppstr == nullptr) {
 			return FALSE;
+		}
 		sa->ppstr[0] = cu_alloc<char>(strlen(dn) + 6);
 		if (sa->ppstr[0] == nullptr)
 			return FALSE;
@@ -2285,6 +2286,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	} else {
 		pminids->pl = cu_alloc<uint32_t>(pminids->count);
 		if (NULL == pminids->pl) {
+			pminids->count = 0;
 			return FALSE;
 		}
 	}

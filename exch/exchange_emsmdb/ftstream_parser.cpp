@@ -778,9 +778,11 @@ static int ftstream_parser_read_element(
 		if (0 == count) {
 			ba->pbin = nullptr;
 		} else {
-			ba->pbin = cu_alloc<BINARY>(count);
-			if (ba->pbin == nullptr)
+			ba->pbin = cu_alloc<BINARY>(ba->count);
+			if (ba->pbin == nullptr) {
+				ba->count = 0;
 				return FTSTREAM_PARSER_READ_FAIL;
+			}
 		}
 		for (size_t i = 0; i < count; ++i) {
 			if (!ftstream_parser_read_binary(pstream,

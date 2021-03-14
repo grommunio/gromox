@@ -96,6 +96,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	if (0 != client_ip_offset && 0 != r->client_ip_size) {
 		r->client_ip = pext->anew<uint8_t>(r->client_ip_size);
 		if (NULL == r->client_ip) {
+			r->client_ip_size = 0;
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + client_ip_offset - 4;
@@ -106,6 +107,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	if (0 != client_ip_mask_offset && 0 != r->client_ip_mask_size) {
 		r->client_ip_mask = pext->anew<uint8_t>(r->client_ip_mask_size);
 		if (NULL == r->client_ip_mask) {
+			r->client_ip_mask_size = 0;
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + client_ip_mask_offset - 4;
@@ -122,6 +124,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	if (0 != mac_address_offset && 0 != r->mac_address_size) {
 		r->mac_address = pext->anew<uint8_t>(r->mac_address_size);
 		if (NULL == r->mac_address) {
+			r->mac_address_size = 0;
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + mac_address_offset - 4;

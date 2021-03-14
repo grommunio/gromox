@@ -2204,6 +2204,7 @@ static int exmdb_ext_pull_update_folder_permission_request(
 	} else {
 		ppayload->update_folder_permission.prow = cu_alloc<PERMISSION_DATA>(ppayload->update_folder_permission.count);
 		if (NULL == ppayload->update_folder_permission.prow) {
+			ppayload->update_folder_permission.count = 0;
 			return EXT_ERR_ALLOC;
 		}
 		for (i=0; i<ppayload->update_folder_permission.count; i++) {
@@ -2252,6 +2253,7 @@ static int exmdb_ext_pull_update_folder_rule_request(
 	} else {
 		ppayload->update_folder_rule.prow = cu_alloc<RULE_DATA>(ppayload->update_folder_rule.count);
 		if (NULL == ppayload->update_folder_rule.prow) {
+			ppayload->update_folder_rule.count = 0;
 			return EXT_ERR_ALLOC;
 		}
 		for (i=0; i<ppayload->update_folder_rule.count; i++) {
@@ -5141,6 +5143,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_response(
 	} else {
 		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = cu_alloc<TPROPVAL_ARRAY>(ppayload->get_hierarchy_sync.fldchgs.count);
 		if (NULL == ppayload->get_hierarchy_sync.fldchgs.pfldchgs) {
+			ppayload->get_hierarchy_sync.fldchgs.count = 0;
 			return EXT_ERR_ALLOC;
 		}
 		for (size_t i = 0; i < ppayload->get_hierarchy_sync.fldchgs.count; ++i)

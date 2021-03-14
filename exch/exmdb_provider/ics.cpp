@@ -601,6 +601,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (0 != enum_param.pdeleted_eids->count) {
 		pdeleted_mids->pids = cu_alloc<uint64_t>(pdeleted_mids->count);
 		if (NULL == pdeleted_mids->pids) {
+			pdeleted_mids->count = 0;
 			eid_array_free(enum_param.pdeleted_eids);
 			eid_array_free(enum_param.pnolonger_mids);
 			db_engine_put_db(pdb);
@@ -619,6 +620,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (0 != enum_param.pnolonger_mids->count) {
 		pnolonger_mids->pids = cu_alloc<uint64_t>(pnolonger_mids->count);
 		if (NULL == pnolonger_mids->pids) {
+			pnolonger_mids->count = 0;
 			eid_array_free(enum_param.pnolonger_mids);
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
@@ -983,6 +985,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	if (0 != pfldchgs->count) {
 		pfldchgs->pfldchgs = cu_alloc<TPROPVAL_ARRAY>(pfldchgs->count);
 		if (NULL == pfldchgs->pfldchgs) {
+			pfldchgs->count = 0;
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
 			return FALSE;
@@ -1121,6 +1124,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
 	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
+		pdeleted_fids->count = 0;
 		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;
 	}
