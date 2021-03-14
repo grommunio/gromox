@@ -1311,7 +1311,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
  */
 BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
 {
-	int		tag_len, val_len;
+	uint32_t tag_len, val_len;
 	size_t	len, offset;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
@@ -1460,7 +1460,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			*plength = 0;
 			return FALSE;
 		}
-		if (mail_len > max_length) {
+		if (static_cast<size_t>(mail_len) > max_length) {
 			*plength = 0;
 			return FALSE;
 		}
@@ -1617,15 +1617,13 @@ BOOL mime_to_file(MIME *pmime, int fd)
 		/* the original buffer contains \r\n */
 		if (pmime->head_begin + pmime->head_length
 			+ 2 == pmime->content_begin) {
-			if (pmime->head_length + 2 != write(fd,
-				pmime->head_begin, pmime->head_length + 2)) {
+			auto wrlen = write(fd, pmime->head_begin, pmime->head_length + 2);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length + 2)
 				return FALSE;
-			}
 		} else {
-			if (pmime->head_length != write(fd,
-				pmime->head_begin, pmime->head_length)) {
+			auto wrlen = write(fd, pmime->head_begin, pmime->head_length);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length)
 				return FALSE;
-			}
 			if (2 != write(fd, "\r\n", 2)) {
 				return FALSE;
 			}
@@ -1646,9 +1644,9 @@ BOOL mime_to_file(MIME *pmime, int fd)
 			len += val_len;
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
-			if (len != write(fd, tmp_buff, len)) {
+			auto wrlen = write(fd, tmp_buff, len);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
-			}
 		}
 
 		/* Content-Type: xxxxx */
@@ -1689,18 +1687,16 @@ BOOL mime_to_file(MIME *pmime, int fd)
 		/* \r\n for separate head and content */
 		memcpy(tmp_buff + len, "\r\n\r\n", 4);
 		len += 4;
-		if (len != write(fd, tmp_buff, len)) {
+		auto wrlen = write(fd, tmp_buff, len);
+		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return FALSE;
-		}
-		
 	}
 	if (SINGLE_MIME == pmime->mime_type) {
 		if (NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
-				if (pmime->content_length != write(fd,
-					pmime->content_begin, pmime->content_length)) {
+				auto wrlen = write(fd, pmime->content_begin, pmime->content_length);
+				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
 					return FALSE;
-				}
 			} else {
 				if (!mail_to_file(reinterpret_cast<MAIL *>(pmime->content_begin), fd))
 					return FALSE;
@@ -1735,9 +1731,9 @@ BOOL mime_to_file(MIME *pmime, int fd)
 			len += pmime->boundary_len;
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
-			if (len != write(fd, tmp_buff, len)) {
+			auto wrlen = write(fd, tmp_buff, len);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
-			}
 			pmime_child = (MIME*)pnode->pdata;
 			if (FALSE == mime_to_file(pmime_child, fd)) {
 				return FALSE;
@@ -1752,9 +1748,9 @@ BOOL mime_to_file(MIME *pmime, int fd)
 			len += pmime->boundary_len;
 			memcpy(tmp_buff + len, "\r\n\r\n", 4);
 			len += 4;
-			if (len != write(fd, tmp_buff, len)) {
+			auto wrlen = write(fd, tmp_buff, len);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
-			}
 		}
 		memcpy(tmp_buff, "--", 2);
 		len = 2;
@@ -1779,9 +1775,9 @@ BOOL mime_to_file(MIME *pmime, int fd)
 				return FALSE;
 			}
 		}
-		if (len != write(fd, tmp_buff, len)) {
+		auto wrlen = write(fd, tmp_buff, len);
+		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -1821,15 +1817,13 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 		/* the original buffer contains \r\n */
 		if (pmime->head_begin + pmime->head_length
 			+ 2 == pmime->content_begin) {
-			if (pmime->head_length + 2 != SSL_write(ssl,
-				pmime->head_begin, pmime->head_length + 2)) {
+			auto wrlen = SSL_write(ssl, pmime->head_begin, pmime->head_length + 2);
+			if (wrlen < 0 || static_cast<size_t>(wrlen))
 				return FALSE;
-			}
 		} else {
-			if (pmime->head_length != SSL_write(ssl,
-				pmime->head_begin, pmime->head_length)) {
+			auto wrlen = SSL_write(ssl, pmime->head_begin, pmime->head_length);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length)
 				return FALSE;
-			}
 			if (2 != SSL_write(ssl, "\r\n", 2)) {
 				return FALSE;
 			}
@@ -1850,9 +1844,9 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 			len += val_len;
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
-			if (len != SSL_write(ssl, tmp_buff, len)) {
+			auto wrlen = SSL_write(ssl, tmp_buff, len);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
-			}
 		}
 
 		/* Content-Type: xxxxx */
@@ -1893,18 +1887,16 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 		/* \r\n for separate head and content */
 		memcpy(tmp_buff + len, "\r\n\r\n", 4);
 		len += 4;
-		if (len != SSL_write(ssl, tmp_buff, len)) {
+		auto wrlen = SSL_write(ssl, tmp_buff, len);
+		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return FALSE;
-		}
-		
 	}
 	if (SINGLE_MIME == pmime->mime_type) {
 		if (NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
-				if (pmime->content_length != SSL_write(ssl,
-					pmime->content_begin, pmime->content_length)) {
+				auto wrlen = SSL_write(ssl, pmime->content_begin, pmime->content_length);
+				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
 					return FALSE;
-				}
 			} else {
 				if (!mail_to_ssl(reinterpret_cast<MAIL *>(pmime->content_begin), ssl))
 					return FALSE;
@@ -1939,9 +1931,9 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 			len += pmime->boundary_len;
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
-			if (len != SSL_write(ssl, tmp_buff, len)) {
+			auto wrlen = SSL_write(ssl, tmp_buff, len);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
-			}
 			pmime_child = (MIME*)pnode->pdata;
 			if (FALSE == mime_to_ssl(pmime_child, ssl)) {
 				return FALSE;
@@ -1956,9 +1948,9 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 			len += pmime->boundary_len;
 			memcpy(tmp_buff + len, "\r\n\r\n", 4);
 			len += 4;
-			if (len != SSL_write(ssl, tmp_buff, len)) {
+			auto wrlen = SSL_write(ssl, tmp_buff, len);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
-			}
 		}
 		memcpy(tmp_buff, "--", 2);
 		len = 2;
@@ -1983,9 +1975,9 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 				return FALSE;
 			}
 		}
-		if (len != SSL_write(ssl, tmp_buff, len)) {
+		auto wrlen = SSL_write(ssl, tmp_buff, len);
+		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

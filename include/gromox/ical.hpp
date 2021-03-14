@@ -126,12 +126,9 @@ extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *nam
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);
 extern GX_EXPORT bool ical_parse_datetime(const char *str_datetime, bool *pb_utc, ICAL_TIME *pitime);
-int ical_get_dayofweek(int year, int month, int day);
-
-int ical_get_dayofyear(int year, int month, int day);
-
-int ical_get_monthdays(int year, int month);
-
+extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int month, unsigned int day);
+extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
+extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);
 int ical_get_monthweekorder(int day);
 
 int ical_get_negative_monthweekorder(int year, int month, int day);

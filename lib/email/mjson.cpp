@@ -69,9 +69,7 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
 static void mjson_enum_id(SIMPLE_TREE_NODE *pnode, void *param);
 
 static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param);
-static BOOL mjson_record_value(MJSON *pjson, char *tag,
-	char *value, int length);
-
+static BOOL mjson_record_value(MJSON *pjson, char *tag, char *value, size_t length);
 static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type);
 
 static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type);
@@ -786,14 +784,10 @@ static void mjson_enum_id(SIMPLE_TREE_NODE *pnode, void *param)
 }
 
 static BOOL mjson_record_value(MJSON *pjson, char *tag,
-	char *value, int length)
+    char *value, size_t length)
 {
 	size_t temp_len;
 	char temp_buff[32];
-	
-	if (length < 0) {
-		return FALSE;
-	}
 	
 	if (0 == strcasecmp(tag, "file")) {
 		if ('\0' == pjson->filename[0] && length < 128) {
@@ -1191,7 +1185,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		temp_len = strlen(temp_mime.id);
 		memcpy(temp_buff, temp_mime.id, temp_len + 1);
 		last_pos = 0;
-		for (i=0; i<=temp_len; i++) {
+		for (size_t i = 0; i <= temp_len; ++i) {
 			if ('.' == temp_buff[i] || '\0' == temp_buff[i]) {
 				temp_buff[i] = '\0';
 				offset = atoi(temp_buff + last_pos);

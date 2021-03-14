@@ -6,8 +6,8 @@
 #include <string>
 #include <gromox/defs.h>
 #include <gromox/mem_file.hpp>
-#define MIME_NAME_LEN			80
-#define MIME_FIELD_LEN			64*1024
+#define MIME_NAME_LEN 80U
+#define MIME_FIELD_LEN (64U * 1024)
 
 /* address following RFC2822 */
 struct EMAIL_ADDR {

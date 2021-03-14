@@ -40,13 +40,12 @@ void dsn_init(DSN *pdsn)
 
 bool dsn_retrieve(DSN *pdsn, char *in_buff, size_t length)
 {
-	long current_offset;
 	DSN_FIELDS *pfields;
 	MIME_FIELD mime_field;
 	char tag[MIME_NAME_LEN + 1];
 	char value[MIME_FIELD_LEN + 1];
-	
-	current_offset = 0;
+	size_t current_offset = 0;
+
 	dsn_clear(pdsn);
 	pfields = &pdsn->message_fields;
 	while (current_offset < length) {

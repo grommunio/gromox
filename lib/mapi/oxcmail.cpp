@@ -4997,7 +4997,7 @@ static BOOL oxcmail_export_addresses(
 	char *field)
 {
 	int i;
-	int offset;
+	size_t offset;
 	int tmp_len;
 	void *pvalue;
 	char username[256];
@@ -5044,13 +5044,13 @@ static BOOL oxcmail_export_addresses(
 			PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
 			PROP_TAG_EMAILADDRESS, PROP_TAG_ENTRYID, username)) {
 			if (NULL != pdisplay_name) {
-				offset += gx_snprintf(field + offset,
+				offset += std::max(0, gx_snprintf(field + offset,
 						MIME_FIELD_LEN - offset,
-						" <%s>", username);
+						" <%s>", username));
 			} else {
-				offset += gx_snprintf(field,
+				offset += std::max(0, gx_snprintf(field,
 					MIME_FIELD_LEN - offset,
-					"<%s>", username);
+					"<%s>", username));
 			}
 		}
 	}
@@ -5064,7 +5064,6 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 	const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
 {
 	int i;
-	int offset;
 	int tmp_len;
 	EXT_PULL ext_pull;
 	STRING_ARRAY *pstrings;
@@ -5086,7 +5085,7 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 		address_array.count) {
 		pstrings = NULL;
 	}
-	offset = 0;
+	size_t offset = 0;
 	for (i=0; i<address_array.count; i++) {
 		if (0 != offset) {
 			memcpy(field + offset, ", ", 2);
@@ -5119,11 +5118,11 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 		if (NULL != pstrings) {
-			offset += gx_snprintf(field, MIME_FIELD_LEN - offset,
-				" <%s>", address_array.pentry_id[i].pmail_address);
+			offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
+				" <%s>", address_array.pentry_id[i].pmail_address));
 		} else {
-			offset += gx_snprintf(field, MIME_FIELD_LEN - offset,
-				"<%s>", address_array.pentry_id[i].pmail_address);
+			offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
+				"<%s>", address_array.pentry_id[i].pmail_address));
 		}
 	}
 	if (0 == offset || offset >= MIME_FIELD_LEN) {
@@ -5391,7 +5390,8 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
 	MIME *phead)
 {
-	int i, tmp_len = 0;
+	int i;
+	size_t tmp_len = 0;
 	GUID guid;
 	uint32_t lid;
 	void *pvalue;

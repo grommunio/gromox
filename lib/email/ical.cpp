@@ -923,7 +923,7 @@ int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2)
 	return 0;
 }
 
-static bool ical_check_leap_year(int year)
+static bool ical_check_leap_year(unsigned int year)
 {
 	if ((0 == year%4 && 0 != year%100) || (0 == year%400)) {
 		return true;
@@ -931,13 +931,15 @@ static bool ical_check_leap_year(int year)
 	return false;
 }
 
-int ical_get_dayofweek(int year, int month, int day)
+unsigned int ical_get_dayofweek(unsigned int year, unsigned int month,
+    unsigned int day)
 {
 	return (day += month < 3 ? year -- : year - 2, 23*month/9
 			+ day + 4 + year/4 - year/100 + year/400) % 7; 	
 }
 
-int ical_get_dayofyear(int year, int month, int day)
+unsigned int ical_get_dayofyear(unsigned int year, unsigned int month,
+    unsigned int day)
 {
 	static const int days[2][12] = {
 		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
@@ -947,7 +949,7 @@ int ical_get_dayofyear(int year, int month, int day)
 	return days[0][month - 1] + day;
 }
 
-int ical_get_monthdays(int year, int month)
+unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
 {
 	static const int days[2][12] = {
 		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
@@ -1036,9 +1038,9 @@ void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime)
 	}
 }
 
-static unsigned int ical_get_yearweeks(int year)
+static unsigned int ical_get_yearweeks(unsigned int year)
 {
-	unsigned int dayofweek = ical_get_dayofweek(year, 1, 1);
+	auto dayofweek = ical_get_dayofweek(year, 1, 1);
 	/*
 	 * DOW    CW     YEARTYPE        DOW    CW     #WKS
 	 * JAN01  JAN01  (EXAMPLE)       DEC31  DEC31  INYEAR
@@ -1064,7 +1066,7 @@ static int ical_get_weekofyear(int year, int month,
 	int day, int weekstart, BOOL *pb_yeargap)
 {
 	int dayofweek;
-	int weeknumber;
+	unsigned int weeknumber;
 	
 	*pb_yeargap = FALSE;
 	dayofweek = ical_get_dayofweek(year, month, day) - weekstart + 1;
@@ -1085,17 +1087,13 @@ static int ical_get_weekofyear(int year, int month,
 static int ical_get_negative_weekofyear(int year, int month,
 	int day, int weekstart, BOOL *pb_yeargap)
 {
-	int dayofweek;
-	int yearweeks;
-	int weeknumber;
-	
 	*pb_yeargap = FALSE;
-	dayofweek = ical_get_dayofweek(year, month, day) - weekstart + 1;
+	auto dayofweek = ical_get_dayofweek(year, month, day) - weekstart + 1;
 	if (dayofweek <= 0) {
 		dayofweek += 7;
 	}
-	weeknumber = (ical_get_dayofyear(year, month, day) - dayofweek + 10)/7;
-	yearweeks = ical_get_yearweeks(year);
+	auto weeknumber = (ical_get_dayofyear(year, month, day) - dayofweek + 10)/7;
+	auto yearweeks = ical_get_yearweeks(year);
 	if (weeknumber < 1) {
 		*pb_yeargap = TRUE;
 		return -1;
