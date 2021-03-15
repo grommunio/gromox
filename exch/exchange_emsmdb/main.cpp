@@ -23,6 +23,15 @@
 #include <cstring>
 #include <cstdio>
 
+enum {
+	ecDoDisconnect = 1,
+	ecRRegisterPushNotification = 4,
+	ecDummyRpc = 6,
+	ecDoConnectEx = 10,
+	ecDoRpcExt2 = 11,
+	ecDoAsyncConnectEx = 14,
+};
+
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
 
 static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
@@ -317,34 +326,34 @@ PROC_ENTRY(proc_exchange_emsmdb);
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 {
 	switch (opnum) {
-	case 1:
+	case ecDoDisconnect:
 		*ppin = ndr_stack_anew<ECDODISCONNECT_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_IN *>(*ppin));
-	case 4:
+	case ecRRegisterPushNotification:
 		*ppin = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(*ppin));
-	case 6:
+	case ecDummyRpc:
 		*ppin = NULL;
 		return NDR_ERR_SUCCESS;
-	case 10:
+	case ecDoConnectEx:
 		*ppin = ndr_stack_anew<ECDOCONNECTEX_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_IN *>(*ppin));
-	case 11:
+	case ecDoRpcExt2:
 		*ppin = ndr_stack_anew<ECDORPCEXT2_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
 		}
 		return emsmdb_ndr_pull_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_IN *>(*ppin));
-	case 14:
+	case ecDoAsyncConnectEx:
 		*ppin = ndr_stack_anew<ECDOASYNCCONNECTEX_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
@@ -359,7 +368,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 	uint64_t handle, void *pin, void **ppout)
 {
 	switch (opnum) {
-	case 1: {
+	case ecDoDisconnect: {
 		auto in  = static_cast<ECDOASYNCCONNECTEX_IN *>(pin);
 		auto out = ndr_stack_anew<ECDODISCONNECT_OUT>(NDR_STACK_OUT);
 		if (out == nullptr)
@@ -369,7 +378,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 		out->cxh = in->cxh;
 		return DISPATCH_SUCCESS;
 	}
-	case 4: {
+	case ecRRegisterPushNotification: {
 		auto in  = static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(pin);
 		auto out = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_OUT>(NDR_STACK_OUT);
 		if (out == nullptr)
@@ -381,14 +390,14 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 		out->cxh = in->cxh;
 		return DISPATCH_SUCCESS;
 	}
-	case 6:
+	case ecDummyRpc:
 		*ppout = ndr_stack_anew<int32_t>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
 		*(int32_t*)*ppout = emsmdb_interface_dummy_rpc(handle);
 		return DISPATCH_SUCCESS;
-	case 10: {
+	case ecDoConnectEx: {
 		auto in  = static_cast<ECDOCONNECTEX_IN *>(pin);
 		auto out = ndr_stack_anew<ECDOCONNECTEX_OUT>(NDR_STACK_OUT);
 		if (out == nullptr)
@@ -407,7 +416,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 		out->cb_auxout = in->cb_auxout;
 		return DISPATCH_SUCCESS;
 	}
-	case 11: {
+	case ecDoRpcExt2: {
 		auto in  = static_cast<ECDORPCEXT2_IN *>(pin);
 		auto out = ndr_stack_anew<ECDORPCEXT2_OUT>(NDR_STACK_OUT);
 		if (out == nullptr)
@@ -423,7 +432,7 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 		out->cb_auxout = in->cb_auxout;
 		return DISPATCH_SUCCESS;
 	}
-	case 14: {
+	case ecDoAsyncConnectEx: {
 		auto in  = static_cast<ECDOASYNCCONNECTEX_IN *>(pin);
 		auto out = ndr_stack_anew<ECDOASYNCCONNECTEX_OUT>(NDR_STACK_OUT);
 		if (out == nullptr)
@@ -440,17 +449,17 @@ static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
 static int exchange_emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	switch (opnum) {
-	case 1:
+	case ecDoDisconnect:
 		return emsmdb_ndr_push_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_OUT *>(pout));
-	case 4:
+	case ecRRegisterPushNotification:
 		return emsmdb_ndr_push_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_OUT *>(pout));
-	case 6:
+	case ecDummyRpc:
 		return emsmdb_ndr_push_ecdummyrpc(pndr, static_cast<int32_t *>(pout));
-	case 10:
+	case ecDoConnectEx:
 		return emsmdb_ndr_push_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_OUT *>(pout));
-	case 11:
+	case ecDoRpcExt2:
 		return emsmdb_ndr_push_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_OUT *>(pout));
-	case 14:
+	case ecDoAsyncConnectEx:
 		return emsmdb_ndr_push_ecdoasyncconnectex(pndr, static_cast<ECDOASYNCCONNECTEX_OUT *>(pout));
 	default:
 		return NDR_ERR_BAD_SWITCH;
