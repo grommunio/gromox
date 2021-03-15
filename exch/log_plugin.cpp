@@ -249,7 +249,8 @@ static void* thread_work_func(void *arg)
 			}
 			if (TRUE == should_delete) {
 				printf("[log_plugin]: removing old logfile %s\n", temp_path);
-				remove(temp_path);
+				if (remove(temp_path) < 0 && errno != ENOENT)
+					fprintf(stderr, "W-1401: remove %s: %s\n", temp_path, strerror(errno));
 			}
 		}
 		closedir(dirp);

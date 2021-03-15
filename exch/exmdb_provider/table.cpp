@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <cstdint>
 #include <gromox/database.h>
 #include <gromox/fileio.h>
@@ -4173,7 +4174,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_close(psqlite);
-			remove(tmp_path);
+			if (remove(tmp_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1348: remove %s: %s\n", tmp_path, strerror(errno));
 			db_engine_put_db(pdb);
 			return FALSE;
 		}

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -802,7 +804,8 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		phpm_ctx->cache_fd = -1;
 		phpm_ctx->content_length = node_stat.st_size;
 		sprintf(tmp_path, "/tmp/http-%d", context_id);
-		remove(tmp_path);
+		if (remove(tmp_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1347: remove %s: %s\n", tmp_path, strerror(errno));
 	}
 	b_result = phpm_ctx->pinterface->proc(context_id,
 				pcontent, phpm_ctx->content_length);
@@ -861,7 +864,8 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
 		sprintf(tmp_path, "/tmp/http-%d", context_id);
-		remove(tmp_path);
+		if (remove(tmp_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1369: remove %s: %s\n", tmp_path, strerror(errno));
 	}
 	phpm_ctx->content_length = 0;
 	phpm_ctx->b_preproc = FALSE;

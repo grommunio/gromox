@@ -176,9 +176,11 @@ static void* thread_work_func(void* arg)
 		client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(6, "New connection from [%s]:%hu",
 					client_hostip, client_port);
-		fcntl(sockd2, F_SETFL, O_NONBLOCK);
+		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+			fprintf(stderr, "W-1416: fcntl: %s\n", strerror(errno));
 		flag = 1;
-		setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
+		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+			fprintf(stderr, "W-1417: setsockopt: %s\n", strerror(errno));
 		pcontext = (IMAP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
@@ -316,9 +318,11 @@ static void* thread_work_ssl_func(void* arg)
 		}
 		system_services_log_info(6, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
-		fcntl(sockd2, F_SETFL, O_NONBLOCK);
+		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+			fprintf(stderr, "W-1418: fcntl: %s\n", strerror(errno));
 		flag = 1;
-		setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
+		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+			fprintf(stderr, "W-1419: setsockopt: %s\n", strerror(errno));
 		pcontext = (IMAP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {

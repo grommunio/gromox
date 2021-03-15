@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <atomic>
+#include <cerrno>
 #include <climits>
 #include <cstdint>
 #include <libHX/string.h>
@@ -3359,20 +3360,23 @@ static BOOL common_util_set_message_body(
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 			sizeof(int) != write(fd, &len, sizeof(int))) {
 			close(fd);
-			remove(path);
+			if (remove(path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1382: remove %s: %s\n", path, strerror(errno));
 			return FALSE;
 		}
 	}
 	len = strlen(static_cast<char *>(pvalue)) + 1;
 	if (len != write(fd, pvalue, len)) {
 		close(fd);
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1383: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	close(fd);
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, proptag, cid)) {
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1384: remove %s: %s\n", path, strerror(errno));
 	}
 	return TRUE;
 }
@@ -3422,20 +3426,23 @@ static BOOL common_util_set_message_header(
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 			sizeof(int) != write(fd, &len, sizeof(int))) {
 			close(fd);
-			remove(path);
+			if (remove(path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1366: remove %s: %s\n", path, strerror(errno));
 			return FALSE;
 		}
 	}
 	len = strlen(static_cast<char *>(pvalue)) + 1;
 	if (len != write(fd, pvalue, len)) {
 		close(fd);
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1367: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	close(fd);
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, proptag, cid)) {
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1368: remove %s: %s\n", path, strerror(errno));
 	}
 	return TRUE;
 }
@@ -3467,13 +3474,15 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	if (write(fd, bv->pv, bv->cb) != bv->cb) {
 		close(fd);
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1389: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	close(fd);
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, ppropval->proptag, cid)) {
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1390: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	return TRUE;
@@ -3525,13 +3534,15 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	if (write(fd, bv->pv, bv->cb) != bv->cb) {
 		close(fd);
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1363: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	close(fd);
 	if (FALSE == common_util_update_attachment_cid(
 		psqlite, attachment_id, ppropval->proptag, cid)) {
-		remove(path);
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1364: remove %s: %s\n", path, strerror(errno));
 		return FALSE;	
 	}
 	return TRUE;

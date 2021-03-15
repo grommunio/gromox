@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <cstdint>
 #include "ftstream_parser.h"
 #include "rop_processor.h"
@@ -941,6 +942,7 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 void ftstream_parser_free(FTSTREAM_PARSER *pstream)
 {
 	close(pstream->fd);
-	remove(pstream->path);
+	if (remove(pstream->path) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1392: remove %s: %s\n", pstream->path, strerror(errno));
 	free(pstream);
 }

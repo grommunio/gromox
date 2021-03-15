@@ -7,6 +7,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <cerrno>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -3213,7 +3214,8 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		mail_free(&imail);
 		if (-1 != fd) {
 			close(fd);
-			remove(temp_path);
+			if (remove(temp_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1370: remove %s: %s\n", temp_path, strerror(errno));
 		}
 		/* IMAP_CODE_2190009: NO fail to save message */
 		imap_reply_str = resource_get_imap_code(
@@ -3438,7 +3440,8 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	b_draft = FALSE;
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
 		close(pcontext->message_fd);
-		remove(pcontext->file_path);
+		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1342: remove %s: %s\n", pcontext->file_path, strerror(errno));
 		pcontext->message_fd = -1;
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
@@ -3458,7 +3461,8 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			free(pbuff);
 		}
 		close(pcontext->message_fd);
-		remove(pcontext->file_path);
+		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1343: remove %s: %s\n", pcontext->file_path, strerror(errno));
 		pcontext->message_fd = -1;
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
@@ -3478,7 +3482,8 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		node_stat.st_size - tmp_len)) {
 		mail_free(&imail);
 		free(pbuff);
-		remove(pcontext->file_path);
+		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1344: remove %s: %s\n", pcontext->file_path, strerror(errno));
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
 		/* IMAP_CODE_2190009: NO fail to save message */
@@ -3530,12 +3535,14 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
 		mail_free(&imail);
 		free(pbuff);
-		remove(pcontext->file_path);
+		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1345: remove %s: %s\n", pcontext->file_path, strerror(errno));
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
 		if (-1 != fd) {
 			close(fd);
-			remove(temp_path);
+			if (remove(temp_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1346: remove %s: %s\n", temp_path, strerror(errno));
 		}
 		/* IMAP_CODE_2190009: NO fail to save message */
 		imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
@@ -3546,7 +3553,8 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	close(fd);
 	mail_free(&imail);
 	free(pbuff);
-	remove(pcontext->file_path);
+	if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1347: remove %s: %s\n", pcontext->file_path, strerror(errno));
 	pcontext->file_path[0] = '\0';
 	switch (system_services_insert_mail(pcontext->maildir,
 	        temp_name, pcontext->mid, flag_buff, tmp_time, &errnum)) {

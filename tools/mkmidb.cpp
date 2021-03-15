@@ -162,7 +162,8 @@ int main(int argc, const char **argv)
 		sqlite3_shutdown();
 		return 9;
 	}
-	chmod(temp_path, 0666);
+	if (chmod(temp_path, 0666) < 0)
+		fprintf(stderr, "W-1349: chmod %s: %s\n", temp_path, strerror(errno));
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	

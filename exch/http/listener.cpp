@@ -190,10 +190,11 @@ static void* thread_work_func(void* arg)
 		client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(6, "New connection from [%s]:%hu",
 			client_hostip, client_port);
-		fcntl(sockd2, F_SETFL, O_NONBLOCK);
+		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+			fprintf(stderr, "W-1408: fcntl: %s\n", strerror(errno));
 		flag = 1;
-		setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY,
-				(const void*)&flag, sizeof(flag));
+		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+			fprintf(stderr, "W-1409: setsockopt: %s\n", strerror(errno));
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
@@ -320,10 +321,11 @@ static void* thread_work_ssl_func(void* arg)
 		client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(6, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
-		fcntl(sockd2, F_SETFL, O_NONBLOCK);
+		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+			fprintf(stderr, "W-1410: fcntl: %s\n", strerror(errno));
 		flag = 1;
-		setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY,
-				(const void*)&flag, sizeof(flag));
+		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+			fprintf(stderr, "W-1411: setsockopt: %s\n", strerror(errno));
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {

@@ -1072,7 +1072,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		pcontext->message_fd = -1;
 	}
 	if ('\0' != pcontext->file_path[0]) {
-		remove(pcontext->file_path);
+		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1381: remove %s: %s\n", pcontext->file_path, strerror(errno));
 		pcontext->file_path[0] = '\0';
 	}
 	if (system_services_container_remove_ip != nullptr)
@@ -1687,7 +1688,8 @@ static void imap_parser_context_free(IMAP_CONTEXT *pcontext)
 		close(pcontext->message_fd);
 	}
 	if (pcontext->file_path[0] != '\0')
-		remove(pcontext->file_path);
+		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1351: chmod %s: %s\n", pcontext->file_path, strerror(errno));
 }
 
 static void* thread_work_func(void *argp)
@@ -1944,7 +1946,8 @@ void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t co
 	/* set socket to block mode */
 	opt = fcntl(pcontext->connection.sockd, F_GETFL, 0);
 	opt &= (~O_NONBLOCK);
-	fcntl(pcontext->connection.sockd, F_SETFL, opt);
+	if (fcntl(pcontext->connection.sockd, F_SETFL, opt) < 0)
+		fprintf(stderr, "W-1365: fcntl: %s\n", strerror(errno));
 	/* end of set mode */
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pbuff, count);
@@ -1953,6 +1956,7 @@ void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t co
 	}
 	/* set the socket back to non-block mode */
 	opt |= O_NONBLOCK;
-	fcntl(pcontext->connection.sockd, F_SETFL, opt);
+	if (fcntl(pcontext->connection.sockd, F_SETFL, opt) < 0)
+		fprintf(stderr, "W-1366: fcntl: %s\n", strerror(errno));
 	/* end of set mode */
 }

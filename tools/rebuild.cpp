@@ -356,14 +356,16 @@ int main(int argc, const char **argv)
 		return 8;
 	}
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
-	remove(temp_path1);
+	if (remove(temp_path1) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1393: remove %s: %s\n", temp_path1, strerror(errno));
 	if (SQLITE_OK != sqlite3_open_v2(temp_path1, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
 		sqlite3_shutdown();
 		return 9;
 	}
-	chmod(temp_path1, 0666);
+	if (chmod(temp_path1, 0666) < 0)
+		fprintf(stderr, "W-1397: chmod %s: %s\n", temp_path1, strerror(errno));
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
@@ -585,8 +587,11 @@ int main(int argc, const char **argv)
 		printf("fail to unload store\n");
 		return 12;
 	}
-	remove(temp_path);
-	link(temp_path1, temp_path);
-	remove(temp_path1);
+	if (remove(temp_path) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1394: remove %s: %s\n", temp_path, strerror(errno));
+	if (link(temp_path1, temp_path) < 0)
+		fprintf(stderr, "W-1395: link %s %s: %s\n", temp_path1, temp_path, strerror(errno));
+	if (remove(temp_path1) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1396: remove %s: %s\n", temp_path1, strerror(errno));
 	exit(0);
 }

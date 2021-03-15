@@ -138,7 +138,8 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (sizeof(int) != write(fd, &times, sizeof(int)) ||
 		sizeof(time_t) != write(fd, &original_time, sizeof(time_t))) {
 		close(fd);
-		remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1353: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
 	/* at the begin of file, write the length of message */
@@ -146,13 +147,15 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (len < 0) {
 		printf("[exmdb_local]: fail to get mail length\n");
 		close(fd);
-        remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1354: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
 	static_assert(sizeof(len) == sizeof(int32_t));
 	if (write(fd, &len, sizeof(len)) == sizeof(len)) {
 		close(fd);
-        remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1355: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
 	if (FALSE == mail_to_file(pcontext->pmail, fd) ||
@@ -162,7 +165,8 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 		sizeof(BOOL) != write(fd, &pcontext->pcontrol->need_bounce,
 		sizeof(BOOL))) {
         close(fd);
-        remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1356: remove %s: %s\n", file_name, strerror(errno));
         return -1;
     }
 	/* write envelop from */
@@ -170,27 +174,31 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
     temp_len ++;
     if (temp_len != write(fd, pcontext->pcontrol->from, temp_len)) {
         close(fd);
-        remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1357: remove %s: %s\n", file_name, strerror(errno));
         return -1;
     }
 	/* write envelop rcpt */
 	temp_len = strlen(rcpt_to) + 1;
 	if (temp_len != write(fd, rcpt_to, temp_len)) {
 		close(fd);
-		remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1358: remove %s: %s\n", file_name, strerror(errno));
 		return -1;
     }
     /* last null character for indicating end of rcpt to array */
     if (1 != write(fd, "", 1)) {
 		close(fd);
-        remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1359: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
 	lseek(fd, 0, SEEK_SET);
 	times = 1;
 	if (sizeof(int) != write(fd, &times, sizeof(int))) {
 		close(fd);
-        remove(file_name);
+		if (remove(file_name) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1360: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
 	close(fd);

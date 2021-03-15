@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <cstdint>
 #include <gromox/mapidefs.h>
 #include "ftstream_producer.h"
@@ -1187,22 +1188,22 @@ FTSTREAM_PRODUCER* ftstream_producer_create(
 	int stream_id;
 	char path[256];
 	DCERPC_INFO rpc_info;
-	struct stat node_stat;
 	
+	stream_id = common_util_get_ftstream_id();
+	rpc_info = get_rpc_info();
+	sprintf(path, "%s/tmp", rpc_info.maildir);
+	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1422: mkdir %s: %s\n", path, strerror(errno));
+		return nullptr;
+	}
+	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
+	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1341: mkdir %s: %s\n", path, strerror(errno));
+		return nullptr;
+	}
 	auto pstream = me_alloc<FTSTREAM_PRODUCER>();
 	if (NULL == pstream) {
 		return NULL;
-	}
-	stream_id = common_util_get_ftstream_id();
-	rpc_info = get_rpc_info();
-	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
-	if (0 != stat(path, &node_stat)) {
-		mkdir(pstream->path, 0777);
-	} else {
-		if (0 == S_ISDIR(node_stat.st_mode)) {
-			remove(path);
-			mkdir(path, 0777);
-		}
 	}
 	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
 	pstream->fd = -1;
@@ -1220,9 +1221,12 @@ void ftstream_producer_free(FTSTREAM_PRODUCER *pstream)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
+	if (pstream == nullptr)
+		return;
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
-		remove(pstream->path);
+		if (remove(pstream->path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path, strerror(errno));
 	}
 	while ((pnode = double_list_pop_front(&pstream->bp_list)) != nullptr)
 		free(pnode->pdata);
@@ -1337,7 +1341,8 @@ BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
 		pstream->fd = -1;
-		remove(pstream->path);
+		if (remove(pstream->path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1340: remove: %s: %s\n", pstream->path, strerror(errno));
 	}
 	pstream->offset = 0;
 	pstream->buffer_offset = 0;

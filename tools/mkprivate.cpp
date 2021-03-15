@@ -586,10 +586,10 @@ int main(int argc, const char **argv)
 	}
 	
 	snprintf(temp_path, 256, "%s/exmdb", dir);
-	if (0 != stat(temp_path, &node_stat)) {
-		mkdir(temp_path, 0777);
+	if (mkdir(temp_path, 0777) && errno != EEXIST) {
+		fprintf(stderr, "E-1420: mkdir %s: %s\n", temp_path, strerror(errno));
+		return 6;
 	}
-	
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", dir);
 	if (0 == stat(temp_path, &node_stat)) {
 		printf("can not create sotre database,"
@@ -620,7 +620,8 @@ int main(int argc, const char **argv)
 		sqlite3_shutdown();
 		return 9;
 	}
-	chmod(temp_path, 0666);
+	if (chmod(temp_path, 0666) < 0)
+		fprintf(stderr, "W-1350: chmod %s: %s\n", temp_path, strerror(errno));
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,

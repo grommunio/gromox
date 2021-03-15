@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -2038,7 +2039,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		}
 		if (FALSE == mail_to_file(&imail, fd)) {
 			close(fd);
-			remove(msg_path);
+			if (remove(msg_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1372: remove %s: %s\n", msg_path, strerror(errno));
 			mail_free(&imail);
 			free(pbuff);
 			pbuild->build_result = FALSE;
@@ -2057,7 +2059,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		mail_free(&imail);
 		free(pbuff);
 		if (result <= 0) {
-			remove(msg_path);
+			if (remove(msg_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1373: remove %s: %s\n", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2068,14 +2071,17 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		
 		fd = open(dgt_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
-			remove(msg_path);
+			if (remove(msg_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1374: remove %s: %s\n", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
 		if (digest_len != write(fd, digest_buff, digest_len)) {
 			close(fd);
-			remove(dgt_path);
-			remove(msg_path);
+			if (remove(dgt_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1375: remove %s: %s\n", dgt_path, strerror(errno));
+			if (remove(msg_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1376: remove %s: %s\n", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2084,8 +2090,10 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		mjson_init(&temp_mjson, pmime->ppool);
 		if (FALSE == mjson_retrieve(&temp_mjson,
 			digest_buff, digest_len, pbuild->storage_path)) {
-			remove(dgt_path);
-			remove(msg_path);
+			if (remove(dgt_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1377: remove %s: %s\n", dgt_path, strerror(errno));
+			if (remove(msg_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1378: remove %s: %s\n", msg_path, strerror(errno));
 			mjson_free(&temp_mjson);
 			pbuild->build_result = FALSE;
 			return;
@@ -2105,8 +2113,10 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		mjson_enum_mime(&temp_mjson, (MJSON_MIME_ENUM)mjson_enum_build,
 			&build_param);
 		if (FALSE == build_param.build_result) {
-			remove(dgt_path);
-			remove(msg_path);
+			if (remove(dgt_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1379: remove %s: %s\n", dgt_path, strerror(errno));
+			if (remove(msg_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1380: remove %s: %s\n", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 		}
 	}

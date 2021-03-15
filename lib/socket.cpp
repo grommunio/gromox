@@ -130,7 +130,8 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 		}
 		if (oflags & O_NONBLOCK) {
 			int flags = 0;
-			fcntl(fd, F_GETFL, 0);
+			if (fcntl(fd, F_GETFL, 0) < 0)
+				fprintf(stderr, "W-1391: fctnl: %s\n", strerror(errno));
 			flags |= O_NONBLOCK;
 			if (fcntl(fd, F_SETFL, O_NONBLOCK) != 0) {
 				saved_errno = errno;
@@ -169,7 +170,8 @@ int gx_inet_listen(const char *host, uint16_t port)
 			continue;
 		}
 		static const int y = 1;
-		setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y));
+		if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y)) < 0)
+			fprintf(stderr, "W-1385: setsockopt: %s\n", strerror(errno));
 		auto ret = bind(fd, r->ai_addr, r->ai_addrlen);
 		if (ret != 0) {
 			saved_errno = errno;

@@ -130,7 +130,8 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity)
     pentity->pflusher->flush_ptr = NULL;
 	snprintf(file_name, GX_ARRAY_SIZE(file_name), "%s/mess/%d",
 	         g_path, pentity->pflusher->flush_ID);
-	remove(file_name);
+	if (remove(file_name) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1399: remove %s: %s\n", file_name, strerror(errno));
     pentity->pflusher->flush_ID = 0;
 }
 
@@ -415,11 +416,10 @@ static int message_enqueue_retrieve_max_ID()
 				continue;
 			}
 			close(fd);
-			if (0 != size) {
-        		max_ID = temp_ID;
-			} else {
-				remove(temp_path);
-			}
+			if (size != 0)
+				max_ID = temp_ID;
+			else if (remove(temp_path) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1421: remove %s: %s\n", temp_path, strerror(errno));
         } 
     }
     closedir(dirp);

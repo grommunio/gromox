@@ -471,7 +471,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	if (FALSE == mail_to_file(pmail, fd)) {
 		close(fd);
-		remove(temp_path);
+		if (remove(temp_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1386: remove %s: %s\n", temp_path, strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
@@ -487,7 +488,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 				MAX_DIGLEN - tmp_len - 1);
 	
 	if (result <= 0) {
-		remove(temp_path);
+		if (remove(temp_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1387: remove %s: %s\n", temp_path, strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
@@ -510,7 +512,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (NULL == pmsg) {
 		alloc_context_free(&alloc_ctx);
 		pthread_setspecific(g_alloc_key, NULL);
-		remove(temp_path);
+		if (remove(temp_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1388: remove %s: %s\n", temp_path, strerror(errno));
 		exmdb_local_log_info(pcontext, address, 8, "fail "
 			"to convert rtf822 into MAPI message object");
 		return DELIVERY_OPERATION_ERROR;

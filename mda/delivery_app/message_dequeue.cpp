@@ -241,7 +241,8 @@ void message_dequeue_put(MESSAGE *pmessage)
 	free(pmessage->begin_address);
 	pmessage->begin_address = NULL;
 	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, pmessage->message_data);
-	remove(name);
+	if (remove(name) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1352: remove %s: %s\n", name, strerror(errno));
 	std::unique_lock h(g_hash_mutex);
 	int_hash_remove(g_mess_hash, pmessage->message_data);
 	h.unlock();

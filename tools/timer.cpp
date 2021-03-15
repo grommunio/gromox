@@ -373,8 +373,10 @@ int main(int argc, const char **argv)
 						write(temp_fd, temp_line, temp_len);
 					}
 					close(temp_fd);
-					remove(g_list_path);
-					rename(temp_path, g_list_path);
+					if (remove(g_list_path) < 0 && errno != ENOENT)
+						fprintf(stderr, "W-1403: remove %s: %s\n", g_list_path, strerror(errno));
+					if (rename(temp_path, g_list_path) < 0)
+						fprintf(stderr, "E-1404: rename %s %s: %s\n", temp_path, g_list_path, strerror(errno));
 				}
 				last_cltime = cur_time;
 			}

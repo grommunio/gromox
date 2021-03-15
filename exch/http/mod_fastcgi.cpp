@@ -897,7 +897,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 				phttp->pfast_context->cache_fd = -1;
 				context_id = phttp - http_parser_get_contexts_list();
 				sprintf(tmp_path, "/tmp/http-%d", context_id);
-				remove(tmp_path);
+				if (remove(tmp_path) < 0 && errno != ENOENT)
+					fprintf(stderr, "W-1362: remove %s: %s\n", tmp_path, strerror(errno));
 				break;
 			}
 			ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
@@ -950,7 +951,8 @@ void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 		close(phttp->pfast_context->cache_fd);
 		context_id = phttp - http_parser_get_contexts_list();
 		sprintf(tmp_path, "/tmp/http-%d", context_id);
-		remove(tmp_path);
+		if (remove(tmp_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1361: remove %s: %s\n", tmp_path, strerror(errno));
 	}
 	if (-1 != phttp->pfast_context->cli_sockd) {
 		close(phttp->pfast_context->cli_sockd);
