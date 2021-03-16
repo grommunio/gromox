@@ -247,7 +247,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 }
 
 static BOOL firsttime_password(const char *username, const char *password,
-    char *encrypt_passwd, char *reason, int length, unsigned int mode)
+    char *encrypt_passwd, char *reason, int length)
 {
 	const char *pdomain;
 	pdomain = strchr(username, '@');
@@ -328,7 +328,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 }
 
 static BOOL verify_password(const char *username, const char *password,
-    const char *encrypt_passwd, char *reason, int length, unsigned int mode)
+    const char *encrypt_passwd, char *reason, int length)
 {
 		pthread_mutex_lock(&g_crypt_lock);
 		if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
@@ -345,15 +345,15 @@ static BOOL verify_password(const char *username, const char *password,
 
 BOOL mysql_adaptor_login2(const char *username, const char *password,
     char *encrypt_passwd, size_t encrypt_size, char *reason,
-    int length, unsigned int mode)
+    int length)
 {
 	BOOL ret;
 	if (*encrypt_passwd == '\0')
 		ret = firsttime_password(username, password, encrypt_passwd,
-		      reason, length, mode);
+		      reason, length);
 	else
 		ret = verify_password(username, password, encrypt_passwd, reason,
-		      length, mode);
+		      length);
 	return ret;
 }
 

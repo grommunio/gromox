@@ -31,13 +31,13 @@ static BOOL login_gen(const char *username, const char *password,
 		return FALSE;
 	if (am_choice == A_MYSQL)
 		return fptr_mysql_login(username, password, ep, sizeof(ep),
-		       reason, length, mode);
+		       reason, length);
 	else if (am_choice == A_LDAP)
 		return fptr_ldap_login(username, password);
 	if (xip)
 		return fptr_ldap_login(username, password);
 	return fptr_mysql_login(username, password, ep, sizeof(ep),
-	       reason, length, mode);
+	       reason, length);
 }
 
 static BOOL login_exch(const char *username, const char *password,
