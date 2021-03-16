@@ -69,50 +69,28 @@ static unsigned int g_max_rule_num;
 static unsigned int g_max_ext_rule_num;
 static std::atomic<int> g_sequence_id{0};
 
-BOOL (*common_util_lang_to_charset)(
-	const char *lang, char *charset);
+#define E(s) decltype(common_util_ ## s) common_util_ ## s;
+E(lang_to_charset)
+E(cpid_to_charset)
+E(get_user_displayname)
+E(check_mlist_include)
+E(get_user_lang)
+E(get_timezone)
+E(get_maildir)
+E(get_id_from_username)
+E(get_domain_ids)
+E(get_id_from_maildir)
+E(get_id_from_homedir)
+E(send_mail)
+E(get_mime_pool)
+E(log_info)
+E(get_handle)
+#undef E
 
-const char* (*common_util_cpid_to_charset)(uint32_t cpid);
-
-BOOL (*common_util_get_user_displayname)(
-	const char *username, char *pdisplayname);
-	
-BOOL (*common_util_check_mlist_include)(
-	const char *mlistname, const char *username);
-
-BOOL (*common_util_get_user_lang)(
-	const char *username, char *lang);
-
-BOOL (*common_util_get_timezone)(
-	const char *username, char *timezone);
-
-BOOL (*common_util_get_maildir)(
-	const char *username, char *maildir);
-
-BOOL (*common_util_get_id_from_username)(
-	const char *username, int *puser_id);
-
-BOOL (*common_util_get_domain_ids)(const char *domainname,
-	int *pdomain_id, int *porg_id);
-	
 static BOOL (*common_util_get_username_from_id)(int id, char *username);
 
 static BOOL (*common_util_get_user_ids)(const char *username,
 	int *puser_id, int *pdomain_id, int *paddress_type);
-
-BOOL (*common_util_get_id_from_maildir)(
-	const char *maildir, int *puser_id);
-
-BOOL (*common_util_get_id_from_homedir)(
-	const char *homedir, int *pdomain_id);
-
-BOOL (*common_util_send_mail)(MAIL *pmail,
-	const char *sender, DOUBLE_LIST *prcpt_list);
-
-MIME_POOL* (*common_util_get_mime_pool)();
-void (*common_util_log_info)(int level, const char *format, ...);
-const GUID* (*common_util_get_handle)();
-
 static BOOL common_util_evaluate_subobject_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres);
