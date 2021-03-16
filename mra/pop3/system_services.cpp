@@ -4,16 +4,18 @@
 #include "service.h"
 #include <cstdio>
 
-BOOL (*system_services_judge_ip)(const char*);
-BOOL (*system_services_judge_user)(const char*);
-BOOL (*system_services_container_add_ip)(const char*);
-BOOL (*system_services_container_remove_ip)(const char*);
-BOOL (*system_services_add_user_into_temp_list)(const char*, int);
-BOOL (*system_services_auth_login)(const char*, const char*, char*, char*, char*, int);
-int (*system_services_list_mail)(const char *, const char *, ARRAY *, int *pnum, uint64_t *psize);
-int (*system_services_delete_mail)(const char *, const char *, SINGLE_LIST *);
-void (*system_services_broadcast_event)(const char*);
-void (*system_services_log_info)(int, const char *, ...);
+#define E(s) decltype(system_services_ ## s) system_services_ ## s;
+E(judge_ip)
+E(judge_user)
+E(container_add_ip)
+E(container_remove_ip)
+E(add_user_into_temp_list)
+E(auth_login)
+E(list_mail)
+E(delete_mail)
+E(broadcast_event)
+E(log_info)
+#undef E
 
 /*
  *	run system services module
