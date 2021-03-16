@@ -411,6 +411,7 @@ static int exmdb_ext_push_reload_content_table_request(
 static int exmdb_ext_push_load_permission_table_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
+	TRY(ext_buffer_push_uint64(pext, ppayload->load_permission_table.folder_id));
 	return ext_buffer_push_uint8(pext,
 		ppayload->load_permission_table.table_flags);
 }
