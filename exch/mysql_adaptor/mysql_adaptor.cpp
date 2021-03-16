@@ -106,7 +106,7 @@ static bool db_upgrade_check()
 	return db_upgrade_check_2(conn.res.get());
 }
 
-static MYSQL *sql_make_conn()
+MYSQL *sql_make_conn()
 {
 	MYSQL *conn = mysql_init(nullptr);
 	if (conn == nullptr)
@@ -125,26 +125,6 @@ static MYSQL *sql_make_conn()
 	       mysql_error(conn));
 	mysql_close(conn);
 	return nullptr;
-}
-
-bool sqlconn::query(const char *q)
-{
-	if (m_conn != nullptr) {
-		if (mysql_query(m_conn, q) == 0)
-			return true;
-		fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
-		m_conn = sql_make_conn();
-		if (m_conn == nullptr)
-			return false;
-		return mysql_query(m_conn, q) == 0;
-	}
-	m_conn = sql_make_conn();
-	if (m_conn == nullptr)
-		return false;
-	if (mysql_query(m_conn, q) == 0)
-		return true;
-	fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
-	return false;
 }
 
 resource_pool<sqlconn>::token sqlconnpool::get_wait()

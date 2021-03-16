@@ -8,6 +8,8 @@
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/proptags.hpp>
+#include <mysql.h>
+#include <errmsg.h>
 #include "mysql_adaptor.h"
 #include "sql2.hpp"
 
@@ -15,6 +17,49 @@ using namespace gromox;
 using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
 using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::string>>;
 struct sqlconnpool g_sqlconn_pool;
+
+static bool connection_severed(int e)
+{
+#ifdef ER_CONNECTION_KILLED
+	/* server got sigterm */
+	if (e == ER_CONNECTION_KILLED)
+		return true;
+#endif
+	return e == CR_SERVER_LOST || e == CR_SERVER_GONE_ERROR;
+}
+
+bool sqlconn::query(const char *q)
+{
+	if (m_conn == nullptr) {
+		m_conn = sql_make_conn();
+		if (m_conn == nullptr)
+			return false;
+		if (mysql_query(m_conn, q) == 0)
+			return true;
+		fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
+		return false;
+	}
+	auto ret = mysql_query(m_conn, q);
+	if (ret == 0)
+		return true;
+	auto sev = connection_severed(mysql_errno(m_conn));
+	auto ers = mysql_error(m_conn);
+	if (!sev) {
+		/* Problem with query itself, connection likely good */
+		fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, ers);
+		return false;
+	}
+	m_conn = sql_make_conn();
+	if (m_conn == nullptr) {
+		fprintf(stderr, "[mysql_adaptor]: %s, and immediate reconnect unsuccessful: %s\n", ers, mysql_error(m_conn));
+		return false;
+	}
+	ret = mysql_query(m_conn, q);
+	if (ret == 0)
+		return true;
+	fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
+	return false;
+}
 
 static std::vector<std::string>
 aliasmap_extract(aliasmap_t &amap, const char *username)
