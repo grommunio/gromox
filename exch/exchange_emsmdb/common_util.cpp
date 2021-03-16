@@ -60,62 +60,32 @@ static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
 static LIB_BUFFER *g_file_allocator;
 
-BOOL (*common_util_get_maildir)(
-	const char *username, char *maildir);
+#define E(s) decltype(common_util_ ## s) common_util_ ## s;
+E(get_maildir)
+E(get_homedir)
+E(get_user_displayname)
+E(check_mlist_include)
+E(get_user_lang)
+E(get_timezone)
+E(get_username_from_id)
+E(get_id_from_username)
+E(get_user_ids)
+E(get_domain_ids)
+E(check_same_org)
+E(get_homedir_by_id)
+E(get_domainname_from_id)
+E(get_id_from_maildir)
+E(get_id_from_homedir)
+E(lang_to_charset)
+E(cpid_to_charset)
+E(verify_cpid)
+E(add_timer)
+E(cancel_timer)
+#undef E
 
-BOOL (*common_util_get_homedir)(
-	const char *domainname, char *homedir);
-
-BOOL (*common_util_get_user_displayname)(
-	const char *username, char *pdisplayname);
-
-BOOL (*common_util_check_mlist_include)(
-	const char *mlistname, const char *username);
-
-BOOL (*common_util_get_user_lang)(
-	const char *username, char *lang);
-
-BOOL (*common_util_get_timezone)(
-	const char *username, char *timezone);
-
-BOOL (*common_util_get_username_from_id)(int id, char *username);
-
-BOOL (*common_util_get_id_from_username)(
-	const char *username, int *puser_id);
-
-BOOL (*common_util_get_user_ids)(const char *username,
-	int *puser_id, int *pdomain_id, int *paddress_type);
-
-BOOL (*common_util_get_domain_ids)(const char *domainname,
-	int *pdomain_id, int *porg_id);
-	
-BOOL (*common_util_check_same_org)(int domain_id1, int domain_id2);
-
-BOOL (*common_util_get_homedir_by_id)(int domain_id, char *homedir);
-
-BOOL (*common_util_get_domainname_from_id)(
-	int domain_id, char *domainname);
-
-BOOL (*common_util_get_id_from_maildir)(
-	const char *maildir, int *puser_id);
-
-BOOL (*common_util_get_id_from_homedir)(
-	const char *homedir, int *pdomain_id);
-
-BOOL (*common_util_lang_to_charset)(const char *lang, char *charset);
-
-const char* (*common_util_cpid_to_charset)(uint32_t cpid);
-
+static const char *(*common_util_lcid_to_ltag)(uint32_t lcid);
 static uint32_t (*common_util_charset_to_cpid)(const char *charset);
-
-const char* (*common_util_lcid_to_ltag)(uint32_t lcid);
-
 static uint32_t (*common_util_ltag_to_lcid)(const char *ltag);
-bool (*common_util_verify_cpid)(uint32_t cpid);
-int (*common_util_add_timer)(const char *command, int interval);
-
-BOOL (*common_util_cancel_timer)(int timer_id);
-
 static const char* (*common_util_mime_to_extension)(const char *ptype);
 
 static const char* (*common_util_extension_to_mime)(const char *pext);
