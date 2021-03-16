@@ -2010,8 +2010,13 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			pbuild->build_result = FALSE;
 			return;
 		}
-		length = qp_decode_ex(pbuff1, length, pbuff, length);
+		auto qdlen = qp_decode_ex(pbuff1, length, pbuff, length);
 		free(pbuff);
+		if (qdlen < 0) {
+			pbuild->build_result = false;
+			return;
+		}
+		length = qdlen;
 		pbuff = pbuff1;
 	}
 	
