@@ -9,13 +9,15 @@
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
+#include "ldap_adaptor.hpp"
 #include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
 enum { A_MYSQL, A_LDAP, A_EXTERNID };
 
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
-static decltype(mysql_adaptor_login2) *fptr_mysql_login, *fptr_ldap_login;
+static decltype(mysql_adaptor_login2) *fptr_mysql_login;
+static decltype(ldap_adaptor_login2) *fptr_ldap_login;
 static unsigned int am_choice = A_MYSQL;
 
 static BOOL login_gen(const char *username, const char *password,
@@ -31,11 +33,9 @@ static BOOL login_gen(const char *username, const char *password,
 		return fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length, mode);
 	else if (am_choice == A_LDAP)
-		return fptr_ldap_login(username, password, ep, sizeof(ep),
-		       reason, length, mode);
+		return fptr_ldap_login(username, password);
 	if (xip)
-		return fptr_ldap_login(username, password, ep, sizeof(ep),
-		       reason, length, mode);
+		return fptr_ldap_login(username, password);
 	return fptr_mysql_login(username, password, ep, sizeof(ep),
 	       reason, length, mode);
 }

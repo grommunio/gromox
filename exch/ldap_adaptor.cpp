@@ -19,6 +19,7 @@
 #include <gromox/tie.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
+#include "ldap_adaptor.hpp"
 
 using namespace gromox;
 using namespace std::string_literals;
@@ -118,8 +119,7 @@ static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
 	return func(ld.get(), args...);
 }
 
-static BOOL ldap_adaptor_login2(const char *username, const char *password,
-    char *maildir, char *lang, char *reason, int length, unsigned int mode)
+BOOL ldap_adaptor_login2(const char *username, const char *password)
 {
 	struct stdlib_free { void operator()(void *p) { free(p); } };
 	auto tok = g_conn_pool.get_wait();
@@ -250,12 +250,9 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 		return false;
 
 	LINK_API(ppdata);
-	if (!register_service("ldap_adaptor_load", ldap_adaptor_load)) {
-		printf("[ldap_adaptor]: failed to register \"ldap_adaptor_load\" service\n");
-		return false;
-	}
-	if (!register_service("ldap_auth_login2", ldap_adaptor_login2)) {
-		printf("[ldap_adaptor]: failed to register \"auth_login_exch\" service\n");
+	if (!register_service("ldap_adaptor_load", ldap_adaptor_load) ||
+	    !register_service("ldap_auth_login2", ldap_adaptor_login2)) {
+		printf("[ldap_adaptor]: failed to register services\n");
 		return false;
 	}
 	return TRUE;
