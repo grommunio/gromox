@@ -3005,7 +3005,6 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 			TRY(ext_buffer_pull_uint32(&ext_pull, n->ptotal));
 		}
 		TRY(ext_buffer_pull_uint8(&ext_pull, &tmp_byte));
-		TRY(ext_buffer_pull_uint8(&ext_pull, &tmp_byte));
 		if (0 == tmp_byte) {
 			n->punread = nullptr;
 		} else {
