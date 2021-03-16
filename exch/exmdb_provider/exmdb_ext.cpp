@@ -1914,8 +1914,7 @@ static int exmdb_ext_push_set_message_read_state_request(
 		TRY(ext_buffer_push_string(pext, ppayload->set_message_read_state.username));
 	}
 	TRY(ext_buffer_push_uint64(pext, ppayload->set_message_read_state.message_id));
-	return ext_buffer_push_uint64(pext,
-		ppayload->set_message_read_state.mark_as_read);
+	return ext_buffer_push_uint8(pext, ppayload->set_message_read_state.mark_as_read);
 }
 
 static int exmdb_ext_pull_remove_message_properties_request(
