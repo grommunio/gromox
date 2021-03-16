@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/common_types.hpp>
 #include <gromox/mapi_types.hpp>
 
 struct ATTACHMENT_CONTENT;

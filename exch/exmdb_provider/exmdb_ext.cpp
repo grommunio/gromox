@@ -9,6 +9,7 @@
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;
+using REQUEST_PAYLOAD = EXMDB_REQUEST_PAYLOAD;
 
 static int exmdb_ext_pull_connect_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
@@ -2351,8 +2352,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
 	
-	memset(&ppayload->get_content_sync,
-		0, sizeof(REQ_GET_CONTENT_SYNC));
+	memset(&ppayload->get_content_sync, 0, sizeof(EXREQ_GET_CONTENT_SYNC));
 	TRY(ext_buffer_pull_uint64(pext, &ppayload->get_content_sync.folder_id));
 	TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
 	if (0 != tmp_byte) {
@@ -2564,8 +2564,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
 	
-	memset(&ppayload->get_hierarchy_sync,
-		0, sizeof(REQ_GET_HIERARCHY_SYNC));
+	memset(&ppayload->get_hierarchy_sync, 0, sizeof(EXREQ_GET_HIERARCHY_SYNC));
 	TRY(ext_buffer_pull_uint64(pext, &ppayload->get_hierarchy_sync.folder_id));
 	TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
 	if (0 != tmp_byte) {

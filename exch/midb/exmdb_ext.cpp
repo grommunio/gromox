@@ -7,6 +7,8 @@
 #include <gromox/idset.hpp>
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
+using REQUEST_PAYLOAD = EXMDB_REQUEST_PAYLOAD;
+
 static int exmdb_ext_push_connect_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
