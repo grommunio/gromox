@@ -10,6 +10,7 @@
 
 using namespace gromox;
 using REQUEST_PAYLOAD = EXMDB_REQUEST_PAYLOAD;
+using RESPONSE_PAYLOAD = EXMDB_RESPONSE_PAYLOAD;
 
 static int exmdb_ext_pull_connect_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
