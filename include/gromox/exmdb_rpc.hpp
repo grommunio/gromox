@@ -1473,3 +1473,11 @@ extern GX_EXPORT int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse, BI
 extern GX_EXPORT int exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
 extern GX_EXPORT int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
+
+namespace exmdb_client {
+#define IDLOUT
+#define EXMIDL(n) extern GX_EXPORT BOOL n
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
+}

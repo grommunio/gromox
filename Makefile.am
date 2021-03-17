@@ -313,13 +313,13 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 php_mapi/zarafa_rpc.cpp: php_mapi/zarafa_client.h zcidl
 	${AM_V_GEN}${top_srcdir}/zcidl <$< >$@
 
-exch/midb/exmdb_rpc.cpp: exch/midb/exmdb_client.h exmidl
+exch/midb/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
 
-exch/zcore/exmdb_rpc.cpp: exch/zcore/exmdb_client.h exmidl
+exch/zcore/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
 
-exch/exmdb_provider/exmdb_rpc.cpp: exch/exmdb_provider/exmdb_client.h exmidl
+exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl -p <$< >$@
 
 install-data-local:
