@@ -7,13 +7,6 @@
 #define SOCKET_TIMEOUT										60
 #define MAX_DIGLEN											256*1024
 
-struct DB_NOTIFY_DATAGRAM {
-	char *dir;
-	BOOL b_table;
-	LONG_ARRAY id_array;
-	DB_NOTIFY db_notify;
-};
-
 extern void common_util_init();
 extern int common_util_run();
 extern int common_util_stop();

@@ -32,13 +32,6 @@ enum {
 	ATTACHMENT_PROPERTIES_TABLE
 };
 
-struct DB_NOTIFY_DATAGRAM {
-	char *dir;
-	BOOL b_table;
-	LONG_ARRAY id_array;
-	DB_NOTIFY db_notify;
-};
-
 enum {
 	COMMON_UTIL_MAX_RULE_NUMBER,
 	COMMON_UTIL_MAX_EXT_RULE_NUMBER

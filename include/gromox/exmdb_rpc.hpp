@@ -1457,3 +1457,10 @@ struct EXMDB_RESPONSE {
 	uint8_t call_id;
 	EXMDB_RESPONSE_PAYLOAD payload;
 };
+
+struct DB_NOTIFY_DATAGRAM {
+	char *dir;
+	BOOL b_table;
+	LONG_ARRAY id_array;
+	DB_NOTIFY db_notify;
+};

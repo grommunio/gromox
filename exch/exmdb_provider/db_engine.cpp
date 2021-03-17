@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/database.h>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>

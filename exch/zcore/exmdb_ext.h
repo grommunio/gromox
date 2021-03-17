@@ -4,13 +4,6 @@
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 
-struct DB_NOTIFY_DATAGRAM {
-	char *dir;
-	BOOL b_table;
-	LONG_ARRAY id_array;
-	DB_NOTIFY db_notify;
-};
-
 int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	BINARY *pbin_out);
 
