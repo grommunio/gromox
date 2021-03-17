@@ -42,9 +42,8 @@ Makefile.in
 /zcore
 
 /include/gromox/paths.h
+/lib/exmdb_rpc.cpp
 /php_mapi/zarafa_rpc.cpp
-/exch/midb/exmdb_rpc.cpp
-/exch/zcore/exmdb_rpc.cpp
 /exch/exmdb_provider/exmdb_rpc.cpp
 /system/*.service
 /tests/abktconv

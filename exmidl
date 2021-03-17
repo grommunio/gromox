@@ -5,8 +5,8 @@ use warnings;
 my $provider = grep("-p", @ARGV);
 
 print "#include <$_>\n" for qw(cstring gromox/exmdb_rpc.hpp);
-print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.h);
 if ($provider) {
+	print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.h);
 	print "#include \"exmdb_server.h\"\n";
 }
 
@@ -21,18 +21,21 @@ while (<STDIN>) {
 	$iargf = [&split_argl($iargs)];
 	$iargs = [&split_adcl(@$iargf)];
 	my $rbsig = join(", ", "const char *dir", @$iargf, @$oargf);
-	print "BOOL exmdb_client::$func($rbsig)\n{\n";
-	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
 	if ($provider) {
-		print "\tBOOL xb_private;\n\n";
-		print "\tif (exmdb_client_check_local(dir, &xb_private) == TRUE) {\n";
-		print "\t\texmdb_server_build_environment(TRUE, xb_private, dir);\n";
 		my @anames = ("dir", map { $_->[1] } (@$iargs, @$oargs));
-		print "\t\tauto xbresult = exmdb_server_$func(".join(", ", @anames).");\n";
-		print "\t\texmdb_server_free_environment();\n";
-		print "\t\treturn xbresult;\n";
-		print "\t}\n";
+		print "BOOL exmdb_client_local::$func($rbsig)\n{\n";
+		print "\tBOOL xb_private;\n\n";
+		print "\tif (!exmdb_client_check_local(dir, &xb_private))\n";
+		print "\t\treturn exmdb_client_remote::$func(".join(", ", @anames).");\n";
+		print "\texmdb_server_build_environment(TRUE, xb_private, dir);\n";
+		print "\tauto xbresult = exmdb_server_$func(".join(", ", @anames).");\n";
+		print "\texmdb_server_free_environment();\n";
+		print "\treturn xbresult;\n";
+		print "}\n\n";
+		next;
 	}
+	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
+	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
 	print "\n";
 	print "\trequest.call_id = exmdb_callid::".uc($func).";\n";
 	print "\trequest.dir = deconst(dir);\n";
@@ -44,7 +47,7 @@ while (<STDIN>) {
 			print "\trequest.payload.$func.$field = $field;\n";
 		}
 	}
-	print "\tif (!exmdb_client_do_rpc(dir, &request, &response))\n\t\treturn false;\n";
+	print "\tif (!exmdb_rpc_exec(dir, &request, &response))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
 		if ($type =~ m{^char\s*\*}) {

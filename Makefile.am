@@ -89,7 +89,7 @@ system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
 
-BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
+BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/array.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/dir_tree.cpp lib/double_list.cpp lib/errno.cpp lib/files_allocator.cpp lib/fopen.cpp lib/guid.cpp lib/int_hash.cpp lib/lib_buffer.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp
@@ -105,7 +105,7 @@ libgromox_email_la_LIBADD = ${HX_LIBS} ${ssl_LIBS} libgromox_common.la
 libgromox_epoll_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_epoll_la_SOURCES = lib/contexts_pool.cpp lib/threads_pool.cpp
 libgromox_epoll_la_LIBADD = -lpthread -lrt libgromox_common.la
-libgromox_exrpc_la_SOURCES = lib/exmdb_ext.cpp
+libgromox_exrpc_la_SOURCES = lib/exmdb_ext.cpp lib/exmdb_rpc.cpp
 libgromox_exrpc_la_LIBADD = libgromox_mapi.la
 libgromox_mapi_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_mapi_la_SOURCES = lib/mapi/apple_util.cpp lib/mapi/applefile.cpp lib/mapi/binhex.cpp lib/mapi/eid_array.cpp lib/mapi/element_data.cpp lib/mapi/ext_buffer.cpp lib/mapi/html.cpp lib/mapi/idset.cpp lib/mapi/macbinary.cpp lib/mapi/oxcical.cpp lib/mapi/oxcmail.cpp lib/mapi/oxvcard.cpp lib/mapi/pcl.cpp lib/mapi/proptag_array.cpp lib/mapi/propval.cpp lib/mapi/restriction.cpp lib/mapi/rop_util.cpp lib/mapi/rtf.cpp lib/mapi/rtfcp.cpp lib/mapi/rule_actions.cpp lib/mapi/sortorder_set.cpp lib/mapi/tarray_set.cpp lib/mapi/tnef.cpp lib/mapi/tpropval_array.cpp
@@ -158,9 +158,9 @@ EXTRA_libgxs_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 http_SOURCES = exch/http/blocks_allocator.cpp exch/http/console_cmd_handler.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp lib/console_server.cpp
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la
-midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/console_cmd_handler.cpp exch/midb/exmdb_client.cpp exch/midb/exmdb_rpc.cpp exch/midb/listener.cpp exch/midb/mail_engine.cpp exch/midb/main.cpp exch/midb/system_services.cpp lib/console_server.cpp
+midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/console_cmd_handler.cpp exch/midb/exmdb_client.cpp exch/midb/listener.cpp exch/midb/mail_engine.cpp exch/midb/main.cpp exch/midb/system_services.cpp lib/console_server.cpp
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
-zcore_SOURCES = exch/http/service.cpp exch/zcore/ab_tree.cpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.cpp exch/zcore/common_util.cpp exch/zcore/console_cmd_handler.cpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_rpc.cpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/msgchg_grouping.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_parser.cpp exch/zcore/store_object.cpp exch/zcore/system_services.cpp exch/zcore/table_object.cpp exch/zcore/user_object.cpp exch/zcore/zarafa_server.cpp lib/console_server.cpp
+zcore_SOURCES = exch/http/service.cpp exch/zcore/ab_tree.cpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.cpp exch/zcore/common_util.cpp exch/zcore/console_cmd_handler.cpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/msgchg_grouping.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_parser.cpp exch/zcore/store_object.cpp exch/zcore/system_services.cpp exch/zcore/table_object.cpp exch/zcore/user_object.cpp exch/zcore/zarafa_server.cpp lib/console_server.cpp
 zcore_LDADD = -ldl -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 libgxs_codepage_lang_la_SOURCES = exch/codepage_lang.cpp
 libgxs_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -313,10 +313,7 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 php_mapi/zarafa_rpc.cpp: php_mapi/zarafa_client.h zcidl
 	${AM_V_GEN}${top_srcdir}/zcidl <$< >$@
 
-exch/midb/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
-	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
-
-exch/zcore/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
+lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
 
 exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl

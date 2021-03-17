@@ -84,6 +84,7 @@ int main(int argc, const char **argv)
 	char service_path[256];
 	
 	exmdb_rpc_alloc = common_util_alloc;
+	exmdb_rpc_exec = exmdb_client_do_rpc;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;

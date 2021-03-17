@@ -23,3 +23,13 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult);
+
+namespace exmdb_client_local {
+#define IDLOUT
+#define EXMIDL(n) extern GX_EXPORT BOOL n
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
+}
+
+namespace exmdb_client = exmdb_client_local;

@@ -6,6 +6,8 @@
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_rpc.hpp>
 
+namespace exmdb_client = exmdb_client_remote;
+
 enum {
 	ALIVE_PROXY_CONNECTIONS,
 	LOST_PROXY_CONNECTIONS

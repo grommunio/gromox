@@ -92,6 +92,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		exmdb_rpc_alloc = common_util_alloc;
+		exmdb_rpc_exec = exmdb_client_do_rpc;
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
