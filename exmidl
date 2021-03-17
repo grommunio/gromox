@@ -21,7 +21,7 @@ while (<STDIN>) {
 	$iargf = [&split_argl($iargs)];
 	$iargs = [&split_adcl(@$iargf)];
 	my $rbsig = join(", ", "const char *dir", @$iargf, @$oargf);
-	print "BOOL exmdb_client_$func($rbsig)\n{\n";
+	print "BOOL exmdb_client::$func($rbsig)\n{\n";
 	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
 	if ($provider) {
 		print "\tBOOL xb_private;\n\n";

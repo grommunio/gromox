@@ -20,8 +20,10 @@ extern int exmdb_client_stop();
 void exmdb_client_register_proc(void *pproc);
 extern BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
 
+namespace exmdb_client {
+
 #define IDLOUT
-#define EXMIDL(n) extern BOOL exmdb_client_ ## n
+#define EXMIDL(n) extern BOOL n
 EXMIDL(ping_store)(const char *dir);
 EXMIDL(get_all_named_propids)(const char *dir, IDLOUT PROPID_ARRAY *propids);
 EXMIDL(get_named_propids)(const char *dir, BOOL b_create, const PROPNAME_ARRAY *ppropnames, IDLOUT PROPID_ARRAY *propids);
@@ -145,3 +147,5 @@ EXMIDL(check_contact_address)(const char *dir, const char *paddress, IDLOUT BOOL
 EXMIDL(unload_store)(const char *dir);
 #undef EXMIDL
 #undef IDLOUT
+
+}

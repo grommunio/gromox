@@ -186,7 +186,7 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	proptags.count = 1;
 	proptags.pproptag = &proptag;
 	proptag = PROP_TAG_STORERECORDKEY;
-	if (FALSE == exmdb_client_get_store_properties(
+	if (!exmdb_client::get_store_properties(
 		dir, 0, &proptags, &propvals)) {
 		printf("get_store_properties %s: failed\n", dir);
 		return NULL;	
@@ -342,7 +342,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	if (0 == tmp_propids.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_named_propnames(
+	if (!exmdb_client::get_named_propnames(
 		pstore->dir, &tmp_propids, &tmp_propnames)) {
 		return FALSE;	
 	}
@@ -478,7 +478,7 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 	if (0 == tmp_propnames.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_named_propids(pstore->dir,
+	if (!exmdb_client::get_named_propids(pstore->dir,
 		b_create, &tmp_propnames, &tmp_propids)) {
 		return FALSE;	
 	}
@@ -615,7 +615,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 {
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (FALSE == exmdb_client_get_store_all_proptags(
+	if (!exmdb_client::get_store_all_proptags(
 		pstore->dir, &tmp_proptags)) {
 		return FALSE;	
 	}
@@ -996,7 +996,7 @@ static BOOL store_object_get_calculated_property(
 		} else {
 			pinfo = zarafa_server_get_info();
 			if (TRUE == pstore->b_private) {
-				if (FALSE == exmdb_client_check_mailbox_permission(
+				if (!exmdb_client::check_mailbox_permission(
 					pstore->dir, pinfo->username, &permission)) {
 					return FALSE;
 				}
@@ -1038,7 +1038,7 @@ static BOOL store_object_get_calculated_property(
 		} else {
 			pinfo = zarafa_server_get_info();
 			if (TRUE == pstore->b_private) {
-				if (FALSE == exmdb_client_check_mailbox_permission(
+				if (!exmdb_client::check_mailbox_permission(
 					pstore->dir, pinfo->username, &permission)) {
 					return FALSE;
 				}
@@ -1408,7 +1408,7 @@ BOOL store_object_get_properties(STORE_OBJECT *pstore,
 			return TRUE;
 		}	
 	}
-	if (FALSE == exmdb_client_get_store_properties(
+	if (!exmdb_client::get_store_properties(
 		pstore->dir, pinfo->cpid, &tmp_proptags,
 		&tmp_propvals)) {
 		return FALSE;	
@@ -1610,7 +1610,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PROP_TAG_DISPLAYNAME;
 	tmp_propvals.ppropval[0].pvalue = deconst(pdisplayname);
-	if (FALSE == exmdb_client_allocate_cn(pstore->dir, &change_num)) {
+	if (!exmdb_client::allocate_cn(pstore->dir, &change_num)) {
 		return FALSE;
 	}
 	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGENUMBER;
@@ -1637,7 +1637,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	tmp_propvals.ppropval[3].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[4].proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	tmp_propvals.ppropval[4].pvalue = &last_time;
-	return exmdb_client_set_folder_properties(
+	return exmdb_client::set_folder_properties(
 		pstore->dir, 0, folder_id, &tmp_propvals,
 		&tmp_problems);
 }
@@ -1816,18 +1816,18 @@ static BOOL store_object_get_folder_permissions(
 		PROP_TAG_MEMBERRIGHTS
 	};
 	
-	if (FALSE == exmdb_client_load_permission_table(
+	if (!exmdb_client::load_permission_table(
 		pstore->dir, folder_id, 0, &table_id, &row_num)) {
 		return FALSE;
 	}
 	proptags.count = 2;
 	proptags.pproptag = deconst(proptag_buff);
-	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
+	if (!exmdb_client::query_table(pstore->dir, NULL,
 		0, table_id, &proptags, 0, row_num, &permission_set)) {
-		exmdb_client_unload_table(pstore->dir, table_id);
+		exmdb_client::unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
-	exmdb_client_unload_table(pstore->dir, table_id);
+	exmdb_client::unload_table(pstore->dir, table_id);
 	max_count = (pperm_set->count/100)*100;
 	for (size_t i = 0; i < permission_set.count; ++i) {
 		if (max_count == pperm_set->count) {
@@ -1887,7 +1887,7 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	uint64_t folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
 	                     PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE);
 	
-	if (FALSE == exmdb_client_load_hierarchy_table(
+	if (!exmdb_client::load_hierarchy_table(
 		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
 		NULL, &table_id, &row_num)) {
 		return FALSE;
@@ -1895,7 +1895,7 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_FOLDERID;
-	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
+	if (!exmdb_client::query_table(pstore->dir, NULL,
 		0, table_id, &proptags, 0, row_num, &tmp_set)) {
 		return FALSE;
 	}

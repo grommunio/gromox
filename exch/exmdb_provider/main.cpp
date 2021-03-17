@@ -304,7 +304,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			return FALSE;
 		}
 
-#define E(f) register_service("exmdb_client_" #f, exmdb_client_ ## f)
+#define E(f) register_service("exmdb_client_" #f, exmdb_client::f)
 		E(ping_store);
 		E(get_all_named_propids);
 		E(get_named_propids);

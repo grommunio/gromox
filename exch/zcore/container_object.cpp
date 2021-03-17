@@ -416,7 +416,7 @@ BOOL container_object_load_user_table(
 		return TRUE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (FALSE == exmdb_client_load_content_table(pinfo->maildir,
+	if (!exmdb_client::load_content_table(pinfo->maildir,
 		pinfo->cpid, pcontainer->id.exmdb_id.folder_id, NULL, 0,
 		NULL, NULL, &table_id, &row_num)) {
 		return FALSE;
@@ -471,7 +471,7 @@ BOOL container_object_load_user_table(
 		proptags.pproptag[proptags.count] =
 							PROP_TAG_MID;
 		proptags.count ++;
-		if (FALSE == exmdb_client_query_table(
+		if (!exmdb_client::query_table(
 			pinfo->maildir, NULL, pinfo->cpid,
 			table_id, &proptags, 0, row_num,
 			&tmp_set)) {
@@ -492,7 +492,7 @@ BOOL container_object_load_user_table(
 	} else {
 		tmp_set.count = 0;
 	}
-	exmdb_client_unload_table(pinfo->maildir, table_id);
+	exmdb_client::unload_table(pinfo->maildir, table_id);
 	pcontainer->contents.prow_set = tarray_set_init();
 	if (NULL == pcontainer->contents.prow_set) {
 		return FALSE;
@@ -933,7 +933,7 @@ BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 		return TRUE;
 	} else {
 		pinfo = zarafa_server_get_info();
-		if (FALSE == exmdb_client_get_folder_properties(
+		if (!exmdb_client::get_folder_properties(
 			pinfo->maildir, pinfo->cpid,
 			pcontainer->id.exmdb_id.folder_id,
 			container_object_get_folder_proptags(),
@@ -1037,7 +1037,7 @@ static BOOL container_object_query_folder_hierarchy(
 	TPROPVAL_ARRAY **pparray;
 	
 	pinfo = zarafa_server_get_info();
-	if (FALSE == exmdb_client_load_hierarchy_table(
+	if (!exmdb_client::load_hierarchy_table(
 		pinfo->maildir, folder_id, NULL, TABLE_FLAG_DEPTH,
 		NULL, &table_id, &row_num)) {
 		return FALSE;
@@ -1045,14 +1045,14 @@ static BOOL container_object_query_folder_hierarchy(
 	if (0 == row_num) {
 		tmp_set.count = 0;
 	} else {
-		if (FALSE == exmdb_client_query_table(
+		if (!exmdb_client::query_table(
 			pinfo->maildir, NULL, pinfo->cpid, table_id,
 			container_object_get_folder_proptags(), 0,
 			row_num, &tmp_set)) {
 			return FALSE;
 		}
 	}
-	exmdb_client_unload_table(pinfo->maildir, table_id);
+	exmdb_client::unload_table(pinfo->maildir, table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pvalue = common_util_get_propvals(
 			tmp_set.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
@@ -1152,7 +1152,7 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			pinfo = zarafa_server_get_info();
-			if (FALSE == exmdb_client_get_folder_properties(pinfo->maildir,
+			if (!exmdb_client::get_folder_properties(pinfo->maildir,
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 				container_object_get_folder_proptags(), &tmp_propvals)) {
 				ab_tree_put_base(pbase);

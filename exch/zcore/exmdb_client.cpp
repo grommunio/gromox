@@ -599,7 +599,7 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	
 	tmp_propnames.count = 1;
 	tmp_propnames.ppropname = (PROPERTY_NAME*)ppropname;
-	if (FALSE == exmdb_client_get_named_propids(dir,
+	if (!exmdb_client::get_named_propids(dir,
 		b_create, &tmp_propnames, &tmp_propids)) {
 		return FALSE;	
 	}
@@ -616,7 +616,7 @@ BOOL exmdb_client_get_folder_property(const char *dir,
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
-	if (FALSE == exmdb_client_get_folder_properties(
+	if (!exmdb_client::get_folder_properties(
 		dir, cpid, folder_id, &tmp_proptags,
 		&tmp_propvals)) {
 		return FALSE;	
@@ -634,7 +634,7 @@ BOOL exmdb_client_get_message_property(const char *dir,
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
-	if (FALSE == exmdb_client_get_message_properties(dir,
+	if (!exmdb_client::get_message_properties(dir,
 		username, cpid, message_id, &tmp_proptags, &tmp_propvals)) {
 		return FALSE;	
 	}
@@ -651,7 +651,7 @@ BOOL exmdb_client_delete_message(const char *dir,
 	
 	message_ids.count = 1;
 	message_ids.pids = &message_id;
-	if (FALSE == exmdb_client_delete_messages(dir, account_id,
+	if (!exmdb_client::delete_messages(dir, account_id,
 		cpid, NULL, folder_id, &message_ids, b_hard, &b_partial)) {
 		return FALSE;	
 	}
@@ -668,7 +668,7 @@ BOOL exmdb_client_get_instance_property(
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
-	if (FALSE == exmdb_client_get_instance_properties(dir,
+	if (!exmdb_client::get_instance_properties(dir,
 		0, instance_id, &tmp_proptags, &tmp_propvals)) {
 		return FALSE;	
 	}
@@ -685,7 +685,7 @@ BOOL exmdb_client_set_instance_property(
 	
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = (TAGGED_PROPVAL*)ppropval;
-	if (FALSE == exmdb_client_set_instance_properties(dir,
+	if (!exmdb_client::set_instance_properties(dir,
 		instance_id, &tmp_propvals, &tmp_problems)) {
 		return FALSE;	
 	}
@@ -701,7 +701,7 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
-	if (FALSE == exmdb_client_remove_instance_properties(
+	if (!exmdb_client::remove_instance_properties(
 		dir, instance_id, &tmp_proptags, &tmp_problems)) {
 		return FALSE;	
 	}
@@ -716,7 +716,7 @@ BOOL exmdb_client_remove_message_property(const char *dir,
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
-	if (FALSE == exmdb_client_remove_message_properties(
+	if (!exmdb_client::remove_message_properties(
 		dir, cpid, message_id, &tmp_proptags)) {
 		return FALSE;	
 	}

@@ -243,7 +243,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[9];
 	
-	if (FALSE == exmdb_client_allocate_cn(dir, &change_num)) {
+	if (!exmdb_client::allocate_cn(dir, &change_num)) {
 		return FALSE;
 	}
 	tmp_type = FOLDER_TYPE_GENERIC;
@@ -289,7 +289,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	pcl_free(ppcl);
 	propval_buff[8].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval_buff[8].pvalue = pbin;
-	if (FALSE == exmdb_client_create_folder_by_properties(
+	if (!exmdb_client::create_folder_by_properties(
 		dir, 0, &tmp_propvals, pfolder_id)) {
 		rop_util_free_binary(pbin);
 		return FALSE;
@@ -304,14 +304,14 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
-	return exmdb_client_get_named_propids(
+	return exmdb_client::get_named_propids(
 		common_util_get_maildir(), FALSE,
 		ppropnames, ppropids);
 }
 
 BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
-	return exmdb_client_get_named_propids(common_util_get_maildir(),
+	return exmdb_client::get_named_propids(common_util_get_maildir(),
 	       TRUE, names, ids);
 }
 
@@ -323,7 +323,7 @@ BOOL common_util_get_propname(
 	
 	propids.count = 1;
 	propids.ppropid = &propid;
-	if (FALSE == exmdb_client_get_named_propnames(
+	if (!exmdb_client::get_named_propnames(
 		common_util_get_maildir(), &propids, &propnames)) {
 		return FALSE;	
 	}

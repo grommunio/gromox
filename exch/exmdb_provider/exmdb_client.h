@@ -23,8 +23,10 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult);
 
+namespace exmdb_client {
+
 #define IDLOUT
-#define EXMIDL(n) extern BOOL exmdb_client_ ## n
+#define EXMIDL(n) extern BOOL n
 EXMIDL(ping_store)(const char *dir);
 EXMIDL(get_all_named_propids)(const char *dir, IDLOUT PROPID_ARRAY *propids);
 EXMIDL(get_named_propids)(const char *dir, BOOL b_create, const PROPNAME_ARRAY *ppropnames, IDLOUT PROPID_ARRAY *propids);
@@ -32,7 +34,7 @@ EXMIDL(get_named_propnames)(const char *dir, const PROPID_ARRAY *ppropids, IDLOU
 EXMIDL(get_mapping_guid)(const char *dir, uint16_t replid, IDLOUT BOOL *b_found, GUID *guid);
 EXMIDL(get_mapping_replid)(const char *dir, GUID guid, IDLOUT BOOL *b_found, uint16_t *replid);
 EXMIDL(get_store_all_proptags)(const char *dir, IDLOUT PROPTAG_ARRAY *proptags);
-EXMIDL(get_store_properties)(const char *dir,	uint32_t cpid, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals);
+EXMIDL(get_store_properties)(const char *dir, uint32_t cpid, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals);
 EXMIDL(set_store_properties)(const char *dir, uint32_t cpid, const TPROPVAL_ARRAY *ppropvals, IDLOUT PROBLEM_ARRAY *problems);
 EXMIDL(remove_store_properties)(const char *dir, const PROPTAG_ARRAY *pproptags);
 EXMIDL(check_mailbox_permission)(const char *dir, const char *username, IDLOUT uint32_t *permission);
@@ -148,3 +150,5 @@ EXMIDL(get_public_folder_unread_count)(const char *dir, const char *username, ui
 EXMIDL(unload_store)(const char *dir);
 #undef EXMIDL
 #undef IDLOUT
+
+}

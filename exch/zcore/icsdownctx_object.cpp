@@ -75,7 +75,7 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
 	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
 	auto username = !store_object_check_private(pctx->pstore) ? pinfo->username : nullptr;
-	if (FALSE == exmdb_client_get_content_sync(
+	if (!exmdb_client::get_content_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,
 		username, pctx->pstate->pgiven, pseen, pseen_fai,
 		pread, pinfo->cpid, prestriction, TRUE, &count_fai,
@@ -175,7 +175,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	}
 	pinfo = zarafa_server_get_info();
 	auto username = store_object_check_owner_mode(pctx->pstore) ? nullptr : pinfo->username;
-	if (FALSE == exmdb_client_get_hierarchy_sync(
+	if (!exmdb_client::get_hierarchy_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,
 		username, pctx->pstate->pgiven, pctx->pstate->pseen,
 		&fldchgs, &pctx->last_changenum, &given_folders,
@@ -400,7 +400,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	proptag_buff[3] = PROP_TAG_ATTRIBUTEHIDDEN;
 	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
 	proptag_buff[5] = PROP_TAG_CHANGENUMBER;
-	if (FALSE == exmdb_client_get_folder_properties(
+	if (!exmdb_client::get_folder_properties(
 		store_object_get_dir(pctx->pstore), 0,
 		folder_id, &proptags, &tmp_propvals)) {
 		return FALSE;

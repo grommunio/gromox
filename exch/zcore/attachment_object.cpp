@@ -21,7 +21,7 @@ ATTACHMENT_OBJECT* attachment_object_create(
 	pattachment->b_writable = pparent->b_writable;
 	pattachment->b_touched = FALSE;
 	if (ATTACHMENT_NUM_INVALID == attachment_num) {
-		if (FALSE == exmdb_client_create_attachment_instance(
+		if (!exmdb_client::create_attachment_instance(
 			store_object_get_dir(pparent->pstore), pparent->instance_id,
 			&pattachment->instance_id, &pattachment->attachment_num)) {
 			free(pattachment);
@@ -34,7 +34,7 @@ ATTACHMENT_OBJECT* attachment_object_create(
 		}
 		pattachment->b_new = TRUE;
 	} else {
-		if (FALSE == exmdb_client_load_attachment_instance(
+		if (!exmdb_client::load_attachment_instance(
 			store_object_get_dir(pparent->pstore),
 			pparent->instance_id, attachment_num,
 			&pattachment->instance_id)) {
@@ -107,7 +107,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	return exmdb_client_set_instance_properties(
+	return exmdb_client::set_instance_properties(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment->instance_id, &propvals, &problems);
 }
@@ -115,7 +115,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 void attachment_object_free(ATTACHMENT_OBJECT *pattachment)
 {
 	if (0 != pattachment->instance_id) {
-		exmdb_client_unload_instance(
+		exmdb_client::unload_instance(
 			store_object_get_dir(
 			pattachment->pparent->pstore),
 			pattachment->instance_id);
@@ -148,7 +148,7 @@ gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 		return GXERR_CALL_FAILED;
 	}
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client_flush_instance(store_object_get_dir(pattachment->pparent->pstore),
+	if (!exmdb_client::flush_instance(store_object_get_dir(pattachment->pparent->pstore),
 	    pattachment->instance_id, nullptr, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	pattachment->b_new = FALSE;
@@ -164,7 +164,7 @@ BOOL attachment_object_get_all_proptags(
 {
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (FALSE == exmdb_client_get_instance_all_proptags(
+	if (!exmdb_client::get_instance_all_proptags(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment->instance_id, &tmp_proptags)) {
 		return FALSE;	
@@ -291,7 +291,7 @@ BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_instance_properties(
+	if (!exmdb_client::get_instance_properties(
 		store_object_get_dir(pattachment->pparent->pstore),
 		0, pattachment->instance_id, &tmp_proptags,
 		&tmp_propvals)) {
@@ -331,7 +331,7 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_set_instance_properties(
+	if (!exmdb_client::set_instance_properties(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment->instance_id, &tmp_propvals, &tmp_problems)) {
 		return FALSE;	
@@ -366,7 +366,7 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_remove_instance_properties(
+	if (!exmdb_client::remove_instance_properties(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment->instance_id, &tmp_proptags,
 		&tmp_problems)) {
@@ -386,7 +386,7 @@ BOOL attachment_object_copy_properties(
 	PROBLEM_ARRAY tmp_problems;
 	ATTACHMENT_CONTENT attctnt;
 	
-	if (FALSE == exmdb_client_check_instance_cycle(
+	if (!exmdb_client::check_instance_cycle(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment_src->instance_id, pattachment->instance_id,
 		pb_cycle)) {
@@ -395,7 +395,7 @@ BOOL attachment_object_copy_properties(
 	if (TRUE == *pb_cycle) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_read_attachment_instance(
+	if (!exmdb_client::read_attachment_instance(
 		store_object_get_dir(pattachment_src->pparent->pstore),
 		pattachment_src->instance_id, &attctnt)) {
 		return FALSE;
@@ -415,7 +415,7 @@ BOOL attachment_object_copy_properties(
 		PROP_TAG_ATTACHDATAOBJECT) >= 0) {
 		attctnt.pembedded = NULL;
 	}
-	if (FALSE == exmdb_client_write_attachment_instance(
+	if (!exmdb_client::write_attachment_instance(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment->instance_id, &attctnt, b_force,
 		&tmp_problems)) {

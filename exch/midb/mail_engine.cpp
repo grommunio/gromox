@@ -2013,7 +2013,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		if (FALSE == common_util_switch_allocator()) {
 			return;
 		}
-		if (FALSE == exmdb_client_read_message(dir, NULL, 0,
+		if (!exmdb_client::read_message(dir, NULL, 0,
 			rop_util_make_eid_ex(1, message_id), &pmsgctnt)) {
 			common_util_switch_allocator();
 			return;
@@ -2157,7 +2157,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	DOUBLE_LIST_NODE *pnode;
 	
 	dir = common_util_get_maildir();
-	if (FALSE == exmdb_client_query_folder_messages(
+	if (!exmdb_client::query_folder_messages(
 		dir, rop_util_make_eid_ex(1, folder_id), &rows)) {
 		return FALSE;
 	}
@@ -2485,7 +2485,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	uint32_t proptag_buff[6];
 	
 	dir = common_util_get_maildir();
-	if (FALSE == exmdb_client_load_hierarchy_table(dir,
+	if (!exmdb_client::load_hierarchy_table(dir,
 		rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 		NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
 		NULL, &table_id, &row_count)) {
@@ -2499,12 +2499,12 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	proptag_buff[3] = PROP_TAG_CONTAINERCLASS;
 	proptag_buff[4] = PROP_TAG_DISPLAYNAME;
 	proptag_buff[5] = PROP_TAG_LOCALCOMMITTIMEMAX;
-	if (FALSE == exmdb_client_query_table(dir, NULL,
+	if (!exmdb_client::query_table(dir, NULL,
 		0, table_id, &proptags, 0, row_count, &rows)) {
-		exmdb_client_unload_table(dir, table_id);
+		exmdb_client::unload_table(dir, table_id);
 		return FALSE;
 	}
-	exmdb_client_unload_table(dir, table_id);
+	exmdb_client::unload_table(dir, table_id);
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		return FALSE;
@@ -2714,7 +2714,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	sqlite3_exec(pidb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sqlite3_close(psqlite);
-	if (FALSE == exmdb_client_subscribe_notification(dir,
+	if (!exmdb_client::subscribe_notification(dir,
 		NOTIFICATION_TYPE_OBJECTCREATED|NOTIFICATION_TYPE_OBJECTDELETED|
 		NOTIFICATION_TYPE_OBJECTMODIFIED|NOTIFICATION_TYPE_OBJECTMOVED|
 		NOTIFICATION_TYPE_OBJECTCOPIED|NOTIFICATION_TYPE_NEWMAIL, TRUE,
@@ -2942,7 +2942,7 @@ static void *scan_work_func(void *param)
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			psub = (SUB_NODE*)pnode->pdata;
 			if (TRUE == common_util_build_environment(psub->maildir)) {
-				exmdb_client_unsubscribe_notification(
+				exmdb_client::unsubscribe_notification(
 						psub->maildir, psub->sub_id);
 				common_util_free_environment();
 			}
@@ -2956,7 +2956,7 @@ static void *scan_work_func(void *param)
 		pidb = (IDB_ITEM*)str_hash_iter_get_value(iter, htag);
 		swap_string(path, htag);
 		if (0 != pidb->sub_id) {
-			exmdb_client_unsubscribe_notification(
+			exmdb_client::unsubscribe_notification(
 								path, pidb->sub_id);
 		}
 		mail_engine_free_idb(pidb);
@@ -2988,7 +2988,7 @@ static int mail_engine_mquta(int argc, char **argv, int sockd)
 	tmp_proptags[0] = PROP_TAG_MESSAGESIZEEXTENDED;
 	tmp_proptags[1] = PROP_TAG_PROHIBITRECEIVEQUOTA;
 	tmp_proptags[2] = PROP_TAG_CONTENTCOUNT;
-	if (FALSE == exmdb_client_get_store_properties(
+	if (!exmdb_client::get_store_properties(
 		argv[1], 0, &proptags, &propvals)) {
 		return 4;	
 	}
@@ -3022,7 +3022,7 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PROP_TAG_PROHIBITRECEIVEQUOTA;
 	tmp_proptags[1] = PROP_TAG_MESSAGESIZEEXTENDED;
-	if (FALSE == exmdb_client_get_store_properties(
+	if (!exmdb_client::get_store_properties(
 		argv[1], 0, &proptags, &propvals)) {
 		return 4;	
 	}
@@ -3089,7 +3089,7 @@ static int mail_engine_mping(int argc, char **argv, int sockd)
 	if (NULL != pidb) {
 		mail_engine_put_idb(pidb);
 	}
-	exmdb_client_ping_store(argv[1]);
+	exmdb_client::ping_store(argv[1]);
 	write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -3136,7 +3136,7 @@ static int mail_engine_mweml(int argc, char **argv, int sockd)
 	message_id = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	mail_engine_put_idb(pidb);
-	if (FALSE == exmdb_client_read_message(argv[1],
+	if (!exmdb_client::read_message(argv[1],
 		NULL, 0, rop_util_make_eid_ex(1, message_id),
 		&pmsgctnt) || NULL == pmsgctnt) {
 		return 4;
@@ -3765,9 +3765,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		tmp_flags = MESSAGE_FLAG_UNSENT;
 		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
 	}
-	if (FALSE == exmdb_client_allocate_message_id(argv[1],
+	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
-		FALSE == exmdb_client_allocate_cn(argv[1], &change_num)) {
+		!exmdb_client::allocate_cn(argv[1], &change_num)) {
 		mail_engine_put_idb(pidb);
 		message_content_free(pmsgctnt);
 		return 4;
@@ -3828,7 +3828,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		cpid = 1252;
 	}
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client_write_message(argv[1], username, cpid,
+	if (!exmdb_client::write_message(argv[1], username, cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
 	    e_result != GXERR_SUCCESS) {
 		message_content_free(pmsgctnt);
@@ -3890,7 +3890,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	}
 	sqlite3_finalize(pstmt);
 	mail_engine_put_idb(pidb);
-	if (FALSE == exmdb_client_delete_messages(argv[1],
+	if (!exmdb_client::delete_messages(argv[1],
 		user_id, 0, NULL, rop_util_make_eid_ex(1, folder_id),
 		&message_ids, TRUE, &b_partial)) {
 		return 4;	
@@ -3970,7 +3970,7 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PROP_TAG_MESSAGEFLAGS;
-		if (FALSE == exmdb_client_get_message_properties(argv[1],
+		if (!exmdb_client::get_message_properties(argv[1],
 			NULL, 0, rop_util_make_eid_ex(1, message_id), &proptags,
 			&propvals) || 0 == propvals.count) {
 			return 4;
@@ -3982,7 +3982,7 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 			message_flags |= MESSAGE_FLAG_UNSENT;
 		}
 		propvals.ppropval[0].pvalue = &message_flags;
-		if (FALSE == exmdb_client_set_message_properties(argv[1],
+		if (!exmdb_client::set_message_properties(argv[1],
 			NULL, 0, rop_util_make_eid_ex(1, message_id), &propvals,
 			&problems)) {
 			return 4;
@@ -3992,7 +3992,7 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 	} else if (0 == strcasecmp(argv[4], "read")) {
 		mail_engine_put_idb(pidb);
 		tmp_byte = atoi(argv[5]);
-		if (FALSE == exmdb_client_set_message_read_state(argv[1],
+		if (!exmdb_client::set_message_read_state(argv[1],
 			NULL, rop_util_make_eid_ex(1, message_id), tmp_byte,
 			&read_cn)) {
 			return 4;
@@ -4113,7 +4113,7 @@ static int mail_engine_mmove(int argc, char **argv, int sockd)
 	mail_engine_put_idb(pidb);
 	message_ids.count = 1;
 	message_ids.pids = &message_id;
-	if (FALSE == exmdb_client_movecopy_messages(argv[1], user_id,
+	if (!exmdb_client::movecopy_messages(argv[1], user_id,
 		0, FALSE, NULL, rop_util_make_eid_ex(1, folder_id),
 		rop_util_make_eid_ex(1, folder_id1), FALSE, &message_ids,
 		&b_partial) || TRUE == b_partial) {
@@ -4286,9 +4286,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		tmp_flags = MESSAGE_FLAG_UNSENT;
 		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
 	}
-	if (FALSE == exmdb_client_allocate_message_id(argv[1],
+	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
-		FALSE == exmdb_client_allocate_cn(argv[1], &change_num)) {
+		!exmdb_client::allocate_cn(argv[1], &change_num)) {
 		mail_engine_put_idb(pidb);
 		message_content_free(pmsgctnt);
 		return 4;
@@ -4357,7 +4357,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		cpid = 1252;
 	}
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client_write_message(argv[1], username, cpid,
+	if (!exmdb_client::write_message(argv[1], username, cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
 	    e_result != GXERR_SUCCESS) {
 		message_content_free(pmsgctnt);
@@ -4478,7 +4478,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	mail_engine_put_idb(pidb);
 	if (parent_id != folder_id1) {
-		if (FALSE == exmdb_client_movecopy_folder(
+		if (!exmdb_client::movecopy_folder(
 			argv[1], user_id, 0, FALSE, NULL,
 			rop_util_make_eid_ex(1, parent_id),
 			rop_util_make_eid_ex(1, folder_id),
@@ -4496,8 +4496,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_PREDECESSORCHANGELIST;
-	if (FALSE == exmdb_client_allocate_cn(argv[1], &change_num)
-		|| FALSE == exmdb_client_get_folder_properties(argv[1],
+	if (!exmdb_client::allocate_cn(argv[1], &change_num)
+		|| !exmdb_client::get_folder_properties(argv[1],
 		0, rop_util_make_eid_ex(1, folder_id), &proptags, &propvals)
 		||
 	     (pbin1 = static_cast<BINARY *>(common_util_get_propvals(&propvals, PROP_TAG_PREDECESSORCHANGELIST))) == nullptr) {
@@ -4531,7 +4531,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		propval_buff[4].proptag = PROP_TAG_DISPLAYNAME;
 		propval_buff[4].pvalue = ptoken;
 	}
-	if (FALSE == exmdb_client_set_folder_properties(
+	if (!exmdb_client::set_folder_properties(
 		argv[1], 0, rop_util_make_eid_ex(1, folder_id),
 		&propvals, &problems)) {
 		return 4;	
@@ -4647,11 +4647,11 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	}
 	mail_engine_put_idb(pidb);
 	folder_id = rop_util_make_eid_ex(1, folder_id);
-	if (FALSE == exmdb_client_empty_folder(argv[1], 0, NULL, folder_id,
+	if (!exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
 		TRUE, TRUE, TRUE, FALSE, &b_partial) || TRUE == b_partial ||
-		FALSE == exmdb_client_empty_folder(argv[1], 0, NULL, folder_id,
+		!exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
 		TRUE, FALSE, FALSE, TRUE, &b_partial) || TRUE == b_partial ||
-		FALSE == exmdb_client_delete_folder(argv[1], 0, folder_id, TRUE,
+		!exmdb_client::delete_folder(argv[1], 0, folder_id, TRUE,
 		&b_result) || FALSE == b_result) {
 		return 4;
 	}
@@ -5753,7 +5753,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PROP_TAG_MESSAGEFLAGS;
-		if (FALSE == exmdb_client_get_message_properties(argv[1], NULL,
+		if (!exmdb_client::get_message_properties(argv[1], NULL,
 			0, rop_util_make_eid_ex(1, message_id), &proptags, &propvals)
 			|| 0 == propvals.count) {
 			mail_engine_put_idb(pidb);
@@ -5763,7 +5763,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		if (0 == (MESSAGE_FLAG_UNSENT & message_flags)) {
 			message_flags |= MESSAGE_FLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
-			if (FALSE == exmdb_client_set_message_properties(argv[1],
+			if (!exmdb_client::set_message_properties(argv[1],
 				NULL, 0, rop_util_make_eid_ex(1, message_id), &propvals,
 				&problems)) {
 				mail_engine_put_idb(pidb);
@@ -5787,7 +5787,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 	}
 	if (NULL != strchr(argv[4], 'S')) {
-		if (FALSE == exmdb_client_set_message_read_state(argv[1],
+		if (!exmdb_client::set_message_read_state(argv[1],
 			NULL, rop_util_make_eid_ex(1, message_id), 1, &read_cn)) {
 			mail_engine_put_idb(pidb);
 			return 4;
@@ -5853,7 +5853,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PROP_TAG_MESSAGEFLAGS;
-		if (FALSE == exmdb_client_get_message_properties(argv[1], NULL,
+		if (!exmdb_client::get_message_properties(argv[1], NULL,
 			0, rop_util_make_eid_ex(1, message_id), &proptags, &propvals)
 			|| 0 == propvals.count) {
 			mail_engine_put_idb(pidb);
@@ -5863,7 +5863,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		if (MESSAGE_FLAG_UNSENT & message_flags) {
 			message_flags &= ~MESSAGE_FLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
-			if (FALSE == exmdb_client_set_message_properties(argv[1],
+			if (!exmdb_client::set_message_properties(argv[1],
 				NULL, 0, rop_util_make_eid_ex(1, message_id), &propvals,
 				&problems)) {
 				mail_engine_put_idb(pidb);
@@ -5887,7 +5887,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 	}
 	if (NULL != strchr(argv[4], 'S')) {
-		if (FALSE == exmdb_client_set_message_read_state(argv[1],
+		if (!exmdb_client::set_message_read_state(argv[1],
 			NULL, rop_util_make_eid_ex(1, message_id), 0, &read_cn)) {
 			mail_engine_put_idb(pidb);
 			return 4;
@@ -6178,7 +6178,7 @@ static void mail_engine_add_notification_message(
 	tmp_proptags[1] = PROP_TAG_LASTMODIFICATIONTIME;
 	tmp_proptags[2] = PROP_TAG_MIDSTRING;
 	tmp_proptags[3] = PROP_TAG_MESSAGEFLAGS;
-	if (FALSE == exmdb_client_get_message_properties(
+	if (!exmdb_client::get_message_properties(
 		common_util_get_maildir(), NULL, 0,
 		rop_util_make_eid_ex(1, message_id),
 		&proptags, &propvals)) {
@@ -6356,7 +6356,7 @@ static BOOL mail_engine_add_notification_folder(
 	tmp_proptags[3] = PROP_TAG_ATTRIBUTEHIDDEN;
 	b_wait = FALSE;
  REQUERY_FOLDER:
-	if (FALSE == exmdb_client_get_folder_properties(
+	if (!exmdb_client::get_folder_properties(
 		common_util_get_maildir(), 0,
 		rop_util_make_eid_ex(1, folder_id),
 		&proptags, &propvals)) {
@@ -6528,7 +6528,7 @@ static void mail_engine_move_notification_folder(
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_DISPLAYNAME;
-	if (FALSE == exmdb_client_get_folder_properties(
+	if (!exmdb_client::get_folder_properties(
 		common_util_get_maildir(), 0,
 		rop_util_make_eid_ex(1, folder_id),
 		&proptags, &propvals)) {
@@ -6600,7 +6600,7 @@ static void mail_engine_modify_notification_folder(
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_DISPLAYNAME;
-	if (FALSE == exmdb_client_get_folder_properties(
+	if (!exmdb_client::get_folder_properties(
 		common_util_get_maildir(), 0,
 		rop_util_make_eid_ex(1, folder_id),
 		&proptags, &propvals)) {
@@ -6658,7 +6658,7 @@ static void mail_engine_modify_notification_message(
 	tmp_proptags[0] = PROP_TAG_MESSAGEFLAGS;
 	tmp_proptags[1] = PROP_TAG_LASTMODIFICATIONTIME;
 	tmp_proptags[2] = PROP_TAG_MIDSTRING;
-	if (FALSE == exmdb_client_get_message_properties(
+	if (!exmdb_client::get_message_properties(
 		common_util_get_maildir(), NULL, 0,
 		rop_util_make_eid_ex(1, message_id),
 		&proptags, &propvals)) {
