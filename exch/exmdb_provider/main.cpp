@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include "bounce_producer.h"
 #include <gromox/svc_common.h>
@@ -90,6 +91,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
+		exmdb_rpc_alloc = common_util_alloc;
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {

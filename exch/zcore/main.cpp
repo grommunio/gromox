@@ -9,6 +9,7 @@
 #include <memory>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -95,6 +96,7 @@ int main(int argc, const char **argv)
 	char service_path[256];
 	char submit_command[1024];
 	
+	exmdb_rpc_alloc = common_util_alloc;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;

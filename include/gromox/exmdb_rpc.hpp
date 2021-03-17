@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 
@@ -1464,3 +1465,11 @@ struct DB_NOTIFY_DATAGRAM {
 	LONG_ARRAY id_array;
 	DB_NOTIFY db_notify;
 };
+
+extern GX_EXPORT int exmdb_ext_pull_request(const BINARY *, EXMDB_REQUEST *);
+extern GX_EXPORT int exmdb_ext_push_request(const EXMDB_REQUEST *, BINARY *);
+extern GX_EXPORT int exmdb_ext_pull_response(const BINARY *, EXMDB_RESPONSE *);
+extern GX_EXPORT int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse, BINARY *);
+extern GX_EXPORT int exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
+extern GX_EXPORT int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
+extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstring>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/scope.hpp>
-#include "exmdb_ext.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/idset.hpp>
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
@@ -11,6 +12,10 @@
 using namespace gromox;
 using REQUEST_PAYLOAD = EXMDB_REQUEST_PAYLOAD;
 using RESPONSE_PAYLOAD = EXMDB_RESPONSE_PAYLOAD;
+
+void *(*exmdb_rpc_alloc)(size_t);
+template<typename T> T *cu_alloc() { return static_cast<T *>(exmdb_rpc_alloc(sizeof(T))); }
+template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem)); }
 
 static int exmdb_ext_pull_connect_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
@@ -2755,7 +2760,7 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
+		pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_buffer_pull_uint8(&ext_pull, &prequest->call_id));
 	if (prequest->call_id == exmdb_callid::CONNECT) {
 		return exmdb_ext_pull_connect_request(
@@ -5221,7 +5226,7 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
+		pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	switch (presponse->call_id) {
 	case exmdb_callid::PING_STORE:
 		return EXT_ERR_SUCCESS;
@@ -6074,7 +6079,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
+		pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_buffer_pull_string(&ext_pull, &pnotify->dir));
 	TRY(ext_buffer_pull_bool(&ext_pull, &pnotify->b_table));
 	TRY(ext_buffer_pull_long_array(&ext_pull, &pnotify->id_array));
