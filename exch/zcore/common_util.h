@@ -33,10 +33,6 @@
 #define STATUS_PRIMARY_STORE						0x00001000
 #define STATUS_SECONDARY_STORE						0x00002000
 
-struct FLATUID {
-	uint8_t ab[16];
-};
-
 struct ZMOVECOPY_ACTION {
 	BINARY store_eid;
 	BINARY folder_eid;

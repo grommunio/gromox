@@ -118,6 +118,15 @@ struct BINARY_ARRAY {
 	BINARY *pbin;
 };
 
+struct FLATUID {
+	uint8_t ab[16];
+};
+
+struct FLATUID_ARRAY {
+	uint32_t cvalues;
+	FLATUID **ppguid;
+};
+
 struct GUID {
 	uint32_t time_low;
 	uint16_t time_mid;

@@ -2,10 +2,6 @@
 #include <cstdint>
 #include <gromox/mapidefs.h>
 
-struct FLATUID {
-	uint8_t ab[16];
-};
-
 struct STRING_ARRAY {
 	uint32_t count;
 	char **ppstr;

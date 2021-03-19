@@ -10,11 +10,6 @@
 
 typedef CONTEXT_HANDLE NSPI_HANDLE;
 
-
-struct FLATUID {
-	uint8_t ab[16];
-};
-
 struct STAT {
 	uint32_t sort_type;
 	uint32_t container_id;
@@ -60,11 +55,6 @@ struct SHORT_ARRAY {
 struct LONG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pl;
-};
-
-struct FLATUID_ARRAY {
-	uint32_t cvalues;
-	FLATUID **ppguid;
 };
 
 struct FILETIME_ARRAY {
