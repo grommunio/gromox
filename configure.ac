@@ -96,7 +96,12 @@ AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 	AC_MSG_RESULT([$mysql_LIBS])
 ])
 MYSQL_WITH_MYSQL_CONFIG
-AC_ARG_WITH([php], [AS_HELP_STRING([--without-php], [Disable building PHP components])])
+AC_ARG_WITH([php], [
+		AS_HELP_STRING([--with-php=/usr/bin/php-config], [Enable building PHP modules])
+		AS_HELP_STRING([--without-php], [Disable building PHP modules])
+	],
+	[PHP_CONFIG="$withval"],
+	[AC_PATH_PROGS([PHP_CONFIG], [php-config])])
 AS_IF([test "$with_php" != "no"], [
 	PHP_WITH_PHP_CONFIG
 	CPPFLAGS="$saved_CPPFLAGS"

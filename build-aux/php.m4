@@ -7,14 +7,11 @@
 #  PHP_VERSION
 
 AC_DEFUN([PHP_WITH_PHP_CONFIG],[
-	AC_ARG_WITH(php-config, AC_HELP_STRING([--with-php-config=PATH],[path to the php-config script]),
-		[PHP_CONFIG=${withval}],[PHP_CONFIG=php-config])
-
-	AC_MSG_CHECKING([for PHP])
 	PHP_INCLUDES=$($PHP_CONFIG --includes)
 	PHP_LDFLAGS=$($PHP_CONFIG --ldflags)
 	PHP_EXTENSION_DIR=$($PHP_CONFIG --extension-dir)
 	AS_IF([test "$?" -ne 0], [AC_MSG_ERROR([Cannot execute $PHP_CONFIG])])
+	AC_MSG_CHECKING([for PHP])
 	PHP_VERSION=$($PHP_CONFIG --version)
 	AC_MSG_RESULT([$PHP_VERSION])
 	PHP_SYSCONF_DIR=$($PHP_CONFIG --ini-dir)
