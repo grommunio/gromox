@@ -771,10 +771,10 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		while (presponse->result == ecSuccess &&
 			*pcb_out - offset >= 0x8000 && count < MAX_ROP_PAYLOADS) {
 			if (req->forward_read != 0) {
-				if (rsp->seek_pos == SEEK_POS_END)
+				if (rsp->seek_pos == BOOKMARK_END)
 					break;
 			} else {
-				if (rsp->seek_pos == SEEK_POS_BEGIN)
+				if (rsp->seek_pos == BOOKMARK_BEGINNING)
 					break;
 			}
 			req->row_count -= rsp->count;

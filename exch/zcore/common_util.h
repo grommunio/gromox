@@ -43,14 +43,6 @@ struct ZREPLY_ACTION {
 	GUID template_guid;
 };
 
-#define STREAM_SEEK_SET								0
-#define STREAM_SEEK_CUR								1
-#define STREAM_SEEK_END								2
-
-#define BOOKMARK_BEGINNING							0
-#define BOOKMARK_CURRENT							1
-#define BOOKMARK_END								2
-
 #define MODRECIP_ADD								0x00000002
 #define MODRECIP_MODIFY								0x00000004
 #define MODRECIP_REMOVE								0x00000008

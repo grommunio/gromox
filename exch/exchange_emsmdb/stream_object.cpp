@@ -281,7 +281,7 @@ BOOL stream_object_set_length(
 BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
 {	
 	switch (opt) {
-	case SEEK_POS_BEGIN:
+	case STREAM_SEEK_SET:
 		if (offset <= 0) {
 			pstream->seek_ptr = 0;
 			return TRUE;
@@ -294,7 +294,7 @@ BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
 		}
 		pstream->seek_ptr = offset;
 		return TRUE; 
-	case SEEK_POS_CURRENT: {
+	case STREAM_SEEK_CUR: {
 		if (offset < 0) {
 			/* underflow safety check for s64t */
 			uint64_t dwoff = offset != INT64_MIN ? -offset :
@@ -319,7 +319,7 @@ BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
 		pstream->seek_ptr += upoff;
 		return TRUE;
 	}
-	case SEEK_POS_END: {
+	case STREAM_SEEK_END: {
 		if (offset <= 0) {
 			/* underflow safety check for s64t */
 			uint64_t dwoff = offset != INT64_MIN ? -offset :

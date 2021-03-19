@@ -343,15 +343,15 @@ uint32_t rop_queryrows(uint8_t flags,
 	if (0 == (QUERY_ROWS_FLAGS_NOADVANCE & flags)) {
 		table_object_seek_current(ptable, b_forward, *pcount);
 	}
-	*pseek_pos = SEEK_POS_CURRENT;
+	*pseek_pos = BOOKMARK_CURRENT;
 	if (TRUE == b_forward) {
 		if (table_object_get_position(ptable) >=
 			table_object_get_total(ptable)) {
-			*pseek_pos = SEEK_POS_END;	
+			*pseek_pos = BOOKMARK_END;
 		}
 	} else {
 		if (0 == table_object_get_position(ptable)) {
-			*pseek_pos = SEEK_POS_BEGIN;
+			*pseek_pos = BOOKMARK_BEGINNING;
 		}
 	}
 	return ecSuccess;
@@ -432,7 +432,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		return ecError;
 	}
 	switch (seek_pos) {
-	case SEEK_POS_BEGIN:
+	case BOOKMARK_BEGINNING:
 		if (offset < 0) {
 			return ecInvalidParam;
 		}
@@ -440,7 +440,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		*phas_soughtless = static_cast<uint32_t>(offset) > table_object_get_total(ptable);
 		table_object_set_position(ptable, offset);
 		break;
-	case SEEK_POS_END: {
+	case BOOKMARK_END: {
 		if (offset > 0) {
 			return ecInvalidParam;
 		}
@@ -452,7 +452,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		table_object_set_position(ptable, *phas_soughtless ? 0 : original_position - dwoff);
 		break;
 	}
-	case SEEK_POS_CURRENT: {
+	case BOOKMARK_CURRENT: {
 		original_position = table_object_get_position(ptable);
 		if (offset < 0) {
 			/* underflow safety check for s32t */
@@ -522,7 +522,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		return ecInvalidBookmark;
 	}
 	*prow_invisible = !b_exist;
-	return rop_seekrow(SEEK_POS_CURRENT, offset, want_moved_count,
+	return rop_seekrow(BOOKMARK_CURRENT, offset, want_moved_count,
 	       phas_soughtless, reinterpret_cast<int32_t *>(poffset_sought), plogmap, logon_id, hin);
 }
 
@@ -647,7 +647,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	BOOL b_forward = (flags & FIND_ROW_FLAG_BACKWARD) ? false : TRUE;
 	*pbookmark_invisible = 0;
 	switch (seek_pos) {
-	case SEEK_POS_CUSTOM:
+	case BOOKMARK_CUSTOM:
 		if (table_object_get_rop_id(ptable) == ropGetRulesTable)
 			return ecNotSupported;
 		if (pbookmark->cb != sizeof(uint32_t)) {
@@ -658,14 +658,14 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		if (result != ecSuccess)
 			return result;
 		break;
-	case SEEK_POS_BEGIN:
+	case BOOKMARK_BEGINNING:
 		table_object_set_position(ptable, 0);
 		break;
-	case SEEK_POS_END:
+	case BOOKMARK_END:
 		table_object_set_position(ptable,
 			table_object_get_total(ptable));
 		break;
-	case SEEK_POS_CURRENT:
+	case BOOKMARK_CURRENT:
 		break;
 	default:
 		return ecInvalidParam;

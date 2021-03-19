@@ -1321,9 +1321,9 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 	int object_type;
 	
 	switch (seek_pos) {
-	case SEEK_POS_BEGIN:
-	case SEEK_POS_CURRENT:
-	case SEEK_POS_END:
+	case STREAM_SEEK_SET:
+	case STREAM_SEEK_CUR:
+	case STREAM_SEEK_END:
 		break;
 	default:
 		return ecInvalidParam;

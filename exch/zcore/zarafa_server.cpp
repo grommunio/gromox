@@ -3826,7 +3826,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		return ecError;
 	}
 	switch (bookmark) {
-	case SEEK_POS_BEGIN:
+	case BOOKMARK_BEGINNING:
 		if (seek_rows < 0) {
 			zarafa_server_put_user_info(pinfo);
 			return ecInvalidParam;
@@ -3834,7 +3834,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		original_position = 0;
 		table_object_set_position(ptable, static_cast<uint32_t>(seek_rows));
 		break;
-	case SEEK_POS_END: {
+	case BOOKMARK_END: {
 		if (seek_rows > 0) {
 			zarafa_server_put_user_info(pinfo);
 			return ecInvalidParam;
@@ -3849,7 +3849,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 			table_object_set_position(ptable, table_object_get_total(ptable) - dwoff);
 		break;
 	}
-	case SEEK_POS_CURRENT: {
+	case BOOKMARK_CURRENT: {
 		original_position = table_object_get_position(ptable);
 		if (seek_rows < 0) {
 			/* underflow safety check for s32t */
@@ -4165,14 +4165,14 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 		return ecError;
 	}
 	switch (bookmark) {
-	case SEEK_POS_BEGIN:
+	case BOOKMARK_BEGINNING:
 		table_object_set_position(ptable, 0);
 		break;
-	case SEEK_POS_END:
+	case BOOKMARK_END:
 		table_object_set_position(ptable,
 			table_object_get_total(ptable));
 		break;
-	case SEEK_POS_CURRENT:
+	case BOOKMARK_CURRENT:
 		break;
 	default:
 		if (RULE_TABLE == table_object_get_table_type(ptable)) {
