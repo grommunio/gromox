@@ -102,6 +102,22 @@ enum {
 	FL_LOOSE = 1 << 18,
 };
 
+struct BINARY {
+	uint32_t cb;
+	union {
+		uint8_t *pb;
+		char *pc;
+		void *pv;
+	};
+};
+
+struct BINARY_ARRAY {
+	union {
+		uint32_t count, cvalues;
+	};
+	BINARY *pbin;
+};
+
 struct GUID {
 	uint32_t time_low;
 	uint16_t time_mid;

@@ -47,15 +47,6 @@ struct STRING_ARRAY {
 /* OXNSPI §2.2.2.6 vs §2.2.7.1 oddity that is irrelevant for our implementation */
 using STRINGS_ARRAY = STRING_ARRAY;
 
-struct BINARY {
-	uint32_t cb;
-	union {
-		uint8_t *pb;
-		char *pc;
-		void *pv;
-	};
-};
-
 struct FILETIME {
 	uint32_t low_datetime;
 	uint32_t high_datetime;
@@ -69,11 +60,6 @@ struct SHORT_ARRAY {
 struct LONG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pl;
-};
-
-struct BINARY_ARRAY {
-	uint32_t cvalues;
-	BINARY *pbin;
 };
 
 struct FLATUID_ARRAY {

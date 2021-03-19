@@ -5,20 +5,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/mapidefs.h>
 
-struct BINARY {
-	uint32_t cb;
-	union {
-		uint8_t *pb;
-		char *pc;
-		void *pv;
-	};
-};
-
-struct BINARY_ARRAY {
-	uint32_t count;
-	BINARY *pbin;
-};
-
 struct STRING_ARRAY {
 	uint32_t count;
 	char **ppstr;

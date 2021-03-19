@@ -6,20 +6,6 @@ struct FLATUID {
 	uint8_t ab[16];
 };
 
-struct BINARY {
-	uint32_t cb;
-	union {
-		uint8_t *pb;
-		char *pc;
-		void *pv;
-	};
-};
-
-struct BINARY_ARRAY {
-	uint32_t count;
-	BINARY *pbin;
-};
-
 struct STRING_ARRAY {
 	uint32_t count;
 	char **ppstr;
