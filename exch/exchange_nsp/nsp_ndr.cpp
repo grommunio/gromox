@@ -12,9 +12,9 @@
 #define FLAG_CONTENT		0x2
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 
-static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, RESTRICTION *r);
+static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, NSPRES *r);
 
-static int nsp_ndr_push_restriction(NDR_PUSH *pndr, int flag, const RESTRICTION *r);
+static int nsp_ndr_push_restriction(NDR_PUSH *pndr, int flag, const NSPRES *r);
 
 static int nsp_ndr_to_utf16(int ndr_flag, const char *src, char *dst, size_t len)
 {
@@ -1283,7 +1283,8 @@ static int nsp_ndr_push_proprow_set(NDR_PUSH *pndr, int flag, const PROPROW_SET 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION_AND_OR *r)
+static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag,
+    NSPRES_AND_OR *r)
 {
 	uint32_t ptr;
 	uint32_t cnt;
@@ -1296,7 +1297,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION
 			return NDR_ERR_RANGE;
 		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
-		r->pres = ptr != 0 ? reinterpret_cast<RESTRICTION *>(static_cast<uintptr_t>(ptr)) : nullptr;
+		r->pres = ptr != 0 ? reinterpret_cast<NSPRES *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
 	}
 	
@@ -1306,7 +1307,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION
 			if (size != r->cres) {
 				return NDR_ERR_ARRAY_SIZE;
 			}
-			r->pres = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN, size);
+			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN, size);
 			if (NULL == r->pres) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1321,7 +1322,8 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, int flag, const RESTRICTION_AND_OR *r)
+static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, int flag,
+    const NSPRES_AND_OR *r)
 {
 	uint32_t cnt;
 	
@@ -1346,7 +1348,8 @@ static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, int flag, const RESTR
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, int flag, RESTRICTION_NOT *r)
+static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, int flag,
+    NSPRES_NOT *r)
 {
 	uint32_t ptr;
 	
@@ -1354,7 +1357,7 @@ static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, int flag, RESTRICTION_NO
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pres = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN);
+			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 			if (NULL == r->pres) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1372,7 +1375,8 @@ static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, int flag, RESTRICTION_NO
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_not(NDR_PUSH *pndr, int flag, const RESTRICTION_NOT *r)
+static int nsp_ndr_push_restriction_not(NDR_PUSH *pndr, int flag,
+    const NSPRES_NOT *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
@@ -1388,7 +1392,8 @@ static int nsp_ndr_push_restriction_not(NDR_PUSH *pndr, int flag, const RESTRICT
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, int flag, RESTRICTION_CONTENT *r)
+static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, int flag,
+     NSPRES_CONTENT *r)
 {
 	uint32_t ptr;
 	
@@ -1416,7 +1421,8 @@ static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, int flag, RESTRICTIO
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_content(NDR_PUSH *pndr, int flag, const RESTRICTION_CONTENT *r)
+static int nsp_ndr_push_restriction_content(NDR_PUSH *pndr, int flag,
+    const NSPRES_CONTENT *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
@@ -1434,7 +1440,8 @@ static int nsp_ndr_push_restriction_content(NDR_PUSH *pndr, int flag, const REST
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, int flag, RESTRICTION_PROPERTY *r)
+static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, int flag,
+    NSPRES_PROPERTY *r)
 {
 	uint32_t ptr;
 	
@@ -1462,7 +1469,8 @@ static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, int flag, RESTRICTI
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_property(NDR_PUSH *pndr, int flag, const RESTRICTION_PROPERTY *r)
+static int nsp_ndr_push_restriction_property(NDR_PUSH *pndr, int flag,
+    const NSPRES_PROPERTY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
@@ -1480,7 +1488,8 @@ static int nsp_ndr_push_restriction_property(NDR_PUSH *pndr, int flag, const RES
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr, RESTRICTION_PROPCOMPARE *r)
+static int nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
+    NSPRES_PROPCOMPARE *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint32(pndr, &r->relop));
@@ -1490,7 +1499,8 @@ static int nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr, RESTRICTION_PROP
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr, const RESTRICTION_PROPCOMPARE *r)
+static int nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
+    const NSPRES_PROPCOMPARE *r)
 {
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint32(pndr, r->relop));
@@ -1500,7 +1510,7 @@ static int nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr, const RESTRICTIO
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, RESTRICTION_BITMASK *r)
+static int nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMASK *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint32(pndr, &r->rel_mbr));
@@ -1511,7 +1521,8 @@ static int nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, RESTRICTION_BITMASK 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr, const RESTRICTION_BITMASK *r)
+static int nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
+    const NSPRES_BITMASK *r)
 {
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint32(pndr, r->rel_mbr));
@@ -1521,7 +1532,7 @@ static int nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr, const RESTRICTION_BI
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_size(NDR_PULL *pndr, RESTRICTION_SIZE *r)
+static int nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint32(pndr, &r->relop));
@@ -1531,7 +1542,7 @@ static int nsp_ndr_pull_restriction_size(NDR_PULL *pndr, RESTRICTION_SIZE *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const RESTRICTION_SIZE *r)
+static int nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SIZE *r)
 {
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint32(pndr, r->relop));
@@ -1541,7 +1552,7 @@ static int nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const RESTRICTION_SIZE 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, RESTRICTION_EXIST *r)
+static int nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, NSPRES_EXIST *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_uint32(pndr, &r->reserved1));
@@ -1551,7 +1562,7 @@ static int nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, RESTRICTION_EXIST *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const RESTRICTION_EXIST *r)
+static int nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const NSPRES_EXIST *r)
 {
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint32(pndr, r->reserved1));
@@ -1561,7 +1572,7 @@ static int nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const RESTRICTION_EXIS
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, int flag, RESTRICTION_SUB *r)
+static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, int flag, NSPRES_SUB *r)
 {
 	uint32_t ptr;
 	
@@ -1570,7 +1581,7 @@ static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, int flag, RESTRICTION_SU
 		TRY(ndr_pull_uint32(pndr, &r->subobject));
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		if (0 != ptr) {
-			r->pres = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN);
+			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 			if (NULL == r->pres) {
 				return NDR_ERR_ALLOC;
 			}
@@ -1588,7 +1599,8 @@ static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, int flag, RESTRICTION_SU
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, int flag, const RESTRICTION_SUB *r)
+static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, int flag,
+    const NSPRES_SUB *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
@@ -1606,7 +1618,7 @@ static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, int flag, const RESTRICT
 }
 
 static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag,
-    uint32_t *ptype, RESTRICTION_UNION *r)
+    uint32_t *ptype, NSPRES_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_union_align(pndr, 5));
@@ -1683,7 +1695,8 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag, int type, const RESTRICTION_UNION *r)
+static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag,
+    int type, const NSPRES_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_union_align(pndr, 5));
@@ -1761,7 +1774,7 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag, int type, co
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, RESTRICTION *r)
+static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, NSPRES *r)
 {
 	if (flag & FLAG_HEADER) {
 		uint32_t type;
@@ -1781,7 +1794,7 @@ static int nsp_ndr_pull_restriction(NDR_PULL *pndr, int flag, RESTRICTION *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction(NDR_PUSH *pndr, int flag, const RESTRICTION *r)
+static int nsp_ndr_push_restriction(NDR_PUSH *pndr, int flag, const NSPRES *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 4));
@@ -1990,7 +2003,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->reserved2));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pfilter = ndr_stack_anew<RESTRICTION>(NDR_STACK_IN);
+		r->pfilter = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 		if (NULL == r->pfilter) {
 			return NDR_ERR_ALLOC;
 		}

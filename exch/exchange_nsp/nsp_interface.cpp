@@ -1270,7 +1270,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
-    const RESTRICTION *pfilter)
+    const NSPRES *pfilter)
 {
 	char *ptoken;
 	uint8_t node_type;
@@ -1559,7 +1559,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 
 int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     STAT *pstat, const MID_ARRAY *preserved, uint32_t reserved2,
-    const RESTRICTION *pfilter, const NSP_PROPNAME *ppropname,
+    const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)
 {

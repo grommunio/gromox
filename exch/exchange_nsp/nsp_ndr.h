@@ -74,7 +74,7 @@ struct NSPIGETMATCHES_IN {
 	STAT stat;
 	PROPTAG_ARRAY *preserved;
 	uint32_t reserved2;
-	RESTRICTION *pfilter;
+	NSPRES *pfilter;
 	PROPERTY_NAME *ppropname;
 	uint32_t requested;
 	PROPTAG_ARRAY *pproptags;
