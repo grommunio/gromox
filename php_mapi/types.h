@@ -22,19 +22,6 @@ struct LONGLONG_ARRAY {
 	uint64_t *pll;
 };
 
-enum {
-	MNID_ID = 0,
-	MNID_STRING = 1,
-	KIND_NONE = 0xff,
-};
-
-struct PROPERTY_NAME {
-	uint8_t kind;
-	GUID guid;
-	uint32_t *plid;
-	char *pname;
-};
-
 struct RESTRICTION_AND_OR;
 struct RESTRICTION_NOT;
 struct RESTRICTION_CONTENT;
@@ -189,11 +176,6 @@ struct SORTORDER_SET {
 	uint16_t ccategories;
 	uint16_t cexpanded;
 	SORT_ORDER *psort;
-};
-
-struct PROPNAME_ARRAY {
-	uint16_t count;
-	PROPERTY_NAME *ppropname;
 };
 
 #define RULE_DATA_FLAG_ADD_ROW						0x01

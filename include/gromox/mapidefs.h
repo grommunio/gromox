@@ -65,6 +65,12 @@ enum bm_relop {
 	BMR_NEZ,
 };
 
+enum {
+	MNID_ID = 0,
+	MNID_STRING = 1,
+	KIND_NONE = 0xff,
+};
+
 enum relop {
 	RELOP_LT = 0x00,
 	RELOP_LE,
@@ -150,9 +156,21 @@ struct MESSAGE_STATE {
 	uint32_t message_flags;
 };
 
+struct PROPERTY_NAME {
+	uint8_t kind;
+	GUID guid;
+	uint32_t *plid;
+	char *pname;
+};
+
 struct PROPID_ARRAY {
 	uint16_t count;
 	uint16_t *ppropid;
+};
+
+struct PROPNAME_ARRAY {
+	uint16_t count;
+	PROPERTY_NAME *ppropname;
 };
 
 struct PROPTAG_ARRAY {
