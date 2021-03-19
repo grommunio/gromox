@@ -400,11 +400,6 @@ struct PROPNAME_ARRAY {
 	PROPERTY_NAME *ppropname;
 };
 
-struct PROPID_ARRAY {
-	uint16_t count;
-	uint16_t *ppropid;
-};
-
 struct PROPERTY_PROBLEM {
 	uint16_t index;
 	uint32_t proptag;

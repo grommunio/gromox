@@ -196,11 +196,6 @@ struct PROPNAME_ARRAY {
 	PROPERTY_NAME *ppropname;
 };
 
-struct PROPID_ARRAY {
-	uint16_t count;
-	uint16_t *ppropid;
-};
-
 #define RULE_DATA_FLAG_ADD_ROW						0x01
 #define RULE_DATA_FLAG_MODIFY_ROW					0x02
 #define RULE_DATA_FLAG_REMOVE_ROW					0x04

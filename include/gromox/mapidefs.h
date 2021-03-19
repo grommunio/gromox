@@ -150,6 +150,11 @@ struct MESSAGE_STATE {
 	uint32_t message_flags;
 };
 
+struct PROPID_ARRAY {
+	uint16_t count;
+	uint16_t *ppropid;
+};
+
 struct PROPTAG_ARRAY {
 	union {
 		uint16_t cvalues, count;
