@@ -79,16 +79,6 @@ struct ZREPLY_ACTION {
 #define EVENT_TYPE_OBJECTCOPIED						0x00000040
 #define EVENT_TYPE_SEARCHCOMPLETE					0x00000080
 
-struct ZNOTIFICATION {
-	uint32_t event_type;
-	void *pnotification_data; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
-};
-
-struct ZNOTIFICATION_ARRAY {
-	uint16_t count;
-	ZNOTIFICATION **ppnotification;
-};
-
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
 #define ICS_TYPE_CONTENTS							1

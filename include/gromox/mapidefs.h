@@ -402,3 +402,13 @@ struct RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
 };
+
+struct ZNOTIFICATION {
+	uint32_t event_type;
+	void *pnotification_data; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
+};
+
+struct ZNOTIFICATION_ARRAY {
+	uint16_t count;
+	ZNOTIFICATION **ppnotification;
+};
