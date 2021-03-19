@@ -496,8 +496,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			data_entry = zend_hash_find(paction_hash, str_flavor.get());
 			pblock->flavor = data_entry != nullptr ? zval_get_long(data_entry) : 0;
 			switch (pblock->type) {
-			case ACTION_TYPE_OP_MOVE:
-			case ACTION_TYPE_OP_COPY: {
+			case OP_MOVE:
+			case OP_COPY: {
 				pblock->pdata = emalloc(sizeof(MOVECOPY_ACTION));
 				auto xq = static_cast<MOVECOPY_ACTION *>(pblock->pdata);
 				if (xq == nullptr)
@@ -524,8 +524,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				memcpy(xq->folder_eid.pb, str2->val, str2->len);
 				break;
 			}
-			case ACTION_TYPE_OP_REPLY:
-			case ACTION_TYPE_OP_OOF_REPLY: {
+			case OP_REPLY:
+			case OP_OOF_REPLY: {
 				data_entry = zend_hash_find(paction_hash, str_replyentryid.get());
 				if (data_entry == nullptr)
 					return NULL;
@@ -551,7 +551,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				}
 				break;
 			}
-			case ACTION_TYPE_OP_DEFER_ACTION: {
+			case OP_DEFER_ACTION: {
 				data_entry = zend_hash_find(paction_hash, str_dam.get());
 				if (data_entry == nullptr)
 					return NULL;
@@ -566,7 +566,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				memcpy(pblock->pdata, str1->val, str1->len);
 				break;
 			}
-			case ACTION_TYPE_OP_BOUNCE:
+			case OP_BOUNCE:
 				data_entry = zend_hash_find(paction_hash, str_code.get());
 				if (data_entry == nullptr)
 					return NULL;
@@ -576,8 +576,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				}
 				*static_cast<uint32_t *>(pblock->pdata) = zval_get_long(data_entry);
 				break;
-			case ACTION_TYPE_OP_FORWARD:
-			case ACTION_TYPE_OP_DELEGATE: {
+			case OP_FORWARD:
+			case OP_DELEGATE: {
 				data_entry = zend_hash_find(paction_hash, str_adrlist.get());
 				if (data_entry == nullptr || Z_TYPE_P(data_entry) != IS_ARRAY)
 					return NULL;
@@ -606,7 +606,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				} ZEND_HASH_FOREACH_END();
 				break;
 			}
-			case ACTION_TYPE_OP_TAG:
+			case OP_TAG:
 				data_entry = zend_hash_find(paction_hash, str_proptag.get());
 				if (data_entry == nullptr)
 					return NULL;
@@ -617,8 +617,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				}
 				pblock->pdata = tmp_propvals.ppropval;
 				break;
-			case ACTION_TYPE_OP_DELETE:
-			case ACTION_TYPE_OP_MARK_AS_READ:
+			case OP_DELETE:
+			case OP_MARK_AS_READ:
 				pblock->pdata = NULL;
 				break;
 			default:
@@ -1279,8 +1279,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 				add_assoc_long(&pzactval, "flags", prule->pblock[j].flags);
 				add_assoc_long(&pzactval, "flavor", prule->pblock[j].flavor);
 				switch (prule->pblock[j].type) {
-				case ACTION_TYPE_OP_MOVE:
-				case ACTION_TYPE_OP_COPY: {
+				case OP_MOVE:
+				case OP_COPY: {
 					auto xq = static_cast<MOVECOPY_ACTION *>(prule->pblock[j].pdata);
 					add_assoc_stringl(&pzactval, "storeentryid",
 						reinterpret_cast<char *>(xq->store_eid.pb),
@@ -1290,8 +1290,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 						xq->folder_eid.cb);
 					break;
 				}
-				case ACTION_TYPE_OP_REPLY:
-				case ACTION_TYPE_OP_OOF_REPLY: {
+				case OP_REPLY:
+				case OP_OOF_REPLY: {
 					auto xq = static_cast<REPLY_ACTION *>(prule->pblock[j].pdata);
 					add_assoc_stringl(&pzactval, "replyentryid",
 						reinterpret_cast<char *>(xq->message_eid.pb),
@@ -1302,17 +1302,17 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 						sizeof(GUID));
 					break;
 				}
-				case ACTION_TYPE_OP_DEFER_ACTION:
+				case OP_DEFER_ACTION:
 					add_assoc_stringl(&pzactval, "dam",
 						static_cast<const char *>(prule->pblock[j].pdata), prule->pblock[j].length
 						- sizeof(uint8_t) - 2*sizeof(uint32_t));
 					break;
-				case ACTION_TYPE_OP_BOUNCE:
+				case OP_BOUNCE:
 					add_assoc_long(&pzactval, "code",
 						*(uint32_t*)prule->pblock[j].pdata);
 					break;
-				case ACTION_TYPE_OP_FORWARD:
-				case ACTION_TYPE_OP_DELEGATE: {
+				case OP_FORWARD:
+				case OP_DELEGATE: {
 					array_init(&pzalist);
 					auto xq = static_cast<FORWARDDELEGATE_ACTION *>(prule->pblock[j].pdata);
 					for (size_t k = 0; k < xq->count; ++k) {
@@ -1326,15 +1326,15 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 					add_assoc_zval(&pzactval, "adrlist", &pzalist);
 					break;
 				}
-				case ACTION_TYPE_OP_TAG:
+				case OP_TAG:
 					tmp_propvals.count = 1;
 					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(prule->pblock[j].pdata);
 					if (!tpropval_array_to_php(&tmp_propvals, &pzalist))
 						return 0;
 					add_assoc_zval(&pzactval, "proptag", &pzalist);
 					break;
-				case ACTION_TYPE_OP_DELETE:
-				case ACTION_TYPE_OP_MARK_AS_READ:
+				case OP_DELETE:
+				case OP_MARK_AS_READ:
 					break;
 				default:
 					return 0;

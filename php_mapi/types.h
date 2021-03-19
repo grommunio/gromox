@@ -31,18 +31,6 @@ struct FORWARDDELEGATE_ACTION {
 	RECIPIENT_BLOCK *pblock;
 };
 
-#define ACTION_TYPE_OP_MOVE							0x1
-#define ACTION_TYPE_OP_COPY							0x2
-#define ACTION_TYPE_OP_REPLY						0x3
-#define ACTION_TYPE_OP_OOF_REPLY					0x4
-#define ACTION_TYPE_OP_DEFER_ACTION					0x5
-#define ACTION_TYPE_OP_BOUNCE						0x6
-#define ACTION_TYPE_OP_FORWARD						0x7
-#define ACTION_TYPE_OP_DELEGATE						0x8
-#define ACTION_TYPE_OP_TAG							0x9
-#define ACTION_TYPE_OP_DELETE						0xA
-#define ACTION_TYPE_OP_MARK_AS_READ					0xB
-
 struct ACTION_BLOCK {
 	uint16_t length;
 	uint8_t type;

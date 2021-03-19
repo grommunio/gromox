@@ -1765,30 +1765,30 @@ static BOOL common_util_convert_action_block(
 	BOOL to_unicode, ACTION_BLOCK *pblock)
 {
 	switch (pblock->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		break;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		if (!common_util_convert_forwarddelegate_action(to_unicode,
 		    static_cast<FORWARDDELEGATE_ACTION *>(pblock->pdata)))
 			return FALSE;	
 		break;
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		if (!common_util_convert_tagged_propval(to_unicode,
 		    static_cast<TAGGED_PROPVAL *>(pblock->pdata)))
 			return FALSE;	
 		break;
-	case ACTION_TYPE_OP_DELETE:
+	case OP_DELETE:
 		break;
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_MARK_AS_READ:
 		break;
 	}
 	return TRUE;

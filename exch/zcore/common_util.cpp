@@ -2219,8 +2219,8 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 	                ppropvals, PROP_TAG_RULEACTIONS));
 	for (i=0; i<pactions->count; i++) {
 		switch (pactions->pblock[i].type) {
-		case ACTION_TYPE_OP_MOVE:
-		case ACTION_TYPE_OP_COPY:
+		case OP_MOVE:
+		case OP_COPY:
 			pactions->pblock[i].pdata =
 				common_util_convert_from_zmovecopy(
 				static_cast<ZMOVECOPY_ACTION *>(pactions->pblock[i].pdata));
@@ -2228,8 +2228,8 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 				return FALSE;
 			}
 			break;
-		case ACTION_TYPE_OP_REPLY:
-		case ACTION_TYPE_OP_OOF_REPLY:
+		case OP_REPLY:
+		case OP_OOF_REPLY:
 			pactions->pblock[i].pdata =
 				common_util_convert_from_zreply(
 				static_cast<ZREPLY_ACTION *>(pactions->pblock[i].pdata));
@@ -2355,8 +2355,8 @@ BOOL common_util_convert_to_zrule_data(
 	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(ppropvals, PROP_TAG_RULEACTIONS));
 	for (i=0; i<pactions->count; i++) {
 		switch (pactions->pblock[i].type) {
-		case ACTION_TYPE_OP_MOVE:
-		case ACTION_TYPE_OP_COPY:
+		case OP_MOVE:
+		case OP_COPY:
 			pactions->pblock[i].pdata =
 				common_util_convert_to_zmovecopy(
 				pstore, static_cast<MOVECOPY_ACTION *>(pactions->pblock[i].pdata));
@@ -2364,8 +2364,8 @@ BOOL common_util_convert_to_zrule_data(
 				return FALSE;
 			}
 			break;
-		case ACTION_TYPE_OP_REPLY:
-		case ACTION_TYPE_OP_OOF_REPLY:
+		case OP_REPLY:
+		case OP_OOF_REPLY:
 			pactions->pblock[i].pdata =
 				common_util_convert_to_zreply(
 				pstore, static_cast<REPLY_ACTION *>(pactions->pblock[i].pdata));

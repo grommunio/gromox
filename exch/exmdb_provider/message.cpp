@@ -3232,7 +3232,7 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 	BOOL b_replaced;
 	
 	for (size_t i = 0; i < pactions->count; ++i)
-		if (ACTION_TYPE_OP_TAG == pactions->pblock[i].type) {
+		if (pactions->pblock[i].type == OP_TAG) {
 			if (FALSE == message_get_real_propid(
 				psqlite, ppropname_info, &((TAGGED_PROPVAL*)
 				pactions->pblock[i].pdata)->proptag,
@@ -3464,7 +3464,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		return FALSE;
 	}
 	if (NULL != pvalue) {
-		if (ACTION_TYPE_OP_REPLY == action_type) {
+		if (action_type == OP_REPLY) {
 			if ((*(uint32_t*)pvalue) &
 				AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
 				*pb_result = TRUE;
@@ -3492,7 +3492,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	if (ACTION_TYPE_OP_REPLY == action_type) {
+	if (action_type == OP_REPLY) {
 		if (strncasecmp(static_cast<char *>(pvalue),
 		    "IPM.Note.rules.ReplyTemplate.", 29) != 0) {
 			*pb_result = FALSE;
@@ -4254,8 +4254,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		}
 		for (size_t i = 0; i < pactions->count; ++i) {
 			switch (pactions->pblock[i].type) {
-			case ACTION_TYPE_OP_MOVE:
-			case ACTION_TYPE_OP_COPY:
+			case OP_MOVE:
+			case OP_COPY:
 				pmovecopy = static_cast<MOVECOPY_ACTION *>(pactions->pblock[i].pdata);
 				if (0 != pmovecopy->same_store) {
 					dst_fid = rop_util_get_gc_value(((SVREID*)
@@ -4344,7 +4344,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						remove(tmp_path);
 						return FALSE;
 					}
-					if (ACTION_TYPE_OP_MOVE == pactions->pblock[i].type) {
+					if (pactions->pblock[i].type == OP_MOVE) {
 						b_del = TRUE;
 						common_util_log_info(6, "user=%s host=unknown  "
 							"Message %llu in folder %llu is going"
@@ -4376,8 +4376,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						&dam_list, &pdnode->node);
 				}
 				break;
-			case ACTION_TYPE_OP_REPLY:
-			case ACTION_TYPE_OP_OOF_REPLY:
+			case OP_REPLY:
+			case OP_OOF_REPLY:
 				preply = static_cast<REPLY_ACTION *>(pactions->pblock[i].pdata);
 				if (FALSE == message_auto_reply(psqlite, message_id,
 					from_address, account, pactions->pblock[i].type,
@@ -4399,7 +4399,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					continue;
 				}
 				break;
-			case ACTION_TYPE_OP_DEFER_ACTION:
+			case OP_DEFER_ACTION:
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}
@@ -4416,7 +4416,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				double_list_append_as_tail(
 					&dam_list, &pdnode->node);
 				break;
-			case ACTION_TYPE_OP_BOUNCE:
+			case OP_BOUNCE:
 				if (FALSE == message_bounce_message(
 					from_address, account, psqlite, message_id,
 					*(uint32_t*)pactions->pblock[i].pdata)) {
@@ -4428,7 +4428,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					" to be deleted by rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
-			case ACTION_TYPE_OP_FORWARD:
+			case OP_FORWARD:
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}
@@ -4453,7 +4453,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				break;
-			case ACTION_TYPE_OP_DELEGATE:
+			case OP_DELEGATE:
 				pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata);
 				if (FALSE == exmdb_server_check_private() ||
 					NULL == pdigest || 0 == pfwddlgt->count) {
@@ -4584,21 +4584,21 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						return FALSE;
 				}
 				break;
-			case ACTION_TYPE_OP_TAG:
+			case OP_TAG:
 				if (!common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 				    message_id, cpid, psqlite,
 				    static_cast<TAGGED_PROPVAL *>(pactions->pblock[i].pdata),
 				    &b_result))
 					return FALSE;
 				break;
-			case ACTION_TYPE_OP_DELETE:
+			case OP_DELETE:
 				b_del = TRUE;
 				common_util_log_info(6, "user=%s host=unknown  "
 					"Message %llu in folder %llu is going"
 					" to be deleted by rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
-			case ACTION_TYPE_OP_MARK_AS_READ:
+			case OP_MARK_AS_READ:
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}
@@ -4681,8 +4681,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		}
 		for (size_t i = 0; i < ext_actions.count; ++i) {
 			switch (ext_actions.pblock[i].type) {
-			case ACTION_TYPE_OP_MOVE:
-			case ACTION_TYPE_OP_COPY:
+			case OP_MOVE:
+			case OP_COPY:
 				pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(ext_actions.pblock[i].pdata);
 				if (TRUE == exmdb_server_check_private()) {
 					if (EITLT_PRIVATE_FOLDER !=
@@ -4810,7 +4810,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					remove(tmp_path);
 					return FALSE;
 				}
-				if (ACTION_TYPE_OP_MOVE == ext_actions.pblock[i].type) {
+				if (ext_actions.pblock[i].type == OP_MOVE) {
 					b_del = TRUE;
 					common_util_log_info(6, "user=%s host=unknown  "
 						"Message %llu in folder %llu is going"
@@ -4825,8 +4825,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						LLU(folder_id), LLU(dst_mid), LLU(dst_fid));
 				}
 				break;
-			case ACTION_TYPE_OP_REPLY:
-			case ACTION_TYPE_OP_OOF_REPLY:
+			case OP_REPLY:
+			case OP_OOF_REPLY:
 				pextreply = static_cast<EXT_REPLY_ACTION *>(ext_actions.pblock[i].pdata);
 				if (TRUE == exmdb_server_check_private()) {
 					if (FALSE == common_util_get_id_from_username(
@@ -4875,9 +4875,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					continue;
 				}
 				break;
-			case ACTION_TYPE_OP_DEFER_ACTION:
+			case OP_DEFER_ACTION:
 				break;
-			case ACTION_TYPE_OP_BOUNCE:
+			case OP_BOUNCE:
 				if (FALSE == message_bounce_message(
 					from_address, account, psqlite, message_id,
 					*(uint32_t*)ext_actions.pblock[i].pdata)) {
@@ -4889,7 +4889,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					" to be deleted by ext rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
-			case ACTION_TYPE_OP_FORWARD:
+			case OP_FORWARD:
 				if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 					if (FALSE == message_disable_rule(
 						psqlite, TRUE, prnode->id)) {
@@ -4905,7 +4905,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				break;
-			case ACTION_TYPE_OP_DELEGATE:
+			case OP_DELEGATE:
 				pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata);
 				if (FALSE == exmdb_server_check_private() ||
 					NULL == pdigest || 0 == pextfwddlgt->count) {
@@ -5029,21 +5029,21 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						return FALSE;
 				}
 				break;
-			case ACTION_TYPE_OP_TAG:
+			case OP_TAG:
 				if (!common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 				    message_id, cpid, psqlite,
 				    static_cast<TAGGED_PROPVAL *>(ext_actions.pblock[i].pdata),
 				    &b_result))
 					return FALSE;
 				break;
-			case ACTION_TYPE_OP_DELETE:
+			case OP_DELETE:
 				b_del = TRUE;
 				common_util_log_info(6, "user=%s host=unknown  "
 					"Message %llu in folder %llu is going"
 					" to be deleted by ext rule", account,
 					LLU(message_id), LLU(folder_id));
 				break;
-			case ACTION_TYPE_OP_MARK_AS_READ:
+			case OP_MARK_AS_READ:
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}

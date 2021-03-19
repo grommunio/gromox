@@ -767,48 +767,48 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 	TRY(ext_buffer_pull_uint32(pext, &r->flavor));
 	TRY(ext_buffer_pull_uint32(pext, &r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		r->pdata = pext->anew<MOVECOPY_ACTION>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		r->pdata = pext->anew<REPLY_ACTION>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = pext->alloc(tmp_len);
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_bytes(pext, r->pdata, tmp_len);
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(r->pdata));
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata));
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		r->pdata = NULL;
 		return EXT_ERR_SUCCESS;
 	default:
@@ -1249,48 +1249,48 @@ static int ext_buffer_pull_ext_action_block(
 	TRY(ext_buffer_pull_uint32(pext, &r->flavor));
 	TRY(ext_buffer_pull_uint32(pext, &r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		r->pdata = pext->anew<EXT_MOVECOPY_ACTION>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_ext_movecopy_action(pext, static_cast<EXT_MOVECOPY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		r->pdata = pext->anew<EXT_REPLY_ACTION>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_ext_reply_action(pext, static_cast<EXT_REPLY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - sizeof(uint32_t);
 		r->pdata = pext->alloc(tmp_len);
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_bytes(pext, r->pdata, tmp_len);
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(r->pdata));
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		r->pdata = pext->anew<EXT_FORWARDDELEGATE_ACTION>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_ext_forwarddelegate_action(pext, static_cast<EXT_FORWARDDELEGATE_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata));
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		r->pdata = NULL;
 		return EXT_ERR_SUCCESS;
 	default:
@@ -2654,29 +2654,29 @@ static int ext_buffer_push_action_block(
 	TRY(ext_buffer_push_uint32(pext, r->flavor));
 	TRY(ext_buffer_push_uint32(pext, r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		TRY(ext_buffer_push_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		TRY(ext_buffer_push_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		TRY(ext_buffer_push_bytes(pext, r->pdata, tmp_len));
 		break;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		TRY(ext_buffer_push_uint32(pext, *static_cast<uint32_t *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		TRY(ext_buffer_push_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		TRY(ext_buffer_push_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata)));
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		break;
 	default:
 		return EXT_ERR_BAD_SWITCH;

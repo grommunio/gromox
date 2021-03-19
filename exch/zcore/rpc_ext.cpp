@@ -80,23 +80,23 @@ static BOOL rpc_ext_pull_action_block(
 	QRF(ext_buffer_pull_uint32(pext, &r->flavor));
 	QRF(ext_buffer_pull_uint32(pext, &r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		r->pdata = pext->anew<ZMOVECOPY_ACTION>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
 		return rpc_ext_pull_zmovecopy_action(pext,
 		       static_cast<ZMOVECOPY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		r->pdata = pext->anew<ZREPLY_ACTION>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
 		return rpc_ext_pull_zreply_action(pext,
 		       static_cast<ZREPLY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = pext->alloc(tmp_len);
 		if (NULL == r->pdata) {
@@ -104,30 +104,30 @@ static BOOL rpc_ext_pull_action_block(
 		}
 		QRF(ext_buffer_pull_bytes(pext, r->pdata, tmp_len));
 		return TRUE;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_uint32(pext, static_cast<uint32_t *>(r->pdata)));
 		return TRUE;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
 		return rpc_ext_pull_forwarddelegate_action(pext,
 		       static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
 		QRF(ext_buffer_pull_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata)));
 		return TRUE;
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		r->pdata = NULL;
 		return TRUE;
 	default:
@@ -475,34 +475,34 @@ static BOOL rpc_ext_push_action_block(
 	QRF(ext_buffer_push_uint32(pext, r->flavor));
 	QRF(ext_buffer_push_uint32(pext, r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		if (!rpc_ext_push_zmovecopy_action(pext,
 		    static_cast<const ZMOVECOPY_ACTION *>(r->pdata)))
 			return FALSE;
 		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		if (!rpc_ext_push_zreply_action(pext,
 		    static_cast<const ZREPLY_ACTION *>(r->pdata)))
 			return FALSE;
 		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		QRF(ext_buffer_push_bytes(pext, r->pdata, tmp_len));
 		break;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		QRF(ext_buffer_push_uint32(pext, *static_cast<uint32_t *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		return rpc_ext_push_forwarddelegate_action(pext,
 		       static_cast<const FORWARDDELEGATE_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		QRF(ext_buffer_push_tagged_propval(pext, static_cast<const TAGGED_PROPVAL *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		break;
 	default:
 		return FALSE;

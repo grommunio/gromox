@@ -578,22 +578,22 @@ static zend_bool ext_pack_pull_action_block(PULL_CTX *pctx, ACTION_BLOCK *r)
 	BTRY(ext_pack_pull_uint32(pctx, &r->flavor));
 	BTRY(ext_pack_pull_uint32(pctx, &r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		r->pdata = emalloc(sizeof(MOVECOPY_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
 		return ext_pack_pull_movecopy_action(pctx, static_cast<MOVECOPY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		r->pdata = emalloc(sizeof(REPLY_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
 		return ext_pack_pull_reply_action(pctx,
 		       static_cast<REPLY_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = emalloc(tmp_len);
 		if (NULL == r->pdata) {
@@ -601,30 +601,30 @@ static zend_bool ext_pack_pull_action_block(PULL_CTX *pctx, ACTION_BLOCK *r)
 		}
 		return ext_pack_pull_bytes(pctx,
 		       static_cast<uint8_t *>(r->pdata), tmp_len);
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		r->pdata = emalloc(sizeof(uint32_t));
 		if (NULL == r->pdata) {
 			return 0;
 		}
 		return ext_pack_pull_uint32(pctx,
 		       static_cast<uint32_t *>(r->pdata));
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		r->pdata = emalloc(sizeof(FORWARDDELEGATE_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
 		return ext_pack_pull_forwarddelegate_action(pctx,
 		       static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		r->pdata = emalloc(sizeof(TAGGED_PROPVAL));
 		if (NULL == r->pdata) {
 			return 0;
 		}
 		return ext_pack_pull_tagged_propval(pctx,
 		       static_cast<TAGGED_PROPVAL *>(r->pdata));
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		r->pdata = NULL;
 		return 1;
 	default:
@@ -1466,29 +1466,29 @@ static zend_bool ext_pack_push_action_block(
 	BTRY(ext_pack_push_uint32(pctx, r->flavor));
 	BTRY(ext_pack_push_uint32(pctx, r->flags));
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		BTRY(ext_pack_push_movecopy_action(pctx, static_cast<MOVECOPY_ACTION *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		BTRY(ext_pack_push_reply_action(pctx, static_cast<REPLY_ACTION *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		BTRY(ext_pack_push_bytes(pctx, r->pdata, tmp_len));
 		break;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		BTRY(ext_pack_push_uint32(pctx, *static_cast<uint32_t *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		BTRY(ext_pack_push_forwarddelegate_action(pctx, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)));
 		break;
-	case ACTION_TYPE_OP_TAG:
+	case OP_TAG:
 		BTRY(ext_pack_push_tagged_propval(pctx, static_cast<TAGGED_PROPVAL *>(r->pdata)));
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		break;
 	default:
 		return 0;

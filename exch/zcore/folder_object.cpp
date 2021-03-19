@@ -1107,8 +1107,7 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 		if (-1 != fd) {
 			if (TRUE == b_delegate) {
 				for (i=0; i<pactions->count; i++) {
-					if (ACTION_TYPE_OP_DELEGATE ==
-						pactions->pblock[i].type) {
+					if (pactions->pblock[i].type == OP_DELEGATE) {
 						if (!folder_object_flush_delegates(
 						    fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
 							close(fd);

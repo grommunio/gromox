@@ -194,21 +194,21 @@ static BOOL action_block_dup_internal(
 	pblock->flavor = paction->flavor;
 	pblock->flags = paction->flags;
 	switch (paction->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		pblock->pdata = movecopy_action_dup(static_cast<MOVECOPY_ACTION *>(paction->pdata));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
 		return TRUE;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		pblock->pdata = reply_action_dup(static_cast<REPLY_ACTION *>(paction->pdata));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
 		return TRUE;
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		tmp_len = paction->length - sizeof(uint8_t) -
 					sizeof(uint32_t) - sizeof(uint32_t);
 		pblock->pdata = malloc(tmp_len);
@@ -217,21 +217,21 @@ static BOOL action_block_dup_internal(
 		}
 		memcpy(pblock->pdata, paction->pdata, tmp_len); 
 		return TRUE;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		pblock->pdata = malloc(sizeof(uint32_t));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
 		*(uint32_t*)pblock->pdata = *(uint32_t*)paction->pdata;
 		return TRUE;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		pblock->pdata = forwarddelegate_action_dup(static_cast<FORWARDDELEGATE_ACTION *>(paction->pdata));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
 		return TRUE;
-	case ACTION_TYPE_OP_TAG: {
+	case OP_TAG: {
 		pblock->pdata = malloc(sizeof(TAGGED_PROPVAL));
 		auto s = static_cast<TAGGED_PROPVAL *>(paction->pdata);
 		auto d = static_cast<TAGGED_PROPVAL *>(pblock->pdata);
@@ -245,8 +245,8 @@ static BOOL action_block_dup_internal(
 		}
 		return TRUE;
 	}
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		pblock->pdata = NULL;
 		return TRUE;
 	}
@@ -256,30 +256,30 @@ static BOOL action_block_dup_internal(
 static void action_block_free_internal(ACTION_BLOCK *paction)
 {
 	switch (paction->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		movecopy_action_free(static_cast<MOVECOPY_ACTION *>(paction->pdata));
 		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		reply_action_free(static_cast<REPLY_ACTION *>(paction->pdata));
 		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_DEFER_ACTION:
+	case OP_BOUNCE:
 		free(paction->pdata);
 		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		forwarddelegate_action_free(static_cast<FORWARDDELEGATE_ACTION *>(paction->pdata));
 		break;
-	case ACTION_TYPE_OP_TAG: {
+	case OP_TAG: {
 		auto p = static_cast<TAGGED_PROPVAL *>(paction->pdata);
 		propval_free(PROP_TYPE(p->proptag), p->pvalue);
 		free(p);
 		break;
 	}
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
+	case OP_DELETE:
+	case OP_MARK_AS_READ:
 		break;
 	}
 }
@@ -382,26 +382,26 @@ static uint32_t action_block_size(const ACTION_BLOCK *r)
 	size = sizeof(uint16_t) + sizeof(uint8_t) + 
 			sizeof(uint32_t) + sizeof(uint32_t);
 	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
+	case OP_MOVE:
+	case OP_COPY:
 		size += movecopy_action_size(static_cast<MOVECOPY_ACTION *>(r->pdata));
 		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
+	case OP_REPLY:
+	case OP_OOF_REPLY:
 		size += reply_action_size(static_cast<REPLY_ACTION *>(r->pdata));
 		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
+	case OP_DEFER_ACTION:
 		size += r->length - sizeof(uint8_t) - 
 				sizeof(uint32_t) - sizeof(uint32_t);
 		break;
-	case ACTION_TYPE_OP_BOUNCE:
+	case OP_BOUNCE:
 		size += sizeof(uint32_t);
 		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
+	case OP_FORWARD:
+	case OP_DELEGATE:
 		size += forwarddelegate_action_size(static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 		break;
-	case ACTION_TYPE_OP_TAG: {
+	case OP_TAG: {
 		auto p = static_cast<TAGGED_PROPVAL *>(r->pdata);
 		size += sizeof(uint32_t) + propval_size(PROP_TYPE(p->proptag), p->pvalue);
 	}

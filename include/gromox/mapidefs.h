@@ -60,6 +60,20 @@ enum {
 	PR_RTF_COMPRESSED = PROP_TAG(PT_BINARY, 0x1009), /* pidTagRtfCompressed */
 };
 
+enum ACTTYPE {
+	OP_MOVE = 0x1U,
+	OP_COPY = 0x2U,
+	OP_REPLY = 0x3U,
+	OP_OOF_REPLY = 0x4U,
+	OP_DEFER_ACTION = 0x5U,
+	OP_BOUNCE = 0x6U,
+	OP_FORWARD = 0x7U,
+	OP_DELEGATE = 0x8U,
+	OP_TAG = 0x9U,
+	OP_DELETE = 0xaU,
+	OP_MARK_AS_READ = 0xbU,
+};
+
 enum bm_relop {
 	BMR_EQZ = 0,
 	BMR_NEZ,
