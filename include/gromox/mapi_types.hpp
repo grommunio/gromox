@@ -38,11 +38,6 @@ struct PROPERTY_NAME {
 	char *pname;
 };
 
-struct TAGGED_PROPVAL {
-	uint32_t proptag;
-	void *pvalue;
-};
-
 struct RESTRICTION_AND_OR;
 struct RESTRICTION_NOT;
 struct RESTRICTION_CONTENT;
@@ -311,16 +306,6 @@ struct NAMEDPROPERTY_INFOMATION {
 	uint16_t count;
 	uint16_t *ppropid;
 	PROPERTY_NAME *ppropname;
-};
-
-struct TPROPVAL_ARRAY {
-	uint16_t count;
-	TAGGED_PROPVAL *ppropval;
-};
-
-struct TARRAY_SET {
-	uint32_t count;
-	TPROPVAL_ARRAY **pparray;
 };
 
 #define FLAGGED_PROPVAL_FLAG_AVAILABLE				0x0

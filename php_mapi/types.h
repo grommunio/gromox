@@ -35,11 +35,6 @@ struct PROPERTY_NAME {
 	char *pname;
 };
 
-struct TAGGED_PROPVAL {
-	uint32_t proptag;
-	void *pvalue;
-};
-
 struct RESTRICTION_AND_OR;
 struct RESTRICTION_NOT;
 struct RESTRICTION_CONTENT;
@@ -181,16 +176,6 @@ struct ACTION_BLOCK {
 struct RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
-};
-
-struct TPROPVAL_ARRAY {
-	uint16_t count;
-	TAGGED_PROPVAL *ppropval;
-};
-
-struct TARRAY_SET {
-	uint32_t count;
-	TPROPVAL_ARRAY **pparray;
 };
 
 struct PROPTAG_ARRAY {

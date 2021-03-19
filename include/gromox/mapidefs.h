@@ -139,3 +139,18 @@ struct GUID_ARRAY {
 	uint32_t count;
 	GUID *pguid;
 };
+
+struct TAGGED_PROPVAL {
+	uint32_t proptag;
+	void *pvalue;
+};
+
+struct TPROPVAL_ARRAY {
+	uint16_t count;
+	TAGGED_PROPVAL *ppropval;
+};
+
+struct TARRAY_SET {
+	uint32_t count;
+	TPROPVAL_ARRAY **pparray;
+};
