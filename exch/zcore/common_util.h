@@ -54,16 +54,6 @@ struct NOTIF_SINK {
 	ADVISE_INFO *padvise;
 };
 
-#define ACCESS_TYPE_DENIED							1
-#define ACCESS_TYPE_GRANT							2
-#define ACCESS_TYPE_BOTH							3
-
-#define RIGHT_NORMAL								0x00
-#define RIGHT_NEW									0x01
-#define RIGHT_MODIFY								0x02
-#define RIGHT_DELETED								0x04
-#define RIGHT_AUTOUPDATE_DENIED						0x08
-
 #define STREAM_SEEK_SET								0
 #define STREAM_SEEK_CUR								1
 #define STREAM_SEEK_END								2
@@ -125,17 +115,6 @@ struct ZNOTIFICATION {
 struct ZNOTIFICATION_ARRAY {
 	uint16_t count;
 	ZNOTIFICATION **ppnotification;
-};
-
-struct PERMISSION_ROW {
-	uint32_t flags;
-	BINARY entryid;
-	uint32_t member_rights;
-};
-
-struct PERMISSION_SET {
-	uint16_t count;
-	PERMISSION_ROW *prows;
 };
 
 struct RULE_LIST {

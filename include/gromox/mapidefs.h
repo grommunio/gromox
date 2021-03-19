@@ -108,6 +108,20 @@ enum {
 	FL_LOOSE = 1 << 18,
 };
 
+enum zaccess_type {
+	ACCESS_TYPE_DENIED = 1,
+	ACCESS_TYPE_GRANT = 2,
+	ACCESS_TYPE_BOTH = 3,
+};
+
+enum {
+	RIGHT_NORMAL = 0,
+	RIGHT_NEW = 1U << 0,
+	RIGHT_MODIFY = 1U << 1,
+	RIGHT_DELETED = 1U << 2,
+	RIGHT_AUTOUPDATE_DENIED = 1U << 3,
+};
+
 struct BINARY {
 	uint32_t cb;
 	union {
@@ -168,6 +182,17 @@ struct LPROPTAG_ARRAY {
 struct MESSAGE_STATE {
 	BINARY source_key;
 	uint32_t message_flags;
+};
+
+struct PERMISSION_ROW {
+	uint32_t flags;
+	BINARY entryid;
+	uint32_t member_rights;
+};
+
+struct PERMISSION_SET {
+	uint16_t count;
+	PERMISSION_ROW *prows;
 };
 
 struct PROPERTY_NAME {
