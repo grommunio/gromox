@@ -126,6 +126,11 @@ enum {
 	RIGHT_AUTOUPDATE_DENIED = 1U << 3,
 };
 
+struct ADVISE_INFO {
+	uint32_t hstore;
+	uint32_t sub_id;
+};
+
 struct BINARY {
 	uint32_t cb;
 	union {
@@ -186,6 +191,12 @@ struct LPROPTAG_ARRAY {
 struct MESSAGE_STATE {
 	BINARY source_key;
 	uint32_t message_flags;
+};
+
+struct NOTIF_SINK {
+	GUID hsession;
+	uint16_t count;
+	ADVISE_INFO *padvise;
 };
 
 struct PERMISSION_ROW {

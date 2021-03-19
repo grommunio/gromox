@@ -89,17 +89,6 @@ struct ONEOFF_ENTRYID {
 	char *pmail_address;
 };
 
-struct ADVISE_INFO {
-	uint32_t hstore;
-	uint32_t sub_id;
-};
-
-struct NOTIF_SINK {
-	GUID hsession;
-	uint16_t count;
-	ADVISE_INFO *padvise;
-};
-
 #define FOLDER_TYPE_GENERIC							1
 
 #define SYNC_DELETES_FLAG_HARDDELETE				0x02

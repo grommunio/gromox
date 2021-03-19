@@ -43,17 +43,6 @@ struct ZREPLY_ACTION {
 	GUID template_guid;
 };
 
-struct ADVISE_INFO {
-	uint32_t hstore;
-	uint32_t sub_id;
-};
-
-struct NOTIF_SINK {
-	GUID hsession;
-	uint16_t count;
-	ADVISE_INFO *padvise;
-};
-
 #define STREAM_SEEK_SET								0
 #define STREAM_SEEK_CUR								1
 #define STREAM_SEEK_END								2
