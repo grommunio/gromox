@@ -145,17 +145,6 @@ struct RULE_LIST {
 
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
-
-struct MESSAGE_STATE {
-	BINARY source_key;
-	uint32_t message_flags;
-};
-
-struct STATE_ARRAY {
-	uint32_t count;
-	MESSAGE_STATE *pstate;
-};
-
 #define ICS_TYPE_CONTENTS							1
 #define ICS_TYPE_HIERARCHY							2
 

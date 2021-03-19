@@ -145,11 +145,21 @@ struct LPROPTAG_ARRAY {
 	uint32_t *pproptag;
 };
 
+struct MESSAGE_STATE {
+	BINARY source_key;
+	uint32_t message_flags;
+};
+
 struct PROPTAG_ARRAY {
 	union {
 		uint16_t cvalues, count;
 	};
 	uint32_t *pproptag;
+};
+
+struct STATE_ARRAY {
+	uint32_t count;
+	MESSAGE_STATE *pstate;
 };
 
 struct TAGGED_PROPVAL {
