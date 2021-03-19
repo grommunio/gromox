@@ -287,6 +287,23 @@ struct TARRAY_SET {
 	TPROPVAL_ARRAY **pparray;
 };
 
+struct NEWMAIL_ZNOTIFICATION {
+	BINARY entryid;
+	BINARY parentid;
+	uint32_t flags; /* unicode or not */
+	char *message_class;
+	uint32_t message_flags;
+};
+
+struct OBJECT_ZNOTIFICATION {
+	uint32_t object_type;
+	BINARY *pentryid;
+	BINARY *pparentid;
+	BINARY *pold_entryid;
+	BINARY *pold_parentid;
+	PROPTAG_ARRAY *pproptags;
+};
+
 struct RESTRICTION_AND_OR;
 struct RESTRICTION_NOT;
 struct RESTRICTION_CONTENT;

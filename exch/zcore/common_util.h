@@ -71,23 +71,6 @@ struct ZREPLY_ACTION {
 #define MAPI_ICSUPCTX								14
 #define MAPI_INVALID								255
 
-struct NEWMAIL_ZNOTIFICATION {
-	BINARY entryid;
-	BINARY parentid;
-	uint32_t flags; /* unicode or not */
-	char *message_class;
-	uint32_t message_flags;
-};
-
-struct OBJECT_ZNOTIFICATION {
-	uint32_t object_type;
-	BINARY *pentryid;
-	BINARY *pparentid;
-	BINARY *pold_entryid;
-	BINARY *pold_parentid;
-	PROPTAG_ARRAY *pproptags;
-};
-
 #define EVENT_TYPE_NEWMAIL							0x00000002
 #define EVENT_TYPE_OBJECTCREATED					0x00000004
 #define EVENT_TYPE_OBJECTDELETED					0x00000008

@@ -98,14 +98,6 @@ struct ONEOFF_ENTRYID {
 #define MODRECIP_MODIFY								0x00000004
 #define MODRECIP_REMOVE								0x00000008
 
-struct NEWMAIL_ZNOTIFICATION {
-	BINARY entryid;
-	BINARY parentid;
-	uint32_t flags;
-	char *message_class;
-	uint32_t message_flags;
-};
-
 #define MAPI_TABLE									1
 #define MAPI_MESSAGE								2
 #define MAPI_ATTACHMENT								3
@@ -124,15 +116,6 @@ struct NEWMAIL_ZNOTIFICATION {
 
 #define ROOT_HANDLE									0
 #define INVALID_HANDLE								0xFFFFFFFF
-
-struct OBJECT_ZNOTIFICATION {
-	uint32_t object_type;
-	BINARY *pentryid;
-	BINARY *pparentid;
-	BINARY *pold_entryid;
-	BINARY *pold_parentid;
-	PROPTAG_ARRAY *pproptags;
-};
 
 #define EVENT_TYPE_NEWMAIL							0x00000002
 #define EVENT_TYPE_OBJECTCREATED					0x00000004
