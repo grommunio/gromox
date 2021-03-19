@@ -2,14 +2,6 @@
 #include <cstdint>
 #include <gromox/mapidefs.h>
 
-struct GUID {
-	uint32_t time_low;
-	uint16_t time_mid;
-	uint16_t time_hi_and_version;
-	uint8_t clock_seq[2];
-	uint8_t node[6];
-};
-
 struct FLATUID {
 	uint8_t ab[16];
 };
@@ -46,11 +38,6 @@ struct LONG_ARRAY {
 struct LONGLONG_ARRAY {
 	uint32_t count;
 	uint64_t *pll;
-};
-
-struct GUID_ARRAY {
-	uint32_t count;
-	GUID *pguid;
 };
 
 enum {

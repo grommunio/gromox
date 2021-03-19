@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/common_types.hpp>
 #include <gromox/rpc_types.hpp>
 #include <gromox/double_list.hpp>
 #define NDR_ERR_SUCCESS					0

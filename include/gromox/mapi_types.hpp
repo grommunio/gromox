@@ -39,11 +39,6 @@ struct LONGLONG_ARRAY {
 	uint64_t *pll;
 };
 
-struct GUID_ARRAY {
-	uint32_t count;
-	GUID *pguid;
-};
-
 enum {
 	MNID_ID = 0,
 	MNID_STRING = 1,

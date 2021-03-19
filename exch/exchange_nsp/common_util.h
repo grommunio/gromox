@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/common_types.hpp>
 #include "nsp_types.h"
 
 #define HANDLE_EXCHANGE_NSP				1

@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include <gromox/common_types.hpp>
+#include <gromox/mapidefs.h>
 
 struct CONTEXT_HANDLE {
 	uint32_t handle_type;

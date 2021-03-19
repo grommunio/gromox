@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+
 #define PROP_ID(x) ((x) >> 16)
 #define PROP_TYPE(x) ((x) & 0xFFFF)
 #define CHANGE_PROP_TYPE(tag, newtype) (((tag) & ~0xFFFF) | (newtype))
@@ -98,4 +100,17 @@ enum {
 	FL_IGNORECASE = 1 << 16,
 	FL_IGNORENONSPACE = 1 << 17,
 	FL_LOOSE = 1 << 18,
+};
+
+struct GUID {
+	uint32_t time_low;
+	uint16_t time_mid;
+	uint16_t time_hi_and_version;
+	uint8_t clock_seq[2];
+	uint8_t node[6];
+};
+
+struct GUID_ARRAY {
+	uint32_t count;
+	GUID *pguid;
 };
