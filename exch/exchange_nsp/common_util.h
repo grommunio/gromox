@@ -95,14 +95,14 @@ BOOL common_util_permanent_entryid_to_binary(
 	
 BOOL common_util_ephemeral_entryid_to_binary(
 	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin);
-extern PROPROW_SET *common_util_proprowset_init();
-PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset);
+extern NSP_ROWSET *common_util_proprowset_init();
+NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset);
 
-PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow);
+NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow);
 
-PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow);
-extern PROPTAG_ARRAY *common_util_proptagarray_init();
-uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags);
+PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow);
+extern LPROPTAG_ARRAY *common_util_proptagarray_init();
+uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags);
 
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern int common_util_run();

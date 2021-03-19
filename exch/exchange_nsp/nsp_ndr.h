@@ -44,12 +44,12 @@ struct NSPIQUERYROWS_IN {
 	uint32_t table_count;
 	uint32_t *ptable;
 	uint32_t count;
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *pproptags;
 };
 
 struct NSPIQUERYROWS_OUT {
 	STAT stat;
-	PROPROW_SET *prows;
+	NSP_ROWSET *prows;
 	uint32_t result;
 };
 
@@ -58,13 +58,13 @@ struct NSPISEEKENTRIES_IN {
 	uint32_t reserved;
 	STAT stat;
 	PROPERTY_VALUE target;
-	PROPTAG_ARRAY *ptable;
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *ptable;
+	LPROPTAG_ARRAY *pproptags;
 };
 
 struct NSPISEEKENTRIES_OUT {
 	STAT stat;
-	PROPROW_SET *prows;
+	NSP_ROWSET *prows;
 	uint32_t result;
 };
 
@@ -72,18 +72,18 @@ struct NSPIGETMATCHES_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved1;
 	STAT stat;
-	PROPTAG_ARRAY *preserved;
+	LPROPTAG_ARRAY *preserved;
 	uint32_t reserved2;
 	NSPRES *pfilter;
-	PROPERTY_NAME *ppropname;
+	NSP_PROPNAME *ppropname;
 	uint32_t requested;
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *pproptags;
 };
 
 struct NSPIGETMATCHES_OUT {
 	STAT stat;
-	PROPTAG_ARRAY *poutmids;
-	PROPROW_SET *prows;
+	LPROPTAG_ARRAY *poutmids;
+	NSP_ROWSET *prows;
 	uint32_t result;
 };
 
@@ -91,13 +91,13 @@ struct NSPIRESORTRESTRICTION_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
-	PROPTAG_ARRAY inmids;
-	PROPTAG_ARRAY *poutmids;
+	LPROPTAG_ARRAY inmids;
+	LPROPTAG_ARRAY *poutmids;
 };
 
 struct NSPIRESORTRESTRICTION_OUT {
 	STAT stat;
-	PROPTAG_ARRAY *poutmids;
+	LPROPTAG_ARRAY *poutmids;
 	uint32_t result;
 };
 
@@ -108,7 +108,7 @@ struct NSPIDNTOMID_IN {
 };
 
 struct NSPIDNTOMID_OUT {
-	PROPTAG_ARRAY *poutmids;
+	LPROPTAG_ARRAY *poutmids;
 	uint32_t result;
 };
 
@@ -120,7 +120,7 @@ struct NSPIGETPROPLIST_IN {
 };
 
 struct NSPIGETPROPLIST_OUT {
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *pproptags;
 	uint32_t result;
 };
 
@@ -128,11 +128,11 @@ struct NSPIGETPROPS_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	STAT stat;
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *pproptags;
 };
 
 struct NSPIGETPROPS_OUT {
-	PROPERTY_ROW *prows;
+	NSP_PROPROW *prows;
 	uint32_t result;
 };
 
@@ -153,8 +153,8 @@ struct NSPIMODPROPS_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
-	PROPTAG_ARRAY *pproptags;
-	PROPERTY_ROW row;
+	LPROPTAG_ARRAY *pproptags;
+	NSP_PROPROW row;
 };
 
 struct NSPIMODPROPS_OUT {
@@ -170,7 +170,7 @@ struct NSPIGETSPECIALTABLE_IN {
 
 struct NSPIGETSPECIALTABLE_OUT {
 	uint32_t version;
-	PROPROW_SET *prows;
+	NSP_ROWSET *prows;
 	uint32_t result;
 };
 
@@ -184,7 +184,7 @@ struct NSPIGETTEMPLATEINFO_IN {
 };
 
 struct NSPIGETTEMPLATEINFO_OUT {
-	PROPERTY_ROW *pdata;
+	NSP_PROPROW *pdata;
 	uint32_t result;
 };
 
@@ -207,7 +207,7 @@ struct NSPIQUERYCOLUMNS_IN {
 };
 
 struct NSPIQUERYCOLUMNS_OUT {
-	PROPTAG_ARRAY *pcolumns;
+	LPROPTAG_ARRAY *pcolumns;
 	uint32_t result;
 };
 
@@ -215,13 +215,13 @@ struct NSPIRESOLVENAMES_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *pproptags;
 	STRINGS_ARRAY strs;
 };
 
 struct NSPIRESOLVENAMES_OUT {
-	PROPTAG_ARRAY *pmids;
-	PROPROW_SET *prows;
+	LPROPTAG_ARRAY *pmids;
+	NSP_ROWSET *prows;
 	uint32_t result;
 };
 
@@ -229,13 +229,13 @@ struct NSPIRESOLVENAMESW_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
-	PROPTAG_ARRAY *pproptags;
+	LPROPTAG_ARRAY *pproptags;
 	STRINGS_ARRAY strs;
 };
 
 struct NSPIRESOLVENAMESW_OUT {
-	PROPTAG_ARRAY *pmids;
-	PROPROW_SET *prows;
+	LPROPTAG_ARRAY *pmids;
+	NSP_ROWSET *prows;
 	uint32_t result;
 };
 

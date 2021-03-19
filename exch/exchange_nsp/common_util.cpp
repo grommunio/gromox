@@ -250,47 +250,47 @@ BOOL common_util_ephemeral_entryid_to_binary(
 	return TRUE;
 }
 
-PROPROW_SET* common_util_proprowset_init()
+NSP_ROWSET* common_util_proprowset_init()
 {
-	auto pset = ndr_stack_anew<PROPROW_SET>(NDR_STACK_OUT);
+	auto pset = ndr_stack_anew<NSP_ROWSET>(NDR_STACK_OUT);
 	if (NULL == pset) {
 		return NULL;
 	}
-	memset(pset, 0, sizeof(PROPROW_SET));
-	pset->prows = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT, 100);
+	memset(pset, 0, sizeof(NSP_ROWSET));
+	pset->prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, 100);
 	if (NULL == pset->prows) {
 		return NULL;
 	}
 	return pset;
 }
 
-PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset)
+NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset)
 {
-	PROPERTY_ROW *prows;
+	NSP_PROPROW *prows;
 	
 	size_t count = (pset->crows / 100 + 1) * 100;
 	if (pset->crows + 1 >= count) {
 		count += 100;
-		prows = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT, count);
+		prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
 		if (NULL == prows) {
 			return NULL;
 		}
-		memcpy(prows, pset->prows, sizeof(PROPERTY_ROW)*pset->crows);
+		memcpy(prows, pset->prows, sizeof(NSP_PROPROW)*pset->crows);
 		pset->prows = prows;
 	}
 	pset->crows ++;
 	return &pset->prows[pset->crows - 1]; 
 }
 
-PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow)
+NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow)
 {
 	if (NULL == prow) {
-		prow = ndr_stack_anew<PROPERTY_ROW>(NDR_STACK_OUT);
+		prow = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT);
 		if (NULL == prow) {
 			return NULL;
 		}
 	}
-	memset(prow, 0, sizeof(PROPERTY_ROW));
+	memset(prow, 0, sizeof(NSP_PROPROW));
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, 40);
 	if (NULL == prow->pprops) {
 		return NULL;
@@ -298,7 +298,7 @@ PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow)
 	return prow;
 }
 
-PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
+PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 {
 	PROPERTY_VALUE *pprops;
 	
@@ -317,13 +317,13 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
 	return &prow->pprops[prow->cvalues - 1]; 
 }
 
-PROPTAG_ARRAY* common_util_proptagarray_init()
+LPROPTAG_ARRAY* common_util_proptagarray_init()
 {
-	auto pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_OUT);
+	auto pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pproptags) {
 		return NULL;
 	}
-	memset(pproptags, 0, sizeof(PROPTAG_ARRAY));
+	memset(pproptags, 0, sizeof(LPROPTAG_ARRAY));
 	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, 100);
 	if (NULL == pproptags->pproptag) {
 		return NULL;
@@ -331,7 +331,7 @@ PROPTAG_ARRAY* common_util_proptagarray_init()
 	return pproptags;
 }
 
-uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags)
+uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags)
 {
 	uint32_t *pproptag;
 	

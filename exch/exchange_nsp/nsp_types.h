@@ -31,7 +31,6 @@ struct LPROPTAG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pproptag;
 };
-using PROPTAG_ARRAY = LPROPTAG_ARRAY;
 /* MID_ARRAY is semantically different, but layout-compatible to LPROPTAG_ARRAY (and exchange_nsp uses the proptag deserializer). */
 using MID_ARRAY = LPROPTAG_ARRAY;
 
@@ -40,7 +39,6 @@ struct NSP_PROPNAME {
 	uint32_t reserved;
 	uint32_t id;
 };
-using PROPERTY_NAME = NSP_PROPNAME;
 
 struct STRING_ARRAY {
 	uint32_t cvalues;
@@ -118,13 +116,11 @@ struct NSP_PROPROW {
 	uint32_t cvalues;
 	PROPERTY_VALUE *pprops;
 };
-using PROPERTY_ROW = NSP_PROPROW;
 
 struct NSP_ROWSET {
 	uint32_t crows;
-	PROPERTY_ROW *prows;
+	NSP_PROPROW *prows;
 };
-using PROPROW_SET = NSP_ROWSET;
 
 struct NSPRES;
 struct NSPRES_AND_OR {

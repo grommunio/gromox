@@ -99,7 +99,7 @@ static int nsp_ndr_push_flatuid(NDR_PUSH *pndr, const FLATUID *r)
 	return ndr_push_array_uint8(pndr, r->ab, 16);
 }
 
-static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, PROPTAG_ARRAY *r)
+static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, LPROPTAG_ARRAY *r)
 {
 	uint32_t cnt;
 	uint32_t size;
@@ -133,7 +133,7 @@ static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, PROPTAG_ARRAY *r)
 	return ndr_pull_trailer_align(pndr, 4);
 }
 
-static int nsp_ndr_push_proptag_array(NDR_PUSH *pndr, const PROPTAG_ARRAY *r)
+static int nsp_ndr_push_proptag_array(NDR_PUSH *pndr, const LPROPTAG_ARRAY *r)
 {
 	uint32_t cnt;
 	
@@ -148,7 +148,7 @@ static int nsp_ndr_push_proptag_array(NDR_PUSH *pndr, const PROPTAG_ARRAY *r)
 	return ndr_push_trailer_align(pndr, 4);
 }
 
-static int nsp_ndr_pull_property_name(NDR_PULL *pndr, int flag, PROPERTY_NAME *r)
+static int nsp_ndr_pull_property_name(NDR_PULL *pndr, int flag, NSP_PROPNAME *r)
 {
 	uint32_t ptr;
 	
@@ -1195,7 +1195,7 @@ static int nsp_ndr_push_property_value(NDR_PUSH *pndr, int flag, const PROPERTY_
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_property_row(NDR_PULL *pndr, int flag, PROPERTY_ROW *r)
+static int nsp_ndr_pull_property_row(NDR_PULL *pndr, int flag, NSP_PROPROW *r)
 {
 	uint32_t ptr;
 	uint32_t cnt;
@@ -1234,7 +1234,7 @@ static int nsp_ndr_pull_property_row(NDR_PULL *pndr, int flag, PROPERTY_ROW *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_property_row(NDR_PUSH *pndr, int flag, const PROPERTY_ROW *r)
+static int nsp_ndr_push_property_row(NDR_PUSH *pndr, int flag, const NSP_PROPROW *r)
 {
 	uint32_t cnt;
 	
@@ -1260,7 +1260,7 @@ static int nsp_ndr_push_property_row(NDR_PUSH *pndr, int flag, const PROPERTY_RO
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_proprow_set(NDR_PUSH *pndr, int flag, const PROPROW_SET *r)
+static int nsp_ndr_push_proprow_set(NDR_PUSH *pndr, int flag, const NSP_ROWSET *r)
 {
 	uint32_t cnt;
 	
@@ -1920,7 +1920,7 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->count));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -1952,7 +1952,7 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 	TRY(nsp_ndr_pull_property_value(pndr, FLAG_HEADER|FLAG_CONTENT, &r->target));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->ptable = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->ptable = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->ptable) {
 			return NDR_ERR_ALLOC;
 		}
@@ -1962,7 +1962,7 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 	}
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -1992,7 +1992,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->preserved = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->preserved = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->preserved) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2013,7 +2013,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	}
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->ppropname = ndr_stack_anew<PROPERTY_NAME>(NDR_STACK_IN);
+		r->ppropname = ndr_stack_anew<NSP_PROPNAME>(NDR_STACK_IN);
 		if (NULL == r->ppropname) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2025,7 +2025,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->requested));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2060,7 +2060,7 @@ int nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr, NSPIRESORTRESTRICTION_IN 
 	TRY(nsp_ndr_pull_proptag_array(pndr, &r->inmids));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->poutmids = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->poutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->poutmids) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2123,7 +2123,7 @@ int nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2168,7 +2168,7 @@ int nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2282,7 +2282,7 @@ int nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
@@ -2316,7 +2316,7 @@ int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r)
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<PROPTAG_ARRAY>(NDR_STACK_IN);
+		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (NULL == r->pproptags) {
 			return NDR_ERR_ALLOC;
 		}
