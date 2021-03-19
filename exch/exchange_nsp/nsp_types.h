@@ -31,26 +31,12 @@ struct NSP_PROPNAME {
 	uint32_t id;
 };
 
-struct STRING_ARRAY {
-	uint32_t cvalues;
-	char **ppstr;
-};
 /* OXNSPI §2.2.2.6 vs §2.2.7.1 oddity that is irrelevant for our implementation */
 using STRINGS_ARRAY = STRING_ARRAY;
 
 struct FILETIME {
 	uint32_t low_datetime;
 	uint32_t high_datetime;
-};
-
-struct SHORT_ARRAY {
-	uint32_t cvalues;
-	uint16_t *ps;
-};
-
-struct LONG_ARRAY {
-	uint32_t cvalues;
-	uint32_t *pl;
 };
 
 struct FILETIME_ARRAY {

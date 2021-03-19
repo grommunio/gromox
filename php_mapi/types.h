@@ -2,26 +2,6 @@
 #include <cstdint>
 #include <gromox/mapidefs.h>
 
-struct STRING_ARRAY {
-	uint32_t count;
-	char **ppstr;
-};
-
-struct SHORT_ARRAY {
-	uint32_t count;
-	uint16_t *ps;
-};
-
-struct LONG_ARRAY {
-	uint32_t count;
-	uint32_t *pl;
-};
-
-struct LONGLONG_ARRAY {
-	uint32_t count;
-	uint64_t *pll;
-};
-
 struct SVREID {
 	BINARY *pbin;
 	uint64_t folder_id;

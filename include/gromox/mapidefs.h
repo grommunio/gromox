@@ -146,6 +146,20 @@ struct GUID_ARRAY {
 	GUID *pguid;
 };
 
+struct LONG_ARRAY {
+	union {
+		uint32_t cvalues, count;
+	};
+	uint32_t *pl;
+};
+
+struct LONGLONG_ARRAY {
+	union {
+		uint32_t cvalues, count;
+	};
+	uint64_t *pll;
+};
+
 struct LPROPTAG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pproptag;
@@ -180,9 +194,23 @@ struct PROPTAG_ARRAY {
 	uint32_t *pproptag;
 };
 
+struct SHORT_ARRAY {
+	union {
+		uint32_t cvalues, count;
+	};
+	uint16_t *ps;
+};
+
 struct STATE_ARRAY {
 	uint32_t count;
 	MESSAGE_STATE *pstate;
+};
+
+struct STRING_ARRAY {
+	union {
+		uint32_t cvalues, count;
+	};
+	char **ppstr;
 };
 
 struct TAGGED_PROPVAL {
