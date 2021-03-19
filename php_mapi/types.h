@@ -56,19 +56,6 @@ struct RULE_ACTIONS {
 	ACTION_BLOCK *pblock;
 };
 
-struct SORT_ORDER {
-	uint16_t type; /* pay attention to the 0x2000 bit */
-	uint16_t propid;
-	uint8_t table_sort;
-};
-
-struct SORTORDER_SET {
-	uint16_t count;
-	uint16_t ccategories;
-	uint16_t cexpanded;
-	SORT_ORDER *psort;
-};
-
 #define RULE_DATA_FLAG_ADD_ROW						0x01
 #define RULE_DATA_FLAG_MODIFY_ROW					0x02
 #define RULE_DATA_FLAG_REMOVE_ROW					0x04

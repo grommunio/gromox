@@ -108,6 +108,10 @@ enum {
 	FL_LOOSE = 1 << 18,
 };
 
+enum {
+	MAXIMUM_SORT_COUNT = 8,
+};
+
 enum zaccess_type {
 	ACCESS_TYPE_DENIED = 1,
 	ACCESS_TYPE_GRANT = 2,
@@ -224,6 +228,19 @@ struct SHORT_ARRAY {
 		uint32_t cvalues, count;
 	};
 	uint16_t *ps;
+};
+
+struct SORT_ORDER {
+	uint16_t type; /* pay attention to the 0x2000 bit */
+	uint16_t propid;
+	uint8_t table_sort;
+};
+
+struct SORTORDER_SET {
+	uint16_t count;
+	uint16_t ccategories;
+	uint16_t cexpanded;
+	SORT_ORDER *psort;
 };
 
 struct STATE_ARRAY {

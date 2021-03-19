@@ -258,21 +258,6 @@ struct PROPROW_SET {
 #define TABLE_SORT_MAXIMUM_CATEGORY					0x4
 #define TABLE_SORT_MINIMUM_CATEGORY					0x8
 
-struct SORT_ORDER {
-	uint16_t type; /* pay attention to the 0x2000 bit */
-	uint16_t propid;
-	uint8_t table_sort;
-};
-
-#define MAXIMUM_SORT_COUNT							8
-
-struct SORTORDER_SET {
-	uint16_t count;
-	uint16_t ccategories;
-	uint16_t cexpanded;
-	SORT_ORDER *psort;
-};
-
 struct PROPERTY_PROBLEM {
 	uint16_t index;
 	uint32_t proptag;
