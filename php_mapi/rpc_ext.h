@@ -483,14 +483,6 @@ struct REQ_VCFTOMESSAGE {
 	BINARY *pvcf_bin;
 };
 
-struct REQ_SAVESESSION {
-	GUID hsession;
-};
-
-struct REQ_RESTORESESSION {
-	BINARY *pdata_bin;
-};
-
 struct REQ_GETUSERAVAILABILITY {
 	GUID hsession;
 	BINARY entryid;
@@ -817,14 +809,6 @@ struct RESP_MESSAGETOICAL {
 
 struct RESP_MESSAGETOVCF {
 	BINARY vcf_bin;
-};
-
-struct RESP_SAVESESSION {
-	BINARY data_bin;
-};
-
-struct RESP_RESTORESESSION {
-	GUID hsession;
 };
 
 struct RESP_GETUSERAVAILABILITY {
