@@ -152,11 +152,6 @@ struct ZNOTIFICATION_ARRAY {
 	ZNOTIFICATION **ppnotification;
 };
 
-struct RULE_LIST {
-	uint16_t count;
-	RULE_DATA *prule;
-};
-
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
 #define ICS_TYPE_CONTENTS							1

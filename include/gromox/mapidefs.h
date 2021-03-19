@@ -380,3 +380,8 @@ struct RULE_DATA {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
 };
+
+struct RULE_LIST {
+	uint16_t count;
+	RULE_DATA *prule;
+};
