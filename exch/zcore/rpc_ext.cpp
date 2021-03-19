@@ -1766,7 +1766,7 @@ static BOOL rpc_ext_pull_configsync_request(
 static BOOL rpc_ext_push_configsync_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_push_bool(pext, ppayload->configsync.b_changed));
+	QRF(ext_buffer_push_uint8(pext, ppayload->configsync.b_changed));
 	QRF(ext_buffer_push_uint32(pext, ppayload->configsync.count));
 	return TRUE;
 }
@@ -1797,7 +1797,7 @@ static BOOL rpc_ext_pull_syncmessagechange_request(
 static BOOL rpc_ext_push_syncmessagechange_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_push_bool(pext, ppayload->syncmessagechange.b_new));
+	QRF(ext_buffer_push_uint8(pext, ppayload->syncmessagechange.b_new));
 	QRF(ext_buffer_push_tpropval_array(pext, &ppayload->syncmessagechange.proplist));
 	return TRUE;
 }

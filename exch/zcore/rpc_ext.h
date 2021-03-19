@@ -162,7 +162,7 @@ struct RESP_CONTENTSYNC {
 };
 
 struct RESP_CONFIGSYNC {
-	BOOL b_changed;
+	uint8_t b_changed;
 	uint32_t count;
 };
 
@@ -171,7 +171,7 @@ struct RESP_STATESYNC {
 };
 
 struct RESP_SYNCMESSAGECHANGE {
-	BOOL b_new;
+	uint8_t b_new;
 	TPROPVAL_ARRAY proplist;
 };
 

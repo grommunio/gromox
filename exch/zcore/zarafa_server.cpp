@@ -5834,10 +5834,9 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zarafa_server_configsync(GUID hsession,
-	uint32_t hctx, uint32_t flags, const BINARY *pstate,
-	const RESTRICTION *prestriction, BOOL *pb_changed,
-	uint32_t *pcount)
+uint32_t zarafa_server_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
+    const BINARY *pstate, const RESTRICTION *prestriction, uint8_t *pb_changed,
+    uint32_t *pcount)
 {
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
@@ -5857,19 +5856,21 @@ uint32_t zarafa_server_configsync(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotSupported;
 	}
+	BOOL b_changed = false;
 	if (SYNC_TYPE_CONTENTS == icsdownctx_object_get_type(pctx)) {
 		if (FALSE == icsdownctx_object_make_content(pctx,
-			pstate, prestriction, flags, pb_changed, pcount)) {
+			pstate, prestriction, flags, &b_changed, pcount)) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
 	} else {
 		if (FALSE == icsdownctx_object_make_hierarchy(
-			pctx, pstate, flags, pb_changed, pcount)) {
+			pctx, pstate, flags, &b_changed, pcount)) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
 	}
+	*pb_changed = !!b_changed;
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }
@@ -5906,8 +5907,8 @@ uint32_t zarafa_server_statesync(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zarafa_server_syncmessagechange(GUID hsession,
-	uint32_t hctx, BOOL *pb_new, TPROPVAL_ARRAY *pproplist)
+uint32_t zarafa_server_syncmessagechange(GUID hsession, uint32_t hctx,
+    uint8_t *pb_new, TPROPVAL_ARRAY *pproplist)
 {
 	BOOL b_found;
 	USER_INFO *pinfo;
@@ -5929,11 +5930,13 @@ uint32_t zarafa_server_syncmessagechange(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotSupported;
 	}
+	BOOL b_new = false;
 	if (FALSE == icsdownctx_object_sync_message_change(
-		pctx, &b_found, pb_new, pproplist)) {
+	    pctx, &b_found, &b_new, pproplist)) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	*pb_new = !!b_new;
 	if (FALSE == b_found) {
 		zarafa_server_put_user_info(pinfo);
 		return ecNotFound;

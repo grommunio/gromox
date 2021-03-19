@@ -224,18 +224,10 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 
 uint32_t zarafa_server_contentsync(GUID hsession,
 	uint32_t hfolder, uint32_t *phobject);
-
-uint32_t zarafa_server_configsync(GUID hsession,
-	uint32_t hctx, uint32_t flags, const BINARY *pstate,
-	const RESTRICTION *prestriction, BOOL *pb_changed,
-	uint32_t *pcount);
-
+extern uint32_t zarafa_server_configsync(GUID, uint32_t, uint32_t, const BINARY *, const RESTRICTION *, uint8_t *, uint32_t *);
 uint32_t zarafa_server_statesync(GUID hsession,
 	uint32_t hctx, BINARY *pstate);
-
-uint32_t zarafa_server_syncmessagechange(GUID hsession,
-	uint32_t hctx, BOOL *pb_new, TPROPVAL_ARRAY *pproplist);
-
+extern uint32_t zarafa_server_syncmessagechange(GUID, uint32_t, uint8_t *, TPROPVAL_ARRAY *);
 uint32_t zarafa_server_syncfolderchange(GUID hsession,
 	uint32_t hctx, TPROPVAL_ARRAY *pproplist);
 
