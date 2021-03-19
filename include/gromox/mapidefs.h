@@ -140,6 +140,18 @@ struct GUID_ARRAY {
 	GUID *pguid;
 };
 
+struct LPROPTAG_ARRAY {
+	uint32_t cvalues;
+	uint32_t *pproptag;
+};
+
+struct PROPTAG_ARRAY {
+	union {
+		uint16_t cvalues, count;
+	};
+	uint32_t *pproptag;
+};
+
 struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;

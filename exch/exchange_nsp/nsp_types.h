@@ -22,10 +22,6 @@ struct STAT {
 	uint32_t sort_locale;
 };
 
-struct LPROPTAG_ARRAY {
-	uint32_t cvalues;
-	uint32_t *pproptag;
-};
 /* MID_ARRAY is semantically different, but layout-compatible to LPROPTAG_ARRAY (and exchange_nsp uses the proptag deserializer). */
 using MID_ARRAY = LPROPTAG_ARRAY;
 

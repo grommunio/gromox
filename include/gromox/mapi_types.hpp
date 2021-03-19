@@ -317,11 +317,6 @@ struct FLAGGED_PROPVAL {
 	void *pvalue;
 };
 
-struct PROPTAG_ARRAY {
-	uint16_t count;
-	uint32_t *pproptag;
-};
-
 struct TYPED_PROPVAL {
 	uint16_t type;
 	void *pvalue;

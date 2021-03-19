@@ -178,11 +178,6 @@ struct RULE_ACTIONS {
 	ACTION_BLOCK *pblock;
 };
 
-struct PROPTAG_ARRAY {
-	uint16_t count;
-	uint32_t *pproptag;
-};
-
 struct SORT_ORDER {
 	uint16_t type; /* pay attention to the 0x2000 bit */
 	uint16_t propid;
