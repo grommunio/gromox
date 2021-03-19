@@ -269,15 +269,6 @@ struct PROBLEM_ARRAY {
 	PROPERTY_PROBLEM *pproblem;
 };
 
-#define RULE_DATA_FLAG_ADD_ROW						0x01
-#define RULE_DATA_FLAG_MODIFY_ROW					0x02
-#define RULE_DATA_FLAG_REMOVE_ROW					0x04
-
-struct RULE_DATA {
-	uint8_t flags;
-	TPROPVAL_ARRAY propvals;
-};
-
 #define PROVIDER_UID_ADDRESS_BOOK					1
 #define PROVIDER_UID_PUBLIC							2
 #define PROVIDER_UID_ONE_OFF						3

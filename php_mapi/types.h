@@ -56,15 +56,6 @@ struct RULE_ACTIONS {
 	ACTION_BLOCK *pblock;
 };
 
-#define RULE_DATA_FLAG_ADD_ROW						0x01
-#define RULE_DATA_FLAG_MODIFY_ROW					0x02
-#define RULE_DATA_FLAG_REMOVE_ROW					0x04
-
-struct RULE_DATA {
-	uint8_t flags;
-	TPROPVAL_ARRAY propvals;
-};
-
 #define CTRL_FLAG_BINHEX							0x0000
 #define CTRL_FLAG_UUENCODE							0x0020
 #define CTRL_FLAG_APPLESINGLE						0x0040

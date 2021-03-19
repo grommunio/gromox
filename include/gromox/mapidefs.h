@@ -112,6 +112,12 @@ enum {
 	MAXIMUM_SORT_COUNT = 8,
 };
 
+enum {
+	RULE_DATA_FLAG_ADD_ROW = 1U << 0,
+	RULE_DATA_FLAG_MODIFY_ROW = 1U << 1,
+	RULE_DATA_FLAG_REMOVE_ROW = 1U << 2,
+};
+
 enum zaccess_type {
 	ACCESS_TYPE_DENIED = 1,
 	ACCESS_TYPE_GRANT = 2,
@@ -368,4 +374,9 @@ struct RESTRICTION_COMMENT {
 struct RESTRICTION_COUNT {
 	uint32_t count;
 	RESTRICTION sub_res;
+};
+
+struct RULE_DATA {
+	uint8_t flags;
+	TPROPVAL_ARRAY propvals;
 };
