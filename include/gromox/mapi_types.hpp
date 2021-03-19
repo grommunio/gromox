@@ -298,35 +298,6 @@ struct ADDRESSBOOK_ENTRYID {
 	char *px500dn;
 };
 
-#define CTRL_FLAG_BINHEX						0x0000
-#define CTRL_FLAG_UUENCODE						0x0020
-#define CTRL_FLAG_APPLESINGLE					0x0040
-#define CTRL_FLAG_APPLEDOUBLE					0x0060
-
-#define CTRL_FLAG_TEXTONLY						0x0006
-#define CTRL_FLAG_HTMLONLY						0x000E
-#define CTRL_FLAG_TEXTANDHTML					0x0016
-
-#define CTRL_FLAG_NORICH						0x0001
-#define CTRL_FLAG_UNICODE						0x8000
-#define CTRL_FLAG_DONTLOOKUP					0x1000
-
-struct ONEOFF_ENTRYID {
-	uint32_t flags;
-	 /* 81.2B.1F.A4.BE.A3.10.19.9D.6E.00.DD.01.0F.54.02 */
-	uint8_t provider_uid[16];
-	uint16_t version; /* should be 0x0000 */
-	uint16_t ctrl_flags;
-	char *pdisplay_name;
-	char *paddress_type;
-	char *pmail_address;
-};
-
-struct ONEOFF_ARRAY {
-	uint32_t count;
-	ONEOFF_ENTRYID *pentry_id;
-};
-
 #define DAYOFWEEK_SUNDAY							0x0
 #define DAYOFWEEK_MONDAY							0x1
 #define DAYOFWEEK_TUESDAY							0x2

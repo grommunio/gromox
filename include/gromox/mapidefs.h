@@ -66,6 +66,19 @@ enum bm_relop {
 };
 
 enum {
+	CTRL_FLAG_BINHEX = 0x00,
+	CTRL_FLAG_UUENCODE = 0x20,
+	CTRL_FLAG_APPLESINGLE = 0x40,
+	CTRL_FLAG_APPLEDOUBLE = 0x60,
+	CTRL_FLAG_TEXTONLY = 0x06,
+	CTRL_FLAG_HTMLONLY = 0x0E,
+	CTRL_FLAG_TEXTANDHTML = 0x16,
+	CTRL_FLAG_NORICH = 0x01,
+	CTRL_FLAG_UNICODE = 0x8000,
+	CTRL_FLAG_DONTLOOKUP = 0x1000,
+};
+
+enum {
 	MNID_ID = 0,
 	MNID_STRING = 1,
 	KIND_NONE = 0xff,
@@ -203,6 +216,22 @@ struct NOTIF_SINK {
 	GUID hsession;
 	uint16_t count;
 	ADVISE_INFO *padvise;
+};
+
+struct ONEOFF_ENTRYID {
+	uint32_t flags;
+	/* 81.2B.1F.A4.BE.A3.10.19.9D.6E.00.DD.01.0F.54.02 */
+	uint8_t provider_uid[16];
+	uint16_t version; /* should be 0x0000 */
+	uint16_t ctrl_flags;
+	char *pdisplay_name;
+	char *paddress_type;
+	char *pmail_address;
+};
+
+struct ONEOFF_ARRAY {
+	uint32_t count;
+	ONEOFF_ENTRYID *pentry_id;
 };
 
 struct PERMISSION_ROW {
