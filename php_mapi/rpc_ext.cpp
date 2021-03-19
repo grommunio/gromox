@@ -6,6 +6,9 @@
 #include "rpc_ext.h"
 #define TRY(expr) do { if (!(expr)) return 0; } while (false)
 
+using RPC_REQUEST = ZCORE_RPC_REQUEST;
+using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
+
 static zend_bool rpc_ext_push_logon_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {

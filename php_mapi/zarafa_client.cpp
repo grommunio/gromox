@@ -22,6 +22,8 @@
 #include <cerrno>
 #include <cstdint>
 
+using RPC_REQUEST = ZCORE_RPC_REQUEST;
+
 static int zarafa_client_connect()
 {
 	int sockd, len;

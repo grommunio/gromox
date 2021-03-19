@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <poll.h>
 
+using RPC_REQUEST = ZCORE_RPC_REQUEST;
+
 enum {
 	DISPATCH_TRUE,
 	DISPATCH_FALSE,

@@ -9,10 +9,10 @@
 #include "types.h"
 #include <cstdint>
 
-struct RPC_REQUEST;
+struct ZCORE_RPC_REQUEST;
 struct RPC_RESPONSE;
 
-extern zend_bool zarafa_client_do_rpc(const RPC_REQUEST *, RPC_RESPONSE *);
+extern zend_bool zarafa_client_do_rpc(const ZCORE_RPC_REQUEST *, RPC_RESPONSE *);
 extern uint32_t zarafa_client_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag, const void *pvalue);
 extern uint32_t zarafa_client_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag, void **ppvalue);
 
