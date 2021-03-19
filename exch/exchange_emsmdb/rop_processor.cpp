@@ -763,31 +763,23 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	double_list_init(&response_list);
 	
 	if (presponse->rop_id == ropQueryRows) {
-		if (QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS ==
-			((QUERYROWS_REQUEST*)prequest->ppayload)->flags) {
+		auto req = static_cast<QUERYROWS_REQUEST *>(prequest->ppayload);
+		auto rsp = static_cast<QUERYROWS_RESPONSE *>(presponse->ppayload);
+		if (req->flags == QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS)
 			goto PROC_SUCCESS;
-		}
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
 			*pcb_out - offset >= 0x8000 && count < MAX_ROP_PAYLOADS) {
-			if (0 != ((QUERYROWS_REQUEST*)
-				prequest->ppayload)->forward_read) {
-				if (SEEK_POS_END == ((QUERYROWS_RESPONSE*)
-					presponse->ppayload)->seek_pos) {
+			if (req->forward_read != 0) {
+				if (rsp->seek_pos == SEEK_POS_END)
 					break;
-				}
 			} else {
-				if (SEEK_POS_BEGIN == ((QUERYROWS_RESPONSE*)
-					presponse->ppayload)->seek_pos) {
+				if (rsp->seek_pos == SEEK_POS_BEGIN)
 					break;
-				}
 			}
-			((QUERYROWS_REQUEST*)prequest->ppayload)->row_count -=
-				((QUERYROWS_RESPONSE*)presponse->ppayload)->count;
-			if (0 == ((QUERYROWS_REQUEST*)
-				prequest->ppayload)->row_count) {
+			req->row_count -= rsp->count;
+			if (req->row_count == 0)
 				break;
-			}
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
