@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapidefs.h>
 
 namespace zcore_response {
@@ -698,4 +699,285 @@ union ZCORE_REQUEST_PAYLOAD {
 struct ZCORE_RPC_REQUEST {
 	uint8_t call_id;
 	ZCORE_REQUEST_PAYLOAD payload;
+};
+
+struct ZCRESP_LOGON {
+	GUID hsession;
+};
+
+struct ZCRESP_UINFO {
+	BINARY entryid;
+	char *pdisplay_name;
+	char *px500dn;
+	uint32_t privilege_bits;
+};
+
+struct ZCRESP_OPENENTRY {
+	uint8_t mapi_type;
+	uint32_t hobject;
+};
+
+struct ZCRESP_OPENSTOREENTRY {
+	uint8_t mapi_type;
+	uint32_t hxobject;
+};
+
+struct ZCRESP_OPENABENTRY {
+	uint8_t mapi_type;
+	uint32_t hobject;
+};
+
+struct ZCRESP_RESOLVENAME {
+	TARRAY_SET result_set;
+};
+
+struct ZCRESP_GETPERMISSIONS {
+	PERMISSION_SET perm_set;
+};
+
+struct ZCRESP_GETABGAL {
+	BINARY entryid;
+};
+
+struct ZCRESP_LOADSTORETABLE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_OPENSTORE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_OPENPROPFILESEC {
+	uint32_t hobject;
+};
+
+struct ZCRESP_LOADHIERARCHYTABLE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_LOADCONTENTTABLE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_LOADRECIPIENTTABLE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_LOADRULETABLE {
+	uint32_t hobject;
+};
+	
+struct ZCRESP_CREATEMESSAGE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_CREATEFOLDER {
+	uint32_t hobject;
+};
+
+struct ZCRESP_GETSTOREENTRYID {
+	BINARY entryid;
+};
+
+struct ZCRESP_ENTRYIDFROMSOURCEKEY {
+	BINARY entryid;
+};
+
+struct ZCRESP_STOREADVISE {
+	uint32_t sub_id;
+};
+
+struct ZCRESP_NOTIFDEQUEUE {
+	ZNOTIFICATION_ARRAY notifications;
+};
+
+struct ZCRESP_QUERYROWS {
+	TARRAY_SET rowset;
+};
+
+struct ZCRESP_SETCOLUMNS {
+	GUID hsession;
+	uint32_t htable;
+	PROPTAG_ARRAY *pproptags;
+	uint32_t flags;
+};
+
+struct ZCRESP_SEEKROW {
+	int32_t sought_rows;
+};
+
+struct ZCRESP_GETROWCOUNT {
+	uint32_t count;
+};
+
+struct ZCRESP_FINDROW {
+	uint32_t row_idx;
+};
+
+struct ZCRESP_CREATEBOOKMARK {
+	uint32_t bookmark;
+};
+
+struct ZCRESP_GETRECEIVEFOLDER {
+	BINARY entryid;
+};
+
+struct ZCRESP_LOADATTACHMENTTABLE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_OPENATTACHMENT {
+	uint32_t hobject;
+};
+
+struct ZCRESP_CREATEATTACHMENT {
+	uint32_t hobject;
+};
+
+struct ZCRESP_GETPROPVALS {
+	TPROPVAL_ARRAY propvals;
+};
+
+struct ZCRESP_OPENEMBEDDED {
+	uint32_t hobject;
+};
+
+struct ZCRESP_GETNAMEDPROPIDS {
+	PROPID_ARRAY propids;
+};
+
+struct ZCRESP_GETPROPNAMES {
+	PROPNAME_ARRAY propnames;
+};
+
+struct ZCRESP_HIERARCHYSYNC {
+	uint32_t hobject;
+};
+
+struct ZCRESP_CONTENTSYNC {
+	uint32_t hobject;
+};
+
+struct ZCRESP_CONFIGSYNC {
+	uint8_t b_changed;
+	uint32_t count;
+};
+
+struct ZCRESP_STATESYNC {
+	BINARY state;
+};
+
+struct ZCRESP_SYNCMESSAGECHANGE {
+	uint8_t b_new;
+	TPROPVAL_ARRAY proplist;
+};
+
+struct ZCRESP_SYNCFOLDERCHANGE {
+	TPROPVAL_ARRAY proplist;
+};
+
+struct ZCRESP_SYNCREADSTATECHANGES {
+	STATE_ARRAY states;
+};
+
+struct ZCRESP_SYNCDELETIONS {
+	BINARY_ARRAY bins;
+};
+
+struct ZCRESP_HIERARCHYIMPORT {
+	uint32_t hobject;
+};
+
+struct ZCRESP_CONTENTIMPORT {
+	uint32_t hobject;
+};
+	
+struct ZCRESP_STATEIMPORT {
+	BINARY state;
+};
+
+struct ZCRESP_IMPORTMESSAGE {
+	uint32_t hobject;
+};
+
+struct ZCRESP_GETSEARCHCRITERIA {
+	BINARY_ARRAY folder_array;
+	RESTRICTION *prestriction;
+	uint32_t search_stat;
+};
+
+struct ZCRESP_MESSAGETORFC822 {
+	BINARY eml_bin;
+};
+
+struct ZCRESP_MESSAGETOICAL {
+	BINARY ical_bin;
+};
+
+struct ZCRESP_MESSAGETOVCF {
+	BINARY vcf_bin;
+};
+
+struct ZCRESP_GETUSERAVAILABILITY {
+	char *result_string;
+};
+
+union ZCORE_RESPONSE_PAYLOAD {
+	ZCRESP_LOGON logon;
+	ZCRESP_UINFO uinfo;
+	ZCRESP_OPENENTRY openentry;
+	ZCRESP_OPENSTOREENTRY openstoreentry;
+	ZCRESP_OPENABENTRY openabentry;
+	ZCRESP_RESOLVENAME resolvename;
+	ZCRESP_GETPERMISSIONS getpermissions;
+	ZCRESP_GETABGAL getabgal;
+	ZCRESP_LOADSTORETABLE loadstoretable;
+	ZCRESP_OPENSTORE openstore;
+	ZCRESP_OPENPROPFILESEC openpropfilesec;
+	ZCRESP_LOADHIERARCHYTABLE loadhierarchytable;
+	ZCRESP_LOADCONTENTTABLE loadcontenttable;
+	ZCRESP_LOADRECIPIENTTABLE loadrecipienttable;
+	ZCRESP_LOADRULETABLE loadruletable;
+	ZCRESP_CREATEMESSAGE createmessage;
+	ZCRESP_CREATEFOLDER createfolder;
+	ZCRESP_GETSTOREENTRYID getstoreentryid;
+	ZCRESP_ENTRYIDFROMSOURCEKEY entryidfromsourcekey;
+	ZCRESP_STOREADVISE storeadvise;
+	ZCRESP_NOTIFDEQUEUE notifdequeue;
+	ZCRESP_QUERYROWS queryrows;
+	ZCRESP_SEEKROW seekrow;
+	ZCRESP_GETROWCOUNT getrowcount;
+	ZCRESP_FINDROW findrow;
+	ZCRESP_CREATEBOOKMARK createbookmark;
+	ZCRESP_GETRECEIVEFOLDER getreceivefolder;
+	ZCRESP_LOADATTACHMENTTABLE loadattachmenttable;
+	ZCRESP_OPENATTACHMENT openattachment;
+	ZCRESP_CREATEATTACHMENT createattachment;
+	ZCRESP_GETPROPVALS getpropvals;
+	ZCRESP_OPENEMBEDDED openembedded;
+	ZCRESP_GETNAMEDPROPIDS getnamedpropids;
+	ZCRESP_GETPROPNAMES getpropnames;
+	ZCRESP_HIERARCHYSYNC hierarchysync;
+	ZCRESP_CONTENTSYNC contentsync;
+	ZCRESP_CONFIGSYNC configsync;
+	ZCRESP_STATESYNC statesync;
+	ZCRESP_SYNCMESSAGECHANGE syncmessagechange;
+	ZCRESP_SYNCFOLDERCHANGE syncfolderchange;
+	ZCRESP_SYNCREADSTATECHANGES syncreadstatechanges;
+	ZCRESP_SYNCDELETIONS syncdeletions;
+	ZCRESP_HIERARCHYIMPORT hierarchyimport;
+	ZCRESP_CONTENTIMPORT contentimport;
+	ZCRESP_STATEIMPORT stateimport;
+	ZCRESP_IMPORTMESSAGE importmessage;
+	ZCRESP_GETSEARCHCRITERIA getsearchcriteria;
+	ZCRESP_MESSAGETORFC822 messagetorfc822;
+	ZCRESP_MESSAGETOICAL messagetoical;
+	ZCRESP_MESSAGETOVCF messagetovcf;
+	ZCRESP_GETUSERAVAILABILITY getuseravailability;
+};
+
+struct ZCORE_RPC_RESPONSE {
+	uint8_t call_id;
+	uint32_t result;
+	ZCORE_RESPONSE_PAYLOAD payload;
 };

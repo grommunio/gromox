@@ -7,7 +7,9 @@
 #define TRY(expr) do { if (!(expr)) return 0; } while (false)
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;
+using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
 using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
+using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 
 static zend_bool rpc_ext_push_logon_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)

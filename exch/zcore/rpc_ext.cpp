@@ -8,6 +8,7 @@
 #define QRF(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;
+using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
 using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
 using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 

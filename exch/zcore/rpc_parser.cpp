@@ -18,6 +18,7 @@
 #include <poll.h>
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;
+using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
 
 enum {
 	DISPATCH_TRUE,

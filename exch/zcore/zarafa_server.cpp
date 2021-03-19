@@ -117,7 +117,7 @@ static void* scan_work_func(void *param)
 	INT_HASH_ITER *iter;
 	STR_HASH_ITER *iter1;
 	struct pollfd fdpoll;
-	RPC_RESPONSE response;
+	ZCORE_RPC_RESPONSE response;
 	SINK_NODE *psink_node;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST temp_list1;
@@ -270,7 +270,7 @@ static void zarafa_server_notification_proc(const char *dir,
 	uint64_t message_id;
 	struct pollfd fdpoll;
 	STORE_OBJECT *pstore;
-	RPC_RESPONSE response;
+	ZCORE_RPC_RESPONSE response;
 	SINK_NODE *psink_node;
 	uint64_t old_parentid;
 	PROPTAG_ARRAY proptags;

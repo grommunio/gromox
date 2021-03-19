@@ -23,6 +23,7 @@
 #include <cstdint>
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;
+using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
 
 static int zarafa_client_connect()
 {
