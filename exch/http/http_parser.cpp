@@ -417,6 +417,31 @@ static int http_parser_reconstruct_stream(
 	return stream_get_total_length(pstream_dst);
 }
 
+static void http_4xx(HTTP_CONTEXT *ctx)
+{
+	if (hpm_processor_check_context(ctx))
+		hpm_processor_put_context(ctx);
+	else if (ctx->pfast_context != nullptr)
+		mod_fastcgi_put_context(ctx);
+	else if (mod_cache_check_caching(ctx))
+		mod_cache_put_context(ctx);
+
+	char dstring[128], response_buff[1024];
+	http_parser_rfc1123_dstring(dstring);
+	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
+		"HTTP/1.1 400 Bad Request\r\n"
+		"Date: %s\r\n"
+		"Server: %s\r\n"
+		"Content-Length: 0\r\n"
+		"Connection: close\r\n"
+		"\r\n", dstring, resource_get_string("HOST_ID"));
+	stream_write(&ctx->stream_out, response_buff, response_len);
+	ctx->total_length = response_len;
+	ctx->bytes_rw = 0;
+	ctx->b_close = TRUE;
+	ctx->sched_stat = SCHED_STAT_WRREP;
+}
+
 static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error",
     unsigned int code = 500)
 {
@@ -559,7 +584,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			case STREAM_LINE_FAIL:
 				http_parser_log_info(pcontext, 6,
 					"request header line too long");
-				goto BAD_HTTP_REQUEST;
+				http_4xx(pcontext);
+				goto CONTEXT_PROCESSING;
 			case STREAM_LINE_UNAVAILABLE:
 				if (actual_read > 0) {
 					return PROCESS_CONTINUE;
@@ -578,12 +604,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext, 6, "request method error");
-						goto BAD_HTTP_REQUEST;
+						http_4xx(pcontext);
+						goto CONTEXT_PROCESSING;
 					}
 					tmp_len = ptoken - line;
 					if (tmp_len >= 32) {
 						http_parser_log_info(pcontext, 6, "request method error");
-						goto BAD_HTTP_REQUEST;
+						http_4xx(pcontext);
+						goto CONTEXT_PROCESSING;
 					}
 					
 					memcpy(pcontext->request.method, line, tmp_len);
@@ -592,14 +620,16 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							line_length - tmp_len - 1));
 					if (NULL == ptoken1) {
 						http_parser_log_info(pcontext, 6, "request method error");
-						goto BAD_HTTP_REQUEST;
+						http_4xx(pcontext);
+						goto CONTEXT_PROCESSING;
 					}
 					tmp_len1 = ptoken1 - ptoken - 1;
 					tmp_len = line_length - (ptoken1 + 6 - line);
 					if (0 != strncasecmp(ptoken1 + 1,
 						"HTTP/", 5) || tmp_len >= 8) {
 						http_parser_log_info(pcontext, 6, "request method error");
-						goto BAD_HTTP_REQUEST;
+						http_4xx(pcontext);
+						goto CONTEXT_PROCESSING;
 					}
 					if (FALSE == mod_rewrite_process(ptoken + 1,
 						tmp_len1, &pcontext->request.f_request_uri)) {
@@ -613,7 +643,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext,
 							6, "request method error");
-						goto BAD_HTTP_REQUEST;
+						http_4xx(pcontext);
+						goto CONTEXT_PROCESSING;
 					}
 					
 					tmp_len = ptoken - line;
@@ -795,7 +826,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (0 == tmp_len || tmp_len >= 1024) {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
-					goto BAD_HTTP_REQUEST;
+					http_4xx(pcontext);
+					goto CONTEXT_PROCESSING;
 				}
 				tmp_len = mem_file_read(
 					&pcontext->request.f_request_uri,
@@ -810,19 +842,22 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				} else {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
-					goto BAD_HTTP_REQUEST;
+					http_4xx(pcontext);
+					goto CONTEXT_PROCESSING;
 				}
 				ptoken1 = strchr(tmp_buff, ':');
 				if (NULL == ptoken1) {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
-					goto BAD_HTTP_REQUEST;
+					http_4xx(pcontext);
+					goto CONTEXT_PROCESSING;
 				}
 				*ptoken1 = '\0';
 				if (ptoken1 - ptoken > 128) {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
-					goto BAD_HTTP_REQUEST;
+					http_4xx(pcontext);
+					goto CONTEXT_PROCESSING;
 				}
 				ptoken1 ++;
 				strcpy(pcontext->host, ptoken);
@@ -857,7 +892,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (MEM_END_OF_FILE == tmp_len) {
 					http_parser_log_info(pcontext, 6,
 						"content-length of rpcproxy request error");
-					goto BAD_HTTP_REQUEST;
+					http_4xx(pcontext);
+					goto CONTEXT_PROCESSING;
 				}
 				pcontext->total_length = atoll(tmp_buff);
 				
@@ -1383,7 +1419,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pcontext->sched_stat = SCHED_STAT_WRREP;
 			} else {
 				/* other http request here if wanted */
-				goto BAD_HTTP_REQUEST;
+				http_4xx(pcontext);
+				goto CONTEXT_PROCESSING;
 			}
 				
 			if (http_parser_reconstruct_stream(
@@ -1839,29 +1876,6 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		return PROCESS_POLLING_RDONLY;
 	}
 	
- BAD_HTTP_REQUEST:
-	if (TRUE == hpm_processor_check_context(pcontext)) {
-		hpm_processor_put_context(pcontext);
-	} else if (NULL != pcontext->pfast_context) {
-		mod_fastcgi_put_context(pcontext);
-	} else if (TRUE == mod_cache_check_caching(pcontext)) {
-		mod_cache_put_context(pcontext);
-	}
-	http_parser_rfc1123_dstring(dstring);
-	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
-					"HTTP/1.1 400 Bad Request\r\n"
-					"Date: %s\r\n"
-					"Server: %s\r\n"
-					"Content-Length: 0\r\n"
-					"Connection: close\r\n"
-					"\r\n", dstring, resource_get_string("HOST_ID"));
-	stream_write(&pcontext->stream_out, response_buff, response_len);
-	pcontext->total_length = response_len;
-	pcontext->bytes_rw = 0;
-	pcontext->b_close = TRUE;
-	pcontext->sched_stat = SCHED_STAT_WRREP;
-	goto CONTEXT_PROCESSING;
-
  REQUEST_TIME_OUT:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
 		hpm_processor_put_context(pcontext);
