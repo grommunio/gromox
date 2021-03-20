@@ -545,18 +545,6 @@ static int http_end(HTTP_CONTEXT *ctx)
  */
 int http_parser_process(HTTP_CONTEXT *pcontext)
 {
-	char *line;
-	void *pbuff;
-	int tmp_len;
-	int tmp_len1;
-	char *ptoken;
-	char *ptoken1;
-	size_t decode_len;
-	char field_name[64];
-	char tmp_buff[2048];
-	char tmp_buff1[1024];
-	int size, line_length;
-
  CONTEXT_PROCESSING:
 	if (SCHED_STAT_INITSSL == pcontext->sched_stat) {
 		if (NULL == pcontext->connection.ssl) {
@@ -591,9 +579,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 	} else if (SCHED_STAT_RDHEAD == pcontext->sched_stat) {
-		size = STREAM_BLOCK_SIZE;
-		pbuff = stream_getbuffer_for_writing(&pcontext->stream_in,
-		        reinterpret_cast<unsigned int *>(&size));
+		unsigned int size = STREAM_BLOCK_SIZE;
+		auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
 		if (NULL == pbuff) {
 			http_parser_log_info(pcontext, 6, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
@@ -646,17 +633,17 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				break;
 			}
 			
-			line_length = stream_readline(&pcontext->stream_in, &line);
-			
+			char *line = nullptr;
+			auto line_length = stream_readline(&pcontext->stream_in, &line);
 			if (0 != line_length) {
 				if ('\0' == pcontext->request.method[0]) {
-					ptoken = static_cast<char *>(memchr(line, ' ', line_length));
+					auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
 						goto CONTEXT_PROCESSING;
 					}
-					tmp_len = ptoken - line;
+					size_t tmp_len = ptoken - line;
 					if (tmp_len >= 32) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
@@ -665,14 +652,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					
 					memcpy(pcontext->request.method, line, tmp_len);
 					pcontext->request.method[tmp_len] = '\0';
-					ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ',
-							line_length - tmp_len - 1));
+					auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 					if (NULL == ptoken1) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
 						goto CONTEXT_PROCESSING;
 					}
-					tmp_len1 = ptoken1 - ptoken - 1;
+					size_t tmp_len1 = ptoken1 - ptoken - 1;
 					tmp_len = line_length - (ptoken1 + 6 - line);
 					if (0 != strncasecmp(ptoken1 + 1,
 						"HTTP/", 5) || tmp_len >= 8) {
@@ -688,7 +674,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 					pcontext->request.version[tmp_len] = '\0';
 				} else {
-					ptoken = static_cast<char *>(memchr(line, ':', line_length));
+					auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext,
 							6, "request method error");
@@ -696,7 +682,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						goto CONTEXT_PROCESSING;
 					}
 					
-					tmp_len = ptoken - line;
+					size_t tmp_len = ptoken - line;
+					char field_name[64];
 					memcpy(field_name, line, tmp_len);
 					field_name[tmp_len] = '\0';
 					HX_strrtrim(field_name);
@@ -709,8 +696,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						}
 						ptoken ++;
 					}
-					tmp_len = line_length - (ptoken - line);
-					
+					tmp_len = line_length - static_cast<size_t>(ptoken - line);
 					if (0 == strcasecmp(field_name, "Host")) {
 						mem_file_write(&pcontext->request.f_host,
 							ptoken, tmp_len);
@@ -750,15 +736,11 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 								we treat it as "close" */
 							pcontext->b_close = FALSE;
 						}
-						tmp_len1 = strlen(field_name);
-						mem_file_write(&pcontext->request.f_others, 
-							(char*)&tmp_len1, sizeof(int));
-						mem_file_write(&pcontext->request.f_others,
-							field_name, tmp_len1);
-						mem_file_write(&pcontext->request.f_others,
-							(char*)&tmp_len, sizeof(int));
-						mem_file_write(&pcontext->request.f_others,
-							ptoken, tmp_len);
+						uint32_t tmp_len1 = strlen(field_name);
+						mem_file_write(&pcontext->request.f_others, reinterpret_cast<char *>(&tmp_len1), sizeof(uint32_t));
+						mem_file_write(&pcontext->request.f_others, field_name, tmp_len1);
+						mem_file_write(&pcontext->request.f_others, reinterpret_cast<char *>(&tmp_len), sizeof(uint32_t));
+						mem_file_write(&pcontext->request.f_others, ptoken, tmp_len);
 					}
 				}
 				continue;
@@ -774,12 +756,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			stream_free(&pcontext->stream_in);
 			pcontext->stream_in = stream_1;
 			
-			if (TRUE == http_parser_request_head(
-				&pcontext->request.f_others, "Authorization", tmp_buff,
-				1024) && 0 == strncasecmp(tmp_buff, "Basic ", 6) &&
-				0 == decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1,
-				&decode_len) && NULL != (ptoken = strchr(tmp_buff1, ':'))) {
-				
+			char tmp_buff[2048], tmp_buff1[1024];
+			size_t decode_len = 0;
+			char *ptoken = nullptr;
+			if (http_parser_request_head(&pcontext->request.f_others,
+			    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
+			    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1, &decode_len) == 0 &&
+			    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
 				*ptoken = '\0';
 				ptoken ++;
 				strncpy(pcontext->username, tmp_buff1, 256);
@@ -874,7 +858,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			
 			if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
 				0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
-				tmp_len = mem_file_get_total_length(
+				auto tmp_len = mem_file_get_total_length(
 					&pcontext->request.f_request_uri);
 				if (0 == tmp_len || tmp_len >= 1024) {
 					http_parser_log_info(pcontext, 6,
@@ -898,7 +882,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_4xx(pcontext);
 					goto CONTEXT_PROCESSING;
 				}
-				ptoken1 = strchr(tmp_buff, ':');
+				auto ptoken1 = strchr(tmp_buff, ':');
 				if (NULL == ptoken1) {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
@@ -1007,11 +991,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->stream_in = std::move(stream_2);
 					if (0 != stream_get_total_length(
 						&pcontext->stream_out)) {
-						tmp_len = STREAM_BLOCK_SIZE;
-						pcontext->write_buff =
-							stream_getbuffer_for_reading(
-							&pcontext->stream_out,
-							reinterpret_cast<unsigned int *>(&tmp_len));
+						unsigned int tmp_len = STREAM_BLOCK_SIZE;
+						pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 						pcontext->write_length = tmp_len;
 					}
 				} else {
@@ -1107,11 +1088,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_RDHEAD;
 					stream_clear(&pcontext->stream_out);
 					return PROCESS_CONTINUE;
-				case HPM_RETRIEVE_SOCKET:
-					size = STREAM_BLOCK_SIZE;
-					pbuff = stream_getbuffer_for_reading(
-							&pcontext->stream_in,
-							reinterpret_cast<unsigned int *>(&size));
+				case HPM_RETRIEVE_SOCKET: {
+					unsigned int size = STREAM_BLOCK_SIZE;
+					auto pbuff = stream_getbuffer_for_reading(&pcontext->stream_in, &size);
 					if (NULL != pbuff) {
 						if (FALSE == hpm_processor_send(
 							pcontext, pbuff, size)) {
@@ -1123,14 +1102,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					stream_clear(&pcontext->stream_in);
 					stream_clear(&pcontext->stream_out);
 					http_parser_request_clear(&pcontext->request);
-					tmp_len = STREAM_BLOCK_SIZE;
-					pcontext->write_buff = stream_getbuffer_for_writing(
-						&pcontext->stream_out,
-						reinterpret_cast<unsigned int *>(&tmp_len));
+					unsigned int tmp_len = STREAM_BLOCK_SIZE;
+					pcontext->write_buff = stream_getbuffer_for_writing(&pcontext->stream_out, &tmp_len);
 					pcontext->write_length = 0;
 					pcontext->write_offset = 0;
 					pcontext->sched_stat = SCHED_STAT_SOCKET;
 					return PROCESS_POLLING_RDWR;
+				}
 				}
 			} else if (NULL != pcontext->pfast_context) {
 				switch (mod_fastcgi_check_response(pcontext)) {
@@ -1181,6 +1159,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 			}
 			pcontext->write_offset = 0;
+			unsigned int tmp_len;
 			if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
 				CHANNEL_STAT_OPENED == ((RPC_OUT_CHANNEL*)
 				pcontext->pchannel)->channel_stat) {
@@ -1205,9 +1184,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				http_parser_put_vconnection(pvconnection);
 			} else {
 				tmp_len = STREAM_BLOCK_SIZE;
-				pcontext->write_buff = stream_getbuffer_for_reading(
-				                       &pcontext->stream_out,
-				                       reinterpret_cast<unsigned int *>(&tmp_len));
+				pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 			}
 			
 			/* if context is set to write response state, there's
@@ -1326,10 +1303,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 			http_parser_put_vconnection(pvconnection);
 		} else {
-			tmp_len = STREAM_BLOCK_SIZE;
-			pcontext->write_buff = stream_getbuffer_for_reading(
-			                       &pcontext->stream_out,
-			                       reinterpret_cast<unsigned int *>(&tmp_len));
+			unsigned int tmp_len = STREAM_BLOCK_SIZE;
+			pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 			pcontext->write_length = tmp_len;
 			if (NULL == pcontext->write_buff) {
 				if (CHANNEL_TYPE_OUT == pcontext->channel_type
@@ -1360,10 +1335,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		if (NULL == pcontext->pchannel) {
 			if (0 == pcontext->total_length ||
 				pcontext->bytes_rw < pcontext->total_length) {
-				size = STREAM_BLOCK_SIZE;
-				pbuff = stream_getbuffer_for_writing(
-				        &pcontext->stream_in,
-				        reinterpret_cast<unsigned int *>(&size));
+				unsigned int size = STREAM_BLOCK_SIZE;
+				auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
 				if (NULL == pbuff) {
 					http_parser_log_info(pcontext, 6, "out of memory");
 					http_5xx(pcontext);
@@ -1403,11 +1376,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							pcontext->stream_in = std::move(stream_5);
 							if (0 != stream_get_total_length(
 								&pcontext->stream_out)) {
-								tmp_len = STREAM_BLOCK_SIZE;
-								pcontext->write_buff =
-									stream_getbuffer_for_reading(
-									&pcontext->stream_out,
-									reinterpret_cast<unsigned int *>(&tmp_len));
+								unsigned int tmp_len = STREAM_BLOCK_SIZE;
+								pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 								pcontext->write_length = tmp_len;
 							}
 						}
@@ -1489,23 +1459,15 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 		
-		RPC_IN_CHANNEL *pchannel_in = nullptr;
-		RPC_OUT_CHANNEL *pchannel_out = nullptr;
-		uint16_t frag_length;
-		if (CHANNEL_TYPE_IN == pcontext->channel_type) {
-			pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
-			frag_length = pchannel_in->frag_length;
-		} else {
-			pchannel_out = (RPC_OUT_CHANNEL*)pcontext->pchannel;
-			frag_length = pchannel_out->frag_length;
-		}
-		tmp_len = stream_get_total_length(&pcontext->stream_in);
+		auto pchannel_in = pcontext->channel_type == CHANNEL_TYPE_IN ? static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel) : nullptr;
+		auto pchannel_out = pcontext->channel_type == CHANNEL_TYPE_OUT ? static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
+		auto frag_length = pcontext->channel_type == CHANNEL_TYPE_IN ?
+		                   pchannel_in->frag_length : pchannel_out->frag_length;
+		auto tmp_len = stream_get_total_length(&pcontext->stream_in);
 		if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2 ||
 			(frag_length > 0 && tmp_len < frag_length)) {
-			size = STREAM_BLOCK_SIZE;
-			pbuff = stream_getbuffer_for_writing(
-			        &pcontext->stream_in,
-			        reinterpret_cast<unsigned int *>(&size));
+			unsigned int size = STREAM_BLOCK_SIZE;
+			auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
 			if (NULL == pbuff) {
 				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
@@ -1546,12 +1508,12 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 		}
 		
-		tmp_len = STREAM_BLOCK_SIZE;
-		pbuff = stream_getbuffer_for_reading(&pcontext->stream_in,
-		        reinterpret_cast<unsigned int *>(&tmp_len));
+		unsigned int tmp_len2 = STREAM_BLOCK_SIZE;
+		auto pbuff = stream_getbuffer_for_reading(&pcontext->stream_in, &tmp_len2);
 		if (NULL == pbuff) {
 			return PROCESS_POLLING_RDONLY;
 		}
+		tmp_len = tmp_len2;
 		stream_backward_reading_ptr(&pcontext->stream_in, tmp_len);
 		if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2) {
 			return PROCESS_CONTINUE;
@@ -1824,7 +1786,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return http_end(pcontext);
 		}
 		
-		if (0 == recv(pcontext->connection.sockd, tmp_buff, 1, MSG_PEEK)) {
+		char tmp_buff;
+		if (recv(pcontext->connection.sockd, &tmp_buff, 1, MSG_PEEK) == 0) {
 			http_parser_log_info(pcontext, 6, "connection lost");
 			return http_end(pcontext);
 		}
@@ -1855,7 +1818,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		return PROCESS_IDLE;
 	} else if (SCHED_STAT_SOCKET == pcontext->sched_stat) {
 		if (0 == pcontext->write_length) {
-			tmp_len = hpm_processor_receive(pcontext,
+			auto tmp_len = hpm_processor_receive(pcontext,
 			          static_cast<char *>(pcontext->write_buff),
 			          STREAM_BLOCK_SIZE);
 			if (0 == tmp_len) {
@@ -1906,6 +1869,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				return PROCESS_POLLING_WRONLY;
 			}
 		}
+		char tmp_buff[2048];
 		ssize_t actual_read = pcontext->connection.ssl == nullptr ?
 		                      read(pcontext->connection.sockd, tmp_buff, sizeof(tmp_buff)) :
 		                      SSL_read(pcontext->connection.ssl, tmp_buff, sizeof(tmp_buff));
