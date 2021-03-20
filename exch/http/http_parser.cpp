@@ -556,10 +556,16 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 		}
-		if (-1 == SSL_accept(pcontext->connection.ssl)) {
+		if (SSL_accept(pcontext->connection.ssl) >= 0) {
+			pcontext->sched_stat = SCHED_STAT_RDHEAD;
+			return PROCESS_CONTINUE;
+		} else {
 			auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
-			if (SSL_ERROR_WANT_READ == ssl_errno ||
-				SSL_ERROR_WANT_WRITE == ssl_errno) {
+			if (ssl_errno != SSL_ERROR_WANT_READ && ssl_errno != SSL_ERROR_WANT_WRITE) {
+				http_parser_log_info(pcontext, 6, "fail to accept"
+						" SSL connection, errno is %d", ssl_errno);
+				return X_RUNOFF;
+			} else {
 				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (CALCULATE_INTERVAL(current_time,
@@ -569,14 +575,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 				http_parser_log_info(pcontext, 6, "time out");
 				http_4xx(pcontext, "Request Timeout", 408);
 				return X_LOOP;
-			} else {
-				http_parser_log_info(pcontext, 6, "fail to accept"
-						" SSL connection, errno is %d", ssl_errno);
-				return X_RUNOFF;
 			}
-		} else {
-			pcontext->sched_stat = SCHED_STAT_RDHEAD;
-			return PROCESS_CONTINUE;
 		}
 		return X_RUNOFF;
 }
@@ -907,7 +906,9 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 					http_5xx(pcontext);
 					return X_LOOP;
 				}
-				if (TRUE == hpm_processor_check_end_of_request(pcontext)) {
+				if (!hpm_processor_check_end_of_request(pcontext)) {
+					pcontext->sched_stat = SCHED_STAT_RDBODY;
+				} else {
 					if (FALSE == hpm_processor_proc(pcontext)) {
 						http_5xx(pcontext);
 						return X_LOOP;
@@ -921,14 +922,12 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 					}
 					stream_free(&pcontext->stream_in);
 					pcontext->stream_in = std::move(stream_2);
-					if (0 != stream_get_total_length(
-						&pcontext->stream_out)) {
+					if (stream_get_total_length(&pcontext->stream_out) == 0) {
+					} else {
 						unsigned int tmp_len = STREAM_BLOCK_SIZE;
 						pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 						pcontext->write_length = tmp_len;
 					}
-				} else {
-					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
 				return X_LOOP;
 }
@@ -943,7 +942,9 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 					http_5xx(pcontext);
 					return X_LOOP;
 				}
-				if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
+				if (!mod_fastcgi_check_end_of_read(pcontext)) {
+					pcontext->sched_stat = SCHED_STAT_RDBODY;
+				} else {
 					if (FALSE == mod_fastcgi_relay_content(pcontext)) {
 						http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 						return X_LOOP;
@@ -957,8 +958,6 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 					}
 					stream_free(&pcontext->stream_in);
 					pcontext->stream_in = std::move(stream_3);
-				} else {
-					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
 				return X_LOOP;
 }
@@ -1108,7 +1107,8 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
-				pcontext->connection.last_timestamp) >= g_timeout) {
+			    pcontext->connection.last_timestamp) < g_timeout) {
+			} else {
 				http_parser_log_info(pcontext, 6, "time out");
 				http_4xx(pcontext, "Request Timeout", 408);
 				return X_LOOP;
@@ -1291,11 +1291,11 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
-				pcontext->connection.last_timestamp) >= g_timeout) {
+			    pcontext->connection.last_timestamp) < g_timeout) {
+				return PROCESS_POLLING_WRONLY;
+			} else {
 				http_parser_log_info(pcontext, 6, "time out");
 				return X_RUNOFF;
-			} else {
-				return PROCESS_POLLING_WRONLY;
 			}
 		}
         pcontext->connection.last_timestamp = current_time;
@@ -1341,7 +1341,10 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
 			pnode = double_list_get_head(
 				&((RPC_OUT_CHANNEL*)pcontext->pchannel)->pdu_list);
-			if (NULL == pnode) {
+			if (pnode != nullptr) {
+				pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.data;
+				pcontext->write_length = static_cast<BLOB_NODE *>(pnode->pdata)->blob.length;
+			} else {
 				if (pcontext->total_length > 0 &&
 					pcontext->total_length - pcontext->bytes_rw <=
 					MAX_RECLYING_REMAINING && FALSE ==
@@ -1358,18 +1361,14 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 				} else {
 					pcontext->sched_stat = SCHED_STAT_WAIT;
 				}
-			} else {
-				pcontext->write_buff =
-					((BLOB_NODE*)pnode->pdata)->blob.data;
-				pcontext->write_length =
-					((BLOB_NODE*)pnode->pdata)->blob.length;
 			}
 			http_parser_put_vconnection(pvconnection);
 		} else {
 			unsigned int tmp_len = STREAM_BLOCK_SIZE;
 			pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 			pcontext->write_length = tmp_len;
-			if (NULL == pcontext->write_buff) {
+			if (pcontext->write_buff != nullptr) {
+			} else {
 				if (CHANNEL_TYPE_OUT == pcontext->channel_type
 					&& (CHANNEL_STAT_WAITINCHANNEL == 
 					((RPC_OUT_CHANNEL*)pcontext->pchannel)->channel_stat
@@ -1391,6 +1390,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_RDHEAD;
 				}
 				stream_clear(&pcontext->stream_out);
+			        return PROCESS_CONTINUE;
 			}
 		}
 	        return PROCESS_CONTINUE;
@@ -1422,8 +1422,9 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 							http_5xx(pcontext);
 							return X_LOOP;
 						}
-						if (TRUE == hpm_processor_check_end_of_request(
+						if (!hpm_processor_check_end_of_request(
 							pcontext)) {
+						} else {
 							if (FALSE == hpm_processor_proc(pcontext)) {
 								http_5xx(pcontext);
 								return X_LOOP;
@@ -1450,7 +1451,8 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 							http_5xx(pcontext);
 							return X_LOOP;
 						}
-						if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
+						if (!mod_fastcgi_check_end_of_read(pcontext)) {
+						} else {
 							if (FALSE == mod_fastcgi_relay_content(pcontext)) {
 								http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 								return X_LOOP;
@@ -1479,12 +1481,11 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 					}
 					/* check if context is timed out */
 					if (CALCULATE_INTERVAL(current_time,
-						pcontext->connection.last_timestamp) >= g_timeout) {
+					    pcontext->connection.last_timestamp) < g_timeout) {
+					} else {
 						http_parser_log_info(pcontext, 6, "time out");
 						http_4xx(pcontext, "Request Timeout", 408);
 						return X_LOOP;
-					} else {
-						return PROCESS_POLLING_RDONLY;
 					}
 				}
 				return X_RUNOFF;
@@ -1499,8 +1500,12 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 					return ret;
 			}
 			
-			if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
-				0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
+			if (strcasecmp(pcontext->request.method, "RPC_IN_DATA") != 0 &&
+			    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") != 0) {
+				/* other http request here if wanted */
+				http_4xx(pcontext);
+				return X_LOOP;
+			} else {
 				/* ECHO request */
 				char response_buff[1024];
 				auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
@@ -1515,10 +1520,6 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 				pcontext->total_length = response_len;
 				pcontext->bytes_rw = 0;
 				pcontext->sched_stat = SCHED_STAT_WRREP;
-			} else {
-				/* other http request here if wanted */
-				http_4xx(pcontext);
-				return X_LOOP;
 			}
 				
 			STREAM stream_7;
@@ -1576,13 +1577,12 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 					return X_RUNOFF;
 				}
 				/* check if context is timed out */
-				if (CALCULATE_INTERVAL(current_time,
-					pcontext->connection.last_timestamp) >= g_timeout) {
+				if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
+					return PROCESS_POLLING_RDONLY;
+				} else {
 					http_parser_log_info(pcontext, 6, "time out");
 					http_4xx(pcontext, "Request Timeout", 408);
 					return X_LOOP;
-				} else {
-					return PROCESS_POLLING_RDONLY;
 				}
 			}
 		}
@@ -1697,8 +1697,13 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
 				/* only under two conditions below, out channel
 				   will produce PDU_PROCESSOR_OUTPUT */ 
-				if (CHANNEL_STAT_OPENSTART == pchannel_out->channel_stat ||
-					CHANNEL_STAT_RECYCLING == pchannel_out->channel_stat) {
+				if (pchannel_out->channel_stat != CHANNEL_STAT_OPENSTART &&
+				    pchannel_out->channel_stat != CHANNEL_STAT_RECYCLING) {
+					http_parser_log_info(pcontext, 6,
+						"pdu process error! out channel can't output "
+						"itself after virtual connection established");
+					return X_RUNOFF;
+				} else {
 					/* first send http response head */
 					char dstring[128], response_buff[1024];
 					http_parser_rfc1123_dstring(dstring);
@@ -1730,11 +1735,6 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 							CHANNEL_STAT_WAITRECYCLED;
 					}
 					return X_LOOP;
-				} else {
-					http_parser_log_info(pcontext, 6,
-						"pdu process error! out channel can't output "
-						"itself after virtual connection established");
-					return X_RUNOFF;
 				}
 			}
 			/* in channel here, find the corresponding out channel first! */
@@ -1814,9 +1814,10 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			/* check if context is timed out */
-			if (CALCULATE_INTERVAL(current_time,
-				pcontext->connection.last_timestamp)
-				>= OUT_CHANNEL_MAX_WAIT) {
+			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
+			    OUT_CHANNEL_MAX_WAIT) {
+				return PROCESS_IDLE;
+			} else {
 				http_parser_log_info(pcontext, 6, "no correpoding in "
 					"channel coming during maximum waiting interval");
 				return X_RUNOFF;
@@ -1854,9 +1855,9 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			/* check if context is timed out */
-			if (CALCULATE_INTERVAL(current_time,
-				pcontext->connection.last_timestamp)
-				>= OUT_CHANNEL_MAX_WAIT) {
+			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
+			    OUT_CHANNEL_MAX_WAIT) {
+			} else {
 				http_parser_log_info(pcontext, 6, "channel is not "
 						"recycled during maximum waiting interval");
 				return X_RUNOFF;
@@ -1888,9 +1889,9 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		/* check keep alive */
-		if (CALCULATE_INTERVAL(current_time,
-			pcontext->connection.last_timestamp) >=
+		if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 			pchannel_out->client_keepalive/2000) {
+		} else {
 			if (FALSE == pdu_processor_rts_ping(pchannel_out->pcall)) {
 				return PROCESS_IDLE;
 			}
@@ -1957,8 +1958,8 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 					return X_RUNOFF;
 				}
 				/* check if context is timed out */
-				if (CALCULATE_INTERVAL(current_time,
-					pcontext->connection.last_timestamp) >= g_timeout) {
+				if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
+				} else {
 					http_parser_log_info(pcontext, 6, "time out");
 					return X_RUNOFF;
 				}
@@ -1988,8 +1989,8 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 				return X_RUNOFF;
 			}
 			/* check if context is timed out */
-			if (CALCULATE_INTERVAL(current_time,
-				pcontext->connection.last_timestamp) >= g_timeout) {
+			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
+			} else {
 				http_parser_log_info(pcontext, 6, "time out");
 				return X_RUNOFF;
 			}
