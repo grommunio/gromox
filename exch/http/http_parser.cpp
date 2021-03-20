@@ -489,7 +489,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
-				http_parser_log_info(pcontext, 8, "out of SSL object");
+				http_parser_log_info(pcontext, 6, "out of SSL object");
 				http_5xx(pcontext);
 				goto CONTEXT_PROCESSING;
 			}
@@ -504,10 +504,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->connection.last_timestamp) < g_timeout) {
 					return PROCESS_POLLING_RDONLY;
 				}
-				http_parser_log_info(pcontext, 8, "time out");
+				http_parser_log_info(pcontext, 6, "time out");
 				goto REQUEST_TIME_OUT;
 			} else {
-				http_parser_log_info(pcontext, 8, "fail to accept"
+				http_parser_log_info(pcontext, 6, "fail to accept"
 						" SSL connection, errno is %d", ssl_errno);
 				goto END_PROCESSING;
 			}
@@ -520,7 +520,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		pbuff = stream_getbuffer_for_writing(&pcontext->stream_in,
 		        reinterpret_cast<unsigned int *>(&size));
 		if (NULL == pbuff) {
-			http_parser_log_info(pcontext, 8, "out of memory");
+			http_parser_log_info(pcontext, 6, "out of memory");
 			http_5xx(pcontext);
 			goto CONTEXT_PROCESSING;
 		}
@@ -531,20 +531,20 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		}
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
-			http_parser_log_info(pcontext, 8, "connection lost");
+			http_parser_log_info(pcontext, 6, "connection lost");
 			goto END_PROCESSING;
 		} else if (actual_read > 0) {
 			pcontext->connection.last_timestamp = current_time;
 			stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
 		} else {
 			if (EAGAIN != errno) {
-				http_parser_log_info(pcontext, 8, "connection lost");
+				http_parser_log_info(pcontext, 6, "connection lost");
 				goto END_PROCESSING;
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				http_parser_log_info(pcontext, 8, "time out");
+				http_parser_log_info(pcontext, 6, "time out");
 				goto REQUEST_TIME_OUT;
 			}
 			
@@ -556,7 +556,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			stream_try_mark_line(&pcontext->stream_in);
 			switch (stream_has_newline(&pcontext->stream_in)) {
 			case STREAM_LINE_FAIL:
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"request header line too long");
 				goto BAD_HTTP_REQUEST;
 			case STREAM_LINE_UNAVAILABLE:
@@ -576,14 +576,12 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if ('\0' == pcontext->request.method[0]) {
 					ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 					if (NULL == ptoken) {
-						http_parser_log_info(pcontext,
-							8, "request method error");
+						http_parser_log_info(pcontext, 6, "request method error");
 						goto BAD_HTTP_REQUEST;
 					}
 					tmp_len = ptoken - line;
 					if (tmp_len >= 32) {
-						http_parser_log_info(pcontext,
-							8, "request method error");
+						http_parser_log_info(pcontext, 6, "request method error");
 						goto BAD_HTTP_REQUEST;
 					}
 					
@@ -592,16 +590,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ',
 							line_length - tmp_len - 1));
 					if (NULL == ptoken1) {
-						http_parser_log_info(pcontext,
-							8, "request method error");
+						http_parser_log_info(pcontext, 6, "request method error");
 						goto BAD_HTTP_REQUEST;
 					}
 					tmp_len1 = ptoken1 - ptoken - 1;
 					tmp_len = line_length - (ptoken1 + 6 - line);
 					if (0 != strncasecmp(ptoken1 + 1,
 						"HTTP/", 5) || tmp_len >= 8) {
-						http_parser_log_info(pcontext,
-							8, "request method error");
+						http_parser_log_info(pcontext, 6, "request method error");
 						goto BAD_HTTP_REQUEST;
 					}
 					if (FALSE == mod_rewrite_process(ptoken + 1,
@@ -615,7 +611,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					ptoken = static_cast<char *>(memchr(line, ':', line_length));
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext,
-							8, "request method error");
+							6, "request method error");
 						goto BAD_HTTP_REQUEST;
 					}
 					
@@ -690,7 +686,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			/* meet the end of request header */
 			if (http_parser_reconstruct_stream(
 				&pcontext->stream_in, &stream) < 0) {
-				http_parser_log_info(pcontext, 8, "out of memory");
+				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext);
 				goto CONTEXT_PROCESSING;
 			}
@@ -725,7 +721,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->bytes_rw = 0;
 					pcontext->b_close = TRUE;
 					pcontext->sched_stat = SCHED_STAT_WRREP;
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"user %s is denied by user filter",
 						pcontext->username);
 					goto CONTEXT_PROCESSING;
@@ -751,8 +747,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->total_length = response_len;
 						pcontext->bytes_rw = 0;
 						pcontext->sched_stat = SCHED_STAT_WRREP;
-						http_parser_log_info(pcontext,
-							8, "can not get maildir");
+						http_parser_log_info(pcontext, 6, "can not get maildir");
 						goto CONTEXT_PROCESSING;
 					}
 
@@ -760,10 +755,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						strcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"));
 					}
 					pcontext->b_authed = TRUE;
-					http_parser_log_info(pcontext, 8, "login success");
+					http_parser_log_info(pcontext, 6, "login success");
 				} else {
 					pcontext->b_authed = FALSE;
-					http_parser_log_info(pcontext, 8, "login fail");
+					http_parser_log_info(pcontext, 6, "login fail");
 					pcontext->auth_times ++;
 					if (system_services_add_user_into_temp_list != nullptr &&
 					    pcontext->auth_times >= g_max_auth_times)
@@ -797,7 +792,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				tmp_len = mem_file_get_total_length(
 					&pcontext->request.f_request_uri);
 				if (0 == tmp_len || tmp_len >= 1024) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					goto BAD_HTTP_REQUEST;
 				}
@@ -812,19 +807,19 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					"/rpcwithcert/rpcproxy.dll?", 26)) {
 					ptoken = tmp_buff + 26;
 				} else {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					goto BAD_HTTP_REQUEST;
 				}
 				ptoken1 = strchr(tmp_buff, ':');
 				if (NULL == ptoken1) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					goto BAD_HTTP_REQUEST;
 				}
 				*ptoken1 = '\0';
 				if (ptoken1 - ptoken > 128) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					goto BAD_HTTP_REQUEST;
 				}
@@ -850,7 +845,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->total_length = response_len;
 					pcontext->bytes_rw = 0;
 					pcontext->sched_stat = SCHED_STAT_WRREP;
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"authentification needed");
 					goto CONTEXT_PROCESSING;
 				}
@@ -859,7 +854,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					&pcontext->request.f_content_length,
 					tmp_buff, 256);
 				if (MEM_END_OF_FILE == tmp_len) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"content-length of rpcproxy request error");
 					goto BAD_HTTP_REQUEST;
 				}
@@ -913,7 +908,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					if (http_parser_reconstruct_stream(
 						&pcontext->stream_in, &stream) < 0) {
-						http_parser_log_info(pcontext, 8, "out of memory");
+						http_parser_log_info(pcontext, 6, "out of memory");
 						http_5xx(pcontext);
 						goto CONTEXT_PROCESSING;
 					}
@@ -951,7 +946,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					if (http_parser_reconstruct_stream(
 						&pcontext->stream_in, &stream) < 0) {
-						http_parser_log_info(pcontext, 8, "out of memory");
+						http_parser_log_info(pcontext, 6, "out of memory");
 						http_5xx(pcontext);
 						goto CONTEXT_PROCESSING;
 					}
@@ -969,7 +964,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pcontext->sched_stat = SCHED_STAT_WRREP;
 				if (http_parser_reconstruct_stream(
 					&pcontext->stream_in, &stream) < 0) {
-					http_parser_log_info(pcontext, 8, "out of memory");
+					http_parser_log_info(pcontext, 6, "out of memory");
 					http_5xx(pcontext);
 					goto CONTEXT_PROCESSING;
 				}
@@ -1028,7 +1023,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (NULL != pbuff) {
 						if (FALSE == hpm_processor_send(
 							pcontext, pbuff, size)) {
-							http_parser_log_info(pcontext, 8,
+							http_parser_log_info(pcontext, 6,
 								"connection closed by hpm");
 							goto END_PROCESSING;	
 						}
@@ -1050,7 +1045,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				case RESPONSE_WAITING:
 					return PROCESS_CONTINUE;
 				case RESPONSE_TIMEOUT:
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"fastcgi excution time out");
 					http_5xx(pcontext);
 					goto CONTEXT_PROCESSING;
@@ -1103,7 +1098,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->host, pcontext->port,
 					((RPC_OUT_CHANNEL*)pcontext->pchannel)->connection_cookie);
 				if (NULL == pvconnection) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"virtual connection error in hash table");
 					goto END_PROCESSING;
 				}
@@ -1155,17 +1150,17 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
         gettimeofday(&current_time, NULL);
 		
 		if (0 == written_len) {
-			http_parser_log_info(pcontext, 8, "connection lost");
+			http_parser_log_info(pcontext, 6, "connection lost");
 			goto END_PROCESSING;
 		} else if (written_len < 0) {
 			if (EAGAIN != errno) {
-				http_parser_log_info(pcontext, 8, "connection lost");
+				http_parser_log_info(pcontext, 6, "connection lost");
 				goto END_PROCESSING;
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				http_parser_log_info(pcontext, 8, "time out");
+				http_parser_log_info(pcontext, 6, "time out");
 				goto END_PROCESSING;
 			} else {
 				return PROCESS_POLLING_WRONLY;
@@ -1204,7 +1199,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pcontext->host, pcontext->port,
 				((RPC_OUT_CHANNEL*)pcontext->pchannel)->connection_cookie);
 			if (NULL == pvconnection) {
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"virtual connection error in hash table");
 				goto END_PROCESSING;
 			}
@@ -1277,7 +1272,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				        &pcontext->stream_in,
 				        reinterpret_cast<unsigned int *>(&size));
 				if (NULL == pbuff) {
-					http_parser_log_info(pcontext, 8, "out of memory");
+					http_parser_log_info(pcontext, 6, "out of memory");
 					http_5xx(pcontext);
 					goto CONTEXT_PROCESSING;
 				}
@@ -1290,7 +1285,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 				gettimeofday(&current_time, NULL);
 				if (0 == actual_read) {
-					http_parser_log_info(pcontext, 8, "connection lost");
+					http_parser_log_info(pcontext, 6, "connection lost");
 					goto END_PROCESSING;
 				} else if (actual_read > 0) {
 					pcontext->connection.last_timestamp = current_time;
@@ -1310,8 +1305,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							pcontext->sched_stat = SCHED_STAT_WRREP;
 							if (http_parser_reconstruct_stream(
 								&pcontext->stream_in, &stream) < 0) {
-								http_parser_log_info(pcontext,
-										8, "out of memory");
+								http_parser_log_info(pcontext, 6, "out of memory");
 								http_5xx(pcontext);
 								goto CONTEXT_PROCESSING;
 							}
@@ -1341,8 +1335,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							pcontext->sched_stat = SCHED_STAT_WRREP;
 							if (http_parser_reconstruct_stream(
 								&pcontext->stream_in, &stream) < 0) {
-								http_parser_log_info(pcontext,
-									8, "out of memory");
+								http_parser_log_info(pcontext, 6, "out of memory");
 								http_5xx(pcontext);
 								goto CONTEXT_PROCESSING;
 							}
@@ -1358,13 +1351,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					}
 				} else {
 					if (EAGAIN != errno) {
-						http_parser_log_info(pcontext, 8, "connection lost");
+						http_parser_log_info(pcontext, 6, "connection lost");
 						goto END_PROCESSING;
 					}
 					/* check if context is timed out */
 					if (CALCULATE_INTERVAL(current_time,
 						pcontext->connection.last_timestamp) >= g_timeout) {
-						http_parser_log_info(pcontext, 8, "time out");
+						http_parser_log_info(pcontext, 6, "time out");
 						goto REQUEST_TIME_OUT;
 					} else {
 						return PROCESS_POLLING_RDONLY;
@@ -1394,7 +1387,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				
 			if (http_parser_reconstruct_stream(
 				&pcontext->stream_in, &stream) < 0) {
-				http_parser_log_info(pcontext, 8, "out of memory");
+				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext);
 				goto CONTEXT_PROCESSING;
 			}
@@ -1418,7 +1411,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			        &pcontext->stream_in,
 			        reinterpret_cast<unsigned int *>(&size));
 			if (NULL == pbuff) {
-				http_parser_log_info(pcontext, 8, "out of memory");
+				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext);
 				goto CONTEXT_PROCESSING;
 			}
@@ -1430,12 +1423,12 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 			gettimeofday(&current_time, NULL);
 			if (0 == actual_read) {
-				http_parser_log_info(pcontext, 8, "connection lost");
+				http_parser_log_info(pcontext, 6, "connection lost");
 				goto END_PROCESSING;
 			} else if (actual_read > 0) {
 				pcontext->bytes_rw += actual_read;
 				if (pcontext->bytes_rw > pcontext->total_length) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"content length overflow when reading body");
 					goto END_PROCESSING;
 				}
@@ -1443,13 +1436,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
 			} else {
 				if (EAGAIN != errno) {
-					http_parser_log_info(pcontext, 8, "connection lost");
+					http_parser_log_info(pcontext, 6, "connection lost");
 					goto END_PROCESSING;
 				}
 				/* check if context is timed out */
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_timeout) {
-					http_parser_log_info(pcontext, 8, "time out");
+					http_parser_log_info(pcontext, 6, "time out");
 					goto REQUEST_TIME_OUT;
 				} else {
 					return PROCESS_POLLING_RDONLY;
@@ -1499,14 +1492,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pvconnection = http_parser_get_vconnection(pcontext->host,
 							pcontext->port, pchannel_in->connection_cookie);
 				if (NULL == pvconnection) {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"virtual connection error in hash table");
 					goto END_PROCESSING;
 				}
 				if (pvconnection->pcontext_in != pcontext ||
 					NULL == pvconnection->pprocessor) {
 					http_parser_put_vconnection(pvconnection);
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"virtual connection error in hash table");
 					goto END_PROCESSING;
 				}
@@ -1547,7 +1540,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		
 		if (http_parser_reconstruct_stream(
 			&pcontext->stream_in, &stream) < 0) {
-			http_parser_log_info(pcontext, 8, "out of memory");
+			http_parser_log_info(pcontext, 6, "out of memory");
 			http_5xx(pcontext);
 			goto CONTEXT_PROCESSING;
 		}
@@ -1557,7 +1550,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		switch (result) {
 		case PDU_PROCESSOR_ERROR:
 		case PDU_PROCESSOR_FORWARD:
-			http_parser_log_info(pcontext, 8, "pdu process error!");
+			http_parser_log_info(pcontext, 6, "pdu process error!");
 			goto END_PROCESSING;
 		case PDU_PROCESSOR_INPUT:
 			/* do nothing */
@@ -1599,7 +1592,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					}
 					goto CONTEXT_PROCESSING;
 				} else {
-					http_parser_log_info(pcontext, 8,
+					http_parser_log_info(pcontext, 6,
 						"pdu process error! out channel can't output "
 						"itself after virtual connection established");
 					goto END_PROCESSING;
@@ -1610,7 +1603,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->port, pchannel_in->connection_cookie);
 			if (NULL == pvconnection) {
 				pdu_processor_free_call(pcall);
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"cannot find virtual connection in hash table");
 				goto END_PROCESSING;
 			}
@@ -1620,7 +1613,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				|| NULL == pvconnection->pcontext_out) {
 				http_parser_put_vconnection(pvconnection);
 				pdu_processor_free_call(pcall);
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"missing out channel in virtual connection");
 				goto END_PROCESSING;
 			}
@@ -1667,7 +1660,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (FALSE == pdu_processor_rts_conn_c2(
 						pchannel_out->pcall, pchannel_out->window_size)) {
 						http_parser_put_vconnection(pvconnection);
-						http_parser_log_info(pcontext, 8,
+						http_parser_log_info(pcontext, 6,
 							"pdu process error! fail to setup conn/c2");
 						goto END_PROCESSING;
 					}
@@ -1686,7 +1679,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp)
 				>= OUT_CHANNEL_MAX_WAIT) {
-				http_parser_log_info(pcontext, 8, "no correpoding in "
+				http_parser_log_info(pcontext, 6, "no correpoding in "
 					"channel coming during maximum waiting interval");
 				goto END_PROCESSING;
 			}
@@ -1722,7 +1715,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp)
 				>= OUT_CHANNEL_MAX_WAIT) {
-				http_parser_log_info(pcontext, 8, "channel is not "
+				http_parser_log_info(pcontext, 6, "channel is not "
 						"recycled during maximum waiting interval");
 				goto END_PROCESSING;
 			}
@@ -1732,7 +1725,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		}
 		
 		if (0 == recv(pcontext->connection.sockd, tmp_buff, 1, MSG_PEEK)) {
-			http_parser_log_info(pcontext, 8, "connection lost");
+			http_parser_log_info(pcontext, 6, "connection lost");
 			goto END_PROCESSING;
 		}
 		
@@ -1765,7 +1758,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			          static_cast<char *>(pcontext->write_buff),
 			          STREAM_BLOCK_SIZE);
 			if (0 == tmp_len) {
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"connection closed by hpm");
 				goto END_PROCESSING;
 			} else if (tmp_len > 0) {
@@ -1788,7 +1781,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			gettimeofday(&current_time, NULL);
 			
 			if (0 == written_len) {
-				http_parser_log_info(pcontext, 8, "connection lost");
+				http_parser_log_info(pcontext, 6, "connection lost");
 				goto END_PROCESSING;
 			} else if (written_len > 0) {
 				pcontext->connection.last_timestamp = current_time;
@@ -1799,13 +1792,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 			} else {
 				if (EAGAIN != errno) {
-					http_parser_log_info(pcontext, 8, "connection lost");
+					http_parser_log_info(pcontext, 6, "connection lost");
 					goto END_PROCESSING;
 				}
 				/* check if context is timed out */
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_timeout) {
-					http_parser_log_info(pcontext, 8, "time out");
+					http_parser_log_info(pcontext, 6, "time out");
 					goto END_PROCESSING;
 				}
 				return PROCESS_POLLING_WRONLY;
@@ -1820,25 +1813,25 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		}
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
-			http_parser_log_info(pcontext, 8, "connection lost");
+			http_parser_log_info(pcontext, 6, "connection lost");
 			goto END_PROCESSING;
 		} else if (actual_read > 0) {
 			pcontext->connection.last_timestamp = current_time;
 			if (FALSE == hpm_processor_send(
 				pcontext, tmp_buff, actual_read)) {
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"connection closed by hpm");
 				goto END_PROCESSING;	
 			}
 		} else {
 			if (EAGAIN != errno) {
-				http_parser_log_info(pcontext, 8, "connection lost");
+				http_parser_log_info(pcontext, 6, "connection lost");
 				goto END_PROCESSING;
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				http_parser_log_info(pcontext, 8, "time out");
+				http_parser_log_info(pcontext, 6, "time out");
 				goto END_PROCESSING;
 			}
 		}
@@ -2242,7 +2235,7 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 		tmp_conn.pprocessor = pdu_processor_create(
 					pcontext->host, pcontext->port);
 		if (NULL == tmp_conn.pprocessor) {
-			http_parser_log_info(pcontext, 8,
+			http_parser_log_info(pcontext, 6,
 				"fail to create processor on %s:%d",
 				pcontext->host, pcontext->port);
 			return FALSE;
@@ -2459,7 +2452,7 @@ BOOL http_parser_activate_outrecycling(
 				pvconnection->pcontext_out->pchannel;
 			if (FALSE == pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
 				http_parser_put_vconnection(pvconnection);
-				http_parser_log_info(pcontext, 8,
+				http_parser_log_info(pcontext, 6,
 					"pdu process error! fail to setup r2/b3");
 				return FALSE;
 			}

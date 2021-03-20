@@ -672,7 +672,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	tmp_len = mem_file_get_total_length(&phttp->request.f_host);
 	if (tmp_len >= sizeof(domain)) {
-		http_parser_log_info(phttp, 8, "length of "
+		http_parser_log_info(phttp, 6, "length of "
 			"request host is too long for mod_cache");
 		return FALSE;
 	}
@@ -691,11 +691,11 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	tmp_len = mem_file_get_total_length(
 		&phttp->request.f_request_uri);
 	if (0 == tmp_len) {
-		http_parser_log_info(phttp, 8, "cannot"
+		http_parser_log_info(phttp, 6, "cannot"
 			" find request uri for mod_cache");
 		return FALSE;
 	} else if (tmp_len >= sizeof(tmp_buff)) {
-		http_parser_log_info(phttp, 8, "length of "
+		http_parser_log_info(phttp, 6, "length of "
 			"request uri is too long for mod_cache");
 		return FALSE;
 	}
@@ -704,14 +704,14 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	mem_file_read(&phttp->request.f_request_uri, tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	if (FALSE == parse_uri(tmp_buff, request_uri)) {
-		http_parser_log_info(phttp, 8, "request"
+		http_parser_log_info(phttp, 6, "request"
 				" uri format error for mod_cache");
 		return FALSE;
 	}
 	suffix[0] = '\0';
 	ptoken = strrchr(request_uri, '/');
 	if (NULL == ptoken) {
-		http_parser_log_info(phttp, 8, "request uri "
+		http_parser_log_info(phttp, 6, "request uri "
 			"format error, missing slash for mod_cache");
 		return FALSE;
 	}
@@ -774,7 +774,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		tmp_buff, sizeof(tmp_buff))) {
 		if (FALSE == mod_cache_parse_range_value(
 			tmp_buff, node_stat.st_size, pcontext)) {
-			http_parser_log_info(phttp, 8, "\"range\""
+			http_parser_log_info(phttp, 6, "\"range\""
 				" value in http request header format"
 				" error for mod_cache");
 			return FALSE;
