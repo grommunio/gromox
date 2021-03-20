@@ -12,6 +12,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include <gromox/list_file.hpp>
@@ -60,7 +61,7 @@ struct TIMER {
 static BOOL g_notify_stop;
 static int g_threads_num;
 static int g_last_tid;
-static int g_list_fd;
+static int g_list_fd = -1;
 static char g_list_path[256];
 static std::vector<std::string> g_acl_list;
 static std::list<CONNECTION_NODE> g_connection_list, g_connection_list1;
@@ -129,7 +130,7 @@ int main(int argc, const char **argv)
 	time_t cur_time;
 	time_t last_cltime;
 	pthread_t thr_accept_id;
-	pthread_t *thr_ids;
+	std::vector<pthread_t> thr_ids;
 	char listen_ip[40];
 	char temp_path[256];
 	char temp_line[2048];
@@ -249,35 +250,34 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 4;
 	}
+	auto cl_0 = make_scope_exit([&]() { close(sockd); });
 	g_list_fd = open(g_list_path, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
-	if (-1 == g_list_fd) {
+	if (g_list_fd < 0) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path, strerror(errno));
 		close(sockd);
 		return 7;
 	}
+	auto cl_1 = make_scope_exit([&]() { close(g_list_fd); });
 
-	thr_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
-
+	thr_ids.reserve(g_threads_num);
 	for (i=0; i<g_threads_num; i++) {
-		int ret = pthread_create(&thr_ids[i], nullptr, thread_work_func, nullptr);
+		pthread_t tid;
+		int ret = pthread_create(&tid, nullptr, thread_work_func, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			break;
 		}
+		thr_ids.push_back(tid);
 		char buf[32];
 		snprintf(buf, sizeof(buf), "worker/%u", i);
 		pthread_setname_np(thr_ids[i], buf);
 	}
-
-	if (i != g_threads_num) {
-		for (i-=1; i>=0; i--) {
-			pthread_cancel(thr_ids[i]);
-		}
-
-		close(sockd);
-		close(g_list_fd);
+	auto cl_2 = make_scope_exit([&]() {
+		for (auto tid : thr_ids)
+			pthread_cancel(tid);
+	});
+	if (thr_ids.size() != g_threads_num)
 		return 8;
-	}
 
 	auto ret = list_file_read_fixedstrings("timer_acl.txt", config_dir, g_acl_list);
 	if (ret == -ENOENT) {
@@ -285,11 +285,6 @@ int main(int argc, const char **argv)
 		g_acl_list = {"::1"};
 	} else if (ret < 0) {
 		printf("[system]: list_file_initd timer_acl.txt: %s\n", strerror(-ret));
-		for (i = g_threads_num - 1; i >= 0; i--) {
-			pthread_cancel(thr_ids[i]);
-		}
-		close(sockd);
-		close(g_list_fd);
 		return 9;
 	}
 	
@@ -297,12 +292,6 @@ int main(int argc, const char **argv)
 	          reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
-		for (i=g_threads_num-1; i>=0; i--) {
-			pthread_cancel(thr_ids[i]);
-		}
-
-		close(sockd);
-		close(g_list_fd);
 		return 10;
 	}
 	
@@ -372,14 +361,6 @@ int main(int argc, const char **argv)
 
 	}
 
-
-	for (i=0; i<g_threads_num; i++) {
-		pthread_cancel(thr_ids[i]);
-	}
-	free(thr_ids);
-
-	close(sockd);
-	close(g_list_fd);
 	g_connection_list.clear();
 	g_connection_list1.clear();
 	return 0;
