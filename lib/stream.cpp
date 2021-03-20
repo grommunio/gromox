@@ -482,7 +482,7 @@ void stream_reset_reading(STREAM *pstream)
  *	  @return
  *		  size of stream
  */
-size_t stream_get_total_length(STREAM *pstream)
+size_t stream_get_total_length(const STREAM *pstream)
 {
 	return pstream->wr_total_pos;
 }
@@ -760,11 +760,10 @@ int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *psize)
  *	@return
  *		length of content retrieved
  */
-unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
+unsigned int stream_peek_buffer(const STREAM *pstream, char *pbuff, unsigned int size)
 {
 	unsigned int tmp_size;
 	unsigned int actual_size;
-	DOUBLE_LIST_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pstream || NULL == pbuff) {
@@ -783,7 +782,7 @@ unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
 	}
 	
 	actual_size = pstream->wr_total_pos - pstream->rd_total_pos;
-	pnode = pstream->pnode_rd;
+	const DOUBLE_LIST_NODE *pnode = pstream->pnode_rd;
 	
 	/* if the read node is the last node of the mem file */
 	if (pstream->pnode_rd == pstream->pnode_wr) {

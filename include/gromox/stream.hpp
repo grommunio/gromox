@@ -79,12 +79,8 @@ unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset);
 unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset);
 extern void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize);
 void stream_reset_reading(STREAM *pstream);
-
-size_t stream_get_total_length(STREAM *pstream);
-
+extern GX_EXPORT size_t stream_get_total_length(const STREAM *);
 int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *size);
-
-unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size);
-
+extern GX_EXPORT unsigned int stream_peek_buffer(const STREAM *, char *, unsigned int);
 int stream_dump(STREAM *pstream, int fd);
 extern int stream_write(STREAM *pstream, const void *pbuff, size_t size);
