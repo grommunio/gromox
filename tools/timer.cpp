@@ -59,7 +59,7 @@ struct TIMER {
 };
 
 static BOOL g_notify_stop;
-static int g_threads_num;
+static size_t g_threads_num;
 static int g_last_tid;
 static int g_list_fd = -1;
 static char g_list_path[256];
@@ -123,7 +123,6 @@ static TIMER *put_timer(TIMER &&ptimer)
 
 int main(int argc, const char **argv)
 {
-	int i, j;
 	int temp_fd;
 	int temp_len;
 	int listen_port;
@@ -195,8 +194,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	printf("[system]: processing threads number is %d\n", g_threads_num);
-
+	printf("[system]: processing threads number is %zu\n", g_threads_num);
 	g_threads_num ++;
 
 	struct srcitem {
@@ -213,9 +211,9 @@ int main(int argc, const char **argv)
 
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (i=0; i<item_num; i++) {
+	for (size_t i = 0; i < item_num; ++i) {
 		if (pitem[i].exectime == 0) {
-			for (j=0; j<item_num; j++) {
+			for (size_t j = 0; j < item_num; ++j) {
 				if (i == j) {
 					continue;
 				}
@@ -229,7 +227,7 @@ int main(int argc, const char **argv)
 
 	time(&cur_time);
 
-	for (i=0; i<item_num; i++) {
+	for (size_t i = 0; i < item_num; ++i) {
 		if (pitem[i].tid > g_last_tid)
 			g_last_tid = pitem[i].tid;
 		if (pitem[i].exectime == 0)
@@ -260,7 +258,7 @@ int main(int argc, const char **argv)
 	auto cl_1 = make_scope_exit([&]() { close(g_list_fd); });
 
 	thr_ids.reserve(g_threads_num);
-	for (i=0; i<g_threads_num; i++) {
+	for (size_t i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
 		int ret = pthread_create(&tid, nullptr, thread_work_func, nullptr);
 		if (ret != 0) {
@@ -269,7 +267,7 @@ int main(int argc, const char **argv)
 		}
 		thr_ids.push_back(tid);
 		char buf[32];
-		snprintf(buf, sizeof(buf), "worker/%u", i);
+		snprintf(buf, sizeof(buf), "worker/%zu", i);
 		pthread_setname_np(thr_ids[i], buf);
 	}
 	auto cl_2 = make_scope_exit([&]() {
@@ -319,9 +317,9 @@ int main(int argc, const char **argv)
 			if (NULL != pfile) {
 				auto item_num = pfile->get_size();
 				auto pitem = static_cast<srcitem *>(pfile->get_list());
-				for (i=0; i<item_num; i++) {
+				for (size_t i = 0; i < item_num; ++i) {
 					if (pitem[i].exectime == 0) {
-						for (j=0; j<item_num; j++) {
+						for (size_t j = 0; j < item_num; ++j) {
 							if (i == j) {
 								continue;
 							}
@@ -335,7 +333,7 @@ int main(int argc, const char **argv)
 				snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_list_path);
 				temp_fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 				if (-1 != temp_fd) {
-					for (i=0; i<item_num; i++) {
+					for (size_t i = 0; i < item_num; ++i) {
 						if (pitem[i].exectime == 0)
 							continue;
 						temp_len = sprintf(temp_line, "%d\t%ld\t",
