@@ -941,7 +941,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 				if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
 					if (FALSE == mod_fastcgi_relay_content(pcontext)) {
-						http_5xx(pcontext);
+						http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 						goto CONTEXT_PROCESSING;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
@@ -1048,7 +1048,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				case RESPONSE_TIMEOUT:
 					http_parser_log_info(pcontext, 6,
 						"fastcgi excution time out");
-					http_5xx(pcontext);
+					http_5xx(pcontext, "FastCGI Timeout", 504);
 					goto CONTEXT_PROCESSING;
 				}
 				if (TRUE == mod_fastcgi_check_responded(pcontext)) {
@@ -1067,7 +1067,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					}
 				} else {
 					if (FALSE == mod_fastcgi_read_response(pcontext)) {
-						http_5xx(pcontext);
+						http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 						goto CONTEXT_PROCESSING;
 					}
 				}
@@ -1330,7 +1330,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						}
 						if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
 							if (FALSE == mod_fastcgi_relay_content(pcontext)) {
-								http_5xx(pcontext);
+								http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 								goto CONTEXT_PROCESSING;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
