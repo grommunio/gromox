@@ -607,12 +607,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			http_5xx(pcontext, "Resources exhausted", 503);
 			goto CONTEXT_PROCESSING;
 		}
-		ssize_t actual_read;
-		if (NULL != pcontext->connection.ssl) {
-			actual_read = SSL_read(pcontext->connection.ssl, pbuff, size);
-		} else {
-			actual_read = read(pcontext->connection.sockd, pbuff, size);
-		}
+		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
+		                      SSL_read(pcontext->connection.ssl, pbuff, size) :
+		                      read(pcontext->connection.sockd, pbuff, size);
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
@@ -1380,14 +1377,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_5xx(pcontext);
 					goto CONTEXT_PROCESSING;
 				}
-				ssize_t actual_read;
-				if (NULL != pcontext->connection.ssl) {
-					actual_read = SSL_read(
-						pcontext->connection.ssl, pbuff, size);
-				} else {
-					actual_read = read(
-						pcontext->connection.sockd, pbuff, size);
-				}
+				ssize_t actual_read = pcontext->connection.ssl != nullptr ?
+				                      SSL_read(pcontext->connection.ssl, pbuff, size) :
+				                      read(pcontext->connection.sockd, pbuff, size);
 				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (0 == actual_read) {
@@ -1525,12 +1517,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				goto CONTEXT_PROCESSING;
 			}
 			
-			ssize_t actual_read;
-			if (NULL != pcontext->connection.ssl) {
-				actual_read = SSL_read(pcontext->connection.ssl, pbuff, size);
-			} else {
-				actual_read = read(pcontext->connection.sockd, pbuff, size);
-			}
+			ssize_t actual_read = pcontext->connection.ssl != nullptr ?
+			                      SSL_read(pcontext->connection.ssl, pbuff, size) :
+			                      read(pcontext->connection.sockd, pbuff, size);
 			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			if (0 == actual_read) {
@@ -1921,14 +1910,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				return PROCESS_POLLING_WRONLY;
 			}
 		}
-		ssize_t actual_read;
-		if (NULL == pcontext->connection.ssl) {
-			actual_read = read(pcontext->connection.sockd,
-							tmp_buff, sizeof(tmp_buff));
-		} else {
-			actual_read = SSL_read(pcontext->connection.ssl,
-								tmp_buff, sizeof(tmp_buff));
-		}
+		ssize_t actual_read = pcontext->connection.ssl == nullptr ?
+		                      read(pcontext->connection.sockd, tmp_buff, sizeof(tmp_buff)) :
+		                      SSL_read(pcontext->connection.ssl, tmp_buff, sizeof(tmp_buff));
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
