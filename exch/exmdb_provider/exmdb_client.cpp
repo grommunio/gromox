@@ -110,17 +110,17 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pv = common_util_alloc(1);
-				if (pbin->pv == nullptr)
+				pbin->pb = cu_alloc<uint8_t>();
+				if (pbin->pb == nullptr)
 					return FALSE;
 				*(uint8_t*)pbin->pb = resp_buff[0];
 				return TRUE;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pv = common_util_alloc(pbin->cb);
-				if (pbin->pv == nullptr)
+				pbin->pb = cu_alloc<uint8_t>(pbin->cb);
+				if (pbin->pb == nullptr)
 					return FALSE;
-				memcpy(pbin->pv, resp_buff, 5);
+				memcpy(pbin->pb, resp_buff, 5);
 				offset = 5;
 				if (offset == pbin->cb) {
 					return TRUE;
