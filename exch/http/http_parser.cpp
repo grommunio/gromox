@@ -581,69 +581,8 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 }
 
-static int htparse_rdhead(HTTP_CONTEXT *pcontext)
+static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int line_length)
 {
-		unsigned int size = STREAM_BLOCK_SIZE;
-		auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
-		if (NULL == pbuff) {
-			http_parser_log_info(pcontext, 6, "out of memory");
-			http_5xx(pcontext, "Resources exhausted", 503);
-			return X_LOOP;
-		}
-		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
-		                      SSL_read(pcontext->connection.ssl, pbuff, size) :
-		                      read(pcontext->connection.sockd, pbuff, size);
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		if (0 == actual_read) {
-			http_parser_log_info(pcontext, 6, "connection lost");
-			return X_RUNOFF;
-		} else if (actual_read > 0) {
-			pcontext->connection.last_timestamp = current_time;
-			stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
-		} else {
-			if (EAGAIN != errno) {
-				http_parser_log_info(pcontext, 6, "connection lost");
-				return X_RUNOFF;
-			}
-			/* check if context is timed out */
-			if (CALCULATE_INTERVAL(current_time,
-				pcontext->connection.last_timestamp) >= g_timeout) {
-				http_parser_log_info(pcontext, 6, "time out");
-				http_4xx(pcontext, "Request Timeout", 408);
-				return X_LOOP;
-			}
-			
-			/* do not return immediately, check
-				line in stream (eg. pipeline) */
-		}
-		
-		return [](HTTP_CONTEXT *pcontext, ssize_t actual_read) -> int {
-		while (TRUE) {
-			stream_try_mark_line(&pcontext->stream_in);
-			switch (stream_has_newline(&pcontext->stream_in)) {
-			case STREAM_LINE_FAIL:
-				http_parser_log_info(pcontext, 6,
-					"request header line too long");
-				http_4xx(pcontext);
-				return X_LOOP;
-			case STREAM_LINE_UNAVAILABLE:
-				if (actual_read > 0) {
-					return PROCESS_CONTINUE;
-				} else {
-					return PROCESS_POLLING_RDONLY;
-				}
-			case STREAM_LINE_AVAILABLE:
-				/* continue to process line below */
-				break;
-			}
-			
-			char *line = nullptr;
-			auto line_length = stream_readline(&pcontext->stream_in, &line);
-			if (0 != line_length) {
-				int ret;
-				if ('\0' == pcontext->request.method[0]) {
-					ret = [](HTTP_CONTEXT *pcontext, char *line, unsigned int line_length) -> int {
 					auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext, 6, "request method error");
@@ -681,9 +620,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 					memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 					pcontext->request.version[tmp_len] = '\0';
 					return X_RUNOFF;
-					}(pcontext, line, line_length);
-				} else {
-					ret = [](HTTP_CONTEXT *pcontext, char *line, unsigned int line_length) -> int {
+}
+
+static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int line_length)
+{
 					auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext,
@@ -753,37 +693,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 						mem_file_write(&pcontext->request.f_others, ptoken, tmp_len);
 					}
 					return X_RUNOFF;
-					}(pcontext, line, line_length);
-				}
-				if (ret != X_RUNOFF)
-					return ret;
-				continue;
-			}
-			
-			/* meet the end of request header */
-			STREAM stream_1;
-			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_1) < 0) {
-				http_parser_log_info(pcontext, 6, "out of memory");
-				http_5xx(pcontext, "Resources exhausted", 503);
-				return X_LOOP;
-			}
-			stream_free(&pcontext->stream_in);
-			pcontext->stream_in = stream_1;
-			
-			char tmp_buff[2048], tmp_buff1[1024];
-			size_t decode_len = 0;
-			char *ptoken = nullptr;
-			if (http_parser_request_head(&pcontext->request.f_others,
-			    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
-			    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
-			    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1, &decode_len) == 0 &&
-			    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
-				*ptoken = '\0';
-				ptoken ++;
-				strncpy(pcontext->username, tmp_buff1, 256);
-				strncpy(pcontext->password, ptoken, 128);
-				
-				auto ret = [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htp_auth(HTTP_CONTEXT *pcontext)
+{
 				if (system_services_judge_user != nullptr &&
 				    !system_services_judge_user(pcontext->username)) {
 					char dstring[128], response_buff[1024];
@@ -870,14 +783,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 					return X_LOOP;
 				}
 				return X_RUNOFF;
-				}(pcontext);
-				if (ret != X_RUNOFF)
-					return ret;
-			}
-			
-			if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
-				0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
-				return [](HTTP_CONTEXT *pcontext, const STREAM &stream_1) -> int {
+}
+
+static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
+{
 				auto tmp_len = mem_file_get_total_length(
 					&pcontext->request.f_request_uri);
 				if (0 == tmp_len || tmp_len >= 1024) {
@@ -986,11 +895,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 				pcontext->bytes_rw = stream_get_total_length(&stream_1);
 				pcontext->sched_stat = SCHED_STAT_RDBODY;
 				return X_LOOP;
-				}(pcontext, stream_1);
-			}
-			/* try to make hpm_processor take over the request */
-			if (TRUE == hpm_processor_get_context(pcontext)) {
-				return [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
+{
 				/* let mod_fastcgi decide the read/write bytes */
 				pcontext->bytes_rw = 0;
 				pcontext->total_length = 0;
@@ -1023,11 +931,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
 				return X_LOOP;
-				}(pcontext);
-			}
-			/* try to make mod_fastcgi process the request */
-			if (TRUE == mod_fastcgi_get_context(pcontext)) {
-				return [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
+{
 				/* let mod_fastcgi decide the read/write bytes */
 				pcontext->bytes_rw = 0;
 				pcontext->total_length = 0;
@@ -1054,10 +961,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
 				return X_LOOP;
-				}(pcontext);
-			}
-			if (TRUE == mod_cache_get_context(pcontext)) {
-				return [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
+{
 				/* let mod_cache decide the read/write bytes */
 				pcontext->bytes_rw = 0;
 				pcontext->total_length = 0;
@@ -1071,7 +978,84 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 				stream_free(&pcontext->stream_in);
 				pcontext->stream_in = std::move(stream_4);
 				return X_LOOP;
-				}(pcontext);
+}
+
+static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
+{
+		while (TRUE) {
+			stream_try_mark_line(&pcontext->stream_in);
+			switch (stream_has_newline(&pcontext->stream_in)) {
+			case STREAM_LINE_FAIL:
+				http_parser_log_info(pcontext, 6,
+					"request header line too long");
+				http_4xx(pcontext);
+				return X_LOOP;
+			case STREAM_LINE_UNAVAILABLE:
+				if (actual_read > 0) {
+					return PROCESS_CONTINUE;
+				} else {
+					return PROCESS_POLLING_RDONLY;
+				}
+			case STREAM_LINE_AVAILABLE:
+				/* continue to process line below */
+				break;
+			}
+
+			char *line = nullptr;
+			auto line_length = stream_readline(&pcontext->stream_in, &line);
+			if (0 != line_length) {
+				int ret;
+				if ('\0' == pcontext->request.method[0]) {
+					ret = htparse_rdhead_no(pcontext, line, line_length);
+				} else {
+					ret = htparse_rdhead_mt(pcontext, line, line_length);
+				}
+				if (ret != X_RUNOFF)
+					return ret;
+				continue;
+			}
+
+			/* meet the end of request header */
+			STREAM stream_1;
+			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_1) < 0) {
+				http_parser_log_info(pcontext, 6, "out of memory");
+				http_5xx(pcontext, "Resources exhausted", 503);
+				return X_LOOP;
+			}
+			stream_free(&pcontext->stream_in);
+			pcontext->stream_in = stream_1;
+
+			char tmp_buff[2048], tmp_buff1[1024];
+			size_t decode_len = 0;
+			char *ptoken = nullptr;
+			if (http_parser_request_head(&pcontext->request.f_others,
+			    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
+			    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1, &decode_len) == 0 &&
+			    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
+				*ptoken = '\0';
+				ptoken ++;
+				strncpy(pcontext->username, tmp_buff1, 256);
+				strncpy(pcontext->password, ptoken, 128);
+				auto ret = htp_auth(pcontext);
+				if (ret != X_RUNOFF)
+					return ret;
+			}
+
+			if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
+				0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
+				return htp_delegate_rpc(pcontext, stream_1);
+			}
+			/* try to make hpm_processor take over the request */
+			if (TRUE == hpm_processor_get_context(pcontext)) {
+				return htp_delegate_hpm(pcontext);
+			}
+			/* try to make mod_fastcgi process the request */
+			if (TRUE == mod_fastcgi_get_context(pcontext)) {
+				return htp_delegate_fcgi(pcontext);
+			}
+			if (TRUE == mod_cache_get_context(pcontext)) {
+				return htp_delegate_cache(pcontext);
 			}
 			/* other http request here if wanted */
 			char dstring[128], response_buff[1024];
@@ -1095,13 +1079,48 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 			return X_LOOP;
 		}
 		return X_RUNOFF;
-		}(pcontext, actual_read);
 }
 
-static int htparse_wrrep(HTTP_CONTEXT *pcontext)
+static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 {
-		if (NULL == pcontext->write_buff) {
-			auto ret = [](HTTP_CONTEXT *pcontext) -> int {
+		unsigned int size = STREAM_BLOCK_SIZE;
+		auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
+		if (NULL == pbuff) {
+			http_parser_log_info(pcontext, 6, "out of memory");
+			http_5xx(pcontext, "Resources exhausted", 503);
+			return X_LOOP;
+		}
+		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
+		                      SSL_read(pcontext->connection.ssl, pbuff, size) :
+		                      read(pcontext->connection.sockd, pbuff, size);
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if (0 == actual_read) {
+			http_parser_log_info(pcontext, 6, "connection lost");
+			return X_RUNOFF;
+		} else if (actual_read > 0) {
+			pcontext->connection.last_timestamp = current_time;
+			stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
+		} else {
+			if (EAGAIN != errno) {
+				http_parser_log_info(pcontext, 6, "connection lost");
+				return X_RUNOFF;
+			}
+			/* check if context is timed out */
+			if (CALCULATE_INTERVAL(current_time,
+				pcontext->connection.last_timestamp) >= g_timeout) {
+				http_parser_log_info(pcontext, 6, "time out");
+				http_4xx(pcontext, "Request Timeout", 408);
+				return X_LOOP;
+			}
+			/* do not return immediately, check
+				line in stream (eg. pipeline) */
+		}
+		return htparse_rdhead_st(pcontext, actual_read);
+}
+
+static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
+{
 			if (TRUE == hpm_processor_check_context(pcontext)) {
 				switch (hpm_processor_retrieve_response(pcontext)) {
 				case HPM_RETRIEVE_ERROR:
@@ -1227,7 +1246,12 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 				wether pcontext->write_buff pointer is NULL */
 			pcontext->write_length = tmp_len;
 			return X_RUNOFF;
-			}(pcontext);
+}
+
+static int htparse_wrrep(HTTP_CONTEXT *pcontext)
+{
+		if (NULL == pcontext->write_buff) {
+			auto ret = htparse_wrrep_nobuf(pcontext);
 			if (ret != X_RUNOFF)
 				return ret;
 		}
@@ -1372,13 +1396,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	        return PROCESS_CONTINUE;
 }
 
-static int htparse_rdbody(HTTP_CONTEXT *pcontext)
+static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 {
-		if (NULL == pcontext->pchannel) {
-			return [](HTTP_CONTEXT *pcontext) -> int {
-			if (0 == pcontext->total_length ||
-				pcontext->bytes_rw < pcontext->total_length) {
-				auto ret = [](HTTP_CONTEXT *pcontext) -> int {
 				unsigned int size = STREAM_BLOCK_SIZE;
 				auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
 				if (NULL == pbuff) {
@@ -1469,7 +1488,13 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 					}
 				}
 				return X_RUNOFF;
-				}(pcontext);
+}
+
+static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
+{
+			if (0 == pcontext->total_length ||
+				pcontext->bytes_rw < pcontext->total_length) {
+				auto ret = htparse_rdbody_nochan2(pcontext);
 				if (ret != X_RUNOFF)
 					return ret;
 			}
@@ -1505,7 +1530,12 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			stream_free(&pcontext->stream_in);
 			pcontext->stream_in = std::move(stream_7);
 			return PROCESS_CONTINUE;
-			}(pcontext);
+}
+
+static int htparse_rdbody(HTTP_CONTEXT *pcontext)
+{
+		if (NULL == pcontext->pchannel) {
+			return htparse_rdbody_nochan(pcontext);
 		}
 		
 		auto pchannel_in = pcontext->channel_type == CHANNEL_TYPE_IN ? static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel) : nullptr;
@@ -1751,15 +1781,8 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 }
 
-static int htparse_wait(HTTP_CONTEXT *pcontext)
+static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchannel_out)
 {
-		if (TRUE == hpm_processor_check_context(pcontext)) {
-			return PROCESS_IDLE;
-		}
-		/* only hpm_processor or out channel can be set to SCHED_STAT_WAIT */
-		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		if (CHANNEL_STAT_WAITINCHANNEL == pchannel_out->channel_stat) {
-			return [](HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchannel_out) -> int {
 			auto pvconnection = http_parser_get_vconnection(pcontext->host,
 					pcontext->port, pchannel_out->connection_cookie);
 			if (NULL != pvconnection) {
@@ -1799,9 +1822,10 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 				return X_RUNOFF;
 			}
 			return PROCESS_IDLE;
-			}(pcontext, pchannel_out);
-		} else if (CHANNEL_STAT_WAITRECYCLED == pchannel_out->channel_stat) {
-			return [](HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchannel_out) -> int {
+}
+
+static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchannel_out)
+{
 			auto pvconnection = http_parser_get_vconnection(pcontext->host,
 					pcontext->port, pchannel_out->connection_cookie);
 			if (NULL != pvconnection) {
@@ -1838,7 +1862,19 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 				return X_RUNOFF;
 			}
 			return PROCESS_IDLE;
-			}(pcontext, pchannel_out);
+}
+
+static int htparse_wait(HTTP_CONTEXT *pcontext)
+{
+		if (TRUE == hpm_processor_check_context(pcontext)) {
+			return PROCESS_IDLE;
+		}
+		/* only hpm_processor or out channel can be set to SCHED_STAT_WAIT */
+		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+		if (CHANNEL_STAT_WAITINCHANNEL == pchannel_out->channel_stat) {
+			return htparse_waitinchannel(pcontext, pchannel_out);
+		} else if (CHANNEL_STAT_WAITRECYCLED == pchannel_out->channel_stat) {
+			return htparse_waitrecycled(pcontext, pchannel_out);
 		} else if (CHANNEL_STAT_RECYCLED == pchannel_out->channel_stat) {
 			return X_RUNOFF;
 		}
