@@ -531,6 +531,8 @@ static int http_end(HTTP_CONTEXT *ctx)
 	return PROCESS_CLOSE;
 }
 
+enum { X_LOOP = -1, X_RUNOFF = -2, };
+
 /* 
  * process a context
  * @param
@@ -545,14 +547,16 @@ static int http_end(HTTP_CONTEXT *ctx)
  */
 int http_parser_process(HTTP_CONTEXT *pcontext)
 {
- CONTEXT_PROCESSING:
+	int ret = X_RUNOFF;
+	do {
 	if (SCHED_STAT_INITSSL == pcontext->sched_stat) {
+		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
 				http_parser_log_info(pcontext, 6, "out of SSL object");
 				http_5xx(pcontext, "Resources exhausted", 503);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 		}
@@ -568,7 +572,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 				http_parser_log_info(pcontext, 6, "time out");
 				http_4xx(pcontext, "Request Timeout", 408);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			} else {
 				http_parser_log_info(pcontext, 6, "fail to accept"
 						" SSL connection, errno is %d", ssl_errno);
@@ -578,13 +582,16 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
 			return PROCESS_CONTINUE;
 		}
+		return X_RUNOFF;
+		}(pcontext);
 	} else if (SCHED_STAT_RDHEAD == pcontext->sched_stat) {
+		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		unsigned int size = STREAM_BLOCK_SIZE;
 		auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
 		if (NULL == pbuff) {
 			http_parser_log_info(pcontext, 6, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
-			goto CONTEXT_PROCESSING;
+			return X_LOOP;
 		}
 		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 		                      SSL_read(pcontext->connection.ssl, pbuff, size) :
@@ -607,7 +614,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pcontext->connection.last_timestamp) >= g_timeout) {
 				http_parser_log_info(pcontext, 6, "time out");
 				http_4xx(pcontext, "Request Timeout", 408);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			
 			/* do not return immediately, check
@@ -621,7 +628,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				http_parser_log_info(pcontext, 6,
 					"request header line too long");
 				http_4xx(pcontext);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			case STREAM_LINE_UNAVAILABLE:
 				if (actual_read > 0) {
 					return PROCESS_CONTINUE;
@@ -641,13 +648,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (NULL == ptoken) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					size_t tmp_len = ptoken - line;
 					if (tmp_len >= 32) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					
 					memcpy(pcontext->request.method, line, tmp_len);
@@ -656,7 +663,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (NULL == ptoken1) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					size_t tmp_len1 = ptoken1 - ptoken - 1;
 					tmp_len = line_length - (ptoken1 + 6 - line);
@@ -664,7 +671,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						"HTTP/", 5) || tmp_len >= 8) {
 						http_parser_log_info(pcontext, 6, "request method error");
 						http_4xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					if (FALSE == mod_rewrite_process(ptoken + 1,
 						tmp_len1, &pcontext->request.f_request_uri)) {
@@ -679,7 +686,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						http_parser_log_info(pcontext,
 							6, "request method error");
 						http_4xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					
 					size_t tmp_len = ptoken - line;
@@ -751,7 +758,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_1) < 0) {
 				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			stream_free(&pcontext->stream_in);
 			pcontext->stream_in = stream_1;
@@ -790,7 +797,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_log_info(pcontext, 6,
 						"user %s is denied by user filter",
 						pcontext->username);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				char reason[256];
 				if (TRUE == system_services_auth_login(
@@ -816,7 +823,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->bytes_rw = 0;
 						pcontext->sched_stat = SCHED_STAT_WRREP;
 						http_parser_log_info(pcontext, 6, "can not get maildir");
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 
 					if ('\0' == pcontext->lang[0]) {
@@ -852,7 +859,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->total_length = response_len;
 					pcontext->bytes_rw = 0;
 					pcontext->sched_stat = SCHED_STAT_WRREP;
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 			}
 			
@@ -864,7 +871,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					http_4xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				tmp_len = mem_file_read(
 					&pcontext->request.f_request_uri,
@@ -880,21 +887,21 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					http_4xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				auto ptoken1 = strchr(tmp_buff, ':');
 				if (NULL == ptoken1) {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					http_4xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				*ptoken1 = '\0';
 				if (ptoken1 - ptoken > 128) {
 					http_parser_log_info(pcontext, 6,
 						"rpcproxy request method error");
 					http_4xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				ptoken1 ++;
 				strcpy(pcontext->host, ptoken);
@@ -921,7 +928,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					http_parser_log_info(pcontext, 6,
 						"authentification needed");
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				
 				tmp_len = mem_file_read(
@@ -931,7 +938,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_log_info(pcontext, 6,
 						"content-length of rpcproxy request error");
 					http_4xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				pcontext->total_length = atoll(tmp_buff);
 				
@@ -943,7 +950,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							lib_buffer_get(g_inchannel_allocator);
 						if (NULL == pcontext->pchannel) {
 							http_5xx(pcontext, "Resources exhausted", 503);
-							goto CONTEXT_PROCESSING;
+							return X_LOOP;
 						}	
 						memset(pcontext->pchannel, 0, sizeof(RPC_IN_CHANNEL));
 						double_list_init(&((RPC_IN_CHANNEL*)
@@ -954,7 +961,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							lib_buffer_get(g_outchannel_allocator);
 						if (NULL == pcontext->pchannel) {
 							http_5xx(pcontext, "Resources exhausted", 503);
-							goto CONTEXT_PROCESSING;
+							return X_LOOP;
 						}
 						memset(pcontext->pchannel, 0, sizeof(RPC_OUT_CHANNEL));
 						double_list_init(&((RPC_OUT_CHANNEL*)
@@ -963,7 +970,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 				pcontext->bytes_rw = stream_get_total_length(&stream_1);
 				pcontext->sched_stat = SCHED_STAT_RDBODY;
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			/* try to make hpm_processor take over the request */
 			if (TRUE == hpm_processor_get_context(pcontext)) {
@@ -973,19 +980,19 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				
 				if (FALSE == hpm_processor_write_request(pcontext)) {
 					http_5xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				if (TRUE == hpm_processor_check_end_of_request(pcontext)) {
 					if (FALSE == hpm_processor_proc(pcontext)) {
 						http_5xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					STREAM stream_2;
 					if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_2) < 0) {
 						http_parser_log_info(pcontext, 6, "out of memory");
 						http_5xx(pcontext, "Resources exhausted", 503);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					stream_free(&pcontext->stream_in);
 					pcontext->stream_in = std::move(stream_2);
@@ -998,7 +1005,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				} else {
 					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			/* try to make mod_fastcgi process the request */
 			if (TRUE == mod_fastcgi_get_context(pcontext)) {
@@ -1008,26 +1015,26 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				
 				if (FALSE == mod_fastcgi_write_request(pcontext)) {
 					http_5xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
 					if (FALSE == mod_fastcgi_relay_content(pcontext)) {
 						http_5xx(pcontext, "Bad FastCGI Gateway", 502);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					STREAM stream_3;
 					if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_3) < 0) {
 						http_parser_log_info(pcontext, 6, "out of memory");
 						http_5xx(pcontext, "Resources exhausted", 503);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					stream_free(&pcontext->stream_in);
 					pcontext->stream_in = std::move(stream_3);
 				} else {
 					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			if (TRUE == mod_cache_get_context(pcontext)) {
 				/* let mod_cache decide the read/write bytes */
@@ -1038,11 +1045,11 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_4) < 0) {
 					http_parser_log_info(pcontext, 6, "out of memory");
 					http_5xx(pcontext, "Resources exhausted", 503);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				stream_free(&pcontext->stream_in);
 				pcontext->stream_in = std::move(stream_4);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			/* other http request here if wanted */
 			char dstring[128], response_buff[1024];
@@ -1063,15 +1070,18 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
 			pcontext->sched_stat = SCHED_STAT_WRREP;
-			goto CONTEXT_PROCESSING;
-        }
+			return X_LOOP;
+		}
+		return X_RUNOFF;
+		}(pcontext);
 	} else if (SCHED_STAT_WRREP == pcontext->sched_stat) {
+		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		if (NULL == pcontext->write_buff) {
 			if (TRUE == hpm_processor_check_context(pcontext)) {
 				switch (hpm_processor_retrieve_response(pcontext)) {
 				case HPM_RETRIEVE_ERROR:
 					http_5xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				case HPM_RETRIEVE_WRITE:
 					break;
 				case HPM_RETRIEVE_NONE:
@@ -1118,7 +1128,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_log_info(pcontext, 6,
 						"fastcgi excution time out");
 					http_5xx(pcontext, "FastCGI Timeout", 504);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				if (TRUE == mod_fastcgi_check_responded(pcontext)) {
 					if (FALSE == mod_fastcgi_read_response(pcontext)) {
@@ -1137,14 +1147,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				} else {
 					if (FALSE == mod_fastcgi_read_response(pcontext)) {
 						http_5xx(pcontext, "Bad FastCGI Gateway", 502);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 				}
 			} else if (TRUE == mod_cache_check_caching(pcontext)) {
 				if (FALSE == mod_cache_read_response(pcontext)) {
 					if (FALSE == mod_cache_check_responded(pcontext)) {
 						http_5xx(pcontext);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					}
 					if (0 == stream_get_total_length(&pcontext->stream_out)) {
 						if (TRUE == pcontext->b_close) {
@@ -1329,9 +1339,11 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				}
 				stream_clear(&pcontext->stream_out);
 			}
-        }
-        return PROCESS_CONTINUE;
+		}
+	        return PROCESS_CONTINUE;
+		}(pcontext);
 	} else if (SCHED_STAT_RDBODY == pcontext->sched_stat) {
+		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		if (NULL == pcontext->pchannel) {
 			if (0 == pcontext->total_length ||
 				pcontext->bytes_rw < pcontext->total_length) {
@@ -1340,7 +1352,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (NULL == pbuff) {
 					http_parser_log_info(pcontext, 6, "out of memory");
 					http_5xx(pcontext);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 				                      SSL_read(pcontext->connection.ssl, pbuff, size) :
@@ -1357,20 +1369,20 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (TRUE == hpm_processor_check_context(pcontext)) {
 						if (FALSE == hpm_processor_write_request(pcontext)) {
 							http_5xx(pcontext);
-							goto CONTEXT_PROCESSING;
+							return X_LOOP;
 						}
 						if (TRUE == hpm_processor_check_end_of_request(
 							pcontext)) {
 							if (FALSE == hpm_processor_proc(pcontext)) {
 								http_5xx(pcontext);
-								goto CONTEXT_PROCESSING;
+								return X_LOOP;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
 							STREAM stream_5;
 							if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_5) < 0) {
 								http_parser_log_info(pcontext, 6, "out of memory");
 								http_5xx(pcontext, "Resources exhausted", 503);
-								goto CONTEXT_PROCESSING;
+								return X_LOOP;
 							}
 							stream_free(&pcontext->stream_in);
 							pcontext->stream_in = std::move(stream_5);
@@ -1385,19 +1397,19 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					} else if (NULL != pcontext->pfast_context) {
 						if (FALSE == mod_fastcgi_write_request(pcontext)) {
 							http_5xx(pcontext);
-							goto CONTEXT_PROCESSING;
+							return X_LOOP;
 						}
 						if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
 							if (FALSE == mod_fastcgi_relay_content(pcontext)) {
 								http_5xx(pcontext, "Bad FastCGI Gateway", 502);
-								goto CONTEXT_PROCESSING;
+								return X_LOOP;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
 							STREAM stream_6;
 							if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_6) < 0) {
 								http_parser_log_info(pcontext, 6, "out of memory");
 								http_5xx(pcontext, "Resources exhausted", 503);
-								goto CONTEXT_PROCESSING;
+								return X_LOOP;
 							}
 							stream_free(&pcontext->stream_in);
 							pcontext->stream_in = std::move(stream_6);
@@ -1419,7 +1431,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->connection.last_timestamp) >= g_timeout) {
 						http_parser_log_info(pcontext, 6, "time out");
 						http_4xx(pcontext, "Request Timeout", 408);
-						goto CONTEXT_PROCESSING;
+						return X_LOOP;
 					} else {
 						return PROCESS_POLLING_RDONLY;
 					}
@@ -1445,14 +1457,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			} else {
 				/* other http request here if wanted */
 				http_4xx(pcontext);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 				
 			STREAM stream_7;
 			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_7) < 0) {
 				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			stream_free(&pcontext->stream_in);
 			pcontext->stream_in = std::move(stream_7);
@@ -1471,7 +1483,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (NULL == pbuff) {
 				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
-				goto CONTEXT_PROCESSING;
+				return X_LOOP;
 			}
 			
 			ssize_t actual_read = pcontext->connection.ssl != nullptr ?
@@ -1501,7 +1513,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->connection.last_timestamp) >= g_timeout) {
 					http_parser_log_info(pcontext, 6, "time out");
 					http_4xx(pcontext, "Request Timeout", 408);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				} else {
 					return PROCESS_POLLING_RDONLY;
 				}
@@ -1601,7 +1613,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_8) < 0) {
 			http_parser_log_info(pcontext, 6, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
-			goto CONTEXT_PROCESSING;
+			return X_LOOP;
 		}
 		stream_free(&pcontext->stream_in);
 		pcontext->stream_in = std::move(stream_8);
@@ -1650,7 +1662,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pchannel_out->channel_stat =
 							CHANNEL_STAT_WAITRECYCLED;
 					}
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				} else {
 					http_parser_log_info(pcontext, 6,
 						"pdu process error! out channel can't output "
@@ -1699,7 +1711,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		case PDU_PROCESSOR_TERMINATE:
 			return http_end(pcontext);
 		}
+		return X_RUNOFF;
+		}(pcontext);
 	} else if (SCHED_STAT_WAIT == pcontext->sched_stat) {
+		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		if (TRUE == hpm_processor_check_context(pcontext)) {
 			return PROCESS_IDLE;
 		}
@@ -1729,7 +1744,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					pchannel_out->channel_stat = CHANNEL_STAT_OPENED;
 					http_parser_put_vconnection(pvconnection);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				http_parser_put_vconnection(pvconnection);
 			}
@@ -1766,7 +1781,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->sched_stat = SCHED_STAT_WRREP;
 					}
 					http_parser_put_vconnection(pvconnection);
-					goto CONTEXT_PROCESSING;
+					return X_LOOP;
 				}
 				http_parser_put_vconnection(pvconnection);
 			}
@@ -1812,11 +1827,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (NULL != pvconnection) {
 				http_parser_put_vconnection(pvconnection);
 			}
-			goto CONTEXT_PROCESSING;
+			return X_LOOP;
 		}
-		
+
 		return PROCESS_IDLE;
+		}(pcontext);
 	} else if (SCHED_STAT_SOCKET == pcontext->sched_stat) {
+		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		if (0 == pcontext->write_length) {
 			auto tmp_len = hpm_processor_receive(pcontext,
 			          static_cast<char *>(pcontext->write_buff),
@@ -1899,8 +1916,11 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 		}
 		return PROCESS_POLLING_RDONLY;
+		}(pcontext);
 	}
-	
+	} while (ret == X_LOOP);
+	if (ret != X_RUNOFF)
+		return ret;
 	return http_end(pcontext);
 }
 
