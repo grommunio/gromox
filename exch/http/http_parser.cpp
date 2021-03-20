@@ -553,10 +553,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	char *ptoken1;
 	STREAM stream;
 	int written_len;
-	char reason[256];
-	int response_len;
 	size_t decode_len;
-	char dstring[128];
 	DCERPC_CALL *pcall;
 	char field_name[64];
 	char tmp_buff[2048];
@@ -564,9 +561,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	uint16_t frag_length;
 	int size, line_length;
 	DOUBLE_LIST_NODE *pnode;
-	char response_buff[1024];
     int actual_read, ssl_errno;
-    struct timeval current_time;
 	RPC_IN_CHANNEL *pchannel_in = nullptr;
 	RPC_OUT_CHANNEL *pchannel_out = nullptr;
 	VIRTUAL_CONNECTION *pvconnection;
@@ -587,6 +582,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
+				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) < g_timeout) {
@@ -618,6 +614,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		} else {
 			actual_read = read(pcontext->connection.sockd, pbuff, size);
 		}
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, 6, "connection lost");
@@ -802,8 +799,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				
 				if (system_services_judge_user != nullptr &&
 				    !system_services_judge_user(pcontext->username)) {
+					char dstring[128], response_buff[1024];
 					http_parser_rfc1123_dstring(dstring);
-					response_len = gx_snprintf(
+					auto response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 503 L-689 Service Unavailable\r\n"
 						"Date: %s\r\n"
@@ -822,12 +820,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->username);
 					goto CONTEXT_PROCESSING;
 				}
+				char reason[256];
 				if (TRUE == system_services_auth_login(
 					pcontext->username, pcontext->password,
-					pcontext->maildir, pcontext->lang, reason, 256)) {
+				    pcontext->maildir, pcontext->lang, reason, GX_ARRAY_SIZE(reason))) {
 					if ('\0' == pcontext->maildir[0]) {
+						char dstring[128], response_buff[1024];
 						http_parser_rfc1123_dstring(dstring);
-						response_len = gx_snprintf(
+						auto response_len = gx_snprintf(
 							response_buff, GX_ARRAY_SIZE(response_buff),
 							"HTTP/1.1 401 Unauthorized\r\n"
 							"Date: %s\r\n"
@@ -860,8 +860,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					    pcontext->auth_times >= g_max_auth_times)
 						system_services_add_user_into_temp_list(
 							pcontext->username, g_block_auth_fail);
+					char dstring[128], response_buff[1024];
 					http_parser_rfc1123_dstring(dstring);
-					response_len = gx_snprintf(
+					auto response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 401 Unauthorized\r\n"
 						"Date: %s\r\n"
@@ -928,8 +929,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pcontext->port = atoi(ptoken1);
 				
 				if (FALSE == pcontext->b_authed) {
+					char dstring[128], response_buff[1024];
 					http_parser_rfc1123_dstring(dstring);
-					response_len = gx_snprintf(
+					auto response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 401 Unauthorized\r\n"
 						"Date: %s\r\n"
@@ -1074,8 +1076,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				goto CONTEXT_PROCESSING;
 			}
 			/* other http request here if wanted */
+			char dstring[128], response_buff[1024];
 			http_parser_rfc1123_dstring(dstring);
-			response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
+			auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 404 Not Found\r\n"
 						"Date: %s\r\n"
 						"Server: %s\r\n"
@@ -1248,6 +1251,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				written_len);
 		}
 
+		struct timeval current_time;
         gettimeofday(&current_time, NULL);
 		
 		if (0 == written_len) {
@@ -1384,6 +1388,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					actual_read = read(
 						pcontext->connection.sockd, pbuff, size);
 				}
+				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (0 == actual_read) {
 					http_parser_log_info(pcontext, 6, "connection lost");
@@ -1470,7 +1475,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
 				0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
 				/* ECHO request */
-				response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
+				char response_buff[1024];
+				auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 								"HTTP/1.1 200 Success\r\n"
 								"Connection: Keep-Alive\r\n"
 								"Content-length: 20\r\n"
@@ -1524,6 +1530,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			} else {
 				actual_read = read(pcontext->connection.sockd, pbuff, size);
 			}
+			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			if (0 == actual_read) {
 				http_parser_log_info(pcontext, 6, "connection lost");
@@ -1666,8 +1673,9 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (CHANNEL_STAT_OPENSTART == pchannel_out->channel_stat ||
 					CHANNEL_STAT_RECYCLING == pchannel_out->channel_stat) {
 					/* first send http response head */
+					char dstring[128], response_buff[1024];
 					http_parser_rfc1123_dstring(dstring);
-					response_len = gx_snprintf(
+					auto response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),
 							"HTTP/1.1 200 Success\r\n"
 							"Date: %s\r\n"
@@ -1778,6 +1786,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				http_parser_put_vconnection(pvconnection);
 			}
 			
+			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
@@ -1814,6 +1823,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				http_parser_put_vconnection(pvconnection);
 			}
 			
+			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
@@ -1833,6 +1843,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return http_end(pcontext);
 		}
 		
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		/* check keep alive */
 		if (CALCULATE_INTERVAL(current_time,
@@ -1882,6 +1893,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					written_len);
 			}
 			
+			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			
 			if (0 == written_len) {
@@ -1915,6 +1927,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			actual_read = SSL_read(pcontext->connection.ssl,
 								tmp_buff, sizeof(tmp_buff));
 		}
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, 6, "connection lost");
