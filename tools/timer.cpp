@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <condition_variable>
+#include <list>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -41,9 +42,12 @@
 using namespace gromox;
 
 struct CONNECTION_NODE {
-	DOUBLE_LIST_NODE node;
-	int sockd;
-	int offset;
+	CONNECTION_NODE() = default;
+	CONNECTION_NODE(CONNECTION_NODE &&);
+	~CONNECTION_NODE();
+	void operator=(CONNECTION_NODE &&) = delete;
+	int sockd = -1;
+	int offset = 0;
 	char buffer[1024];
 	char line[1024];
 };
@@ -61,8 +65,7 @@ static int g_last_tid;
 static int g_list_fd;
 static char g_list_path[256];
 static std::vector<std::string> g_acl_list;
-static DOUBLE_LIST g_connection_list;
-static DOUBLE_LIST g_connection_list1;
+static std::list<CONNECTION_NODE> g_connection_list, g_connection_list1;
 static DOUBLE_LIST g_exec_list;
 static std::mutex g_tid_lock, g_list_lock, g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
@@ -92,6 +95,20 @@ static void term_handler(int signo);
 static int increase_tid();
 static void put_timer(TIMER *ptimer);
 
+CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) :
+	sockd(o.sockd), offset(o.offset)
+{
+	o.sockd = -1;
+	memcpy(buffer, o.buffer, sizeof(buffer));
+	memcpy(line, o.line, sizeof(line));
+}
+
+CONNECTION_NODE::~CONNECTION_NODE()
+{
+	if (sockd >= 0)
+		close(sockd);
+}
+
 int main(int argc, const char **argv)
 {
 	int i, j;
@@ -107,7 +124,6 @@ int main(int argc, const char **argv)
 	char temp_line[2048];
 	TIMER *ptimer;
 	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -233,9 +249,6 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 
-	double_list_init(&g_connection_list);
-	double_list_init(&g_connection_list1);
-
 	thr_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
 
 	for (i=0; i<g_threads_num; i++) {
@@ -256,8 +269,6 @@ int main(int argc, const char **argv)
 
 		close(sockd);
 		close(g_list_fd);
-		double_list_free(&g_connection_list);
-		double_list_free(&g_connection_list1);
 		return 8;
 	}
 
@@ -272,8 +283,6 @@ int main(int argc, const char **argv)
 		}
 		close(sockd);
 		close(g_list_fd);
-		double_list_free(&g_connection_list);
-		double_list_free(&g_connection_list1);
 		return 9;
 	}
 	
@@ -287,8 +296,6 @@ int main(int argc, const char **argv)
 
 		close(sockd);
 		close(g_list_fd);
-		double_list_free(&g_connection_list);
-		double_list_free(&g_connection_list1);
 		return 10;
 	}
 	
@@ -372,21 +379,8 @@ int main(int argc, const char **argv)
 
 	close(sockd);
 	close(g_list_fd);
-	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
-		pconnection = (CONNECTION_NODE*)pnode->pdata;
-		close(pconnection->sockd);
-		free(pconnection);
-	}
-
-	double_list_free(&g_connection_list);
-
-	while ((pnode = double_list_pop_front(&g_connection_list1)) != nullptr) {
-		pconnection = (CONNECTION_NODE*)pnode->pdata;
-		close(pconnection->sockd);
-		free(pconnection);
-	}
-
-	double_list_free(&g_connection_list1);
+	g_connection_list.clear();
+	g_connection_list1.clear();
 	return 0;
 }
 
@@ -420,7 +414,6 @@ static void *accept_work_func(void *param)
 	socklen_t addrlen;
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
-	CONNECTION_NODE *pconnection;	
 
 	sockd = (int)(long)param;
     while (FALSE == g_notify_stop) {
@@ -430,41 +423,34 @@ static void *accept_work_func(void *param)
 		if (-1 == sockd2) {
 			continue;
 		}
+		CONNECTION_NODE conn;
+		conn.sockd = sockd2;
 		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
 			printf("getnameinfo: %s\n", gai_strerror(ret));
-			close(sockd2);
 			continue;
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
 			write(sockd2, "Access Deny\r\n", 13);
-			close(sockd2);
 			continue;
 		}
 
-		pconnection = (CONNECTION_NODE*)malloc(sizeof(CONNECTION_NODE));
-		if (NULL == pconnection) {
-			write(sockd2, "Internal Error!\r\n", 17);
-			close(sockd2);
-			continue;
-		}
 		std::unique_lock co_hold(g_connection_lock);
-		if (double_list_get_nodes_num(&g_connection_list) + 1 +
-			double_list_get_nodes_num(&g_connection_list1) >= g_threads_num) {
+		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			free(pconnection);
 			write(sockd2, "Maximum Connection Reached!\r\n", 29);
-			close(sockd2);
 			continue;
 		}
 
-		pconnection->node.pdata = pconnection;
-		pconnection->sockd = sockd2;
-		pconnection->offset = 0;
-		double_list_append_as_tail(&g_connection_list1, &pconnection->node);
+		try {
+			g_connection_list1.push_back(std::move(conn));
+		} catch (const std::bad_alloc &) {
+			write(sockd2, "Not enough memory\r\n", 19);
+			continue;
+		}
 		co_hold.unlock();
 		write(sockd2, "OK\r\n", 4);
 		g_waken_cond.notify_one();
@@ -518,7 +504,6 @@ static void *thread_work_func(void *param)
 	int exec_interval;
 	TIMER *ptimer;
 	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;	
 	char *pspace, temp_line[1024];
 	
  NEXT_LOOP:
@@ -527,24 +512,17 @@ static void *thread_work_func(void *param)
 	cm_hold.unlock();
 
 	std::unique_lock co_hold(g_connection_lock);
-	pnode = double_list_pop_front(&g_connection_list1);
-	if (NULL != pnode) {
-		double_list_append_as_tail(&g_connection_list, pnode);
-	}
-	co_hold.unlock();
-	if (NULL == pnode) {
+	if (g_connection_list1.size() == 0)
 		goto NEXT_LOOP;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
+	g_connection_list.splice(g_connection_list.end(), g_connection_list1, g_connection_list1.begin());
+	auto pconnection = std::prev(g_connection_list.rbegin().base());
+	co_hold.unlock();
 
 	while (TRUE) {
-		if (FALSE == read_mark(pconnection)) {
-			close(pconnection->sockd);
+		if (!read_mark(&*pconnection)) {
 			co_hold.lock();
-			double_list_remove(&g_connection_list, &pconnection->node);
+			g_connection_list.erase(pconnection);
 			co_hold.unlock();
-			free(pconnection);
 			goto NEXT_LOOP;
 		}
 
@@ -615,9 +593,8 @@ static void *thread_work_func(void *param)
 			write(pconnection->sockd, "BYE\r\n", 5);
 			close(pconnection->sockd);
 			co_hold.lock();
-			double_list_remove(&g_connection_list, &pconnection->node);
+			g_connection_list.erase(pconnection);
 			co_hold.unlock();
-			free(pconnection);
 			goto NEXT_LOOP;
 		} else if (0 == strcasecmp(pconnection->line, "PING")) {
 			write(pconnection->sockd, "TRUE\r\n", 6);	
