@@ -166,5 +166,5 @@ void* fifo_get_front(FIFO* pfifo)
 	}
 
 	node = single_list_get_head(&pfifo->mlist);
-	return node->pdata;
+	return node != nullptr ? node->pdata : nullptr;
 }

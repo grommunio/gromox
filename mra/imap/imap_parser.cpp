@@ -1714,6 +1714,8 @@ static void* thread_work_func(void *argp)
 			ll_hold.lock();
 			pnode = double_list_pop_front(&g_sleeping_list);
 			ll_hold.unlock();
+			if (pnode == nullptr)
+				break;
 			pcontext = (IMAP_CONTEXT*)pnode->pdata;
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
 				std::unique_lock hl_hold(g_hash_lock);

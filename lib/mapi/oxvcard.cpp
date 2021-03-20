@@ -619,8 +619,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-		} else if (0 == strcasecmp(pvline->name, "CLASS")) {
-			pstring = vcard_get_first_subvalue(pvline);
+		} else if (strcasecmp(pvline->name, "CLASS") == 0 &&
+		    (pstring = vcard_get_first_subvalue(pvline)) != nullptr) {
 			if (0 == strcasecmp(pstring, "PRIVATE")) {
 				tmp_int32 = 2;
 			} else if (0 == strcasecmp(pstring, "CONFIDENTIAL")) {

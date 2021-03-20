@@ -154,9 +154,11 @@ static void rop_processor_release_objnode(
 		pthread_mutex_lock(&g_hash_lock);
 		pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash,
 		       logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject))));
-		(*pref) --;
-		if (0 == *pref) {
-			str_hash_remove(g_logon_hash, logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject)));
+		if (pref != nullptr) {
+			(*pref) --;
+			if (0 == *pref) {
+				str_hash_remove(g_logon_hash, logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject)));
+			}
 		}
 		pthread_mutex_unlock(&g_hash_lock);
 		b_root = TRUE;

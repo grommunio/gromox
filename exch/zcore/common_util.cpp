@@ -2217,6 +2217,8 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 	
 	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 	                ppropvals, PROP_TAG_RULEACTIONS));
+	if (pactions == nullptr)
+		return TRUE;
 	for (i=0; i<pactions->count; i++) {
 		switch (pactions->pblock[i].type) {
 		case OP_MOVE:
@@ -2353,6 +2355,8 @@ BOOL common_util_convert_to_zrule_data(
 	int i;
 	
 	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(ppropvals, PROP_TAG_RULEACTIONS));
+	if (pactions == nullptr)
+		return TRUE;
 	for (i=0; i<pactions->count; i++) {
 		switch (pactions->pblock[i].type) {
 		case OP_MOVE:
