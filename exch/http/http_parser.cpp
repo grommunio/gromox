@@ -4,6 +4,7 @@
  */ 
 #include <atomic>
 #include <cerrno>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -551,7 +552,6 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	int tmp_len1;
 	char *ptoken;
 	char *ptoken1;
-	STREAM stream;
 	int written_len;
 	size_t decode_len;
 	DCERPC_CALL *pcall;
@@ -777,14 +777,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 			
 			/* meet the end of request header */
-			if (http_parser_reconstruct_stream(
-				&pcontext->stream_in, &stream) < 0) {
+			STREAM stream_1;
+			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_1) < 0) {
 				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
 				goto CONTEXT_PROCESSING;
 			}
 			stream_free(&pcontext->stream_in);
-			pcontext->stream_in = stream;
+			pcontext->stream_in = stream_1;
 			
 			if (TRUE == http_parser_request_head(
 				&pcontext->request.f_others, "Authorization", tmp_buff,
@@ -989,7 +989,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							pcontext->pchannel)->pdu_list);
 					}
 				}
-				pcontext->bytes_rw = stream_get_total_length(&stream);
+				pcontext->bytes_rw = stream_get_total_length(&stream_1);
 				pcontext->sched_stat = SCHED_STAT_RDBODY;
 				goto CONTEXT_PROCESSING;
 			}
@@ -1009,14 +1009,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						goto CONTEXT_PROCESSING;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
-					if (http_parser_reconstruct_stream(
-						&pcontext->stream_in, &stream) < 0) {
+					STREAM stream_2;
+					if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_2) < 0) {
 						http_parser_log_info(pcontext, 6, "out of memory");
 						http_5xx(pcontext, "Resources exhausted", 503);
 						goto CONTEXT_PROCESSING;
 					}
 					stream_free(&pcontext->stream_in);
-					pcontext->stream_in = stream;
+					pcontext->stream_in = std::move(stream_2);
 					if (0 != stream_get_total_length(
 						&pcontext->stream_out)) {
 						tmp_len = STREAM_BLOCK_SIZE;
@@ -1047,14 +1047,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						goto CONTEXT_PROCESSING;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
-					if (http_parser_reconstruct_stream(
-						&pcontext->stream_in, &stream) < 0) {
+					STREAM stream_3;
+					if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_3) < 0) {
 						http_parser_log_info(pcontext, 6, "out of memory");
 						http_5xx(pcontext, "Resources exhausted", 503);
 						goto CONTEXT_PROCESSING;
 					}
 					stream_free(&pcontext->stream_in);
-					pcontext->stream_in = stream;
+					pcontext->stream_in = std::move(stream_3);
 				} else {
 					pcontext->sched_stat = SCHED_STAT_RDBODY;
 				}
@@ -1065,14 +1065,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pcontext->bytes_rw = 0;
 				pcontext->total_length = 0;
 				pcontext->sched_stat = SCHED_STAT_WRREP;
-				if (http_parser_reconstruct_stream(
-					&pcontext->stream_in, &stream) < 0) {
+				STREAM stream_4;
+				if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_4) < 0) {
 					http_parser_log_info(pcontext, 6, "out of memory");
 					http_5xx(pcontext, "Resources exhausted", 503);
 					goto CONTEXT_PROCESSING;
 				}
 				stream_free(&pcontext->stream_in);
-				pcontext->stream_in = stream;
+				pcontext->stream_in = std::move(stream_4);
 				goto CONTEXT_PROCESSING;
 			}
 			/* other http request here if wanted */
@@ -1409,14 +1409,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 								goto CONTEXT_PROCESSING;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
-							if (http_parser_reconstruct_stream(
-								&pcontext->stream_in, &stream) < 0) {
+							STREAM stream_5;
+							if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_5) < 0) {
 								http_parser_log_info(pcontext, 6, "out of memory");
 								http_5xx(pcontext, "Resources exhausted", 503);
 								goto CONTEXT_PROCESSING;
 							}
 							stream_free(&pcontext->stream_in);
-							pcontext->stream_in = stream;
+							pcontext->stream_in = std::move(stream_5);
 							if (0 != stream_get_total_length(
 								&pcontext->stream_out)) {
 								tmp_len = STREAM_BLOCK_SIZE;
@@ -1439,14 +1439,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 								goto CONTEXT_PROCESSING;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
-							if (http_parser_reconstruct_stream(
-								&pcontext->stream_in, &stream) < 0) {
+							STREAM stream_6;
+							if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_6) < 0) {
 								http_parser_log_info(pcontext, 6, "out of memory");
 								http_5xx(pcontext, "Resources exhausted", 503);
 								goto CONTEXT_PROCESSING;
 							}
 							stream_free(&pcontext->stream_in);
-							pcontext->stream_in = stream;
+							pcontext->stream_in = std::move(stream_6);
 						}
 						return PROCESS_CONTINUE;
 					} else {
@@ -1494,14 +1494,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				goto CONTEXT_PROCESSING;
 			}
 				
-			if (http_parser_reconstruct_stream(
-				&pcontext->stream_in, &stream) < 0) {
+			STREAM stream_7;
+			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_7) < 0) {
 				http_parser_log_info(pcontext, 6, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
 				goto CONTEXT_PROCESSING;
 			}
 			stream_free(&pcontext->stream_in);
-			pcontext->stream_in = stream;
+			pcontext->stream_in = std::move(stream_7);
 			return PROCESS_CONTINUE;
 		}
 		
@@ -1649,14 +1649,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			pchannel_out->frag_length = 0;
 		}
 		
-		if (http_parser_reconstruct_stream(
-			&pcontext->stream_in, &stream) < 0) {
+		STREAM stream_8;
+		if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_8) < 0) {
 			http_parser_log_info(pcontext, 6, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
 			goto CONTEXT_PROCESSING;
 		}
 		stream_free(&pcontext->stream_in);
-		pcontext->stream_in = stream;
+		pcontext->stream_in = std::move(stream_8);
 		
 		switch (result) {
 		case PDU_PROCESSOR_ERROR:
