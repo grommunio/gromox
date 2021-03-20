@@ -417,7 +417,8 @@ static int http_parser_reconstruct_stream(
 	return stream_get_total_length(pstream_dst);
 }
 
-static void http_4xx(HTTP_CONTEXT *ctx)
+static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
+    unsigned int code = 400)
 {
 	if (hpm_processor_check_context(ctx))
 		hpm_processor_put_context(ctx);
@@ -429,12 +430,12 @@ static void http_4xx(HTTP_CONTEXT *ctx)
 	char dstring[128], response_buff[1024];
 	http_parser_rfc1123_dstring(dstring);
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
-		"HTTP/1.1 400 Bad Request\r\n"
+		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
 		"Server: %s\r\n"
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n"
-		"\r\n", dstring, resource_get_string("HOST_ID"));
+		"\r\n", code, msg, dstring, resource_get_string("HOST_ID"));
 	stream_write(&ctx->stream_out, response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -531,7 +532,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					return PROCESS_POLLING_RDONLY;
 				}
 				http_parser_log_info(pcontext, 6, "time out");
-				goto REQUEST_TIME_OUT;
+				http_4xx(pcontext, "Request Timeout", 408);
+				goto CONTEXT_PROCESSING;
 			} else {
 				http_parser_log_info(pcontext, 6, "fail to accept"
 						" SSL connection, errno is %d", ssl_errno);
@@ -571,7 +573,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
 				http_parser_log_info(pcontext, 6, "time out");
-				goto REQUEST_TIME_OUT;
+				http_4xx(pcontext, "Request Timeout", 408);
+				goto CONTEXT_PROCESSING;
 			}
 			
 			/* do not return immediately, check
@@ -1395,7 +1398,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (CALCULATE_INTERVAL(current_time,
 						pcontext->connection.last_timestamp) >= g_timeout) {
 						http_parser_log_info(pcontext, 6, "time out");
-						goto REQUEST_TIME_OUT;
+						http_4xx(pcontext, "Request Timeout", 408);
+						goto CONTEXT_PROCESSING;
 					} else {
 						return PROCESS_POLLING_RDONLY;
 					}
@@ -1481,7 +1485,8 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_timeout) {
 					http_parser_log_info(pcontext, 6, "time out");
-					goto REQUEST_TIME_OUT;
+					http_4xx(pcontext, "Request Timeout", 408);
+					goto CONTEXT_PROCESSING;
 				} else {
 					return PROCESS_POLLING_RDONLY;
 				}
@@ -1875,29 +1880,6 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		}
 		return PROCESS_POLLING_RDONLY;
 	}
-	
- REQUEST_TIME_OUT:
-	if (TRUE == hpm_processor_check_context(pcontext)) {
-		hpm_processor_put_context(pcontext);
-	} else if (NULL != pcontext->pfast_context) {
-		mod_fastcgi_put_context(pcontext);
-	} else if (TRUE == mod_cache_check_caching(pcontext)) {
-		mod_cache_put_context(pcontext);
-	}
-	http_parser_rfc1123_dstring(dstring);
-	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
-					"HTTP/1.1 408 Request Timeout\r\n"
-					"Date: %s\r\n"
-					"Server: %s\r\n"
-					"Content-Length: 0\r\n"
-					"Connection: close\r\n"
-					"\r\n", dstring, resource_get_string("HOST_ID"));
-	stream_write(&pcontext->stream_out, response_buff, response_len);
-	pcontext->total_length = response_len;
-	pcontext->bytes_rw = 0;
-	pcontext->b_close = TRUE;
-	pcontext->sched_stat = SCHED_STAT_WRREP;
-	goto CONTEXT_PROCESSING;
 	
  END_PROCESSING:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
