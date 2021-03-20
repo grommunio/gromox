@@ -552,7 +552,6 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	int tmp_len1;
 	char *ptoken;
 	char *ptoken1;
-	int written_len;
 	size_t decode_len;
 	DCERPC_CALL *pcall;
 	char field_name[64];
@@ -561,7 +560,6 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	uint16_t frag_length;
 	int size, line_length;
 	DOUBLE_LIST_NODE *pnode;
-    int actual_read, ssl_errno;
 	RPC_IN_CHANNEL *pchannel_in = nullptr;
 	RPC_OUT_CHANNEL *pchannel_out = nullptr;
 	VIRTUAL_CONNECTION *pvconnection;
@@ -579,7 +577,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 		}
 		if (-1 == SSL_accept(pcontext->connection.ssl)) {
-			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
+			auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
 				struct timeval current_time;
@@ -609,6 +607,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			http_5xx(pcontext, "Resources exhausted", 503);
 			goto CONTEXT_PROCESSING;
 		}
+		ssize_t actual_read;
 		if (NULL != pcontext->connection.ssl) {
 			actual_read = SSL_read(pcontext->connection.ssl, pbuff, size);
 		} else {
@@ -1229,7 +1228,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			pcontext->write_length = tmp_len;
 		}
 		
-		written_len = pcontext->write_length - pcontext->write_offset;
+		ssize_t written_len = pcontext->write_length - pcontext->write_offset;
 		if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
 			CHANNEL_STAT_OPENED == ((RPC_OUT_CHANNEL*)
 			pcontext->pchannel)->channel_stat) {
@@ -1381,6 +1380,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_5xx(pcontext);
 					goto CONTEXT_PROCESSING;
 				}
+				ssize_t actual_read;
 				if (NULL != pcontext->connection.ssl) {
 					actual_read = SSL_read(
 						pcontext->connection.ssl, pbuff, size);
@@ -1525,6 +1525,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				goto CONTEXT_PROCESSING;
 			}
 			
+			ssize_t actual_read;
 			if (NULL != pcontext->connection.ssl) {
 				actual_read = SSL_read(pcontext->connection.ssl, pbuff, size);
 			} else {
@@ -1882,7 +1883,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 		}
 		if (pcontext->write_length > pcontext->write_offset) {
-			written_len = pcontext->write_length - pcontext->write_offset;
+			ssize_t written_len = pcontext->write_length - pcontext->write_offset;
 			if (NULL != pcontext->connection.ssl) {
 				written_len = SSL_write(pcontext->connection.ssl,
 				              static_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
@@ -1920,6 +1921,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				return PROCESS_POLLING_WRONLY;
 			}
 		}
+		ssize_t actual_read;
 		if (NULL == pcontext->connection.ssl) {
 			actual_read = read(pcontext->connection.sockd,
 							tmp_buff, sizeof(tmp_buff));
