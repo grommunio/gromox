@@ -467,7 +467,7 @@ void *service_query(const char *service_name, const char *module, const std::typ
 	if (NULL == pnode) {
 		static constexpr const char *excl[] =
 			{"ip_container_add", "ip_container_remove",
-			"ip_filter_judge", "ndr_stack_alloc"};
+			"ip_filter_add", "ip_filter_judge", "ndr_stack_alloc"};
 		if (std::none_of(excl, &excl[GX_ARRAY_SIZE(excl)],
 		    [&](const char *s) { return strcmp(service_name, s) == 0; }))
 			printf("[service]: dlname \"%s\" not found\n", service_name);
