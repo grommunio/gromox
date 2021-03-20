@@ -461,7 +461,10 @@ void console_server_notify_main_stop()
 	
 	g_terminate = TRUE;
 	b_console = FALSE;
-	pthread_join(g_listening_tid, NULL);
+	if (g_listening_tid != 0) {
+		pthread_join(g_listening_tid, NULL);
+		g_listening_tid = 0;
+	}
 	std::unique_lock ll_hold(g_list_lock);
 	while ((pnode = double_list_pop_front(&g_console_list)) != nullptr) {
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
