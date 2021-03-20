@@ -545,12 +545,8 @@ enum { X_LOOP = -1, X_RUNOFF = -2, };
  *         PROCESS_SLEEPING			need to sleep the context
  *         PROCESS_CLOSE			need to cose the context
  */
-int http_parser_process(HTTP_CONTEXT *pcontext)
+static int htparse_initssl(HTTP_CONTEXT *pcontext)
 {
-	int ret = X_RUNOFF;
-	do {
-	if (SCHED_STAT_INITSSL == pcontext->sched_stat) {
-		ret = [](HTTP_CONTEXT *pcontext) -> int {
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
@@ -583,9 +579,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 		return X_RUNOFF;
-		}(pcontext);
-	} else if (SCHED_STAT_RDHEAD == pcontext->sched_stat) {
-		ret = [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htparse_rdhead(HTTP_CONTEXT *pcontext)
+{
 		unsigned int size = STREAM_BLOCK_SIZE;
 		auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
 		if (NULL == pbuff) {
@@ -1073,9 +1070,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return X_LOOP;
 		}
 		return X_RUNOFF;
-		}(pcontext);
-	} else if (SCHED_STAT_WRREP == pcontext->sched_stat) {
-		ret = [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htparse_wrrep(HTTP_CONTEXT *pcontext)
+{
 		if (NULL == pcontext->write_buff) {
 			if (TRUE == hpm_processor_check_context(pcontext)) {
 				switch (hpm_processor_retrieve_response(pcontext)) {
@@ -1341,9 +1339,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 		}
 	        return PROCESS_CONTINUE;
-		}(pcontext);
-	} else if (SCHED_STAT_RDBODY == pcontext->sched_stat) {
-		ret = [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htparse_rdbody(HTTP_CONTEXT *pcontext)
+{
 		if (NULL == pcontext->pchannel) {
 			if (0 == pcontext->total_length ||
 				pcontext->bytes_rw < pcontext->total_length) {
@@ -1712,9 +1711,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			return http_end(pcontext);
 		}
 		return X_RUNOFF;
-		}(pcontext);
-	} else if (SCHED_STAT_WAIT == pcontext->sched_stat) {
-		ret = [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htparse_wait(HTTP_CONTEXT *pcontext)
+{
 		if (TRUE == hpm_processor_check_context(pcontext)) {
 			return PROCESS_IDLE;
 		}
@@ -1831,9 +1831,10 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		}
 
 		return PROCESS_IDLE;
-		}(pcontext);
-	} else if (SCHED_STAT_SOCKET == pcontext->sched_stat) {
-		ret = [](HTTP_CONTEXT *pcontext) -> int {
+}
+
+static int htparse_socket(HTTP_CONTEXT *pcontext)
+{
 		if (0 == pcontext->write_length) {
 			auto tmp_len = hpm_processor_receive(pcontext,
 			          static_cast<char *>(pcontext->write_buff),
@@ -1916,8 +1917,18 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			}
 		}
 		return PROCESS_POLLING_RDONLY;
-		}(pcontext);
-	}
+}
+
+int http_parser_process(HTTP_CONTEXT *pcontext)
+{
+	static constexpr int (*func[])(HTTP_CONTEXT *) = {
+		htparse_initssl, htparse_rdhead, htparse_rdbody, htparse_wrrep,
+		htparse_wait, htparse_socket,
+	};
+	int ret = X_RUNOFF;
+	do {
+		if (pcontext->sched_stat < GX_ARRAY_SIZE(func))
+			ret = func[pcontext->sched_stat](pcontext);
 	} while (ret == X_LOOP);
 	if (ret != X_RUNOFF)
 		return ret;

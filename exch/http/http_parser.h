@@ -79,7 +79,7 @@ struct HTTP_CONTEXT {
 	HTTP_REQUEST		request;
 	uint64_t			total_length;
 	uint64_t			bytes_rw;
-	int					sched_stat;
+	unsigned int sched_stat;
 	STREAM				stream_in;			/* stream for reading */
 	STREAM				stream_out;			/* stream for writing */
 	void *write_buff;
