@@ -527,3 +527,32 @@ DOUBLE_LIST_NODE* double_list_get_tail(DOUBLE_LIST *plist)
 	return plist->phead->pprev;
 }
 
+const DOUBLE_LIST_NODE *double_list_get_before(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n)
+{
+	return double_list_get_before(deconst(l), deconst(n));
+}
+
+const DOUBLE_LIST_NODE *double_list_get_after(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n)
+{
+	return double_list_get_after(deconst(l), deconst(n));
+}
+
+const DOUBLE_LIST_NODE *double_list_forward(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n, size_t *z)
+{
+	return double_list_forward(deconst(l), deconst(n), z);
+}
+
+const DOUBLE_LIST_NODE *double_list_backward(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n, size_t *z)
+{
+	return double_list_backward(deconst(l), deconst(n), z);
+}
+
+const DOUBLE_LIST_NODE *double_list_get_head(const DOUBLE_LIST *l)
+{
+	return double_list_get_head(deconst(l));
+}
+
+const DOUBLE_LIST_NODE *double_list_get_tail(const DOUBLE_LIST *l)
+{
+	return double_list_get_tail(deconst(l));
+}
