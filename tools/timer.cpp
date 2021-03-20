@@ -14,7 +14,6 @@
 #include <gromox/paths.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include <gromox/double_list.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/config_file.hpp>
 #include <cstdio>
@@ -53,10 +52,9 @@ struct CONNECTION_NODE {
 };
 
 struct TIMER {
-	DOUBLE_LIST_NODE node;
 	int t_id;
 	time_t exec_time;
-	char command[COMMAND_LENGTH];
+	std::string command;
 };
 
 static BOOL g_notify_stop;
@@ -66,7 +64,7 @@ static int g_list_fd;
 static char g_list_path[256];
 static std::vector<std::string> g_acl_list;
 static std::list<CONNECTION_NODE> g_connection_list, g_connection_list1;
-static DOUBLE_LIST g_exec_list;
+static std::list<TIMER> g_exec_list;
 static std::mutex g_tid_lock, g_list_lock, g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static char *opt_config_file;
@@ -93,7 +91,6 @@ static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static void term_handler(int signo);
 static int increase_tid();
-static void put_timer(TIMER *ptimer);
 
 CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) :
 	sockd(o.sockd), offset(o.offset)
@@ -109,6 +106,20 @@ CONNECTION_NODE::~CONNECTION_NODE()
 		close(sockd);
 }
 
+static TIMER *put_timer(TIMER &&ptimer)
+{
+	for (auto pos = g_exec_list.begin(); pos != g_exec_list.end(); ++pos) {
+		if (pos->exec_time > ptimer.exec_time) {
+			std::list<TIMER> stash;
+			stash.push_back(std::move(ptimer));
+			g_exec_list.splice(pos, stash, stash.begin());
+			return &*pos;
+		}
+	}
+	g_exec_list.push_back(std::move(ptimer));
+	return &g_exec_list.back();
+}
+
 int main(int argc, const char **argv)
 {
 	int i, j;
@@ -122,8 +133,6 @@ int main(int argc, const char **argv)
 	char listen_ip[40];
 	char temp_path[256];
 	char temp_line[2048];
-	TIMER *ptimer;
-	DOUBLE_LIST_NODE *pnode;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -201,7 +210,6 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 
-	double_list_init(&g_exec_list);
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
 	for (i=0; i<item_num; i++) {
@@ -225,15 +233,14 @@ int main(int argc, const char **argv)
 			g_last_tid = pitem[i].tid;
 		if (pitem[i].exectime == 0)
 			continue;
-		ptimer = (TIMER*)malloc(sizeof(TIMER));
-		if (NULL == ptimer) {
-			continue;
+		try {
+			TIMER tmr;
+			tmr.t_id = pitem[i].tid;
+			tmr.exec_time = pitem[i].exectime;
+			tmr.command = pitem[i].command;
+			put_timer(std::move(tmr));
+		} catch (std::bad_alloc &) {
 		}
-		ptimer->node.pdata = ptimer;
-		ptimer->t_id = pitem[i].tid;
-		ptimer->exec_time = pitem[i].exectime;
-		HX_strlcpy(ptimer->command, pitem[i].command, sizeof(ptimer->command));
-		put_timer(ptimer);
 	}
 	pfile.reset();
 
@@ -308,19 +315,13 @@ int main(int argc, const char **argv)
 	while (FALSE == g_notify_stop) {
 		std::unique_lock li_hold(g_list_lock);
 		time(&cur_time);
-		for (pnode=double_list_get_head(&g_exec_list); NULL!=pnode;
-			pnode=double_list_get_after(&g_exec_list, pnode)) {
-			ptimer = (TIMER*)pnode->pdata;
+		for (auto ptimer = g_exec_list.begin(); ptimer != g_exec_list.end(); ) {
 			if (ptimer->exec_time > cur_time) {
 				break;
 			}
-			pnode = double_list_get_after(&g_exec_list, pnode);
-			double_list_remove(&g_exec_list, &ptimer->node);
-			execute_timer(ptimer);
-			free(ptimer);
-			if (NULL == pnode) {
-				break;
-			}
+			std::list<TIMER> stash;
+			stash.splice(stash.end(), g_exec_list, ptimer++);
+			execute_timer(&stash.front());
 		}
 
 		if (cur_time - last_cltime > 7 * 86400) {
@@ -384,30 +385,6 @@ int main(int argc, const char **argv)
 	return 0;
 }
 
-
-static void put_timer(TIMER *ptimer)
-{
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_exec_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_exec_list, pnode)) {
-		if (((TIMER*)(pnode->pdata))->exec_time > ptimer->exec_time) {
-			break;
-		}
-	}
-
-	if (NULL == pnode) {
-		double_list_append_as_tail(&g_exec_list, &ptimer->node);
-	} else {
-		if (pnode == double_list_get_head(&g_exec_list)) {
-			double_list_insert_as_head(&g_exec_list, &ptimer->node);
-		} else {
-			double_list_insert_before(&g_exec_list, pnode, &ptimer->node);
-		}
-	}
-}
-
-
 static void *accept_work_func(void *param)
 {
 	int sockd, sockd2;
@@ -461,14 +438,13 @@ static void *accept_work_func(void *param)
 static void execute_timer(TIMER *ptimer)
 {
 	int len;
-	int argc;
 	int status;
 	pid_t pid;
 	char result[1024];
 	char temp_buff[2048];
 	char* argv[MAXARGS];
 
-	argc = parse_line(temp_buff, ptimer->command, argv);
+	int argc = parse_line(temp_buff, ptimer->command.c_str(), argv);
 	if (argc > 0) {
 		pid = fork();
 		if (0 == pid) {
@@ -502,8 +478,6 @@ static void *thread_work_func(void *param)
 	int t_id;
 	int temp_len;
 	int exec_interval;
-	TIMER *ptimer;
-	DOUBLE_LIST_NODE *pnode;
 	char *pspace, temp_line[1024];
 	
  NEXT_LOOP:
@@ -532,25 +506,24 @@ static void *thread_work_func(void *param)
 				write(pconnection->sockd, "FALSE 1\r\n", 9);	
 				continue;
 			}
+			bool removed_timer = false;
 			std::unique_lock li_hold(g_list_lock);
-			for (pnode=double_list_get_head(&g_exec_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_exec_list, pnode)) {
-				ptimer = (TIMER*)pnode->pdata;
+			for (auto pos = g_exec_list.begin(); pos != g_exec_list.end(); ++pos) {
+				auto ptimer = &*pos;
 				if (t_id == ptimer->t_id) {
-					double_list_remove(&g_exec_list, pnode);
 					temp_len = sprintf(temp_line, "%d\t0\tCANCEL\n",
 								ptimer->t_id);
-					free(ptimer);
+					g_exec_list.erase(pos);
+					removed_timer = true;
 					write(g_list_fd, temp_line, temp_len);
 					break;
 				}
 			}
 			li_hold.unlock();
-			if (NULL != pnode) {
+			if (removed_timer)
 				write(pconnection->sockd, "TRUE\r\n", 6);
-			} else {
+			else
 				write(pconnection->sockd, "FALSE 2\r\n", 9);
-			}
 		} else if (0 == strncasecmp(pconnection->line, "ADD ", 4)) {
 			pspace = strchr(pconnection->line + 4, ' ');
 			if (NULL == pspace) {
@@ -566,22 +539,22 @@ static void *thread_work_func(void *param)
 				continue;
 			}
 
-			ptimer = (TIMER*)malloc(sizeof(TIMER));
-			if (NULL == ptimer) {
+			TIMER tmr;
+			tmr.t_id = increase_tid();
+			tmr.exec_time = exec_interval + time(nullptr);
+			try {
+				tmr.command = pspace;
+			} catch (const std::bad_alloc &) {
 				write(pconnection->sockd, "FALSE 3\r\n", 9);
 				continue;
 			}
-			ptimer->node.pdata = ptimer;
-			ptimer->t_id = increase_tid();
-			ptimer->exec_time = exec_interval + time(NULL);
-			strcpy(ptimer->command, pspace);
 
 			std::unique_lock li_hold(g_list_lock);
-			put_timer(ptimer);
+			auto ptimer = put_timer(std::move(tmr));
 
 			temp_len = sprintf(temp_line, "%d\t%ld\t", ptimer->t_id,
 						ptimer->exec_time);
-			encode_line(ptimer->command, temp_line + temp_len);
+			encode_line(ptimer->command.c_str(), temp_line + temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';
 			temp_len ++;
