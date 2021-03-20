@@ -417,7 +417,8 @@ static int http_parser_reconstruct_stream(
 	return stream_get_total_length(pstream_dst);
 }
 
-static void http_5xx(HTTP_CONTEXT *ctx)
+static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error",
+    unsigned int code = 500)
 {
 	if (hpm_processor_check_context(ctx))
 		hpm_processor_put_context(ctx);
@@ -429,12 +430,12 @@ static void http_5xx(HTTP_CONTEXT *ctx)
 	char dstring[128], response_buff[1024];
 	http_parser_rfc1123_dstring(dstring);
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
-		"HTTP/1.1 500 Internal Server Error\r\n"
+		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
 		"Server: %s\r\n"
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n"
-		"\r\n", dstring, resource_get_string("HOST_ID"));
+		"\r\n", code, msg, dstring, resource_get_string("HOST_ID"));
 	stream_write(&ctx->stream_out, response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -490,7 +491,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
 				http_parser_log_info(pcontext, 6, "out of SSL object");
-				http_5xx(pcontext);
+				http_5xx(pcontext, "Resources exhausted", 503);
 				goto CONTEXT_PROCESSING;
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
@@ -521,7 +522,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		        reinterpret_cast<unsigned int *>(&size));
 		if (NULL == pbuff) {
 			http_parser_log_info(pcontext, 6, "out of memory");
-			http_5xx(pcontext);
+			http_5xx(pcontext, "Resources exhausted", 503);
 			goto CONTEXT_PROCESSING;
 		}
 		if (NULL != pcontext->connection.ssl) {
@@ -687,7 +688,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (http_parser_reconstruct_stream(
 				&pcontext->stream_in, &stream) < 0) {
 				http_parser_log_info(pcontext, 6, "out of memory");
-				http_5xx(pcontext);
+				http_5xx(pcontext, "Resources exhausted", 503);
 				goto CONTEXT_PROCESSING;
 			}
 			stream_free(&pcontext->stream_in);
@@ -867,7 +868,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->pchannel =
 							lib_buffer_get(g_inchannel_allocator);
 						if (NULL == pcontext->pchannel) {
-							http_5xx(pcontext);
+							http_5xx(pcontext, "Resources exhausted", 503);
 							goto CONTEXT_PROCESSING;
 						}	
 						memset(pcontext->pchannel, 0, sizeof(RPC_IN_CHANNEL));
@@ -878,7 +879,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						pcontext->pchannel =
 							lib_buffer_get(g_outchannel_allocator);
 						if (NULL == pcontext->pchannel) {
-							http_5xx(pcontext);
+							http_5xx(pcontext, "Resources exhausted", 503);
 							goto CONTEXT_PROCESSING;
 						}
 						memset(pcontext->pchannel, 0, sizeof(RPC_OUT_CHANNEL));
@@ -909,7 +910,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (http_parser_reconstruct_stream(
 						&pcontext->stream_in, &stream) < 0) {
 						http_parser_log_info(pcontext, 6, "out of memory");
-						http_5xx(pcontext);
+						http_5xx(pcontext, "Resources exhausted", 503);
 						goto CONTEXT_PROCESSING;
 					}
 					stream_free(&pcontext->stream_in);
@@ -947,7 +948,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					if (http_parser_reconstruct_stream(
 						&pcontext->stream_in, &stream) < 0) {
 						http_parser_log_info(pcontext, 6, "out of memory");
-						http_5xx(pcontext);
+						http_5xx(pcontext, "Resources exhausted", 503);
 						goto CONTEXT_PROCESSING;
 					}
 					stream_free(&pcontext->stream_in);
@@ -965,7 +966,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (http_parser_reconstruct_stream(
 					&pcontext->stream_in, &stream) < 0) {
 					http_parser_log_info(pcontext, 6, "out of memory");
-					http_5xx(pcontext);
+					http_5xx(pcontext, "Resources exhausted", 503);
 					goto CONTEXT_PROCESSING;
 				}
 				stream_free(&pcontext->stream_in);
@@ -1306,7 +1307,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							if (http_parser_reconstruct_stream(
 								&pcontext->stream_in, &stream) < 0) {
 								http_parser_log_info(pcontext, 6, "out of memory");
-								http_5xx(pcontext);
+								http_5xx(pcontext, "Resources exhausted", 503);
 								goto CONTEXT_PROCESSING;
 							}
 							stream_free(&pcontext->stream_in);
@@ -1336,7 +1337,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							if (http_parser_reconstruct_stream(
 								&pcontext->stream_in, &stream) < 0) {
 								http_parser_log_info(pcontext, 6, "out of memory");
-								http_5xx(pcontext);
+								http_5xx(pcontext, "Resources exhausted", 503);
 								goto CONTEXT_PROCESSING;
 							}
 							stream_free(&pcontext->stream_in);
@@ -1388,7 +1389,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (http_parser_reconstruct_stream(
 				&pcontext->stream_in, &stream) < 0) {
 				http_parser_log_info(pcontext, 6, "out of memory");
-				http_5xx(pcontext);
+				http_5xx(pcontext, "Resources exhausted", 503);
 				goto CONTEXT_PROCESSING;
 			}
 			stream_free(&pcontext->stream_in);
@@ -1412,7 +1413,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			        reinterpret_cast<unsigned int *>(&size));
 			if (NULL == pbuff) {
 				http_parser_log_info(pcontext, 6, "out of memory");
-				http_5xx(pcontext);
+				http_5xx(pcontext, "Resources exhausted", 503);
 				goto CONTEXT_PROCESSING;
 			}
 			
@@ -1541,7 +1542,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		if (http_parser_reconstruct_stream(
 			&pcontext->stream_in, &stream) < 0) {
 			http_parser_log_info(pcontext, 6, "out of memory");
-			http_5xx(pcontext);
+			http_5xx(pcontext, "Resources exhausted", 503);
 			goto CONTEXT_PROCESSING;
 		}
 		stream_free(&pcontext->stream_in);
