@@ -469,6 +469,67 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 	ctx->sched_stat = SCHED_STAT_WRREP;
 }
 
+static int http_end(HTTP_CONTEXT *ctx)
+{
+	if (hpm_processor_check_context(ctx))
+		hpm_processor_put_context(ctx);
+	else if (ctx->pfast_context != nullptr)
+		mod_fastcgi_put_context(ctx);
+	else if (mod_cache_check_caching(ctx))
+		mod_cache_put_context(ctx);
+
+	if (ctx->pchannel != nullptr) {
+		DOUBLE_LIST_NODE *pnode;
+		if (ctx->channel_type == CHANNEL_TYPE_IN) {
+			auto chan = static_cast<RPC_IN_CHANNEL *>(ctx->pchannel);
+			auto conn = http_parser_get_vconnection(ctx->host,
+			            ctx->port, chan->connection_cookie);
+			if (conn != nullptr) {
+				if (conn->pcontext_in == ctx)
+					conn->pcontext_in = nullptr;
+				http_parser_put_vconnection(conn);
+			}
+			while ((pnode = double_list_pop_front(&chan->pdu_list)) != nullptr) {
+				free(static_cast<BLOB_NODE *>(pnode->pdata)->blob.data);
+				pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
+			}
+			double_list_free(&chan->pdu_list);
+			lib_buffer_put(g_inchannel_allocator, ctx->pchannel);
+		} else {
+			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
+			auto conn = http_parser_get_vconnection(ctx->host,
+			            ctx->port, chan->connection_cookie);
+			if (conn != nullptr) {
+				if (conn->pcontext_out == ctx)
+					conn->pcontext_out = nullptr;
+				http_parser_put_vconnection(conn);
+			}
+			if (chan->pcall != nullptr) {
+				pdu_processor_free_call(chan->pcall);
+				chan->pcall = nullptr;
+			}
+			while ((pnode = double_list_pop_front(&chan->pdu_list)) != nullptr) {
+				free(static_cast<BLOB_NODE *>(pnode->pdata)->blob.data);
+				pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
+			}
+			double_list_free(&chan->pdu_list);
+			lib_buffer_put(g_outchannel_allocator, ctx->pchannel);
+		}
+		ctx->pchannel = nullptr;
+	}
+
+	if (ctx->connection.ssl != nullptr) {
+		SSL_shutdown(ctx->connection.ssl);
+		SSL_free(ctx->connection.ssl);
+		ctx->connection.ssl = nullptr;
+	}
+	close(ctx->connection.sockd);
+	if (system_services_container_remove_ip != nullptr)
+		system_services_container_remove_ip(ctx->connection.client_ip);
+	http_parser_context_clear(ctx);
+	return PROCESS_CLOSE;
+}
+
 /* 
  * process a context
  * @param
@@ -537,7 +598,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			} else {
 				http_parser_log_info(pcontext, 6, "fail to accept"
 						" SSL connection, errno is %d", ssl_errno);
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 		} else {
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
@@ -560,14 +621,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, 6, "connection lost");
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		} else if (actual_read > 0) {
 			pcontext->connection.last_timestamp = current_time;
 			stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
 		} else {
 			if (EAGAIN != errno) {
 				http_parser_log_info(pcontext, 6, "connection lost");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
@@ -1048,7 +1109,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					return PROCESS_IDLE;
 				case HPM_RETRIEVE_DONE:
 					if (TRUE == pcontext->b_close) {
-						goto END_PROCESSING;
+						return http_end(pcontext);
 					}
 					http_parser_request_clear(&pcontext->request);
 					hpm_processor_put_context(pcontext);
@@ -1065,7 +1126,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 							pcontext, pbuff, size)) {
 							http_parser_log_info(pcontext, 6,
 								"connection closed by hpm");
-							goto END_PROCESSING;	
+							return http_end(pcontext);
 						}
 					}
 					stream_clear(&pcontext->stream_in);
@@ -1095,7 +1156,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						if (0 == stream_get_total_length(
 							&pcontext->stream_out)) {
 							if (TRUE == pcontext->b_close) {
-								goto END_PROCESSING;
+								return http_end(pcontext);
 							} else {
 								http_parser_request_clear(&pcontext->request);
 								pcontext->sched_stat = SCHED_STAT_RDHEAD;
@@ -1118,7 +1179,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					}
 					if (0 == stream_get_total_length(&pcontext->stream_out)) {
 						if (TRUE == pcontext->b_close) {
-							goto END_PROCESSING;
+							return http_end(pcontext);
 						} else {
 							http_parser_request_clear(&pcontext->request);
 							pcontext->sched_stat = SCHED_STAT_RDHEAD;
@@ -1140,7 +1201,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (NULL == pvconnection) {
 					http_parser_log_info(pcontext, 6,
 						"virtual connection error in hash table");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				pnode = double_list_get_head(
 					&((RPC_OUT_CHANNEL*)pcontext->pchannel)->pdu_list);
@@ -1191,17 +1252,17 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		
 		if (0 == written_len) {
 			http_parser_log_info(pcontext, 6, "connection lost");
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		} else if (written_len < 0) {
 			if (EAGAIN != errno) {
 				http_parser_log_info(pcontext, 6, "connection lost");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
 				http_parser_log_info(pcontext, 6, "time out");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			} else {
 				return PROCESS_POLLING_WRONLY;
 			}
@@ -1241,7 +1302,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (NULL == pvconnection) {
 				http_parser_log_info(pcontext, 6,
 					"virtual connection error in hash table");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			pnode = double_list_pop_front(&static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->pdu_list);
 			free(((BLOB_NODE*)pnode->pdata)->blob.data);
@@ -1294,7 +1355,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					return PROCESS_CONTINUE;
 				} else {
 					if (TRUE == pcontext->b_close) {
-						goto END_PROCESSING;
+						return http_end(pcontext);
 					}
 					http_parser_request_clear(&pcontext->request);
 					pcontext->sched_stat = SCHED_STAT_RDHEAD;
@@ -1326,7 +1387,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				gettimeofday(&current_time, NULL);
 				if (0 == actual_read) {
 					http_parser_log_info(pcontext, 6, "connection lost");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				} else if (actual_read > 0) {
 					pcontext->connection.last_timestamp = current_time;
 					stream_forward_writing_ptr(
@@ -1392,7 +1453,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				} else {
 					if (EAGAIN != errno) {
 						http_parser_log_info(pcontext, 6, "connection lost");
-						goto END_PROCESSING;
+						return http_end(pcontext);
 					}
 					/* check if context is timed out */
 					if (CALCULATE_INTERVAL(current_time,
@@ -1466,20 +1527,20 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			gettimeofday(&current_time, NULL);
 			if (0 == actual_read) {
 				http_parser_log_info(pcontext, 6, "connection lost");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			} else if (actual_read > 0) {
 				pcontext->bytes_rw += actual_read;
 				if (pcontext->bytes_rw > pcontext->total_length) {
 					http_parser_log_info(pcontext, 6,
 						"content length overflow when reading body");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				pcontext->connection.last_timestamp = current_time;
 				stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
 			} else {
 				if (EAGAIN != errno) {
 					http_parser_log_info(pcontext, 6, "connection lost");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				/* check if context is timed out */
 				if (CALCULATE_INTERVAL(current_time,
@@ -1537,14 +1598,14 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				if (NULL == pvconnection) {
 					http_parser_log_info(pcontext, 6,
 						"virtual connection error in hash table");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				if (pvconnection->pcontext_in != pcontext ||
 					NULL == pvconnection->pprocessor) {
 					http_parser_put_vconnection(pvconnection);
 					http_parser_log_info(pcontext, 6,
 						"virtual connection error in hash table");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				result = pdu_processor_input(pvconnection->pprocessor,
 				         static_cast<char *>(pbuff), frag_length, &pcall);
@@ -1594,7 +1655,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		case PDU_PROCESSOR_ERROR:
 		case PDU_PROCESSOR_FORWARD:
 			http_parser_log_info(pcontext, 6, "pdu process error!");
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		case PDU_PROCESSOR_INPUT:
 			/* do nothing */
 			return PROCESS_CONTINUE;
@@ -1638,7 +1699,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 					http_parser_log_info(pcontext, 6,
 						"pdu process error! out channel can't output "
 						"itself after virtual connection established");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 			}
 			/* in channel here, find the corresponding out channel first! */
@@ -1648,7 +1709,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pdu_processor_free_call(pcall);
 				http_parser_log_info(pcontext, 6,
 					"cannot find virtual connection in hash table");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			
 			if ((pcontext != pvconnection->pcontext_in &&
@@ -1658,7 +1719,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				pdu_processor_free_call(pcall);
 				http_parser_log_info(pcontext, 6,
 					"missing out channel in virtual connection");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			if (TRUE == ((RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel)->b_obsolete) {
@@ -1679,7 +1740,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			pdu_processor_free_call(pcall);
 			return PROCESS_CONTINUE;
 		case PDU_PROCESSOR_TERMINATE:
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		}
 	} else if (SCHED_STAT_WAIT == pcontext->sched_stat) {
 		if (TRUE == hpm_processor_check_context(pcontext)) {
@@ -1705,7 +1766,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 						http_parser_put_vconnection(pvconnection);
 						http_parser_log_info(pcontext, 6,
 							"pdu process error! fail to setup conn/c2");
-						goto END_PROCESSING;
+						return http_end(pcontext);
 					}
 					pdu_processor_output_pdu(
 						pchannel_out->pcall, &pchannel_out->pdu_list);
@@ -1724,7 +1785,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				>= OUT_CHANNEL_MAX_WAIT) {
 				http_parser_log_info(pcontext, 6, "no correpoding in "
 					"channel coming during maximum waiting interval");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			return PROCESS_IDLE;
 		} else if (CHANNEL_STAT_WAITRECYCLED == pchannel_out->channel_stat) {
@@ -1760,16 +1821,16 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 				>= OUT_CHANNEL_MAX_WAIT) {
 				http_parser_log_info(pcontext, 6, "channel is not "
 						"recycled during maximum waiting interval");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			return PROCESS_IDLE;
 		} else if (CHANNEL_STAT_RECYCLED == pchannel_out->channel_stat) {
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		}
 		
 		if (0 == recv(pcontext->connection.sockd, tmp_buff, 1, MSG_PEEK)) {
 			http_parser_log_info(pcontext, 6, "connection lost");
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		}
 		
 		gettimeofday(&current_time, NULL);
@@ -1803,7 +1864,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			if (0 == tmp_len) {
 				http_parser_log_info(pcontext, 6,
 					"connection closed by hpm");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			} else if (tmp_len > 0) {
 				pcontext->write_length = tmp_len;
 				pcontext->write_offset = 0;
@@ -1825,7 +1886,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			
 			if (0 == written_len) {
 				http_parser_log_info(pcontext, 6, "connection lost");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			} else if (written_len > 0) {
 				pcontext->connection.last_timestamp = current_time;
 				pcontext->write_offset += written_len;
@@ -1836,13 +1897,13 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 			} else {
 				if (EAGAIN != errno) {
 					http_parser_log_info(pcontext, 6, "connection lost");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				/* check if context is timed out */
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_timeout) {
 					http_parser_log_info(pcontext, 6, "time out");
-					goto END_PROCESSING;
+					return http_end(pcontext);
 				}
 				return PROCESS_POLLING_WRONLY;
 			}
@@ -1857,89 +1918,31 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		gettimeofday(&current_time, NULL);
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, 6, "connection lost");
-			goto END_PROCESSING;
+			return http_end(pcontext);
 		} else if (actual_read > 0) {
 			pcontext->connection.last_timestamp = current_time;
 			if (FALSE == hpm_processor_send(
 				pcontext, tmp_buff, actual_read)) {
 				http_parser_log_info(pcontext, 6,
 					"connection closed by hpm");
-				goto END_PROCESSING;	
+				return http_end(pcontext);
 			}
 		} else {
 			if (EAGAIN != errno) {
 				http_parser_log_info(pcontext, 6, "connection lost");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
 				http_parser_log_info(pcontext, 6, "time out");
-				goto END_PROCESSING;
+				return http_end(pcontext);
 			}
 		}
 		return PROCESS_POLLING_RDONLY;
 	}
 	
- END_PROCESSING:
-	if (TRUE == hpm_processor_check_context(pcontext)) {
-		hpm_processor_put_context(pcontext);
-	} else if (NULL != pcontext->pfast_context) {
-		mod_fastcgi_put_context(pcontext);
-	} else if (TRUE == mod_cache_check_caching(pcontext)) {
-		mod_cache_put_context(pcontext);
-	}
-	if (NULL != pcontext->pchannel) {
-		if (CHANNEL_TYPE_IN == pcontext->channel_type) {
-			pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
-			pvconnection = http_parser_get_vconnection(pcontext->host,
-					pcontext->port, pchannel_in->connection_cookie);
-			if (NULL != pvconnection) {
-				if (pcontext == pvconnection->pcontext_in) {
-					pvconnection->pcontext_in = NULL;
-				}
-				http_parser_put_vconnection(pvconnection);
-			}
-			while ((pnode = double_list_pop_front(&pchannel_in->pdu_list)) != nullptr) {
-				free(((BLOB_NODE*)pnode->pdata)->blob.data);
-				pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
-			}
-			double_list_free(&pchannel_in->pdu_list);
-			lib_buffer_put(g_inchannel_allocator, pcontext->pchannel);
-		} else {
-			pchannel_out = (RPC_OUT_CHANNEL*)pcontext->pchannel;
-			pvconnection = http_parser_get_vconnection(pcontext->host,
-					pcontext->port, pchannel_out->connection_cookie);
-			if (NULL != pvconnection) {
-				if (pcontext == pvconnection->pcontext_out) {
-					pvconnection->pcontext_out = NULL;
-				}
-				http_parser_put_vconnection(pvconnection);
-			}
-			if (NULL != pchannel_out->pcall) {
-				pdu_processor_free_call(pchannel_out->pcall);
-				pchannel_out->pcall = NULL;
-			}
-			while ((pnode = double_list_pop_front(&pchannel_out->pdu_list)) != nullptr) {
-				free(((BLOB_NODE*)pnode->pdata)->blob.data);
-				pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
-			}
-			double_list_free(&pchannel_out->pdu_list);
-			lib_buffer_put(g_outchannel_allocator, pcontext->pchannel);
-		}
-		pcontext->pchannel = NULL;
-	}
-	
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	close(pcontext->connection.sockd);
-	if (system_services_container_remove_ip != nullptr)
-		system_services_container_remove_ip(pcontext->connection.client_ip);
-	http_parser_context_clear(pcontext);
-	return PROCESS_CLOSE;
+	return http_end(pcontext);
 }
 
 void http_parser_shutdown_async()
