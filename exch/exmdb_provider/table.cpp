@@ -153,14 +153,12 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
 		         " folders WHERE parent_id=%llu AND is_deleted=%u",
 		         LLU(folder_id), !!(table_flags & TABLE_FLAG_SOFTDELETES));
+	} else if (table_flags & TABLE_FLAG_SOFTDELETES) {
+		sprintf(sql_string, "SELECT"
+		        " folder_id FROM folders WHERE 0");
 	} else {
-		if (table_flags & TABLE_FLAG_SOFTDELETES) {
-			sprintf(sql_string, "SELECT"
-				" folder_id FROM folders WHERE 0");
-		} else {
-			sprintf(sql_string, "SELECT folder_id "
-			          "FROM folders WHERE parent_id=%llu", LLU(folder_id));
-		}
+		sprintf(sql_string, "SELECT folder_id "
+		        "FROM folders WHERE parent_id=%llu", LLU(folder_id));
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		return FALSE;
@@ -177,12 +175,9 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 				continue;
 			}
 		}
-		if (NULL != prestriction) {
-			if (FALSE == common_util_evaluate_folder_restriction(
-				psqlite, folder_id1, prestriction)) {
-				goto LOAD_SUBFOLDER;
-			}
-		}
+		if (prestriction != nullptr &&
+		    !common_util_evaluate_folder_restriction(psqlite, folder_id1, prestriction))
+			goto LOAD_SUBFOLDER;
 		sqlite3_bind_int64(pstmt, 1, folder_id1);
 		sqlite3_bind_int64(pstmt, 2, depth);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
@@ -192,13 +187,11 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 		(*prow_count) ++;
 		sqlite3_reset(pstmt);
  LOAD_SUBFOLDER:
-		if (table_flags & TABLE_FLAG_DEPTH) {
-			if (FALSE == table_load_hierarchy(
-				psqlite, folder_id1, username, table_flags,
-				prestriction, pstmt, depth + 1, prow_count)) {
-				sqlite3_finalize(pstmt1);
-				return FALSE;
-			}
+		if ((table_flags & TABLE_FLAG_DEPTH) &&
+		    !table_load_hierarchy(psqlite, folder_id1, username,
+		    table_flags, prestriction, pstmt, depth + 1, prow_count)) {
+			sqlite3_finalize(pstmt1);
+			return FALSE;
 		}
 	}
 	sqlite3_finalize(pstmt1);
