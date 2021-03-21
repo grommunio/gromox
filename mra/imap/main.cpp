@@ -58,7 +58,7 @@ int main(int argc, const char **argv)
 { 
 	int retcode = EXIT_FAILURE, listen_port, listen_ssl_port;
 	int autologout_time, context_aver_mitem;
-	int context_num, context_aver_mem, context_max_mem;
+	unsigned int context_num, context_aver_mem, context_max_mem;
 	int imap_auth_times, imap_conn_timeout;
 	int thread_init_num, thread_charge_num; 
 	int imap_support_stls, imap_force_stls;
@@ -122,7 +122,7 @@ int main(int argc, const char **argv)
 	else
 		printf("[system]: running identity of process will be %s\n", user_name);
 
-	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
+	if (!resource_get_uint("CONTEXT_NUM", &context_num)) {
 		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}

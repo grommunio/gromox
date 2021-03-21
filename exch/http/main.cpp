@@ -96,7 +96,7 @@ int main(int argc, const char **argv)
 	char host_name[256], *ptoken;
 	const char *proc_plugin_path;
 	const char *service_plugin_path;
-	int context_num, context_aver_mem;
+	unsigned int context_num, context_aver_mem;
 	int http_auth_times, http_conn_timeout;
 	const char *console_server_ip, *user_name;
 	int listen_port, listen_ssl_port, mss_size;
@@ -174,7 +174,7 @@ int main(int argc, const char **argv)
 	else
 		printf("[system]: running identity of process will be %s\n", user_name);
 
-	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
+	if (!resource_get_uint("CONTEXT_NUM", &context_num)) {
 		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}

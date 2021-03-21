@@ -49,14 +49,14 @@ static BOOL service_register_talk(TALK_MAIN talk);
 static const char *service_get_plugin_name();
 static const char *service_get_config_path();
 static const char *service_get_data_path();
-static int service_get_context_num();
+static unsigned int service_get_context_num();
 static const char *service_get_host_ID();
 
 static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static SVC_PLUG_ENTITY *g_cur_plug;
-static int				g_context_num;
+static unsigned int g_context_num;
 static const char *const *g_plugin_names;
 static bool g_ign_loaderr;
 static SVC_PLUG_ENTITY g_system_image;
@@ -359,7 +359,7 @@ static const char* service_get_data_path()
  *	@return
  *		context number
  */
-static int service_get_context_num()
+static unsigned int service_get_context_num()
 {
 	return g_context_num;
 }

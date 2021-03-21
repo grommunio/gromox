@@ -58,7 +58,8 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 { 
 	size_t max_mem;
-	int retcode = EXIT_FAILURE, threads_min, threads_max;
+	int retcode = EXIT_FAILURE;
+	unsigned int threads_min, threads_max;
 	int free_contexts, mime_ratio;
     const char *dequeue_path, *mpc_plugin_path, *service_plugin_path; 
     const char *console_server_ip, *user_name, *str_val, *admin_mb;
@@ -135,7 +136,7 @@ int main(int argc, const char **argv)
 		printf("[system]: domain list in system is valid\n");
 	}
 
-	if (!resource_get_integer("WORK_THREADS_MIN", &threads_min)) {
+	if (!resource_get_uint("WORK_THREADS_MIN", &threads_min)) {
 		threads_min = 16;
 		resource_set_integer("WORK_THREADS_MIN", threads_min);
     } else {
@@ -146,7 +147,7 @@ int main(int argc, const char **argv)
 	}
     printf("[system]: minimum working threads number is %d\n", threads_min);
 
-	if (!resource_get_integer("WORK_THREADS_MAX", &threads_max)) {
+	if (!resource_get_uint("WORK_THREADS_MAX", &threads_max)) {
         threads_max = threads_min * 2; 
 		resource_set_integer("WORK_THREADS_MAX", threads_max);
     } else {

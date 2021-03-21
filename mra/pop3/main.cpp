@@ -56,7 +56,8 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
-	int retcode = EXIT_FAILURE, context_num, context_aver_units;
+	int retcode = EXIT_FAILURE;
+	unsigned int context_num, context_aver_units;
 	size_t context_max_mem;
 	size_t context_aver_mem;
 	int listen_port, listen_ssl_port;
@@ -123,7 +124,7 @@ int main(int argc, const char **argv)
 	else
 		printf("[system]: running identity of process will be %s\n", user_name);
 
-	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
+	if (!resource_get_uint("CONTEXT_NUM", &context_num)) {
 		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}
@@ -191,7 +192,7 @@ int main(int argc, const char **argv)
 	bytetoa(context_max_mem, temp_buff);
 	printf("[pop3]: context maximum memory is %s\n", temp_buff);
 
-	if (!resource_get_integer("CONTEXT_AVERAGE_UNITS", &context_aver_units)) {
+	if (!resource_get_uint("CONTEXT_AVERAGE_UNITS", &context_aver_units)) {
 		context_aver_units = 5000;
 		resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_units);
 	} else {

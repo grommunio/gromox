@@ -68,7 +68,7 @@ int main(int argc, const char **argv)
 	int mime_num;
 	int proxy_num;
 	int listen_port;
-	int threads_num;
+	unsigned int threads_num;
 	struct rlimit rl;
 	char charset[32];
 	int console_port;

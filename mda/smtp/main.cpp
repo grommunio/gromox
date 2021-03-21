@@ -64,7 +64,7 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 { 
 	int retcode = EXIT_FAILURE, listen_port, listen_ssl_port;
-	int context_num;
+	unsigned int context_num;
 	size_t max_mail_len;
 	size_t context_aver_mem, context_max_mem;
 	int smtp_max_mail_num;
@@ -142,7 +142,7 @@ int main(int argc, const char **argv)
 	else
 		printf("[system]: running identity of process will be %s\n", user_name);
 
-	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
+	if (!resource_get_uint("CONTEXT_NUM", &context_num)) {
 		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}
