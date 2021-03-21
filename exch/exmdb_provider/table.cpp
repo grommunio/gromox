@@ -727,15 +727,14 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	RESTRICTION_PROPERTY *pres = nullptr;
 	
 	b_conversation = FALSE;
-	if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-		if (prestriction != nullptr &&
-		    prestriction->rt == RES_PROPERTY &&
-		    (pres = prestriction->prop) != nullptr &&
-		    pres->relop == RELOP_EQ &&
-		    pres->proptag == PROP_TAG_CONVERSATIONID &&
-		    static_cast<BINARY *>(pres->propval.pvalue)->cb == 16)
-			b_conversation = TRUE;
-	}
+	if ((table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) &&
+	    prestriction != nullptr &&
+	    prestriction->rt == RES_PROPERTY &&
+	    (pres = prestriction->prop) != nullptr &&
+	    pres->relop == RELOP_EQ &&
+	    pres->proptag == PROP_TAG_CONVERSATIONID &&
+	    static_cast<BINARY *>(pres->propval.pvalue)->cb == 16)
+		b_conversation = TRUE;
 	if (NULL != psorts && psorts->count >
 		sizeof(tmp_proptags)/sizeof(uint32_t)) {
 		return FALSE;	
@@ -757,12 +756,10 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		}
 		sqlite3_finalize(pstmt);
 	}
-	if (NULL == pdb->tables.psqlite) {
-		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
-			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			return FALSE;
-		}
-	}
+	if (pdb->tables.psqlite == nullptr &&
+	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
+		return FALSE;
 	if (0 == *ptable_id) {
 		pdb->tables.last_id ++;
 		table_id = pdb->tables.last_id;
@@ -988,80 +985,70 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	if (TRUE == exmdb_server_check_private()) {
 		if (table_flags & TABLE_FLAG_SOFTDELETES) {
 			sql_len = sprintf(sql_string, "SELECT "
-				"message_id FROM messages WHERE 0");
-		} else {
-			if (table_flags & TABLE_FLAG_ASSOCIATED) {
-				if (FALSE == b_search) {
-					sql_len = sprintf(sql_string, "SELECT message_id "
-								"FROM messages WHERE parent_fid=%llu "
-								"AND is_associated=1", LLU(fid_val));
-				} else {
-					sql_len = sprintf(sql_string, "SELECT "
-						"messages.message_id FROM messages"
-						" JOIN search_result ON "
-						"search_result.folder_id=%llu AND "
-						"search_result.message_id=messages.message_id"
-						" AND messages.is_associated=1", LLU(fid_val));
-				}
+			          "message_id FROM messages WHERE 0");
+		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
+			if (FALSE == b_search) {
+				sql_len = sprintf(sql_string, "SELECT message_id "
+				          "FROM messages WHERE parent_fid=%llu "
+				          "AND is_associated=1", LLU(fid_val));
 			} else {
-				if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-					if (TRUE == b_conversation) {
-						encode_hex_binary(((BINARY*)pres->propval.pvalue)->pb,
-										16, tmp_string, sizeof(tmp_string));
-						sql_len = sprintf(sql_string, "SELECT message_id "
-							"FROM message_properties WHERE proptag=%u AND"
-							" propval=x'%s'", PROP_TAG_CONVERSATIONID,
-							tmp_string);
-					} else {
-						sql_len = sprintf(sql_string, "SELECT message_id"
-							" FROM messages WHERE parent_fid IS NOT NULL"
-							" AND is_associated=0");
-					}
-				} else {
-					if (FALSE == b_search) {
-						sql_len = sprintf(sql_string, "SELECT message_id "
-									"FROM messages WHERE parent_fid=%llu "
-									"AND is_associated=0", LLU(fid_val));
-					} else {
-						sql_len = sprintf(sql_string, "SELECT "
-							"messages.message_id FROM messages"
-							" JOIN search_result ON "
-							"search_result.folder_id=%llu AND "
-							"search_result.message_id=messages.message_id"
-							" AND messages.is_associated=0", LLU(fid_val));
-					}
-				}
+				sql_len = sprintf(sql_string, "SELECT "
+				          "messages.message_id FROM messages"
+				          " JOIN search_result ON "
+				          "search_result.folder_id=%llu AND "
+				          "search_result.message_id=messages.message_id"
+				          " AND messages.is_associated=1", LLU(fid_val));
 			}
-		}
-	} else {
-		if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-			          "SELECT message_id "
-			          "FROM messages WHERE parent_fid=%llu "
-			          " AND is_deleted=%u AND is_associated=%u",
-			          LLU(fid_val),
-			          !!(table_flags & TABLE_FLAG_SOFTDELETES),
-			          !!(table_flags & TABLE_FLAG_ASSOCIATED));
-		} else {
+		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 			if (TRUE == b_conversation) {
-				encode_hex_binary(((BINARY*)pres->propval.pvalue)->pb,
-									16, tmp_string, sizeof(tmp_string));
-				sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-				          "SELECT message_properties.message_id "
-				          "FROM message_properties JOIN messages ON "
-				          "messages.message_id=message_properties.message_id"
-				          " WHERE message_properties.proptag=%u AND"
-				          " message_properties.propval=x'%s' AND "
-				          "messages.is_deleted=%u", PROP_TAG_CONVERSATIONID,
-				          tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
+				encode_hex_binary(((BINARY *)pres->propval.pvalue)->pb,
+					16, tmp_string, sizeof(tmp_string));
+				sql_len = sprintf(sql_string, "SELECT message_id "
+				          "FROM message_properties WHERE proptag=%u AND"
+				          " propval=x'%s'", PROP_TAG_CONVERSATIONID,
+				          tmp_string);
 			} else {
-				sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-				          "SELECT message_id"
+				sql_len = sprintf(sql_string, "SELECT message_id"
 				          " FROM messages WHERE parent_fid IS NOT NULL"
-				          " AND is_associated=0 AND is_deleted=%u",
-				          !!(table_flags & TABLE_FLAG_SOFTDELETES));
+				          " AND is_associated=0");
 			}
+		} else if (!b_search) {
+			sql_len = sprintf(sql_string, "SELECT message_id "
+			          "FROM messages WHERE parent_fid=%llu "
+			          "AND is_associated=0", LLU(fid_val));
+		} else {
+			sql_len = sprintf(sql_string, "SELECT "
+			          "messages.message_id FROM messages"
+			          " JOIN search_result ON "
+			          "search_result.folder_id=%llu AND "
+			          "search_result.message_id=messages.message_id"
+			          " AND messages.is_associated=0", LLU(fid_val));
 		}
+	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
+		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		          "SELECT message_id "
+		          "FROM messages WHERE parent_fid=%llu "
+		          " AND is_deleted=%u AND is_associated=%u",
+		          LLU(fid_val),
+		          !!(table_flags & TABLE_FLAG_SOFTDELETES),
+		          !!(table_flags & TABLE_FLAG_ASSOCIATED));
+	} else if (b_conversation) {
+		encode_hex_binary(((BINARY *)pres->propval.pvalue)->pb,
+			16, tmp_string, sizeof(tmp_string));
+		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		          "SELECT message_properties.message_id "
+		          "FROM message_properties JOIN messages ON "
+		          "messages.message_id=message_properties.message_id"
+		          " WHERE message_properties.proptag=%u AND"
+		          " message_properties.propval=x'%s' AND "
+		          "messages.is_deleted=%u", PROP_TAG_CONVERSATIONID,
+		          tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
+	} else {
+		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		          "SELECT message_id"
+		          " FROM messages WHERE parent_fid IS NOT NULL"
+		          " AND is_associated=0 AND is_deleted=%u",
+		          !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	}
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 		goto LOAD_CONTENT_FAIL;
@@ -1080,13 +1067,9 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			if (0 == parent_fid) {
 				continue;
 			}
-		} else {
-			if (NULL != prestriction) {
-				if (FALSE == common_util_evaluate_message_restriction(
-					pdb->psqlite, cpid, mid_val, prestriction)) {
-					continue;
-				}
-			}
+		} else if (prestriction != nullptr &&
+		    !common_util_evaluate_message_restriction(pdb->psqlite, cpid, mid_val, prestriction)) {
+			continue;
 		}
 		sqlite3_bind_int64(pstmt1, 1, mid_val);
 		if (NULL != psorts) {
@@ -1103,10 +1086,8 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				}
 				if (NULL == pvalue) {
 					sqlite3_bind_null(pstmt1, i + 2);
-				} else {
-					if (!common_util_bind_sqlite_statement(pstmt1,
-					    i + 2, PROP_TYPE(tmp_proptag), pvalue))
-						goto LOAD_CONTENT_FAIL;	
+				} else if (!common_util_bind_sqlite_statement(pstmt1, i + 2, PROP_TYPE(tmp_proptag), pvalue)) {
+					goto LOAD_CONTENT_FAIL;
 				}
 			}
 			if (psorts->ccategories > 0) {
