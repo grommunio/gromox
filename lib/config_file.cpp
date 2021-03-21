@@ -435,6 +435,16 @@ BOOL config_file_get_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int *
 	return TRUE;
 }
 
+BOOL config_file_get_uint(std::shared_ptr<CONFIG_FILE> cf, const char *key,
+    unsigned int *value)
+{
+	const char *v = config_file_get_value(cf, key);
+	if (v == nullptr)
+		return FALSE;
+	*value = strtoul(v, nullptr, 0);
+	return TRUE;
+}
+
 BOOL config_file_set_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int value)
 {
 	char buf[HXSIZEOF_Z32];
