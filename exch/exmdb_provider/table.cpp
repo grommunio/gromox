@@ -1034,7 +1034,15 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			}
 		}
 	} else {
-		if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
+		if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
+			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			          "SELECT message_id "
+			          "FROM messages WHERE parent_fid=%llu "
+			          " AND is_deleted=%u AND is_associated=%u",
+			          LLU(fid_val),
+			          !!(table_flags & TABLE_FLAG_SOFTDELETES),
+			          !!(table_flags & TABLE_FLAG_ASSOCIATED));
+		} else {
 			if (TRUE == b_conversation) {
 				encode_hex_binary(((BINARY*)pres->propval.pvalue)->pb,
 									16, tmp_string, sizeof(tmp_string));
@@ -1053,14 +1061,6 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				          " AND is_associated=0 AND is_deleted=%u",
 				          !!(table_flags & TABLE_FLAG_SOFTDELETES));
 			}
-		} else {
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-			          "SELECT message_id "
-			          "FROM messages WHERE parent_fid=%llu "
-			          " AND is_deleted=%u AND is_associated=%u",
-			          LLU(fid_val),
-			          !!(table_flags & TABLE_FLAG_SOFTDELETES),
-			          !!(table_flags & TABLE_FLAG_ASSOCIATED));
 		}
 	}
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
