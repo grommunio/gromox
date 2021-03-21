@@ -397,6 +397,7 @@ int main(int argc, const char **argv)
 		printf("fail to create store database\n");
 		return 9;
 	}
+	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (chmod(temp_path, 0666) < 0)
 		fprintf(stderr, "W-1400: chmod %s: %s\n", temp_path, strerror(errno));
 	/* begin the transaction */
@@ -405,7 +406,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -414,12 +414,10 @@ int main(int argc, const char **argv)
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
 		fprintf(stderr, "list_file_initd propnames.txt: %s\n", strerror(-ret));
-		sqlite3_close(psqlite);
 		return 7;
 	}
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -431,7 +429,6 @@ int main(int argc, const char **argv)
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
 			sqlite3_finalize(pstmt);
-			sqlite3_close(psqlite);
 			return 9;
 		}
 		sqlite3_reset(pstmt);
@@ -440,12 +437,10 @@ int main(int argc, const char **argv)
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -455,7 +450,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -464,7 +458,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -473,7 +466,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -482,7 +474,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -491,7 +482,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -500,7 +490,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -509,38 +498,32 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_ROOT,
 		0, domain_id, "Root Container", NULL)) {
 		printf("fail to create \"root\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_IPMSUBTREE,
 		PUBLIC_FID_ROOT, domain_id, "IPM_SUBTREE", NULL)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_NONIPMSUBTREE,
 		PUBLIC_FID_ROOT, domain_id, "NON_IPM_SUBTREE", NULL)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_EFORMSREGISTRY,
 		PUBLIC_FID_NONIPMSUBTREE, domain_id, "EFORMS REGISTRY", NULL)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	tmp_guid = guid_random_new();
@@ -550,7 +533,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -559,7 +541,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -568,7 +549,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -577,7 +557,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -586,7 +565,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -595,7 +573,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -604,7 +581,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -615,7 +591,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -624,13 +599,11 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	sqlite3_close(psqlite);
 	return EXIT_SUCCESS;
 }

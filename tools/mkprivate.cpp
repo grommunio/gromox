@@ -621,6 +621,7 @@ int main(int argc, const char **argv)
 		printf("fail to create store database\n");
 		return 9;
 	}
+	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (chmod(temp_path, 0666) < 0)
 		fprintf(stderr, "W-1350: chmod %s: %s\n", temp_path, strerror(errno));
 	/* begin the transaction */
@@ -628,7 +629,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -637,12 +637,10 @@ int main(int argc, const char **argv)
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
 		printf("list_file_initd propnames.txt: %s\n", strerror(-ret));
-		sqlite3_close(psqlite);
 		return 7;
 	}
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -654,7 +652,6 @@ int main(int argc, const char **argv)
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
 			sqlite3_finalize(pstmt);
-			sqlite3_close(psqlite);
 			return 9;
 		}
 		sqlite3_reset(pstmt);
@@ -665,7 +662,6 @@ int main(int argc, const char **argv)
 	
 	csql_string = "INSERT INTO receive_table VALUES (?, ?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_bind_text(pstmt, 1, "", -1, SQLITE_STATIC);
@@ -674,7 +670,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -684,7 +679,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -694,7 +688,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -704,14 +697,12 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CREATIONTIME);
@@ -719,7 +710,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -728,7 +718,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -737,7 +726,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -746,7 +734,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -755,7 +742,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -764,7 +750,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -773,7 +758,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -782,69 +766,59 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_ROOT,
 		0, user_id, "Root Container", NULL, FALSE)) {
 		printf("fail to create \"root container\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_IPMSUBTREE,
 		PRIVATE_FID_ROOT, user_id, folder_lang[RES_ID_IPM], NULL, FALSE)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_INBOX,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_INBOX],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"inbox\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DRAFT,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_DRAFT],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"draft\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_OUTBOX,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_OUTBOX],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"outbox\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SENT_ITEMS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_SENT],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"sent\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DELETED_ITEMS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_DELETED],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"deleted\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CONTACTS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_CONTACTS],
 		"IPF.Contact", FALSE)) {
 		printf("fail to create \"contacts\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CALENDAR,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_CALENDAR],
 		"IPF.Appointment", FALSE)) {
 		printf("fail to create \"calendar\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
@@ -855,132 +829,112 @@ int main(int argc, const char **argv)
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_JOURNAL],
 		"IPF.Journal", FALSE)) {
 		printf("fail to create \"journal\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_NOTES,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_NOTES],
 		"IPF.StickyNote", FALSE)) {
 		printf("fail to create \"notes\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_TASKS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_TASKS],
 		"IPF.Task", FALSE)) {
 		printf("fail to create \"tasks\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_QUICKCONTACTS,
 		PRIVATE_FID_CONTACTS, user_id, "Quick Contacts",
 		"IPF.Contact.MOC.QuickContacts", TRUE)) {
 		printf("fail to create \"quick contacts\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_IMCONTACTLIST,
 		PRIVATE_FID_CONTACTS, user_id, "IM Contacts List",
 		"IPF.Contact.MOC.ImContactList", TRUE)) {
 		printf("fail to create \"im contacts list\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_GALCONTACTS,
 		PRIVATE_FID_CONTACTS, user_id, "GAL Contacts",
 		"IPF.Contact.GalContacts", TRUE)) {
 		printf("fail to create \"contacts\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_JUNK,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_JUNK],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"junk\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite,
 		PRIVATE_FID_CONVERSATION_ACTION_SETTINGS, PRIVATE_FID_IPMSUBTREE,
 		user_id, "Conversation Action Settings", "IPF.Configuration", TRUE)) {
 		printf("fail to create \"conversation action settings\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DEFERRED_ACTION,
 		PRIVATE_FID_ROOT, user_id, "Deferred Action", NULL, FALSE)) {
 		printf("fail to create \"deferred action\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
 		PRIVATE_FID_ROOT, user_id, "Spooler Queue", "IPF.Note")) {
 		printf("fail to create \"spooler queue\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_COMMON_VIEWS,
 		PRIVATE_FID_ROOT, user_id, "Common Views", NULL, FALSE)) {
 		printf("fail to create \"common views\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SCHEDULE,
 		PRIVATE_FID_ROOT, user_id, "Schedule", NULL, FALSE)) {
 		printf("fail to create \"schedule\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_FINDER,
 		PRIVATE_FID_ROOT, user_id, "Finder", NULL, FALSE)) {
 		printf("fail to create \"finder\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_VIEWS,
 		PRIVATE_FID_ROOT, user_id, "Views", NULL, FALSE)) {
 		printf("fail to create \"views\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SHORTCUTS,
 		PRIVATE_FID_ROOT, user_id, "Shortcuts", NULL, FALSE)) {
 		printf("fail to create \"shortcuts\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SYNC_ISSUES,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_SYNC],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"sync issues\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CONFLICTS,
 		PRIVATE_FID_SYNC_ISSUES, user_id, folder_lang[RES_ID_CONFLICT],
 		"IPF.Note", FALSE)) {
 		printf("fail to create \"conflicts\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite,
 		PRIVATE_FID_LOCAL_FAILURES, PRIVATE_FID_SYNC_ISSUES,
 		user_id, folder_lang[RES_ID_LOCAL], "IPF.Note", FALSE)) {
 		printf("fail to create \"local failures\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite,
 		PRIVATE_FID_SERVER_FAILURES, PRIVATE_FID_SYNC_ISSUES,
 		user_id, folder_lang[RES_ID_SERVER], "IPF.Note", FALSE)) {
 		printf("fail to create \"server failures\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_LOCAL_FREEBUSY,
 		PRIVATE_FID_ROOT, user_id, "Freebusy Data", NULL, FALSE)) {
 		printf("fail to create \"freebusy data\" folder\n");
-		sqlite3_close(psqlite);
 		return 10;
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
@@ -989,7 +943,6 @@ int main(int argc, const char **argv)
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	tmp_guid = guid_random_new();
@@ -999,7 +952,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1008,7 +960,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1017,7 +968,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1026,7 +976,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1035,7 +984,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1044,7 +992,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1053,7 +1000,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1062,7 +1008,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1071,13 +1016,11 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	sqlite3_close(psqlite);
 	return EXIT_SUCCESS;
 }

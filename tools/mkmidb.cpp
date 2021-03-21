@@ -163,6 +163,7 @@ int main(int argc, const char **argv)
 		printf("fail to create store database\n");
 		return 9;
 	}
+	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (chmod(temp_path, 0666) < 0)
 		fprintf(stderr, "W-1349: chmod %s: %s\n", temp_path, strerror(errno));
 	/* begin the transaction */
@@ -171,13 +172,11 @@ int main(int argc, const char **argv)
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -186,7 +185,6 @@ int main(int argc, const char **argv)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		sqlite3_finalize(pstmt);
-		sqlite3_close(psqlite);
 		return 9;
 	}
 	
@@ -194,6 +192,5 @@ int main(int argc, const char **argv)
 	
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	sqlite3_close(psqlite);
 	return EXIT_SUCCESS;
 }
