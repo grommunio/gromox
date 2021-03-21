@@ -101,7 +101,7 @@ AC_ARG_WITH([php], [
 		AS_HELP_STRING([--without-php], [Disable building PHP modules])
 	],
 	[PHP_CONFIG="$withval"],
-	[AC_PATH_PROGS([PHP_CONFIG], [php-config])])
+	[AC_PATH_PROGS([PHP_CONFIG], [php-config php-config8.0 php-config7.4])])
 AS_IF([test "$with_php" != "no"], [
 	PHP_WITH_PHP_CONFIG
 	CPPFLAGS="$saved_CPPFLAGS"
