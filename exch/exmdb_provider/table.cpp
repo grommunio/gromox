@@ -5,6 +5,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/sortorder_set.hpp>
 #include "exmdb_server.h"
 #include <gromox/restriction.hpp>
@@ -23,6 +24,8 @@
 #include <iconv.h>
 #include <cstdio>
 #define LLU(x) static_cast<unsigned long long>(x)
+
+using namespace gromox;
 
 struct CONDITION_NODE {
 	DOUBLE_LIST_NODE node;
@@ -209,14 +212,13 @@ BOOL exmdb_server_sum_hierarchy(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	*pcount = table_sum_hierarchy(pdb->psqlite,
 					fid_val, username, b_depth);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 	
@@ -238,8 +240,8 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == exmdb_server_check_private()) {
@@ -249,7 +251,6 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -264,13 +265,11 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(ptnode, 0, sizeof(TABLE_NODE));
@@ -282,7 +281,6 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		if (NULL == ptnode->remote_id) {
 			free(ptnode);
 			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -305,7 +303,6 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 			}
 			free(ptnode);
 			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -320,7 +317,6 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		}
 		free(ptnode);
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*prow_count = 0;
@@ -336,14 +332,12 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		}
 		free(ptnode);
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(pdb->tables.psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -359,8 +353,8 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -375,17 +369,14 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 			LLU(fid_val), !!b_fai, !!b_deleted);
 	}
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*pcount = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1361,8 +1352,8 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*ptable_id = 0;
@@ -1370,10 +1361,8 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 	if (FALSE == table_load_content_table(pdb, cpid,
 		fid_val, username, table_flags, prestriction,
 		psorts, ptable_id, prow_count)) {
-		db_engine_put_db(pdb);
 		return FALSE;	
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1390,8 +1379,8 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -1403,7 +1392,6 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
@@ -1427,7 +1415,6 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 	}
 	free(ptnode);
 	db_engine_notify_content_table_reload(pdb, table_id);
-	db_engine_put_db(pdb);
 	return b_result;
 }
 
@@ -1505,15 +1492,14 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -1526,13 +1512,11 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(ptnode, 0, sizeof(TABLE_NODE));
@@ -1544,7 +1528,6 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 		if (NULL == ptnode->remote_id) {
 			free(ptnode);
 			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -1559,7 +1542,6 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 		}
 		free(ptnode);
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*prow_count = 0;
@@ -1571,14 +1553,12 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 		}
 		free(ptnode);
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(pdb->tables.psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1779,15 +1759,14 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -1800,13 +1779,11 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(ptnode, 0, sizeof(TABLE_NODE));
@@ -1818,7 +1795,6 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 		if (NULL == ptnode->remote_id) {
 			free(ptnode);
 			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -1832,7 +1808,6 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 			}
 			free(ptnode);
 			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -1847,7 +1822,6 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 		}
 		free(ptnode);
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*prow_count = 0;
@@ -1863,14 +1837,12 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 		}
 		free(ptnode);
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(pdb->tables.psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1885,8 +1857,8 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -1897,7 +1869,6 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
@@ -1916,7 +1887,6 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 		sortorder_set_free(ptnode->psorts);
 	}
 	free(ptnode);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1929,15 +1899,13 @@ BOOL exmdb_server_sum_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == table_sum_table_count(pdb, table_id, prows)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -2131,8 +2099,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pset->count = 0;
@@ -2144,7 +2112,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	if (FALSE == exmdb_server_check_private()) {
@@ -2170,11 +2137,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos);
 		}
 		if (NULL == pset->pparray) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -2184,7 +2149,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
@@ -2192,7 +2156,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			count = 0;
@@ -2203,7 +2166,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 						sqlite3_finalize(pstmt);
 						sqlite3_exec(pdb->psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 1);
@@ -2214,7 +2176,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 						sqlite3_finalize(pstmt);
 						sqlite3_exec(pdb->psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 					if (NULL == pvalue) {
@@ -2263,11 +2224,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos);
 		}
 		if (NULL == pset->pparray) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
@@ -2275,7 +2234,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					" t%u WHERE row_id=?", ptnode->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			sprintf(sql_string, "SELECT value FROM"
@@ -2283,7 +2241,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		} else {
@@ -2293,7 +2250,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 		if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2310,7 +2266,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				}
 				common_util_end_message_optimize();
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
@@ -2325,7 +2280,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				}
 				common_util_end_message_optimize();
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			count = 0;
@@ -2349,7 +2303,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 						}
 						common_util_end_message_optimize();
 						sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
@@ -2405,11 +2358,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos);
 		}
 		if (NULL == pset->pparray) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2417,14 +2368,12 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			count = 0;
@@ -2436,7 +2385,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				if (FALSE == common_util_get_permission_property(member_id,
 					pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					sqlite3_finalize(pstmt);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				if (PROP_TAG_MEMBERRIGHTS == pproptags->pproptag[i]
@@ -2482,11 +2430,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos);
 		}
 		if (NULL == pset->pparray) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2494,14 +2440,12 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			count = 0;
@@ -2515,7 +2459,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				if (FALSE == common_util_get_rule_property(
 					rule_id, pdb->psqlite, proptag, &pvalue)) {
 					sqlite3_finalize(pstmt);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				if (NULL == pvalue) {
@@ -2539,7 +2482,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		sqlite3_finalize(pstmt);
 		break;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -2803,8 +2745,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -2814,7 +2756,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		*pposition = -1;
 		return TRUE;
 	}
@@ -2836,7 +2777,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				" idx DESC", table_id, start_pos + 1);
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -2854,7 +2794,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				if (NULL == ppropvals->ppropval) {
 					sqlite3_finalize(pstmt);
 					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				for (i=0; i<pproptags->count; i++) {
@@ -2864,7 +2803,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 							sqlite3_finalize(pstmt);
 							sqlite3_exec(pdb->psqlite,
 								"ROLLBACK", NULL, NULL, NULL);
-							db_engine_put_db(pdb);
 							return FALSE;
 						}
 						*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 2);
@@ -2875,7 +2813,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 							sqlite3_finalize(pstmt);
 							sqlite3_exec(pdb->psqlite,
 								"ROLLBACK", NULL, NULL, NULL);
-							db_engine_put_db(pdb);
 							return FALSE;
 						}
 						if (NULL == pvalue) {
@@ -2917,7 +2854,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				start_pos + 1);
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
@@ -2925,7 +2861,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					" t%u WHERE row_id=?", ptnode->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			sprintf(sql_string, "SELECT value FROM"
@@ -2933,7 +2868,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		} else {
@@ -2943,7 +2877,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 		if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2975,7 +2908,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					}
 					common_util_end_message_optimize();
 					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				for (i=0; i<pproptags->count; i++) {
@@ -2998,7 +2930,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 							}
 							common_util_end_message_optimize();
 							sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-							db_engine_put_db(pdb);
 							return FALSE;
 						}
 					}
@@ -3047,7 +2978,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					" idx DESC", table_id, start_pos + 1);
 		}
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3058,7 +2988,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 				if (NULL == ppropvals->ppropval) {
 					sqlite3_finalize(pstmt);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				count = 0;
@@ -3072,7 +3001,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					if (FALSE == common_util_get_rule_property(
 						rule_id, pdb->psqlite, proptag, &pvalue)) {
 						sqlite3_finalize(pstmt);
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 					if (NULL == pvalue) {
@@ -3097,7 +3025,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	} else {
 		*pposition = -1;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3116,8 +3043,8 @@ BOOL exmdb_server_locate_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -3128,7 +3055,6 @@ BOOL exmdb_server_locate_table(const char *dir,
 	}
 	if (NULL == pnode) {
 		*pposition = -1;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
@@ -3162,11 +3088,9 @@ BOOL exmdb_server_locate_table(const char *dir,
 		          "WHERE rule_id=%llu", ptnode->table_id, LLU(inst_id));
 		break;
 	default:
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*prow_type = 0;
@@ -3179,7 +3103,6 @@ BOOL exmdb_server_locate_table(const char *dir,
 		idx = 0;
 	}
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	*pposition = idx - 1;
 	return TRUE;
 }
@@ -3206,8 +3129,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -3217,7 +3140,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		ppropvals->count = 0;
 		return TRUE;
 	}
@@ -3236,12 +3158,10 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		sprintf(sql_string, "SELECT depth FROM t%u"
 		          " WHERE folder_id=%llu", table_id, LLU(folder_id));
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			ppropvals->count = 0;
 			return TRUE;
 		}
@@ -3252,7 +3172,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (NULL == ppropvals->ppropval) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=0; i<pproptags->count; i++) {
@@ -3261,7 +3180,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				if (NULL == pvalue) {
 					sqlite3_exec(pdb->psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				*(uint32_t*)pvalue = depth;
@@ -3271,7 +3189,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 					pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					sqlite3_exec(pdb->psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				if (NULL == pvalue) {
@@ -3305,12 +3222,10 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 					" WHERE inst_id=%llu AND inst_num=%u",
 					table_id, LLU(inst_id), inst_num);
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			ppropvals->count = 0;
 			return TRUE;
 		}
@@ -3320,7 +3235,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 					" t%u WHERE row_id=?", ptnode->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			sprintf(sql_string, "SELECT value FROM"
@@ -3328,7 +3242,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		} else {
@@ -3347,7 +3260,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				sqlite3_finalize(pstmt2);
 			}
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=0; i<pproptags->count; i++) {
@@ -3369,7 +3281,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 						sqlite3_finalize(pstmt2);
 					}
 					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 			}
@@ -3405,7 +3316,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	} else {
 		ppropvals->count = 0;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 	
@@ -3423,8 +3333,8 @@ BOOL exmdb_server_mark_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*pinst_id = 0;
@@ -3437,7 +3347,6 @@ BOOL exmdb_server_mark_table(const char *dir,
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
@@ -3460,11 +3369,9 @@ BOOL exmdb_server_mark_table(const char *dir,
 			"WHERE idx=%u", ptnode->table_id, position + 1);
 		break;
 	default:
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3488,7 +3395,6 @@ BOOL exmdb_server_mark_table(const char *dir,
 		}
 	}
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3510,8 +3416,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -3523,7 +3429,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	if (NULL == pnode) {
 		pproptags->count = 0;
 		pproptags->pproptag = NULL;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
@@ -3531,14 +3436,12 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	case TABLE_TYPE_HIERARCHY:
 		phash = int_hash_init(0x1000, sizeof(int));
 		if (NULL == phash) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			int_hash_free(phash);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT proptag "
@@ -3546,7 +3449,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
 			int_hash_free(phash);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3566,7 +3468,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		iter = int_hash_iter_init(phash);
 		if (NULL == iter) {
 			int_hash_free(phash);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pproptags->count = 0;
@@ -3582,24 +3483,20 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memcpy(pproptags->pproptag, tmp_proptags,
 			sizeof(uint32_t)*pproptags->count);
-		db_engine_put_db(pdb);
 		return TRUE;
 	case TABLE_TYPE_CONTENT:	
 		phash = int_hash_init(0x1000, sizeof(int));
 		if (NULL == phash) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			int_hash_free(phash);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT proptag "
@@ -3607,7 +3504,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
 			int_hash_free(phash);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3631,7 +3527,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		iter = int_hash_iter_init(phash);
 		if (NULL == iter) {
 			int_hash_free(phash);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pproptags->count = 0;
@@ -3662,31 +3557,26 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memcpy(pproptags->pproptag, tmp_proptags,
 			sizeof(uint32_t)*pproptags->count);
-		db_engine_put_db(pdb);
 		return TRUE;
 	case TABLE_TYPE_PERMISSION:
 		pproptags->count = 4;
 		pproptags->pproptag = cu_alloc<uint32_t>(4);
 		if (NULL == pproptags->pproptag) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pproptags->pproptag[0] = PROP_TAG_ENTRYID;
 		pproptags->pproptag[1] = PROP_TAG_MEMBERID;
 		pproptags->pproptag[2] = PROP_TAG_MEMBERNAME;
 		pproptags->pproptag[3] = PROP_TAG_MEMBERRIGHTS;
-		db_engine_put_db(pdb);
 		return TRUE;
 	case TABLE_TYPE_RULE:
 		pproptags->count = 10;
 		pproptags->pproptag = cu_alloc<uint32_t>(10);
 		if (NULL == pproptags->pproptag) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pproptags->pproptag[0] = PROP_TAG_RULEID;
@@ -3699,10 +3589,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		pproptags->pproptag[7] = PROP_TAG_RULEPROVIDERDATA;
 		pproptags->pproptag[8] = PROP_TAG_RULECONDITION;
 		pproptags->pproptag[9] = PROP_TAG_RULEACTIONS;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
-	db_engine_put_db(pdb);
 	return FALSE;
 }
 
@@ -3808,8 +3696,8 @@ BOOL exmdb_server_expand_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -3820,14 +3708,12 @@ BOOL exmdb_server_expand_table(const char *dir,
 	}
 	if (NULL == pnode) {
 		*pb_found = FALSE;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type ||
 		2 != rop_util_get_replid(inst_id)) {
 		*pb_found = FALSE;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	inst_id = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
@@ -3835,21 +3721,18 @@ BOOL exmdb_server_expand_table(const char *dir,
 			"row_stat, depth, idx FROM t%u WHERE inst_id=%llu"
 			" AND inst_num=0", ptnode->table_id, LLU(inst_id));
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		CONTENT_ROW_HEADER != sqlite3_column_int64(pstmt, 1)) {
 		sqlite3_finalize(pstmt);
 		*pb_found = FALSE;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	*pb_found = TRUE;
 	if (0 != sqlite3_column_int64(pstmt, 2)) {
 		sqlite3_finalize(pstmt);
 		*pposition = -1;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	row_id = sqlite3_column_int64(pstmt, 0);
@@ -3860,14 +3743,12 @@ BOOL exmdb_server_expand_table(const char *dir,
 	sprintf(sql_string, "SELECT count(*) FROM"
 			" t%u WHERE parent_id=?", ptnode->table_id);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (ptnode->psorts->ccategories == depth + 1) {
 		sqlite3_bind_int64(pstmt, 1, row_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		*prow_count = sqlite3_column_int64(pstmt, 0);
@@ -3876,7 +3757,6 @@ BOOL exmdb_server_expand_table(const char *dir,
 				"FROM t%u WHERE parent_id=?", ptnode->table_id);
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		*prow_count = 0;
@@ -3885,7 +3765,6 @@ BOOL exmdb_server_expand_table(const char *dir,
 			row_id, pstmt, pstmt1, prow_count)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_finalize(pstmt1);
@@ -3895,25 +3774,21 @@ BOOL exmdb_server_expand_table(const char *dir,
 	        "WHERE row_id=%llu", ptnode->table_id, LLU(row_id));
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (0 == *prow_count) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	sprintf(sql_string, "SELECT row_id "
 		"FROM t%u WHERE idx>%u ORDER BY idx DESC",
 		ptnode->table_id, idx);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "UPDATE t%u SET idx=idx+%u"
 			" WHERE row_id=?", ptnode->table_id, *prow_count);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3922,7 +3797,6 @@ BOOL exmdb_server_expand_table(const char *dir,
 		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
@@ -3932,14 +3806,12 @@ BOOL exmdb_server_expand_table(const char *dir,
 	sprintf(sql_string, "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptnode->table_id);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == table_expand_sub_contents(
@@ -3947,12 +3819,10 @@ BOOL exmdb_server_expand_table(const char *dir,
 		row_id, pstmt, pstmt1, &idx)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
-		db_engine_put_db(pdb);
 		return false;
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_finalize(pstmt1);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3975,8 +3845,8 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -3987,14 +3857,12 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	}
 	if (NULL == pnode) {
 		*pb_found = FALSE;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type ||
 		2 != rop_util_get_replid(inst_id)) {
 		*pb_found = FALSE;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	inst_id = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
@@ -4002,21 +3870,18 @@ BOOL exmdb_server_collapse_table(const char *dir,
 		"row_stat, depth, idx FROM t%u WHERE inst_id=%llu AND"
 		" inst_num=0", ptnode->table_id, LLU(inst_id));
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		CONTENT_ROW_HEADER != sqlite3_column_int64(pstmt, 1)) {
 		sqlite3_finalize(pstmt);
 		*pb_found = FALSE;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	*pb_found = TRUE;
 	if (0 == sqlite3_column_int64(pstmt, 2)) {
 		sqlite3_finalize(pstmt);
 		*pposition = -1;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	row_id = sqlite3_column_int64(pstmt, 0);
@@ -4028,7 +3893,6 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	        "WHERE row_id=%llu", ptnode->table_id, LLU(row_id));
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*prow_count = 0;
@@ -4037,14 +3901,12 @@ BOOL exmdb_server_collapse_table(const char *dir,
 			"depth, prev_id FROM t%u WHERE idx>%u "
 			"ORDER BY idx ASC", ptnode->table_id, idx);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -4068,14 +3930,12 @@ BOOL exmdb_server_collapse_table(const char *dir,
 		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_finalize(pstmt1);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -4109,8 +3969,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -4121,19 +3981,16 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	*pstate_id = 0;
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	sprintf(tmp_path, "%s/tmp/state.sqlite3", exmdb_server_get_dir());
 	if (0 != stat(tmp_path, &node_stat)) {
 		if (SQLITE_OK != sqlite3_open_v2(tmp_path, &psqlite,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
@@ -4153,7 +4010,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sqlite3_close(psqlite);
 			if (remove(tmp_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1348: remove %s: %s\n", tmp_path, strerror(errno));
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sprintf(sql_string, "CREATE UNIQUE INDEX state_index"
@@ -4162,13 +4018,11 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_close(psqlite);
 			remove(tmp_path);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	} else {
 		if (SQLITE_OK != sqlite3_open_v2(tmp_path,
 			&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
@@ -4185,7 +4039,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_bind_int64(pstmt, 1, ptnode->folder_id);
@@ -4197,7 +4050,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			&ext_push, ptnode->psorts)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_close(psqlite);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_bind_blob(pstmt, 3, ext_push.data,
@@ -4214,7 +4066,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_close(psqlite);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_bind_int64(pstmt, 1, ptnode->folder_id);
@@ -4229,7 +4080,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sqlite3_finalize(pstmt);
 			sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_close(psqlite);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		*pstate_id = sqlite3_last_insert_rowid(psqlite);
@@ -4241,7 +4091,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 				sql_string, NULL, NULL, NULL)) {
 				sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 				sqlite3_close(psqlite);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		}
@@ -4254,7 +4103,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 				sql_string, NULL, NULL, NULL)) {
 				sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 				sqlite3_close(psqlite);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		}
@@ -4269,14 +4117,12 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_close(psqlite);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
 	if (NULL == ptnode->psorts || 0 == ptnode->psorts->ccategories) {
 		sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	sql_len = sprintf(sql_string, "CREATE TABLE s%u "
@@ -4321,7 +4167,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		default:
 			sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_close(psqlite);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -4332,7 +4177,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT row_id, inst_id,"
@@ -4340,7 +4184,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "INSERT"
@@ -4356,7 +4199,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT parent_id FROM"
@@ -4366,7 +4208,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_finalize(pstmt1);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT value FROM"
@@ -4376,7 +4217,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_finalize(pstmt1);
 		sqlite3_finalize(pstmt2);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	uint64_t inst_id1 = rop_util_get_replid(inst_id) == 2 ?
@@ -4399,7 +4239,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 				sqlite3_finalize(pstmt3);
 				sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 				sqlite3_close(psqlite);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		} else {
@@ -4428,7 +4267,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 				sqlite3_finalize(pstmt3);
 				sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 				sqlite3_close(psqlite);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pvalue = common_util_column_sqlite_statement(pstmt3, 0, type);
@@ -4444,7 +4282,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 					sqlite3_finalize(pstmt3);
 					sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 					sqlite3_close(psqlite);
-					db_engine_put_db(pdb);
 					return FALSE;	
 				}
 			}
@@ -4460,7 +4297,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 				sqlite3_finalize(pstmt3);
 				sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 				sqlite3_close(psqlite);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			row_id = sqlite3_column_int64(pstmt2, 0);
@@ -4476,7 +4312,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sqlite3_finalize(pstmt3);
 			sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_close(psqlite);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
@@ -4487,7 +4322,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	sqlite3_finalize(pstmt3);
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sqlite3_close(psqlite);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -4530,8 +4364,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -4541,22 +4375,18 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		}
 	}
 	if (NULL == pnode) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	sprintf(tmp_path, "%s/tmp/state.sqlite3", exmdb_server_get_dir());
 	if (0 != stat(tmp_path, &node_stat)) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	if (SQLITE_OK != sqlite3_open_v2(tmp_path,
 		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
@@ -4566,13 +4396,11 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			" FROM state_info WHERE state_id=%u", state_id);
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return FALSE;	
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	message_id = sqlite3_column_int64(pstmt, 3);
@@ -4618,7 +4446,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "UPDATE t%u SET "
@@ -4628,7 +4455,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -4654,7 +4480,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			sqlite3_close(psqlite);
 			sqlite3_exec(pdb->tables.psqlite,
 				"ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
@@ -4668,7 +4493,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT row_id FROM t%u WHERE"
@@ -4678,7 +4502,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT row_id FROM t%u WHERE"
@@ -4689,7 +4512,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "UPDATE t%u SET "
@@ -4701,7 +4523,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	current_id = 0;
@@ -4733,7 +4554,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 					sqlite3_close(psqlite);
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				if (SQLITE_ROW != sqlite3_step(pstmt2)) {
@@ -4763,7 +4583,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			sqlite3_close(psqlite);
 			sqlite3_exec(pdb->tables.psqlite,
 				"ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sqlite3_reset(pstmt3);
@@ -4778,7 +4597,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT row_id, row_stat"
@@ -4786,7 +4604,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return false;
 	}
 	sprintf(sql_string, "UPDATE t%u SET"
@@ -4795,7 +4612,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return false;
 	}
 	idx = 0;
@@ -4808,7 +4624,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			sqlite3_finalize(pstmt1);
 			sqlite3_exec(pdb->tables.psqlite,
 				"ROLLBACK", NULL, NULL, NULL);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -4826,11 +4641,9 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		          " row_id=%llu", ptnode->table_id, LLU(row_id1));
 	}
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return false;
 	}
 	*pposition = sqlite3_step(pstmt) == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) - 1 : -1;
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	return TRUE;
 }

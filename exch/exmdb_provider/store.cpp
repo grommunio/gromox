@@ -9,6 +9,7 @@
 #include "db_engine.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include <cstdlib>
 #include <cstring>
@@ -17,6 +18,8 @@
 #define MAXIMUM_ALLOCATION_NUMBER				1000000
 
 #define ALLOCATION_INTERVAL						24*60*60
+
+using namespace gromox;
 
 struct dlgitem {
 	char user[256];
@@ -46,38 +49,33 @@ BOOL exmdb_server_get_all_named_propids(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT "
 			"count(*) FROM named_properties");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	total_count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	if (0 == total_count) {
-		db_engine_put_db(pdb);
 		ppropids->count = 0;
 		ppropids->ppropid = NULL;
 		return TRUE;
 	}
 	ppropids->ppropid = cu_alloc<uint16_t>(total_count);
 	if (NULL == ppropids->ppropid) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT"
 		" propid FROM named_properties");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	ppropids->count = 0;
@@ -87,7 +85,6 @@ BOOL exmdb_server_get_all_named_propids(
 		ppropids->count ++;
 	}
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -101,8 +98,8 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -110,12 +107,10 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 		pdb->psqlite, b_create, ppropnames, ppropids)) {
 		/* rollback the transaction */
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	/* commit the transaction */
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -128,16 +123,14 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_named_propnames(
 		pdb->psqlite, ppropids, ppropnames)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -154,16 +147,14 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_mapping_guid(
 		pdb->psqlite, replid, pb_found, pguid)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	*pb_found = TRUE;
 	return TRUE;
 }
@@ -184,26 +175,23 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	guid_to_string(&guid, guid_string, 64);
 	sprintf(sql_string, "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	*preplid = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	*pb_found = TRUE;
 	return TRUE;
 }
@@ -217,17 +205,15 @@ BOOL exmdb_server_get_store_all_proptags(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_proptags(
 		STORE_PROPERTIES_TABLE, 0,
 		pdb->psqlite, pproptags)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -241,17 +227,15 @@ BOOL exmdb_server_get_store_properties(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_properties(
 		STORE_PROPERTIES_TABLE, 0, cpid, pdb->psqlite,
 		pproptags, ppropvals)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -265,8 +249,8 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -274,11 +258,9 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 		STORE_PROPERTIES_TABLE, 0, cpid, pdb->psqlite,
 		ppropvals, pproblems)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -291,19 +273,17 @@ BOOL exmdb_server_remove_store_properties(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (FALSE == common_util_remove_properties(
 		STORE_PROPERTIES_TABLE, 0, pdb->psqlite, pproptags)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -376,15 +356,13 @@ BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	*pcn = rop_util_make_eid_ex(1, change_num);
 	return TRUE;
 }
@@ -405,8 +383,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT range_begin, "
@@ -414,7 +392,6 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 				" WHERE allocate_time>=%lu",
 				time(NULL) - ALLOCATION_INTERVAL);
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	range_begin = 0;
@@ -442,19 +419,16 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	}
 	sqlite3_finalize(pstmt);
 	if (range_end - range_begin + count > MAXIMUM_ALLOCATION_NUMBER) {
-		db_engine_put_db(pdb);
 		*pbegin_eid = 0;
 		return TRUE;
 	}
 	sprintf(sql_string, "SELECT "
 		"max(range_end) FROM allocated_eids");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
@@ -466,10 +440,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	          static_cast<long long>(time(nullptr)));
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	*pbegin_eid = rop_util_make_eid_ex(1, tmp_eid);
 	return TRUE;
 }
@@ -488,8 +460,8 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pnode = double_list_get_tail(&pdb->nsub_list);
@@ -497,7 +469,6 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	                   static_cast<NSUB_NODE *>(pnode->pdata)->sub_id;
 	pnsub = me_alloc<NSUB_NODE>();
 	if (NULL == pnsub) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pnsub->node.pdata = pnsub;
@@ -509,7 +480,6 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 		pnsub->remote_id = strdup(remote_id);
 		if (NULL == pnsub->remote_id) {
 			free(pnsub);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -534,7 +504,6 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	pnsub->message_id = message_id == 0 ? 0 :
 	                    rop_util_get_gc_value(message_id);
 	double_list_append_as_tail(&pdb->nsub_list, &pnsub->node);
-	db_engine_put_db(pdb);
 	*psub_id = last_id + 1;
 	return TRUE;
 }
@@ -550,8 +519,8 @@ BOOL exmdb_server_unsubscribe_notification(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
@@ -566,7 +535,6 @@ BOOL exmdb_server_unsubscribe_notification(
 			break;
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -579,13 +547,12 @@ BOOL exmdb_server_transport_new_mail(const char *dir, uint64_t folder_id,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	db_engine_transport_new_mail(pdb, rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), message_flags, pstr_class);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -649,8 +616,8 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	propnames.count = 3;
@@ -672,7 +639,6 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	propname_buff[2].plid = &lids[2];
 	if (FALSE == common_util_get_named_propids(pdb->psqlite,
 		FALSE, &propnames, &propids) || 3 != propids.count) {
-		db_engine_put_db(pdb);
 		return FALSE;	
 	}
 	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
@@ -681,7 +647,6 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	sprintf(sql_string, "SELECT folder_id"
 				" FROM folders WHERE parent_id=?");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT messages.message_id"
@@ -695,7 +660,6 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		proptags[2]);
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt2)) {
 		sqlite3_finalize(pstmt1);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == table_check_address_in_contact_folder(
@@ -703,12 +667,10 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		pb_found)) {
 		sqlite3_finalize(pstmt1);
 		sqlite3_finalize(pstmt2);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_finalize(pstmt1);
 	sqlite3_finalize(pstmt2);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 

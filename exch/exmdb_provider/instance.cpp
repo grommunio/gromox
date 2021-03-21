@@ -6,6 +6,7 @@
 #include <gromox/database.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/scope.hpp>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "exmdb_server.h"
@@ -14,6 +15,7 @@
 #include "db_engine.h"
 #include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cstring>
@@ -31,6 +33,8 @@
 
 #define MAX_RECIPIENT_NUMBER							4096
 #define MAX_ATTACHMENT_NUMBER							1024
+
+using namespace gromox;
 
 static BOOL instance_read_message(
 	const MESSAGE_CONTENT *pmsgctnt1, MESSAGE_CONTENT *pmsgctnt);
@@ -389,8 +393,8 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pnode = double_list_get_tail(&pdb->instance_list);
@@ -399,7 +403,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	instance_id ++;
 	auto pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(pinstance, 0, sizeof(INSTANCE_NODE));
@@ -413,7 +416,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		pinstance->username = strdup(username);
 		if (NULL == pinstance->username) {
 			free(pinstance);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -426,7 +428,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 				free(pinstance->username);
 			}
 			free(pinstance);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		propval.proptag = PROP_TAG_MID;
@@ -437,7 +438,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 				free(pinstance->username);
 			}
 			free(pinstance);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		propval.proptag = PROP_TAG_MESSAGESTATUS;
@@ -447,7 +447,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 			pinstance->pcontent)->proplist, &propval);
 		double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
 		*pinstance_id = instance_id;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	if (FALSE == exmdb_server_check_private()) {
@@ -456,7 +455,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == instance_load_message(
@@ -468,7 +466,6 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 			free(pinstance->username);
 		}
 		free(pinstance);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	common_util_end_message_optimize();
@@ -479,12 +476,10 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		}
 		free(pinstance);
 		*pinstance_id = 0;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	pinstance->b_new = FALSE;
 	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
-	db_engine_put_db(pdb);
 	*pinstance_id = instance_id;
 	return TRUE;
 }
@@ -522,8 +517,8 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pnode = double_list_get_tail(&pdb->instance_list);
@@ -532,24 +527,20 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 	instance_id ++;
 	pinstance1 = instance_get_instance(pdb, attachment_instance_id);
 	if (NULL == pinstance1 || INSTANCE_TYPE_ATTACHMENT != pinstance1->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = ((ATTACHMENT_CONTENT*)pinstance1->pcontent)->pembedded;
 	if (NULL == pmsgctnt) {
 		if (FALSE == b_new) {
 			*pinstance_id = 0;
-			db_engine_put_db(pdb);
 			return TRUE;
 		}
 		if (FALSE == common_util_allocate_eid(pdb->psqlite, &mid_val)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		message_id = rop_util_make_eid_ex(1, mid_val);
 		pinstance = me_alloc<INSTANCE_NODE>();
 		if (NULL == pinstance) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memset(pinstance, 0, sizeof(INSTANCE_NODE));
@@ -560,7 +551,6 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		if (NULL != pinstance1->username) {
 			pinstance->username = strdup(pinstance1->username);
 			if (NULL == pinstance->username) {
-				db_engine_put_db(pdb);
 				free(pinstance);
 				return FALSE;
 			}
@@ -573,7 +563,6 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 				free(pinstance->username);
 			}
 			free(pinstance);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		propval.proptag = PROP_TAG_MID;
@@ -584,22 +573,18 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 				free(pinstance->username);
 			}
 			free(pinstance);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
 		*pinstance_id = instance_id;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	if (TRUE == b_new) {
 		*pinstance_id = 0;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(pinstance, 0, sizeof(INSTANCE_NODE));
@@ -621,7 +606,6 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 	if (NULL != pinstance1->username) {
 		pinstance->username = strdup(pinstance1->username);
 		if (NULL == pinstance->username) {
-			db_engine_put_db(pdb);
 			free(pinstance);
 			return FALSE;
 		}
@@ -634,12 +618,10 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 			free(pinstance->username);
 		}
 		free(pinstance);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
 	*pinstance_id = instance_id;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -654,19 +636,17 @@ BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*ppcn = pinstance->parent_id == 0 ? nullptr :
 	        static_cast<uint64_t *>(tpropval_array_get_propval(
 	        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_CHANGENUMBER));
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -687,17 +667,15 @@ BOOL exmdb_server_reload_message_instance(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (TRUE == pinstance->b_new) {
-		db_engine_put_db(pdb);
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -705,17 +683,14 @@ BOOL exmdb_server_reload_message_instance(
 		pvalue = tpropval_array_get_propval(&((MESSAGE_CONTENT*)
 					pinstance->pcontent)->proplist, PROP_TAG_MID);
 		if (NULL == pvalue) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		last_id = 0;
 		if (FALSE == instance_load_message(pdb->psqlite,
 			*(uint64_t*)pvalue, &last_id, &pmsgctnt)) {
-			db_engine_put_db(pdb);
 			return FALSE;	
 		}
 		if (NULL == pmsgctnt) {
-			db_engine_put_db(pdb);
 			*pb_result = FALSE;
 			return TRUE;
 		}
@@ -726,19 +701,16 @@ BOOL exmdb_server_reload_message_instance(
 		pinstance1 = instance_get_instance(pdb, pinstance->parent_id);
 		if (NULL == pinstance1 || INSTANCE_TYPE_ATTACHMENT
 			!= pinstance1->type) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL == ((ATTACHMENT_CONTENT*)
 			pinstance1->pcontent)->pembedded) {
-			db_engine_put_db(pdb);
 			*pb_result = FALSE;
 			return TRUE;	
 		}
 		pmsgctnt = message_content_dup(((ATTACHMENT_CONTENT*)
 							pinstance1->pcontent)->pembedded);
 		if (NULL == pmsgctnt) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL != pmsgctnt->children.pattachments &&
@@ -755,7 +727,6 @@ BOOL exmdb_server_reload_message_instance(
 	}
 	message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
 	pinstance->pcontent = pmsgctnt;
-	db_engine_put_db(pdb);
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -773,36 +744,31 @@ BOOL exmdb_server_clear_message_instance(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pvalue = tpropval_array_get_propval(&((MESSAGE_CONTENT*)
 				pinstance->pcontent)->proplist, PROP_TAG_MID);
 	if (NULL == pvalue) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = message_content_init();
 	if (NULL == pmsgctnt) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = pvalue;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
 	pinstance->pcontent = pmsgctnt;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1140,22 +1106,19 @@ BOOL exmdb_server_read_message_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(pmsgctnt, 0, sizeof(MESSAGE_CONTENT));
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == instance_read_message(
 	    static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pmsgctnt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1228,25 +1191,22 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pmsgctnt->proplist.count + 2);
 	if (NULL == pproblems->pproblem) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproptags->count = 0;
 	pproptags->pproptag = cu_alloc<uint32_t>(pmsgctnt->proplist.count + 2);
 	if (NULL == pproptags->pproptag) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproplist = &((MESSAGE_CONTENT*)pinstance->pcontent)->proplist;
@@ -1341,7 +1301,6 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			break;
 		}
 		if (!tpropval_array_set_propval(pproplist, pmsgctnt->proplist.ppropval + i)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		switch (proptag) {
@@ -1358,12 +1317,10 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			pinstance->pcontent)->children.prcpts) {
 			prcpts = tarray_set_dup(pmsgctnt->children.prcpts);
 			if (NULL == prcpts) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (FALSE == instance_identify_rcpts(prcpts)) {
 				tarray_set_free(prcpts);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			message_content_set_rcpts_internal(
@@ -1379,12 +1336,10 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			pattachments = attachment_list_dup(
 				pmsgctnt->children.pattachments);
 			if (NULL == pattachments) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (FALSE == instance_identify_attachments(pattachments)) {
 				attachment_list_free(pattachments);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			message_content_set_attachments_internal(
@@ -1394,7 +1349,6 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			pproptags->count ++;
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1415,8 +1369,8 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pnode = double_list_get_tail(&pdb->instance_list);
@@ -1425,12 +1379,10 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	instance_id ++;
 	pinstance1 = instance_get_instance(pdb, message_instance_id);
 	if (NULL == pinstance1 || INSTANCE_TYPE_MESSAGE != pinstance1->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance1->pcontent;
 	if (NULL == pmsgctnt->children.pattachments) {
-		db_engine_put_db(pdb);
 		*pinstance_id = 0;
 		return TRUE;
 	}
@@ -1439,7 +1391,6 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 		pvalue = tpropval_array_get_propval(
 			&pattachment->proplist, PROP_TAG_ATTACHNUMBER);
 		if (NULL == pvalue) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (*(uint32_t*)pvalue == attachment_num) {
@@ -1447,13 +1398,11 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 		}
 	}
 	if (i >= pmsgctnt->children.pattachments->count) {
-		db_engine_put_db(pdb);
 		*pinstance_id = 0;
 		return TRUE;
 	}
 	pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(pinstance, 0, sizeof(INSTANCE_NODE));
@@ -1464,7 +1413,6 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	if (NULL != pinstance1->username) {
 		pinstance->username = strdup(pinstance1->username);
 		if (NULL == pinstance->username) {
-			db_engine_put_db(pdb);
 			free(pinstance);
 			return FALSE;
 		}
@@ -1477,12 +1425,10 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 			free(pinstance->username);
 		}
 		free(pinstance);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
 	*pinstance_id = instance_id;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1502,8 +1448,8 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pnode = double_list_get_tail(&pdb->instance_list);
@@ -1512,21 +1458,18 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	instance_id ++;
 	pinstance1 = instance_get_instance(pdb, message_instance_id);
 	if (NULL == pinstance1 || INSTANCE_TYPE_MESSAGE != pinstance1->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance1->pcontent;
 	if (NULL != pmsgctnt->children.pattachments &&
 		pmsgctnt->children.pattachments->count >=
 		MAX_ATTACHMENT_NUMBER) {
-		db_engine_put_db(pdb);
 		*pinstance_id = 0;
 		*pattachment_num = ATTACHMENT_NUM_INVALID;
 		return TRUE;	
 	}
 	pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(pinstance, 0, sizeof(INSTANCE_NODE));
@@ -1537,7 +1480,6 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	if (NULL != pinstance1->username) {
 		pinstance->username = strdup(pinstance1->username);
 		if (NULL == pinstance->username) {
-			db_engine_put_db(pdb);
 			free(pinstance);
 			return FALSE;
 		}
@@ -1550,7 +1492,6 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 			free(pinstance->username);
 		}
 		free(pinstance);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*pattachment_num = pinstance1->last_id;
@@ -1563,13 +1504,11 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 			free(pinstance->username);
 		}
 		free(pinstance);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance->pcontent = pattachment;
 	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
 	*pinstance_id = instance_id;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1583,22 +1522,19 @@ BOOL exmdb_server_read_attachment_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	memset(pattctnt, 0, sizeof(ATTACHMENT_CONTENT));
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_ATTACHMENT != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == instance_read_attachment(
 	    static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pattctnt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1617,19 +1553,17 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_ATTACHMENT != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pattctnt->proplist.count + 1);
 	if (NULL == pproblems->pproblem) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproplist = &((ATTACHMENT_CONTENT*)pinstance->pcontent)->proplist;
@@ -1682,7 +1616,6 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 			break;
 		}
 		if (!tpropval_array_set_propval(pproplist, pattctnt->proplist.ppropval + i)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -1691,18 +1624,15 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 			pinstance->pcontent)->pembedded) {
 			pmsgctnt = message_content_dup(pattctnt->pembedded);
 			if (NULL == pmsgctnt) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (FALSE == instance_identify_message(pmsgctnt)) {
 				message_content_free(pmsgctnt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pmsgctnt);
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -1721,18 +1651,16 @@ BOOL exmdb_server_delete_message_instance_attachment(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, message_instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	if (NULL == pmsgctnt->children.pattachments) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
@@ -1740,7 +1668,6 @@ BOOL exmdb_server_delete_message_instance_attachment(
 		pvalue = tpropval_array_get_propval(
 			&pattachment->proplist, PROP_TAG_ATTACHNUMBER);
 		if (NULL == pvalue) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (*(uint32_t*)pvalue == attachment_num) {
@@ -1748,7 +1675,6 @@ BOOL exmdb_server_delete_message_instance_attachment(
 		}
 	}
 	if (i >= pmsgctnt->children.pattachments->count) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	attachment_list_remove(pmsgctnt->children.pattachments, i);
@@ -1756,7 +1682,6 @@ BOOL exmdb_server_delete_message_instance_attachment(
 		attachment_list_free(pmsgctnt->children.pattachments);
 		pmsgctnt->children.pattachments = NULL;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -2007,13 +1932,12 @@ BOOL exmdb_server_unload_instance(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	double_list_remove(&pdb->instance_list, &pinstance->node);
@@ -2026,7 +1950,6 @@ BOOL exmdb_server_unload_instance(
 		free(pinstance->username);
 	}
 	free(pinstance);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -2044,13 +1967,12 @@ BOOL exmdb_server_get_instance_all_proptags(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (INSTANCE_TYPE_MESSAGE == pinstance->type) {
@@ -2065,7 +1987,6 @@ BOOL exmdb_server_get_instance_all_proptags(
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=0; i<pmsgctnt->proplist.count; i++) {
@@ -2117,7 +2038,6 @@ BOOL exmdb_server_get_instance_all_proptags(
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=0; i<pattachment->proplist.count; i++) {
@@ -2138,7 +2058,6 @@ BOOL exmdb_server_get_instance_all_proptags(
 		pproptags->pproptag[pproptags->count] = PROP_TAG_ATTACHSIZE;
 		pproptags->count ++;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -2543,19 +2462,17 @@ BOOL exmdb_server_get_instance_properties(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (INSTANCE_TYPE_ATTACHMENT == pinstance->type) {
 		pinstance1 = instance_get_instance(pdb, pinstance->parent_id);
 		if (NULL == pinstance1) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pvalue = tpropval_array_get_propval(&((MESSAGE_CONTENT*)
@@ -2564,17 +2481,14 @@ BOOL exmdb_server_get_instance_properties(
 		    pinstance->cpid, static_cast<uint64_t *>(pvalue),
 		    static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent),
 			pproptags, ppropvals)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
@@ -2584,7 +2498,6 @@ BOOL exmdb_server_get_instance_properties(
 			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
 			if (NULL == ppropvals->ppropval[
 				ppropvals->count].pvalue) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			*(uint32_t*)ppropvals->ppropval[
@@ -2657,7 +2570,6 @@ BOOL exmdb_server_get_instance_properties(
 					ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
 					if (NULL == ppropvals->ppropval[
 						ppropvals->count].pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;	
 					}
 					((TYPED_PROPVAL*)ppropvals->ppropval[
@@ -2683,7 +2595,6 @@ BOOL exmdb_server_get_instance_properties(
 		case PR_RTF_COMPRESSED: {
 			auto ret = instance_get_message_body(pmsgctnt, pproptags->pproptag[i], pinstance->cpid, ppropvals);
 			if (ret < 0) {
-				db_engine_put_db(pdb);
 				return false;
 			}
 			break;
@@ -2695,7 +2606,6 @@ BOOL exmdb_server_get_instance_properties(
 				pvalue = instance_read_cid_content(
 						*(uint64_t*)pvalue, NULL);
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
@@ -2703,7 +2613,6 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
 				if (NULL == ppropvals->ppropval[
 					ppropvals->count].pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;	
 				}
 				((TYPED_PROPVAL*)ppropvals->ppropval[
@@ -2720,7 +2629,6 @@ BOOL exmdb_server_get_instance_properties(
 					pvalue = instance_read_cid_content(
 							*(uint64_t*)pvalue, NULL);
 					if (NULL == pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 					ppropvals->ppropval[ppropvals->count].proptag =
@@ -2728,7 +2636,6 @@ BOOL exmdb_server_get_instance_properties(
 					ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
 					if (NULL == ppropvals->ppropval[
 						ppropvals->count].pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;	
 					}
 					((TYPED_PROPVAL*)ppropvals->ppropval[
@@ -2745,7 +2652,6 @@ BOOL exmdb_server_get_instance_properties(
 			if (FALSE == instance_get_message_subject(
 				&pmsgctnt->proplist, pinstance->cpid,
 				pproptags->pproptag[i], &pvalue)) {
-				db_engine_put_db(pdb);
 				return FALSE;	
 			}
 			if (NULL != pvalue) {
@@ -2764,7 +2670,6 @@ BOOL exmdb_server_get_instance_properties(
 				pvalue = instance_read_cid_content(
 						*(uint64_t*)pvalue, NULL);
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
@@ -2779,7 +2684,6 @@ BOOL exmdb_server_get_instance_properties(
 				pvalue = instance_read_cid_content(
 						*(uint64_t*)pvalue, NULL);
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
@@ -2801,7 +2705,6 @@ BOOL exmdb_server_get_instance_properties(
 				pvalue = instance_read_cid_content(
 						*(uint64_t*)pvalue, NULL);
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
@@ -2816,7 +2719,6 @@ BOOL exmdb_server_get_instance_properties(
 				pvalue = instance_read_cid_content(
 						*(uint64_t*)pvalue, NULL);
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
@@ -2838,7 +2740,6 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
 				if (NULL == ppropvals->ppropval[
 					ppropvals->count].pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;	
 				}
 				*(uint64_t*)ppropvals->ppropval[
@@ -2863,14 +2764,12 @@ BOOL exmdb_server_get_instance_properties(
 			if (PROP_TAG_MESSAGESIZE == pproptags->pproptag[i]) {
 				pvalue = cu_alloc<uint32_t>();
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				*(uint32_t*)pvalue = length;
 			} else {
 				pvalue = cu_alloc<uint64_t>();
 				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				*(uint64_t*)pvalue = length;
@@ -2883,7 +2782,6 @@ BOOL exmdb_server_get_instance_properties(
 									pproptags->pproptag[i];
 			pvalue = cu_alloc<uint8_t>();
 			if (NULL == pvalue) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
@@ -2901,7 +2799,6 @@ BOOL exmdb_server_get_instance_properties(
 				if (FALSE == instance_get_message_display_recipients(
 					pmsgctnt->children.prcpts, pinstance->cpid,
 					pproptags->pproptag[i], &pvalue)) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				ppropvals->ppropval[ppropvals->count].proptag =
@@ -2914,7 +2811,6 @@ BOOL exmdb_server_get_instance_properties(
 			break;
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -2937,19 +2833,17 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
 	if (NULL == pproblems->pproblem) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (INSTANCE_TYPE_MESSAGE == pinstance->type) {
@@ -3015,7 +2909,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
@@ -3024,7 +2917,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}	
 				}
@@ -3033,7 +2925,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}	
 				}
@@ -3042,7 +2933,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}	
 				}
@@ -3072,12 +2962,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = common_util_convert_copy(TRUE,
 						pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
 				if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				continue;
@@ -3111,7 +2999,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = common_util_convert_copy(TRUE,
 						pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
@@ -3130,7 +3017,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 										TRUE, pinstance->cpid,
 					                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
@@ -3140,7 +3026,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				break;
 			}
 			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (PROP_TAG_BODY == propval.proptag ||
@@ -3165,7 +3050,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				propval.proptag = PROP_TAG_NATIVEBODY;
 				propval.pvalue = &body_type;
 				if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-					db_engine_put_db(pdb);
 					return FALSE;
 				}
 			}
@@ -3207,7 +3091,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.pvalue = common_util_convert_copy(TRUE,
 						pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
@@ -3226,7 +3109,6 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 										TRUE, pinstance->cpid,
 					                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 				}
@@ -3236,12 +3118,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				break;
 			}
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3260,13 +3140,12 @@ BOOL exmdb_server_remove_instance_properties(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pproblems->count = 0;
@@ -3369,7 +3248,6 @@ BOOL exmdb_server_remove_instance_properties(
 			}
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3387,21 +3265,19 @@ BOOL exmdb_server_check_instance_cycle(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, dst_instance_id);
 	while (NULL != pinstance && 0 != pinstance->parent_id) {
 		if (pinstance->parent_id == src_instance_id) {
 			*pb_cycle = TRUE;
-			db_engine_put_db(pdb);
 			return TRUE;
 		}
 		pinstance = instance_get_instance(pdb, pinstance->parent_id);
 	}
 	*pb_cycle = FALSE;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3416,13 +3292,12 @@ BOOL exmdb_server_empty_message_instance_rcpts(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
@@ -3430,7 +3305,6 @@ BOOL exmdb_server_empty_message_instance_rcpts(
 		tarray_set_free(pmsgctnt->children.prcpts);
 		pmsgctnt->children.prcpts = NULL;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3445,19 +3319,17 @@ BOOL exmdb_server_get_message_instance_rcpts_num(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	*pnum = pmsgctnt->children.prcpts == nullptr ? 0 :
 	        pmsgctnt->children.prcpts->count;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3474,25 +3346,22 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	if (NULL == pmsgctnt->children.prcpts) {
 		pproptags->count = 0;
 		pproptags->pproptag = NULL;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	pproptags1 = proptag_array_init();
 	if (NULL == pproptags1) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	prcpts = pmsgctnt->children.prcpts;
@@ -3500,20 +3369,17 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 		for (size_t j = 0; j < prcpts->pparray[i]->count; ++j)
 			if (!proptag_array_append(pproptags1,
 			    prcpts->pparray[i]->ppropval[j].proptag)) {
-				db_engine_put_db(pdb);
 				proptag_array_free(pproptags1);
 				return FALSE;
 			}
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
-		db_engine_put_db(pdb);
 		proptag_array_free(pproptags1);
 		return FALSE;
 	}
 	memcpy(pproptags->pproptag, pproptags1->pproptag,
 				sizeof(uint32_t)*pproptags1->count);
-	db_engine_put_db(pdb);
 	proptag_array_free(pproptags1);
 	return TRUE;
 }
@@ -3532,20 +3398,18 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	if (NULL == pmsgctnt->children.prcpts) {
 		pset->count = 0;
 		pset->pparray = NULL;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	prcpts = pmsgctnt->children.prcpts;
@@ -3560,7 +3424,6 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	if (i >= prcpts->count) {
 		pset->count = 0;
 		pset->pparray = NULL;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	auto begin_pos = i;
@@ -3570,13 +3433,11 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	pset->count = need_count;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(need_count);
 	if (NULL == pset->pparray) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (i=0; i<need_count; i++) {
 		pset->pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[i]) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pset->pparray[i]->count =
@@ -3584,14 +3445,12 @@ BOOL exmdb_server_get_message_instance_rcpts(
 		pset->pparray[i]->ppropval = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count);
 		if (NULL == pset->pparray[i]->ppropval) {
 			pset->pparray[i]->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memcpy(pset->pparray[i]->ppropval,
 			prcpts->pparray[begin_pos + i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3610,20 +3469,18 @@ BOOL exmdb_server_update_message_instance_rcpts(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	if (NULL == pmsgctnt->children.prcpts) {
 		pmsgctnt->children.prcpts = tarray_set_init();
 		if (NULL == pmsgctnt->children.prcpts) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -3645,7 +3502,6 @@ BOOL exmdb_server_update_message_instance_rcpts(
 				} else {
 					prcpt = tpropval_array_dup(pset->pparray[i]);
 					if (NULL == prcpt) {
-						db_engine_put_db(pdb);
 						return FALSE;
 					}
 					tpropval_array_free(
@@ -3658,22 +3514,18 @@ BOOL exmdb_server_update_message_instance_rcpts(
 		if (j >= pmsgctnt->children.prcpts->count) {
 			if (pmsgctnt->children.prcpts->count
 				>= MAX_RECIPIENT_NUMBER) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			prcpt = tpropval_array_dup(pset->pparray[i]);
 			if (NULL == prcpt) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (!tarray_set_append_internal(pmsgctnt->children.prcpts, prcpt)) {
 				tpropval_array_free(prcpt);
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3690,38 +3542,33 @@ BOOL exmdb_server_copy_instance_rcpts(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance_src = instance_get_instance(pdb, src_instance_id);
 	if (NULL == pinstance_src ||
 		INSTANCE_TYPE_MESSAGE != pinstance_src->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (NULL == ((MESSAGE_CONTENT*)
 		pinstance_src->pcontent)->children.prcpts) {
-		db_engine_put_db(pdb);
 		*pb_result = FALSE;
 		return TRUE;
 	}
 	pinstance_dst = instance_get_instance(pdb, dst_instance_id);
 	if (NULL == pinstance_dst ||
 		INSTANCE_TYPE_MESSAGE != pinstance_dst->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == b_force && NULL != ((MESSAGE_CONTENT*)
 		pinstance_dst->pcontent)->children.prcpts) {
-		db_engine_put_db(pdb);
 		*pb_result = FALSE;
 		return TRUE;	
 	}
 	prcpts = tarray_set_dup(((MESSAGE_CONTENT*)
 		pinstance_src->pcontent)->children.prcpts);
 	if (NULL == prcpts) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (NULL != ((MESSAGE_CONTENT*)
@@ -3731,7 +3578,6 @@ BOOL exmdb_server_copy_instance_rcpts(
 	}
 	((MESSAGE_CONTENT*)pinstance_dst->pcontent)->children.prcpts =
 															prcpts;
-	db_engine_put_db(pdb);
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -3747,13 +3593,12 @@ BOOL exmdb_server_empty_message_instance_attachments(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
@@ -3761,7 +3606,6 @@ BOOL exmdb_server_empty_message_instance_attachments(
 		attachment_list_free(pmsgctnt->children.pattachments);
 		pmsgctnt->children.pattachments = NULL;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3776,19 +3620,17 @@ BOOL exmdb_server_get_message_instance_attachments_num(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	*pnum = pmsgctnt->children.pattachments == nullptr ? 0 :
 	        pmsgctnt->children.pattachments->count;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3806,25 +3648,22 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	if (NULL == pmsgctnt->children.pattachments) {
 		pproptags->count = 0;
 		pproptags->pproptag = NULL;
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	pproptags1 = proptag_array_init();
 	if (NULL == pproptags1) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pattachments = pmsgctnt->children.pattachments;
@@ -3832,7 +3671,6 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 		for (j=0; j<pattachments->pplist[i]->proplist.count; j++) {
 			if (!proptag_array_append(pproptags1,
 			    pattachments->pplist[i]->proplist.ppropval[j].proptag)) {
-				db_engine_put_db(pdb);
 				proptag_array_free(pproptags1);
 				return FALSE;
 			}
@@ -3841,13 +3679,11 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
-		db_engine_put_db(pdb);
 		proptag_array_free(pproptags1);
 		return FALSE;
 	}
 	memcpy(pproptags->pproptag, pproptags1->pproptag,
 				sizeof(uint32_t)*pproptags1->count);
-	db_engine_put_db(pdb);
 	proptag_array_free(pproptags1);
 	return TRUE;
 }
@@ -3865,38 +3701,33 @@ BOOL exmdb_server_copy_instance_attachments(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance_src = instance_get_instance(pdb, src_instance_id);
 	if (NULL == pinstance_src ||
 		INSTANCE_TYPE_MESSAGE != pinstance_src->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (NULL == ((MESSAGE_CONTENT*)
 		pinstance_src->pcontent)->children.pattachments) {
-		db_engine_put_db(pdb);
 		*pb_result = FALSE;
 		return TRUE;	
 	}
 	pinstance_dst = instance_get_instance(pdb, dst_instance_id);
 	if (NULL == pinstance_dst ||
 		INSTANCE_TYPE_MESSAGE != pinstance_dst->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == b_force && NULL != ((MESSAGE_CONTENT*)
 		pinstance_dst->pcontent)->children.pattachments) {
-		db_engine_put_db(pdb);
 		*pb_result = FALSE;
 		return TRUE;	
 	}
 	pattachments = attachment_list_dup(((MESSAGE_CONTENT*)
 		pinstance_src->pcontent)->children.pattachments);
 	if (NULL == pattachments) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (NULL != ((MESSAGE_CONTENT*)
@@ -3906,7 +3737,6 @@ BOOL exmdb_server_copy_instance_attachments(
 	}
 	((MESSAGE_CONTENT*)pinstance_dst->pcontent)->children.pattachments =
 															pattachments;
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -3927,20 +3757,18 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsgctnt = (MESSAGE_CONTENT*)pinstance->pcontent;
 	if (NULL == pmsgctnt->children.pattachments ||
 		0 == pmsgctnt->children.pattachments->count ||
 		start_pos >= pmsgctnt->children.pattachments->count) {
-		db_engine_put_db(pdb);
 		pset->count = 0;
 		pset->pparray = NULL;
 		return TRUE;
@@ -3956,20 +3784,17 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 		pset->count = 0;
 		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - start_pos + 1);
 		if (NULL == pset->pparray) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=start_pos; i<=end_pos; i++) {
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == pset->pparray[pset->count]) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (FALSE == instance_get_attachment_properties(
 			    pinstance->cpid, static_cast<uint64_t *>(pvalue),
 			    pattachments->pplist[i],
 				pproptags, pset->pparray[pset->count])) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->count ++;
@@ -3982,26 +3807,22 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 		pset->count = 0;
 		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos + 1);
 		if (NULL == pset->pparray) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=start_pos; i>=end_pos; i--) {
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == pset->pparray[pset->count]) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			if (FALSE == instance_get_attachment_properties(
 			    pinstance->cpid, static_cast<uint64_t *>(pvalue),
 			    pattachments->pplist[i],
 				pproptags, pset->pparray[pset->count])) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->count ++;
 		}
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
@@ -4025,13 +3846,12 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmsg = (MESSAGE_CONTENT*)pinstance->pcontent;
@@ -4045,13 +3865,11 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	}
 	if (FALSE == b_inconflict) {
 		if (FALSE == instance_read_message(pmsg, &msgctnt)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL == pmsg->children.pattachments) {
 			pattachments = attachment_list_init();
 			if (NULL == pattachments) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pmsg->children.pattachments = pattachments;
@@ -4060,13 +3878,11 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		}
 		pattachment = attachment_content_init();
 		if (NULL == pattachment) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		pembedded = message_content_dup(&msgctnt);
 		if (NULL == pembedded) {
 			attachment_content_free(pattachment);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		tpropval_array_remove_propval(&pembedded->proplist, PROP_TAG_MID);
@@ -4074,7 +3890,6 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		if (FALSE == attachment_list_append_internal(
 			pattachments, pattachment)) {
 			attachment_content_free(pattachment);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		propval.proptag = PROP_TAG_INCONFLICT;
@@ -4085,7 +3900,6 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		if (NULL == pmsg->children.pattachments) {
 			pattachments = attachment_list_init();
 			if (NULL == pattachments) {
-				db_engine_put_db(pdb);
 				return FALSE;
 			}
 		} else {
@@ -4094,13 +3908,11 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	}
 	pattachment = attachment_content_init();
 	if (NULL == pattachment) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pembedded = message_content_dup(pmsgctnt);
 	if (NULL == pembedded) {
 		attachment_content_free(pattachment);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	tpropval_array_remove_propval(&pembedded->proplist, PROP_TAG_MID);
@@ -4108,7 +3920,6 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	if (FALSE == attachment_list_append_internal(
 		pattachments, pattachment)) {
 		attachment_content_free(pattachment);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_INCONFLICT;
@@ -4126,6 +3937,5 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		propval.pvalue = pvalue;
 	}
 	tpropval_array_set_propval(&pmsg->proplist, &propval);
-	db_engine_put_db(pdb);
 	return TRUE;
 }

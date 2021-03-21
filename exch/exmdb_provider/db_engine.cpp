@@ -5,6 +5,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
 #include "db_engine.h"
 #include <gromox/eid_array.hpp>
@@ -30,6 +31,8 @@
 #define MAX_DB_WAITING_THREADS			5
 
 #define MAX_DYNAMIC_NODES				100
+
+using namespace gromox;
 
 struct POPULATING_NODE {
 	DOUBLE_LIST_NODE node;
@@ -494,26 +497,23 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	if (NULL == pdb) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU(folder_id));
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (!eid_array_append(pfolder_ids,
 		    sqlite3_column_int64(pstmt, 0))) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
