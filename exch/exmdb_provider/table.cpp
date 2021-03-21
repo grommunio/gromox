@@ -149,7 +149,11 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	char sql_string[256];
 	sqlite3_stmt *pstmt1;
 	
-	if (TRUE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private()) {
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
+		         " folders WHERE parent_id=%llu AND is_deleted=%u",
+		         LLU(folder_id), !!(table_flags & TABLE_FLAG_SOFTDELETES));
+	} else {
 		if (table_flags & TABLE_FLAG_SOFTDELETES) {
 			sprintf(sql_string, "SELECT"
 				" folder_id FROM folders WHERE 0");
@@ -157,10 +161,6 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 			sprintf(sql_string, "SELECT folder_id "
 			          "FROM folders WHERE parent_id=%llu", LLU(folder_id));
 		}
-	} else {
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
-			" folders WHERE parent_id=%llu AND is_deleted=%u",
-			LLU(folder_id), !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		return FALSE;
