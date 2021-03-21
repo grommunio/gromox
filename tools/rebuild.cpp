@@ -9,6 +9,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/list_file.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -357,13 +358,14 @@ int main(int argc, const char **argv)
 		printf("Failed to initialize sqlite engine\n");
 		return 8;
 	}
+	{
+	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
 	if (remove(temp_path1) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1393: remove %s: %s\n", temp_path1, strerror(errno));
 	if (SQLITE_OK != sqlite3_open_v2(temp_path1, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
-		sqlite3_shutdown();
 		return 9;
 	}
 	if (chmod(temp_path1, 0666) < 0)
@@ -373,7 +375,6 @@ int main(int argc, const char **argv)
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	/* commit the transaction */
@@ -384,7 +385,6 @@ int main(int argc, const char **argv)
 		tmp_sql, NULL, NULL, &err_msg)) {
 		printf("fail to execute attach database sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	
@@ -395,7 +395,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO allocated_eids "
@@ -404,7 +403,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO named_properties "
@@ -413,7 +411,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO store_properties "
@@ -422,7 +419,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO permissions "
@@ -431,7 +427,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO rules "
@@ -440,7 +435,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO folders "
@@ -449,7 +443,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO folder_properties "
@@ -458,7 +451,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO receive_table "
@@ -467,7 +459,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO messages "
@@ -476,7 +467,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO message_properties "
@@ -485,7 +475,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO message_changes "
@@ -494,7 +483,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO recipients "
@@ -503,7 +491,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO recipients_properties "
@@ -512,7 +499,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO attachments "
@@ -521,7 +507,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO attachment_properties "
@@ -530,7 +515,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO search_scopes "
@@ -539,7 +523,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO search_result "
@@ -548,7 +531,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	/* commit the transaction */
@@ -559,7 +541,6 @@ int main(int argc, const char **argv)
 		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to execute reindex sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
-		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "PRAGMA integrity_check";
@@ -575,7 +556,7 @@ int main(int argc, const char **argv)
 		sqlite3_finalize(pstmt);
 	}
 	sqlite3_close(psqlite);
-	sqlite3_shutdown();
+	}
 	
 	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, g_exmdb_list);
 	if (ret < 0) {
