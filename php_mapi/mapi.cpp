@@ -2887,17 +2887,30 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 static ZEND_FUNCTION(mapi_decompressrtf)
 {
 	ZCL_MEMORY;
-	size_t rtflen = 0;
-	char *rtfbuffer = nullptr;
+	zval *firstarg = nullptr;
 	
-	if (zend_parse_parameters(ZEND_NUM_ARGS(),
-		"s", &rtfbuffer, &rtflen) == FAILURE || NULL ==
-		rtfbuffer || 0 == rtflen)
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &firstarg) == FAILURE)
 		pthrow(ecInvalidParam);
+	auto deref = firstarg;
+	ZVAL_DEREF(deref);
+	if (Z_TYPE_P(deref) != IS_STRING || Z_STRLEN_P(deref) < 16) {
+		MAPI_G(hr) = ecSuccess;
+		ZVAL_COPY(return_value, firstarg);
+		return;
+	}
+	static constexpr char mela[] = {0x4d,0x45,0x4c,0x41};
+	static constexpr char lzfu[] = {0x4c,0x5a,0x46,0x75};
+	auto magic = Z_STRVAL_P(deref) + 8;
+	if (memcmp(magic, mela, 4) != 0 &&
+	    memcmp(magic, lzfu, 4) != 0) {
+		MAPI_G(hr) = ecSuccess;
+		ZVAL_COPY(return_value, firstarg);
+		return;
+	}
 
 	BINARY rtf_bin;
-	rtf_bin.cb = rtflen;
-	rtf_bin.pc = rtfbuffer;
+	rtf_bin.cb = Z_STRLEN_P(deref);
+	rtf_bin.pc = Z_STRVAL_P(deref);
 	ssize_t unc_size = rtfcp_uncompressed_size(&rtf_bin);
 	if (unc_size < 0)
 		/* Input does not look like RTFCP (MELA or LZFU) */
