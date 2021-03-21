@@ -902,7 +902,6 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memcpy(pproptags->pproptag, tmp_proptags.pproptag,
