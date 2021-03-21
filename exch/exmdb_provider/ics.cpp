@@ -37,18 +37,25 @@ struct REPLID_NODE {
 };
 
 struct IDSET_CACHE {
-	sqlite3 *psqlite;
-	sqlite3_stmt *pstmt;
+	IDSET_CACHE();
+	~IDSET_CACHE();
+	sqlite3 *psqlite = nullptr;
+	sqlite3_stmt *pstmt = nullptr;
 	DOUBLE_LIST range_list;
 };
 
-static void ics_free_idset_cache(IDSET_CACHE *pcache)
+IDSET_CACHE::IDSET_CACHE()
 {
-	if (NULL != pcache->pstmt) {
-		sqlite3_finalize(pcache->pstmt);
-	}
-	sqlite3_close(pcache->psqlite);
-	double_list_free(&pcache->range_list);
+	double_list_init(&range_list);
+}
+
+IDSET_CACHE::~IDSET_CACHE()
+{
+	if (pstmt != nullptr)
+		sqlite3_finalize(pstmt);
+	if (psqlite != nullptr)
+		sqlite3_close(psqlite);
+	double_list_free(&range_list);
 }
 
 static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
@@ -70,10 +77,8 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 			" (id_val INTEGER PRIMARY KEY)");
 	if (SQLITE_OK != sqlite3_exec(pcache->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_close(pcache->psqlite);
 		return FALSE;
 	}
-	double_list_init(&pcache->range_list);
 	pcache->pstmt = NULL;
 	prange_list = NULL;
 	for (pnode=double_list_get_head(
@@ -91,7 +96,6 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 	}
 	sprintf(sql_string, "INSERT INTO id_vals VALUES (?)");
 	if (!gx_sql_prep(pcache->psqlite, sql_string, &pstmt)) {
-		ics_free_idset_cache(pcache);
 		return FALSE;
 	}
 	for (pnode=double_list_get_head(prange_list); NULL!=pnode;
@@ -103,7 +107,6 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 			prange_node1 = cu_alloc<RANGE_NODE>();
 			if (NULL == prange_node1) {
 				sqlite3_finalize(pstmt);
-				ics_free_idset_cache(pcache);
 				return FALSE;
 			}
 			prange_node1->node.pdata = prange_node1;
@@ -118,7 +121,6 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 				sqlite3_bind_int64(pstmt, 1, ival);
 				if (SQLITE_DONE != sqlite3_step(pstmt)) {
 					sqlite3_finalize(pstmt);
-					ics_free_idset_cache(pcache);
 					return FALSE;
 				}
 			}
@@ -202,7 +204,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	sqlite3 *psqlite;
 	uint64_t fid_val;
 	uint64_t mid_val;
-	IDSET_CACHE cache;
 	uint64_t change_num;
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
@@ -273,6 +274,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			return FALSE;
 		}
 	}
+	IDSET_CACHE cache;
 	if (FALSE == ics_init_idset_cache(pgiven, &cache)) {
 		sqlite3_close(psqlite);
 		return FALSE;
@@ -281,13 +283,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	pstmt = NULL;
@@ -487,14 +487,12 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	count = sqlite3_column_int64(pstmt, 0);
@@ -507,7 +505,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (NULL == pupdated_mids->pids || NULL == pchg_mids->pids) {
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 	} else {
@@ -523,7 +520,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	for (i=0; i<count; i++) {
@@ -531,7 +527,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		mid_val = sqlite3_column_int64(pstmt, 0);
@@ -550,7 +545,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT message_id"
@@ -559,7 +553,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	enum_param.b_result = TRUE;
@@ -571,7 +564,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_finalize(pstmt1);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	enum_param.pnolonger_mids = eid_array_init();
@@ -581,7 +573,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_finalize(pstmt1);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	if (FALSE == idset_enum_repl((IDSET*)pgiven, 1,
@@ -592,7 +583,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		eid_array_free(enum_param.pnolonger_mids);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;	
 	}
 	sqlite3_finalize(pstmt);
@@ -606,7 +596,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			eid_array_free(enum_param.pnolonger_mids);
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		memcpy(pdeleted_mids->pids,
@@ -624,7 +613,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			eid_array_free(enum_param.pnolonger_mids);
 			db_engine_put_db(pdb);
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		memcpy(pnolonger_mids->pids,
@@ -638,13 +626,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	sprintf(sql_string, "SELECT count(*) FROM existence");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
-		ics_free_idset_cache(&cache);
 		return FALSE;
 	}
 	count = sqlite3_column_int64(pstmt, 0);
@@ -656,14 +642,12 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pgiven_mids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pgiven_mids->pids) {
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT message_id"
 			" FROM existence ORDER BY message_id DESC");
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -678,13 +662,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sprintf(sql_string, "SELECT count(*) FROM reads");
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		count = sqlite3_column_int64(pstmt, 0);
@@ -698,13 +680,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			pread_mids->pids = cu_alloc<uint64_t>(count);
 			if (NULL == pread_mids->pids) {
 				sqlite3_close(psqlite);
-				ics_free_idset_cache(&cache);
 				return FALSE;
 			}
 			punread_mids->pids = cu_alloc<uint64_t>(count);
 			if (NULL == punread_mids->pids) {
 				sqlite3_close(psqlite);
-				ics_free_idset_cache(&cache);
 				return FALSE;
 			}
 		}
@@ -712,7 +692,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			"message_id, read_state FROM reads");
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
-			ics_free_idset_cache(&cache);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -735,7 +714,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		punread_mids->pids = NULL;
 	}
 	sqlite3_close(psqlite);
-	ics_free_idset_cache(&cache);
 	return TRUE;
  QUERY_FAILURE:
 	if (NULL != pstmt) {
@@ -765,7 +743,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	db_engine_put_db(pdb);
 	sqlite3_close(psqlite);
-	ics_free_idset_cache(&cache);
 	return FALSE;
 }
 
