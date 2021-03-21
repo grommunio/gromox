@@ -1319,6 +1319,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	if (FALSE == common_util_allocate_cn(pdb->psqlite, &read_cn)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
+		return false;
 	}
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);

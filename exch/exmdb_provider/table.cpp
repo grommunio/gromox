@@ -3974,6 +3974,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		db_engine_put_db(pdb);
+		return false;
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_finalize(pstmt1);
@@ -4812,6 +4813,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
+		return false;
 	}
 	sprintf(sql_string, "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
@@ -4820,6 +4822,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
+		return false;
 	}
 	idx = 0;
 	sqlite3_bind_int64(pstmt, 1, 0);
@@ -4848,8 +4851,10 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		sprintf(sql_string, "SELECT idx FROM t%u WHERE"
 		          " row_id=%llu", ptnode->table_id, LLU(row_id1));
 	}
-	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
+		return false;
+	}
 	*pposition = sqlite3_step(pstmt) == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) - 1 : -1;
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
