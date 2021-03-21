@@ -2217,8 +2217,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
-				db_engine_put_db(pdb);
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
+				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			count = 0;
@@ -2879,8 +2879,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 				if (NULL == ppropvals->ppropval) {
 					sqlite3_finalize(pstmt);
-					db_engine_put_db(pdb);
 					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
+					db_engine_put_db(pdb);
 					return FALSE;
 				}
 				for (i=0; i<pproptags->count; i++) {
@@ -3277,8 +3277,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (NULL == ppropvals->ppropval) {
-			db_engine_put_db(pdb);
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
+			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		for (i=0; i<pproptags->count; i++) {
