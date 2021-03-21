@@ -53,7 +53,8 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "out of memory\n");
 		return EXIT_FAILURE;
 	}
-	while ((read_len = read(STDIN_FILENO, pbuff, buff_len - offset)) > 0) {
+	while ((read_len = read(STDIN_FILENO, &pbuff[offset],
+	    buff_len - offset)) > 0) {
 		offset += read_len;
 		if (offset == buff_len) {
 			buff_len *= 2;
