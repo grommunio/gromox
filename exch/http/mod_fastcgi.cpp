@@ -343,15 +343,14 @@ static int mod_fastcgi_pull_record_header(
 }
 
 static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
-	const char *tag, char *value, int length)
+    const char *tag, char *value, size_t length)
 {
 	char tmp_buff[256];
-	int tag_len, val_len;
+	uint32_t tag_len, val_len;
 	
 	mem_file_seek(pf_others, MEM_FILE_READ_PTR,
 		0, MEM_FILE_SEEK_BEGIN);
-	while (MEM_END_OF_FILE != mem_file_read(pf_others,
-		&tag_len, sizeof(int))) {
+	while (mem_file_read(pf_others, &tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (tag_len > sizeof(tmp_buff)) {
 			return FALSE;
 		}
@@ -394,7 +393,6 @@ static int mod_fastcgi_connect_backend(const char *path)
 
 BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 {
-	int tmp_len;
 	BOOL b_index;
 	char *ptoken;
 	char *ptoken1;
@@ -408,7 +406,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	uint64_t content_length;
 	FASTCGI_CONTEXT *pcontext;
 	
-	tmp_len = mem_file_get_total_length(&phttp->request.f_host);
+	auto tmp_len = mem_file_get_total_length(&phttp->request.f_host);
 	if (tmp_len >= sizeof(domain)) {
 		http_parser_log_info(phttp, 6, "length of "
 			"request host is too long for mod_fastcgi");
@@ -797,7 +795,6 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 
 BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 {
-	int tmp_len;
 	void *pbuff;
 	int cli_sockd;
 	int ndr_length;
@@ -849,9 +846,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		if (0 == phttp->pfast_context->content_length) {
 			goto END_OF_STDIN;
 		}
-		tmp_len = sizeof(tmp_buff);
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
-		    reinterpret_cast<unsigned int *>(&tmp_len))) != nullptr) {
+		unsigned int tmp_len = sizeof(tmp_buff);
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in, &tmp_len)) != nullptr) {
 			if (tmp_len > phttp->pfast_context->content_length) {
 				stream_backward_reading_ptr(&phttp->stream_in,
 					tmp_len - phttp->pfast_context->content_length);
@@ -885,7 +881,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	} else {
 		lseek(phttp->pfast_context->cache_fd, 0, SEEK_SET);
 		while (TRUE) {
-			tmp_len = read(phttp->pfast_context->cache_fd,
+			auto tmp_len = read(phttp->pfast_context->cache_fd,
 				tmp_buff, sizeof(tmp_buff));
 			if (tmp_len < 0) {
 				close(cli_sockd);
@@ -1151,7 +1147,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 {
-	int tmp_len;
+	unsigned int tmp_len;
 	time_t cur_time;
 	struct tm tmp_tm;
 	NDR_PULL ndr_pull;

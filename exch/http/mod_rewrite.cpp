@@ -235,8 +235,8 @@ int mod_rewrite_run(const char *sdlist) try
 	return -ENOMEM;
 }
 
-BOOL mod_rewrite_process(const char *uri_buff,
-	int uri_len, MEM_FILE *pf_request_uri)
+BOOL mod_rewrite_process(const char *uri_buff, size_t uri_len,
+    MEM_FILE *pf_request_uri)
 {
 	char tmp_buff[8192];
 	

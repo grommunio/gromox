@@ -2032,7 +2032,7 @@ void pdu_processor_rpc_free_environment()
 	}
 }
 
-static void pdu_processor_async_reply(int async_id, void *pout)
+static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 {
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;

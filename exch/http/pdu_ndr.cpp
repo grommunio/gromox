@@ -83,7 +83,6 @@ static int pdu_ndr_pull_dcerpc_ack_ctx(NDR_PULL *pndr, DCERPC_ACK_CTX *r)
 
 static int pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK *r)
 {
-	int i;
 	int status;
 
 	TRY(ndr_pull_align(pndr, 4));
@@ -98,7 +97,7 @@ static int pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK *r)
 				r->num_versions = 0;
 				return NDR_ERR_ALLOC;
 			}
-			for (i=0; i<r->num_versions; i++) {
+			for (size_t i = 0; i < r->num_versions; ++i) {
 				status = ndr_pull_uint32(pndr, &r->versions[i]);
 				if (NDR_ERR_SUCCESS != status) {
 					free(r->versions);
@@ -1123,17 +1122,14 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 static int pdu_ndr_push_dcerpc_bind_nak(NDR_PUSH *pndr,
 	DCERPC_BIND_NAK *r)
 {
-	int i;
-
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_uint16(pndr, r->reject_reason));
 	TRY(ndr_push_align(pndr, 4));
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
 		TRY(ndr_push_uint32(pndr, r->num_versions));
-		for (i=0; i<r->num_versions; i++) {
+		for (size_t i = 0; i < r->num_versions; ++i)
 			TRY(ndr_push_uint32(pndr, r->versions[i]));
-		}
 	}
 	return ndr_push_trailer_align(pndr, 4);
 }

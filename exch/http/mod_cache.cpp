@@ -272,12 +272,11 @@ BOOL mod_cache_check_caching(HTTP_CONTEXT *phttp)
 static BOOL mod_cache_retrieve_etag(const char *etag,
 	ino_t *pino, uint32_t *plength, time_t *pmtime)
 {
-	int tmp_len;
 	char *ptoken;
 	char *ptoken1;
 	char tmp_buff[128];
 	
-	tmp_len = strlen(etag);
+	auto tmp_len = strlen(etag);
 	if (tmp_len >= sizeof(tmp_buff)) {
 		return FALSE;
 	}
@@ -331,21 +330,20 @@ static void mod_cache_serialize_etag(ino_t ino,
 }
 
 static BOOL mod_cache_get_others_field(MEM_FILE *pf_others,
-	const char *tag, char *value, int length)
+    const char *tag, char *value, size_t length)
 {
 	char tmp_buff[256];
-	int tag_len, val_len;
+	uint32_t tag_len, val_len;
 	
 	mem_file_seek(pf_others, MEM_FILE_READ_PTR,
 		0, MEM_FILE_SEEK_BEGIN);
-	while (MEM_END_OF_FILE != mem_file_read(pf_others,
-		&tag_len, sizeof(int))) {
+	while (mem_file_read(pf_others, &tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (tag_len > sizeof(tmp_buff)) {
 			return FALSE;
 		}
 		mem_file_read(pf_others, tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
-		mem_file_read(pf_others, &val_len, sizeof(int));
+		mem_file_read(pf_others, &val_len, sizeof(uint32_t));
 		if (0 == strcasecmp(tag, tmp_buff)) {
 			length = (length > val_len)?val_len:(length - 1);
 			mem_file_read(pf_others, value, length);
@@ -539,7 +537,6 @@ static BOOL mod_cache_parse_range_value(char *value,
 	uint32_t size, CACHE_CONTEXT *pcontext)
 {
 	int i;
-	int count;
 	int val_len;
 	char *ptoken;
 	char *ptoken1;
@@ -549,7 +546,6 @@ static BOOL mod_cache_parse_range_value(char *value,
 	char *plast_token;
 	RANGE ranges[1024];
 	
-	count = 0;
 	HX_strrtrim(value);
 	HX_strltrim(value);
 	if (0 != strncasecmp(value, "bytes", 5)) {
@@ -567,14 +563,14 @@ static BOOL mod_cache_parse_range_value(char *value,
 		value[val_len] = ',';
 		val_len ++;
 	}
+	size_t count = 0;
 	for (i=0; i<val_len; i++) {
 		if (',' == value[i]) {
 			count ++;
 		}
 	}
-	if (count > sizeof(ranges)/sizeof(RANGE)) {
+	if (count > GX_ARRAY_SIZE(ranges))
 		return FALSE;
-	}
 	range_num = 0;
 	plast_token = value;
 	for (i=0; i<val_len; i++) {
@@ -637,7 +633,6 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 {
 	int fd;
 	ino_t ino;
-	int tmp_len;
 	char *ptoken;
 	time_t mtime;
 	uint32_t size;
@@ -657,7 +652,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		0 != strcasecmp(phttp->request.method, "HEAD")) {
 		return FALSE;
 	}
-	tmp_len = mem_file_get_total_length(&phttp->request.f_content_length);
+	auto tmp_len = mem_file_get_total_length(&phttp->request.f_content_length);
 	if (0 != tmp_len) {
 		if (tmp_len >= 32) {
 			return FALSE;
@@ -746,9 +741,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	if (node_stat.st_size >= 0xFFFFFFFF) {
 		return FALSE;
 	}
-	if (TRUE == mod_cache_get_others_field(
-		&phttp->request.f_others,
-		"If-None-Match", tmp_buff, 128) &&
+	if (mod_cache_get_others_field(&phttp->request.f_others,
+	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 		TRUE == mod_cache_retrieve_etag(
 		tmp_buff, &ino, &size, &mtime)) {
 		if (ino == node_stat.st_ino &&
@@ -757,9 +751,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			return mod_cache_response_unmodified(phttp);
 		}
 	} else {
-		if (TRUE == mod_cache_get_others_field(
-			&phttp->request.f_others,
-			"If-Modified-Since", tmp_buff, 128) &&
+		if (mod_cache_get_others_field(&phttp->request.f_others,
+		    "If-Modified-Since", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 			TRUE == mod_cache_parse_rfc1123_dstring(
 			tmp_buff, &mtime)) {
 			if (mtime == node_stat.st_mtime) {
@@ -769,9 +762,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	memset(pcontext, 0, sizeof(CACHE_CONTEXT));
-	if (TRUE == mod_cache_get_others_field(
-		&phttp->request.f_others, "Range",
-		tmp_buff, sizeof(tmp_buff))) {
+	if (mod_cache_get_others_field(&phttp->request.f_others, "Range",
+	    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 		if (FALSE == mod_cache_parse_range_value(
 			tmp_buff, node_stat.st_size, pcontext)) {
 			http_parser_log_info(phttp, 6, "\"range\""

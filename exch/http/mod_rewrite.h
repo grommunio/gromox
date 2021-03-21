@@ -3,5 +3,4 @@
 #include <gromox/mem_file.hpp>
 
 extern int mod_rewrite_run(const char *sdlist);
-BOOL mod_rewrite_process(const char *uri_buff,
-	int uri_len, MEM_FILE *pf_request_uri);
+extern BOOL mod_rewrite_process(const char *, size_t, MEM_FILE *);
