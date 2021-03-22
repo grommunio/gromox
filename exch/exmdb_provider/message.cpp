@@ -942,8 +942,10 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	mid_val = rop_util_get_gc_value(message_id);
 	sprintf(sql_string, "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(mid_val));
-	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
+		db_engine_put_db(pdb);
 		return FALSE;
+	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		*ppbrief = NULL;
