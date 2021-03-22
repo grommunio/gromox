@@ -199,7 +199,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 {
 	int i;
 	int count;
-	DB_ITEM *pdb;
 	int read_state;
 	uint64_t dtime;
 	uint64_t mtime;
@@ -277,12 +276,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pstmt = NULL;
@@ -480,12 +478,10 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	sprintf(sql_string, "SELECT count(*) FROM changes");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	count = sqlite3_column_int64(pstmt, 0);
@@ -496,7 +492,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pupdated_mids->pids = cu_alloc<uint64_t>(count);
 		pchg_mids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pupdated_mids->pids || NULL == pchg_mids->pids) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	} else {
@@ -510,13 +505,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sprintf(sql_string, "SELECT message_id FROM changes");
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (i=0; i<count; i++) {
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		mid_val = sqlite3_column_int64(pstmt, 0);
@@ -533,14 +526,12 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	sprintf(sql_string, "SELECT message_id"
 				" FROM existence WHERE message_id=?");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT message_id"
 				" FROM messages WHERE message_id=?");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	enum_param.b_result = TRUE;
@@ -550,7 +541,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (NULL == enum_param.pdeleted_eids) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	enum_param.pnolonger_mids = eid_array_init();
@@ -558,7 +548,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		eid_array_free(enum_param.pdeleted_eids);
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == idset_enum_repl((IDSET*)pgiven, 1,
@@ -567,7 +556,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_finalize(pstmt1);
 		eid_array_free(enum_param.pdeleted_eids);
 		eid_array_free(enum_param.pnolonger_mids);
-		db_engine_put_db(pdb);
 		return FALSE;	
 	}
 	sqlite3_finalize(pstmt);
@@ -579,7 +567,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			pdeleted_mids->count = 0;
 			eid_array_free(enum_param.pdeleted_eids);
 			eid_array_free(enum_param.pnolonger_mids);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memcpy(pdeleted_mids->pids,
@@ -595,7 +582,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (NULL == pnolonger_mids->pids) {
 			pnolonger_mids->count = 0;
 			eid_array_free(enum_param.pnolonger_mids);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		memcpy(pnolonger_mids->pids,
@@ -605,7 +591,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pnolonger_mids->pids = NULL;
 	}
 	eid_array_free(enum_param.pnolonger_mids);
-	db_engine_put_db(pdb);
+	pdb.reset();
 	sprintf(sql_string, "SELECT count(*) FROM existence");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		return FALSE;
@@ -714,7 +700,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (NULL != prestriction) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	}
-	db_engine_put_db(pdb);
 	return FALSE;
 }
 
@@ -824,7 +809,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	EID_ARRAY *pgiven_fids, EID_ARRAY *pdeleted_fids)
 {
 	int count;
-	DB_ITEM *pdb;
 	sqlite3 *psqlite;
 	uint64_t fid_val;
 	uint64_t fid_val1;
@@ -857,12 +841,11 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (TRUE == exmdb_server_check_private()) {
@@ -874,7 +857,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			" AND is_deleted=0");
 	}
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -883,7 +865,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "INSERT INTO existence VALUES (?)");
@@ -891,7 +872,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*plast_cn = 0;
@@ -901,7 +881,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		sqlite3_finalize(pstmt1);
 		sqlite3_finalize(pstmt2);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_finalize(pstmt);
@@ -913,12 +892,10 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "SELECT count(*) FROM changes");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pfldchgs->count = sqlite3_column_int64(pstmt, 0);
@@ -927,7 +904,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		pfldchgs->pfldchgs = cu_alloc<TPROPVAL_ARRAY>(pfldchgs->count);
 		if (NULL == pfldchgs->pfldchgs) {
 			pfldchgs->count = 0;
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	} else {
@@ -938,14 +914,12 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 					" FROM changes ORDER BY idx ASC");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	for (size_t i = 0; i < pfldchgs->count; ++i) {
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		fid_val1 = sqlite3_column_int64(pstmt, 0);
@@ -954,7 +928,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			pdb->psqlite, &proptags)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		count = 0;
@@ -980,13 +953,12 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			pdb->psqlite, &proptags, pfldchgs->pfldchgs + i)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_put_db(pdb);
+	pdb.reset();
 	sprintf(sql_string, "SELECT count(*) FROM existence");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		return FALSE;

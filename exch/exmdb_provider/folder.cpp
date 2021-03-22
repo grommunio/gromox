@@ -27,7 +27,6 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 	const char *str_class, uint64_t *pid, char *str_explicit)
 {
 	char *pdot;
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char tmp_class[256];
 	char sql_string[1024];
@@ -38,11 +37,10 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 	auto class_len = std::min(strlen(str_class), static_cast<size_t>(255));
 	memcpy(tmp_class, str_class, class_len);
 	tmp_class[class_len] = '\0';
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -82,18 +80,16 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 BOOL exmdb_server_set_folder_by_class(const char *dir,
 	uint64_t folder_id, const char *str_class, BOOL *pb_result)
 {
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -157,17 +153,15 @@ BOOL exmdb_server_set_folder_by_class(const char *dir,
 BOOL exmdb_server_get_folder_class_table(
 	const char *dir, TARRAY_SET *ptable)
 {
-	DB_ITEM *pdb;
 	int total_count;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	TPROPVAL_ARRAY *ppropvals;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -242,13 +236,10 @@ BOOL exmdb_server_get_folder_class_table(
 BOOL exmdb_server_check_folder_id(const char *dir,
 	uint64_t folder_id, BOOL *pb_exist)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -263,7 +254,6 @@ BOOL exmdb_server_check_folder_id(const char *dir,
 BOOL exmdb_server_query_folder_messages(const char *dir,
 	uint64_t folder_id, TARRAY_SET *pset)
 {
-	DB_ITEM *pdb;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
@@ -274,11 +264,10 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -442,7 +431,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 BOOL exmdb_server_check_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
@@ -450,11 +438,10 @@ BOOL exmdb_server_check_folder_deleted(const char *dir,
 		*pb_del = FALSE;
 		return TRUE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -473,14 +460,12 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	uint64_t parent_id, const char *str_name,
 	uint64_t *pfolder_id)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -499,7 +484,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
 	uint64_t *pfolder_id)
 {
-	DB_ITEM *pdb;
 	void *pvalue;
 	uint32_t art;
 	uint32_t hcn;
@@ -596,11 +580,10 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		common_util_remove_propvals((TPROPVAL_ARRAY*)
 				pproperties, PROP_TAG_FOLDERTYPE);
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -806,23 +789,20 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 	uint64_t folder_id, PROPTAG_ARRAY *pproptags)
 {
 	int i;
-	DB_ITEM *pdb;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_proptags(FOLDER_PROPERTIES_TABLE,
 		rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
+	pdb.reset();
 	for (i=0; i<tmp_proptags.count; i++) {
 		if (PROP_TAG_SOURCEKEY == tmp_proptags.pproptag[i]) {
 			break;
@@ -848,13 +828,10 @@ BOOL exmdb_server_get_folder_properties(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -874,15 +851,13 @@ BOOL exmdb_server_set_folder_properties(
 	PROBLEM_ARRAY *pproblems)
 {
 	int i;
-	DB_ITEM *pdb;
 	BOOL b_result;
 	uint64_t fid_val;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -923,14 +898,11 @@ BOOL exmdb_server_set_folder_properties(
 BOOL exmdb_server_remove_folder_properties(const char *dir,
 	uint64_t folder_id, const PROPTAG_ARRAY *pproptags)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -948,7 +920,7 @@ BOOL exmdb_server_remove_folder_properties(const char *dir,
 	return TRUE;
 }
 
-static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
+static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	const char *username, uint64_t folder_id, BOOL b_hard,
 	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial,
 	uint64_t *pnormal_size, uint64_t *pfai_size,
@@ -1340,7 +1312,6 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	uint64_t folder_id, BOOL b_hard, BOOL *pb_result)
 {
-	DB_ITEM *pdb;
 	BOOL b_search;
 	BOOL b_partial;
 	uint64_t fid_val;
@@ -1350,11 +1321,10 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	char sql_string[256];
 	uint64_t normal_size;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1513,7 +1483,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 	const char *username, uint64_t folder_id, BOOL b_hard,
 	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	uint64_t fai_size;
 	char sql_string[256];
@@ -1521,11 +1490,10 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 	uint32_t folder_count;
 	uint32_t message_count;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1602,13 +1570,10 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 BOOL exmdb_server_check_folder_cycle(const char *dir,
 	uint64_t src_fid, uint64_t dst_fid, BOOL *pb_cycle)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1744,7 +1709,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BOOL folder_copy_search_folder(DB_ITEM *pdb,
+static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	uint32_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, uint64_t dst_pid, uint64_t *pdst_fid)
 {
@@ -1860,8 +1825,8 @@ static BOOL folder_copy_search_folder(DB_ITEM *pdb,
 	return TRUE;
 }
 
-static BOOL folder_copy_folder_internal(
-	DB_ITEM *pdb, int account_id, uint32_t cpid, BOOL b_guest,
+static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
+    uint32_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, BOOL b_normal,
 	BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_partial,
 	uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pfolder_count)
@@ -2182,7 +2147,6 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 	uint64_t src_fid, BOOL b_normal, BOOL b_fai, BOOL b_sub,
 	uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
 {
-	DB_ITEM *pdb;
 	BOOL b_partial;
 	uint64_t src_val;
 	uint64_t dst_val;
@@ -2191,11 +2155,10 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 	uint64_t normal_size;
 	uint32_t folder_count;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -2266,7 +2229,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	const char *str_new, BOOL b_copy, BOOL *pb_exist,
 	BOOL *pb_partial)
 {
-	DB_ITEM *pdb;
 	BOOL b_partial;
 	BOOL b_included;
 	uint64_t nt_time;
@@ -2299,11 +2261,10 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			}
 		}
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -2475,7 +2436,6 @@ BOOL exmdb_server_get_search_criteria(
 	const char *dir, uint64_t folder_id, uint32_t *psearch_status,
 	RESTRICTION **pprestriction, LONGLONG_ARRAY *pfolder_ids)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	EXT_PULL ext_pull;
 	sqlite3_stmt *pstmt;
@@ -2485,12 +2445,11 @@ BOOL exmdb_server_get_search_criteria(
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -2498,7 +2457,6 @@ BOOL exmdb_server_get_search_criteria(
 				" search_flags, search_criteria FROM "
 				"folders WHERE folder_id=%llu", LLU(fid_val));
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
@@ -2514,7 +2472,6 @@ BOOL exmdb_server_get_search_criteria(
 			pfolder_ids->count = 0;
 			pfolder_ids->pll = NULL;
 		}
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	search_flags = sqlite3_column_int64(pstmt, 1);
@@ -2526,13 +2483,11 @@ BOOL exmdb_server_get_search_criteria(
 		*pprestriction = cu_alloc<RESTRICTION>();
 		if (NULL == *pprestriction) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_restriction(
 			&ext_pull, *pprestriction)) {
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -2540,11 +2495,10 @@ BOOL exmdb_server_get_search_criteria(
 	if (NULL != pfolder_ids) {
 		if (FALSE == common_util_load_search_scopes(
 			pdb->psqlite, fid_val, pfolder_ids)) {
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
-	db_engine_put_db(pdb);
+	pdb.reset();
 	if (NULL != pfolder_ids) {
 		for (size_t i = 0; i < pfolder_ids->count; ++i)
 			pfolder_ids->pll[i] = rop_util_make_eid_ex(
@@ -2574,7 +2528,7 @@ BOOL exmdb_server_get_search_criteria(
 	return TRUE;
 }
 
-static BOOL folder_clear_search_folder(DB_ITEM *pdb,
+static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	uint32_t cpid, uint64_t folder_id)
 {
 	sqlite3_stmt *pstmt;
@@ -2604,7 +2558,6 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
 	BOOL *pb_result)
 {
-	DB_ITEM *pdb;
 	BOOL b_update;
 	BOOL b_populate;
 	BOOL b_included;
@@ -2623,12 +2576,11 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -2637,11 +2589,9 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 			fid_val1 = rop_util_get_gc_value(pfolder_ids->pll[i]);
 			if (!common_util_check_descendant(pdb->psqlite, fid_val,
 			    fid_val1, &b_included)) {
-				db_engine_put_db(pdb);
 				return FALSE;	
 			}
 			if (TRUE == b_included) {
-				db_engine_put_db(pdb);
 				*pb_result = FALSE;
 				return TRUE;
 			}
@@ -2650,12 +2600,10 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	sprintf(sql_string, "SELECT search_flags FROM"
 	          " folders WHERE folder_id=%llu", LLU(fid_val));
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	original_flags = sqlite3_column_int64(pstmt, 0);
@@ -2785,7 +2733,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	} else {
 		db_engine_delete_dynamic(pdb, fid_val);
 	}
-	db_engine_put_db(pdb);
+	pdb.reset();
 	if (TRUE == b_populate) {
 		if (FALSE == db_engine_enqueue_populating_criteria(
 			dir, cpid, fid_val, b_recursive, prestriction,
@@ -2797,7 +2745,6 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	return TRUE;
  CRITERIA_FAILURE:
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-	db_engine_put_db(pdb);
 	return FALSE;
 }
 
@@ -2805,13 +2752,10 @@ BOOL exmdb_server_check_folder_permission(const char *dir,
 	uint64_t folder_id, const char *username,
 	uint32_t *ppermission)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -2826,14 +2770,11 @@ BOOL exmdb_server_check_folder_permission(const char *dir,
 BOOL exmdb_server_empty_folder_permission(
 	const char *dir, uint64_t folder_id)
 {
-	DB_ITEM *pdb;
 	char sql_string[1024];
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -2852,7 +2793,6 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	uint16_t count, const PERMISSION_DATA *prow)
 {
 	int i;
-	DB_ITEM *pdb;
 	void *pvalue;
 	uint64_t fid_val;
 	uint64_t member_id;
@@ -2862,11 +2802,10 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	sqlite3_stmt *pstmt1;
 	char sql_string[128];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3111,14 +3050,11 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 BOOL exmdb_server_empty_folder_rule(
 	const char *dir, uint64_t folder_id)
 {
-	DB_ITEM *pdb;
 	char sql_string[1024];
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3138,7 +3074,6 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 {
 	int i;
 	char *pname;
-	DB_ITEM *pdb;
 	void *pvalue;
 	int action_len;
 	uint32_t state;
@@ -3159,11 +3094,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	char action_buff[256*1024];
 	char condition_buff[256*1024];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3465,16 +3399,13 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount)
 {
-	DB_ITEM *pdb;
-	
 	if (TRUE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}

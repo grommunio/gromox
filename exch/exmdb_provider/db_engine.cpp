@@ -97,8 +97,7 @@ static STR_HASH_TABLE *g_hash_table;
 static DOUBLE_LIST g_populating_list;
 static DOUBLE_LIST g_populating_list1;
 
-static void db_engine_notify_content_table_modify_row(
-	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id);
+static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
 
 static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 {
@@ -169,7 +168,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 }
 
 /* query or create DB_ITEM in hash table */
-DB_ITEM* db_engine_get_db(const char *path)
+db_item_ptr db_engine_get_db(const char *path)
 {
 	BOOL b_new;
 	char htag[256];
@@ -246,7 +245,7 @@ DB_ITEM* db_engine_get_db(const char *path)
 			}
 		}
 	}
-	return pdb;
+	return db_item_ptr(pdb);
 }
 
 void db_engine_put_db(DB_ITEM *pdb)
@@ -391,28 +390,24 @@ static BOOL db_engine_search_folder(const char *dir,
 	uint32_t cpid, uint64_t search_fid, uint64_t scope_fid,
 	const RESTRICTION *prestriction)
 {
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	EID_ARRAY *pmessage_ids;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU(scope_fid));
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return TRUE;
 	}
 	if (0 == sqlite3_column_int64(pstmt, 0)) {
@@ -426,13 +421,11 @@ static BOOL db_engine_search_folder(const char *dir,
 	}
 	sqlite3_finalize(pstmt);
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	pmessage_ids = eid_array_init();
 	if (NULL == pmessage_ids) {
 		sqlite3_finalize(pstmt);
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -440,7 +433,6 @@ static BOOL db_engine_search_folder(const char *dir,
 		    sqlite3_column_int64(pstmt, 0))) {
 			eid_array_free(pmessage_ids);
 			sqlite3_finalize(pstmt);
-			db_engine_put_db(pdb);
 			return FALSE;
 		}
 	}
@@ -451,7 +443,7 @@ static BOOL db_engine_search_folder(const char *dir,
 			break;
 		}
 		if (200 == count) {
-			db_engine_put_db(pdb);
+			pdb.reset();
 			exmdb_server_free_environment();
 			sleep(1);
 			pdb = db_engine_get_db(dir);
@@ -460,7 +452,6 @@ static BOOL db_engine_search_folder(const char *dir,
 				return FALSE;
 			}
 			if (NULL == pdb->psqlite) {
-				db_engine_put_db(pdb);
 				eid_array_free(pmessage_ids);
 				return FALSE;
 			}
@@ -480,7 +471,7 @@ static BOOL db_engine_search_folder(const char *dir,
 			}
 		}
 	}
-	db_engine_put_db(pdb);
+	pdb.reset();
 	exmdb_server_free_environment();
 	eid_array_free(pmessage_ids);
 	return TRUE;
@@ -489,15 +480,13 @@ static BOOL db_engine_search_folder(const char *dir,
 static BOOL db_engine_load_folder_descendant(const char *dir,
 	BOOL b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
 {
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -601,8 +590,7 @@ static ID_ARRAYS* db_engine_classify_id_array(DOUBLE_LIST *plist)
 	return parrays;
 }
 
-static void db_engine_notify_search_completion(
-	DB_ITEM *pdb, uint64_t folder_id)
+static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder_id)
 {
 	int i;
 	const char *dir;
@@ -662,7 +650,6 @@ static void db_engine_notify_search_completion(
 
 static void *thread_work_func(void *param)
 {
-	DB_ITEM *pdb;
 	int table_num;
 	TABLE_NODE *ptable;
 	uint32_t *ptable_ids = nullptr;
@@ -722,7 +709,7 @@ static void *thread_work_func(void *param)
 			}
 		}
 		if (FALSE == g_notify_stop) {
-			pdb = db_engine_get_db(psearch->dir);
+			auto pdb = db_engine_get_db(psearch->dir);
 			if (NULL != pdb) {
 				if (NULL != pdb->psqlite) {
 					exmdb_server_build_environment(
@@ -752,7 +739,7 @@ static void *thread_work_func(void *param)
 							}
 						}
 					}
-					db_engine_put_db(pdb);
+					pdb.reset();
 					if (ptable_ids != nullptr) while (table_num > 0) {
 						table_num --;
 						exmdb_server_reload_content_table(
@@ -760,7 +747,7 @@ static void *thread_work_func(void *param)
 					}
 					exmdb_server_free_environment();
 				} else {
-					db_engine_put_db(pdb);
+					pdb.reset();
 				}
 			}
 		}
@@ -949,7 +936,7 @@ BOOL db_engine_check_populating(const char *dir, uint64_t folder_id)
 	return FALSE;
 }
 
-void db_engine_update_dynamic(DB_ITEM *pdb, uint64_t folder_id,
+void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
 	uint32_t search_flags, const RESTRICTION *prestriction,
 	const LONGLONG_ARRAY *pfolder_ids)
 {
@@ -995,7 +982,7 @@ void db_engine_update_dynamic(DB_ITEM *pdb, uint64_t folder_id,
 	pdynamic->folder_ids.pll = pll;
 }
 
-void db_engine_delete_dynamic(DB_ITEM *pdb, uint64_t folder_id)
+void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
 {
 	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
@@ -1013,7 +1000,7 @@ void db_engine_delete_dynamic(DB_ITEM *pdb, uint64_t folder_id)
 	}
 }
 
-void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid,
+void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	BOOL b_exist;
@@ -1494,8 +1481,8 @@ static BOOL db_engine_check_new_header(
 	return FALSE;
 }
 
-static void db_engine_notify_content_table_add_row(
-	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
+static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
+    uint64_t folder_id, uint64_t message_id)
 {
 	int result;
 	BOOL b_read = false, b_break;
@@ -2471,7 +2458,7 @@ static void db_engine_notify_content_table_add_row(
 	}
 }
 
-void db_engine_transport_new_mail(DB_ITEM *pdb, uint64_t folder_id,
+void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
 {
 	int i;
@@ -2534,7 +2521,7 @@ void db_engine_transport_new_mail(DB_ITEM *pdb, uint64_t folder_id,
 }
 	
 
-void db_engine_notify_new_mail(DB_ITEM *pdb,
+void db_engine_notify_new_mail(db_item_ptr &pdb,
 	uint64_t folder_id, uint64_t message_id)
 {
 	int i;
@@ -2614,7 +2601,7 @@ void db_engine_notify_new_mail(DB_ITEM *pdb,
 		pdb->psqlite, folder_id), folder_id);
 }
 
-void db_engine_notify_message_creation(DB_ITEM *pdb,
+void db_engine_notify_message_creation(db_item_ptr &pdb,
 	uint64_t folder_id, uint64_t message_id)
 {
 	int i;
@@ -2680,7 +2667,7 @@ void db_engine_notify_message_creation(DB_ITEM *pdb,
 		pdb->psqlite, folder_id), folder_id);
 }
 
-void db_engine_notify_link_creation(DB_ITEM *pdb,
+void db_engine_notify_link_creation(db_item_ptr &pdb,
 	uint64_t parent_id, uint64_t message_id)
 {
 	int i;
@@ -2752,8 +2739,8 @@ void db_engine_notify_link_creation(DB_ITEM *pdb,
 		pdb->psqlite, parent_id), parent_id);
 }
 
-static void db_engine_notify_hierarchy_table_add_row(
-	DB_ITEM *pdb, uint64_t parent_id, uint64_t folder_id)
+static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
+    uint64_t parent_id, uint64_t folder_id)
 {
 	uint32_t idx;
 	uint32_t depth;
@@ -2939,7 +2926,7 @@ static void db_engine_notify_hierarchy_table_add_row(
 	}
 }
 
-void db_engine_notify_folder_creation(DB_ITEM *pdb,
+void db_engine_notify_folder_creation(db_item_ptr &pdb,
 	uint64_t parent_id, uint64_t folder_id)
 {
 	int i;
@@ -3021,7 +3008,7 @@ static void db_engine_update_prev_id(DOUBLE_LIST *plist,
 	}
 }
 
-static void* db_engine_get_extremum_value(DB_ITEM *pdb,
+static void* db_engine_get_extremum_value(db_item_ptr &pdb,
 	uint32_t cpid, uint32_t table_id, uint32_t extremum_tag,
 	uint64_t parent_id, uint8_t table_sort)
 {
@@ -3066,8 +3053,8 @@ static void* db_engine_get_extremum_value(DB_ITEM *pdb,
 	return pvalue;
 }
 
-static void db_engine_notify_content_table_delete_row(
-	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
+static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
+    uint64_t folder_id, uint64_t message_id)
 {
 	int result;
 	BOOL b_index;
@@ -3653,7 +3640,7 @@ static void db_engine_notify_content_table_delete_row(
 	}
 }
 
-void db_engine_notify_message_deletion(DB_ITEM *pdb,
+void db_engine_notify_message_deletion(db_item_ptr &pdb,
 	uint64_t folder_id, uint64_t message_id)
 {
 	int i;
@@ -3718,7 +3705,7 @@ void db_engine_notify_message_deletion(DB_ITEM *pdb,
 		pdb->psqlite, folder_id), folder_id);
 }
 
-void db_engine_notify_link_deletion(DB_ITEM *pdb,
+void db_engine_notify_link_deletion(db_item_ptr &pdb,
 	uint64_t parent_id, uint64_t message_id)
 {
 	int i;
@@ -3789,8 +3776,8 @@ void db_engine_notify_link_deletion(DB_ITEM *pdb,
 		pdb->psqlite, parent_id), parent_id);
 }
 
-static void db_engine_notify_hierarchy_table_delete_row(
-	DB_ITEM *pdb, uint64_t parent_id, uint64_t folder_id)
+static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
+    uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
 	BOOL b_included;
@@ -3877,7 +3864,7 @@ static void db_engine_notify_hierarchy_table_delete_row(
 	}
 }	
 
-void db_engine_notify_folder_deletion(DB_ITEM *pdb,
+void db_engine_notify_folder_deletion(db_item_ptr &pdb,
 	uint64_t parent_id, uint64_t folder_id)
 {
 	int i;
@@ -3939,8 +3926,8 @@ void db_engine_notify_folder_deletion(DB_ITEM *pdb,
 		pdb, parent_id, folder_id);
 }
 
-static void db_engine_notify_content_table_modify_row(
-	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
+static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
+    uint64_t folder_id, uint64_t message_id)
 {
 	int result;
 	int row_type;
@@ -4706,7 +4693,7 @@ static void db_engine_notify_content_table_modify_row(
 	}
 }
 
-void db_engine_notify_message_modification(DB_ITEM *pdb,
+void db_engine_notify_message_modification(db_item_ptr &pdb,
 	uint64_t folder_id, uint64_t message_id)
 {
 	int i;
@@ -4772,8 +4759,8 @@ void db_engine_notify_message_modification(DB_ITEM *pdb,
 		pdb->psqlite, folder_id), folder_id);
 }
 
-static void db_engine_notify_hierarchy_table_modify_row(
-	DB_ITEM *pdb, uint64_t parent_id, uint64_t folder_id)
+static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
+    uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
 	BOOL b_included;
@@ -4966,7 +4953,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 	}
 }
 
-void db_engine_notify_folder_modification(DB_ITEM *pdb,
+void db_engine_notify_folder_modification(db_item_ptr &pdb,
 	uint64_t parent_id, uint64_t folder_id)
 {
 	int i;
@@ -5030,7 +5017,7 @@ void db_engine_notify_folder_modification(DB_ITEM *pdb,
 		pdb, parent_id, folder_id);
 }
 
-void db_engine_notify_message_movecopy(DB_ITEM *pdb,
+void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	BOOL b_copy, uint64_t folder_id, uint64_t message_id,
 	uint64_t old_fid, uint64_t old_mid)
 {
@@ -5116,7 +5103,7 @@ void db_engine_notify_message_movecopy(DB_ITEM *pdb,
 		pdb->psqlite, folder_id), folder_id);
 }
 
-void db_engine_notify_folder_movecopy(DB_ITEM *pdb,
+void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	BOOL b_copy, uint64_t parent_id, uint64_t folder_id, 
 	uint64_t old_pid, uint64_t old_fid)
 {
@@ -5203,8 +5190,7 @@ void db_engine_notify_folder_movecopy(DB_ITEM *pdb,
 		pdb->psqlite, parent_id), parent_id);
 }
 
-void db_engine_notify_content_table_reload(
-	DB_ITEM *pdb, uint32_t table_id)
+void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 {
 	TABLE_NODE *ptable;
 	DOUBLE_LIST_NODE *pnode;
@@ -5232,12 +5218,12 @@ void db_engine_notify_content_table_reload(
 		ptable->remote_id, &datagram);
 }
 
-void db_engine_begin_batch_mode(DB_ITEM *pdb)
+void db_engine_begin_batch_mode(db_item_ptr &pdb)
 {
 	pdb->tables.b_batch = TRUE;
 }
 
-void db_engine_commit_batch_mode(DB_ITEM *pdb)
+void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 {
 	int table_num;
 	const char *dir;
@@ -5259,7 +5245,7 @@ void db_engine_commit_batch_mode(DB_ITEM *pdb)
 		}
 	}
 	pdb->tables.b_batch = FALSE;
-	db_engine_put_db(pdb);
+	pdb.reset();
 	dir = exmdb_server_get_dir();
 	while (0 != table_num) {
 		table_num --;
@@ -5268,7 +5254,7 @@ void db_engine_commit_batch_mode(DB_ITEM *pdb)
 	}
 }
 
-void db_engine_cancel_batch_mode(DB_ITEM *pdb)
+void db_engine_cancel_batch_mode(db_item_ptr &pdb)
 {
 	TABLE_NODE *ptable;
 	DOUBLE_LIST_NODE *pnode;

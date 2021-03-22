@@ -27,29 +27,24 @@ struct dlgitem {
 
 BOOL exmdb_server_ping_store(const char *dir)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	db_engine_put_db(pdb);
 	return TRUE;
 }
 
 BOOL exmdb_server_get_all_named_propids(
 	const char *dir, PROPID_ARRAY *ppropids)
 {
-	DB_ITEM *pdb;
 	int total_count;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -92,13 +87,10 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -117,13 +109,10 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 BOOL exmdb_server_get_named_propnames(const char *dir,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -138,16 +127,13 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 BOOL exmdb_server_get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	DB_ITEM *pdb;
-	
 	if (TRUE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -163,7 +149,6 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 BOOL exmdb_server_get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char guid_string[64];
 	char sql_string[128];
@@ -171,11 +156,10 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	if (TRUE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -199,13 +183,10 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 BOOL exmdb_server_get_store_all_proptags(
 	const char *dir, PROPTAG_ARRAY *pproptags)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -221,13 +202,10 @@ BOOL exmdb_server_get_store_properties(const char *dir,
 	uint32_t cpid, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -243,13 +221,10 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *ppropvals,
 	PROBLEM_ARRAY *pproblems)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -267,13 +242,10 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 BOOL exmdb_server_remove_store_properties(
 	const char *dir, const PROPTAG_ARRAY *pproptags)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -291,7 +263,6 @@ BOOL exmdb_server_remove_store_properties(
 BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	const char *username, uint32_t *ppermission)
 {
-	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
 	char sql_string[128];
@@ -299,19 +270,17 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
 	if (NULL == pdb->psqlite) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	*ppermission = 0;
 	sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
@@ -322,7 +291,6 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	sprintf(sql_string, "SELECT "
 		"username, permission FROM permissions");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
-		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -330,7 +298,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 			*ppermission |= sqlite3_column_int64(pstmt, 1);
 	}
 	sqlite3_finalize(pstmt);
-	db_engine_put_db(pdb);
+	pdb.reset();
 	sprintf(temp_path, "%s/config/delegates.txt", dir);
 	auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
 	if (NULL != pfile) {
@@ -349,14 +317,11 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 
 BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 {
-	DB_ITEM *pdb;
 	uint64_t change_num;
-		
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -372,18 +337,16 @@ BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 BOOL exmdb_server_allocate_ids(const char *dir,
 	uint32_t count, uint64_t *pbegin_eid)
 {
-	DB_ITEM *pdb;
 	uint64_t tmp_eid;
 	uint64_t range_end;
 	sqlite3_stmt *pstmt;
 	uint64_t range_begin;
 	char sql_string[128];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -450,17 +413,15 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	uint16_t notificaton_type, BOOL b_whole, uint64_t folder_id,
 	uint64_t message_id, uint32_t *psub_id)
 {
-	DB_ITEM *pdb;
 	uint16_t replid;
 	NSUB_NODE *pnsub;
 	const char *remote_id;
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -511,15 +472,13 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 BOOL exmdb_server_unsubscribe_notification(
 	const char *dir, uint32_t sub_id)
 {
-	DB_ITEM *pdb;
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -541,13 +500,10 @@ BOOL exmdb_server_unsubscribe_notification(
 BOOL exmdb_server_transport_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -602,7 +558,6 @@ static BOOL table_check_address_in_contact_folder(
 BOOL exmdb_server_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
-	DB_ITEM *pdb;
 	uint32_t lids[3];
 	uint32_t proptags[3];
 	char sql_string[512];
@@ -612,11 +567,10 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}

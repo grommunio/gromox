@@ -56,7 +56,7 @@ struct HIERARCHY_ROW_PARAM {
 
 typedef BOOL (*TABLE_GET_ROW_PROPERTY)(void*, uint32_t, void **);
 
-static BOOL table_sum_table_count(DB_ITEM *pdb,
+static BOOL table_sum_table_count(db_item_ptr &pdb,
 	uint32_t table_id, uint32_t *prows)
 {
 	sqlite3_stmt *pstmt;
@@ -205,14 +205,11 @@ BOOL exmdb_server_sum_hierarchy(const char *dir,
 	uint64_t folder_id, const char *username,
 	BOOL b_depth, uint32_t *pcount)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -227,7 +224,6 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	const RESTRICTION *prestriction, uint32_t *ptable_id,
 	uint32_t *prow_count)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
@@ -236,11 +232,10 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	const char *remote_id;
 	const GUID *phandle_guid;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -344,16 +339,14 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	BOOL b_fai, BOOL b_deleted, uint32_t *pcount)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -409,7 +402,7 @@ static void table_condition_list_to_where_clause(
 	where_clause[offset] = '\0';
 }
 
-static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
+static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
 	DOUBLE_LIST *pcondition_list, sqlite3_stmt *pstmt_insert,
 	uint32_t *pheader_id, sqlite3_stmt *pstmt_update,
@@ -680,7 +673,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 }
 
 /* under public mode username always available for read state */
-static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
+static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	uint64_t fid_val, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
@@ -1345,14 +1338,11 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1368,18 +1358,16 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 
 BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 {
-	DB_ITEM *pdb;
 	BOOL b_result;
 	uint32_t row_count;
 	TABLE_NODE *ptnode;
 	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1480,7 +1468,6 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	uint64_t folder_id, uint8_t table_flags,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
@@ -1488,11 +1475,10 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	char sql_string[256];
 	const char *remote_id;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1747,7 +1733,6 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	const RESTRICTION *prestriction,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
-	DB_ITEM *pdb;
 	uint64_t fid_val;
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
@@ -1755,11 +1740,10 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	char sql_string[256];
 	const char *remote_id;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1848,16 +1832,14 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 
 BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 {
-	DB_ITEM *pdb;
 	TABLE_NODE *ptnode;
 	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -1893,13 +1875,10 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 BOOL exmdb_server_sum_table(const char *dir,
 	uint32_t table_id, uint32_t *prows)
 {
-	DB_ITEM *pdb;
-	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -2079,7 +2058,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 {
 	int i;
 	int count;
-	DB_ITEM *pdb;
 	void *pvalue;
 	int row_type;
 	int32_t end_pos;
@@ -2095,11 +2073,10 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	char sql_string[1024];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -2725,7 +2702,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	int i;
 	int idx;
 	int count;
-	DB_ITEM *pdb;
 	void *pvalue;
 	int row_type;
 	uint32_t proptag;
@@ -2741,11 +2717,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	CONTENT_ROW_PARAM content_param;
 	HIERARCHY_ROW_PARAM hierarchy_param;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3033,17 +3008,15 @@ BOOL exmdb_server_locate_table(const char *dir,
 	int32_t *pposition, uint32_t *prow_type)
 {
 	int idx;
-	DB_ITEM *pdb;
 	TABLE_NODE *ptnode;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3113,7 +3086,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 {
 	int i;
 	int count;
-	DB_ITEM *pdb;
 	void *pvalue;
 	int row_type;
 	uint32_t depth;
@@ -3125,11 +3097,10 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	char sql_string[1024];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3323,17 +3294,15 @@ BOOL exmdb_server_mark_table(const char *dir,
 	uint32_t table_id, uint32_t position, uint64_t *pinst_id,
 	uint32_t *pinst_num, uint32_t *prow_type)
 {
-	DB_ITEM *pdb;
 	TABLE_NODE *ptnode;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3401,7 +3370,6 @@ BOOL exmdb_server_mark_table(const char *dir,
 BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	uint32_t table_id, PROPTAG_ARRAY *pproptags)
 {
-	DB_ITEM *pdb;
 	uint32_t proptag;
 	TABLE_NODE *ptnode;
 	INT_HASH_ITER *iter;
@@ -3412,11 +3380,10 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t tmp_proptags[0x1000];
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3683,7 +3650,6 @@ BOOL exmdb_server_expand_table(const char *dir,
 	int32_t *pposition, uint32_t *prow_count)
 {
 	int depth;
-	DB_ITEM *pdb;
 	uint32_t idx;
 	uint64_t row_id;
 	TABLE_NODE *ptnode;
@@ -3692,11 +3658,10 @@ BOOL exmdb_server_expand_table(const char *dir,
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3831,7 +3796,6 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	int32_t *pposition, uint32_t *prow_count)
 {
 	int depth;
-	DB_ITEM *pdb;
 	uint32_t idx;
 	uint64_t row_id;
 	uint64_t prev_id;
@@ -3841,11 +3805,10 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -3946,7 +3909,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	int i;
 	int depth;
 	int sql_len;
-	DB_ITEM *pdb;
 	void *pvalue;
 	uint16_t type;
 	uint64_t row_id;
@@ -3965,11 +3927,10 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	struct stat node_stat;
 	DOUBLE_LIST_NODE *pnode;
 	
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
@@ -4330,7 +4291,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 {
 	int i;
 	int depth;
-	DB_ITEM *pdb;
 	void *pvalue;
 	uint32_t idx;
 	uint16_t type;
@@ -4360,11 +4320,10 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (0 == state_id) {
 		return TRUE;
 	}
-	pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { db_engine_put_db(pdb); });
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}

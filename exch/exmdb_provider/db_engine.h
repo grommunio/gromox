@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -108,10 +109,16 @@ void db_engine_init(int table_size, int cache_interval,
 extern int db_engine_run();
 extern int db_engine_stop();
 extern void db_engine_free();
-DB_ITEM* db_engine_get_db(const char *path);
-
 void db_engine_put_db(DB_ITEM *pdb);
 
+class db_item_deleter {
+	public:
+	void operator()(DB_ITEM *d) { db_engine_put_db(d); }
+};
+
+using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
+
+extern db_item_ptr db_engine_get_db(const char *dir);
 BOOL db_engine_unload_db(const char *path);
 
 BOOL db_engine_enqueue_populating_criteria(
@@ -120,57 +127,23 @@ BOOL db_engine_enqueue_populating_criteria(
 	const LONGLONG_ARRAY *pfolder_ids);
 
 BOOL db_engine_check_populating(const char *dir, uint64_t folder_id);
-
-void db_engine_update_dynamic(DB_ITEM *pdb, uint64_t folder_id,
-	uint32_t search_flags, const RESTRICTION *prestriction,
-	const LONGLONG_ARRAY *pfolder_ids);
-
-void db_engine_delete_dynamic(DB_ITEM *pdb, uint64_t folder_id);
-extern void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid, int event_type, uint64_t id1, uint64_t id2, uint64_t id3);
-void db_engine_notify_new_mail(DB_ITEM *pdb,
-	uint64_t folder_id, uint64_t message_id);
-
-void db_engine_notify_message_creation(DB_ITEM *pdb,
-	uint64_t folder_id, uint64_t message_id);
-
-void db_engine_notify_link_creation(DB_ITEM *pdb,
-	uint64_t parent_id, uint64_t message_id);
-
-void db_engine_notify_folder_creation(DB_ITEM *pdb,
-	uint64_t parent_id, uint64_t folder_id);
-
-void db_engine_notify_message_deletion(DB_ITEM *pdb,
-	uint64_t folder_id, uint64_t message_id);
-
-void db_engine_notify_link_deletion(DB_ITEM *pdb,
-	uint64_t parent_id, uint64_t message_id);
-
-void db_engine_notify_folder_deletion(DB_ITEM *pdb,
-	uint64_t parent_id, uint64_t folder_id);
-
-void db_engine_notify_message_modification(DB_ITEM *pdb,
-	uint64_t folder_id, uint64_t message_id);
-
-void db_engine_notify_folder_modification(DB_ITEM *pdb,
-	uint64_t parent_id, uint64_t folder_id);
-
-void db_engine_notify_message_movecopy(DB_ITEM *pdb,
-	BOOL b_copy, uint64_t folder_id, uint64_t message_id,
-	uint64_t old_fid, uint64_t old_mid);
-
-void db_engine_notify_folder_movecopy(DB_ITEM *pdb,
-	BOOL b_copy, uint64_t parent_id, uint64_t folder_id, 
-	uint64_t old_pid, uint64_t old_fid);
-
-void db_engine_notify_content_table_reload(
-	DB_ITEM *pdb, uint32_t table_id);
-	
-void db_engine_transport_new_mail(DB_ITEM *pdb, uint64_t folder_id,
-	uint64_t message_id, uint32_t message_flags, const char *pstr_class);
-
-void db_engine_begin_batch_mode(DB_ITEM *pdb);
-
+extern void db_engine_update_dynamic(db_item_ptr &, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
+extern void db_engine_delete_dynamic(db_item_ptr &, uint64_t folder_id);
+extern void db_engine_proc_dynamic_event(db_item_ptr &, uint32_t cpid, int event_type, uint64_t id1, uint64_t id2, uint64_t id3);
+extern void db_engine_notify_new_mail(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
+extern void db_engine_notify_message_creation(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
+extern void db_engine_notify_link_creation(db_item_ptr &, uint64_t parent_id, uint64_t msg_id);
+extern void db_engine_notify_folder_creation(db_item_ptr &, uint64_t parent_id, uint64_t folder_id);
+extern void db_engine_notify_message_deletion(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
+extern void db_engine_notify_link_deletion(db_item_ptr &, uint64_t parent_id, uint64_t msg_id);
+extern void db_engine_notify_folder_deletion(db_item_ptr &, uint64_t parent_id, uint64_t folder_id);
+extern void db_engine_notify_message_modification(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
+extern void db_engine_notify_folder_modification(db_item_ptr &, uint64_t parent_id, uint64_t folder_id);
+extern void db_engine_notify_message_movecopy(db_item_ptr &, BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid);
+extern void db_engine_notify_folder_movecopy(db_item_ptr &, BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid);
+extern void db_engine_notify_content_table_reload(db_item_ptr &, uint32_t table_id);
+extern void db_engine_transport_new_mail(db_item_ptr &, uint64_t folder_id, uint64_t msg_id, uint32_t message_flags, const char *pstr_class);
+extern void db_engine_begin_batch_mode(db_item_ptr &);
 /* pdb will also be put */
-void db_engine_commit_batch_mode(DB_ITEM *pdb);
-
-void db_engine_cancel_batch_mode(DB_ITEM *pdb);
+extern void db_engine_commit_batch_mode(db_item_ptr &&);
+extern void db_engine_cancel_batch_mode(db_item_ptr &);
