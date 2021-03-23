@@ -12,6 +12,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
+#include <gromox/paths.h>
 #include <gromox/str_hash.hpp>
 #include "resource.h"
 #include "mod_cache.h"
@@ -142,13 +143,26 @@ void mod_cache_init(int context_num)
 	double_list_init(&g_item_list);
 }
 
+static int mod_cache_defaults()
+{
+	printf("[mod_cache]: defualting to built-in list of handled paths\n");
+	DIRECTORY_NODE node;
+	node.domain = "*";
+	node.path = "/web";
+	node.dir = DATADIR "/grammm-web";
+	g_directory_list.push_back(std::move(node));
+	return 0;
+}
+
 static int mod_cache_read_txt() try
 {
 	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
 	auto pfile = list_file_initd("cache.txt", resource_get_string("config_file_path"),
-	             "%s:256%s:256%s:256");
-	if (NULL == pfile) {
+	             "%s:256%s:256%s:256", ERROR_ON_ABSENCE);
+	if (pfile == nullptr && errno == ENOENT) {
+		return mod_cache_defaults();
+	} else if (pfile == nullptr) {
 		printf("[mod_cache]: list_file_initd cache.txt: %s\n", strerror(errno));
 		return -1;
 	}
