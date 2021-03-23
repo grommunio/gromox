@@ -68,7 +68,6 @@ IDSET_CACHE::~IDSET_CACHE()
 static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 {
 	uint64_t ival;
-	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
 	REPLID_NODE *prepl_node;
@@ -102,7 +101,7 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 		return TRUE;
 	}
 	sprintf(sql_string, "INSERT INTO id_vals VALUES (?)");
-	pstmt = gx_sql_prep(pcache->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pcache->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -213,7 +212,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	uint64_t fid_val;
 	uint64_t mid_val;
 	uint64_t change_num;
-	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
 	sqlite3_stmt *pstmt2;
 	sqlite3_stmt *pstmt3;
@@ -289,7 +287,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (NULL == pdb->psqlite) {
 		return FALSE;
 	}
-	pstmt = NULL;
 	pstmt1 = NULL;
 	pstmt2 = NULL;
 	pstmt3 = NULL;
@@ -311,7 +308,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			"FROM messages WHERE parent_fid=%llu AND "
 			"is_deleted=0", static_cast<unsigned long long>(fid_val));
 	}
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		goto QUERY_FAILURE;
 	if (TRUE == b_ordered) {
@@ -833,9 +830,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3 *psqlite;
 	uint64_t fid_val;
 	uint64_t fid_val1;
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
-	sqlite3_stmt *pstmt2;
 	char sql_string[256];
 	REPLID_ARRAY replids;
 	ENUM_PARAM enum_param;
@@ -877,21 +871,21 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			"change_number FROM folders WHERE parent_id=?"
 			" AND is_deleted=0");
 	}
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "INSERT INTO"
 			" changes (folder_id) VALUES (?)");
-	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sprintf(sql_string, "INSERT INTO existence VALUES (?)");
-	pstmt2 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt2 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);

@@ -86,7 +86,6 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	uint64_t fid_val;
 	int is_associated;
 	uint64_t change_num;
-	sqlite3_stmt *pstmt;
 	uint64_t parent_fid;
 	char sql_string[256];
 	uint32_t message_size;
@@ -121,7 +120,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	}
 	sprintf(sql_string, "SELECT message_id "
 	          "FROM messages WHERE message_id=%llu", LLU(dst_val));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -288,7 +287,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	uint32_t del_count;
 	uint64_t change_num, parent_fid = 0;
 	uint32_t permission;
-	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
 	char sql_string[256];
 	uint32_t folder_type;
@@ -331,7 +329,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "SELECT parent_fid, "
 		"is_associated FROM messages WHERE message_id=?");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		if (TRUE == b_batch) {
@@ -552,8 +550,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	uint32_t permission;
 	uint64_t parent_fid;
 	uint64_t change_num;
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
 	char sql_string[256];
 	uint32_t folder_type;
 	uint64_t normal_size;
@@ -597,7 +593,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "SELECT parent_fid, is_associated, "
 					"message_size FROM messages WHERE message_id=?");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		if (TRUE == b_batch) {
@@ -612,7 +608,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		sprintf(sql_string, "UPDATE messages"
 				" SET is_deleted=1 WHERE message_id=?");
 	}
-	pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(pdb->psqlite,
@@ -794,8 +790,6 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 	uint32_t row_id;
 	uint64_t rcpt_id;
 	uint32_t rcpt_num;
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
 	char sql_string[256];
 	PROPTAG_ARRAY proptags;
 	TAGGED_PROPVAL *ppropval;
@@ -803,7 +797,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 	
 	sprintf(sql_string, "SELECT count(*) FROM"
 	          " recipients WHERE message_id=%llu", LLU(message_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -828,7 +822,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		return FALSE;
 	sprintf(sql_string, "SELECT proptag FROM"
 		" recipients_properties WHERE recipient_id=?");
-	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		return FALSE;
@@ -884,7 +878,6 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 {
 	uint32_t count;
 	uint64_t mid_val;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
@@ -901,7 +894,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	mid_val = rop_util_get_gc_value(message_id);
 	sprintf(sql_string, "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(mid_val));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -996,7 +989,6 @@ BOOL exmdb_server_check_message(const char *dir,
 	uint64_t tmp_val;
 	uint64_t fid_val;
 	uint64_t mid_val;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	uint32_t folder_type;
 	
@@ -1021,7 +1013,7 @@ BOOL exmdb_server_check_message(const char *dir,
 		sprintf(sql_string, "SELECT parent_fid FROM"
 					" messages WHERE message_id=%llu", LLU(mid_val));
 	}
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1040,7 +1032,6 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 	uint64_t message_id, BOOL *pb_del)
 {
 	uint64_t mid_val;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1058,7 +1049,7 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 		sprintf(sql_string, "SELECT is_deleted "
 		          "FROM messages WHERE message_id=%llu", LLU(mid_val));
 	}
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1221,7 +1212,6 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	uint64_t mid_val;
 	uint64_t fid_val;
 	uint64_t read_cn;
-	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	TAGGED_PROPVAL tmp_propval;
 	
@@ -1245,7 +1235,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 		sprintf(sql_string, "REPLACE INTO "
 				"read_cns VALUES (%llu, ?, %llu)",
 				LLU(mid_val), LLU(read_cn));
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
@@ -1322,7 +1312,6 @@ BOOL exmdb_server_allocate_message_id(const char *dir,
 BOOL exmdb_server_get_message_group_id(const char *dir,
 	uint64_t message_id, uint32_t **ppgroup_id)
 {
-	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
@@ -1334,7 +1323,7 @@ BOOL exmdb_server_get_message_group_id(const char *dir,
 	sprintf(sql_string, "SELECT group_id "
 				"FROM messages WHERE message_id=%llu",
 				LLU(rop_util_get_gc_value(message_id)));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1382,7 +1371,6 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 {
 	uint64_t mid_val;
 	EXT_PUSH ext_push;
-	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	uint8_t indices_buff[0x8000];
 	uint8_t proptags_buff[0x8000];
@@ -1398,7 +1386,7 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 	if (0 == pindices->count && 0 == pungroup_proptags->count) {
 		sprintf(sql_string, "UPDATE messages SET "
 		          "group_id=? WHERE message_id=%llu", LLU(mid_val));
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -1412,7 +1400,7 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 	}
 	sprintf(sql_string, "INSERT INTO"
 		" message_changes VALUES (?, ?, ?, ?)");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1453,7 +1441,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 	uint64_t cn_val;
 	uint64_t mid_val;
 	EXT_PULL ext_pull;
-	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	INDEX_ARRAY tmp_indices;
 	INDEX_ARRAY *ptmp_indices;
@@ -1481,7 +1468,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 	sprintf(sql_string, "SELECT change_number,"
 				" indices, proptags FROM message_changes"
 				" WHERE message_id=%llu", LLU(mid_val));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		proptag_array_free(ptmp_indices);
 		proptag_array_free(ptmp_proptags);
@@ -1642,7 +1629,6 @@ BOOL exmdb_server_clear_submit(const char *dir,
 {
 	BOOL b_result;
 	uint64_t mid_val;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	TAGGED_PROPVAL propval;
 	uint32_t *pmessage_flags;
@@ -1679,7 +1665,7 @@ BOOL exmdb_server_clear_submit(const char *dir,
 	}
 	sprintf(sql_string, "UPDATE messages SET"
 	          " timer_id=? WHERE message_id=%llu", LLU(mid_val));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
@@ -1701,7 +1687,6 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 {
 	uint64_t fid_val;
 	uint64_t mid_val;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	uint32_t folder_type;
 	
@@ -1727,7 +1712,7 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 	}	
 	sprintf(sql_string, "SELECT message_id FROM "
 	          "messages WHERE message_id=%llu", LLU(mid_val));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1816,7 +1801,6 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 	uint64_t message_id, uint32_t **pptimer_id)
 {
 	uint64_t mid_val;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
 	if (FALSE == exmdb_server_check_private()) {
@@ -1832,7 +1816,7 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 	mid_val = rop_util_get_gc_value(message_id);
 	sprintf(sql_string, "SELECT timer_id FROM "
 	          "messages WHERE message_id=%llu", LLU(mid_val));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1862,8 +1846,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	int i;
 	uint32_t count;
 	uint32_t attach_num;
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
 	char sql_string[256];
 	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
@@ -1874,7 +1856,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	
 	sprintf(sql_string, "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(message_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -1948,7 +1930,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		return FALSE;
 	sprintf(sql_string, "SELECT message_id"
 			" FROM messages WHERE parent_attid=?");
-	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		return FALSE;
@@ -2364,9 +2346,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	uint8_t tmp_byte;
 	uint64_t change_num;
 	uint64_t message_id;
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
-	sqlite3_stmt *pstmt2;
 	char sql_string[256];
 	uint32_t message_size;
 	uint32_t original_size;
@@ -2442,7 +2421,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			sprintf(sql_string, "SELECT is_deleted FROM"
 			          " folders WHERE folder_id=%llu", LLU(parent_id));
 		}
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -2538,7 +2517,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	} else {
 		sprintf(sql_string, "SELECT count(*) FROM "
 		          "attachments WHERE attachment_id=%llu", LLU(parent_id));
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -2615,7 +2594,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (NULL != pmsgctnt->children.prcpts) {
 		sprintf(sql_string, "INSERT INTO recipients "
 		          "(message_id) VALUES (%llu)", LLU(*pmessage_id));
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
@@ -2636,7 +2615,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (NULL != pmsgctnt->children.pattachments) {
 		sprintf(sql_string, "INSERT INTO attachments"
 		          " (message_id) VALUES (%llu)", LLU(*pmessage_id));
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
@@ -2682,19 +2661,19 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				"message_size=message_size+%u WHERE message_id=?",
 				message_size - original_size);
 		}
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		sprintf(sql_string, "SELECT message_id FROM"
 						" attachments WHERE attachment_id=?");
-		pstmt1 = gx_sql_prep(psqlite, sql_string);
+		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT parent_attid, "
 			"is_associated FROM messages WHERE message_id=?");
-		pstmt2 = gx_sql_prep(psqlite, sql_string);
+		auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt2 == nullptr) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -2777,14 +2756,13 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 	void *pvalue;
 	uint32_t state;
 	RULE_NODE *prnode;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	
 	sprintf(sql_string, "SELECT state, rule_id,"
 					" sequence, provider FROM rules WHERE"
 					" folder_id=%lld", LLU(folder_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2843,7 +2821,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 	uint32_t sequence;
 	RULE_NODE *prnode;
 	uint64_t message_id;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -2857,7 +2834,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 				"is_associated=1 AND is_deleted=0",
 				LLU(folder_id));
 	}
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	size_t count = 0, ext_count = 0;

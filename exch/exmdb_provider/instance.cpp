@@ -52,9 +52,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	uint32_t proptag;
 	uint64_t rcpt_id;
 	TARRAY_SET *prcpts;
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
-	sqlite3_stmt *pstmt2;
 	char sql_string[256];
 	uint64_t message_id1;
 	TAGGED_PROPVAL propval;
@@ -68,7 +65,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	
 	sprintf(sql_string, "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(message_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -210,7 +207,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	sprintf(sql_string, "SELECT proptag FROM"
 		" recipients_properties WHERE recipient_id=?");
-	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		message_content_free(pmsgctnt);
@@ -319,12 +316,12 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		for (i=0; i<proptags.count; i++) {
 			switch (proptags.pproptag[i]) {
 			case PROP_TAG_ATTACHDATABINARY:
-			case PROP_TAG_ATTACHDATAOBJECT:
+			case PROP_TAG_ATTACHDATAOBJECT: {
 				sprintf(sql_string, "SELECT propval FROM "
 					"attachment_properties WHERE attachment_id=%llu AND"
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
 					static_cast<unsigned int>(proptags.pproptag[i]));
-				pstmt2 = gx_sql_prep(psqlite, sql_string);
+				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 				if (pstmt2 == nullptr) {
 					sqlite3_finalize(pstmt);
 					sqlite3_finalize(pstmt1);
@@ -350,6 +347,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					return FALSE;
 				}
 				break;
+			}
 			default:
 				propval.proptag = proptags.pproptag[i];
 				if (FALSE == common_util_get_property(

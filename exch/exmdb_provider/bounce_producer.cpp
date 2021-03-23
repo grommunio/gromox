@@ -388,7 +388,6 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 	int tmp_len;
 	void *pvalue;
 	BOOL b_first;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	uint64_t attachment_id;
 	
@@ -396,7 +395,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 	b_first = FALSE;
 	sprintf(sql_string, "SELECT attachment_id FROM "
 	        "attachments WHERE message_id=%llu", static_cast<unsigned long long>(message_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {

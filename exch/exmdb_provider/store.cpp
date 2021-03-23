@@ -40,7 +40,6 @@ BOOL exmdb_server_get_all_named_propids(
 	const char *dir, PROPID_ARRAY *ppropids)
 {
 	int total_count;
-	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -52,7 +51,7 @@ BOOL exmdb_server_get_all_named_propids(
 	}
 	sprintf(sql_string, "SELECT "
 			"count(*) FROM named_properties");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -153,7 +152,6 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 BOOL exmdb_server_get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	sqlite3_stmt *pstmt;
 	char guid_string[64];
 	char sql_string[128];
 	
@@ -170,7 +168,7 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	guid_to_string(&guid, guid_string, 64);
 	sprintf(sql_string, "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -268,7 +266,6 @@ BOOL exmdb_server_remove_store_properties(
 BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	const char *username, uint32_t *ppermission)
 {
-	sqlite3_stmt *pstmt;
 	char temp_path[256];
 	char sql_string[128];
 	
@@ -285,7 +282,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	*ppermission = 0;
 	sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -346,7 +343,6 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 {
 	uint64_t tmp_eid;
 	uint64_t range_end;
-	sqlite3_stmt *pstmt;
 	uint64_t range_begin;
 	char sql_string[128];
 	
@@ -361,7 +357,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 				"range_end, is_system FROM allocated_eids"
 				" WHERE allocate_time>=%lu",
 				time(NULL) - ALLOCATION_INTERVAL);
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -570,8 +566,6 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	uint32_t lids[3];
 	uint32_t proptags[3];
 	char sql_string[512];
-	sqlite3_stmt *pstmt1;
-	sqlite3_stmt *pstmt2;
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
@@ -609,7 +603,7 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
 	sprintf(sql_string, "SELECT folder_id"
 				" FROM folders WHERE parent_id=?");
-	pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -622,7 +616,7 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		" AND message_properties.propval=?"
 		" LIMIT 1", proptags[0], proptags[1],
 		proptags[2]);
-	pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt2 == nullptr) {
 		sqlite3_finalize(pstmt1);
 		return FALSE;
