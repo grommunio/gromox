@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -61,7 +62,7 @@ static int g_context_num;
 static BOOL g_notify_stop;
 static pthread_t g_scan_tid;
 static DOUBLE_LIST g_item_list;
-static pthread_mutex_t g_hash_lock;
+static std::mutex g_hash_lock;
 static DOUBLE_LIST g_directory_list;
 static STR_HASH_TABLE *g_cache_hash;
 static CACHE_CONTEXT *g_context_list;
@@ -83,7 +84,7 @@ static void* scan_work_func(void *pparam)
 			sleep(1);
 			continue;
 		}
-		pthread_mutex_lock(&g_hash_lock);
+		std::lock_guard hhold(g_hash_lock);
 		iter = str_hash_iter_init(g_cache_hash);
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
@@ -104,7 +105,6 @@ static void* scan_work_func(void *pparam)
 			free(pitem);
 		}
 		str_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_hash_lock);
 		count = 0;
 	}
 	return nullptr;
@@ -138,7 +138,6 @@ void mod_cache_init(int context_num)
 {
 	g_notify_stop = TRUE;
 	g_context_num = context_num;
-	pthread_mutex_init(&g_hash_lock, NULL);
 	double_list_init(&g_item_list);
 	double_list_init(&g_directory_list);
 }
@@ -252,7 +251,6 @@ int mod_cache_stop()
 
 void mod_cache_free()
 {
-	pthread_mutex_destroy(&g_hash_lock);
 	double_list_free(&g_directory_list);
 	double_list_free(&g_item_list);
 }
@@ -782,7 +780,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		pcontext->offset = 0;
 		pcontext->until = node_stat.st_size;
 	}
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash, tmp_path));
 	if (NULL != ppitem) {
 		pitem = *ppitem;
@@ -801,12 +799,11 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			}
 		} else {
 			pitem->reference ++;
-			pthread_mutex_unlock(&g_hash_lock);
 			pcontext->pitem = pitem;
 			return TRUE;
 		}
 	}
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	pitem = static_cast<CACHE_ITEM *>(malloc(sizeof(*pitem)));
 	if (NULL == pitem) {
 		if (NULL != pcontext->prange) {
@@ -851,7 +848,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	close(fd);
-	pthread_mutex_lock(&g_hash_lock);
+	hhold.lock();
 	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash, tmp_path));
 	if (NULL == ppitem) {
 		if (1 != str_hash_add(g_cache_hash, tmp_path, &pitem)) {
@@ -861,7 +858,6 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			str_hash_add(g_cache_hash, tmp_path, &pitem);
 		}
 		pitem->b_expired = FALSE;
-		pthread_mutex_unlock(&g_hash_lock);
 		pcontext->pitem = pitem;
 		return TRUE;
 	}
@@ -869,7 +865,6 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	pitem->b_expired = TRUE;
 	pitem->node.pdata = pitem;
 	double_list_append_as_tail(&g_item_list, &pitem->node);
-	pthread_mutex_unlock(&g_hash_lock);
 	pcontext->pitem = pitem;
 	return TRUE;
 }
@@ -885,14 +880,13 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 	}
 	pitem = pcontext->pitem;
 	pcontext->pitem = NULL;
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	pitem->reference --;
 	if (0 != pitem->reference || FALSE == pitem->b_expired) {
-		pthread_mutex_unlock(&g_hash_lock);
 		return;
 	}
 	double_list_remove(&g_item_list, &pitem->node);
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	free(pitem->blob.data);
 	free(pitem);
 	if (NULL != pcontext->prange) {
