@@ -143,7 +143,7 @@ void mod_cache_init(int context_num)
 	double_list_init(&g_directory_list);
 }
 
-int mod_cache_run()
+static int mod_cache_read_txt()
 {
 	int tmp_len;
 	DIRECTORY_NODE *pdnode;
@@ -176,7 +176,14 @@ int mod_cache_run()
 		}
 		double_list_append_as_tail(&g_directory_list, &pdnode->node);
 	}
-	pfile.reset();
+	return 0;
+}
+
+int mod_cache_run()
+{
+	auto ret = mod_cache_read_txt();
+	if (ret < 0)
+		return ret;
 	g_context_list = static_cast<CACHE_CONTEXT *>(malloc(sizeof(CACHE_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[mod_cache]: Failed to allocate context list\n");
@@ -190,7 +197,7 @@ int mod_cache_run()
 		return -3;
 	}
 	g_notify_stop = FALSE;
-	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[mod_cache]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
