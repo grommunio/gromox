@@ -150,11 +150,11 @@ static int mod_fastcgi_defaults()
 	node.sock_path = PKGRUNDIR "/php-fpm.sock";
 	g_fastcgi_list.push_back(node);
 	node.path = "/sync";
-	node.dir = PKGDATADIR "/../grammm-sync";
+	node.dir = DATADIR "/grammm-sync";
 	node.header_list.clear();
 	g_fastcgi_list.push_back(node);
 	node.path = "/web";
-	node.dir = PKGDATADIR "/../grammm-webapp";
+	node.dir = DATADIR "/grammm-web";
 	g_fastcgi_list.push_back(node);
 	return 0;
 }

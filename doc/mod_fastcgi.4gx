@@ -46,7 +46,7 @@ If the file is absent however, a set of default entries will be used.
 .nf
 * /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
 * /sync /usr/share/grammm-sync php index.php | /run/gromox/php-fpm.sock
-* /web /usr/share/grammm-webapp php index.php | /run/gromox/php-fpm.sock
+* /web /usr/share/grammm-web php index.php | /run/gromox/php-fpm.sock
 .fi
 .SH Files
 .IP \(bu 4

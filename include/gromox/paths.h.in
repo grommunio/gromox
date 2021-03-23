@@ -4,6 +4,7 @@
 #define PKGSYSCONFDIR "/etc/gromox"
 #define PKGLIBDIR "/usr/lib/gromox"
 #define PKGLIBEXECDIR "/usr/libexec/gromox"
+#define DATADIR "/usr/share"
 #define PKGDATADIR "/usr/share/gromox"
 #define PKGRUNDIR "/run/gromox"
 #define PKGSTATEDIR "/var/lib/gromox"

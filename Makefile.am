@@ -307,6 +307,7 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
 	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
+	 -e 's|#define DATADIR .*|#define DATADIR "${datadir}"|' \
 		<$< >$@.tmp
 	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi; rm -f $@.tmp
 
