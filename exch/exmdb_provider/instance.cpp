@@ -68,7 +68,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	
 	sprintf(sql_string, "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(message_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -105,7 +106,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
 				PROP_TAG_BODY, LLU(message_id), PROP_TAG_BODY_STRING8);
-			if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+			pstmt = gx_sql_prep(psqlite, sql_string);
+			if (pstmt == nullptr) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -130,7 +132,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			sprintf(sql_string, "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
 				"proptag=%u", LLU(message_id), UI(proptags.pproptag[i]));
-			if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+			pstmt = gx_sql_prep(psqlite, sql_string);
+			if (pstmt == nullptr) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -156,7 +159,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
 				PROP_TAG_TRANSPORTMESSAGEHEADERS, LLU(message_id),
 				PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+			pstmt = gx_sql_prep(psqlite, sql_string);
+			if (pstmt == nullptr) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -199,13 +203,15 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	message_content_set_rcpts_internal(pmsgctnt, prcpts);
 	sprintf(sql_string, "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU(message_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT proptag FROM"
 		" recipients_properties WHERE recipient_id=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt1)) {
+	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		message_content_free(pmsgctnt);
 		return FALSE;
@@ -263,13 +269,15 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	message_content_set_attachments_internal(pmsgctnt, pattachments);
 	sprintf(sql_string, "SELECT attachment_id FROM "
 	          "attachments WHERE message_id=%llu", LLU(message_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT message_id"
 			" FROM messages WHERE parent_attid=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt1)) {
+	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		message_content_free(pmsgctnt);
 		return FALSE;
@@ -316,7 +324,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					"attachment_properties WHERE attachment_id=%llu AND"
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
 					static_cast<unsigned int>(proptags.pproptag[i]));
-				if (!gx_sql_prep(psqlite, sql_string, &pstmt2)) {
+				pstmt2 = gx_sql_prep(psqlite, sql_string);
+				if (pstmt2 == nullptr) {
 					sqlite3_finalize(pstmt);
 					sqlite3_finalize(pstmt1);
 					message_content_free(pmsgctnt);

@@ -524,7 +524,8 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	csql_string = "PRAGMA integrity_check";
-	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, csql_string);
+	if (pstmt == nullptr) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));
 			if (NULL == presult || 0 != strcmp(presult, "ok")) {

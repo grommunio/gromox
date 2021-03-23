@@ -77,7 +77,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sprintf(sql_string, "INSERT INTO folders "
 				"(folder_id, parent_id, change_number, "
 				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, folder_id);
 	if (0 == parent_id) {
@@ -97,7 +98,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	art_num = g_last_art;
 	sprintf(sql_string, "INSERT INTO "
 	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDCOUNTTOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
@@ -417,7 +419,8 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
-	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, csql_string);
+	if (pstmt == nullptr) {
 		return 9;
 	}
 	
@@ -436,11 +439,13 @@ int main(int argc, const char **argv)
 	sqlite3_finalize(pstmt);
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, csql_string);
+	if (pstmt == nullptr) {
 		return 9;
 	}
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, csql_string);
+	if (pstmt == nullptr) {
 		return 9;
 	}
 	
@@ -523,7 +528,8 @@ int main(int argc, const char **argv)
 	}
 	
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, csql_string);
+	if (pstmt == nullptr) {
 		return 9;
 	}
 	tmp_guid = guid_random_new();

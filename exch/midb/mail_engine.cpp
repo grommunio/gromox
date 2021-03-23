@@ -316,7 +316,8 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	sprintf(sql_string, "SELECT uid, recent, read,"
 		" unsent, flagged, replied, forwarded, deleted, ext,"
 		" folder_id FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, mid_string, -1, SQLITE_STATIC);
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -1739,7 +1740,8 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 
 	sprintf(sql_string, "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		return NULL;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -1749,7 +1751,8 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		return NULL;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -1761,7 +1764,8 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 		"uid, recent, read, unsent, flagged, replied, forwarded,"
 		"deleted, received, ext, folder_id, size FROM messages "
 		"WHERE mid_string=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt_message))
+	pstmt_message = gx_sql_prep(psqlite, sql_string);
+	if (pstmt_message == nullptr)
 		return NULL;
 	auto presult = me_alloc<CONDITION_RESULT>();
 	if (NULL == presult) {
@@ -1772,7 +1776,8 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 	presult->pcur_node = NULL;
 	sprintf(sql_string, "SELECT mid_string, uid FROM "
 	          "messages WHERE folder_id=%llu ORDER BY uid", LLU(folder_id));
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr) {
 		single_list_free(&presult->list);
 		free(presult);
 		sqlite3_finalize(pstmt_message);
@@ -1837,7 +1842,8 @@ static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
 	
 	sprintf(sql_string, "SELECT "
 		"folder_id FROM folders WHERE name=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, name, -1, SQLITE_STATIC);
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -1888,7 +1894,8 @@ static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
 	}
 	sprintf(sql_string, "SELECT folder_id,"
 			" sort_field FROM folders WHERE name=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_text(pstmt, 1, folder_name, -1, SQLITE_STATIC);
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
@@ -1903,11 +1910,13 @@ static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT message_id FROM messages"
 	          " WHERE folder_id=%llu ORDER BY %s", LLU(folder_id), field_name);
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return FALSE;
 	sprintf(sql_string, "UPDATE messages"
 				" SET idx=? WHERE message_id=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt1)) {
+	pstmt1 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		return FALSE;
 	}
@@ -2163,7 +2172,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	}
 	sprintf(sql_string, "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -2191,7 +2201,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sprintf(sql_string, "INSERT INTO messages (message_id,"
 			" mid_string, mod_time, message_flags, received) VALUES "
 			"(?, ?, ?, ?, ?)");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr) {
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
@@ -2245,13 +2256,15 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sprintf(sql_string, "SELECT message_id, "
 		"mid_string, mod_time, message_flags, received"
 		" FROM messages");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr) {
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT message_id, mid_string,"
 		" mod_time, unsent, read FROM messages WHERE message_id=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt1)) {
+	pstmt1 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		return FALSE;
@@ -2260,7 +2273,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		"folder_id, mid_string, mod_time, uid, unsent, read, subject,"
 		" sender, rcpt, size, received) VALUES (?, %llu, ?, ?, ?, ?, "
 		"?, ?, ?, ?, ?, ?)", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt2)) {
+	pstmt2 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt2 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_close(psqlite);
@@ -2268,7 +2282,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	}
 	sprintf(sql_string, "UPDATE messages"
 		" SET unsent=?, read=? WHERE message_id=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt3)) {
+	pstmt3 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt3 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_finalize(pstmt2);
@@ -2306,13 +2321,15 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sqlite3_finalize(pstmt3);
 	sprintf(sql_string, "SELECT message_id FROM "
 	          "messages WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT message_id"
 				" FROM messages WHERE message_id=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt1)) {
+	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		return FALSE;
@@ -2346,7 +2363,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	if (0 != double_list_get_nodes_num(&temp_list)) {
 		sprintf(sql_string, "DELETE "
 			"FROM messages WHERE message_id=?");
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			sqlite3_close(psqlite);
 			return FALSE;
 		}
@@ -2522,7 +2540,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	sprintf(sql_string, "INSERT INTO folders (folder_id, "
 		"parent_fid, display_name, commit_max) VALUES (?, ?, ?, ?)");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr) {
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
@@ -2597,19 +2616,23 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	sqlite3_exec(pidb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "SELECT folder_id, "
 				"parent_fid, commit_max FROM folders");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
 		goto SYNC_FAILURE;
 	sprintf(sql_string, "SELECT folder_id, parent_fid, "
 				"commit_max, name FROM folders WHERE folder_id=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt1))
+	pstmt1 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt1 == nullptr)
 		goto SYNC_FAILURE;
 	sprintf(sql_string, "INSERT INTO folders (folder_id, "
 				"parent_fid, commit_max, name) VALUES (?, ?, ?, ?)");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt2))
+	pstmt2 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt2 == nullptr)
 		goto SYNC_FAILURE;
 	sprintf(sql_string, "SELECT parent_fid, "
 		"display_name FROM folders WHERE folder_id=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt3))
+	pstmt3 = gx_sql_prep(psqlite, sql_string);
+	if (pstmt3 == nullptr)
 		goto SYNC_FAILURE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		folder_id = sqlite3_column_int64(pstmt, 0);
@@ -2670,11 +2693,13 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	sqlite3_finalize(pstmt3);
 	pstmt3 = NULL;
 	sprintf(sql_string, "SELECT folder_id FROM folders");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		goto SYNC_FAILURE;
 	sprintf(sql_string, "SELECT "
 		"folder_id FROM folders WHERE folder_id=?");
-	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
+	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	if (pstmt1 == nullptr)
 		goto SYNC_FAILURE;
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2701,7 +2726,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	if (0 != double_list_get_nodes_num(&temp_list)) {
 		sprintf(sql_string, "DELETE"
 			" FROM folders WHERE folder_id=?");
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr)
 			goto SYNC_FAILURE;
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			sqlite3_reset(pstmt);
@@ -2819,7 +2845,8 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		sqlite3_exec(pidb->psqlite, "DELETE FROM mapping", NULL, NULL, NULL);
 		sprintf(sql_string, "SELECT config_value FROM "
 			"configurations WHERE config_id=%u", CONFIG_ID_USERNAME);
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
 			pthread_mutex_unlock(&g_hash_lock);
@@ -3123,7 +3150,8 @@ static int mail_engine_mweml(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT message_id"
 				" FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3210,7 +3238,8 @@ static int mail_engine_msumy(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT count(message_id) FROM "
 	          "messages WHERE folder_id=%llu AND read=0", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3223,7 +3252,8 @@ static int mail_engine_msumy(int argc, char **argv, int sockd)
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT count(message_id)"
 	          " FROM messages WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3265,20 +3295,23 @@ static int mail_engine_minfo(int argc, char**argv, int sockd)
 	temp_len = 32;
 	count = 0;
 	sprintf(sql_string, "SELECT folder_id, name FROM folders");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
 	sprintf(sql_string, "SELECT count(message_id) "
 				"FROM messages WHERE folder_id=? AND read=0");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt1)) {
+	pstmt1 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt1 == nullptr) {
 		sqlite3_finalize(pstmt);
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
 	sprintf(sql_string, "SELECT count(message_id)"
 						" FROM messages WHERE folder_id=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt2)) {
+	pstmt2 = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt2 == nullptr) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		mail_engine_put_idb(pidb);
@@ -3334,7 +3367,8 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 		return 2;
 	}
 	sprintf(sql_string, "SELECT folder_id, name FROM folders");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3434,7 +3468,8 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3488,7 +3523,8 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 			"WHERE folder_id=%llu AND idx>=%d AND idx<=%d ORDER BY idx "
 			"DESC", LLU(folder_id), idx1, idx2);
 	}
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3543,7 +3579,8 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT mid_string, size FROM"
 	          " messages WHERE folder_id=%llu ORDER BY uid", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3775,7 +3812,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	sprintf(sql_string, "INSERT INTO mapping"
 		" (message_id, mid_string, flag_string) VALUES"
 		" (%llu, ?, ?)", LLU(rop_util_get_gc_value(message_id)));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		message_content_free(pmsgctnt);
 		return 4;	
@@ -3874,7 +3912,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT message_id,"
 		" folder_id FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -3946,7 +3985,8 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT message_id,"
 		" folder_id FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4022,7 +4062,8 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 	} else {
 		sprintf(sql_string, "SELECT ext "
 				"FROM messages WHERE mid_string=?");
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			mail_engine_put_idb(pidb);
 			return 4;
 		}
@@ -4042,7 +4083,8 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 		sqlite3_finalize(pstmt);
 		sprintf(sql_string, "UPDATE messages SET"
 		          " ext=? WHERE message_id=%llu", LLU(message_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			mail_engine_put_idb(pidb);
 			return 4;
 		}
@@ -4096,7 +4138,8 @@ static int mail_engine_mmove(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT message_id,"
 		" folder_id FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4205,7 +4248,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		"uid, recent, read, unsent, flagged, replied, forwarded,"
 		"deleted, received, ext, folder_id, size FROM messages "
 		"WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		mail_free(&imail);
 		free(pbuff);
@@ -4304,7 +4348,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	sprintf(sql_string, "INSERT INTO mapping"
 		" (message_id, mid_string, flag_string) VALUES"
 		" (%llu, ?, ?)", LLU(rop_util_get_gc_value(message_id)));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		message_content_free(pmsgctnt);
 		return 4;	
@@ -4422,7 +4467,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT folder_id,"
 			" parent_fid FROM folders WHERE name=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;	
 	}
@@ -4717,7 +4763,8 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT folder_id,"
 			" idx FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4733,7 +4780,8 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	if (FALSE == b_asc) {
 		sprintf(sql_string, "SELECT count(message_id) "
 		          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			mail_engine_put_idb(pidb);
 			return 4;
 		}
@@ -4779,7 +4827,8 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT folder_id,"
 			" uid FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4843,7 +4892,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT folder_id,"
 				" uidnext FROM folders WHERE name=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;	
 	}
@@ -4858,7 +4908,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4871,7 +4922,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT count(message_id) FROM "
 	          "messages WHERE folder_id=%llu AND read=0", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4883,7 +4935,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT count(message_id) FROM"
 	          " messages WHERE folder_id=%llu AND recent=0", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4895,7 +4948,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "SELECT min(idx) FROM messages "
 	          "WHERE folder_id=%llu AND read=0", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -4988,7 +5042,8 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 		return 2;
 	}
 	sprintf(sql_string, "SELECT name FROM folders WHERE unsub=0");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 2;
 	}
@@ -5086,7 +5141,8 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5142,7 +5198,8 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 				"messages WHERE folder_id=%llu AND idx>=%d AND idx<=%d "
 				"ORDER BY idx DESC", LLU(folder_id), idx1, idx2);
 	}
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5297,7 +5354,8 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	} else {
 		sprintf(sql_string, "SELECT count(message_id) "
 			"FROM messages WHERE folder_id=%llu", LLU(folder_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			mail_engine_put_idb(pidb);
 			return 4;
 		}
@@ -5335,7 +5393,8 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 				"ORDER BY idx DESC", LLU(folder_id), first, last);
 		}
 	}
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5485,7 +5544,8 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT count(message_id) FROM "
 		"messages WHERE folder_id=%llu AND deleted=1", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5505,7 +5565,8 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 			" messages WHERE folder_id=%llu AND deleted=1 ORDER BY idx "
 			"DESC", LLU(folder_id));
 	}
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5620,7 +5681,8 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	} else {
 		sprintf(sql_string, "SELECT count(message_id) "
 		          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr) {
 			mail_engine_put_idb(pidb);
 			return 4;
 		}
@@ -5653,7 +5715,8 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 				"uid<=%u ORDER BY idx DESC", LLU(folder_id), first, last);
 		}
 	}
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5731,7 +5794,8 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT message_id,"
 		" folder_id FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5831,7 +5895,8 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	}
 	sprintf(sql_string, "SELECT message_id,"
 		" folder_id FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -5929,7 +5994,8 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 	sprintf(sql_string, "SELECT folder_id, recent, "
 		"read, unsent, flagged, replied, forwarded, deleted "
 		"FROM messages WHERE mid_string=?");
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr) {
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
@@ -6210,7 +6276,8 @@ static void mail_engine_add_notification_message(
 	if (NULL == pvalue) {
 		sprintf(sql_string, "SELECT mid_string, flag_string"
 		          " FROM mapping WHERE message_id=%llu", LLU(message_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr)
 			return;
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			HX_strlcpy(mid_string, S2A(sqlite3_column_text(pstmt, 0)), sizeof(mid_string));
@@ -6229,7 +6296,8 @@ static void mail_engine_add_notification_message(
 	}
 	sprintf(sql_string, "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -6249,7 +6317,8 @@ static void mail_engine_add_notification_message(
 		"unsent, read, subject, sender, rcpt, size, received)"
 		" VALUES (?, %llu, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;	
 	mail_engine_insert_message(pstmt, &uidnext, message_id,
 		static_cast<const char *>(pvalue), message_flags, received_time, mod_time);
@@ -6279,7 +6348,8 @@ static void mail_engine_delete_notification_message(
 	
 	sprintf(sql_string, "SELECT folder_id FROM "
 	          "messages WHERE message_id=%llu", LLU(message_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;	
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -6335,7 +6405,8 @@ static BOOL mail_engine_add_notification_folder(
 	default:
 		sprintf(sql_string, "SELECT name FROM"
 		          " folders WHERE folder_id=%llu", LLU(parent_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr)
 			return FALSE;	
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
@@ -6442,7 +6513,8 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 	
 	sprintf(sql_string, "SELECT folder_id, name"
 	          " FROM folders WHERE parent_fid=%llu", LLU(parent_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;	
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		folder_id = sqlite3_column_int64(pstmt, 0);
@@ -6482,7 +6554,8 @@ static void mail_engine_move_notification_folder(
 	
 	sprintf(sql_string, "SELECT folder_id "
 	          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;	
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -6512,7 +6585,8 @@ static void mail_engine_move_notification_folder(
 	default:
 		sprintf(sql_string, "SELECT name FROM"
 		          " folders WHERE folder_id=%llu", LLU(parent_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr)
 			return;	
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
@@ -6585,7 +6659,8 @@ static void mail_engine_modify_notification_folder(
 	}
 	sprintf(sql_string, "SELECT name FROM"
 	          " folders WHERE folder_id=%llu", LLU(folder_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;	
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -6697,7 +6772,8 @@ static void mail_engine_modify_notification_message(
 	}
 	sprintf(sql_string, "SELECT mod_time FROM"
 	          " messages WHERE message_id=%llu", LLU(message_id));
-	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
 		return;	
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
@@ -6749,7 +6825,8 @@ static void mail_engine_notification_proc(const char *dir,
 				pidb, folder_id, message_id);
 		sprintf(sql_string, "SELECT name FROM"
 		          " folders WHERE folder_id=%llu", LLU(folder_id));
-		if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
+		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+		if (pstmt == nullptr)
 			break;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);

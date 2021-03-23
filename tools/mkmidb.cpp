@@ -176,7 +176,8 @@ int main(int argc, const char **argv)
 	}
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
+	pstmt = gx_sql_prep(psqlite, csql_string);
+	if (pstmt == nullptr) {
 		return 9;
 	}
 	
