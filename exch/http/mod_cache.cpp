@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -52,10 +56,7 @@ struct CACHE_CONTEXT {
 };
 
 struct DIRECTORY_NODE {
-	DOUBLE_LIST_NODE node;
-	char *domain;
-	char *path;
-	char *directory;
+	std::string domain, path, dir;
 };
 
 static int g_context_num;
@@ -63,7 +64,7 @@ static BOOL g_notify_stop;
 static pthread_t g_scan_tid;
 static DOUBLE_LIST g_item_list;
 static std::mutex g_hash_lock;
-static DOUBLE_LIST g_directory_list;
+static std::vector<DIRECTORY_NODE> g_directory_list;
 static STR_HASH_TABLE *g_cache_hash;
 static CACHE_CONTEXT *g_context_list;
 
@@ -139,13 +140,10 @@ void mod_cache_init(int context_num)
 	g_notify_stop = TRUE;
 	g_context_num = context_num;
 	double_list_init(&g_item_list);
-	double_list_init(&g_directory_list);
 }
 
-static int mod_cache_read_txt()
+static int mod_cache_read_txt() try
 {
-	int tmp_len;
-	DIRECTORY_NODE *pdnode;
 	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
 	auto pfile = list_file_initd("cache.txt", resource_get_string("config_file_path"),
@@ -157,25 +155,20 @@ static int mod_cache_read_txt()
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
 	for (decltype(item_num) i = 0; i < item_num; ++i) {
-		pdnode = static_cast<DIRECTORY_NODE *>(malloc(sizeof(*pdnode)));
-		if (NULL == pdnode) {
-			continue;
-		}
-		pdnode->node.pdata = pdnode;
-		pdnode->domain = strdup(pitem[i].domain);
-		pdnode->path = strdup(pitem[i].uri_path);
-		tmp_len = strlen(pdnode->path);
-		if ('/' == pdnode->path[tmp_len - 1]) {
-			pdnode->path[tmp_len - 1] = '\0';
-		}
-		pdnode->directory = strdup(pitem[i].dir);
-		tmp_len = strlen(pdnode->directory);
-		if ('/' == pdnode->directory[tmp_len - 1]) {
-			pdnode->directory[tmp_len - 1] = '\0';
-		}
-		double_list_append_as_tail(&g_directory_list, &pdnode->node);
+		DIRECTORY_NODE node;
+		node.domain = pitem[i].domain;
+		node.path = pitem[i].uri_path;
+		if (node.path.size() > 0 && node.path.back() == '/')
+			node.path.pop_back();
+		node.dir = pitem[i].dir;
+		if (node.dir.size() > 0 && node.dir.back() == '/')
+			node.dir.pop_back();
+		g_directory_list.push_back(std::move(node));
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	printf("[mod_cache: bad_alloc\n");
+	return -ENOMEM;
 }
 
 int mod_cache_run()
@@ -211,20 +204,13 @@ int mod_cache_stop()
 	CACHE_ITEM *pitem;
 	CACHE_ITEM **ppitem;
 	STR_HASH_ITER *iter;
-	DIRECTORY_NODE *pdnode;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
 		pthread_join(g_scan_tid, NULL);
 	}
-	while ((pnode = double_list_pop_front(&g_directory_list)) != nullptr) {
-		pdnode = (DIRECTORY_NODE*)pnode->pdata;
-		free(pdnode->domain);
-		free(pdnode->path);
-		free(pdnode->directory);
-		free(pdnode);
-	}
+	g_directory_list.clear();
 	if (NULL != g_context_list) {
 		free(g_context_list);
 		g_context_list = NULL;
@@ -251,7 +237,6 @@ int mod_cache_stop()
 
 void mod_cache_free()
 {
-	double_list_free(&g_directory_list);
 	double_list_free(&g_item_list);
 }
 
@@ -648,9 +633,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	CACHE_ITEM **ppitem;
 	char tmp_buff[8192];
 	struct stat node_stat;
-	DIRECTORY_NODE *pdnode = nullptr;
 	char request_uri[8192];
-	DOUBLE_LIST_NODE *pnode;
 	CACHE_CONTEXT *pcontext;
 	
 	if (0 != strcasecmp(phttp->request.method, "GET") &&
@@ -723,22 +706,15 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			strcpy(suffix, ptoken);
 		}
 	}
-	for (pnode=double_list_get_head(&g_directory_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_directory_list, pnode)) {
-		pdnode = (DIRECTORY_NODE*)pnode->pdata;	
-		if (0 == wildcard_match(domain, pdnode->domain, TRUE)) {
-			continue;
-		}
-		tmp_len = strlen(pdnode->path);
-		if (0 == strncasecmp(request_uri, pdnode->path, tmp_len)) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto it = std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
+	          [&](const auto &e) {
+	            return wildcard_match(domain, e.domain.c_str(), TRUE) != 0 &&
+	                   strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
+	          });
+	if (it == g_directory_list.cend())
 		return FALSE;
-	}
-	snprintf(tmp_path, sizeof(tmp_path), "%s%s",
-		pdnode->directory, request_uri + tmp_len);
+	snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s%s", it->dir.c_str(),
+	         request_uri + it->path.size());
 	if (0 != stat(tmp_path, &node_stat) ||
 		0 == S_ISREG(node_stat.st_mode)) {
 		return FALSE;
