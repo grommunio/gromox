@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <gromox/database.h>
+#include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
 #include <gromox/proptags.hpp>
 #include <mysql.h>

@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <mysql.h>
-#include <gromox/database.h>
+#include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 
 using namespace gromox;

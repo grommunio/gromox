@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/database.h>
+#include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include "mysql_adaptor.h"
