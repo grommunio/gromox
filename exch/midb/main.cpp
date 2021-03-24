@@ -360,7 +360,6 @@ int main(int argc, const char **argv)
 	auto cl_0b = make_scope_exit([&]() { listener_free(); });
 	mail_engine_init(charset, timezone, org_name, table_size,
 		b_async, b_wal, mmap_size, cache_interval, mime_num);
-	auto cleanup_1 = make_scope_exit(mail_engine_free);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT);
 	auto cleanup_2 = make_scope_exit(cmd_parser_free);

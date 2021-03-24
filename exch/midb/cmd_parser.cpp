@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <condition_variable>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
@@ -30,9 +32,8 @@ static size_t g_threads_num;
 static BOOL g_notify_stop;
 static int g_timeout_interval;
 static pthread_t *g_thread_ids;
-static pthread_mutex_t g_connection_lock;
-static pthread_mutex_t g_cond_mutex;
-static pthread_cond_t g_waken_cond;
+static std::mutex g_connection_lock, g_cond_mutex;
+static std::condition_variable g_waken_cond;
 static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
 static COMMAND_ENTRY g_cmd_entry[128];
@@ -49,11 +50,6 @@ void cmd_parser_init(size_t threads_num, int timeout)
 	g_cmd_num = 0;
 	g_threads_num = threads_num;
 	g_timeout_interval = timeout;
-	
-	pthread_mutex_init(&g_connection_lock, NULL);
-	pthread_mutex_init(&g_cond_mutex, NULL);
-	pthread_cond_init(&g_waken_cond, NULL);
-
 	double_list_init(&g_connection_list);
 	double_list_init(&g_connection_list1);
 }
@@ -64,22 +60,16 @@ void cmd_parser_free()
 
 	double_list_free(&g_connection_list);
 	double_list_free(&g_connection_list1);
-
-	pthread_mutex_destroy(&g_connection_lock);
-	pthread_mutex_destroy(&g_cond_mutex);
-	pthread_cond_destroy(&g_waken_cond);
 }
 
 CONNECTION* cmd_parser_get_connection()
 {
-	pthread_mutex_lock(&g_connection_lock);
+	std::unique_lock chold(g_connection_lock);
 	if (double_list_get_nodes_num(&g_connection_list) + 1 +
 		double_list_get_nodes_num(&g_connection_list1) >= g_threads_num) {
-		pthread_mutex_unlock(&g_connection_lock);
 		return NULL;
 	}
-	
-	pthread_mutex_unlock(&g_connection_lock);
+	chold.unlock();
 	auto pconnection = me_alloc<CONNECTION>();
 	pconnection->node.pdata = pconnection;
 
@@ -88,10 +78,10 @@ CONNECTION* cmd_parser_get_connection()
 
 void cmd_parser_put_connection(CONNECTION *pconnection)
 {	
-	pthread_mutex_lock(&g_connection_lock);
+	std::unique_lock chold(g_connection_lock);
 	double_list_append_as_tail(&g_connection_list1, &pconnection->node);
-	pthread_mutex_unlock(&g_connection_lock);
-	pthread_cond_signal(&g_waken_cond);
+	chold.unlock();
+	g_waken_cond.notify_one();
 }
 
 
@@ -138,8 +128,8 @@ int cmd_parser_stop()
 	CONNECTION *pconnection;
 
 	g_notify_stop = TRUE;
-	pthread_cond_broadcast(&g_waken_cond);
-	pthread_mutex_lock(&g_connection_lock);
+	g_waken_cond.notify_all();
+	std::unique_lock chold(g_connection_lock);
 	for (pnode=double_list_get_head(&g_connection_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_connection_list, pnode)) {
 		pconnection = (CONNECTION*)pnode->pdata;
@@ -150,8 +140,7 @@ int cmd_parser_stop()
 			pconnection->sockd = -1;
 		}	
 	}
-	pthread_mutex_unlock(&g_connection_lock);
-
+	chold.unlock();
 	for (size_t i = 0; i < g_threads_num; ++i)
 		pthread_join(g_thread_ids[i], NULL);
 	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
@@ -199,21 +188,18 @@ static void *thread_work_func(void *param)
 	if (TRUE == g_notify_stop) {
 		return nullptr;
 	}
-
-	pthread_mutex_lock(&g_cond_mutex);
-	pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
-	pthread_mutex_unlock(&g_cond_mutex);
-
+	std::unique_lock cm_hold(g_cond_mutex);
+	g_waken_cond.wait(cm_hold);
+	cm_hold.unlock();
 	if (TRUE == g_notify_stop) {
 		return nullptr;
 	}
-	
-	pthread_mutex_lock(&g_connection_lock);
+	std::unique_lock co_hold(g_connection_lock);
 	pnode = double_list_pop_front(&g_connection_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_connection_list, pnode);
 	}
-	pthread_mutex_unlock(&g_connection_lock);
+	co_hold.unlock();
 	if (NULL == pnode) {
 		goto NEXT_LOOP;
 	}
@@ -229,9 +215,9 @@ static void *thread_work_func(void *param)
 		pconnection->thr_id = pthread_self();
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			pconnection->is_selecting = FALSE;
-			pthread_mutex_lock(&g_connection_lock);
+			std::unique_lock co_hold(g_connection_lock);
 			double_list_remove(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_connection_lock);
+			co_hold.unlock();
 			close(pconnection->sockd);
 			free(pconnection);
 			goto NEXT_LOOP;
@@ -240,9 +226,9 @@ static void *thread_work_func(void *param)
 		read_len = read(pconnection->sockd, buffer + offset,
 					CONN_BUFFLEN - offset);
 		if (read_len <= 0) {
-			pthread_mutex_lock(&g_connection_lock);
+			std::unique_lock co_hold(g_connection_lock);
 			double_list_remove(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_connection_lock);
+			co_hold.unlock();
 			close(pconnection->sockd);
 			free(pconnection);
 			goto NEXT_LOOP;
@@ -252,9 +238,9 @@ static void *thread_work_func(void *param)
 			if ('\r' == buffer[i] && '\n' == buffer[i + 1]) {
 				if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
 					write(pconnection->sockd, "BYE\r\n", 5);
-					pthread_mutex_lock(&g_connection_lock);
+					std::unique_lock co_hold(g_connection_lock);
 					double_list_remove(&g_connection_list, &pconnection->node);
-					pthread_mutex_unlock(&g_connection_lock);
+					co_hold.unlock();
 					close(pconnection->sockd);
 					free(pconnection);
 					goto NEXT_LOOP;
@@ -299,9 +285,9 @@ static void *thread_work_func(void *param)
 		}
 
 		if (CONN_BUFFLEN == offset) {
-			pthread_mutex_lock(&g_connection_lock);
+			std::unique_lock co_hold(g_connection_lock);
 			double_list_remove(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_connection_lock);
+			co_hold.unlock();
 			close(pconnection->sockd);
 			free(pconnection);
 			goto NEXT_LOOP;

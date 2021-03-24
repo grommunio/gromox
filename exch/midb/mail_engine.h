@@ -11,5 +11,4 @@ void mail_engine_init(const char *default_charset,
 	uint64_t mmap_size, int cache_interval, int mime_num);
 extern int mail_engine_run();
 extern int mail_engine_stop();
-extern void mail_engine_free();
 int mail_engine_get_param(int param);

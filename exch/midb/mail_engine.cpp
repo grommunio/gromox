@@ -6,6 +6,7 @@
 #endif
 #include <atomic>
 #include <climits>
+#include <mutex>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
@@ -192,7 +193,7 @@ static MIME_POOL *g_mime_pool;
 static LIB_BUFFER *g_alloc_mjson;      /* mjson allocator */
 static char g_default_charset[32];
 static char g_default_timezone[64];
-static pthread_mutex_t g_hash_lock;
+static std::mutex g_hash_lock;
 static STR_HASH_TABLE *g_hash_table;
 
 static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string);
@@ -2774,21 +2775,20 @@ static IDB_ITEM* mail_engine_peek_idb(const char *path)
 	char htag[256];
 	
 	swap_string(htag, path);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	pidb = (IDB_ITEM*)str_hash_query(g_hash_table, htag);
 	if (NULL == pidb) {
-		pthread_mutex_unlock(&g_hash_lock);
 		return NULL;
 	}
 	pidb->reference ++;
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	pthread_mutex_lock(&pidb->lock);
 	if (NULL == pidb->psqlite) {
 		pidb->last_time = 0;
 		pthread_mutex_unlock(&pidb->lock);
-		pthread_mutex_lock(&g_hash_lock);
+		hhold.lock();
 		pidb->reference --;
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		return NULL;
 	}
 	return pidb;
@@ -2805,12 +2805,12 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 	
 	b_load = FALSE;
 	swap_string(htag, path);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pidb) {
 		IDB_ITEM temp_idb;
 		if (1 != str_hash_add(g_hash_table, htag, &temp_idb)) {
-			pthread_mutex_unlock(&g_hash_lock);
+			hhold.unlock();
 			debug_info("[mail_engine]: no room in idb hash table!");
 			return NULL;
 		}
@@ -2819,7 +2819,6 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		if (SQLITE_OK != sqlite3_open_v2(temp_path,
 			&pidb->psqlite, SQLITE_OPEN_READWRITE, NULL)) {
 			str_hash_remove(g_hash_table, htag);
-			pthread_mutex_unlock(&g_hash_lock);
 			return NULL;
 		}
 		sqlite3_exec(pidb->psqlite, "PRAGMA foreign_keys=ON",
@@ -2849,14 +2848,12 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		if (pstmt == nullptr) {
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
-			pthread_mutex_unlock(&g_hash_lock);
 			return NULL;
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
-			pthread_mutex_unlock(&g_hash_lock);
 			return NULL;
 		}
 		pidb->username = strdup(S2A(sqlite3_column_text(pstmt, 0)));
@@ -2864,24 +2861,23 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		if (NULL == pidb->username) {
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
-			pthread_mutex_unlock(&g_hash_lock);
 			return NULL;
 		}
 		pthread_mutex_init(&pidb->lock, NULL);
 		b_load = TRUE;
 	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		debug_info("[mail_engine]: too many threads waiting on %s\n", path);
 		return NULL;
 	}
 	pidb->reference ++;
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	clock_gettime(CLOCK_REALTIME, &timeout_tm);
     timeout_tm.tv_sec += DB_LOCK_TIMEOUT;
 	if (0 != pthread_mutex_timedlock(&pidb->lock, &timeout_tm)) {
-		pthread_mutex_lock(&g_hash_lock);
+		hhold.lock();
 		pidb->reference --;
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		return NULL;
 	}
 	if (TRUE == b_load) {
@@ -2890,9 +2886,9 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		if (NULL == pidb->psqlite) {
 			pidb->last_time = 0;
 			pthread_mutex_unlock(&pidb->lock);
-			pthread_mutex_lock(&g_hash_lock);
+			hhold.lock();
 			pidb->reference --;
-			pthread_mutex_unlock(&g_hash_lock);
+			hhold.unlock();
 			return NULL;
 		}
 	}
@@ -2903,9 +2899,8 @@ static void mail_engine_put_idb(IDB_ITEM *pidb)
 {
 	time(&pidb->last_time);
 	pthread_mutex_unlock(&pidb->lock);
-	pthread_mutex_lock(&g_hash_lock);
+	std::lock_guard hhold(g_hash_lock);
 	pidb->reference --;
-	pthread_mutex_unlock(&g_hash_lock);
 }
 
 static void mail_engine_free_idb(IDB_ITEM *pidb)
@@ -2940,7 +2935,7 @@ static void *scan_work_func(void *param)
 			continue;
 		}
 		count = 0;
-		pthread_mutex_lock(&g_hash_lock);
+		std::unique_lock hhold(g_hash_lock);
 		iter = str_hash_iter_init(g_hash_table);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
@@ -2965,7 +2960,7 @@ static void *scan_work_func(void *param)
 			}
 		}
 		str_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			psub = (SUB_NODE*)pnode->pdata;
 			if (TRUE == common_util_build_environment(psub->maildir)) {
@@ -2976,7 +2971,7 @@ static void *scan_work_func(void *param)
 			free(psub);
 		}
 	}
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	iter = str_hash_iter_init(g_hash_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
@@ -2990,7 +2985,7 @@ static void *scan_work_func(void *param)
 		str_hash_iter_remove(iter);
 	}
 	str_hash_iter_free(iter);
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	double_list_free(&temp_list);
 	return nullptr;
 }
@@ -3075,18 +3070,18 @@ static int mail_engine_mfree(int argc, char **argv, int sockd)
 		return 1;
 	}
 	swap_string(htag, argv[1]);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pidb) {
 		IDB_ITEM temp_idb;
 		temp_idb.last_time = time(NULL) + g_cache_interval - 10;
 		str_hash_add(g_hash_table, htag, &temp_idb);
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		write(sockd, "TRUE\r\n", 6);
 		return 0;
 	}
 	pidb->reference ++;
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	pthread_mutex_lock(&pidb->lock);
 	if (NULL != pidb->username) {
 		free(pidb->username);
@@ -3098,9 +3093,9 @@ static int mail_engine_mfree(int argc, char **argv, int sockd)
 	}
 	pidb->last_time = time(NULL) - g_cache_interval - 10;
 	pthread_mutex_unlock(&pidb->lock);
-	pthread_mutex_lock(&g_hash_lock);
+	hhold.lock();
 	pidb->reference --;
-	pthread_mutex_unlock(&g_hash_lock);
+	hhold.unlock();
 	write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -6941,7 +6936,6 @@ void mail_engine_init(const char *default_charset,
 	g_table_size = table_size;
 	g_mime_num = mime_num;
 	g_cache_interval = cache_interval;
-	pthread_mutex_init(&g_hash_lock, NULL);
 }
 
 int mail_engine_run()
@@ -7036,11 +7030,6 @@ int mail_engine_stop()
 	mime_pool_free(g_mime_pool);
 	lib_buffer_free(g_alloc_mjson);
 	return 0;
-}
-
-void mail_engine_free()
-{
-	pthread_mutex_destroy(&g_hash_lock);
 }
 
 int mail_engine_get_param(int param)
