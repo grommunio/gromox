@@ -309,44 +309,114 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			"is_deleted=0", static_cast<unsigned long long>(fid_val));
 	}
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		goto QUERY_FAILURE;
+	if (pstmt == nullptr) {
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		if (prestriction != nullptr)
+			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		return false;
+	}
 	if (TRUE == b_ordered) {
 		sprintf(sql_string, "INSERT INTO changes VALUES (?, ?, ?)");
 	} else {
 		sprintf(sql_string, "INSERT INTO changes VALUES (?)");
 	}
 	pstmt1 = gx_sql_prep(psqlite, sql_string);
-	if (pstmt1 == nullptr)
-		goto QUERY_FAILURE;
+	if (pstmt1 == nullptr) {
+		if (pstmt != nullptr)
+			sqlite3_finalize(pstmt);
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		if (prestriction != nullptr)
+			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		return false;
+	}
 	sprintf(sql_string, "INSERT INTO existence VALUES (?)");
 	pstmt2 = gx_sql_prep(psqlite, sql_string);
-	if (pstmt2 == nullptr)
-		goto QUERY_FAILURE;
+	if (pstmt2 == nullptr) {
+		if (pstmt != nullptr)
+			sqlite3_finalize(pstmt);
+		if (pstmt1 != nullptr)
+			sqlite3_finalize(pstmt1);
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		if (prestriction != nullptr)
+			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		return false;
+	}
 	if (NULL != pread) {
 		if (FALSE == b_private) {
 			sprintf(sql_string, "SELECT read_cn FROM "
 					"read_cns WHERE message_id=? AND username=?");
 			pstmt4 = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt4 == nullptr)
-				goto QUERY_FAILURE;
+			if (pstmt4 == nullptr) {
+				if (pstmt != nullptr)
+					sqlite3_finalize(pstmt);
+				if (pstmt1 != nullptr)
+					sqlite3_finalize(pstmt1);
+				if (pstmt2 != nullptr)
+					sqlite3_finalize(pstmt2);
+				sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+				if (prestriction != nullptr)
+					sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+				return false;
+			}
 			sprintf(sql_string, "SELECT message_id FROM "
 					"read_states WHERE message_id=? AND username=?");
 			pstmt5 = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt5 == nullptr)
-				goto QUERY_FAILURE;
+			if (pstmt5 == nullptr) {
+				if (pstmt != nullptr)
+					sqlite3_finalize(pstmt);
+				if (pstmt1 != nullptr)
+					sqlite3_finalize(pstmt1);
+				if (pstmt2 != nullptr)
+					sqlite3_finalize(pstmt2);
+				if (pstmt4 != nullptr)
+					sqlite3_finalize(pstmt4);
+				sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+				if (prestriction != nullptr)
+					sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+				return false;
+			}
 		}
 		sprintf(sql_string, "INSERT INTO reads VALUES (?, ?)");
 		pstmt3 = gx_sql_prep(psqlite, sql_string);
-		if (pstmt3 == nullptr)
-			goto QUERY_FAILURE;
+		if (pstmt3 == nullptr) {
+			if (pstmt != nullptr)
+				sqlite3_finalize(pstmt);
+			if (pstmt1 != nullptr)
+				sqlite3_finalize(pstmt1);
+			if (pstmt2 != nullptr)
+				sqlite3_finalize(pstmt2);
+			if (pstmt4 != nullptr)
+				sqlite3_finalize(pstmt4);
+			if (pstmt5 != nullptr)
+				sqlite3_finalize(pstmt5);
+			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			if (prestriction != nullptr)
+				sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			return false;
+		}
 	}
 	if (TRUE == b_ordered) {
 		sprintf(sql_string, "SELECT propval FROM "
 			"message_properties WHERE proptag=? AND message_id=?");
 		pstmt6 = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt6 == nullptr)
-			goto QUERY_FAILURE;
+		if (pstmt6 == nullptr) {
+			if (pstmt != nullptr)
+				sqlite3_finalize(pstmt);
+			if (pstmt1 != nullptr)
+				sqlite3_finalize(pstmt1);
+			if (pstmt2 != nullptr)
+				sqlite3_finalize(pstmt2);
+			if (pstmt3 != nullptr)
+				sqlite3_finalize(pstmt3);
+			if (pstmt4 != nullptr)
+				sqlite3_finalize(pstmt4);
+			if (pstmt5 != nullptr)
+				sqlite3_finalize(pstmt5);
+			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			if (prestriction != nullptr)
+				sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			return false;
+		}
 	}
 	*plast_cn = 0;
 	*plast_readcn = 0;
@@ -374,7 +444,24 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_reset(pstmt2);
 		sqlite3_bind_int64(pstmt2, 1, mid_val);
 		if (SQLITE_DONE != sqlite3_step(pstmt2)) {
-			goto QUERY_FAILURE;
+			if (pstmt != nullptr)
+				sqlite3_finalize(pstmt);
+			if (pstmt1 != nullptr)
+				sqlite3_finalize(pstmt1);
+			if (pstmt2 != nullptr)
+				sqlite3_finalize(pstmt2);
+			if (pstmt3 != nullptr)
+				sqlite3_finalize(pstmt3);
+			if (pstmt4 != nullptr)
+				sqlite3_finalize(pstmt4);
+			if (pstmt5 != nullptr)
+				sqlite3_finalize(pstmt5);
+			if (pstmt6 != nullptr)
+				sqlite3_finalize(pstmt6);
+			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			if (prestriction != nullptr)
+				sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			return false;
 		}
 		if (change_num > *plast_cn) {
 			*plast_cn = change_num;
@@ -423,7 +510,24 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 				sqlite3_bind_int64(pstmt3, 1, mid_val);
 				sqlite3_bind_int64(pstmt3, 2, read_state);
 				if (SQLITE_DONE != sqlite3_step(pstmt3)) {
-					goto QUERY_FAILURE;
+					if (pstmt != nullptr)
+						sqlite3_finalize(pstmt);
+					if (pstmt1 != nullptr)
+						sqlite3_finalize(pstmt1);
+					if (pstmt2 != nullptr)
+						sqlite3_finalize(pstmt2);
+					if (pstmt3 != nullptr)
+						sqlite3_finalize(pstmt3);
+					if (pstmt4 != nullptr)
+						sqlite3_finalize(pstmt4);
+					if (pstmt5 != nullptr)
+						sqlite3_finalize(pstmt5);
+					if (pstmt6 != nullptr)
+						sqlite3_finalize(pstmt6);
+					sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+					if (prestriction != nullptr)
+						sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+					return false;
 				}
 				continue;
 			}
@@ -452,7 +556,24 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			sqlite3_bind_int64(pstmt1, 3, mtime);
 		}
 		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-			goto QUERY_FAILURE;
+			if (pstmt != nullptr)
+				sqlite3_finalize(pstmt);
+			if (pstmt1 != nullptr)
+				sqlite3_finalize(pstmt1);
+			if (pstmt2 != nullptr)
+				sqlite3_finalize(pstmt2);
+			if (pstmt3 != nullptr)
+				sqlite3_finalize(pstmt3);
+			if (pstmt4 != nullptr)
+				sqlite3_finalize(pstmt4);
+			if (pstmt5 != nullptr)
+				sqlite3_finalize(pstmt5);
+			if (pstmt6 != nullptr)
+				sqlite3_finalize(pstmt6);
+			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			if (prestriction != nullptr)
+				sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			return false;
 		}
 	}
 	if (NULL != pstmt) {
@@ -692,33 +813,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		punread_mids->pids = NULL;
 	}
 	return TRUE;
- QUERY_FAILURE:
-	if (NULL != pstmt) {
-		sqlite3_finalize(pstmt);
-	}
-	if (NULL != pstmt1) {
-		sqlite3_finalize(pstmt1);
-	}
-	if (NULL != pstmt2) {
-		sqlite3_finalize(pstmt2);
-	}
-	if (NULL != pstmt3) {
-		sqlite3_finalize(pstmt3);
-	}
-	if (NULL != pstmt4) {
-		sqlite3_finalize(pstmt4);
-	}
-	if (NULL != pstmt5) {
-		sqlite3_finalize(pstmt5);
-	}
-	if (NULL != pstmt6) {
-		sqlite3_finalize(pstmt6);
-	}
-	sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
-	if (NULL != prestriction) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-	}
-	return FALSE;
 }
 
 static void ics_enum_hierarchy_idset(
