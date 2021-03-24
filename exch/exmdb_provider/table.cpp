@@ -809,10 +809,33 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
 	remote_id = exmdb_server_get_remote_id();
+	bool all_ok = false;
+	auto cl_0 = make_scope_exit([&]() {
+		if (all_ok)
+			return;
+		if (pstmt != nullptr)
+			sqlite3_finalize(pstmt);
+		if (pstmt1 != nullptr)
+			sqlite3_finalize(pstmt1);
+		if (psqlite != nullptr) {
+			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			sqlite3_close(psqlite);
+		}
+		if (ptnode->psorts != nullptr)
+			sortorder_set_free(ptnode->psorts);
+		if (ptnode->prestriction != nullptr)
+			restriction_free(ptnode->prestriction);
+		if (ptnode->username != nullptr)
+			free(ptnode->username);
+		if (ptnode->remote_id != nullptr)
+			free(ptnode->remote_id);
+		free(ptnode);
+		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
 		if (NULL == ptnode->remote_id) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 	}
 	ptnode->type = TABLE_TYPE_CONTENT;
@@ -823,23 +846,23 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	if (FALSE == exmdb_server_check_private()) {
 		ptnode->username = strdup(username);
 		if (NULL == ptnode->username) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 	}
 	if (NULL != prestriction) {
 		ptnode->prestriction = restriction_dup(prestriction);
 		if (NULL == ptnode->prestriction) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 	}
 	if (NULL != psorts) {
 		ptnode->psorts = sortorder_set_dup(psorts);
 		if (NULL == ptnode->psorts) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 		sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 		sql_len = sprintf(sql_string, "CREATE"
@@ -904,7 +927,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							", v%x BLOB", tmp_proptag);
 				break;
 			default:
-				goto LOAD_CONTENT_FAIL;
+				return false;
 			}
 		}
 		if (psorts->ccategories > 0) {
@@ -922,7 +945,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		sql_string[sql_len] = '\0';
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 		for (size_t i = 0; i < tag_count; ++i) {
 			tmp_proptag = tmp_proptags[i];
@@ -931,7 +954,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			         i, tmp_proptag);
 			if (SQLITE_OK != sqlite3_exec(psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				goto LOAD_CONTENT_FAIL;
+				return false;
 			}
 		}
 		if (0 == ptnode->instance_tag) {
@@ -943,7 +966,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		}
 		if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 		sql_len = sprintf(sql_string, "INSERT INTO stbl VALUES (?");
 		for (size_t i = 0; i < tag_count; ++i)
@@ -962,14 +985,14 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		sql_string[sql_len] = '\0';
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
-			goto LOAD_CONTENT_FAIL;
+			return false;
 	} else {
 		sql_len = sprintf(sql_string, "INSERT INTO t%u (inst_id,"
 			" prev_id, row_type, depth, inst_num, idx) VALUES "
 			"(?, ?, %u, 0, 0, ?)", table_id, CONTENT_ROW_MESSAGE);
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
-			goto LOAD_CONTENT_FAIL;
+			return false;
 	}
 	if (TRUE == exmdb_server_check_private()) {
 		if (table_flags & TABLE_FLAG_SOFTDELETES) {
@@ -1041,7 +1064,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	}
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
-		goto LOAD_CONTENT_FAIL;
+		return false;
 	last_row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		mid_val = sqlite3_column_int64(pstmt, 0);
@@ -1052,7 +1075,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			}
 			if (FALSE == common_util_get_message_parent_folder(
 				pdb->psqlite, mid_val, &parent_fid)) {
-				goto LOAD_CONTENT_FAIL;
+				return false;
 			}
 			if (0 == parent_fid) {
 				continue;
@@ -1072,19 +1095,19 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					MESSAGE_PROPERTIES_TABLE, mid_val,
 					cpid, pdb->psqlite, tmp_proptag,
 					&pvalue)) {
-					goto LOAD_CONTENT_FAIL;
+					return false;
 				}
 				if (NULL == pvalue) {
 					sqlite3_bind_null(pstmt1, i + 2);
 				} else if (!common_util_bind_sqlite_statement(pstmt1, i + 2, PROP_TYPE(tmp_proptag), pvalue)) {
-					goto LOAD_CONTENT_FAIL;
+					return false;
 				}
 			}
 			if (psorts->ccategories > 0) {
 				if (FALSE == common_util_get_property(
 					MESSAGE_PROPERTIES_TABLE, mid_val, 0,
 					pdb->psqlite, PROP_TAG_READ, &pvalue)) {
-					goto LOAD_CONTENT_FAIL;
+					return false;
 				}
 				sqlite3_bind_int64(pstmt1, tag_count + 2,
 					pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1);
@@ -1096,13 +1119,13 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 				    mid_val, cpid, pdb->psqlite,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
-					goto LOAD_CONTENT_FAIL;
+					return false;
 				if (NULL == pvalue) {
  BIND_NULL_INSTANCE:
 					sqlite3_bind_null(pstmt1, multi_index);
 					sqlite3_bind_int64(pstmt1, tag_count + 3, 0);
 					if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-						goto LOAD_CONTENT_FAIL;
+						return false;
 					}
 					sqlite3_reset(pstmt1);
 					continue;
@@ -1115,11 +1138,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					for (size_t i = 0; i < sa->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_SHORT, &sa->ps[i]))
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						}
 						sqlite3_reset(pstmt1);
 					}
@@ -1132,11 +1155,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					for (size_t i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_LONG, &la->pl[i]))
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						}
 						sqlite3_reset(pstmt1);
 					}
@@ -1149,11 +1172,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					for (size_t i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_I8, &la->pll[i]))
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						}
 						sqlite3_reset(pstmt1);
 					}
@@ -1167,11 +1190,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					for (size_t i = 0; i < sa->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_STRING8, &sa->ppstr[i]))
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						}
 						sqlite3_reset(pstmt1);
 					}
@@ -1184,11 +1207,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					for (size_t i = 0; i < ga->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_CLSID, &ga->pguid[i]))
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						}
 						sqlite3_reset(pstmt1);
 					}
@@ -1201,18 +1224,18 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					for (size_t i = 0; i < ba->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
 						    pstmt1, multi_index, PT_BINARY, ba->pbin + i))
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-							goto LOAD_CONTENT_FAIL;
+							return false;
 						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
 				}
 				default:
-					goto LOAD_CONTENT_FAIL;
+					return false;
 				}
 				continue;
 			}
@@ -1221,7 +1244,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			sqlite3_bind_int64(pstmt1, 3, last_row_id + 1);
 		}
 		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		}
 		if (NULL == psorts) {
 			last_row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
@@ -1243,18 +1266,18 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		sql_len = sprintf(sql_string, "UPDATE t%u SET"
 				" unread=? WHERE row_id=?", table_id);
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
-			goto LOAD_CONTENT_FAIL;
+			return false;
 		double_list_init(&value_list);
 		uint32_t unread_count = 0;
 		if (FALSE == table_load_content(pdb,
 			psqlite, psorts, 0, 0, &value_list, pstmt,
 			&ptnode->header_id, pstmt1, &unread_count)) {
-			goto LOAD_CONTENT_FAIL;	
+			return false;
 		}
 		sqlite3_finalize(pstmt);
 		pstmt = NULL;
@@ -1270,12 +1293,12 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				" t%u ORDER BY row_id", table_id);
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr)
-				goto LOAD_CONTENT_FAIL;
+				return false;
 			sql_len = sprintf(sql_string, "UPDATE t%u SET "
 					"idx=? WHERE row_id=?", table_id);
 			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr)
-				goto LOAD_CONTENT_FAIL;
+				return false;
 			size_t i = 1;
 			prev_id = 0;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -1295,7 +1318,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				sqlite3_bind_int64(pstmt1, 1, i);
 				sqlite3_bind_int64(pstmt1, 2, row_id);
 				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-					goto LOAD_CONTENT_FAIL;
+					return false;
 				}
 				sqlite3_reset(pstmt1);
 				i ++;
@@ -1308,10 +1331,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			sprintf(sql_string, "UPDATE t%u SET idx=row_id", table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				goto LOAD_CONTENT_FAIL;	
+				return false;
 			}
 		}
 	}
+	all_ok = true;
 	sqlite3_exec(pdb->tables.psqlite,
 		"COMMIT TRANSACTION", NULL, NULL, NULL);
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
@@ -1321,33 +1345,6 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	*prow_count = 0;
 	table_sum_table_count(pdb, table_id, prow_count); 
 	return TRUE;
-	
- LOAD_CONTENT_FAIL:
-	if (NULL != pstmt) {
-		sqlite3_finalize(pstmt);
-	}
-	if (NULL != pstmt1) {
-		sqlite3_finalize(pstmt1);
-	}
-	if (NULL != psqlite) {
-		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
-		sqlite3_close(psqlite);
-	}
-	if (NULL != ptnode->psorts) {
-		sortorder_set_free(ptnode->psorts);
-	}
-	if (NULL != ptnode->prestriction) {
-		restriction_free(ptnode->prestriction);
-	}
-	if (NULL != ptnode->username) {
-		free(ptnode->username);
-	}
-	if (NULL != ptnode->remote_id) {
-		free(ptnode->remote_id);
-	}
-	free(ptnode);
-	sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
-	return FALSE;
 }
 
 BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
