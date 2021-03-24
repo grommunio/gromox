@@ -56,11 +56,11 @@ BOOL exmdb_server_get_all_named_propids(
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	total_count = sqlite3_column_int64(pstmt, 0);
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	if (0 == total_count) {
 		ppropids->count = 0;
 		ppropids->ppropid = NULL;
@@ -82,7 +82,7 @@ BOOL exmdb_server_get_all_named_propids(
 				sqlite3_column_int64(pstmt, 0);
 		ppropids->count ++;
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	return TRUE;
 }
 
@@ -173,12 +173,12 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	*preplid = sqlite3_column_int64(pstmt, 0);
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	*pb_found = TRUE;
 	return TRUE;
 }
@@ -290,7 +290,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		*ppermission |= sqlite3_column_int64(pstmt, 0);
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	sprintf(sql_string, "SELECT "
 		"username, permission FROM permissions");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -301,7 +301,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		if (common_util_check_mlist_include(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)), username))
 			*ppermission |= sqlite3_column_int64(pstmt, 1);
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	pdb.reset();
 	sprintf(temp_path, "%s/config/delegates.txt", dir);
 	auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
@@ -384,7 +384,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 			}
 		}
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	if (range_end - range_begin + count > MAXIMUM_ALLOCATION_NUMBER) {
 		*pbegin_eid = 0;
 		return TRUE;
@@ -396,11 +396,11 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	sprintf(sql_string, "INSERT INTO allocated_eids "
 	          "VALUES (%llu, %llu, %lld, 0)",
 	          static_cast<unsigned long long>(tmp_eid),
@@ -618,18 +618,18 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		proptags[2]);
 	auto pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt2 == nullptr) {
-		sqlite3_finalize(pstmt1);
+		pstmt1.finalize();
 		return FALSE;
 	}
 	if (FALSE == table_check_address_in_contact_folder(
 		pstmt1, pstmt2, PRIVATE_FID_CONTACTS, paddress,
 		pb_found)) {
-		sqlite3_finalize(pstmt1);
-		sqlite3_finalize(pstmt2);
+		pstmt1.finalize();
+		pstmt2.finalize();
 		return FALSE;
 	}
-	sqlite3_finalize(pstmt1);
-	sqlite3_finalize(pstmt2);
+	pstmt1.finalize();
+	pstmt2.finalize();
 	return TRUE;
 }
 
