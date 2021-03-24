@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <climits>
 #include <cstdint>
+#include <new>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -56,10 +57,10 @@ using namespace gromox;
 
 namespace {
 struct OPTIMIZE_STMTS {
-	sqlite3_stmt *pstmt_msg1;		/* normal message property */
-	sqlite3_stmt *pstmt_msg2;		/* string message property */
-	sqlite3_stmt *pstmt_rcpt1;		/* normal recipient property */
-	sqlite3_stmt *pstmt_rcpt2;		/* string recipient property */
+	sqlite3_stmt *pstmt_msg1 = nullptr; /* normal message property */
+	sqlite3_stmt *pstmt_msg2 = nullptr; /* string message property */
+	sqlite3_stmt *pstmt_rcpt1 = nullptr; /* normal recipient property */
+	sqlite3_stmt *pstmt_rcpt2 = nullptr; /* string recipient property */
 };
 }
 
@@ -612,17 +613,15 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 {
 	char sql_string[256];
 	
-	auto popt_stmts = me_alloc<OPTIMIZE_STMTS>();
+	std::unique_ptr<OPTIMIZE_STMTS> popt_stmts(new(std::nothrow) OPTIMIZE_STMTS);
 	if (NULL == popt_stmts) {
 		return FALSE;
 	}
-	memset(popt_stmts, 0, sizeof(OPTIMIZE_STMTS));
 	sprintf(sql_string, "SELECT propval"
 				" FROM message_properties WHERE "
 				"message_id=? AND proptag=?");
 	popt_stmts->pstmt_msg1 = gx_sql_prep(psqlite, sql_string);
 	if (popt_stmts->pstmt_msg1 == nullptr) {
-		free(popt_stmts);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT proptag, "
@@ -631,7 +630,6 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 	popt_stmts->pstmt_msg2 = gx_sql_prep(psqlite, sql_string);
 	if (popt_stmts->pstmt_msg2 == nullptr) {
 		sqlite3_finalize(popt_stmts->pstmt_msg1);
-		free(popt_stmts);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT propval "
@@ -641,7 +639,6 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 	if (popt_stmts->pstmt_rcpt1 == nullptr) {
 		sqlite3_finalize(popt_stmts->pstmt_msg1);
 		sqlite3_finalize(popt_stmts->pstmt_msg2);
-		free(popt_stmts);
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT proptag, propval"
@@ -652,10 +649,9 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 		sqlite3_finalize(popt_stmts->pstmt_msg1);
 		sqlite3_finalize(popt_stmts->pstmt_msg2);
 		sqlite3_finalize(popt_stmts->pstmt_rcpt1);
-		free(popt_stmts);
 		return FALSE;
 	}
-	pthread_setspecific(g_opt_key, popt_stmts);
+	pthread_setspecific(g_opt_key, popt_stmts.release());
 	return TRUE;
 }
 
@@ -669,8 +665,8 @@ void common_util_end_message_optimize()
 	sqlite3_finalize(popt_stmts->pstmt_msg2);
 	sqlite3_finalize(popt_stmts->pstmt_rcpt1);
 	sqlite3_finalize(popt_stmts->pstmt_rcpt2);
-	free(popt_stmts);
 	pthread_setspecific(g_opt_key, NULL);
+	delete popt_stmts;
 }
 
 static sqlite3_stmt* common_util_get_optimize_stmt(
