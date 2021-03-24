@@ -1502,6 +1502,13 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		message_id, 0, pdb->psqlite, PROP_TAG_ASSOCIATED, &pvalue)) {
 		return;	
 	}
+	bool b_optimize = false;
+	auto cl_0 = make_scope_exit([&]() {
+		if (b_optimize)
+			common_util_end_message_optimize();
+		if (pstmt4 != nullptr)
+			sqlite3_finalize(pstmt4);
+	});
 	BOOL b_fai = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
@@ -1553,6 +1560,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				pdb->psqlite)) {
 				return;
 			}
+			b_optimize = true;
 		}
 		if (NULL == ptable->psorts) {
 			sprintf(sql_string, "SELECT "
@@ -1631,7 +1639,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					ptable->cpid, pdb->psqlite, propvals[i].proptag,
 					&propvals[i].pvalue)) {
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 			}
 			sprintf(sql_string, "SELECT row_id, inst_id,"
@@ -1656,7 +1664,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						MESSAGE_PROPERTIES_TABLE, inst_id1,
 						ptable->cpid, pdb->psqlite,
 						propvals[i].proptag, &pvalue)) {
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 					result = db_engine_compare_propval(
 							ptable->psorts->psort[i].type,
@@ -1785,7 +1793,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					ptable->cpid, pdb->psqlite, PROP_TAG_READ,
 					(void**)&pread_byte) || NULL == pread_byte) {
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 				b_read = *pread_byte == 0 ? false : TRUE;
 			}
@@ -1797,13 +1805,13 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					    MESSAGE_PROPERTIES_TABLE, message_id, ptable->cpid,
 					    pdb->psqlite, propvals[i].proptag & ~MV_INSTANCE,
 					    &propvals[i].pvalue))
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 				} else {
 					if (FALSE == common_util_get_property(
 						MESSAGE_PROPERTIES_TABLE, message_id,
 						ptable->cpid, pdb->psqlite, propvals[i].proptag,
 						&propvals[i].pvalue)) {
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 				}
 			}
@@ -1837,7 +1845,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						multi_num = ((BINARY_ARRAY*)pmultival)->count;
 						break;
 					default:
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 					if (0 == multi_num) {
 						pmultival = NULL;
@@ -2003,7 +2011,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						&ptable->header_id, &notify_list, &parent_id)) {
 						sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 				}
 				row_id = 0;
@@ -2023,7 +2031,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 							propvals[i].proptag, &pvalue)) {
 							sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-							goto ADD_CONTENT_ROW_FAIL;
+							return;
 						}
 						result = db_engine_compare_propval(
 								ptable->psorts->psort[i].type,
@@ -2069,7 +2077,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					pstmt1, pstmt2, &notify_list, &row_id)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 				parent_id = 0;
 				while (TRUE) {
@@ -2077,7 +2085,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					if (SQLITE_ROW != sqlite3_step(pstmt3)) {
 						sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 					row_id = sqlite3_column_int64(pstmt3, 6);
 					sqlite3_reset(pstmt3);
@@ -2099,7 +2107,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						sql_string, NULL, NULL, NULL)) {
 						sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 					db_engine_append_rowinfo_node(&notify_list, row_id);
 				}
@@ -2113,7 +2121,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				if (SQLITE_ROW != sqlite3_step(pstmt3)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 				parent_id = sqlite3_column_int64(pstmt3, 6);
 				pvalue = common_util_column_sqlite_statement(
@@ -2145,14 +2153,14 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						pstmt4, 1, type, pvalue)) {
 						sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 				}
 				sqlite3_bind_int64(pstmt4, 2, row_id);
 				if (SQLITE_DONE != sqlite3_step(pstmt4)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 				sqlite3_reset(pstmt4);
 				table_sort = ptable->psorts->psort[
@@ -2200,7 +2208,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				if (SQLITE_ROW != sqlite3_step(pstmt3)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 				prev_id1 = sqlite3_column_int64(pstmt3, 2);
 				sqlite3_reset(pstmt3);
@@ -2218,7 +2226,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					if (SQLITE_DONE != sqlite3_step(pstmt2)) {
 						sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 					sqlite3_reset(pstmt2);
 				}
@@ -2227,7 +2235,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				if (SQLITE_DONE != sqlite3_step(pstmt2)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 				sqlite3_reset(pstmt2);
 				sprintf(sql_string, "UPDATE t%u SET prev_id=%lld"
@@ -2237,7 +2245,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					sql_string, NULL, NULL, NULL)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;	
+					return;
 				}
 				if (0 != row_id1) {
 					sqlite3_bind_int64(pstmt2, 1, row_id);
@@ -2245,7 +2253,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					if (SQLITE_DONE != sqlite3_step(pstmt2)) {
 						sqlite3_exec(pdb->tables.psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						goto ADD_CONTENT_ROW_FAIL;
+						return;
 					}
 					sqlite3_reset(pstmt2);
 				}
@@ -2265,7 +2273,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				sql_string, NULL, NULL, NULL)) {
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
-				goto ADD_CONTENT_ROW_FAIL;
+				return;
 			}
 			sprintf(sql_string, "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptable->table_id);
@@ -2273,7 +2281,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (pstmt == nullptr) {
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
-				goto ADD_CONTENT_ROW_FAIL;
+				return;
 			}
 			sprintf(sql_string, "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
@@ -2281,7 +2289,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (pstmt1 == nullptr) {
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
-				goto ADD_CONTENT_ROW_FAIL;
+				return;
 			}
 			idx = 0;
 			sqlite3_bind_int64(pstmt, 1, 0);
@@ -2290,7 +2298,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					ptable->psorts->ccategories, pstmt, pstmt1, &idx)) {
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					goto ADD_CONTENT_ROW_FAIL;
+					return;
 				}
 			}
 			sqlite3_finalize(pstmt);
@@ -2420,13 +2428,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			sqlite3_finalize(pstmt3);
 			pstmt3 = NULL;
 		}
-	}
- ADD_CONTENT_ROW_FAIL:
-	if (NULL != padded_row) {
-		common_util_end_message_optimize();
-	}
-	if (NULL != pstmt4) {
-		sqlite3_finalize(pstmt4);
 	}
 }
 
