@@ -315,7 +315,6 @@ int main(int argc, const char **argv)
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
 	const char *presult;
-	sqlite3_stmt *pstmt;
 	char temp_path[256];
 	char temp_path1[256];
 	struct stat node_stat;
@@ -528,7 +527,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	csql_string = "PRAGMA integrity_check";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, csql_string);
 	if (pstmt == nullptr) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));
