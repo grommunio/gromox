@@ -288,9 +288,7 @@ struct PROPNAME_ARRAY {
 };
 
 struct PROPTAG_ARRAY {
-	union {
-		uint16_t cvalues, count;
-	};
+	uint16_t count;
 	uint32_t *pproptag;
 };
 
