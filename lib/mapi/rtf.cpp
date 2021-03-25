@@ -1422,7 +1422,8 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			plast_node = pword;
 		}
 	}
-	return false;
+	/* incomplete RTF... pretend it's ok */
+	return true;
 }
 
 static bool rtf_starting_body(RTF_READER *preader)
