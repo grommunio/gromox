@@ -5,7 +5,7 @@ AM_CPPFLAGS = -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLA
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_exrpc.la libgromox_mapi.la libgromox_rpc.la
+lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_rpc.ldd libgromox_mapi.ldd
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
