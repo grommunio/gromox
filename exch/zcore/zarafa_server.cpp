@@ -2431,7 +2431,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 					store_object_get_dir(pstore),
 					store_object_get_account_id(pstore),
 					pinfo->cpid, folder_object_get_id(
-					pdst_folder), message_id, FALSE,
+				    psrc_folder), message_id, false,
 					&b_done)) {
 					zarafa_server_put_user_info(pinfo);
 					return ecError;
