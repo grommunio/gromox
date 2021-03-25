@@ -1211,8 +1211,8 @@ static uint64_t common_util_get_folder_message_size(
 	return size;
 }
 
-BOOL common_util_get_folder_type(sqlite3 *psqlite,
-	uint64_t folder_id, uint32_t *pfolder_type)
+BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
+    uint32_t *pfolder_type, const char *dir)
 {
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
@@ -1228,6 +1228,8 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite,
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
+			fprintf(stderr, "W-1299: folder_type of %s:%llxh indeterminate, possible db corruption\n",
+			        dir != nullptr ? dir : "", static_cast<unsigned long long>(folder_id));
 			return FALSE;
 		}
 		*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_TYPE_GENERIC : FOLDER_TYPE_SEARCH;

@@ -165,10 +165,7 @@ BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite);
 
 uint32_t common_util_get_folder_unread_count(
 	sqlite3 *psqlite, uint64_t folder_id);
-
-BOOL common_util_get_folder_type(sqlite3 *psqlite,
-	uint64_t folder_id, uint32_t *pfolder_type);
-
+extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);
 uint64_t common_util_get_folder_parent_fid(
 	sqlite3 *psqlite, uint64_t folder_id);
 

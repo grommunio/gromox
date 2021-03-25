@@ -303,10 +303,8 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	*pb_partial = FALSE;
 	src_val = rop_util_get_gc_value(src_fid);
 	dst_val = rop_util_get_gc_value(dst_fid);
-	if (FALSE == common_util_get_folder_type(
-		pdb->psqlite, src_val, &folder_type)) {
+	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type, dir))
 		return FALSE;
-	}
 	if (TRUE == b_guest) {
 		if (FOLDER_TYPE_SEARCH != folder_type) {
 			if (FALSE == common_util_check_folder_permission(
