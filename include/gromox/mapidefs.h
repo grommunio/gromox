@@ -187,9 +187,7 @@ struct BINARY {
 };
 
 struct BINARY_ARRAY {
-	union {
-		uint32_t count, cvalues;
-	};
+	uint32_t count;
 	BINARY *pbin;
 };
 

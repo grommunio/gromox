@@ -2619,7 +2619,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			double_list_append_as_tail(&tmp_list, pnode);
 		}
 	}
-	for (size_t i = 0; i < pentry_ids->cvalues; ++i) {
+	for (size_t i = 0; i < pentry_ids->count; ++i) {
 		if (pentry_ids->pbin[i].cb < 32) {
 			continue;
 		}
