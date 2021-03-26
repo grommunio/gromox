@@ -1,3 +1,20 @@
+0.18 (2021-03-26)
+=================
+Changes:
+* http: Split some unspecific HTTP 500 errors into 500, 502, 503, 504.
+* http: Incomplete RTF documents are now decoded rather than "Not Found"
+  being emitted.
+* mod_cache: added the /web path to the built-in defaults
+* mod_fastcgi: fix php-fpm yielding Not Found for /web
+* mod_fastcgi: changed the underlying path of the built-in rule for
+  /web to /usr/share/grammm-web
+* The systemd .target units were removed
+Fixes:
+* zcore: moving mails between two stores had erroneously used the
+  old mail folder's id for deletion and failed.
+* daemons: Fix a crash when programs shut down before entering the mainloop.
+
+
 0.17 (2021-03-06)
 =================
 Enhancements:
