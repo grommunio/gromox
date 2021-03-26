@@ -468,123 +468,61 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run service\n");
 		return 3;
 	}
-	
+	auto cl_0 = make_scope_exit(service_stop);
 	if (0 != system_services_run()) {
 		printf("[system]: failed to run system services\n");
 		return 4;
 	}
+	auto cl_1 = make_scope_exit(system_services_stop);
 	if (common_util_run(data_path) != 0) {
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run common util\n");
 		return 5;
 	}
+	auto cl_2 = make_scope_exit(common_util_stop);
 	if (bounce_producer_run(data_path) != 0) {
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run bounce producer\n");
 		return 6;
 	}
-	
+	auto cl_3 = make_scope_exit(bounce_producer_stop);
 	if (0 != msgchg_grouping_run()) {
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run msgchg grouping\n");
 		return 7;
 	}
-	
+	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
 	if (0 != ab_tree_run()) {
-		msgchg_grouping_stop();
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run address book tree\n");
 		return 8;
 	}
-	
+	auto cl_5 = make_scope_exit(ab_tree_stop);
 	if (0 != rpc_parser_run()) {
-		ab_tree_stop();
-		msgchg_grouping_stop();
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run rpc parser\n");
 		return 9;
 	}
-
+	auto cl_6 = make_scope_exit(rpc_parser_stop);
 	if (0 != zarafa_server_run()) {
-		rpc_parser_stop();
-		ab_tree_stop();
-		msgchg_grouping_stop();
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run zarafa server\n");
 		return 10;
 	}
+	auto cl_7 = make_scope_exit(zarafa_server_stop);
 	if (exmdb_client_run(config_path) != 0) {
-		zarafa_server_stop();
-		rpc_parser_stop();
-		ab_tree_stop();
-		msgchg_grouping_stop();
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run exmdb client\n");
 		return 11;
 	}
-	
+	auto cl_8 = make_scope_exit(exmdb_client_stop);
 	if (0 != console_server_run()) {
-		exmdb_client_stop();
-		zarafa_server_stop();
-		rpc_parser_stop();
-		ab_tree_stop();
-		msgchg_grouping_stop();
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run console server\n");
 		return 12;
 	}
-	
+	auto cl_9 = make_scope_exit(console_server_stop);
 	if (listener_run(CS_PATH) != 0) {
-		console_server_stop();
-		exmdb_client_stop();
-		zarafa_server_stop();
-		rpc_parser_stop();
-		ab_tree_stop();
-		msgchg_grouping_stop();
-		bounce_producer_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run listener\n");
 		return 13;
 	}
-	
+	auto cl_10 = make_scope_exit(listener_stop);
 	signal(SIGTERM, term_handler);
 	printf("[system]: zcore is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}
-	listener_stop();
-	console_server_stop();
-	exmdb_client_stop();
-	rpc_parser_stop();
-	zarafa_server_stop();
-	ab_tree_stop();
-	msgchg_grouping_stop();
-	bounce_producer_stop();
-	common_util_stop();
-	system_services_stop();
-	service_stop();
 	return 0;
 }
