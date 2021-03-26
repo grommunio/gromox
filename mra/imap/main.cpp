@@ -75,8 +75,14 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	signal(SIGPIPE, SIG_IGN);
-	signal(SIGTERM, term_handler);
+	struct sigaction sact{};
+	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = SIG_IGN;
+	sact.sa_flags   = SA_RESTART;
+	sigaction(SIGPIPE, &sact, nullptr);
+	sact.sa_handler = term_handler;
+	sact.sa_flags   = SA_RESETHAND;
+	sigaction(SIGTERM, &sact, nullptr);
 	g_config_file = config_file_prg(opt_config_file, "imap.cfg");
 	if (opt_config_file != nullptr && g_config_file == nullptr) {
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));

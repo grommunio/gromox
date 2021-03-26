@@ -105,7 +105,11 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	signal(SIGPIPE, SIG_IGN);
+	struct sigaction sact{};
+	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = SIG_IGN;
+	sact.sa_flags   = SA_RESTART;
+	sigaction(SIGPIPE, &sact, nullptr);
 	g_config_file = pconfig = config_file_prg(opt_config_file, "zcore.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
@@ -519,7 +523,9 @@ int main(int argc, const char **argv)
 		return 13;
 	}
 	auto cl_10 = make_scope_exit(listener_stop);
-	signal(SIGTERM, term_handler);
+	sact.sa_handler = term_handler;
+	sact.sa_flags   = SA_RESETHAND;
+	sigaction(SIGTERM, &sact, nullptr);
 	printf("[system]: zcore is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);

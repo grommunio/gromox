@@ -132,8 +132,11 @@ int main(int argc, const char **argv)
 	}
 	
 	printf("[system]: ADAPTOR is now running\n");
-	
-	signal(SIGTERM, term_handler);
+	struct sigaction sact{};
+	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = term_handler;
+	sact.sa_flags   = SA_RESETHAND;
+	sigaction(SIGTERM, &sact, nullptr);
 	while (TRUE != g_notify_stop) {
 		sleep(1);
 	}
