@@ -374,93 +374,51 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run service\n");
 		return 3;
 	}
-	
+	auto cl_0 = make_scope_exit(service_stop);
 	if (0 != system_services_run()) {
 		printf("[system]: failed to run system services\n");
 		return 4;
 	}
-	
+	auto cl_1 = make_scope_exit(system_services_stop);
 	if (0 != common_util_run()) {
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run common util\n");
 		return 5;
 	}
+	auto cl_2 = make_scope_exit(common_util_stop);
 	if (listener_run(config_path) != 0) {
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run tcp listener\n");
 		return 6;
 	}
-
+	auto cl_3 = make_scope_exit(listener_stop);
 	if (0 != cmd_parser_run()) {
-		listener_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run command parser\n");
 		return 7;
 	}
-
+	auto cl_4 = make_scope_exit(cmd_parser_stop);
 	if (0 != mail_engine_run()) {
-		cmd_parser_stop();
-		listener_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run mail engine\n");
 		return 8;
 	}
+	auto cl_5 = make_scope_exit(mail_engine_stop);
 	if (exmdb_client_run(config_path) != 0) {
-		mail_engine_stop();
-		cmd_parser_stop();
-		listener_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run exmdb client\n");
 		return 9;
 	}
-
-	
+	auto cl_6 = make_scope_exit(exmdb_client_stop);
 	if (0 != console_server_run()) {
-		exmdb_client_stop();
-		mail_engine_stop();
-		cmd_parser_stop();
-		listener_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: failed to run console server\n");
 		return 10;
 	}
-
+	auto cl_7 = make_scope_exit(console_server_stop);
 	if (0 != listener_trigger_accept()) {
-		console_server_stop();
-		exmdb_client_stop();
-		mail_engine_stop();
-		cmd_parser_stop();
-		listener_stop();
-		common_util_stop();
-		system_services_stop();
-		service_stop();
 		printf("[system]: fail to trigger tcp listener\n");
 		return 11;
 	}
-	
+	auto cl_8 = make_scope_exit(listener_stop);
 	signal(SIGTERM, term_handler);
 	printf("[system]: MIDB is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}
-	listener_stop();
-	console_server_stop();
-	cmd_parser_stop();
-	exmdb_client_stop();
-	mail_engine_stop();
-	common_util_stop();
-	system_services_stop();
-	service_stop();
 	return 0;
 }
