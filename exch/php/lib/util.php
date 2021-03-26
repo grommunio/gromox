@@ -208,4 +208,17 @@ function get_mapihttp_supported()
 	return false;
 }
 
+function _log($from, $message, $exit=-1)
+{
+	error_log($from . ": " . $message);
+	if ($exit >= 0) {
+		exit($exit);
+	}
+}
+
+function _log_db($message)
+{
+	_log("gromox-php-db", $message, 0);
+}
+
 ?>
