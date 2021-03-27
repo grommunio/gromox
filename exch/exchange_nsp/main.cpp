@@ -193,6 +193,9 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		ab_tree_stop();
 		return TRUE;
+	case PLUGIN_RELOAD:
+		ab_tree_invalidate_cache();
+		return TRUE;
 	}
 	return TRUE;
 }

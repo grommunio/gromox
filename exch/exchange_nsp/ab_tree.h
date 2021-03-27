@@ -91,4 +91,4 @@ void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length);
 
 int ab_tree_get_guid_base_id(GUID guid);
 extern ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *, unsigned int codepage, unsigned int proptag, PROPERTY_VALUE *);
-
+extern void ab_tree_invalidate_cache();

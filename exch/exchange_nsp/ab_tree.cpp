@@ -1612,3 +1612,11 @@ ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 	}
 	return ecNotFound;
 }
+
+void ab_tree_invalidate_cache()
+{
+	printf("[exchange_nsp]: Invalidating AB caches\n");
+	std::unique_lock bl_hold(g_base_lock);
+	for (auto &[_, base] : g_base_hash)
+		base.load_time = 0;
+}
