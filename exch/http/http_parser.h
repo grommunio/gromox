@@ -134,7 +134,6 @@ void http_parser_init(int context_num, unsigned int timeout,
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern int http_parser_stop();
-extern void http_parser_free();
 int http_parser_get_context_socket(HTTP_CONTEXT *pcontext);
 
 void http_parser_set_context(int context_id);

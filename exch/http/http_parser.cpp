@@ -4,6 +4,7 @@
  */ 
 #include <atomic>
 #include <cerrno>
+#include <mutex>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -60,10 +61,10 @@ static HTTP_CONTEXT *g_context_list;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
-static pthread_mutex_t *g_ssl_mutex_buf;
+static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 static LIB_BUFFER *g_inchannel_allocator;
 static LIB_BUFFER *g_outchannel_allocator;
-static pthread_mutex_t g_vconnection_lock;
+static std::mutex g_vconnection_lock;
 static STR_HASH_TABLE *g_vconnection_hash;
 
 static void http_parser_context_init(HTTP_CONTEXT *pcontext);
@@ -84,9 +85,7 @@ void http_parser_init(int context_num, unsigned int timeout,
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
 	g_support_ssl           = support_ssl;
-	g_ssl_mutex_buf         = NULL;
 	g_async_stop            = FALSE;
-	pthread_mutex_init(&g_vconnection_lock, NULL);
 	
 	if (TRUE == support_ssl) {
 		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
@@ -103,9 +102,9 @@ void http_parser_init(int context_num, unsigned int timeout,
 static void http_parser_ssl_locking(int mode, int n, const char *file, int line)
 {
 	if (mode & CRYPTO_LOCK)
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+		g_ssl_mutex_buf[n].lock();
 	else
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+		g_ssl_mutex_buf[n].unlock();
 }
 
 static void http_parser_ssl_id(CRYPTO_THREADID* id)
@@ -155,13 +154,11 @@ int http_parser_run()
 			ERR_print_errors_fp(stdout);
 			return -4;
 		}
-		g_ssl_mutex_buf = static_cast<decltype(g_ssl_mutex_buf)>(malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t)));
-		if (NULL == g_ssl_mutex_buf) {
+		try {
+			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
+		} catch (const std::bad_alloc &) {
 			printf("[http_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
-		}
-		for (i=0; i<CRYPTO_num_locks(); i++) {
-			pthread_mutex_init(&g_ssl_mutex_buf[i], NULL);
 		}
 		CRYPTO_THREADID_set_callback(http_parser_ssl_id);
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
@@ -250,19 +247,10 @@ int http_parser_stop()
 	if (TRUE == g_support_ssl && NULL != g_ssl_mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
-		for (i=0; i<CRYPTO_num_locks(); i++) {
-			pthread_mutex_destroy(&g_ssl_mutex_buf[i]);
-		}
-		free(g_ssl_mutex_buf);
-		g_ssl_mutex_buf = NULL;
+		g_ssl_mutex_buf.reset();
 	}
 	pthread_key_delete(g_context_key);
     return 0;
-}
-
-void http_parser_free()
-{
-	pthread_mutex_destroy(&g_vconnection_lock);
 }
 
 int http_parser_threads_event_proc(int action)
@@ -288,12 +276,12 @@ static VIRTUAL_CONNECTION* http_parser_get_vconnection(
 	
 	snprintf(tmp_buff, 256, "%s:%d:%s", conn_cookie, port, host);
 	HX_strlower(tmp_buff);
-	pthread_mutex_lock(&g_vconnection_lock);
+	std::unique_lock vhold(g_vconnection_lock);
 	pvconnection = static_cast<decltype(pvconnection)>(str_hash_query(g_vconnection_hash, tmp_buff));
 	if (NULL != pvconnection) {
 		pvconnection->reference ++;
 	}
-	pthread_mutex_unlock(&g_vconnection_lock);
+	vhold.unlock();
 	if (NULL != pvconnection) {
 		pthread_mutex_lock(&pvconnection->lock);
 	}
@@ -306,7 +294,7 @@ static void http_parser_put_vconnection(VIRTUAL_CONNECTION *pvconnection)
 	
 	pthread_mutex_unlock(&pvconnection->lock);
 	pprocessor = NULL;
-	pthread_mutex_lock(&g_vconnection_lock);
+	std::unique_lock vc_hold(g_vconnection_lock);
 	pvconnection->reference --;
 	if (0 == pvconnection->reference &&
 		NULL == pvconnection->pcontext_in &&
@@ -314,7 +302,7 @@ static void http_parser_put_vconnection(VIRTUAL_CONNECTION *pvconnection)
 		pprocessor = pvconnection->pprocessor;
 		str_hash_remove(g_vconnection_hash, pvconnection->hash_key);
 	}
-	pthread_mutex_unlock(&g_vconnection_lock);
+	vc_hold.unlock();
 	if (NULL != pprocessor) {
 		pdu_processor_destroy(pprocessor);
 	}
@@ -2287,16 +2275,16 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 		snprintf(tmp_conn.hash_key, 256, "%s:%d:%s",
 			conn_cookie, pcontext->port, pcontext->host);
 		HX_strlower(tmp_conn.hash_key);
-		pthread_mutex_lock(&g_vconnection_lock);
+		std::unique_lock vc_hold(g_vconnection_lock);
 		if (1 != str_hash_add(g_vconnection_hash,
 			tmp_conn.hash_key, &tmp_conn)) {
-			pthread_mutex_unlock(&g_vconnection_lock);
+			vc_hold.unlock();
 			pdu_processor_destroy(tmp_conn.pprocessor);
 			goto RETRY_QUERY;
 		}
 		pvconnection = static_cast<VIRTUAL_CONNECTION *>(str_hash_query(g_vconnection_hash, tmp_conn.hash_key));
 		pthread_mutex_init(&pvconnection->lock, NULL);
-		pthread_mutex_unlock(&g_vconnection_lock);
+		vc_hold.unlock();
 	} else {
 		if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
 			pvconnection->pcontext_out = pcontext;

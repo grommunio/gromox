@@ -619,7 +619,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run http parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_21 = make_scope_exit(http_parser_free);
 	auto cleanup_22 = make_scope_exit(http_parser_stop);
 
 	contexts_pool_init(http_parser_get_contexts_list(),

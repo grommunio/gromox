@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -81,10 +82,9 @@ static pthread_key_t g_call_key;
 static pthread_key_t g_stack_key;
 static PROC_PLUGIN *g_cur_plugin;
 static DOUBLE_LIST g_plugin_list;
-static pthread_mutex_t g_list_lock;
+static std::mutex g_list_lock, g_async_lock;
 static DOUBLE_LIST g_endpoint_list;
 static bool g_ign_loaderr;
-static pthread_mutex_t g_async_lock;
 static INT_HASH_TABLE *g_async_hash;
 static LIB_BUFFER *g_call_allocator;
 static DOUBLE_LIST g_processor_list;
@@ -180,8 +180,6 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	double_list_init(&g_plugin_list);
 	double_list_init(&g_endpoint_list);
 	double_list_init(&g_processor_list);
-	pthread_mutex_init(&g_list_lock, NULL);
-	pthread_mutex_init(&g_async_lock, NULL);
 }
 
 int pdu_processor_run()
@@ -263,15 +261,14 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 	ASYNC_NODE *pasync_node;
 	
 	while (TRUE) {
-		pthread_mutex_lock(&g_async_lock);
+		std::unique_lock as_hold(g_async_lock);
 		pnode = double_list_pop_front(&pcontext->async_list);
 		if (NULL == pnode) {
-			pthread_mutex_unlock(&g_async_lock);
 			break;
 		}
 		pasync_node = (ASYNC_NODE*)pnode->pdata;
 		int_hash_remove(g_async_hash, pasync_node->async_id);
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		if (NULL != pcontext->pinterface->reclaim) {
 			pcontext->pinterface->reclaim(pasync_node->async_id);
 		}
@@ -386,8 +383,6 @@ void pdu_processor_free()
 	double_list_free(&g_plugin_list);
 	double_list_free(&g_endpoint_list);
 	double_list_free(&g_processor_list);
-	pthread_mutex_destroy(&g_list_lock);
-	pthread_mutex_destroy(&g_async_lock);
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;
 }
@@ -460,9 +455,8 @@ PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port)
 			double_list_init(&pprocessor->auth_list);
 			double_list_init(&pprocessor->fragmented_list);
 			pprocessor->pendpoint = pendpoint;
-			pthread_mutex_lock(&g_list_lock);
+			std::lock_guard li_hold(g_list_lock);
 			double_list_append_as_tail(&g_processor_list, &pprocessor->node);
-			pthread_mutex_unlock(&g_list_lock);
 			return pprocessor;
 		}
 	}
@@ -481,13 +475,12 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	
 	
 	while (TRUE) {
-		pthread_mutex_lock(&g_async_lock);
+		std::unique_lock as_hold(g_async_lock);
 		if (pprocessor->async_num > 0) {
-			pthread_mutex_unlock(&g_async_lock);
+			as_hold.unlock();
 			usleep(100000);
 		} else {
 			pprocessor->async_num = -1;
-			pthread_mutex_unlock(&g_async_lock);
 			break;
 		}
 	}
@@ -525,11 +518,9 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	double_list_free(&pprocessor->fragmented_list);
 	
 	pprocessor->cli_max_recv_frag = 0;
-	
-	pthread_mutex_lock(&g_list_lock);
+	std::unique_lock li_hold(g_list_lock);
 	double_list_remove(&g_processor_list, &pprocessor->node);
-	pthread_mutex_unlock(&g_list_lock);
-	
+	li_hold.unlock();
 	pprocessor->pendpoint = NULL;
 	lib_buffer_put(g_processor_allocator, pprocessor);
 }
@@ -1898,7 +1889,7 @@ static uint32_t pdu_processor_apply_async_id()
 	pasync_node->vconn_port = pcontext->port;
 	strcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie);
 	
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	g_last_async_id ++;
 	async_id = g_last_async_id;
 	if (g_last_async_id >= 0x7FFFFFFF) {
@@ -1906,14 +1897,13 @@ static uint32_t pdu_processor_apply_async_id()
 	}
 	pfake_async = NULL;
 	if (1 != int_hash_add(g_async_hash, async_id, &pfake_async)) {
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		lib_buffer_put(g_async_allocator, pasync_node);
 		return 0;
 	}
 	pasync_node->async_id = async_id;
 	double_list_append_as_tail(&pcall->pcontext->async_list,
 		&pasync_node->node);
-	pthread_mutex_unlock(&g_async_lock);
 	return async_id;
 }
 
@@ -1928,10 +1918,9 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 	if (NULL == pcall) {
 		return;
 	}
-	pthread_mutex_lock(&g_async_lock);
+	std::lock_guard as_hold(g_async_lock);
 	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node || NULL != *ppasync_node) {
-		pthread_mutex_unlock(&g_async_lock);
 		return;
 	}
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
@@ -1942,7 +1931,6 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 			break;
 		}
 	}
-	pthread_mutex_unlock(&g_async_lock);
 }
 
 static void pdu_processor_cancel_async_id(uint32_t async_id)
@@ -1956,10 +1944,9 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 	if (NULL == pcall) {
 		return;
 	}
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node || NULL != *ppasync_node) {
-		pthread_mutex_unlock(&g_async_lock);
 		return;
 	}
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
@@ -1971,7 +1958,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 			break;
 		}
 	}
-	pthread_mutex_unlock(&g_async_lock);
+	as_hold.unlock();
 	if (NULL != pnode) {
 		lib_buffer_put(g_async_allocator, pasync_node);
 	}
@@ -1985,13 +1972,12 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 	ASYNC_NODE **ppasync_node;
 	
  BUILD_BEGIN:
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node) {
-		pthread_mutex_unlock(&g_async_lock);
 		return FALSE;
 	} else if (NULL == *ppasync_node) {
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		usleep(10000);
 		goto BUILD_BEGIN;
 	}
@@ -1999,7 +1985,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 	/* remove from async hash table to forbidden
 		cancel pdu while async replying */
 	int_hash_remove(g_async_hash, async_id);
-	pthread_mutex_unlock(&g_async_lock);
+	as_hold.unlock();
 	pthread_setspecific(g_call_key,
 			(const void*)pasync_node->pcall);
 	pthread_setspecific(g_stack_key,
@@ -2043,7 +2029,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	if (NULL == pcall) {
 		return;
 	}
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
 		pasync_node = (ASYNC_NODE*)pnode->pdata;
@@ -2054,31 +2040,30 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	if (NULL != pnode) {
 		double_list_remove(&pcall->pcontext->async_list, pnode);
 	} else {
-		pthread_mutex_unlock(&g_async_lock);
 		return;
 	}
 	if (pcall->pprocessor->async_num < 0 ||
 		TRUE == pasync_node->b_cancelled) {
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
 		lib_buffer_put(g_async_allocator, pasync_node);
 		return;
 	}
 	pcall->pprocessor->async_num ++;
-	pthread_mutex_unlock(&g_async_lock);
+	as_hold.unlock();
 	/* stack root will be freed in pdu_processor_reply_request */
 	if (TRUE == pdu_processor_reply_request(pcall, pasync_node->pstack_root, pout)) {
-		pthread_mutex_lock(&g_async_lock);
+		as_hold.lock();
 		pcall->pprocessor->async_num --;
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		http_parser_vconnection_async_reply(pasync_node->vconn_host,
 			pasync_node->vconn_port, pasync_node->vconn_cookie,
 			pasync_node->pcall);
 	} else {
-		pthread_mutex_lock(&g_async_lock);
+		as_hold.lock();
 		pcall->pprocessor->async_num --;
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 	}
 	pdu_processor_free_call(pasync_node->pcall);
 	lib_buffer_put(g_async_allocator, pasync_node);
@@ -2178,7 +2163,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	
 	async_id = 0;
 	b_cancel = FALSE;
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	plist = &pcall->pprocessor->context_list;
 	for (pnode = double_list_pop_front(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -2201,7 +2186,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 			double_list_remove(&pcontext->async_list, pnode1);
 		}
 	}
-	pthread_mutex_unlock(&g_async_lock);
+	as_hold.unlock();
 	if (TRUE == b_cancel) {
 		if (NULL != pcontext->pinterface->reclaim) {
 			pcontext->pinterface->reclaim(async_id);
