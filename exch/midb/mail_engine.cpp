@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
 #include <atomic>
+#include <chrono>
 #include <climits>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
@@ -19,7 +22,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
 #include "cmd_parser.h"
@@ -132,13 +134,14 @@ struct KEYWORD_ENUM {
 };
 
 struct IDB_ITEM {
+	~IDB_ITEM();
 	sqlite3 *psqlite = nullptr;
 	/* client reference count, item can be flushed into file system only count is 0 */
-	char *username = nullptr;
+	std::string username;
 	time_t last_time = 0, load_time = 0;
 	uint32_t sub_id = 0;
 	std::atomic<int> reference{0};
-	pthread_mutex_t lock{};
+	std::timed_mutex lock;
 };
 
 class IDB_REF {
@@ -196,7 +199,7 @@ struct SUB_NODE {
 static BOOL g_wal;
 static BOOL g_async;
 static int g_mime_num;
-static int g_table_size;              /* hash table size */
+static size_t g_table_size;
 static std::atomic<int> g_sequence_id{0};
 static BOOL g_notify_stop;            /* stop signal for scaning thread */
 static uint64_t g_mmap_size;
@@ -208,7 +211,7 @@ static LIB_BUFFER *g_alloc_mjson;      /* mjson allocator */
 static char g_default_charset[32];
 static char g_default_timezone[64];
 static std::mutex g_hash_lock;
-static STR_HASH_TABLE *g_hash_table;
+static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
 static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string);
 static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist, unsigned int num, unsigned int max_uid);
@@ -2789,16 +2792,16 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	
 	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
-	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
-	if (NULL == pidb) {
+	auto it = g_hash_table.find(htag);
+	if (it == g_hash_table.end())
 		return {};
-	}
+	auto pidb = &it->second;
 	pidb->reference ++;
 	hhold.unlock();
-	pthread_mutex_lock(&pidb->lock);
+	std::unique_lock phold(pidb->lock);
 	if (NULL == pidb->psqlite) {
 		pidb->last_time = 0;
-		pthread_mutex_unlock(&pidb->lock);
+		phold.unlock();
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
@@ -2814,24 +2817,28 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
 	char sql_string[1024];
-	struct timespec timeout_tm;
 	
 	b_load = FALSE;
 	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
-	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
-	if (NULL == pidb) {
-		IDB_ITEM temp_idb;
-		if (1 != str_hash_add(g_hash_table, htag, &temp_idb)) {
-			hhold.unlock();
-			debug_info("[mail_engine]: no room in idb hash table!");
-			return {};
-		}
-		pidb = (IDB_ITEM*)str_hash_query(g_hash_table, htag);
+	if (g_hash_table.size() >= g_table_size) {
+		debug_info("[mail_engine]: W-1295: no room in idb hash table!");
+		return {};
+	}
+	decltype(g_hash_table.try_emplace(htag)) xp;
+	try {
+		xp = g_hash_table.try_emplace(htag);
+	} catch (const std::bad_alloc &) {
+		hhold.unlock();
+		debug_info("[mail_engine]: W-1294: mail_engine_get_idb ENOMEM");
+		return {};
+	}
+	auto pidb = &xp.first->second;
+	if (xp.second) {
 		sprintf(temp_path, "%s/exmdb/midb.sqlite3", path);
 		if (SQLITE_OK != sqlite3_open_v2(temp_path,
 			&pidb->psqlite, SQLITE_OPEN_READWRITE, NULL)) {
-			str_hash_remove(g_hash_table, htag);
+			g_hash_table.erase(xp.first);
 			return {};
 		}
 		sqlite3_exec(pidb->psqlite, "PRAGMA foreign_keys=ON",
@@ -2859,24 +2866,22 @@ static IDB_REF mail_engine_get_idb(const char *path)
 			"configurations WHERE config_id=%u", CONFIG_ID_USERNAME);
 		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_close(pidb->psqlite);
-			str_hash_remove(g_hash_table, htag);
+			g_hash_table.erase(xp.first);
 			return {};
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
-			sqlite3_close(pidb->psqlite);
-			str_hash_remove(g_hash_table, htag);
+			g_hash_table.erase(xp.first);
 			return {};
 		}
-		pidb->username = strdup(S2A(sqlite3_column_text(pstmt, 0)));
+		try {
+			pidb->username = S2A(sqlite3_column_text(pstmt, 0));
+		} catch (const std::bad_alloc &) {
+			sqlite3_finalize(pstmt);
+			g_hash_table.erase(xp.first);
+			return {};
+		}
 		sqlite3_finalize(pstmt);
-		if (NULL == pidb->username) {
-			sqlite3_close(pidb->psqlite);
-			str_hash_remove(g_hash_table, htag);
-			return {};
-		}
-		pthread_mutex_init(&pidb->lock, NULL);
 		b_load = TRUE;
 	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
 		hhold.unlock();
@@ -2885,9 +2890,7 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	}
 	pidb->reference ++;
 	hhold.unlock();
-	clock_gettime(CLOCK_REALTIME, &timeout_tm);
-    timeout_tm.tv_sec += DB_LOCK_TIMEOUT;
-	if (0 != pthread_mutex_timedlock(&pidb->lock, &timeout_tm)) {
+	if (!pidb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
@@ -2898,7 +2901,7 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	} else {
 		if (NULL == pidb->psqlite) {
 			pidb->last_time = 0;
-			pthread_mutex_unlock(&pidb->lock);
+			pidb->lock.unlock();
 			hhold.lock();
 			pidb->reference --;
 			hhold.unlock();
@@ -2913,21 +2916,16 @@ void IDB_REF::put()
 	if (pidb == nullptr)
 		return;
 	time(&pidb->last_time);
-	pthread_mutex_unlock(&pidb->lock);
+	pidb->lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pidb->reference --;
 	pidb = nullptr;
 }
 
-static void mail_engine_free_idb(IDB_ITEM *pidb)
+IDB_ITEM::~IDB_ITEM()
 {
-	pthread_mutex_destroy(&pidb->lock);
-	if (NULL != pidb->username) {
-		free(pidb->username);
-	}
-	if (NULL != pidb->psqlite) {
-		sqlite3_close(pidb->psqlite);
-	}
+	if (psqlite != nullptr)
+		sqlite3_close(psqlite);
 }
 
 static void *scan_work_func(void *param)
@@ -2937,7 +2935,6 @@ static void *scan_work_func(void *param)
 	char htag[256];
 	SUB_NODE *psub;
 	time_t now_time;
-	STR_HASH_ITER *iter;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 
@@ -2951,14 +2948,17 @@ static void *scan_work_func(void *param)
 		}
 		count = 0;
 		std::unique_lock hhold(g_hash_lock);
-		iter = str_hash_iter_init(g_hash_table);
-		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			auto pidb = static_cast<IDB_ITEM *>(str_hash_iter_get_value(iter, htag));
+		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
+			auto pidb = &it->second;
 			time(&now_time);
-			if (0 == pidb->reference && (0 == pidb->sub_id ||
-				now_time - pidb->last_time > g_cache_interval ||
-				now_time - pidb->load_time > RELOAD_INTERVAL)) {
+			bool clean = pidb->reference == 0 &&
+			             (pidb->sub_id == 0 ||
+			              now_time - pidb->last_time > g_cache_interval ||
+			              now_time - pidb->load_time > RELOAD_INTERVAL);
+			if (!clean) {
+				++it;
+				continue;
+			}
 				swap_string(path, htag);
 				if (0 != pidb->sub_id) {
 					psub = me_alloc<SUB_NODE>();
@@ -2970,11 +2970,8 @@ static void *scan_work_func(void *param)
 							&temp_list, &psub->node);
 					}
 				}
-				mail_engine_free_idb(pidb);
-				str_hash_iter_remove(iter);
-			}
+			it = g_hash_table.erase(it);
 		}
-		str_hash_iter_free(iter);
 		hhold.unlock();
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			psub = (SUB_NODE*)pnode->pdata;
@@ -2987,19 +2984,15 @@ static void *scan_work_func(void *param)
 		}
 	}
 	std::unique_lock hhold(g_hash_lock);
-	iter = str_hash_iter_init(g_hash_table);
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		auto pidb = static_cast<IDB_ITEM *>(str_hash_iter_get_value(iter, htag));
+	for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
+		auto pidb = &it->second;
 		swap_string(path, htag);
 		if (0 != pidb->sub_id) {
 			exmdb_client::unsubscribe_notification(
 								path, pidb->sub_id);
 		}
-		mail_engine_free_idb(pidb);
-		str_hash_iter_remove(iter);
+		it = g_hash_table.erase(it);
 	}
-	str_hash_iter_free(iter);
 	hhold.unlock();
 	double_list_free(&temp_list);
 	return nullptr;
@@ -3086,28 +3079,31 @@ static int mail_engine_mfree(int argc, char **argv, int sockd)
 	}
 	swap_string(htag, argv[1]);
 	std::unique_lock hhold(g_hash_lock);
-	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
-	if (NULL == pidb) {
-		IDB_ITEM temp_idb;
-		temp_idb.last_time = time(NULL) + g_cache_interval - 10;
-		str_hash_add(g_hash_table, htag, &temp_idb);
+	decltype(g_hash_table.try_emplace(htag)) xp;
+	try {
+		xp = g_hash_table.try_emplace(htag);
+	} catch (const std::bad_alloc &) {
+		hhold.unlock();
+		write(sockd, "TRUE\r\n", 6);
+		return 0;
+	}
+	auto pidb = &xp.first->second;
+	if (xp.second) {
+		pidb->last_time = time(nullptr) + g_cache_interval - 10;
 		hhold.unlock();
 		write(sockd, "TRUE\r\n", 6);
 		return 0;
 	}
 	pidb->reference ++;
 	hhold.unlock();
-	pthread_mutex_lock(&pidb->lock);
-	if (NULL != pidb->username) {
-		free(pidb->username);
-		pidb->username = NULL;
-	}
+	std::unique_lock phold(pidb->lock);
+	pidb->username.clear();
 	if (NULL != pidb->psqlite) {
 		sqlite3_close(pidb->psqlite);
 		pidb->psqlite = NULL;
 	}
 	pidb->last_time = time(NULL) - g_cache_interval - 10;
-	pthread_mutex_unlock(&pidb->lock);
+	phold.unlock();
 	hhold.lock();
 	pidb->reference --;
 	hhold.unlock();
@@ -3645,7 +3641,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	char charset[32];
 	uint8_t b_unsent;
 	char timezone[64];
-	char username[256];
 	uint32_t tmp_flags;
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
@@ -3728,23 +3723,21 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		free(pbuff);
 		return 3;
 	}
-	if (FALSE == system_services_get_id_from_username(
-		pidb->username, &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
 		pidb.put();
 		mail_free(&imail);
 		free(pbuff);
 		return 4;
 	}
-	if (FALSE == system_services_get_user_lang(
-		pidb->username, lang) || '\0' == lang[0] ||
+	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
+	    lang[0] == '\0' ||
 		FALSE == system_services_lang_to_charset(
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
 	}
-	if (FALSE == system_services_get_timezone(
-		pidb->username, timezone) || '\0' == timezone[0]) {
+	if (!system_services_get_timezone(pidb->username.c_str(), timezone) ||
+	    timezone[0] == '\0')
 		strcpy(timezone, g_default_timezone);
-	}
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
 	           common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
@@ -3792,7 +3785,14 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return 4;
 	}
 	sqlite3_finalize(pstmt);
-	strcpy(username, pidb->username);
+	std::string username;
+	try {
+		username = pidb->username;
+	} catch (const std::bad_alloc &) {
+		pidb.put();
+		message_content_free(pmsgctnt);
+		return 4;
+	}
 	pidb.put();
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = &message_id;
@@ -3831,7 +3831,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		cpid = 1252;
 	}
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client::write_message(argv[1], username, cpid,
+	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
 	    e_result != GXERR_SUCCESS) {
 		message_content_free(pmsgctnt);
@@ -3867,10 +3867,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	if (0 == folder_id) {
 		return 3;
 	}
-	if (FALSE == system_services_get_id_from_username(
-		pidb->username, &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return 4;
-	}
 	sprintf(sql_string, "SELECT message_id,"
 		" folder_id FROM messages WHERE mid_string=?");
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -4069,10 +4067,8 @@ static int mail_engine_mmove(int argc, char **argv, int sockd)
 	if (NULL == pidb) {
 		return 2;
 	}
-	if (FALSE == system_services_get_id_from_username(
-		pidb->username, &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return 4;
-	}
 	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		return 3;
@@ -4124,7 +4120,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	char charset[32];
 	uint8_t b_unsent;
 	char timezone[64];
-	char username[256];
 	uint32_t tmp_flags;
 	sqlite3_stmt *pstmt;
 	char flags_buff[16];
@@ -4231,23 +4226,21 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	nt_time = sqlite3_column_int64(pstmt, 10);
 	sqlite3_finalize(pstmt);
-	if (FALSE == system_services_get_id_from_username(
-		pidb->username, &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
 		pidb.put();
 		mail_free(&imail);
 		free(pbuff);
 		return 4;
 	}
-	if (FALSE == system_services_get_user_lang(
-		pidb->username, lang) || '\0' == lang[0] ||
+	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
+	    lang[0] == '\0' ||
 		FALSE == system_services_lang_to_charset(
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
 	}
-	if (FALSE == system_services_get_timezone(
-		pidb->username, timezone) || '\0' == timezone[0]) {
+	if (!system_services_get_timezone(pidb->username.c_str(),
+	    timezone) || timezone[0] == '\0')
 		strcpy(timezone, g_default_timezone);
-	}
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
 	           common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
@@ -4302,7 +4295,14 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return 4;
 	}
 	sqlite3_finalize(pstmt);
-	strcpy(username, pidb->username);
+	std::string username;
+	try {
+		username = pidb->username;
+	} catch (const std::bad_alloc &) {
+		pidb.put();
+		message_content_free(pmsgctnt);
+		return 4;
+	}
 	pidb.put();
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = &message_id;
@@ -4341,7 +4341,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		cpid = 1252;
 	}
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client::write_message(argv[1], username, cpid,
+	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
 	    e_result != GXERR_SUCCESS) {
 		message_content_free(pmsgctnt);
@@ -4398,10 +4398,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (NULL == pidb) {
 		return 2;
 	}
-	if (FALSE == system_services_get_id_from_username(
-		pidb->username, &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return 4;
-	}
 	sprintf(sql_string, "SELECT folder_id,"
 			" parent_fid FROM folders WHERE name=?");
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -4539,10 +4537,8 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (NULL == pidb) {
 		return 2;
 	}
-	if (FALSE == system_services_get_id_from_username(
-		pidb->username, &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return 4;
-	}
 	if (0 != mail_engine_get_folder_id(pidb, argv[2])) {
 		return 7;
 	}
@@ -6666,7 +6662,7 @@ static void mail_engine_notification_proc(const char *dir,
 			break;
 		}
 		snprintf(temp_buff, 1280, "FOLDER-TOUCH %s %s",
-		         pidb->username, S2A(sqlite3_column_text(pstmt, 0)));
+		         pidb->username.c_str(), S2A(sqlite3_column_text(pstmt, 0)));
 		sqlite3_finalize(pstmt);
 		system_services_broadcast_event(temp_buff);
 		break;
@@ -6760,7 +6756,7 @@ static void mail_engine_notification_proc(const char *dir,
 
 void mail_engine_init(const char *default_charset,
 	const char *default_timezone, const char *org_name,
-	int table_size, BOOL b_async, BOOL b_wal,
+	size_t table_size, BOOL b_async, BOOL b_wal,
 	uint64_t mmap_size, int cache_interval, int mime_num)
 {
 	g_sequence_id = 0;
@@ -6793,21 +6789,14 @@ int mail_engine_run()
 		printf("[mail_engine]: Failed to init oxcmail library\n");
 		return -1;
 	}
-	g_hash_table = str_hash_init(g_table_size, sizeof(IDB_ITEM), NULL);
-	if (NULL == g_hash_table) {
-		printf("[mail_engine]: Failed to init hash table\n");
-		return -2;
-	}
 	g_mime_pool = mime_pool_init(g_mime_num, FILENUM_PER_MIME, TRUE);
 	if (NULL == g_mime_pool) {
-		str_hash_free(g_hash_table);
 		printf("[mail_engine]: Failed to init MIME pool\n");
 		return -3;
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size*10, TRUE);
 	if (NULL == g_alloc_mjson) {
 		mime_pool_free(g_mime_pool);
-		str_hash_free(g_hash_table);
 		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
 		return -4;
 	}
@@ -6815,7 +6804,6 @@ int mail_engine_run()
 	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		mime_pool_free(g_mime_pool);
-		str_hash_free(g_hash_table);
 		lib_buffer_free(g_alloc_mjson);
 		printf("[mail_engine]: failed to create scan thread: %s\n", strerror(ret));
 		return -5;
@@ -6863,7 +6851,7 @@ int mail_engine_stop()
 {
 	g_notify_stop = TRUE;
 	pthread_join(g_scan_tid, NULL);
-	str_hash_free(g_hash_table);
+	g_hash_table.clear();
 	mime_pool_free(g_mime_pool);
 	lib_buffer_free(g_alloc_mjson);
 	return 0;
@@ -6873,9 +6861,8 @@ int mail_engine_get_param(int param)
 {
 	switch (param) {
 	case MIDB_TABLE_SIZE:
-		return g_table_size;
 	case MIDB_TABLE_USED:
-		return g_hash_table->item_num;
+		return g_hash_table.size();
 	default:
 		return -1;
 	}
