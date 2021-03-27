@@ -127,10 +127,7 @@ struct RPC_OUT_CHANNEL {
 	int					channel_stat;
 };
 
-void http_parser_init(int context_num, unsigned int timeout,
-	int max_auth_times, int block_auth_fail, BOOL support_ssl,
-	const char *certificate_path, const char *cb_passwd,
-	const char *key_path);
+extern void http_parser_init(size_t context_num, unsigned int timeout, int max_auth_times, int block_auth_fail, BOOL support_ssl, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern int http_parser_stop();

@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021 grammm GmbH
+// This file is part of Gromox.
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
  */ 
 #include <atomic>
+#include <cassert>
 #include <cerrno>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -12,7 +17,6 @@
 #include <gromox/util.hpp>
 #include "pdu_ndr.h"
 #include "resource.h"
-#include <gromox/str_hash.hpp>
 #include "mod_cache.h"
 #include <gromox/mail_func.hpp>
 #include <gromox/lib_buffer.hpp>
@@ -38,19 +42,22 @@
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
 
 struct VIRTUAL_CONNECTION {
-	char hash_key[256];
-	std::atomic<int> reference;
-	pthread_mutex_t lock;
-	PDU_PROCESSOR *pprocessor;
-	HTTP_CONTEXT  *pcontext_in;
-	HTTP_CONTEXT  *pcontext_insucc;
-	HTTP_CONTEXT  *pcontext_out;
-	HTTP_CONTEXT  *pcontext_outsucc;
+	~VIRTUAL_CONNECTION();
+	std::atomic<int> reference{0};
+	std::mutex lock;
+	bool locked = false;
+	PDU_PROCESSOR *pprocessor = nullptr;
+	HTTP_CONTEXT *pcontext_in = nullptr, *pcontext_insucc = nullptr;
+	HTTP_CONTEXT *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
 };
+
+static std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
 
 class VCONN_REF {
 	public:
-	explicit VCONN_REF(VIRTUAL_CONNECTION *p) : pvconnection(p) {}
+	VCONN_REF() = default;
+	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(g_vconnection_hash)::iterator i) :
+		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
 	VCONN_REF(VCONN_REF &&) = delete;
 	~VCONN_REF() { put(); }
 	void operator=(VCONN_REF &&) = delete;
@@ -59,9 +66,11 @@ class VCONN_REF {
 	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
 	private:
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
+	std::unique_lock<std::mutex> m_hold;
+	decltype(g_vconnection_hash)::iterator m_iter;
 };
 
-static int g_context_num;
+static size_t g_context_num;
 static BOOL g_async_stop;
 static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
@@ -78,7 +87,6 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 static LIB_BUFFER *g_inchannel_allocator;
 static LIB_BUFFER *g_outchannel_allocator;
 static std::mutex g_vconnection_lock;
-static STR_HASH_TABLE *g_vconnection_hash;
 
 static void http_parser_context_init(HTTP_CONTEXT *pcontext);
 
@@ -88,7 +96,7 @@ static void http_parser_context_free(HTTP_CONTEXT *pcontext);
 
 static void http_parser_request_clear(HTTP_REQUEST *prequest);
 
-void http_parser_init(int context_num, unsigned int timeout,
+void http_parser_init(size_t context_num, unsigned int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path)
@@ -126,6 +134,12 @@ static void http_parser_ssl_id(CRYPTO_THREADID* id)
 }
 #endif
 
+VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
+{
+	if (pprocessor != nullptr)
+		pdu_processor_destroy(pprocessor);
+}
+
 /* 
  * run the http parser module
  *    @return
@@ -134,8 +148,6 @@ static void http_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int http_parser_run()
 {
-    int i;
-	
 	pthread_key_create(&g_context_key, NULL);
 	if (TRUE == g_support_ssl) {
 		SSL_library_init();
@@ -182,12 +194,6 @@ int http_parser_run()
 		printf("[http_parser]: Failed to init mem file allocator\n");
 		return -6;
 	}
-	g_vconnection_hash = str_hash_init(g_context_num + 1,
-						sizeof(VIRTUAL_CONNECTION), NULL);
-	if (NULL == g_vconnection_hash) {
-		printf("[http_parser]: Failed to init select hash table\n");
-		return -7;
-	}
 	g_context_list = static_cast<HTTP_CONTEXT *>(malloc(sizeof(HTTP_CONTEXT) * g_context_num));
     if (NULL== g_context_list) {
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
@@ -203,9 +209,8 @@ int http_parser_run()
 	if (NULL == g_outchannel_allocator) {
 		return -10;
 	}
-    for (i=0; i<g_context_num; i++) {
-        http_parser_context_init(g_context_list + i);
-    }
+	for (size_t i = 0; i < g_context_num; ++i)
+		http_parser_context_init(g_context_list + i);
     return 0;
 }
 
@@ -217,10 +222,6 @@ int http_parser_run()
  */
 int http_parser_stop()
 {
-	int i;
-	STR_HASH_ITER *iter;
-	VIRTUAL_CONNECTION *pvconnection;
-	
 	if (NULL != g_inchannel_allocator) {
 		lib_buffer_free(g_inchannel_allocator);
 		g_inchannel_allocator = NULL;
@@ -230,25 +231,12 @@ int http_parser_stop()
 		g_outchannel_allocator = NULL;
 	}
 	if (NULL != g_context_list) {
-		for (i=0; i<g_context_num; i++) {
+		for (size_t i = 0; i < g_context_num; ++i)
 			http_parser_context_free(g_context_list + i);
-		}
 		free(g_context_list);
 		g_context_list = NULL;
 	}
-	if (NULL != g_vconnection_hash) {
-		iter = str_hash_iter_init(g_vconnection_hash);
-		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			pvconnection = static_cast<decltype(pvconnection)>(str_hash_iter_get_value(iter, nullptr));
-			if (NULL != pvconnection->pprocessor) {
-				pdu_processor_destroy(pvconnection->pprocessor);
-			}
-		}
-		str_hash_iter_free(iter);
-		str_hash_free(g_vconnection_hash);
-		g_vconnection_hash = NULL;
-	}
+	g_vconnection_hash.clear();
 	if (NULL != g_file_allocator) {
 		lib_buffer_free(g_file_allocator);
 		g_file_allocator = NULL;
@@ -285,41 +273,36 @@ static VCONN_REF http_parser_get_vconnection(const char *host,
     int port, const char *conn_cookie)
 {
 	char tmp_buff[256];
-	VIRTUAL_CONNECTION *pvconnection;
+	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	
 	snprintf(tmp_buff, 256, "%s:%d:%s", conn_cookie, port, host);
 	HX_strlower(tmp_buff);
 	std::unique_lock vhold(g_vconnection_lock);
-	pvconnection = static_cast<decltype(pvconnection)>(str_hash_query(g_vconnection_hash, tmp_buff));
+	auto it = g_vconnection_hash.find(tmp_buff);
+	if (it != g_vconnection_hash.end())
+		pvconnection = &it->second;
 	if (NULL != pvconnection) {
 		pvconnection->reference ++;
 	}
 	vhold.unlock();
-	if (NULL != pvconnection) {
-		pthread_mutex_lock(&pvconnection->lock);
-	}
-	return VCONN_REF(pvconnection);
+	if (pvconnection == nullptr)
+		return {};
+	return VCONN_REF(pvconnection, it);
 }
 
 void VCONN_REF::put()
 {
 	if (pvconnection == nullptr)
 		return;
-	PDU_PROCESSOR *pprocessor;
-	
-	pthread_mutex_unlock(&pvconnection->lock);
-	pprocessor = NULL;
+	m_hold.unlock();
 	std::unique_lock vc_hold(g_vconnection_lock);
 	pvconnection->reference --;
 	if (0 == pvconnection->reference &&
 		NULL == pvconnection->pcontext_in &&
 		NULL == pvconnection->pcontext_out) {
-		pprocessor = pvconnection->pprocessor;
-		str_hash_remove(g_vconnection_hash, pvconnection->hash_key);
-	}
-	vc_hold.unlock();
-	if (NULL != pprocessor) {
-		pdu_processor_destroy(pprocessor);
+		auto nd = g_vconnection_hash.extract(m_iter);
+		vc_hold.unlock();
+		/* end locked region before running ~nd (~VCONN_REF, pdu_processor_destroy) */
 	}
 	pvconnection = nullptr;
 }
@@ -2238,7 +2221,6 @@ bool http_parser_get_password(const char *username, char *password)
 BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 {
 	const char *conn_cookie;
-	VIRTUAL_CONNECTION tmp_conn;
 	
 	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
 		conn_cookie = ((RPC_IN_CHANNEL*)
@@ -2253,36 +2235,40 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, conn_cookie);
 	if (NULL == pvconnection) {
-		tmp_conn.reference = 0;
-		tmp_conn.pprocessor = pdu_processor_create(
-					pcontext->host, pcontext->port);
-		if (NULL == tmp_conn.pprocessor) {
+		std::unique_lock vc_hold(g_vconnection_lock);
+		if (g_vconnection_hash.size() >= g_context_num + 1) {
+			http_parser_log_info(pcontext, 6, "W-1293: vconn hash full");
+			return false;
+		}
+		char hash_key[256];
+		snprintf(hash_key, GX_ARRAY_SIZE(hash_key), "%s:%hu:%s",
+			conn_cookie, pcontext->port, pcontext->host);
+		HX_strlower(hash_key);
+		decltype(g_vconnection_hash.try_emplace(hash_key)) xp;
+		try {
+			xp = g_vconnection_hash.try_emplace(hash_key);
+		} catch (const std::bad_alloc &) {
+			http_parser_log_info(pcontext, 6, "W-1292: Out of memory\n");
+			return false;
+		}
+		if (!xp.second) {
+			http_parser_log_info(pcontext, 6, "W-1291: vconn suddenly started existing\n");
+			goto RETRY_QUERY;
+		}
+		auto nc = &xp.first->second;
+		nc->pprocessor = pdu_processor_create(pcontext->host, pcontext->port);
+		if (nc->pprocessor == nullptr) {
+			g_vconnection_hash.erase(xp.first);
 			http_parser_log_info(pcontext, 6,
 				"fail to create processor on %s:%d",
 				pcontext->host, pcontext->port);
 			return FALSE;
 		}
 		if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
-			tmp_conn.pcontext_in = NULL;
-			tmp_conn.pcontext_out = pcontext;
+			nc->pcontext_out = pcontext;
 		} else {
-			tmp_conn.pcontext_in = pcontext;
-			tmp_conn.pcontext_out = NULL;
+			nc->pcontext_in = pcontext;
 		}
-		tmp_conn.pcontext_insucc = NULL;
-		tmp_conn.pcontext_outsucc = NULL;
-		snprintf(tmp_conn.hash_key, 256, "%s:%d:%s",
-			conn_cookie, pcontext->port, pcontext->host);
-		HX_strlower(tmp_conn.hash_key);
-		std::unique_lock vc_hold(g_vconnection_lock);
-		if (1 != str_hash_add(g_vconnection_hash,
-			tmp_conn.hash_key, &tmp_conn)) {
-			vc_hold.unlock();
-			pdu_processor_destroy(tmp_conn.pprocessor);
-			goto RETRY_QUERY;
-		}
-		auto nc = static_cast<VIRTUAL_CONNECTION *>(str_hash_query(g_vconnection_hash, tmp_conn.hash_key));
-		pthread_mutex_init(&nc->lock, nullptr);
 		vc_hold.unlock();
 	} else {
 		if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
