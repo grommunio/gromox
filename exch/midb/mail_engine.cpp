@@ -143,7 +143,8 @@ struct IDB_ITEM {
 
 class IDB_REF {
 	public:
-	IDB_REF(IDB_ITEM *p) : pidb(p) {}
+	IDB_REF() = default;
+	explicit IDB_REF(IDB_ITEM *p) : pidb(p) {}
 	IDB_REF(IDB_REF &&) = delete;
 	~IDB_REF() { put(); }
 	void operator=(IDB_REF &&) = delete;
@@ -2782,7 +2783,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	return FALSE;
 }
 
-static IDB_ITEM* mail_engine_peek_idb(const char *path)
+static IDB_REF mail_engine_peek_idb(const char *path)
 {
 	char htag[256];
 	
@@ -2790,7 +2791,7 @@ static IDB_ITEM* mail_engine_peek_idb(const char *path)
 	std::unique_lock hhold(g_hash_lock);
 	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pidb) {
-		return NULL;
+		return {};
 	}
 	pidb->reference ++;
 	hhold.unlock();
@@ -2801,9 +2802,9 @@ static IDB_ITEM* mail_engine_peek_idb(const char *path)
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
-		return NULL;
+		return {};
 	}
-	return pidb;
+	return IDB_REF(pidb);
 }
 
 static IDB_REF mail_engine_get_idb(const char *path)
@@ -2824,14 +2825,14 @@ static IDB_REF mail_engine_get_idb(const char *path)
 		if (1 != str_hash_add(g_hash_table, htag, &temp_idb)) {
 			hhold.unlock();
 			debug_info("[mail_engine]: no room in idb hash table!");
-			return NULL;
+			return {};
 		}
 		pidb = (IDB_ITEM*)str_hash_query(g_hash_table, htag);
 		sprintf(temp_path, "%s/exmdb/midb.sqlite3", path);
 		if (SQLITE_OK != sqlite3_open_v2(temp_path,
 			&pidb->psqlite, SQLITE_OPEN_READWRITE, NULL)) {
 			str_hash_remove(g_hash_table, htag);
-			return NULL;
+			return {};
 		}
 		sqlite3_exec(pidb->psqlite, "PRAGMA foreign_keys=ON",
 			NULL, NULL, NULL);
@@ -2860,27 +2861,27 @@ static IDB_REF mail_engine_get_idb(const char *path)
 		if (pstmt == nullptr) {
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
-			return NULL;
+			return {};
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
-			return NULL;
+			return {};
 		}
 		pidb->username = strdup(S2A(sqlite3_column_text(pstmt, 0)));
 		sqlite3_finalize(pstmt);
 		if (NULL == pidb->username) {
 			sqlite3_close(pidb->psqlite);
 			str_hash_remove(g_hash_table, htag);
-			return NULL;
+			return {};
 		}
 		pthread_mutex_init(&pidb->lock, NULL);
 		b_load = TRUE;
 	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
 		hhold.unlock();
 		debug_info("[mail_engine]: too many threads waiting on %s\n", path);
-		return NULL;
+		return {};
 	}
 	pidb->reference ++;
 	hhold.unlock();
@@ -2890,7 +2891,7 @@ static IDB_REF mail_engine_get_idb(const char *path)
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
-		return NULL;
+		return {};
 	}
 	if (TRUE == b_load) {
 		mail_engine_sync_mailbox(pidb);
@@ -2901,10 +2902,10 @@ static IDB_REF mail_engine_get_idb(const char *path)
 			hhold.lock();
 			pidb->reference --;
 			hhold.unlock();
-			return NULL;
+			return {};
 		}
 	}
-	return pidb;
+	return IDB_REF(pidb);
 }
 
 void IDB_REF::put()
