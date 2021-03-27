@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <mutex>
 #include <new>
 #include <string>
 #include <utility>
@@ -87,9 +88,8 @@ static pthread_t g_scan_id;
 static int g_cache_interval;
 static char g_org_name[256];
 static INT_HASH_TABLE *g_base_hash;
-static pthread_mutex_t g_base_lock;
+static std::mutex g_base_lock, g_remote_lock;
 static LIB_BUFFER *g_file_allocator;
-static pthread_mutex_t g_remote_lock;
 
 static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
 static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
@@ -193,15 +193,13 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 	if (NULL != ppnode) {
 		return *ppnode;
 	}
-	pthread_mutex_lock(&g_remote_lock);
+	std::lock_guard rhold(g_remote_lock);
 	for (psnode=single_list_get_head(&pbase->remote_list); NULL!=psnode;
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
 		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
-			pthread_mutex_unlock(&g_remote_lock);
 			return static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
 		}
 	}
-	pthread_mutex_unlock(&g_remote_lock);
 	return NULL;
 }
 
@@ -212,8 +210,6 @@ void ab_tree_init(const char *org_name, int base_size,
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
-	pthread_mutex_init(&g_base_lock, NULL);
-	pthread_mutex_init(&g_remote_lock, NULL);
 	g_notify_stop = TRUE;
 }
 
@@ -322,12 +318,6 @@ int ab_tree_stop()
 		g_file_allocator = NULL;
 	}
 	return 0;
-}
-
-void ab_tree_free()
-{
-	pthread_mutex_destroy(&g_base_lock);
-	pthread_mutex_destroy(&g_remote_lock);
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
@@ -820,16 +810,15 @@ AB_BASE* ab_tree_get_base(int base_id)
 	
 	count = 0;
  RETRY_LOAD_BASE:
-	pthread_mutex_lock(&g_base_lock);
+	std::unique_lock bhold(g_base_lock);
 	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
 	if (NULL == ppbase) {
 		pbase = (AB_BASE*)malloc(sizeof(AB_BASE));
 		if (NULL == pbase) {
-			pthread_mutex_unlock(&g_base_lock);
 			return NULL;
 		}
 		if (1 != int_hash_add(g_base_hash, base_id, &pbase)) {
-			pthread_mutex_unlock(&g_base_lock);
+			bhold.unlock();
 			free(pbase);
 			return NULL;
 		}
@@ -843,20 +832,20 @@ AB_BASE* ab_tree_get_base(int base_id)
 		single_list_init(&pbase->gal_list);
 		single_list_init(&pbase->remote_list);
 		pbase->phash = NULL;
-		pthread_mutex_unlock(&g_base_lock);
+		bhold.unlock();
 		if (FALSE == ab_tree_load_base(pbase)) {
-			pthread_mutex_lock(&g_base_lock);
+			bhold.lock();
 			int_hash_remove(g_base_hash, base_id);
-			pthread_mutex_unlock(&g_base_lock);
+			bhold.unlock();
 			free(pbase);
 			return NULL;
 		}
 		time(&pbase->load_time);
-		pthread_mutex_lock(&g_base_lock);
+		bhold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
 		if (BASE_STATUS_LIVING != (*ppbase)->status) {
-			pthread_mutex_unlock(&g_base_lock);
+			bhold.unlock();
 			count ++;
 			if (count > 60) {
 				return NULL;
@@ -867,15 +856,13 @@ AB_BASE* ab_tree_get_base(int base_id)
 		pbase = *ppbase;
 	}
 	pbase->reference ++;
-	pthread_mutex_unlock(&g_base_lock);
 	return pbase;
 }
 
 void ab_tree_put_base(AB_BASE *pbase)
 {
-	pthread_mutex_lock(&g_base_lock);
+	std::lock_guard bhold(g_base_lock);
 	pbase->reference --;
-	pthread_mutex_unlock(&g_base_lock);
 }
 
 static void *scan_work_func(void *param)
@@ -887,7 +874,7 @@ static void *scan_work_func(void *param)
 	
 	while (FALSE == g_notify_stop) {
 		pbase = NULL;
-		pthread_mutex_lock(&g_base_lock);
+		std::unique_lock bhold(g_base_lock);
 		iter = int_hash_iter_init(g_base_hash);
 		for (int_hash_iter_begin(iter);
 			FALSE == int_hash_iter_done(iter);
@@ -903,7 +890,7 @@ static void *scan_work_func(void *param)
 			break;
 		}
 		int_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_base_lock);
+		bhold.unlock();
 		if (NULL == pbase) {
 			sleep(1);
 			continue;
@@ -923,15 +910,15 @@ static void *scan_work_func(void *param)
 			pbase->phash = NULL;
 		}
 		if (FALSE == ab_tree_load_base(pbase)) {
-			pthread_mutex_lock(&g_base_lock);
+			bhold.lock();
 			int_hash_remove(g_base_hash, pbase->base_id);
-			pthread_mutex_unlock(&g_base_lock);
+			bhold.unlock();
 			free(pbase);
 		} else {
-			pthread_mutex_lock(&g_base_lock);
+			bhold.lock();
 			time(&pbase->load_time);
 			pbase->status = BASE_STATUS_LIVING;
-			pthread_mutex_unlock(&g_base_lock);
+			bhold.unlock();
 		}
 	}
 	return NULL;
@@ -1214,15 +1201,14 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (NULL != ppnode) {
 		return *ppnode;
 	}
-	pthread_mutex_lock(&g_remote_lock);
+	std::unique_lock rhold(g_remote_lock);
 	for (psnode=single_list_get_head(&pbase->remote_list); NULL!=psnode;
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
 		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
-			pthread_mutex_unlock(&g_remote_lock);
 			return static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
 		}
 	}
-	pthread_mutex_unlock(&g_remote_lock);
+	rhold.unlock();
 	for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
 		psnode=single_list_get_after(&pbase->list, psnode)) {
 		if (((DOMAIN_NODE*)psnode->pdata)->domain_id == domain_id) {
@@ -1262,9 +1248,8 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		return nullptr;
 	}
 	ab_tree_put_base(pbase1);
-	pthread_mutex_lock(&g_remote_lock);
+	rhold.lock();
 	single_list_append_as_tail(&pbase->remote_list, psnode);
-	pthread_mutex_unlock(&g_remote_lock);
 	return (SIMPLE_TREE_NODE*)pabnode;
 }
 
@@ -1576,11 +1561,10 @@ int ab_tree_get_guid_base_id(GUID guid)
 	int base_id;
 	
 	memcpy(&base_id, guid.node, sizeof(int));
-	pthread_mutex_lock(&g_base_lock);
+	std::lock_guard bhold(g_base_lock);
 	if (NULL == int_hash_query(g_base_hash, base_id)) {
 		base_id = 0;
 	}
-	pthread_mutex_unlock(&g_base_lock);
 	return base_id;
 }
 

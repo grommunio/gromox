@@ -192,7 +192,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	}
 	case PLUGIN_FREE:
 		ab_tree_stop();
-		ab_tree_free();
 		return TRUE;
 	}
 	return false;
