@@ -2771,12 +2771,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 
 static IDB_ITEM* mail_engine_peek_idb(const char *path)
 {
-	IDB_ITEM *pidb;
 	char htag[256];
 	
 	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
-	pidb = (IDB_ITEM*)str_hash_query(g_hash_table, htag);
+	auto pidb = static_cast<IDB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pidb) {
 		return NULL;
 	}
@@ -2919,7 +2918,6 @@ static void *scan_work_func(void *param)
 	int count;
 	char path[256];
 	char htag[256];
-	IDB_ITEM *pidb;
 	SUB_NODE *psub;
 	time_t now_time;
 	STR_HASH_ITER *iter;
@@ -2939,7 +2937,7 @@ static void *scan_work_func(void *param)
 		iter = str_hash_iter_init(g_hash_table);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
-			pidb = (IDB_ITEM*)str_hash_iter_get_value(iter, htag);
+			auto pidb = static_cast<IDB_ITEM *>(str_hash_iter_get_value(iter, htag));
 			time(&now_time);
 			if (0 == pidb->reference && (0 == pidb->sub_id ||
 				now_time - pidb->last_time > g_cache_interval ||
@@ -2975,7 +2973,7 @@ static void *scan_work_func(void *param)
 	iter = str_hash_iter_init(g_hash_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		pidb = (IDB_ITEM*)str_hash_iter_get_value(iter, htag);
+		auto pidb = static_cast<IDB_ITEM *>(str_hash_iter_get_value(iter, htag));
 		swap_string(path, htag);
 		if (0 != pidb->sub_id) {
 			exmdb_client::unsubscribe_notification(
@@ -3102,12 +3100,10 @@ static int mail_engine_mfree(int argc, char **argv, int sockd)
 
 static int mail_engine_mping(int argc, char **argv, int sockd)
 {
-	IDB_ITEM *pidb;
-	
 	if (2 != argc || strlen(argv[1]) >= 256) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL != pidb) {
 		mail_engine_put_idb(pidb);
 	}
@@ -3122,7 +3118,6 @@ static int mail_engine_mweml(int argc, char **argv, int sockd)
 	MAIL imail;
 	size_t size;
 	int tmp_len;
-	IDB_ITEM *pidb;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
@@ -3139,7 +3134,7 @@ static int mail_engine_mweml(int argc, char **argv, int sockd)
 		write(sockd, "TRUE\r\n", 6);
 		return 0;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -3211,10 +3206,8 @@ static int mail_engine_mweml(int argc, char **argv, int sockd)
 static int mail_engine_msumy(int argc, char **argv, int sockd)
 {
 	int temp_len;
-	IDB_ITEM *pidb;
 	uint32_t count;
 	uint32_t unread;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	char temp_string[1024];
@@ -3222,11 +3215,11 @@ static int mail_engine_msumy(int argc, char **argv, int sockd)
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -3270,7 +3263,6 @@ static int mail_engine_minfo(int argc, char**argv, int sockd)
 	int count;
 	int offset;
 	int temp_len;
-	IDB_ITEM *pidb;
 	uint32_t unreads;
 	uint64_t folder_id;
 	uint32_t total_mail;
@@ -3283,7 +3275,7 @@ static int mail_engine_minfo(int argc, char**argv, int sockd)
 	if (2 != argc || strlen(argv[1]) >= 256) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -3349,7 +3341,6 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	int count;
 	int offset;
 	int temp_len;
-	IDB_ITEM *pidb;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	char temp_buff[256*1024];
@@ -3357,7 +3348,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	if (2 != argc || strlen(argv[1]) >= 256) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -3398,10 +3389,8 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	int length;
 	int temp_len;
 	int idx1, idx2;
-	IDB_ITEM *pidb;
 	int total_mail;
 	int sort_field;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	char temp_buff[MAX_DIGLEN];
@@ -3448,11 +3437,11 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		offset = 0;
 		length = 0;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -3550,9 +3539,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	int result;
 	int offset;
 	int temp_len;
-	IDB_ITEM *pidb;
 	IDL_NODE *pinode;
-	uint64_t folder_id;
 	char temp_line[512];
 	sqlite3_stmt *pstmt;
 	DOUBLE_LIST tmp_list;
@@ -3563,11 +3550,11 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -3622,19 +3609,17 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 static int mail_engine_mmtch(int argc, char **argv, int sockd)
 {
 	int temp_len;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	uint64_t folder_id1;
 	char temp_buff[MAX_DIGLEN + 7];
 
 	if (4 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -3666,7 +3651,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	BINARY *pbin;
 	char lang[32];
 	uint32_t cpid;
-	IDB_ITEM *pidb;
 	uint8_t b_read;
 	size_t mess_len;
 	uint64_t nt_time;
@@ -3674,7 +3658,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	uint8_t b_unsent;
 	char timezone[64];
 	char username[256];
-	uint64_t folder_id;
 	uint32_t tmp_flags;
 	sqlite3_stmt *pstmt;
 	char temp_path[256];
@@ -3744,13 +3727,13 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	write(fd.get(), temp_buff, tmp_len);
 	fd.close();
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		mail_free(&imail);
 		free(pbuff);
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		mail_free(&imail);
@@ -3877,8 +3860,6 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	int i;
 	int user_id;
 	BOOL b_partial;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	EID_ARRAY message_ids;
@@ -3891,11 +3872,11 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	if (NULL == message_ids.pids) {
 		return 4;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -3936,11 +3917,9 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 static int mail_engine_mupdt(int argc, char **argv, int sockd)
 {
 	int tmp_val;
-	IDB_ITEM *pidb;
 	uint8_t tmp_byte;
 	const char *pext;
 	uint64_t read_cn;
-	uint64_t folder_id;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	uint32_t tmp_proptag;
@@ -3969,11 +3948,11 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 			return 1;
 		}
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -4099,10 +4078,7 @@ static int mail_engine_mupdt(int argc, char **argv, int sockd)
 static int mail_engine_mmove(int argc, char **argv, int sockd)
 {
 	int user_id;
-	IDB_ITEM *pidb;
 	BOOL b_partial;
-	uint64_t folder_id;
-	uint64_t folder_id1;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
@@ -4112,7 +4088,7 @@ static int mail_engine_mmove(int argc, char **argv, int sockd)
 		|| strlen(argv[4]) >= 1024 || 0 == strcmp(argv[2], argv[4])) {
 		return 1;		
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -4121,12 +4097,12 @@ static int mail_engine_mmove(int argc, char **argv, int sockd)
 		mail_engine_put_idb(pidb);
 		return 4;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
 	}
-	folder_id1 = mail_engine_get_folder_id(pidb, argv[4]);
+	auto folder_id1 = mail_engine_get_folder_id(pidb, argv[4]);
 	if (0 == folder_id1) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -4171,7 +4147,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	char lang[32];
 	uint32_t cpid;
 	int flags_len;
-	IDB_ITEM *pidb;
 	uint8_t b_read;
 	uint64_t nt_time;
 	char charset[32];
@@ -4179,8 +4154,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	char timezone[64];
 	char username[256];
 	uint32_t tmp_flags;
-	uint64_t folder_id;
-	uint64_t folder_id1;
 	sqlite3_stmt *pstmt;
 	char flags_buff[16];
 	uint64_t change_num;
@@ -4219,20 +4192,20 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		free(pbuff);
 		return 4;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		mail_free(&imail);
 		free(pbuff);
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		mail_free(&imail);
 		free(pbuff);
 		return 3;
 	}
-	folder_id1 = mail_engine_get_folder_id(pidb, argv[4]);
+	auto folder_id1 = mail_engine_get_folder_id(pidb, argv[4]);
 	if (0 == folder_id1) {
 		mail_engine_put_idb(pidb);
 		mail_free(&imail);
@@ -4419,7 +4392,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	BINARY *pbin1;
 	char *ptoken1;
 	BOOL b_partial;
-	IDB_ITEM *pidb;
 	uint64_t nt_time;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -4451,7 +4423,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (FALSE == decode_hex_binary(argv[3], decoded_name, 512)) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -4586,7 +4558,6 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	int user_id;
 	char *ptoken;
 	char *ptoken1;
-	IDB_ITEM *pidb;
 	uint64_t folder_id1;
 	uint64_t folder_id2;
 	char temp_name[256];
@@ -4599,7 +4570,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (FALSE == decode_hex_binary(argv[2], decoded_name, 512)) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -4663,8 +4634,6 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 {
 	BOOL b_result;
 	BOOL b_partial;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
@@ -4676,11 +4645,11 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 		0 == strcmp(argv[2], "junk")) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		write(sockd, "TRUE\r\n", 6);
@@ -4706,8 +4675,6 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	BOOL b_asc;
 	int temp_len;
 	int sort_field, total_mail = 0;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char temp_buff[1024];
 	char sql_string[1024];
@@ -4743,11 +4710,11 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	} else {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -4802,8 +4769,6 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 {
 	int temp_len;
 	uint32_t uid;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char temp_buff[1024];
 	char sql_string[1024];
@@ -4811,11 +4776,11 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	if (4 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -4847,7 +4812,6 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	BOOL b_asc;
 	int offset;
 	int temp_len;
-	IDB_ITEM *pidb;
 	uint32_t total;
 	uint32_t unreads;
 	uint32_t recents;
@@ -4881,7 +4845,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	} else {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -4969,18 +4933,16 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 
 static int mail_engine_psubf(int argc, char **argv, int sockd)
 {
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	char sql_string[1024];
 
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -4995,18 +4957,16 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 
 static int mail_engine_punsf(int argc, char **argv, int sockd)
 {
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	char sql_string[1024];
 
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5024,7 +4984,6 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	int count;
 	int offset;
 	int temp_len;
-	IDB_ITEM *pidb;
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	char temp_buff[256*1024];
@@ -5032,7 +4991,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	if (2 != argc || strlen(argv[1]) >= 256) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
@@ -5068,10 +5027,8 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	uint32_t uid;
 	int flags_len;
 	int idx1, idx2;
-	IDB_ITEM *pidb;
 	int total_mail;
 	int sort_field;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char flags_buff[16];
 	char temp_line[1024];
@@ -5121,11 +5078,11 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		offset = 0;
 		length = 0;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5260,8 +5217,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	int temp_len;
 	int flags_len, total_mail = 0;
 	int sort_field;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	char flags_buff[16];
 	sqlite3_stmt *pstmt;
 	char temp_line[1024];
@@ -5307,11 +5262,11 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 		(-1 == first && -1 != last) || (-1 != last && last < first)) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5484,9 +5439,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	int buff_len;
 	uint32_t uid;
 	uint32_t idx;
-	IDB_ITEM *pidb;
 	int sort_field;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char temp_line[1024];
 	char sql_string[1024];
@@ -5524,11 +5477,11 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	} else {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5592,8 +5545,6 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	BOOL b_asc;
 	int temp_len, total_mail = 0;
 	int sort_field;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	DTLU_NODE *pdt_node;
 	char sql_string[1024];
@@ -5638,11 +5589,11 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 		(-1 == first && -1 != last) || (-1 != last && last < first)) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5763,9 +5714,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 
 static int mail_engine_psflg(int argc, char **argv, int sockd)
 {
-	IDB_ITEM *pidb;
 	uint64_t read_cn;
-	uint64_t folder_id;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	uint32_t tmp_proptag;
@@ -5778,11 +5727,11 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5864,9 +5813,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 
 static int mail_engine_prflg(int argc, char **argv, int sockd)
 {
-	IDB_ITEM *pidb;
 	uint64_t read_cn;
-	uint64_t folder_id;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	uint32_t tmp_proptag;
@@ -5879,11 +5826,11 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -5967,8 +5914,6 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 {
 	int temp_len;
 	int flags_len;
-	IDB_ITEM *pidb;
-	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
 	char flags_buff[32];
 	char sql_string[256];
@@ -5977,11 +5922,11 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 	if (4 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		return 3;
@@ -6046,10 +5991,8 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	int result;
 	char *parg;
 	int tmp_argc;
-	IDB_ITEM *pidb;
 	sqlite3 *psqlite;
 	size_t decode_len;
-	uint64_t folder_id;
 	char temp_path[256];
 	char* tmp_argv[1024];
 	CONDITION_TREE *ptree;
@@ -6083,12 +6026,12 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	if (NULL == ptree) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		mail_engine_ct_destroy(ptree);
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		mail_engine_ct_destroy(ptree);
@@ -6134,13 +6077,10 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	int result;
 	char *parg;
 	int tmp_argc;
-	IDB_ITEM *pidb;
 	sqlite3 *psqlite;
 	size_t decode_len;
-	uint64_t folder_id;
 	char temp_path[256];
 	char* tmp_argv[1024];
-	CONDITION_TREE *ptree;
 	char tmp_buff[16*1024];
 	char list_buff[256*1024];
 	CONDITION_RESULT *presult;
@@ -6167,16 +6107,16 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	if (0 == tmp_argc) {
 		return 1;
 	}
-	ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
+	auto ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
 	if (NULL == ptree) {
 		return 1;
 	}
-	pidb = mail_engine_get_idb(argv[1]);
+	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		mail_engine_ct_destroy(ptree);
 		return 2;
 	}
-	folder_id = mail_engine_get_folder_id(pidb, argv[2]);
+	auto folder_id = mail_engine_get_folder_id(pidb, argv[2]);
 	if (0 == folder_id) {
 		mail_engine_put_idb(pidb);
 		mail_engine_ct_destroy(ptree);
@@ -6792,7 +6732,6 @@ static void mail_engine_modify_notification_message(
 static void mail_engine_notification_proc(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify)
 {
-	IDB_ITEM *pidb;
 	uint64_t folder_id;
 	uint64_t parent_id;
 	uint64_t message_id;
@@ -6803,7 +6742,7 @@ static void mail_engine_notification_proc(const char *dir,
 	if (TRUE == b_table) {
 		return;
 	}
-	pidb = mail_engine_peek_idb(dir);
+	auto pidb = mail_engine_peek_idb(dir);
 	if (NULL == pidb) {
 		return;
 	}
