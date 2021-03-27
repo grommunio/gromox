@@ -48,6 +48,19 @@ struct VIRTUAL_CONNECTION {
 	HTTP_CONTEXT  *pcontext_outsucc;
 };
 
+class VCONN_REF {
+	public:
+	explicit VCONN_REF(VIRTUAL_CONNECTION *p) : pvconnection(p) {}
+	VCONN_REF(VCONN_REF &&) = delete;
+	~VCONN_REF() { put(); }
+	void operator=(VCONN_REF &&) = delete;
+	void put();
+	operator VIRTUAL_CONNECTION *() { return pvconnection; }
+	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
+	private:
+	VIRTUAL_CONNECTION *pvconnection = nullptr;
+};
+
 static int g_context_num;
 static BOOL g_async_stop;
 static BOOL g_support_ssl;
@@ -268,8 +281,8 @@ struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext)
 	return pcontext->connection.last_timestamp;
 }
 
-static VIRTUAL_CONNECTION* http_parser_get_vconnection(
-	const char *host, int port, const char *conn_cookie)
+static VCONN_REF http_parser_get_vconnection(const char *host,
+    int port, const char *conn_cookie)
 {
 	char tmp_buff[256];
 	VIRTUAL_CONNECTION *pvconnection;
@@ -285,11 +298,13 @@ static VIRTUAL_CONNECTION* http_parser_get_vconnection(
 	if (NULL != pvconnection) {
 		pthread_mutex_lock(&pvconnection->lock);
 	}
-	return pvconnection;
+	return VCONN_REF(pvconnection);
 }
 
-static void http_parser_put_vconnection(VIRTUAL_CONNECTION *pvconnection)
+void VCONN_REF::put()
 {
+	if (pvconnection == nullptr)
+		return;
 	PDU_PROCESSOR *pprocessor;
 	
 	pthread_mutex_unlock(&pvconnection->lock);
@@ -306,6 +321,7 @@ static void http_parser_put_vconnection(VIRTUAL_CONNECTION *pvconnection)
 	if (NULL != pprocessor) {
 		pdu_processor_destroy(pprocessor);
 	}
+	pvconnection = nullptr;
 }
 
 static void http_parser_rfc1123_dstring(char *dstring)
@@ -476,7 +492,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 			if (conn != nullptr) {
 				if (conn->pcontext_in == ctx)
 					conn->pcontext_in = nullptr;
-				http_parser_put_vconnection(conn);
+				conn.put();
 			}
 			while ((pnode = double_list_pop_front(&chan->pdu_list)) != nullptr) {
 				free(static_cast<BLOB_NODE *>(pnode->pdata)->blob.data);
@@ -491,7 +507,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 			if (conn != nullptr) {
 				if (conn->pcontext_out == ctx)
 					conn->pcontext_out = nullptr;
-				http_parser_put_vconnection(conn);
+				conn.put();
 			}
 			if (chan->pcall != nullptr) {
 				pdu_processor_free_call(chan->pcall);
@@ -1202,13 +1218,12 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		}
 		auto pnode = double_list_get_head(&static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->pdu_list);
 		if (NULL == pnode) {
-			http_parser_put_vconnection(pvconnection);
+			pvconnection.put();
 			pcontext->sched_stat = SCHED_STAT_WAIT;
 			return PROCESS_IDLE;
 		}
 		pcontext->write_buff = ((BLOB_NODE*)pnode->pdata)->blob.data;
 		tmp_len = ((BLOB_NODE*)pnode->pdata)->blob.length;
-		http_parser_put_vconnection(pvconnection);
 	} else {
 		tmp_len = STREAM_BLOCK_SIZE;
 		pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
@@ -1284,9 +1299,6 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			pchannel_out->available_window -= written_len;
 			pchannel_out->bytes_sent += written_len;
 		}
-		if (NULL != pvconnection) {
-			http_parser_put_vconnection(pvconnection);
-		}
 	}
 
 	if (pcontext->write_offset < pcontext->write_length) {
@@ -1332,7 +1344,6 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		} else {
 			pcontext->sched_stat = SCHED_STAT_WAIT;
 		}
-		http_parser_put_vconnection(pvconnection);
 		return PROCESS_CONTINUE;
 	}
 
@@ -1601,7 +1612,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			}
 			if (pvconnection->pcontext_in != pcontext ||
 			    NULL == pvconnection->pprocessor) {
-				http_parser_put_vconnection(pvconnection);
+				pvconnection.put();
 				http_parser_log_info(pcontext, 6,
 					"virtual connection error in hash table");
 				return X_RUNOFF;
@@ -1630,7 +1641,6 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 						pvconnection->pcontext_out);
 				}
 			}
-			http_parser_put_vconnection(pvconnection);
 		}
 	}
 
@@ -1712,7 +1722,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		if ((pcontext != pvconnection->pcontext_in &&
 		    pcontext != pvconnection->pcontext_insucc)
 		    || NULL == pvconnection->pcontext_out) {
-			http_parser_put_vconnection(pvconnection);
+			pvconnection.put();
 			pdu_processor_free_call(pcall);
 			http_parser_log_info(pcontext, 6,
 				"missing out channel in virtual connection");
@@ -1722,7 +1732,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		    pvconnection->pcontext_out->pchannel)->b_obsolete) {
 			pdu_processor_output_pdu(pcall,
 				&((RPC_IN_CHANNEL*)pcontext->pchannel)->pdu_list);
-			http_parser_put_vconnection(pvconnection);
+			pvconnection.put();
 			pdu_processor_free_call(pcall);
 			return PROCESS_CONTINUE;
 		}
@@ -1732,7 +1742,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 		contexts_pool_signal((SCHEDULE_CONTEXT*)
 					pvconnection->pcontext_out);
-		http_parser_put_vconnection(pvconnection);
+		pvconnection.put();
 		pdu_processor_free_call(pcall);
 		return PROCESS_CONTINUE;
 	}
@@ -1757,7 +1767,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 				pchannel_in->client_keepalive;
 			if (FALSE == pdu_processor_rts_conn_c2(
 			    pchannel_out->pcall, pchannel_out->window_size)) {
-				http_parser_put_vconnection(pvconnection);
+				pvconnection.put();
 				http_parser_log_info(pcontext, 6,
 					"pdu process error! fail to setup conn/c2");
 				return X_RUNOFF;
@@ -1766,10 +1776,9 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 				pchannel_out->pcall, &pchannel_out->pdu_list);
 			pcontext->sched_stat = SCHED_STAT_WRREP;
 			pchannel_out->channel_stat = CHANNEL_STAT_OPENED;
-			http_parser_put_vconnection(pvconnection);
 			return X_LOOP;
 		}
-		http_parser_put_vconnection(pvconnection);
+		pvconnection.put();
 	}
 
 	struct timeval current_time;
@@ -1805,10 +1814,9 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 			} else {
 				pcontext->sched_stat = SCHED_STAT_WRREP;
 			}
-			http_parser_put_vconnection(pvconnection);
 			return X_LOOP;
 		}
-		http_parser_put_vconnection(pvconnection);
+		pvconnection.put();
 	}
 
 	struct timeval current_time;
@@ -1862,9 +1870,6 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 	pdu_processor_output_pdu(
 		pchannel_out->pcall, &pchannel_out->pdu_list);
 	pcontext->sched_stat = SCHED_STAT_WRREP;
-	if (NULL != pvconnection) {
-		http_parser_put_vconnection(pvconnection);
-	}
 	return X_LOOP;
 }
 
@@ -1985,7 +1990,6 @@ void http_parser_vconnection_async_reply(const char *host,
 		return;
 	}
 	if (NULL == pvconnection->pcontext_out) {
-		http_parser_put_vconnection(pvconnection);
 		return;
 	}
 	if (TRUE == ((RPC_OUT_CHANNEL*)
@@ -1993,7 +1997,6 @@ void http_parser_vconnection_async_reply(const char *host,
 		if (NULL != pvconnection->pcontext_in) {
 			pdu_processor_output_pdu(pcall, &((RPC_IN_CHANNEL*)
 				pvconnection->pcontext_in->pchannel)->pdu_list);
-			http_parser_put_vconnection(pvconnection);
 			return;
 		}
 	} else {
@@ -2002,7 +2005,6 @@ void http_parser_vconnection_async_reply(const char *host,
 	}
 	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 	contexts_pool_signal((SCHEDULE_CONTEXT*)pvconnection->pcontext_out);
-	http_parser_put_vconnection(pvconnection);
 }
 
 /*
@@ -2279,8 +2281,8 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 			pdu_processor_destroy(tmp_conn.pprocessor);
 			goto RETRY_QUERY;
 		}
-		pvconnection = static_cast<VIRTUAL_CONNECTION *>(str_hash_query(g_vconnection_hash, tmp_conn.hash_key));
-		pthread_mutex_init(&pvconnection->lock, NULL);
+		auto nc = static_cast<VIRTUAL_CONNECTION *>(str_hash_query(g_vconnection_hash, tmp_conn.hash_key));
+		pthread_mutex_init(&nc->lock, nullptr);
 		vc_hold.unlock();
 	} else {
 		if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
@@ -2292,7 +2294,6 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 							pvconnection->pcontext_out);
 			}
 		}
-		http_parser_put_vconnection(pvconnection);
 	}
 	return TRUE;
 }
@@ -2312,7 +2313,6 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 		return;
 	}
 	if (NULL == pvconnection->pcontext_out) {
-		http_parser_put_vconnection(pvconnection);
 		return;
 	}
 	pchannel_out = (RPC_OUT_CHANNEL*)pvconnection->pcontext_out->pchannel;
@@ -2323,7 +2323,6 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	} else {
 		pchannel_out->available_window = 0;
 	}
-	http_parser_put_vconnection(pvconnection);
 }
 
 BOOL http_parser_recycle_inchannel(
@@ -2356,10 +2355,8 @@ BOOL http_parser_recycle_inchannel(
 				((RPC_IN_CHANNEL*)
 				pvconnection->pcontext_in->pchannel)->assoc_group_id);
 			pvconnection->pcontext_insucc = pcontext;
-			http_parser_put_vconnection(pvconnection);
 			return TRUE;
 		}
-		http_parser_put_vconnection(pvconnection);
 	}
 	return FALSE;
 }
@@ -2381,13 +2378,11 @@ BOOL http_parser_recycle_outchannel(
 			pvconnection->pcontext_out->pchannel)->channel_cookie)) {
 			if (FALSE == ((RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel)->b_obsolete) {
-				http_parser_put_vconnection(pvconnection);
 				return FALSE;
 			}
 			pcall = ((RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel)->pcall;
 			if (FALSE == pdu_processor_rts_outr2_a6(pcall)) {
-				http_parser_put_vconnection(pvconnection);
 				return FALSE;
 			}
 			pdu_processor_output_pdu(pcall, &((RPC_OUT_CHANNEL*)
@@ -2405,10 +2400,8 @@ BOOL http_parser_recycle_outchannel(
 				((RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel)->window_size;
 			pvconnection->pcontext_outsucc = pcontext;
-			http_parser_put_vconnection(pvconnection);
 			return TRUE;
 		}
-		http_parser_put_vconnection(pvconnection);
 	}
 	return FALSE;
 }
@@ -2437,10 +2430,8 @@ BOOL http_parser_activate_inrecycling(
 			((RPC_IN_CHANNEL*)pcontext->pchannel)->channel_stat =
 												CHANNEL_STAT_OPENED;
 			pvconnection->pcontext_insucc = NULL;
-			http_parser_put_vconnection(pvconnection);
 			return TRUE;
 		}
-		http_parser_put_vconnection(pvconnection);
 	}
 	return FALSE;
 }
@@ -2465,7 +2456,7 @@ BOOL http_parser_activate_outrecycling(
 			pchannel_out = (RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel;
 			if (FALSE == pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
-				http_parser_put_vconnection(pvconnection);
+				pvconnection.put();
 				http_parser_log_info(pcontext, 6,
 					"pdu process error! fail to setup r2/b3");
 				return FALSE;
@@ -2479,10 +2470,8 @@ BOOL http_parser_activate_outrecycling(
 			pvconnection->pcontext_outsucc = NULL;
 			contexts_pool_signal((SCHEDULE_CONTEXT*)
 						pvconnection->pcontext_out);
-			http_parser_put_vconnection(pvconnection);
 			return TRUE;
 		}
-		http_parser_put_vconnection(pvconnection);
 	}
 	return FALSE;
 }
@@ -2506,6 +2495,5 @@ void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 				pchannel_out->client_keepalive = keepalive;
 			}
 		}
-		http_parser_put_vconnection(pvconnection);
 	}
 }
