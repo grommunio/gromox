@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,8 +33,7 @@ static size_t g_max_threads, g_max_routers;
 static std::vector<EXMDB_ITEM> g_local_list;
 static DOUBLE_LIST g_router_list;
 static DOUBLE_LIST g_connection_list;
-static pthread_mutex_t g_router_lock;
-static pthread_mutex_t g_connection_lock;
+static std::mutex g_router_lock, g_connection_lock;
 
 int exmdb_parser_get_param(int param)
 {
@@ -48,8 +48,6 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;
-	pthread_mutex_init(&g_router_lock, NULL);
-	pthread_mutex_init(&g_connection_lock, NULL);
 	double_list_init(&g_connection_list);
 	double_list_init(&g_router_list);
 }
@@ -58,8 +56,6 @@ void exmdb_parser_free()
 {
 	double_list_free(&g_router_list);
 	double_list_free(&g_connection_list);
-	pthread_mutex_destroy(&g_router_lock);
-	pthread_mutex_destroy(&g_connection_lock);
 }
 
 EXMDB_CONNECTION* exmdb_parser_get_connection()
@@ -941,14 +937,14 @@ static void *thread_work_func(void *pparam)
 						pthread_mutex_init(&prouter->cond_mutex, NULL);
 						pthread_cond_init(&prouter->waken_cond, NULL);
 						double_list_init(&prouter->datagram_list);
-						pthread_mutex_lock(&g_router_lock);
+						std::unique_lock rhold(g_router_lock);
 						double_list_append_as_tail(
 							&g_router_list, &prouter->node);
-						pthread_mutex_unlock(&g_router_lock);
-						pthread_mutex_lock(&g_connection_lock);
+						rhold.unlock();
+						std::unique_lock chold(g_connection_lock);
 						double_list_remove(&g_connection_list,
 											&pconnection->node);
-						pthread_mutex_unlock(&g_connection_lock);
+						chold.unlock();
 						free(pconnection);
 						notification_agent_thread_work(prouter);
 					}
@@ -976,9 +972,9 @@ static void *thread_work_func(void *pparam)
 	if (NULL != pbuff) {
 		free(pbuff);
 	}
-	pthread_mutex_lock(&g_connection_lock);
+	std::unique_lock chold(g_connection_lock);
 	double_list_remove(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_connection_lock);
+	chold.unlock();
 	if (FALSE == pconnection->b_stop) {
 		pthread_detach(pthread_self());
 	}
@@ -988,14 +984,14 @@ static void *thread_work_func(void *pparam)
 
 void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection)
 {
-	pthread_mutex_lock(&g_connection_lock);
+	std::unique_lock chold(g_connection_lock);
 	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_connection_lock);
+	chold.unlock();
 	if (0 != pthread_create(&pconnection->thr_id,
 		NULL, thread_work_func, pconnection)) {
-		pthread_mutex_lock(&g_connection_lock);
+		chold.lock();
 		double_list_remove(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_connection_lock);
+		chold.unlock();
 		free(pconnection);
 		return;
 	}
@@ -1005,44 +1001,39 @@ ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id)
 {
 	DOUBLE_LIST_NODE *pnode;
 	ROUTER_CONNECTION *prouter;
-	
-	pthread_mutex_lock(&g_router_lock);
+	std::lock_guard rhold(g_router_lock);
+
 	for (pnode=double_list_get_head(&g_router_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_router_list, pnode)) {
 		prouter = (ROUTER_CONNECTION*)pnode->pdata;
 		if (0 == strcmp(prouter->remote_id, remote_id)) {
 			double_list_remove(&g_router_list, pnode);
-			pthread_mutex_unlock(&g_router_lock);
 			return prouter;
 		}
 	}
-	pthread_mutex_unlock(&g_router_lock);
 	return NULL;
 }
 
 void exmdb_parser_put_router(ROUTER_CONNECTION *pconnection)
 {
-	pthread_mutex_lock(&g_router_lock);
+	std::lock_guard rhold(g_router_lock);
 	double_list_append_as_tail(&g_router_list, &pconnection->node);
-	pthread_mutex_unlock(&g_router_lock);
 }
 
 BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
 {
 	DOUBLE_LIST_NODE *pnode;
 	ROUTER_CONNECTION *prouter;
-	
-	pthread_mutex_lock(&g_router_lock);
+	std::lock_guard rhold(g_router_lock);
+
 	for (pnode=double_list_get_head(&g_router_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_router_list, pnode)) {
 		prouter = (ROUTER_CONNECTION*)pnode->pdata;
 		if (pconnection == prouter) {
 			double_list_remove(&g_router_list, pnode);
-			pthread_mutex_unlock(&g_router_lock);
 			return TRUE;
 		}
 	}
-	pthread_mutex_unlock(&g_router_lock);
 	return FALSE;
 }
 
@@ -1070,12 +1061,11 @@ int exmdb_parser_stop()
 	if (g_local_list.size() == 0)
 		return 0;
 	pthr_ids = NULL;
-	pthread_mutex_lock(&g_connection_lock);
+	std::unique_lock chold(g_connection_lock);
 	num = double_list_get_nodes_num(&g_connection_list);
 	if (num > 0) {
 		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
-			pthread_mutex_unlock(&g_connection_lock);
 			return -1;
 		}
 	}
@@ -1087,7 +1077,7 @@ int exmdb_parser_stop()
 		pconnection->b_stop = TRUE;
 		shutdown(pconnection->sockd, SHUT_RDWR);
 	}
-	pthread_mutex_unlock(&g_connection_lock);
+	chold.unlock();
 	for (i=0; i<num; i++) {
 		pthread_join(pthr_ids[i], NULL);
 	}
@@ -1095,12 +1085,11 @@ int exmdb_parser_stop()
 		free(pthr_ids);
 		pthr_ids = NULL;
 	}
-	pthread_mutex_lock(&g_router_lock);
+	std::unique_lock rhold(g_router_lock);
 	num = double_list_get_nodes_num(&g_router_list);
 	if (num > 0) {
 		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
-			pthread_mutex_unlock(&g_router_lock);
 			return -2;
 		}
 	}
@@ -1112,7 +1101,7 @@ int exmdb_parser_stop()
 		prouter->b_stop = TRUE;
 		pthread_cond_signal(&prouter->waken_cond);
 	}
-	pthread_mutex_unlock(&g_router_lock);
+	rhold.unlock();
 	for (i=0; i<num; i++) {
 		pthread_join(pthr_ids[i], NULL);
 	}

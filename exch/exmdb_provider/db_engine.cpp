@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <condition_variable>
+#include <mutex>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
@@ -89,10 +91,8 @@ static pthread_t g_scan_tid;
 static uint64_t g_mmap_size;
 static int g_cache_interval;	/* maximum living interval in table */
 static pthread_t *g_thread_ids;
-static pthread_mutex_t g_list_lock;
-static pthread_mutex_t g_hash_lock;
-static pthread_cond_t g_waken_cond;
-static pthread_mutex_t g_cond_mutex;
+static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
+static std::condition_variable g_waken_cond;
 static STR_HASH_TABLE *g_hash_table;
 static DOUBLE_LIST g_populating_list;
 static DOUBLE_LIST g_populating_list1;
@@ -179,33 +179,32 @@ db_item_ptr db_engine_get_db(const char *path)
 	
 	b_new = FALSE;
 	swap_string(htag, path);
-	pthread_mutex_lock(&g_hash_lock);
+	std::unique_lock hhold(g_hash_lock);
 	auto pdb = static_cast<DB_ITEM *>(str_hash_query(g_hash_table, htag));
 	if (NULL == pdb) {
 		DB_ITEM temp_db;
 		if (1 != str_hash_add(g_hash_table, htag, &temp_db)) {
-			pthread_mutex_unlock(&g_hash_lock);
+			hhold.unlock();
 			printf("[exmdb_provider]: no room in db hash table!\n");
 			return NULL;
 		}
 		pdb = (DB_ITEM*)str_hash_query(g_hash_table, htag);
 		pdb->reference = 0;
 		time(&pdb->last_time);
-		pthread_mutex_init(&pdb->lock, NULL);
 		b_new = TRUE;
 	} else if (pdb->reference > MAX_DB_WAITING_THREADS) {
-		pthread_mutex_unlock(&g_hash_lock);	
+		hhold.unlock();
 		printf("[exmdb_provider]: too many threads waiting on %s\n", path);
 		return NULL;
 	}
 	pdb->reference ++;
-	pthread_mutex_unlock(&g_hash_lock);	
+	hhold.unlock();
     clock_gettime(CLOCK_REALTIME, &timeout_tm);
     timeout_tm.tv_sec += DB_LOCK_TIMEOUT;
 	if (0 != pthread_mutex_timedlock(&pdb->lock, &timeout_tm)) {
-		pthread_mutex_lock(&g_hash_lock);
+		hhold.lock();
 		pdb->reference --;
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		return NULL;
 	}
 	if (TRUE == b_new) {
@@ -253,9 +252,8 @@ void db_engine_put_db(DB_ITEM *pdb)
 {
 	time(&pdb->last_time);
 	pthread_mutex_unlock(&pdb->lock);
-	pthread_mutex_lock(&g_hash_lock);
+	std::lock_guard hhold(g_hash_lock);
 	pdb->reference --;
-	pthread_mutex_unlock(&g_hash_lock);
 }
 
 BOOL db_engine_unload_db(const char *path)
@@ -265,17 +263,16 @@ BOOL db_engine_unload_db(const char *path)
 	
 	swap_string(htag, path);
 	for (i=0; i<20; i++) {
-		pthread_mutex_lock(&g_hash_lock);
+		std::unique_lock hhold(g_hash_lock);
 		auto pdb = static_cast<DB_ITEM *>(str_hash_query(g_hash_table, htag));
 		if (NULL == pdb) {
 			DB_ITEM temp_db;
 			temp_db.last_time = time(NULL) + g_cache_interval - 10;
 			str_hash_add(g_hash_table, htag, &temp_db);
-			pthread_mutex_unlock(&g_hash_lock);
 			return TRUE;
 		}
 		pdb->last_time = time(NULL) - g_cache_interval - 1;
-		pthread_mutex_unlock(&g_hash_lock);
+		hhold.unlock();
 		sleep(1);
 	}
 	return FALSE;
@@ -353,7 +350,7 @@ static void *scan_work_func(void *param)
 			continue;
 		}
 		count = 0;
-		pthread_mutex_lock(&g_hash_lock);
+		std::lock_guard hhold(g_hash_lock);
 		time(&now_time);
 		iter = str_hash_iter_init(g_hash_table);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
@@ -372,9 +369,8 @@ static void *scan_work_func(void *param)
 			str_hash_iter_remove(iter);
 		}
 		str_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_hash_lock);
 	}
-	pthread_mutex_lock(&g_hash_lock);
+	std::lock_guard hhold(g_hash_lock);
 	iter = str_hash_iter_init(g_hash_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
@@ -383,7 +379,6 @@ static void *scan_work_func(void *param)
 		str_hash_iter_remove(iter);
 	}
 	str_hash_iter_free(iter);
-	pthread_mutex_unlock(&g_hash_lock);
 	return nullptr;
 }
 
@@ -512,9 +507,9 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 
 static void db_engine_free_populating_node(POPULATING_NODE *psearch)
 {
-	pthread_mutex_lock(&g_list_lock);
+	std::unique_lock lhold(g_list_lock);
 	double_list_remove(&g_populating_list1, &psearch->node);
-	pthread_mutex_unlock(&g_list_lock);
+	lhold.unlock();
 	free(psearch->dir);
 	restriction_free(psearch->prestriction);
 	free(psearch->folder_ids.pll);
@@ -662,19 +657,19 @@ static void *thread_work_func(void *param)
 	POPULATING_NODE *psearch;
 	
 	while (FALSE == g_notify_stop) {
-		pthread_mutex_lock(&g_cond_mutex);
-		pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
-		pthread_mutex_unlock(&g_cond_mutex);
+		std::unique_lock chold(g_cond_mutex);
+		g_waken_cond.wait(chold);
+		chold.unlock();
  NEXT_SEARCH:
 		if (TRUE == g_notify_stop) {
 			break;
 		}
-		pthread_mutex_lock(&g_list_lock);
+		std::unique_lock lhold(g_list_lock);
 		pnode = double_list_pop_front(&g_populating_list);
 		if (NULL != pnode) {
 			double_list_append_as_tail(&g_populating_list1, pnode);
 		}
-		pthread_mutex_unlock(&g_list_lock);
+		lhold.unlock();
 		if (NULL == pnode) {
 			continue;
 		}
@@ -774,10 +769,6 @@ void db_engine_init(int table_size, int cache_interval,
 	g_threads_num = threads_num;
 	double_list_init(&g_populating_list);
 	double_list_init(&g_populating_list1);
-	pthread_mutex_init(&g_hash_lock, NULL);
-	pthread_mutex_init(&g_list_lock, NULL);
-	pthread_mutex_init(&g_cond_mutex, NULL);
-	pthread_cond_init(&g_waken_cond, NULL);
 }
 
 int db_engine_run()
@@ -838,7 +829,7 @@ int db_engine_stop()
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
 		pthread_join(g_scan_tid, NULL);
-		pthread_cond_broadcast(&g_waken_cond);
+		g_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {
 			pthread_join(g_thread_ids[i], NULL);
 		}
@@ -865,10 +856,6 @@ void db_engine_free()
 {
 	double_list_free(&g_populating_list);
 	double_list_free(&g_populating_list1);
-	pthread_mutex_destroy(&g_hash_lock);
-	pthread_mutex_destroy(&g_list_lock);
-	pthread_mutex_destroy(&g_cond_mutex);
-	pthread_cond_destroy(&g_waken_cond);
 }
 
 BOOL db_engine_enqueue_populating_criteria(
@@ -905,10 +892,10 @@ BOOL db_engine_enqueue_populating_criteria(
 	psearch->folder_id = folder_id;
 	psearch->b_recursive = b_recursive;
 	psearch->folder_ids.count = pfolder_ids->count;
-	pthread_mutex_lock(&g_list_lock);
+	std::unique_lock lhold(g_list_lock);
 	double_list_append_as_tail(&g_populating_list, &psearch->node);
-	pthread_mutex_unlock(&g_list_lock);
-	pthread_cond_signal(&g_waken_cond);
+	lhold.unlock();
+	g_waken_cond.notify_one();
 	return TRUE;
 }
 
@@ -917,13 +904,12 @@ BOOL db_engine_check_populating(const char *dir, uint64_t folder_id)
 	DOUBLE_LIST_NODE *pnode;
 	POPULATING_NODE *psearch;
 	
-	pthread_mutex_lock(&g_list_lock);
+	std::lock_guard lhold(g_list_lock);
 	for (pnode=double_list_get_head(&g_populating_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_populating_list, pnode)) {
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		if (0 == strcmp(psearch->dir, dir) &&
 			folder_id == psearch->folder_id) {
-			pthread_mutex_unlock(&g_list_lock);
 			return TRUE;
 		}
 	}
@@ -932,11 +918,9 @@ BOOL db_engine_check_populating(const char *dir, uint64_t folder_id)
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		if (0 == strcmp(psearch->dir, dir) &&
 			folder_id == psearch->folder_id) {
-			pthread_mutex_unlock(&g_list_lock);
 			return TRUE;
 		}
 	}
-	pthread_mutex_unlock(&g_list_lock);
 	return FALSE;
 }
 
