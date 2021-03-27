@@ -1976,13 +1976,11 @@ void http_parser_shutdown_async()
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall)
 {
-	VIRTUAL_CONNECTION *pvconnection;
-	
 	/* system is going to stop now */
 	if (TRUE == g_async_stop) {
 		return;
 	}
-	pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
+	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
 	if (NULL == pvconnection) {
 		return;
 	}
@@ -2239,7 +2237,6 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 {
 	const char *conn_cookie;
 	VIRTUAL_CONNECTION tmp_conn;
-	VIRTUAL_CONNECTION *pvconnection;
 	
 	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
 		conn_cookie = ((RPC_IN_CHANNEL*)
@@ -2251,7 +2248,7 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 		return FALSE;
 	}
  RETRY_QUERY:
-	pvconnection = http_parser_get_vconnection(
+	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, conn_cookie);
 	if (NULL == pvconnection) {
 		tmp_conn.reference = 0;
@@ -2304,12 +2301,11 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	uint32_t bytes_received, uint32_t available_window)
 {
 	RPC_OUT_CHANNEL *pchannel_out;
-	VIRTUAL_CONNECTION *pvconnection;
 	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return;
 	}
-	pvconnection = http_parser_get_vconnection(
+	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
 	if (NULL == pvconnection) {
@@ -2333,12 +2329,10 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 BOOL http_parser_recycle_inchannel(
 	HTTP_CONTEXT *pcontext, char *predecessor_cookie)
 {
-	VIRTUAL_CONNECTION *pvconnection;
-	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
-	pvconnection = http_parser_get_vconnection(
+	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
 	
@@ -2373,13 +2367,12 @@ BOOL http_parser_recycle_inchannel(
 BOOL http_parser_recycle_outchannel(
 	HTTP_CONTEXT *pcontext, char *predecessor_cookie)
 {
-	VIRTUAL_CONNECTION *pvconnection;
 	DCERPC_CALL *pcall;
 	
 	if (CHANNEL_TYPE_OUT != pcontext->channel_type) {
 		return FALSE;
 	}
-	pvconnection = http_parser_get_vconnection(
+	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_OUT_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
 	if (NULL != pvconnection) {
@@ -2424,12 +2417,11 @@ BOOL http_parser_activate_inrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie)
 {
 	RPC_IN_CHANNEL *pchannel_in;
-	VIRTUAL_CONNECTION *pvconnection;
 	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
-	pvconnection = http_parser_get_vconnection(
+	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
 	
@@ -2457,12 +2449,11 @@ BOOL http_parser_activate_outrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie)
 {
 	RPC_OUT_CHANNEL *pchannel_out;
-	VIRTUAL_CONNECTION *pvconnection;
 	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
-	pvconnection = http_parser_get_vconnection(pcontext->host, pcontext->port,
+	auto pvconnection = http_parser_get_vconnection(pcontext->host, pcontext->port,
 		((RPC_IN_CHANNEL*)pcontext->pchannel)->connection_cookie);
 	
 	if (NULL != pvconnection) {
@@ -2500,9 +2491,8 @@ void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 {
 	RPC_IN_CHANNEL *pchannel_in;
 	RPC_OUT_CHANNEL *pchannel_out;
-	VIRTUAL_CONNECTION *pvconnection;
 	
-	pvconnection = http_parser_get_vconnection(
+	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
 	
