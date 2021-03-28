@@ -88,7 +88,7 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 PROC_ENTRY(proc_exchange_rfr);
 

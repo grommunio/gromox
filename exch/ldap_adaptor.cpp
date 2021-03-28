@@ -247,7 +247,7 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 		return TRUE;
 	}
 	if (reason != PLUGIN_INIT)
-		return false;
+		return TRUE;
 
 	LINK_API(ppdata);
 	if (!register_service("ldap_adaptor_load", ldap_adaptor_load) ||

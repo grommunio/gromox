@@ -50,10 +50,8 @@ static BOOL at_del_timer(int id)
 
 static BOOL svc_atclient(int reason, void **data)
 {
-	if (reason == PLUGIN_FREE)
-		return TRUE;
 	if (reason != PLUGIN_INIT)
-		return false;
+		return TRUE;
 	LINK_API(data);
 	if (!register_service("add_timer", at_add_timer) ||
 	    !register_service("cancel_timer", at_del_timer)) {

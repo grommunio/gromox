@@ -138,6 +138,8 @@ static BOOL svc_ip6_filter(int reason, void **data)
 		g_templist.clear();
 		return TRUE;
 	}
+	if (reason != PLUGIN_INIT)
+		return TRUE;
 	LINK_API(data);
 	std::string plugname, filename;
 	try {

@@ -53,7 +53,7 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 	case SYS_THREAD_DESTROY:
 		return TRUE;
     }
-	return false;
+	return TRUE;
 }
 HOOK_ENTRY(hook_mlist_expand);
 

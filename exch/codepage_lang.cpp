@@ -322,6 +322,6 @@ static BOOL svc_codepage_lang(int reason, void **ppdata)
 		codepage_lang_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_codepage_lang);

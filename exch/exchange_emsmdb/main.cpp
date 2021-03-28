@@ -319,7 +319,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		bounce_producer_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 PROC_ENTRY(proc_exchange_emsmdb);
 

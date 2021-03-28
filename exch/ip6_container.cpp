@@ -56,6 +56,8 @@ static BOOL svc_ip6_container(int reason, void **data)
 		g_cont_tbl.clear();
 		return TRUE;
 	}
+	if (reason != PLUGIN_INIT)
+		return TRUE;
 	LINK_API(data);
 	std::string filename;
 	try {

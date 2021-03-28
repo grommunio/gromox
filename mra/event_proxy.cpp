@@ -158,7 +158,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_event_proxy);
 

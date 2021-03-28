@@ -68,7 +68,7 @@ static BOOL hook_alias_translator(int reason, void **ppdata)
     	pthread_rwlock_destroy(&g_address_lock);
         return TRUE;
     }
-	return false;
+	return TRUE;
 }
 HOOK_ENTRY(hook_alias_translator);
 

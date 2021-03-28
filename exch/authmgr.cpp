@@ -111,10 +111,8 @@ static BOOL authmgr_init()
 
 static BOOL svc_authmgr(int reason, void **datap) try
 {
-	if (reason == PLUGIN_FREE)
-		return TRUE;
 	if (reason != PLUGIN_INIT)
-		return false;
+		return TRUE;
 	LINK_API(datap);
 	return authmgr_init();
 } catch (...) {

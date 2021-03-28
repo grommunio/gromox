@@ -160,7 +160,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_timer_agent);
 

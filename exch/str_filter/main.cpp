@@ -161,6 +161,6 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		str_filter_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_str_filter);

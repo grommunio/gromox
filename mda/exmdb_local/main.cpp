@@ -246,6 +246,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		net_failure_free();
         return TRUE;
     }
-	return false;
+	return TRUE;
 }
 HOOK_ENTRY(hook_exmdb_local);

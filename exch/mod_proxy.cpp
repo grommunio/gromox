@@ -247,7 +247,7 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 		double_list_free(&g_proxy_list);
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 HPM_ENTRY(hpm_mod_proxy);
 

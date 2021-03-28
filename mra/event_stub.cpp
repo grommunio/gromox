@@ -157,7 +157,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		g_event_stub_func = NULL;
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_event_stub);
 

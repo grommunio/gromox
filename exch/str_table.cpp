@@ -491,6 +491,6 @@ static BOOL svc_str_table(int reason, void **ppdata)
 		str_table_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_str_table);

@@ -581,6 +581,6 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 		log_plugin_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_log_plugin);

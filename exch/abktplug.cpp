@@ -6,10 +6,8 @@
 #include <gromox/svc_common.h>
 static BOOL svc_abktplug(int reason, void **apidata)
 {
-	if (reason == PLUGIN_FREE)
-		return TRUE;
 	if (reason != PLUGIN_INIT)
-		return false;
+		return TRUE;
 	LINK_API(apidata);
 	if (!register_service("abkt_tobinary", gromox::abkt_tobinary) ||
 	    !register_service("abkt_tojson", gromox::abkt_tojson)) {

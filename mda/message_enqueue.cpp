@@ -473,6 +473,6 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		message_enqueue_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 FLH_ENTRY(flh_message_enqueue);

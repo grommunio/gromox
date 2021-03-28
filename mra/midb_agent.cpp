@@ -319,7 +319,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_midb_agent);
 

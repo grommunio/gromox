@@ -194,7 +194,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		ab_tree_stop();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 PROC_ENTRY(proc_exchange_nsp);
 

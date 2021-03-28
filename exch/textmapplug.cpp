@@ -22,10 +22,8 @@ static BOOL lang_to_charset_b(const char *lang, char *cset)
 static BOOL svc_textmaps(int reason, void **apidata)
 {
 #define E(s, f) register_service(s, f)
-	if (reason == PLUGIN_FREE)
-		return TRUE;
 	if (reason != PLUGIN_INIT)
-		return false;
+		return TRUE;
 	LINK_API(apidata);
 	using namespace gromox;
 	textmaps_init(get_data_path());

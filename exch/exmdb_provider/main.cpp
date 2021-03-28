@@ -451,6 +451,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		common_util_free();
 		return TRUE;
 	}
-	return false;
+	return TRUE;
 }
 SVC_ENTRY(svc_exmdb_provider);

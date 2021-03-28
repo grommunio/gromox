@@ -162,6 +162,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		mysql_adaptor_free();
         return TRUE;
     }
-    return FALSE;
+	return TRUE;
 }
 SVC_ENTRY(svc_mysql_adaptor);

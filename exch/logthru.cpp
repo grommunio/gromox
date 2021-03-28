@@ -21,10 +21,8 @@ static void xlog_info(int level, const char *fmt, ...)
 
 static BOOL svc_logger(int reason, void **data)
 {
-	if (reason == PLUGIN_FREE)
+	if (reason != PLUGIN_INIT)
 		return TRUE;
-	else if (reason != PLUGIN_INIT)
-		return false;
 	LINK_API(data);
 	auto cfg = config_file_initd("log_plugin.cfg", get_config_path());
 	auto sv = config_file_get_value(cfg, "log_level");
