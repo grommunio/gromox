@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <chrono>
 #include <cstdint>
 #include <condition_variable>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/str_hash.hpp>
 #include "db_engine.h"
 #include <gromox/eid_array.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -84,7 +86,7 @@ struct ROWDEL_NODE {
 
 static BOOL g_wal;
 static BOOL g_async;
-static int g_table_size;		/* hash table size */
+static size_t g_table_size; /* hash table size */
 static int g_threads_num;
 static BOOL g_notify_stop;		/* stop signal for scaning thread */
 static pthread_t g_scan_tid;
@@ -93,7 +95,7 @@ static int g_cache_interval;	/* maximum living interval in table */
 static pthread_t *g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
-static STR_HASH_TABLE *g_hash_table;
+static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 static DOUBLE_LIST g_populating_list;
 static DOUBLE_LIST g_populating_list1;
 
@@ -175,33 +177,39 @@ db_item_ptr db_engine_get_db(const char *path)
 	char htag[256];
 	char db_path[256];
 	char sql_string[256];
-	struct timespec timeout_tm;
+	DB_ITEM *pdb;
 	
 	b_new = FALSE;
 	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
-	auto pdb = static_cast<DB_ITEM *>(str_hash_query(g_hash_table, htag));
-	if (NULL == pdb) {
-		DB_ITEM temp_db;
-		if (1 != str_hash_add(g_hash_table, htag, &temp_db)) {
+	auto it = g_hash_table.find(htag);
+	if (it == g_hash_table.end()) {
+		if (g_hash_table.size() >= g_table_size) {
 			hhold.unlock();
-			printf("[exmdb_provider]: no room in db hash table!\n");
+			printf("[exmdb_provider]: W-1297: db hash table is full\n");
 			return NULL;
 		}
-		pdb = (DB_ITEM*)str_hash_query(g_hash_table, htag);
-		pdb->reference = 0;
+		try {
+			auto xp = g_hash_table.try_emplace(htag);
+			pdb = &xp.first->second;
+		} catch (const std::bad_alloc &) {
+			hhold.unlock();
+			printf("[exmdb_provider]: W-1296: ENOMEM\n");
+			return NULL;
+		}
 		time(&pdb->last_time);
 		b_new = TRUE;
-	} else if (pdb->reference > MAX_DB_WAITING_THREADS) {
-		hhold.unlock();
-		printf("[exmdb_provider]: too many threads waiting on %s\n", path);
-		return NULL;
+	} else {
+		pdb = &it->second;
+		if (pdb->reference > MAX_DB_WAITING_THREADS) {
+			hhold.unlock();
+			printf("[exmdb_provider]: too many threads waiting on %s\n", path);
+			return NULL;
+		}
 	}
 	pdb->reference ++;
 	hhold.unlock();
-    clock_gettime(CLOCK_REALTIME, &timeout_tm);
-    timeout_tm.tv_sec += DB_LOCK_TIMEOUT;
-	if (0 != pthread_mutex_timedlock(&pdb->lock, &timeout_tm)) {
+	if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
 		hhold.lock();
 		pdb->reference --;
 		hhold.unlock();
@@ -251,7 +259,7 @@ db_item_ptr db_engine_get_db(const char *path)
 void db_engine_put_db(DB_ITEM *pdb)
 {
 	time(&pdb->last_time);
-	pthread_mutex_unlock(&pdb->lock);
+	pdb->lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pdb->reference --;
 }
@@ -264,13 +272,19 @@ BOOL db_engine_unload_db(const char *path)
 	swap_string(htag, path);
 	for (i=0; i<20; i++) {
 		std::unique_lock hhold(g_hash_lock);
-		auto pdb = static_cast<DB_ITEM *>(str_hash_query(g_hash_table, htag));
-		if (NULL == pdb) {
-			DB_ITEM temp_db;
-			temp_db.last_time = time(NULL) + g_cache_interval - 10;
-			str_hash_add(g_hash_table, htag, &temp_db);
+		auto it = g_hash_table.find(htag);
+		DB_ITEM *pdb;
+		if (it == g_hash_table.end()) {
+			try {
+				auto xp = g_hash_table.try_emplace(htag);
+				pdb = &xp.first->second;
+			} catch (const std::bad_alloc &) {
+				return TRUE;
+			}
+			pdb->last_time = time(nullptr) + g_cache_interval - 10;
 			return TRUE;
 		}
+		pdb = &it->second;
 		pdb->last_time = time(NULL) - g_cache_interval - 1;
 		hhold.unlock();
 		sleep(1);
@@ -278,8 +292,9 @@ BOOL db_engine_unload_db(const char *path)
 	return FALSE;
 }
 
-static void db_engine_free_db(DB_ITEM *pdb)
+DB_ITEM::~DB_ITEM()
 {
+	auto pdb = this;
 	TABLE_NODE *ptable;
 	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
@@ -326,7 +341,6 @@ static void db_engine_free_db(DB_ITEM *pdb)
 		sqlite3_close(pdb->tables.psqlite);
 		pdb->tables.psqlite = NULL;
 	}
-	pthread_mutex_destroy(&pdb->lock);
 	pdb->last_time = 0;
 	if (NULL != pdb->psqlite) {
 		sqlite3_close(pdb->psqlite);
@@ -337,11 +351,8 @@ static void db_engine_free_db(DB_ITEM *pdb)
 static void *scan_work_func(void *param)
 {
 	int count;
-	DB_ITEM *pdb;
-	char htag[256];
 	time_t now_time;
-	STR_HASH_ITER *iter;
-	
+
 	count = 0;
 	while (FALSE == g_notify_stop) {
 		sleep(1);
@@ -352,33 +363,22 @@ static void *scan_work_func(void *param)
 		count = 0;
 		std::lock_guard hhold(g_hash_lock);
 		time(&now_time);
-		iter = str_hash_iter_init(g_hash_table);
-		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			pdb = (DB_ITEM*)str_hash_iter_get_value(iter, htag);
+		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
+			auto pdb = &it->second;
 			if (0 == pdb->reference && NULL == pdb->psqlite) {
-				db_engine_free_db(pdb);
-				str_hash_iter_remove(iter);
+				it = g_hash_table.erase(it);
 				continue;
 			}
 			if (0 != pdb->reference || now_time - 
 				pdb->last_time <= g_cache_interval) {
+				++it;
 				continue;
 			}
-			db_engine_free_db(pdb);
-			str_hash_iter_remove(iter);
+			it = g_hash_table.erase(it);
 		}
-		str_hash_iter_free(iter);
 	}
 	std::lock_guard hhold(g_hash_lock);
-	iter = str_hash_iter_init(g_hash_table);
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		pdb = (DB_ITEM*)str_hash_iter_get_value(iter, htag);
-		db_engine_free_db(pdb);
-		str_hash_iter_remove(iter);
-	}
-	str_hash_iter_free(iter);
+	g_hash_table.clear();
 	return nullptr;
 }
 
@@ -757,7 +757,7 @@ static void *thread_work_func(void *param)
 	return nullptr;
 }
 
-void db_engine_init(int table_size, int cache_interval,
+void db_engine_init(size_t table_size, int cache_interval,
 	BOOL b_async, BOOL b_wal, uint64_t mmap_size, int threads_num)
 {
 	g_notify_stop = TRUE;
@@ -792,11 +792,6 @@ int db_engine_run()
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("[exmdb_provider]: Failed to initialize sqlite engine\n");
 		return -2;
-	}
-	g_hash_table = str_hash_init(g_table_size, sizeof(DB_ITEM), NULL);
-	if (NULL == g_hash_table) {
-		printf("[exmdb_provider]: Failed to init db hash table\n");
-		return -3;
 	}
 	g_notify_stop = FALSE;
 	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
@@ -838,10 +833,7 @@ int db_engine_stop()
 		free(g_thread_ids);
 		g_thread_ids = NULL;
 	}
-	if (NULL != g_hash_table) {
-		str_hash_free(g_hash_table);
-		g_hash_table = NULL;
-	}
+	g_hash_table.clear();
 	while ((pnode = double_list_pop_front(&g_populating_list)) != nullptr) {
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		restriction_free(psearch->prestriction);

@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <gromox/element_data.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -86,17 +87,18 @@ struct INSTANCE_NODE {
 
 /* memory database for holding rop table objects instance */
 struct MEMORY_TABLES {
-	uint32_t last_id;
-	BOOL b_batch;			/* message database is in batch-mode */
-	DOUBLE_LIST table_list;
-	sqlite3 *psqlite;
+	uint32_t last_id = 0;
+	BOOL b_batch = false;/* message database is in batch-mode */
+	DOUBLE_LIST table_list{};
+	sqlite3 *psqlite = nullptr;
 };
 
 struct DB_ITEM {
+	~DB_ITEM();
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
 	time_t last_time = 0;
-	pthread_mutex_t lock{};
+	std::timed_mutex lock;
 	sqlite3 *psqlite = nullptr;
 	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
 	DOUBLE_LIST nsub_list{};
@@ -104,8 +106,7 @@ struct DB_ITEM {
 	MEMORY_TABLES tables{};
 };
 
-void db_engine_init(int table_size, int cache_interval,
-	BOOL b_async, BOOL b_wal, uint64_t mmap_size, int threads_num);
+extern void db_engine_init(size_t table_size, int cache_interval, BOOL async, BOOL wal, uint64_t mmap_size, int threads_num);
 extern int db_engine_run();
 extern int db_engine_stop();
 extern void db_engine_free();
