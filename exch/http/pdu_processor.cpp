@@ -3829,3 +3829,8 @@ void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
 	}
 }
 
+void pdu_processor_reload()
+{
+	for (const auto &p : g_plugin_list)
+		p.lib_main(PLUGIN_RELOAD, nullptr);
+}

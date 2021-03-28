@@ -21,3 +21,4 @@ void service_release(const char *service_name, const char *module);
 
 int service_console_talk(int argc, char **argv, char *reason, int len);
 extern BOOL service_register_service(const char *func_name, void *addr, const std::type_info &);
+extern void service_reload_all();

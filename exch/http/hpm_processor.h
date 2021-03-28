@@ -61,3 +61,4 @@ BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
 
 int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length);
+extern void hpm_processor_reload();

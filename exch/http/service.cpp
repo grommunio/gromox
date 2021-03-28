@@ -535,3 +535,9 @@ int service_console_talk(int argc, char **argv, char *reason, int len)
 	plib->talk_main(argc, argv, reason, len);
 	return PLUGIN_TALK_OK;
 }
+
+void service_reload_all()
+{
+	for (const auto &p : g_list_plug)
+		p.lib_main(PLUGIN_RELOAD, nullptr);
+}

@@ -10,7 +10,8 @@ enum{
     PLUGIN_INIT,
     PLUGIN_FREE,
     PLUGIN_THREAD_CREATE,
-    PLUGIN_THREAD_DESTROY
+	PLUGIN_THREAD_DESTROY,
+	PLUGIN_RELOAD,
 };
 
 /* enumeration for the return value of xxx_load_library */

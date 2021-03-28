@@ -187,3 +187,4 @@ void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern BOOL pdu_processor_rpc_new_environment();
 extern void pdu_processor_rpc_free_environment();
+extern void pdu_processor_reload();

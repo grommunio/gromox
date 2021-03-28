@@ -827,3 +827,9 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	phpm_ctx->b_preproc = FALSE;
 	phpm_ctx->pinterface = NULL;
 }
+
+void hpm_processor_reload()
+{
+	for (const auto &p : g_plugin_list)
+		p.lib_main(PLUGIN_RELOAD, nullptr);
+}
