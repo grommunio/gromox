@@ -38,18 +38,18 @@ struct DOMAIN_NODE {
 };
 
 struct AB_BASE {
-	GUID guid;
-	std::atomic<int> status, reference;
-	time_t load_time;
-	int base_id;
-	SINGLE_LIST list;
-	SINGLE_LIST gal_list;
-	SINGLE_LIST remote_list;
-	INT_HASH_TABLE *phash;
+	AB_BASE();
+	~AB_BASE();
+
+	GUID guid{};
+	std::atomic<int> status{0}, reference{0};
+	time_t load_time = 0;
+	int base_id = 0;
+	SINGLE_LIST list, gal_list, remote_list{};
+	INT_HASH_TABLE *phash = nullptr;
 };
 
-void ab_tree_init(const char *org_name, int base_size,
-	int cache_interval, int file_blocks);
+extern void ab_tree_init(const char *org_name, size_t base_size, int cache_interval, int file_blocks);
 extern int ab_tree_run();
 extern int ab_tree_stop();
 AB_BASE* ab_tree_get_base(int base_id);

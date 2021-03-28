@@ -5,6 +5,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
@@ -81,13 +82,13 @@ struct ab_sort_item {
 	char *string;
 };
 
-static int g_base_size;
+static size_t g_base_size;
 static int g_file_blocks;
 static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static int g_cache_interval;
 static char g_org_name[256];
-static INT_HASH_TABLE *g_base_hash;
+static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock, g_remote_lock;
 static LIB_BUFFER *g_file_allocator;
 
@@ -203,7 +204,7 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 	return NULL;
 }
 
-void ab_tree_init(const char *org_name, int base_size,
+void ab_tree_init(const char *org_name, size_t base_size,
 	int cache_interval, int file_blocks)
 {
 	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
@@ -234,11 +235,6 @@ int ab_tree_run()
 	E(get_mlist_ids, "get_mlist_ids");
 	E(get_lang, "get_lang");
 #undef E
-	g_base_hash = int_hash_init(g_base_size, sizeof(AB_BASE *));
-	if (NULL == g_base_hash) {
-		printf("[exchange_nsp]: Failed to init base hash table\n");
-		return -2;
-	}
 	g_file_allocator = lib_buffer_init(
 		FILE_ALLOC_SIZE, g_file_blocks, TRUE);
 	if (NULL == g_file_allocator) {
@@ -268,8 +264,9 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	simple_tree_free(ptree);
 }
 
-static void ab_tree_unload_base(AB_BASE *pbase)
+AB_BASE::~AB_BASE()
 {
+	auto pbase = this;
 	SINGLE_LIST_NODE *pnode;
 	
 	while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
@@ -291,28 +288,20 @@ static void ab_tree_unload_base(AB_BASE *pbase)
 	}
 }
 
+AB_BASE::AB_BASE()
+{
+	single_list_init(&list);
+	single_list_init(&gal_list);
+	single_list_init(&remote_list);
+}
+
 int ab_tree_stop()
 {
-	AB_BASE **ppbase;
-	INT_HASH_ITER *iter;
-	
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
 		pthread_join(g_scan_id, NULL);
 	}
-	if (NULL != g_base_hash) {
-		iter = int_hash_iter_init(g_base_hash);
-		for (int_hash_iter_begin(iter);
-			FALSE == int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			ppbase = static_cast<decltype(ppbase)>(int_hash_iter_get_value(iter, nullptr));
-			ab_tree_unload_base(*ppbase);
-			free(*ppbase);
-		}
-		int_hash_iter_free(iter);
-		int_hash_free(g_base_hash);
-		g_base_hash = NULL;
-	}
+	g_base_hash.clear();
 	if (NULL != g_file_allocator) {
 		lib_buffer_free(g_file_allocator);
 		g_file_allocator = NULL;
@@ -724,7 +713,6 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		for (auto domain_id : temp_file) {
 			pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
 			if (NULL == pdomain) {
-				ab_tree_unload_base(pbase);
 				return FALSE;
 			}
 			pdomain->node.pdata = pdomain;
@@ -734,7 +722,6 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 				domain_id, &pdomain->tree, pbase)) {
 				ab_tree_destruct_tree(&pdomain->tree);
 				free(pdomain);
-				ab_tree_unload_base(pbase);
 				return FALSE;
 			}
 			single_list_append_as_tail(&pbase->list, &pdomain->node);
@@ -752,7 +739,6 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			domain_id, &pdomain->tree, pbase)) {
 			ab_tree_destruct_tree(&pdomain->tree);
 			free(pdomain);
-			ab_tree_unload_base(pbase);
 			return FALSE;
 		}
 		single_list_append_as_tail(&pbase->list, &pdomain->node);
@@ -806,45 +792,43 @@ AB_BASE* ab_tree_get_base(int base_id)
 {
 	int count;
 	AB_BASE *pbase;
-	AB_BASE **ppbase;
 	
 	count = 0;
  RETRY_LOAD_BASE:
 	std::unique_lock bhold(g_base_lock);
-	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
-	if (NULL == ppbase) {
-		pbase = (AB_BASE*)malloc(sizeof(AB_BASE));
-		if (NULL == pbase) {
+	auto it = g_base_hash.find(base_id);
+	if (it == g_base_hash.end()) {
+		if (g_base_hash.size() >= g_base_size) {
+			printf("[exchange_nsp]: W-1298: AB base hash is full\n");
 			return NULL;
 		}
-		if (1 != int_hash_add(g_base_hash, base_id, &pbase)) {
-			bhold.unlock();
-			free(pbase);
-			return NULL;
+		decltype(g_base_hash.try_emplace(base_id)) xp;
+		try {
+			xp = g_base_hash.try_emplace(base_id);
+		} catch (const std::bad_alloc &) {
+			return nullptr;
 		}
+		if (!xp.second)
+			return nullptr;
+		pbase = &xp.first->second;
 		pbase->base_id = base_id;
-		pbase->load_time = 0;
-		pbase->reference = 0;
 		pbase->status = BASE_STATUS_CONSTRUCTING;
 		pbase->guid = guid_random_new();
 		memcpy(pbase->guid.node, &base_id, sizeof(int));
-		single_list_init(&pbase->list);
-		single_list_init(&pbase->gal_list);
-		single_list_init(&pbase->remote_list);
 		pbase->phash = NULL;
 		bhold.unlock();
 		if (FALSE == ab_tree_load_base(pbase)) {
 			bhold.lock();
-			int_hash_remove(g_base_hash, base_id);
+			g_base_hash.erase(xp.first);
 			bhold.unlock();
-			free(pbase);
 			return NULL;
 		}
 		time(&pbase->load_time);
 		bhold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
-		if (BASE_STATUS_LIVING != (*ppbase)->status) {
+		pbase = &it->second;
+		if (pbase->status != BASE_STATUS_LIVING) {
 			bhold.unlock();
 			count ++;
 			if (count > 60) {
@@ -853,7 +837,6 @@ AB_BASE* ab_tree_get_base(int base_id)
 			sleep(1);
 			goto RETRY_LOAD_BASE;
 		}
-		pbase = *ppbase;
 	}
 	pbase->reference ++;
 	return pbase;
@@ -868,28 +851,20 @@ void ab_tree_put_base(AB_BASE *pbase)
 static void *scan_work_func(void *param)
 {
 	AB_BASE *pbase;
-	AB_BASE **ppbase;
-	INT_HASH_ITER *iter;
 	SINGLE_LIST_NODE *pnode;
 	
 	while (FALSE == g_notify_stop) {
 		pbase = NULL;
 		std::unique_lock bhold(g_base_lock);
-		iter = int_hash_iter_init(g_base_hash);
-		for (int_hash_iter_begin(iter);
-			FALSE == int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			ppbase = static_cast<decltype(ppbase)>(int_hash_iter_get_value(iter, nullptr));
-			if (BASE_STATUS_LIVING != (*ppbase)->status ||
-				0 != (*ppbase)->reference || time(NULL) -
-				(*ppbase)->load_time < g_cache_interval) {
+		for (auto &[_, base] : g_base_hash) {
+			if (base.status != BASE_STATUS_LIVING ||
+			    base.reference != 0 ||
+			    time(nullptr) - base.load_time < g_cache_interval)
 				continue;
-			}
-			pbase = *ppbase;
+			pbase = &base;
 			pbase->status = BASE_STATUS_CONSTRUCTING;
 			break;
 		}
-		int_hash_iter_free(iter);
 		bhold.unlock();
 		if (NULL == pbase) {
 			sleep(1);
@@ -911,9 +886,8 @@ static void *scan_work_func(void *param)
 		}
 		if (FALSE == ab_tree_load_base(pbase)) {
 			bhold.lock();
-			int_hash_remove(g_base_hash, pbase->base_id);
+			g_base_hash.erase(pbase->base_id);
 			bhold.unlock();
-			free(pbase);
 		} else {
 			bhold.lock();
 			time(&pbase->load_time);
@@ -1562,10 +1536,7 @@ int ab_tree_get_guid_base_id(GUID guid)
 	
 	memcpy(&base_id, guid.node, sizeof(int));
 	std::lock_guard bhold(g_base_lock);
-	if (NULL == int_hash_query(g_base_hash, base_id)) {
-		base_id = 0;
-	}
-	return base_id;
+	return g_base_hash.find(base_id) != g_base_hash.end() ? base_id : 0;
 }
 
 ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
