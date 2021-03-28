@@ -170,10 +170,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			config_file_set_value(pconfig, "CACHE_INTERVAL", "2 hours");
 		} else {
 			cache_interval = atoitvl(str_value);
-			if (cache_interval < 600) {
+			if (cache_interval < 1) {
 				cache_interval = 1800;
-				config_file_set_value(pconfig,
-					"MIDB_CACHE_INTERVAL", "30minutes");
+				config_file_set_value(pconfig, "CACHE_INTERVAL", "30minutes");
 			}
 		}
 		itvltoa(cache_interval, temp_buff);
