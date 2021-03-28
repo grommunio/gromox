@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <atomic>
+#include <list>
 #include <string>
 #include <typeinfo>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -16,6 +19,8 @@
 #include <dlfcn.h>
 #include <cstdio>
 
+using namespace std::string_literals;
+
 struct REFERENCE_NODE {
 	DOUBLE_LIST_NODE	node;
 	char				module_name[256];
@@ -23,15 +28,18 @@ struct REFERENCE_NODE {
 };
 
 struct SVC_PLUG_ENTITY {
-	DOUBLE_LIST_NODE	node;
-	DOUBLE_LIST			list_service;
-	int					ref_count;
-    void*				handle;
-    PLUGIN_MAIN			lib_main;
-    TALK_MAIN			talk_main;
-    char				file_name[256];
-	char				full_path[256];
-	bool completed_init;
+	SVC_PLUG_ENTITY();
+	SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&);
+	~SVC_PLUG_ENTITY();
+	void operator=(SVC_PLUG_ENTITY &&) = delete;
+
+	DOUBLE_LIST list_service{};
+	std::atomic<int> ref_count = 0;
+	void *handle = nullptr;
+	PLUGIN_MAIN lib_main = nullptr;
+	TALK_MAIN talk_main = nullptr;
+	std::string file_name, full_path;
+	bool completed_init = false;
 };
 
 struct SERVICE_ENTRY {
@@ -53,7 +61,7 @@ static unsigned int service_get_context_num();
 static const char *service_get_host_ID();
 
 static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
-static DOUBLE_LIST      g_list_plug;
+static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
@@ -74,9 +82,7 @@ void service_init(const struct service_init_param &parm)
 	HX_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
 	g_plugin_names = parm.plugin_list;
 	g_ign_loaderr = parm.plugin_ignloaderr;
-	double_list_init(&g_list_plug);
 	double_list_init(&g_list_service);
-	g_system_image.node.pdata = &g_system_image;
 	double_list_init(&g_system_image.list_service);
 }
 
@@ -105,22 +111,7 @@ int service_run()
  */
 int service_stop()
 {
-	std::vector<std::string> stack;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode = double_list_get_head(&g_list_plug); pnode != nullptr;
-	     pnode = double_list_get_after(&g_list_plug, pnode)) {
-		try {
-			stack.push_back(static_cast<SVC_PLUG_ENTITY *>(pnode->pdata)->file_name);
-		} catch (...) {
-		}
-	}
-	while (!stack.empty()) {
-		service_unload_library(stack.back().c_str());
-		stack.pop_back();
-	}
-	double_list_free(&g_list_plug);
-	double_list_free(&g_list_service);
+	g_list_plug.clear();
 	g_init_path[0] = '\0';
 	g_plugin_names = NULL;
 	return 0;
@@ -144,113 +135,83 @@ int service_load_library(const char *path)
 {
 	static void *const server_funcs[] = {(void *)service_query_service};
 	const char *fake_path = path;
-	DOUBLE_LIST_NODE *pnode;
-	PLUGIN_MAIN func;
 
 	/* check whether the library is already loaded */
-	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		if (strcmp(static_cast<SVC_PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
-			printf("[service]: %s is already loaded by service module\n", path);
-			return PLUGIN_ALREADY_LOADED;
-		}
+	auto it = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
+	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == path; });
+	if (it != g_list_plug.cend()) {
+		printf("[service]: %s is already loaded by service module\n", path);
+		return PLUGIN_ALREADY_LOADED;
 	}
-	void *handle = dlopen(path, RTLD_LAZY);
-	if (handle == NULL && strchr(path, '/') == NULL) {
-		char altpath[256];
-		snprintf(altpath, sizeof(altpath), "%s/%s", g_init_path, path);
-		handle = dlopen(altpath, RTLD_LAZY);
-	}
-	if (NULL == handle){
+	SVC_PLUG_ENTITY plug;
+	plug.handle = dlopen(path, RTLD_LAZY);
+	if (plug.handle == nullptr && strchr(path, '/') == nullptr)
+		plug.handle = dlopen((g_init_path + "/"s + path).c_str(), RTLD_LAZY);
+	if (plug.handle == nullptr) {
 		printf("[service]: error loading %s: %s\n", fake_path, dlerror());
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
 	}
-	func = (PLUGIN_MAIN)dlsym(handle, "SVC_LibMain");
-	if (NULL == func) {
+	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "SVC_LibMain"));
+	if (plug.lib_main == nullptr) {
 		printf("[service]: error finding the SVC_LibMain function in %s\n",
 				fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
-		dlclose(handle);
 		return PLUGIN_NO_MAIN;
 	}
-	auto plib = static_cast<SVC_PLUG_ENTITY *>(malloc(sizeof(SVC_PLUG_ENTITY)));
-	if (NULL == plib) {
-		printf("[service]: Failed to allocate memory for %s\n", fake_path);
-		printf("[service]: the plugin %s is not loaded\n", fake_path);
-		dlclose(handle);
-		return PLUGIN_FAIL_ALLOCNODE;
-	}
-	memset(plib, 0, sizeof(*plib));
-	/* make the node's pdata ponter point to the PLUG_ENTITY struct */
-	plib->node.pdata = plib;
-	/*  for all plugins, there's should be a read-write lock for controlling
-	 *  its modification. ervery time, the service function is invoked,
-	 *  the read lock is acquired. when the plugin is going to be modified,
-	 *  acquire the write lock.
-	 */
-	double_list_init(&plib->list_service);
-	strncpy(plib->file_name, path, 255);
-	strncpy(plib->full_path, fake_path, 255);
-	plib->handle = handle;
-	plib->lib_main = func;
-	/* append the plib node into lib list */
-	double_list_append_as_tail(&g_list_plug, &plib->node);
+	plug.file_name = path;
+	plug.full_path = fake_path;
+	g_list_plug.push_back(std::move(plug));
 	/*
 	 *  indicate the current lib node when plugin rigisters service
      *  plugin can only register service in "SVC_LibMain"
 	 *  whith the paramter PLUGIN_INIT
 	 */
-	g_cur_plug = plib;
+	g_cur_plug = &g_list_plug.back();
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
+	if (!g_cur_plug->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
 		printf("[service]: error executing the plugin's init function "
 				"in %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
-		/*
-		 *  the lib node will automatically removed from libs list in
-		 *  service_unload_library function
-		 */
-		service_unload_library(fake_path);
+		g_list_plug.pop_back();
 		g_cur_plug = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	plib->completed_init = true;
+	g_cur_plug->completed_init = true;
 	g_cur_plug = NULL;
 	return PLUGIN_LOAD_OK;
 }
 
-/*
- *  unload the plug-in
- *
- *  @return
- *      PLUGIN_UNABLE_UNLOAD	unable unload library
- *		PLUGIN_UNLOAD_OK		success
- *		PLUGIN_NOT_FOUND		plugin is not found in service module
- */
-int service_unload_library(const char *path)
+SVC_PLUG_ENTITY::SVC_PLUG_ENTITY()
+{
+	/*  for all plugins, there's should be a read-write lock for controlling
+	 *  its modification. ervery time, the service function is invoked,
+	 *  the read lock is acquired. when the plugin is going to be modified,
+	 *  acquire the write lock.
+	 */
+	double_list_init(&list_service);
+}
+
+SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) :
+	list_service(o.list_service), ref_count(o.ref_count.load()),
+	handle(o.handle), lib_main(o.lib_main), talk_main(o.talk_main),
+	file_name(std::move(o.file_name)), full_path(std::move(o.full_path)),
+	completed_init(o.completed_init)
+{
+	o.list_service = {};
+	o.ref_count = 0;
+	o.handle = nullptr;
+	o.completed_init = false;
+}
+
+SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 {
 	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
-
-	auto ptr = strrchr(path, '/');
-	if (NULL != ptr) {
-		ptr++;
-	} else {
-		ptr = (char*)path;
-	}
-	/* first find the plugin node in lib list */
-	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_plug, pnode)){
-		if (strcmp(static_cast<SVC_PLUG_ENTITY *>(pnode->pdata)->file_name, ptr) == 0)
-			break;
-	}
-	if(NULL == pnode){
-		return PLUGIN_NOT_FOUND;
-	}
-	auto plib = static_cast<SVC_PLUG_ENTITY *>(pnode->pdata);
+	auto plib = this;
 	if (plib->ref_count > 0) {
-		return PLUGIN_UNABLE_UNLOAD;
+		printf("Unbalanced refcount on %s\n", plib->file_name.c_str());
+		return;
 	}
 	func = (PLUGIN_MAIN)plib->lib_main;
 	if (plib->completed_init)
@@ -270,11 +231,10 @@ int service_unload_library(const char *path)
 		}
 		double_list_free(&plib->list_service);
 	}
-	double_list_remove(&g_list_plug, &plib->node);
-	printf("[service]: unloading %s\n", plib->file_name);
-	dlclose(plib->handle);
-	free(plib);
-	return PLUGIN_UNLOAD_OK;
+	if (handle != nullptr)
+		dlclose(handle);
+	if (plib->file_name.size() > 0)
+		printf("[service]: unloading %s\n", plib->file_name.c_str());
 }
 
 static const char *service_get_state_path()
@@ -329,9 +289,8 @@ static const char* service_get_plugin_name()
 	if (NULL == g_cur_plug) {
 		return NULL;
 	}
-	if (strncmp(g_cur_plug->file_name, "libgxs_", 7) == 0)
-		return g_cur_plug->file_name + 7;
-	return g_cur_plug->file_name;
+	auto fn = g_cur_plug->file_name.c_str();
+	return strncmp(fn, "libgxs_", 7) == 0 ? fn + 7 : fn;
 }
 
 /*
@@ -567,19 +526,12 @@ void service_release(const char *service_name, const char *module)
  */
 int service_console_talk(int argc, char **argv, char *reason, int len)
 {
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		auto plib = static_cast<SVC_PLUG_ENTITY *>(pnode->pdata);
-		if (0 == strncmp(plib->file_name, argv[0], 256)) {
-			if (NULL != plib->talk_main) {
-				plib->talk_main(argc, argv, reason, len);
-				return PLUGIN_TALK_OK;
-			} else {
-				return PLUGIN_NO_TALK;
-			}
-		}
-	}
-	return PLUGIN_NO_FILE;
+	auto plib = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
+	            [&](const SVC_PLUG_ENTITY &p) { return p.file_name == argv[0]; });
+	if (plib == g_list_plug.cend())
+		return PLUGIN_NO_FILE;
+	if (plib->talk_main == nullptr)
+		return PLUGIN_NO_TALK;
+	plib->talk_main(argc, argv, reason, len);
+	return PLUGIN_TALK_OK;
 }
