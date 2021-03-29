@@ -31,19 +31,6 @@ enum{
     PLUGIN_UNLOAD_OK = 0,
 };
 
-/* enumeration for the return value of xxx_reload_library */
-
-enum{
-    PLUGIN_RELOAD_UNABLE_UNLOAD = -7,
-	PLUGIN_RELOAD_FAIL_EXECUTEMAIN,
-    PLUGIN_RELOAD_FAIL_ALLOCNODE,
-    PLUGIN_RELOAD_NO_MAIN,
-    PLUGIN_RELOAD_FAIL_OPEN,
-    PLUGIN_RELOAD_NOT_FOUND,
-    PLUGIN_RELOAD_ERROR,
-    PLUGIN_RELOAD_OK = 0
-};
-
 /* enumeration for result of console talk */
 enum{
     PLUGIN_NO_TALK = -2,
@@ -53,4 +40,3 @@ enum{
 
 typedef BOOL (*PLUGIN_MAIN)(int, void**);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef void (*ENUM_PLUGINS)(const char*);
