@@ -932,7 +932,7 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 		}
 	}
 	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
-	pstream->fd = open(path, O_CREAT|O_RDWR|O_TRUNC, 0666);
+	pstream->fd = open(pstream->path, O_CREAT | O_RDWR | O_TRUNC, 0666);
 	if (-1 == pstream->fd) {
 		free(pstream);
 		return NULL;
