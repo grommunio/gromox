@@ -44,6 +44,7 @@ using namespace gromox;
 std::atomic<bool> g_notify_stop{false};
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
+static std::atomic<bool> g_hup_signalled{false};
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -112,6 +113,8 @@ int main(int argc, const char **argv)
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = [](int) {};
 	sigaction(SIGALRM, &sact, nullptr);
+	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
@@ -679,6 +682,11 @@ int main(int argc, const char **argv)
 	printf("[system]: HTTP DAEMON is now running\n");
 	while (!g_notify_stop) {
 		sleep(3);
+		if (g_hup_signalled.exchange(false)) {
+			service_reload_all();
+			hpm_processor_reload();
+			pdu_processor_reload();
+		}
 	}
 	listener_stop_accept();
 	return retcode;
