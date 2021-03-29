@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <gromox/plugin.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/common_types.hpp>
@@ -22,14 +23,18 @@ struct HPM_INTERFACE {
 };
 
 struct HPM_PLUGIN {
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST list_reference;
-	HPM_INTERFACE interface;
-	void *handle;
-	PLUGIN_MAIN lib_main;
-	TALK_MAIN talk_main;
-	char file_name[256];
-	bool completed_init;
+	HPM_PLUGIN();
+	HPM_PLUGIN(HPM_PLUGIN &&);
+	~HPM_PLUGIN();
+	void operator=(HPM_PLUGIN &&) = delete;
+
+	DOUBLE_LIST list_reference{};
+	HPM_INTERFACE interface{};
+	void *handle = nullptr;
+	PLUGIN_MAIN lib_main = nullptr;
+	TALK_MAIN talk_main = nullptr;
+	std::string file_name;
+	bool completed_init = false;
 };
 
 extern void hpm_processor_init(int context_num, const char *plugins_path, const char *const *names, uint64_t cache_size, uint64_t max_size, bool ignerr);

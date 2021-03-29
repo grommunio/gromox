@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <list>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -19,6 +22,8 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+
+using namespace std::string_literals;
 
 enum {
 	RESP_FAIL,
@@ -35,7 +40,7 @@ struct hpm_service_node {
 };
 
 struct HPM_CONTEXT {
-	HPM_INTERFACE *pinterface;
+	const HPM_INTERFACE *pinterface;
 	BOOL b_preproc;
 	BOOL b_chunked;
 	uint32_t chunk_size;
@@ -59,7 +64,7 @@ static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static char g_plugins_path[256];
 static HPM_PLUGIN *g_cur_plugin;
-static DOUBLE_LIST g_plugin_list;
+static std::list<HPM_PLUGIN> g_plugin_list;
 static HPM_CONTEXT *g_context_list;
 static const char *const *g_plugin_names;
 static bool g_ign_loaderr;
@@ -69,7 +74,6 @@ void hpm_processor_init(int context_num, const char *plugins_path,
     bool ignerr)
 {
 	g_context_num = context_num;
-	double_list_init(&g_plugin_list);
 	HX_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_cache_size = cache_size;
@@ -81,26 +85,23 @@ void hpm_processor_init(int context_num, const char *plugins_path,
 static BOOL hpm_processor_register_interface(
 	HPM_INTERFACE *pinterface)
 {
+	auto fn = g_cur_plugin->file_name.c_str();
 	if (NULL == pinterface->preproc) {
-		printf("[hpm_processor]: preproc of interface in %s "
-				"cannot be NULL\n", g_cur_plugin->file_name);
+		printf("[hpm_processor]: preproc of interface in %s cannot be NULL\n", fn);
 		return FALSE;
 	}
 	if (NULL == pinterface->proc) {
-		printf("[hpm_processor]: proc of interface in %s"
-			" cannot be NULL\n", g_cur_plugin->file_name);
+		printf("[hpm_processor]: proc of interface in %s cannot be NULL\n", fn);
 		return FALSE;
 	}
 	if (NULL == pinterface->retr) {
-		printf("[hpm_processor]: retr of interface in %s"
-			" cannot be NULL\n", g_cur_plugin->file_name);
+		printf("[hpm_processor]: retr of interface in %s cannot be NULL\n", fn);
 		return FALSE;
 	}
 	if (NULL != g_cur_plugin->interface.preproc ||
 		NULL != g_cur_plugin->interface.proc ||
 		NULL != g_cur_plugin->interface.retr) {
-		printf("[hpm_processor]: interface has been already"
-				" registered in %s", g_cur_plugin->file_name);
+		printf("[hpm_processor]: interface has been already registered in %s", fn);
 		return FALSE;
 	}
 	memcpy(&g_cur_plugin->interface, pinterface, sizeof(HPM_INTERFACE));
@@ -131,9 +132,8 @@ static const char* hpm_processor_get_plugin_name()
 	if (NULL == g_cur_plugin) {
 		return NULL;
 	}
-	if (strncmp(g_cur_plugin->file_name, "libgxh_", 7) == 0)
-		return g_cur_plugin->file_name + 7;
-	return g_cur_plugin->file_name;
+	auto fn = g_cur_plugin->file_name.c_str();
+	return strncmp(fn, "libgxh_", 7) == 0 ? fn + 7 : fn;
 }
 
 static const char* hpm_processor_get_config_path()
@@ -338,7 +338,8 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 			return pservice->service_addr;
 		}
 	}
-	ret_addr = service_query(service, g_cur_plugin->file_name, ti);
+	auto fn = g_cur_plugin->file_name.c_str();
+	ret_addr = service_query(service, fn, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}
@@ -346,14 +347,14 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	if (NULL == pservice) {
 		debug_info("[hpm_processor]: fail to "
 			"allocate memory for service node\n");
-		service_release(service, g_cur_plugin->file_name);
+		service_release(service, fn);
 		return NULL;
 	}
 	pservice->service_name = (char*)malloc(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
 		debug_info("[hpm_processor]: fail to "
 			"allocate memory for service name\n");
-		service_release(service, g_cur_plugin->file_name);
+		service_release(service, fn);
 		free(pservice);
 		return NULL;
 	}
@@ -365,23 +366,26 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	return ret_addr;
 }
 
-static void hpm_processor_unload_library(const char *plugin_name)
+HPM_PLUGIN::HPM_PLUGIN()
+{
+	double_list_init(&list_reference);
+}
+
+HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) :
+	list_reference(o.list_reference), interface(o.interface),
+	handle(o.handle), lib_main(o.lib_main), talk_main(o.talk_main),
+	file_name(std::move(o.file_name)), completed_init(o.completed_init)
+{
+	o.list_reference = {};
+	o.handle = nullptr;
+	o.completed_init = false;
+}
+
+HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
-	HPM_PLUGIN *pplugin;
 	DOUBLE_LIST_NODE *pnode;
-	
-    /* first find the plugin node in lib list */
-    for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		pplugin = (HPM_PLUGIN*)pnode->pdata;
-		if (0 == strcmp(pplugin->file_name, plugin_name)) {
-			break;
-		}
-	}
-    if (NULL == pnode){
-        return;
-    }
+	auto pplugin = this;
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -390,76 +394,53 @@ static void hpm_processor_unload_library(const char *plugin_name)
 	/* free the reference list */
 	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
 		service_release(static_cast<hpm_service_node *>(pnode->pdata)->service_name,
-			pplugin->file_name);
+			pplugin->file_name.c_str());
 		free(static_cast<hpm_service_node *>(pnode->pdata)->service_name);
 		free(pnode->pdata);
 	}
 	double_list_free(&pplugin->list_reference);
-	double_list_remove(&g_plugin_list, &pplugin->node);
-	printf("[hpm_processor]: unloading %s\n", pplugin->file_name);
-	dlclose(pplugin->handle);
-	free(pplugin);
+	if (handle != nullptr)
+		dlclose(handle);
+	printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
 }
 
 static int hpm_processor_load_library(const char *plugin_name)
 {
 	static void *const server_funcs[] = {(void *)hpm_processor_queryservice};
 	const char *fake_path = plugin_name;
-	PLUGIN_MAIN func;
-	HPM_PLUGIN *pplugin;
+	HPM_PLUGIN plug;
 
-	void *handle = dlopen(plugin_name, RTLD_LAZY);
-	if (handle == NULL && strchr(plugin_name, '/') == NULL) {
-		char altpath[256];
-		snprintf(altpath, sizeof(altpath), "%s/%s", g_plugins_path, plugin_name);
-		handle = dlopen(altpath, RTLD_LAZY);
-	}
-	if (NULL == handle){
+	plug.handle = dlopen(plugin_name, RTLD_LAZY);
+	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
+		plug.handle = dlopen((g_plugins_path + "/"s + plugin_name).c_str(), RTLD_LAZY);
+	if (plug.handle == nullptr) {
 		printf("[hpm_processor]: error loading %s: %s\n", fake_path, dlerror());
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
     }
-	func = (PLUGIN_MAIN)dlsym(handle, "HPM_LibMain");
-	if (NULL == func) {
+	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HPM_LibMain"));
+	if (plug.lib_main == nullptr) {
 		printf("[hpm_processor]: error finding the "
 			"HPM_LibMain function in %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
-		dlclose(handle);
 		return PLUGIN_NO_MAIN;
 	}
-	pplugin = static_cast<HPM_PLUGIN *>(malloc(sizeof(*pplugin)));
-    if (NULL == pplugin) {
-		printf("[hpm_processor]: Failed to allocate memory for %s\n", fake_path);
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
-		dlclose(handle);
-		return PLUGIN_FAIL_ALLOCNODE;
-	}
-	memset(pplugin, 0, sizeof(HPM_PLUGIN));
-	pplugin->node.pdata = pplugin;
-	double_list_init(&pplugin->list_reference);
-	strncpy(pplugin->file_name, plugin_name, 255);
-	pplugin->handle = handle;
-	pplugin->lib_main = func;
-	/* append the pendpoint node into endpoint list */
-	double_list_append_as_tail(&g_plugin_list, &pplugin->node);
-	g_cur_plugin = pplugin;
+	plug.file_name = plugin_name;
+	g_plugin_list.push_back(std::move(plug));
+	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs)) ||
-		NULL == pplugin->interface.preproc ||
-		NULL == pplugin->interface.proc ||
-		NULL == pplugin->interface.retr) {
+	if (!g_cur_plugin->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs)) ||
+	    g_cur_plugin->interface.preproc == nullptr ||
+	    g_cur_plugin->interface.proc == nullptr ||
+	    g_cur_plugin->interface.retr == nullptr) {
 		printf("[hpm_processor]: error executing the plugin's init "
 			"function, or interface not registered in %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
-		/*
-		 *  the lib node will automatically removed from plugin
-		 *  list in hpm_processor_unload_library function
-		 */
-        hpm_processor_unload_library(plugin_name);
+		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	pplugin->completed_init = true;
+	g_cur_plugin->completed_init = true;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }
@@ -483,20 +464,7 @@ int hpm_processor_run()
 
 int hpm_processor_stop()
 {
-	std::vector<std::string> stack;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		try {
-			stack.push_back(static_cast<HPM_PLUGIN *>(pnode->pdata)->file_name);
-		} catch (...) {
-		}
-	}
-	while (!stack.empty()) {
-		hpm_processor_unload_library(stack.back().c_str());
-		stack.pop_back();
-	}
+	g_plugin_list.clear();
 	if (NULL != g_context_list) {
 		free(g_context_list);
 		g_context_list = NULL;
@@ -506,7 +474,6 @@ int hpm_processor_stop()
 
 void hpm_processor_free()
 {
-	double_list_free(&g_plugin_list);
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;
 }
@@ -514,22 +481,14 @@ void hpm_processor_free()
 int hpm_processor_console_talk(int argc,
 	char** argv, char *result, int length)
 {
-	HPM_PLUGIN *pplugin;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		pplugin = (HPM_PLUGIN*)(pnode->pdata);
-		if (0 == strncmp(pplugin->file_name, argv[0], 256)) {
-			if (NULL != pplugin->talk_main) {
-				pplugin->talk_main(argc, argv, result, length);
-				return PLUGIN_TALK_OK;
-			} else {
-				return PLUGIN_NO_TALK;
-			}
-		}
-	}
-	return PLUGIN_NO_FILE;
+	auto pplugin = std::find_if(g_plugin_list.cbegin(), g_plugin_list.cend(),
+	               [&](const HPM_PLUGIN &p) { return p.file_name == argv[0]; });
+	if (pplugin == g_plugin_list.cend())
+		return PLUGIN_NO_FILE;
+	if (pplugin->talk_main == nullptr)
+		return PLUGIN_NO_TALK;
+	pplugin->talk_main(argc, argv, result, length);
+	return PLUGIN_TALK_OK;
 }
 
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
@@ -538,16 +497,13 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 	int context_id;
 	BOOL b_chunked;
 	char tmp_buff[32];
-	HPM_PLUGIN *pplugin;
 	HPM_CONTEXT *phpm_ctx;
-	DOUBLE_LIST_NODE *pnode;
 	uint64_t content_length;
 	
 	context_id = phttp - http_parser_get_contexts_list();
 	phpm_ctx = g_context_list + context_id;
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		pplugin = (HPM_PLUGIN*)pnode->pdata;
+	for (const auto &p : g_plugin_list) {
+		auto pplugin = &p;
 		if (TRUE == pplugin->interface.preproc(context_id)) {
 			tmp_len = mem_file_get_total_length(
 				&phttp->request.f_content_length);
