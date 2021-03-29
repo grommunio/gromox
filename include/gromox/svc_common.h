@@ -1,10 +1,8 @@
 #pragma once
 #include <typeinfo>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
-#define PLUGIN_INIT     0
-#define PLUGIN_FREE     1
-
+#include <gromox/defs.h>
+#include <gromox/plugin.hpp>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 

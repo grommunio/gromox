@@ -4,8 +4,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mail.hpp>
-#define PLUGIN_INIT                 0
-#define PLUGIN_FREE                 1
+#include <gromox/plugin.hpp>
 #define SYS_THREAD_CREATE           2
 #define SYS_THREAD_DESTROY          3
 
@@ -29,7 +28,6 @@ struct MESSAGE_CONTEXT {
 };
 
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
-typedef void (*TALK_MAIN)(int, char**, char*, int);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

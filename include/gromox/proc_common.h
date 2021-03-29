@@ -3,11 +3,9 @@
 #include <typeinfo>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
+#include <gromox/plugin.hpp>
 #include <gromox/rpc_types.hpp>
 #include <gromox/ndr.hpp>
-#define PLUGIN_INIT                 0
-#define PLUGIN_FREE                 1
-
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
@@ -48,8 +46,6 @@ struct DCERPC_INTERFACE {
 	/* the reclaim function for the chosen interface */
 	void (*reclaim)(uint32_t async_id);
 };
-
-typedef void (*TALK_MAIN)(int, char**, char*, int);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

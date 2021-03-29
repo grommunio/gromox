@@ -1,13 +1,11 @@
 #pragma once
 #include <cstdint>
 #include <typeinfo>
-#include <gromox/mem_file.hpp>
 #include <gromox/common_types.hpp>
-#include <openssl/ssl.h>
 #include <gromox/defs.h>
-#define PLUGIN_INIT                 0
-#define PLUGIN_FREE                 1
-
+#include <gromox/mem_file.hpp>
+#include <gromox/plugin.hpp>
+#include <openssl/ssl.h>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
@@ -60,8 +58,6 @@ struct HTTP_AUTH_INFO {
 	const char* maildir;
 	const char* lang;
 };
-
-typedef void (*TALK_MAIN)(int, char**, char*, int);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

@@ -4,9 +4,8 @@
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/mem_file.hpp>
+#include <gromox/plugin.hpp>
 #include <gromox/stream.hpp>
-#define PLUGIN_INIT                 0
-#define PLUGIN_FREE                 1
 #define FLUSH_WHOLE_MAIL            0
 #define FLUSH_PART_MAIL             1
 
@@ -52,7 +51,6 @@ struct FLUSH_ENTITY {
 };
 
 typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
-typedef void (*TALK_MAIN)(int, char**, char*, int);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
