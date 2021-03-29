@@ -26,12 +26,8 @@ enum {
 static BOOL ftstream_parser_read_uint16(
 	FTSTREAM_PARSER *pstream, uint16_t *pv)
 {
-	uint16_t tmp_val;
-	
-	if (sizeof(uint16_t) != read(pstream->fd,
-		&tmp_val, sizeof(uint16_t))) {
+	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
-	}
 	*pv = le16_to_cpu(*pv);
 	pstream->offset += sizeof(uint16_t);
 	return TRUE;
@@ -40,12 +36,8 @@ static BOOL ftstream_parser_read_uint16(
 static BOOL ftstream_parser_read_uint32(
 	FTSTREAM_PARSER *pstream, uint32_t *pv)
 {
-	uint32_t tmp_val;
-	
-	if (sizeof(uint32_t) != read(pstream->fd,
-		&tmp_val, sizeof(uint32_t))) {
+	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
-	}
 	*pv = le32_to_cpu(*pv);
 	pstream->offset += sizeof(uint32_t);
 	return TRUE;
@@ -54,12 +46,8 @@ static BOOL ftstream_parser_read_uint32(
 static BOOL ftstream_parser_read_uint64(
 	FTSTREAM_PARSER *pstream, uint64_t *pv)
 {
-	uint64_t tmp_val;
-	
-	if (sizeof(uint64_t) != read(pstream->fd,
-		&tmp_val, sizeof(uint64_t))) {
+	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
-	}
 	*pv = le64_to_cpu(*pv);
 	pstream->offset += sizeof(uint64_t);
 	return TRUE;
