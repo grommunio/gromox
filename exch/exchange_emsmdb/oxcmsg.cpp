@@ -285,8 +285,11 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_PROHIBITSENDQUOTA);
-	uint64_t max_quota = pvalue == nullptr ? ULLONG_MAX :
-	                     1024 * *static_cast<uint32_t *>(pvalue);
+	uint64_t max_quota = ULLONG_MAX;
+	if (pvalue != nullptr) {
+		max_quota = *static_cast<uint32_t *>(pvalue);
+		max_quota = max_quota >= ULLONG_MAX / 1024 ? ULLONG_MAX : max_quota * 1024ULL;
+	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_MESSAGESIZEEXTENDED);
 	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
