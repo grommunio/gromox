@@ -399,6 +399,14 @@ static const char tbl_mlists_top[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_orgs_top[] =
+"CREATE TABLE `orgs` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `name` varchar(32) NOT NULL,"
+"  `description` varchar(128),"
+"  PRIMARY KEY (`id`)"
+") DEFAULT CHARSET=utf8mb4";
+
 static const char tbl_specifieds_top[] =
 "CREATE TABLE `specifieds` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -454,7 +462,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"members", tbl_members_top},
 	{"mlists", tbl_mlists_top},
 	{"options", tbl_options_1},
-	{"orgs", tbl_orgs_0},
+	{"orgs", tbl_orgs_top},
 	{"specifieds", tbl_specifieds_top},
 	{"users", tbl_users_top},
 	{"aliases", tbl_alias_top},
@@ -578,6 +586,9 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{69, "ALTER TABLE `classes` ADD COLUMN `domain_id` int(10) unsigned NOT NULL"},
 	{70, "ALTER TABLE `classes` ADD CONSTRAINT FOREIGN KEY (`domain_id`) REFERENCES domains (`id`)"},
 	{71, tbl_configs_71},
+	{72, "ALTER TABLE `orgs` DROP COLUMN `memo`"},
+	{73, "ALTER TABLE `orgs` ADD COLUMN `name` varchar(32) NOT NULL"},
+	{74, "ALTER TABLE `orgs` ADD COLUMN `description` varchar(128)"},
 	{0, nullptr},
 };
 
