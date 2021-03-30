@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cstdint>
+#include <list>
 #include <mutex>
 #include <string>
 #include <typeinfo>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -38,6 +41,7 @@
 #define NDR_STACK_IN					0
 #define NDR_STACK_OUT					1
 
+using namespace std::string_literals;
 
 /* structure for describing service reference */
 struct pdu_service_node {
@@ -81,7 +85,7 @@ static uint32_t g_last_async_id;
 static pthread_key_t g_call_key;
 static pthread_key_t g_stack_key;
 static PROC_PLUGIN *g_cur_plugin;
-static DOUBLE_LIST g_plugin_list;
+static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
 static DOUBLE_LIST g_endpoint_list;
 static bool g_ign_loaderr;
@@ -100,8 +104,6 @@ static const SYNTAX_ID g_transfer_syntax_ndr =
 
 static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
-
-static void pdu_processor_unload_library(const char* plugin_name);
 
 static int pdu_processor_load_library(const char* plugin_name);
 
@@ -177,7 +179,6 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	HX_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
-	double_list_init(&g_plugin_list);
 	double_list_init(&g_endpoint_list);
 	double_list_init(&g_processor_list);
 }
@@ -320,20 +321,7 @@ int pdu_processor_stop()
 		lib_buffer_put(g_processor_allocator, pprocessor);
 	}
 	double_list_free(&g_processor_list);
-	
-	std::vector<std::string> stack;
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		try {
-			stack.push_back(static_cast<PROC_PLUGIN *>(pnode->pdata)->file_name);
-		} catch (...) {
-		}
-	}
-	while (!stack.empty()) {
-		pdu_processor_unload_library(stack.back().c_str());
-		stack.pop_back();
-	}
-	
+	g_plugin_list.clear();
 	while ((pnode = double_list_pop_front(&g_endpoint_list)) != nullptr) {
 		double_list_free(&((DCERPC_ENDPOINT*)pnode->pdata)->interface_list);
 		free(pnode->pdata);
@@ -380,7 +368,6 @@ int pdu_processor_stop()
 
 void pdu_processor_free()
 {
-	double_list_free(&g_plugin_list);
 	double_list_free(&g_endpoint_list);
 	double_list_free(&g_processor_list);
 	g_plugins_path[0] = '\0';
@@ -3460,27 +3447,31 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	return TRUE;
 }
 
-static void pdu_processor_unload_library(const char* plugin_name)
+PROC_PLUGIN::PROC_PLUGIN()
+{
+	double_list_init(&list_reference);
+	double_list_init(&interface_list);
+}
+
+PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) :
+	list_reference(o.list_reference), interface_list(o.interface_list),
+	lib_main(o.lib_main), talk_main(o.talk_main),
+	file_name(std::move(o.file_name)), completed_init(o.completed_init)
+{
+	o.list_reference = {};
+	o.interface_list = {};
+	o.handle = nullptr;
+	o.completed_init = false;
+}
+
+PROC_PLUGIN::~PROC_PLUGIN()
 {
 	PLUGIN_MAIN func;
 	DOUBLE_LIST *plist;
-	PROC_PLUGIN *pplugin;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	INTERFACE_NODE *pif_node;
-	
-	
-    /* first find the plugin node in lib list */
-    for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)){
-		pplugin = (PROC_PLUGIN*)pnode->pdata;
-		if (0 == strcmp(pplugin->file_name, plugin_name)) {
-			break;
-		}
-	}
-    if (NULL == pnode){
-        return;
-    }
+	auto pplugin = this;
 	
 	while ((pnode = double_list_pop_front(&pplugin->interface_list)) != nullptr) {
 		pif_node = (INTERFACE_NODE*)pnode->pdata;
@@ -3506,16 +3497,14 @@ static void pdu_processor_unload_library(const char* plugin_name)
 	/* free the reference list */
 	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
 		service_release(static_cast<pdu_service_node *>(pnode->pdata)->service_name,
-			pplugin->file_name);
+			pplugin->file_name.c_str());
 		free(static_cast<pdu_service_node *>(pnode->pdata)->service_name);
 		free(pnode->pdata);
 	}
 	double_list_free(&pplugin->list_reference);
-	
-	double_list_remove(&g_plugin_list, &pplugin->node);
-	printf("[pdu_processor]: unloading %s\n", pplugin->file_name);
-	dlclose(pplugin->handle);
-	free(pplugin);
+	if (handle != nullptr)
+		dlclose(handle);
+	printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
 }
 
 static BOOL pdu_processor_register_talk(TALK_MAIN talk)
@@ -3542,9 +3531,8 @@ static const char* pdu_processor_get_plugin_name()
 	if (NULL == g_cur_plugin) {
 		return NULL;
 	}
-	if (strncmp(g_cur_plugin->file_name, "libgxp_", 7) == 0)
-		return g_cur_plugin->file_name + 7;
-	return g_cur_plugin->file_name;
+	auto fn = g_cur_plugin->file_name.c_str();
+	return strncmp(fn, "libgxp_", 7) == 0 ? fn + 7 : fn;
 }
 
 static const char* pdu_processor_get_config_path()
@@ -3727,7 +3715,8 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 			return pservice->service_addr;
 		}
 	}
-	ret_addr = service_query(service, g_cur_plugin->file_name, ti);
+	auto fn = g_cur_plugin->file_name.c_str();
+	ret_addr = service_query(service, fn, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}
@@ -3735,14 +3724,14 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	if (NULL == pservice) {
 		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service node\n");
-		service_release(service, g_cur_plugin->file_name);
+		service_release(service, fn);
 		return NULL;
 	}
 	pservice->service_name = (char*)malloc(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
 		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service name\n");
-		service_release(service, g_cur_plugin->file_name);
+		service_release(service, fn);
 		free(pservice);
 		return NULL;
 	}
@@ -3770,84 +3759,53 @@ static int pdu_processor_load_library(const char* plugin_name)
 {
 	static void *const server_funcs[] = {(void *)pdu_processor_queryservice};
 	const char *fake_path = plugin_name;
-	PLUGIN_MAIN func;
-	PROC_PLUGIN *pplugin;
-	
-	void *handle = dlopen(plugin_name, RTLD_LAZY);
-	if (handle == NULL && strchr(plugin_name, '/') == NULL) {
-		char altpath[256];
-		snprintf(altpath, sizeof(altpath), "%s/%s", g_plugins_path, plugin_name);
-		handle = dlopen(altpath, RTLD_LAZY);
-	}
-	if (NULL == handle){
+	PROC_PLUGIN plug;
+
+	plug.handle = dlopen(plugin_name, RTLD_LAZY);
+	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
+		plug.handle = dlopen((g_plugins_path + "/"s + plugin_name).c_str(), RTLD_LAZY);
+	if (plug.handle == nullptr) {
 		printf("[pdu_processor]: error loading %s: %s\n", fake_path,
 			dlerror());
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
     }
-	func = (PLUGIN_MAIN)dlsym(handle, "PROC_LibMain");
-	if (NULL == func) {
+	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "PROC_LibMain"));
+	if (plug.lib_main == nullptr) {
 		printf("[pdu_processor]: error finding the PROC_LibMain function in %s\n",
 			fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
-		dlclose(handle);
 		return PLUGIN_NO_MAIN;
 	}
-	pplugin = static_cast<PROC_PLUGIN *>(malloc(sizeof(*pplugin)));
-    if (NULL == pplugin) {
-		printf("[pdu_processor]: Failed to allocate memory for %s\n", fake_path);
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
-		dlclose(handle);
-		return PLUGIN_FAIL_ALLOCNODE;
-	}
-	
-	memset(pplugin, 0, sizeof(PROC_PLUGIN));
-	pplugin->node.pdata = pplugin;
-	double_list_init(&pplugin->list_reference);
-	double_list_init(&pplugin->interface_list);
-	strncpy(pplugin->file_name, plugin_name, 255);
-	pplugin->handle = handle;
-	pplugin->lib_main = func;
+	plug.file_name = plugin_name;
+	g_plugin_list.push_back(std::move(plug));
+	g_cur_plugin = &g_plugin_list.back();
 	
 	/* append the pendpoint node into endpoint list */
-	double_list_append_as_tail(&g_plugin_list, &pplugin->node);
-	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
+	if (!g_cur_plugin->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
 		printf("[pdu_processor]: error executing the plugin's init function "
 			"in %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
-		/*
-		 *  the lib node will automatically removed from plugin list in
-		 *  pdu_processor_unload_library function
-		 */
-        pdu_processor_unload_library(plugin_name);
+		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
-	pplugin->completed_init = true;
+	g_cur_plugin->completed_init = true;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }
 
 int pdu_processor_console_talk(int argc, char** argv, char *result, int length)
 {
-	PROC_PLUGIN *pplugin;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		pplugin = (PROC_PLUGIN*)(pnode->pdata);
-		if (0 == strncmp(pplugin->file_name, argv[0], 256)) {
-			if (NULL != pplugin->talk_main) {
-				pplugin->talk_main(argc, argv, result, length);
-				return PLUGIN_TALK_OK;
-			} else {
-				return PLUGIN_NO_TALK;
-			}
-		}
-	}
-	return PLUGIN_NO_FILE;
+	auto pplugin = std::find_if(g_plugin_list.cbegin(), g_plugin_list.cend(),
+	               [&](const PROC_PLUGIN &p) { return p.file_name == argv[0]; });
+	if (pplugin == g_plugin_list.cend())
+		return PLUGIN_NO_FILE;
+	if (pplugin->talk_main == nullptr)
+		return PLUGIN_NO_TALK;
+	pplugin->talk_main(argc, argv, result, length);
+	return PLUGIN_TALK_OK;
 }
 
 void pdu_processor_enum_endpoints(void (*enum_ep)(DCERPC_ENDPOINT*))

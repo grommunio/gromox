@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <gromox/ndr.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/ntlmssp.hpp>
@@ -42,14 +43,17 @@ struct DCERPC_INFO {
 }; /* used for proc plugin to get dcerpc information */
 
 struct PROC_PLUGIN {
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST list_reference;
-	DOUBLE_LIST interface_list;
-	void *handle;
-	PLUGIN_MAIN lib_main;
-	TALK_MAIN talk_main;
-	char file_name[256];
-	bool completed_init;
+	PROC_PLUGIN();
+	PROC_PLUGIN(PROC_PLUGIN &&);
+	~PROC_PLUGIN();
+	void operator=(PROC_PLUGIN &&) = delete;
+
+	DOUBLE_LIST list_reference{}, interface_list{};
+	void *handle = nullptr;
+	PLUGIN_MAIN lib_main = nullptr;
+	TALK_MAIN talk_main = nullptr;
+	std::string file_name;
+	bool completed_init = false;
 };
 
 struct DCERPC_ENDPOINT {
