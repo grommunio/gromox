@@ -1,3 +1,15 @@
+0.19 (2021-03-30)
+=================
+Changes:
+* exmdb_provider: allow reduction of cache_interval down to 1s
+Fixes:
+* dbop: classes.filter column was not created on dbop -C
+* exchange_emsmdb: fix integer multiplication overflow during quota check
+* exchange_emsmdb: fix ftstream_parser_create running into EISDIR error
+* exchange_emsmdb: fix read from uninitialized variable
+* php-ews: send error messages to error log rather than stdout
+
+
 0.18 (2021-03-26)
 =================
 Changes:
