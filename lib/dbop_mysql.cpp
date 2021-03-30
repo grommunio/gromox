@@ -317,6 +317,7 @@ static const char tbl_classes_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
 "  `listname` varchar(320) CHARACTER SET ascii DEFAULT NULL,"
+"  `filters` TEXT,"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
 "  KEY `listname` (`listname`),"
