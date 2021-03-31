@@ -445,7 +445,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		db_engine_stop();
 		bounce_producer_stop();
 		common_util_stop();
-		exmdb_parser_free();
 		exmdb_server_free();
 		db_engine_free();
 		bounce_producer_free();

@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -39,7 +40,6 @@ static void *thread_work_func(void *param)
 	socklen_t addrlen;
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
-	EXMDB_CONNECTION *pconnection;
 	
 	while (NULL == common_util_lang_to_charset ||
 		NULL == common_util_cpid_to_charset ||
@@ -79,8 +79,8 @@ static void *thread_work_func(void *param)
 			close(sockd);
 			continue;
 		}
-		pconnection = exmdb_parser_get_connection();
-		if (NULL == pconnection) {
+		auto pconnection = exmdb_parser_get_connection();
+		if (pconnection == nullptr) {
 			tmp_byte = exmdb_response::MAX_REACHED;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
@@ -88,7 +88,7 @@ static void *thread_work_func(void *param)
 
 		}
 		pconnection->sockd = sockd;
-		exmdb_parser_put_connection(pconnection);
+		exmdb_parser_put_connection(std::move(pconnection));
 	}
 	return nullptr;
 }

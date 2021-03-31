@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <cstdint>
 #include <memory>
@@ -34,8 +35,14 @@
 static size_t g_max_threads, g_max_routers;
 static std::vector<EXMDB_ITEM> g_local_list;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
-static DOUBLE_LIST g_connection_list;
+static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
+
+EXMDB_CONNECTION::~EXMDB_CONNECTION()
+{
+	if (sockd >= 0)
+		close(sockd);
+}
 
 ROUTER_CONNECTION::ROUTER_CONNECTION()
 {
@@ -61,27 +68,17 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;
-	double_list_init(&g_connection_list);
 }
 
-void exmdb_parser_free()
+std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_get_connection()
 {
-	double_list_free(&g_connection_list);
-}
-
-EXMDB_CONNECTION* exmdb_parser_get_connection()
-{
-	if (0 != g_max_threads && double_list_get_nodes_num(
-		&g_connection_list) >= g_max_threads) {
-		return NULL;
+	if (g_max_threads != 0 && g_connection_list.size() >= g_max_threads)
+		return nullptr;
+	try {
+		return std::make_shared<EXMDB_CONNECTION>();
+	} catch (const std::bad_alloc &) {
 	}
-	auto pconnection = me_alloc<EXMDB_CONNECTION>();
-	if (NULL == pconnection) {
-		return NULL;
-	}
-	pconnection->node.pdata = pconnection;
-	pconnection->b_stop = FALSE;
-	return pconnection;
+	return nullptr;
 }
 
 static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
@@ -829,11 +826,11 @@ static void *thread_work_func(void *pparam)
 	EXMDB_REQUEST request;
 	struct pollfd pfd_read;
 	EXMDB_RESPONSE response;
-	EXMDB_CONNECTION *pconnection;
 	
 	b_private = FALSE; /* whatever for connect request */
 	memset(resp_buff, 0, 5);
-	pconnection = (EXMDB_CONNECTION*)pparam;
+	/* unordered_set currently owns it, now take another ref */
+	auto pconnection = static_cast<EXMDB_CONNECTION *>(pparam)->shared_from_this();
 	pthread_setname_np(pconnection->thr_id, "exmdb_parser");
 	pbuff = NULL;
 	offset = 0;
@@ -913,9 +910,9 @@ static void *thread_work_func(void *pparam)
 				} else if (b_private != request.payload.connect.b_private) {
 					tmp_byte = exmdb_response::MISCONFIG_MODE;
 				} else {
-					HX_strlcpy(pconnection->remote_id, request.payload.connect.remote_id, GX_ARRAY_SIZE(pconnection->remote_id));
+					pconnection->remote_id = request.payload.connect.remote_id;
 					exmdb_server_free_environment();
-					exmdb_server_set_remote_id(pconnection->remote_id);
+					exmdb_server_set_remote_id(pconnection->remote_id.c_str());
 					is_connected = TRUE;
 					if (5 != write(pconnection->sockd, resp_buff, 5)) {
 						break;
@@ -943,15 +940,15 @@ static void *thread_work_func(void *pparam)
 					} else {
 						prouter->thr_id = pconnection->thr_id;
 						prouter->sockd = pconnection->sockd;
+						pconnection->thr_id = {};
+						pconnection->sockd = -1;
 						time(&prouter->last_time);
 						std::unique_lock r_hold(g_router_lock);
 						g_router_list.insert(prouter);
 						r_hold.unlock();
 						std::unique_lock chold(g_connection_lock);
-						double_list_remove(&g_connection_list,
-											&pconnection->node);
+						g_connection_list.erase(pconnection);
 						chold.unlock();
-						free(pconnection);
 						notification_agent_thread_work(std::move(prouter));
 					}
 				}
@@ -975,32 +972,25 @@ static void *thread_work_func(void *pparam)
 		break;
 	}
 	close(pconnection->sockd);
+	pconnection->sockd = -1;
 	if (NULL != pbuff) {
 		free(pbuff);
 	}
-	std::unique_lock chold(g_connection_lock);
-	double_list_remove(&g_connection_list, &pconnection->node);
-	chold.unlock();
 	if (FALSE == pconnection->b_stop) {
 		pthread_detach(pthread_self());
 	}
-	free(pconnection);
 	return nullptr;
 }
 
-void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection)
+void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection)
 {
 	std::unique_lock chold(g_connection_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
+	auto [it, _] = g_connection_list.insert(pconnection);
 	chold.unlock();
-	if (0 != pthread_create(&pconnection->thr_id,
-		NULL, thread_work_func, pconnection)) {
-		chold.lock();
-		double_list_remove(&g_connection_list, &pconnection->node);
-		chold.unlock();
-		free(pconnection);
+	if (pthread_create(&pconnection->thr_id, nullptr, thread_work_func, pconnection.get()) == 0)
 		return;
-	}
+	chold.lock();
+	g_connection_list.erase(it);
 }
 
 std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_get_router(const char *remote_id)
@@ -1049,27 +1039,22 @@ int exmdb_parser_run(const char *config_path)
 
 int exmdb_parser_stop()
 {
-	int i, num;
+	size_t i = 0;
 	pthread_t *pthr_ids;
-	DOUBLE_LIST_NODE *pnode;
-	EXMDB_CONNECTION *pconnection;
 	
 	if (g_local_list.size() == 0)
 		return 0;
 	pthr_ids = NULL;
 	std::unique_lock chold(g_connection_lock);
-	num = double_list_get_nodes_num(&g_connection_list);
+	size_t num = g_connection_list.size();
 	if (num > 0) {
 		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			return -1;
 		}
 	}
-	for (i=0,pnode=double_list_get_head(&g_connection_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		&g_connection_list, pnode),i++) {
-		pconnection = (EXMDB_CONNECTION*)pnode->pdata;
-		pthr_ids[i] = pconnection->thr_id;
+	for (auto &pconnection : g_connection_list) {
+		pthr_ids[i++] = pconnection->thr_id;
 		pconnection->b_stop = TRUE;
 		shutdown(pconnection->sockd, SHUT_RDWR);
 	}
