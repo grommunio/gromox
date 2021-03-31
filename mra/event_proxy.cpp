@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
+#include <atomic>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -31,7 +32,7 @@ struct BACK_CONN {
 	time_t last_time;
 };
 
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static char g_event_ip[40];
 static int g_event_port;
 static pthread_t g_scan_id;
@@ -62,9 +63,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-
-		g_notify_stop = TRUE;
-
+		g_notify_stop = true;
 		double_list_init(&g_back_list);
 		double_list_init(&g_lost_list);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
@@ -119,10 +118,10 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 			}
 		}
 
-		g_notify_stop = FALSE;
+		g_notify_stop = false;
 		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 		if (ret != 0) {
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr)
 				free(pnode->pdata);
 			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
@@ -138,9 +137,8 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-
-		if (FALSE == g_notify_stop) {
-			g_notify_stop = TRUE;
+		if (!g_notify_stop) {
+			g_notify_stop = true;
 			pthread_join(g_scan_id, NULL);
 
 			while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
@@ -175,7 +173,7 @@ static void *scan_work_func(void *param)
 
 	double_list_init(&temp_list);
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock bl_hold(g_back_lock);
 		time(&now_time);
 		ptail = double_list_get_tail(&g_back_list);

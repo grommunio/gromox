@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
+#include <atomic>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -122,7 +123,7 @@ static BOOL check_full(const char *path);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static int g_conn_num;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;
@@ -205,9 +206,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		
-		g_notify_stop = TRUE;
-
+		g_notify_stop = true;
 		double_list_init(&g_server_list);
 		double_list_init(&g_lost_list);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
@@ -256,7 +255,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			}
 		}
 
-		g_notify_stop = FALSE;
+		g_notify_stop = false;
 		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 		if (ret != 0) {
 			printf("[midb_agent]: failed to create scan thread: %s\n", strerror(ret));
@@ -290,8 +289,8 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (FALSE == g_notify_stop) {
-			g_notify_stop = TRUE;
+		if (!g_notify_stop) {
+			g_notify_stop = true;
 			pthread_join(g_scan_id, NULL);
 		}
 
@@ -336,8 +335,7 @@ static void *scan_work_func(void *param)
 	struct pollfd pfd_read;
 
 	double_list_init(&temp_list);
-
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
 		for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;

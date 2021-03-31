@@ -61,7 +61,7 @@ struct DIRECTORY_NODE {
 };
 
 static int g_context_num;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_tid;
 static DOUBLE_LIST g_item_list;
 static std::mutex g_hash_lock;
@@ -80,7 +80,7 @@ static void* scan_work_func(void *pparam)
 	struct stat node_stat;
 	
 	count = 0;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		count ++;
 		if (count < 600) {
 			sleep(1);
@@ -138,7 +138,7 @@ static BOOL mod_cache_enlarge_hash()
 
 void mod_cache_init(int context_num)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	g_context_num = context_num;
 	double_list_init(&g_item_list);
 }
@@ -202,11 +202,11 @@ int mod_cache_run()
 		printf("[mod_cache]: Failed to init cache hash table\n");
 		return -3;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[mod_cache]: failed to create scanning thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "mod_cache");
@@ -220,8 +220,8 @@ int mod_cache_stop()
 	STR_HASH_ITER *iter;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_tid, NULL);
 	}
 	g_directory_list.clear();

@@ -78,7 +78,7 @@ static int g_block_auth_fail;
 static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static IMAP_CONTEXT *g_context_list;
 static LIB_BUFFER *g_alloc_file;
 static LIB_BUFFER *g_alloc_mjson;
@@ -121,7 +121,7 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_starttls      = support_starttls;
 	g_ssl_mutex_buf         = NULL;
-	g_notify_stop           = TRUE;
+	g_notify_stop = true;
 	double_list_init(&g_sleeping_list);
 	g_sequence_id = 0;
 	if (TRUE == support_starttls) {
@@ -277,11 +277,11 @@ int imap_parser_run()
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_thr_id, nullptr, thread_work_func, nullptr);
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create sleeping list scanning thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		return -11;
 	}
 	pthread_setname_np(g_thr_id, "parser/worker");
@@ -289,7 +289,7 @@ int imap_parser_run()
 	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		pthread_join(g_thr_id, NULL);
 		return -12;
 	}
@@ -308,9 +308,8 @@ int imap_parser_stop()
 {
 	int i;
 	system_services_install_event_stub(nullptr);
-
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_thr_id, NULL);
 		pthread_join(g_scan_id, NULL);
 	}
@@ -1698,7 +1697,7 @@ static void* thread_work_func(void *argp)
 	IMAP_CONTEXT *pcontext;
 	struct timeval current_time;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock ll_hold(g_list_lock);
 		ptail = double_list_get_tail(&g_sleeping_list);
 		ll_hold.unlock();
@@ -1870,9 +1869,7 @@ static void* scan_work_func(void *argp)
 	IMAP_CONTEXT *pcontext;
 	DOUBLE_LIST_NODE *pnode;
 	
-	
-	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		i ++;
 		sleep(1);
 		if (i < SCAN_INTERVAL) {

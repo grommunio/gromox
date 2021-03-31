@@ -3,6 +3,7 @@
 #	include "config.h"
 #endif
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <condition_variable>
 #include <list>
@@ -58,7 +59,7 @@ struct TIMER {
 	std::string command;
 };
 
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static size_t g_threads_num;
 static int g_last_tid;
 static int g_list_fd = -1;
@@ -299,13 +300,13 @@ int main(int argc, const char **argv)
 	
 	pthread_setname_np(thr_accept_id, "accept");
 	time(&last_cltime);
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGTERM, &sact, nullptr);
 	printf("[system]: TIMER is now running\n");
 
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock li_hold(g_list_lock);
 		time(&cur_time);
 		for (auto ptimer = g_exec_list.begin(); ptimer != g_exec_list.end(); ) {
@@ -378,7 +379,7 @@ static void *accept_work_func(void *param)
 	struct sockaddr_storage peer_name;
 
 	sockd = (int)(long)param;
-    while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
         sockd2 = accept(sockd, (struct sockaddr*)&peer_name, &addrlen);
@@ -602,7 +603,7 @@ static BOOL read_mark(CONNECTION_NODE *pconnection)
 
 static void term_handler(int signo)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 static int parse_line(char *pbuff, const char* cmdline, char** argv)

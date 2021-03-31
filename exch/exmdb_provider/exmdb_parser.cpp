@@ -837,7 +837,7 @@ static void *thread_work_func(void *pparam)
 	buff_len = 0;
 	is_writing = FALSE;
 	is_connected = FALSE;
-    while (FALSE == pconnection->b_stop) {
+	while (!pconnection->b_stop) {
 		if (TRUE == is_writing) {
 			written_len = write(pconnection->sockd,
 			              static_cast<char *>(pbuff) + offset, buff_len - offset);
@@ -976,9 +976,8 @@ static void *thread_work_func(void *pparam)
 	if (NULL != pbuff) {
 		free(pbuff);
 	}
-	if (FALSE == pconnection->b_stop) {
+	if (!pconnection->b_stop)
 		pthread_detach(pthread_self());
-	}
 	return nullptr;
 }
 
@@ -1055,7 +1054,7 @@ int exmdb_parser_stop()
 	}
 	for (auto &pconnection : g_connection_list) {
 		pthr_ids[i++] = pconnection->thr_id;
-		pconnection->b_stop = TRUE;
+		pconnection->b_stop = true;
 		shutdown(pconnection->sockd, SHUT_RDWR);
 	}
 	chold.unlock();
@@ -1077,7 +1076,7 @@ int exmdb_parser_stop()
 	i = 0;
 	for (auto &rt : g_router_list) {
 		pthr_ids[i++] = rt->thr_id;
-		rt->b_stop = TRUE;
+		rt->b_stop = true;
 		rt->waken_cond.notify_one();
 	}
 	rhold.unlock();

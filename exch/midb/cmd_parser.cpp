@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <libHX/string.h>
@@ -29,7 +30,7 @@ struct COMMAND_ENTRY {
 
 static int g_cmd_num;
 static size_t g_threads_num;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static int g_timeout_interval;
 static pthread_t *g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;
@@ -95,7 +96,7 @@ int cmd_parser_run()
 
 	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
 	pthread_attr_init(&thr_attr);
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 
 	for (i=0; i<g_threads_num; i++) {
 		int ret = pthread_create(&g_thread_ids[i], &thr_attr,
@@ -127,7 +128,7 @@ int cmd_parser_stop()
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION *pconnection;
 
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	g_waken_cond.notify_all();
 	std::unique_lock chold(g_connection_lock);
 	for (pnode=double_list_get_head(&g_connection_list); NULL!=pnode;
@@ -185,15 +186,13 @@ static void *thread_work_func(void *param)
 	char buffer[CONN_BUFFLEN];
 
  NEXT_LOOP:
-	if (TRUE == g_notify_stop) {
+	if (g_notify_stop)
 		return nullptr;
-	}
 	std::unique_lock cm_hold(g_cond_mutex);
 	g_waken_cond.wait(cm_hold);
 	cm_hold.unlock();
-	if (TRUE == g_notify_stop) {
+	if (g_notify_stop)
 		return nullptr;
-	}
 	std::unique_lock co_hold(g_connection_lock);
 	pnode = double_list_pop_front(&g_connection_list1);
 	if (NULL != pnode) {
@@ -207,7 +206,7 @@ static void *thread_work_func(void *param)
 
 	offset = 0;
 
-    while (FALSE == g_notify_stop) {
+    while (!g_notify_stop) {
 		tv_msec = g_timeout_interval * 1000;
 		pfd_read.fd = pconnection->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -256,8 +255,7 @@ static void *thread_work_func(void *param)
 				
 				/* compare build-in command */
 				for (j=0; j<g_cmd_num; j++) {
-					if (FALSE == g_notify_stop &&
-						0 == strcasecmp(g_cmd_entry[j].cmd, argv[0])) {
+					if (!g_notify_stop && strcasecmp(g_cmd_entry[j].cmd, argv[0]) == 0) {
 						if (FALSE == common_util_build_environment(argv[1])) {
 							write(pconnection->sockd, "FALSE 0\r\n", 9);
 							continue;
@@ -274,10 +272,8 @@ static void *thread_work_func(void *param)
 					}
 				}
 				
-				if (FALSE == g_notify_stop && j == g_cmd_num) {
+				if (!g_notify_stop && j == g_cmd_num)
 					write(pconnection->sockd, "FALSE 0\r\n", 9);
-				}
-
 				offset -= i + 2;
 				memmove(buffer, buffer + i + 2, offset);
 				break;	

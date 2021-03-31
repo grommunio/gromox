@@ -5,6 +5,7 @@
  *    connection is legal, construct a context to represent the connection and 
  *    throw it into contexts pool, or close the connection
  */
+#include <atomic>
 #include <cerrno>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -32,7 +33,7 @@ static void* thread_work_func(void* arg);
 static void* thread_work_ssl_func(void* arg);
 
 static pthread_t g_thr_id;
-static BOOL g_stop_accept;
+static std::atomic<bool> g_stop_accept{false};
 static int g_listener_sock;
 static int g_listener_port;
 static pthread_t g_ssl_thr_id;
@@ -47,7 +48,7 @@ void listener_init(int port, int ssl_port)
 {
 	g_listener_port = port;
 	g_listener_ssl_port = ssl_port;
-	g_stop_accept = FALSE;
+	g_stop_accept = false;
 }
 
 /*
@@ -111,8 +112,7 @@ int listerner_trigger_accept()
  */
 void listener_stop_accept()
 {
-	g_stop_accept = TRUE;
-	
+	g_stop_accept = true;
 	shutdown(g_listener_sock, SHUT_RDWR);
 	pthread_join(g_thr_id, NULL);
 	if (g_listener_ssl_port > 0) {
@@ -141,7 +141,7 @@ static void* thread_work_func(void* arg)
 		/* wait for an incoming connection */
 		sockd2 = accept(g_listener_sock, (struct sockaddr*)&client_peer, 
 			&addrlen);
-		if (TRUE == g_stop_accept) {
+		if (g_stop_accept) {
 			if (sockd2 >= 0)
 				close(sockd2);
 			return nullptr;
@@ -283,7 +283,7 @@ static void* thread_work_ssl_func(void* arg)
 		/* wait for an incoming connection */
 		sockd2 = accept(g_listener_ssl_sock, (struct sockaddr*)&client_peer, 
 			&addrlen);
-		if (TRUE == g_stop_accept) {
+		if (g_stop_accept) {
 			if (sockd2 >= 0)
 				close(sockd2);
 			return nullptr;

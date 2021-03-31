@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
+#include <atomic>
 #include <cerrno>
 #include <unistd.h>
 #include <libHX/string.h>
@@ -29,7 +30,7 @@ enum{
 };
 
 static constexpr char g_time_format[] = "%F", g_filecomp_pattern[] = "%s-%s.%s";
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static char *g_log_buf_ptr;
 static int g_current_size;
 static int g_log_buf_size;
@@ -117,7 +118,7 @@ static int log_plugin_run()
 		printf("[log_plugin]: Failed to allocate memory for files name buffer\n");
 		return -2;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	pthread_attr_init(&attr);
 	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
 	if (ret != 0) {
@@ -139,8 +140,8 @@ static int log_plugin_run()
  */
 static int log_plugin_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_thread_id, NULL);
 	}
 	if (NULL != g_log_buf_ptr) {
@@ -210,7 +211,7 @@ static void* thread_work_func(void *arg)
 	DIR *dirp;
 	struct dirent *direntp;
 
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		time(&current_time);
 		for (i=0; i<g_files_num; i++) {
 			tmp_time = current_time - i * 24 * 3600;
@@ -256,9 +257,8 @@ static void* thread_work_func(void *arg)
 		closedir(dirp);
  WAIT_CLEAN:
 		for (i=0; i<24*3600; i++) {
-			if (TRUE == g_notify_stop) {
+			if (g_notify_stop)
 				return nullptr;
-			}
 			sleep(1);
 		}
 	}

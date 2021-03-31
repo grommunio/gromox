@@ -201,7 +201,7 @@ static BOOL g_async;
 static int g_mime_num;
 static size_t g_table_size;
 static std::atomic<int> g_sequence_id{0};
-static BOOL g_notify_stop;            /* stop signal for scaning thread */
+static std::atomic<bool> g_notify_stop{false}; /* stop signal for scaning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */
@@ -2940,7 +2940,7 @@ static void *scan_work_func(void *param)
 
 	count = 0;
 	double_list_init(&temp_list);
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 		if (count < 10) {
 			count ++;
@@ -6800,7 +6800,7 @@ int mail_engine_run()
 		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
 		return -4;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		mime_pool_free(g_mime_pool);
@@ -6849,7 +6849,7 @@ int mail_engine_run()
 
 int mail_engine_stop()
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_join(g_scan_tid, NULL);
 	g_hash_table.clear();
 	mime_pool_free(g_mime_pool);

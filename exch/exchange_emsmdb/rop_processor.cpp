@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <gromox/defs.h>
@@ -57,7 +58,7 @@ struct OBJECT_NODE {
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static pthread_mutex_t g_hash_lock;
 static STR_HASH_TABLE *g_logon_hash;
 static LIB_BUFFER *g_logmap_allocator;
@@ -394,7 +395,7 @@ static void *scan_work_func(void *param)
 	
 	double_list_init(&temp_list);
 	count = 0;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 		count ++;
 		if (count < g_scan_interval) {
@@ -467,10 +468,10 @@ int rop_processor_run()
 		printf("[exchange_emsmdb]: Failed to init logon hash\n");
 		return -4;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		printf("[exchange_emsmdb]: failed to create scanning thread "
 		       "for logon hash table: %s\n", strerror(ret));
 		return -5;
@@ -481,8 +482,8 @@ int rop_processor_run()
 
 int rop_processor_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_id, NULL);
 	}
 	if (NULL != g_logmap_allocator) {

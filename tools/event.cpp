@@ -3,6 +3,7 @@
 #	include "config.h"
 #endif
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <cstring>
 #include <string>
@@ -72,7 +73,7 @@ struct HOST_NODE {
 	DOUBLE_LIST list;
 };
 
-static BOOL g_notify_stop = FALSE;
+static std::atomic<bool> g_notify_stop{false};
 static int g_threads_num;
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;
@@ -374,12 +375,12 @@ int main(int argc, const char **argv)
 	}
 	
 	pthread_setname_np(thr_id, "accept");
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGTERM, &sact, nullptr);
 	printf("[system]: EVENT is now running\n");
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 	}
 
@@ -453,7 +454,7 @@ static void* scan_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		if (i < SCAN_INTERVAL) {
 			sleep(1);
 			i ++;
@@ -507,7 +508,7 @@ static void* accept_work_func(void *param)
 	ENQUEUE_NODE *penqueue;
 
 	sockd = (int)(long)param;
-    while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
         sockd2 = accept(sockd, (struct sockaddr*)&peer_name, &addrlen);
@@ -1035,5 +1036,5 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue)
 
 static void term_handler(int signo)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }

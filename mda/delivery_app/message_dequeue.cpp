@@ -9,6 +9,7 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
+#include <atomic>
 #include <cerrno>
 #include <cstring>
 #include <mutex>
@@ -54,7 +55,7 @@ static INT_HASH_TABLE	*g_mess_hash;
 static SINGLE_LIST				g_free_list;
 static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static int				g_dequeued_num;
 
 static BOOL message_dequeue_check();
@@ -83,7 +84,7 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	g_msg_id = -1;
 	g_message_ptr = NULL;
 	g_mess_hash = NULL;
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	g_dequeued_num = 0;
 }
 
@@ -258,7 +259,7 @@ void message_dequeue_put(MESSAGE *pmessage)
  */
 int message_dequeue_stop()
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_join(g_thread_id, NULL);
 
 	message_dequeue_collect_resource();
@@ -278,7 +279,7 @@ void message_dequeue_free()
     g_msg_id = -1;
 	g_message_ptr = NULL;
 	g_mess_hash = NULL;
-    g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 /*
@@ -447,7 +448,7 @@ static void* thread_work_func(void* arg)
         sleep(1);
     }
 
-	while (TRUE != g_notify_stop) {
+	while (!g_notify_stop) {
 		if (-1 != msgrcv(g_msg_id, &msg, sizeof(int), 0, IPC_NOWAIT)) {
 			switch(msg.msg_type) {
 			case MESSAGE_MESS:

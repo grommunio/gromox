@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <list>
 #include <mutex>
@@ -78,7 +79,7 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 };
 
 static int g_conn_num;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
 static std::list<REMOTE_CONN> g_lost_list;
 static std::list<REMOTE_SVR> g_server_list;
@@ -357,7 +358,7 @@ static void *scan_work_func(void *pparam)
 	std::list<REMOTE_CONN> temp_list;
 	
 	ping_buff = 0;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
 		for (auto &srv : g_server_list) {
@@ -376,7 +377,7 @@ static void *scan_work_func(void *pparam)
 
 		while (temp_list.size() > 0) {
 			auto pconn = &temp_list.front();
-			if (TRUE == g_notify_stop) {
+			if (g_notify_stop) {
 				close(pconn->sockd);
 				temp_list.pop_front();
 				continue;
@@ -415,7 +416,7 @@ static void *scan_work_func(void *pparam)
 
 		while (temp_list.size() > 0) {
 			auto pconn = &temp_list.front();
-			if (TRUE == g_notify_stop) {
+			if (g_notify_stop) {
 				close(pconn->sockd);
 				temp_list.pop_front();
 				continue;
@@ -497,7 +498,7 @@ REMOTE_CONN_floating::REMOTE_CONN_floating(REMOTE_CONN_floating &&o)
 
 void exmdb_client_init(int conn_num)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	g_conn_num = conn_num;
 }
 
@@ -509,13 +510,13 @@ int exmdb_client_run()
 		printf("[exmdb_local]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return 1;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	for (auto &&item : xmlist) {
 		try {
 			g_server_list.emplace_back(std::move(item));
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_local]: Failed to allocate memory for exmdb\n");
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			return 3;
 		}
 		auto &srv = g_server_list.back();
@@ -530,7 +531,7 @@ int exmdb_client_run()
 			} catch (const std::bad_alloc &) {
 				printf("[exmdb_local]: fail to "
 					"allocate memory for exmdb\n");
-				g_notify_stop = TRUE;
+				g_notify_stop = true;
 				return 4;
 			}
 		}
@@ -538,7 +539,7 @@ int exmdb_client_run()
 	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_local]: failed to create proxy scan thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		return 5;
 	}
 	pthread_setname_np(g_scan_id, "mdbloc/scan");
@@ -547,11 +548,11 @@ int exmdb_client_run()
 
 int exmdb_client_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_id, NULL);
 	}
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	for (auto &srv : g_server_list)
 		for (auto &conn : srv.conn_list)
 			close(conn.sockd);

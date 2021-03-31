@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cstring>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
@@ -23,7 +24,7 @@ struct THR_DATA {
 };
 
 static pthread_t g_scan_id;
-static BOOL g_notify_stop= TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static int g_threads_pool_min_num;
 static int g_threads_pool_max_num;
 static int g_threads_pool_cur_thr_num;
@@ -82,7 +83,7 @@ int threads_pool_run()
 		return -1;
 	}
 	/* list is also protected by g_threads_pool_data_lock */
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
@@ -122,7 +123,7 @@ int threads_pool_stop()
 	DOUBLE_LIST_NODE *pnode;
 	BOOL b_should_exit = FALSE;
 	
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_join(g_scan_id, NULL);
 	while (TRUE) {
 		/* get a thread from list */
@@ -268,17 +269,15 @@ static void* thread_work_func(void* pparam)
 
 void threads_pool_wakeup_thread()
 {
-	if (TRUE == g_notify_stop) {
+	if (g_notify_stop)
 		return;
-	}
 	pthread_cond_signal(&g_threads_pool_waken_cond);
 }
 
 void threads_pool_wakeup_all_threads()
 {
-	if (TRUE == g_notify_stop) {
+	if (g_notify_stop)
 		return;
-	}
 	pthread_cond_broadcast(&g_threads_pool_waken_cond);
 }
 
@@ -289,7 +288,7 @@ static void* scan_work_func(void *pparam)
 	pthread_attr_t attr;
 	
 	not_empty_times = 0;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 		if (contexts_pool_get_param(CUR_SCHEDUING_CONTEXTS) > 1) {
 			not_empty_times ++;

@@ -2,6 +2,7 @@
 /*
  *  the console server which communicate with the telnet clients
  */
+#include <atomic>
 #include <cerrno>
 #include <mutex>
 #include <libHX/string.h>
@@ -49,9 +50,8 @@ struct CONSOLE_NODE {
 	int					client_fd;
 };
 
-extern BOOL g_notify_stop;
-/* declare private global variables */
-static BOOL g_terminate;
+extern std::atomic<bool> g_notify_stop;
+static std::atomic<bool> g_terminate{false};
 static size_t g_cmd_num;
 static char g_listen_ip[40];
 static int g_listen_port;
@@ -191,7 +191,7 @@ static void *thread_work_func(void *argp)
 	struct sockaddr_storage client_peer;
 
     sock = (int)(long)argp;
-    while (FALSE == g_terminate) {
+	while (!g_terminate) {
 		tv.tv_usec = 0;
 		tv.tv_sec = 1;
 		FD_ZERO(&myset);
@@ -459,7 +459,7 @@ void console_server_notify_main_stop()
 	DOUBLE_LIST_NODE *pnode;
 	BOOL b_console;
 	
-	g_terminate = TRUE;
+	g_terminate = true;
 	b_console = FALSE;
 	if (g_listening_tid != 0) {
 		pthread_join(g_listening_tid, NULL);
@@ -479,7 +479,7 @@ void console_server_notify_main_stop()
 	while ((pnode = double_list_pop_front(&g_free_list)) != nullptr)
 		/* do nothing */;
 	ll_hold.unlock();
-    g_notify_stop = TRUE;
+	g_notify_stop = true;
 	if (TRUE == b_console) {
 		pthread_exit(nullptr);
 	}

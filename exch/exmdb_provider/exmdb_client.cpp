@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <atomic>
 #include <list>
 #include <cstdint>
 #include <list>
@@ -66,7 +67,7 @@ struct AGENT_THREAD {
 
 static int g_conn_num;
 static int g_threads_num;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
 static std::list<REMOTE_CONN> g_lost_list;
 static std::list<AGENT_THREAD> g_agent_list;
@@ -257,7 +258,7 @@ static void *scan_work_func(void *pparam)
 	std::list<REMOTE_CONN> temp_list;
 	
 	ping_buff = 0;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
 		for (auto &srv : g_server_list) {
@@ -276,7 +277,7 @@ static void *scan_work_func(void *pparam)
 
 		while (temp_list.size() > 0) {
 			auto pconn = &temp_list.front();
-			if (TRUE == g_notify_stop) {
+			if (g_notify_stop) {
 				close(pconn->sockd);
 				temp_list.pop_front();
 				continue;
@@ -315,7 +316,7 @@ static void *scan_work_func(void *pparam)
 
 		while (temp_list.size() > 0) {
 			auto pconn = &temp_list.front();
-			if (TRUE == g_notify_stop) {
+			if (g_notify_stop) {
 				close(pconn->sockd);
 				temp_list.pop_front();
 				continue;
@@ -349,7 +350,7 @@ static void *thread_work_func(void *pparam)
 	DB_NOTIFY_DATAGRAM notify;
 	
 	pagent = (AGENT_THREAD*)pparam;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		pagent->sockd = exmdb_client_connect_exmdb(
 							pagent->pserver, TRUE);
 		if (-1 == pagent->sockd) {
@@ -463,7 +464,7 @@ REMOTE_CONN_floating::REMOTE_CONN_floating(REMOTE_CONN_floating &&o)
 
 void exmdb_client_init(int conn_num, int threads_num)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	g_conn_num = conn_num;
 	g_threads_num = threads_num;
 }
@@ -478,20 +479,20 @@ int exmdb_client_run(const char *config_path)
 		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return 1;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	for (auto &&item : xmlist) {
 		if (gx_peer_is_local(item.host.c_str())) try {
 			g_local_list.push_back(std::move(item));
 			continue;
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_provider]: Failed to allocate memory\n");
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			return 3;
 		}
 		if (0 == g_conn_num) {
 			printf("[exmdb_provider]: there's remote store media "
 				"in exmdb list, but rpc proxy connection number is 0\n");
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			return 4;
 		}
 
@@ -499,7 +500,7 @@ int exmdb_client_run(const char *config_path)
 			g_server_list.emplace_back(std::move(item));
 		} catch (const std::bad_alloc &) {
 			printf("[exmdb_provider]: Failed to allocate memory for exmdb\n");
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			return 5;
 		}
 		auto &srv = g_server_list.back();
@@ -514,7 +515,7 @@ int exmdb_client_run(const char *config_path)
 			} catch (const std::bad_alloc &) {
 				printf("[exmdb_provider]: fail to "
 					"allocate memory for exmdb\n");
-				g_notify_stop = TRUE;
+				g_notify_stop = true;
 				return 6;
 			}
 		}
@@ -524,7 +525,7 @@ int exmdb_client_run(const char *config_path)
 			} catch (const std::bad_alloc &) {
 				printf("[exmdb_provider]: fail to "
 					"allocate memory for exmdb\n");
-				g_notify_stop = TRUE;
+				g_notify_stop = true;
 				return 7;
 			}
 			auto &ag = g_agent_list.back();
@@ -535,7 +536,7 @@ int exmdb_client_run(const char *config_path)
 			if (pthread_create(&ag.thr_id, nullptr, thread_work_func, &ag) != 0) {
 				printf("[exmdb_provider]: fail to "
 					"create agent thread for exmdb\n");
-				g_notify_stop = TRUE;
+				g_notify_stop = true;
 				g_agent_list.pop_back();
 				return 8;
 			}
@@ -551,7 +552,7 @@ int exmdb_client_run(const char *config_path)
 	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_provider]: failed to create proxy scan thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		return 9;
 	}
 	pthread_setname_np(g_scan_id, "exmdbcl/scan");
@@ -561,12 +562,12 @@ int exmdb_client_run(const char *config_path)
 int exmdb_client_stop()
 {
 	if (0 != g_conn_num) {
-		if (FALSE == g_notify_stop) {
-			g_notify_stop = TRUE;
+		if (!g_notify_stop) {
+			g_notify_stop = true;
 			pthread_join(g_scan_id, NULL);
 		}
 	}
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	for (auto &ag : g_agent_list) {
 		pthread_cancel(ag.thr_id);
 		if (ag.sockd >= 0)

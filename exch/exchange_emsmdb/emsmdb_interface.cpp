@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -66,7 +67,7 @@ struct NOTIFY_ITEM {
 static time_t g_start_time;
 static pthread_t g_scan_id;
 static pthread_mutex_t g_lock;
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static pthread_key_t g_handle_key;
 static STR_HASH_TABLE *g_user_hash;
 static STR_HASH_TABLE *g_handle_hash;
@@ -398,9 +399,9 @@ int emsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init notify hash map\n");
 		return -3;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		printf("[exchange_emsmdb]: fail create scanning thread\n");
 		return -4;
 	}
@@ -410,8 +411,8 @@ int emsmdb_interface_run()
 
 int emsmdb_interface_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_id, NULL);
 	}
 	if (NULL != g_notify_hash) {
@@ -1262,7 +1263,7 @@ static void* scan_work_func(void *pparam)
 	DOUBLE_LIST_NODE *pnode;
 	
 	double_list_init(&temp_list);
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		time(&cur_time);
 		pthread_mutex_lock(&g_lock);
 		iter = str_hash_iter_init(g_handle_hash);

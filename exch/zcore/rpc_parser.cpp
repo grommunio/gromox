@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <gromox/defs.h>
@@ -32,7 +33,7 @@ struct CLIENT_NODE {
 };
 
 static int g_thread_num;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t *g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static pthread_cond_t g_waken_cond;
@@ -42,7 +43,7 @@ static pthread_mutex_t g_cond_mutex;
 
 void rpc_parser_init(int thread_num)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	g_thread_num = thread_num;
 	pthread_mutex_init(&g_cond_mutex, NULL);
 	pthread_cond_init(&g_waken_cond, NULL);
@@ -668,9 +669,8 @@ static void *thread_work_func(void *param)
 	pnode = double_list_pop_front(&g_conn_list);
 	cl_hold.unlock();
 	if (NULL == pnode) {
-		if (TRUE == g_notify_stop) {
+		if (g_notify_stop)
 			return nullptr;
-		}
 		goto WAIT_CLIFD;
 	}
 	clifd = ((CLIENT_NODE*)pnode->pdata)->clifd;
@@ -784,7 +784,7 @@ int rpc_parser_run()
 	if (NULL == g_thread_ids) {
 		return -1;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = 0;
 	for (i=0; i<g_thread_num; i++) {
 		ret = pthread_create(&g_thread_ids[i], nullptr, thread_work_func, nullptr);
@@ -795,7 +795,7 @@ int rpc_parser_run()
 		pthread_setname_np(g_thread_ids[i], buf);
 	}
 	if (i < g_thread_num) {
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		for (i=0; i<g_thread_num; i++) {
 			pthread_cancel(g_thread_ids[i]);
 		}
@@ -810,7 +810,7 @@ int rpc_parser_stop()
 {
 	int i;
 	
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_cond_broadcast(&g_waken_cond);
 	for (i=0; i<g_thread_num; i++) {
 		pthread_join(g_thread_ids[i], NULL);

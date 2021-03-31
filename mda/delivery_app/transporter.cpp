@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cstring>
 #include <string>
 #include <typeinfo>
@@ -112,7 +113,7 @@ static HOOK_FUNCTION	g_local_hook;
 static int				g_threads_max;
 static int				g_threads_min;
 static int				g_mime_num;
-static BOOL				g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static BOOL             g_domainlist_valid;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
@@ -185,7 +186,7 @@ void transporter_init(const char *path, const char *const *names,
 	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = names;
 	g_local_path[0] = '\0';
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
@@ -336,7 +337,7 @@ int transporter_run()
 	pthread_attr_init(&attr);
 	int ret = pthread_create(&g_scan_id, &attr, scan_work_func, nullptr);
 	if (ret != 0) {
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		transporter_collect_hooks();
 		transporter_collect_resource();
 		printf("[transporter]: failed to create scanner thread: %s\n", strerror(ret));
@@ -412,7 +413,7 @@ int transporter_stop()
 	DOUBLE_LIST_NODE *pnode;
 	THREAD_DATA *pthr;
 
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_mutex_lock(&g_threads_list_mutex);
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
 		pthr = (THREAD_DATA*)pnode->pdata;
@@ -562,7 +563,7 @@ static void* thread_work_func(void* arg)
 		pthread_mutex_unlock(&g_cond_mutex);
 	}
 	
-	while (TRUE != g_notify_stop) {
+	while (!g_notify_stop) {
 		pmessage = message_dequeue_get();
 		if (NULL == pmessage) {
 			pcontext = transporter_dequeue_context();	
@@ -663,7 +664,7 @@ static void* scan_work_func(void* arg)
 	DOUBLE_LIST_NODE *pnode;
 	pthread_attr_t attr;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);
 		if (0 != message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING)) {
 			pthread_mutex_lock(&g_threads_list_mutex);

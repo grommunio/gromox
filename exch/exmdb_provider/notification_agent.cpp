@@ -75,7 +75,7 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 	DATAGRAM_NODE *pdnode;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (FALSE == prouter->b_stop) {
+	while (!prouter->b_stop) {
 		std::unique_lock cn_hold(prouter->cond_mutex);
 		static_assert(SOCKET_TIMEOUT >= 3, "integer underflow");
 		prouter->waken_cond.wait_for(cn_hold, std::chrono::seconds(SOCKET_TIMEOUT - 3));
@@ -124,8 +124,7 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		free(pdnode);
 	}
 	double_list_free(&prouter->datagram_list);
-	if (FALSE == prouter->b_stop) {
+	if (!prouter->b_stop)
 		pthread_detach(pthread_self());
-	}
 	pthread_exit(nullptr);
 }

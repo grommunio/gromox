@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cstring>
 #include <gromox/defs.h>
 #include <gromox/contexts_pool.hpp>
@@ -20,7 +21,7 @@ static void *g_context_list;
 static int g_context_offset;
 static pthread_t g_thread_id;
 static int g_contexts_per_thr;
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static struct epoll_event *g_events;
 static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
 static pthread_mutex_t g_context_locks[CONTEXT_TYPES];
@@ -76,7 +77,7 @@ static void* thread_work_func(void *pparam)
 	int i, num;
 	SCHEDULE_CONTEXT *pcontext;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		num = epoll_wait(g_epoll_fd, g_events, g_context_num, 1000);
 		if (num <= 0) {
 			continue;
@@ -122,7 +123,7 @@ static void *scan_work_func(void *pparam)
 	struct timeval current_time;
 	
 	double_list_init(&temp_list);
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
 		gettimeofday(&current_time, NULL);
 		ptail = double_list_get_tail(
@@ -231,11 +232,11 @@ int contexts_pool_run()
 		printf("[contexts_pool]: Failed to allocate memory for events\n");
 		return -2;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
 	if (ret != 0) {
 		printf("[contexts_pool]: failed to create epoll thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		free(g_events);
 		g_events = NULL;
 		close(g_epoll_fd);
@@ -246,7 +247,7 @@ int contexts_pool_run()
 	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		pthread_join(g_thread_id, NULL);
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
@@ -260,7 +261,7 @@ int contexts_pool_run()
 
 int contexts_pool_stop()
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_join(g_thread_id, NULL);
 	pthread_join(g_scan_id, NULL);
 	close(g_epoll_fd);

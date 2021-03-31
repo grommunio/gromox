@@ -2,6 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <atomic>
 #include <cerrno>
 #include <unistd.h>
 #include <libHX/option.h>
@@ -20,7 +21,7 @@
 #include <cstdlib>
 #include <csignal>
 
-static BOOL g_notify_stop = FALSE;
+static std::atomic<bool> g_notify_stop{false};
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
@@ -137,7 +138,7 @@ int main(int argc, const char **argv)
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGTERM, &sact, nullptr);
-	while (TRUE != g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 	}
 
@@ -149,6 +150,6 @@ int main(int argc, const char **argv)
 
 static void term_handler(int signo)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 

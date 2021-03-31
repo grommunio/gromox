@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <string>
 #include <vector>
@@ -28,7 +29,7 @@ using namespace gromox;
 static int g_listen_port;
 static char g_listen_ip[40];
 static int g_listen_sockd;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static std::vector<std::string> g_acl_list;
 
 static void *thread_work_func(void *param);
@@ -42,7 +43,7 @@ void listener_init(const char *ip, int port)
 	}
 	g_listen_port = port;
 	g_listen_sockd = -1;
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 int listener_run(const char *configdir)
@@ -70,7 +71,7 @@ int listener_trigger_accept()
 {
 	pthread_t thr_id;
 
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&thr_id, nullptr, thread_work_func, nullptr);
 	if (ret != 0) {
 		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
@@ -81,7 +82,7 @@ int listener_trigger_accept()
 }
 
 int listener_stop() {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	if (g_listen_sockd > 0) {
 		close(g_listen_sockd);
 		g_listen_sockd = -1;
@@ -102,7 +103,7 @@ static void *thread_work_func(void *param)
 	CONNECTION *pconnection;
 	struct sockaddr_storage peer_name;
 
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
         sockd = accept(g_listen_sockd, (struct sockaddr*)&peer_name, &addrlen);

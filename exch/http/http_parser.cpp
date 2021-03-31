@@ -71,7 +71,7 @@ class VCONN_REF {
 };
 
 static size_t g_context_num;
-static BOOL g_async_stop;
+static std::atomic<bool> g_async_stop{false};
 static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
@@ -106,7 +106,7 @@ void http_parser_init(size_t context_num, unsigned int timeout,
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
 	g_support_ssl           = support_ssl;
-	g_async_stop            = FALSE;
+	g_async_stop = false;
 	
 	if (TRUE == support_ssl) {
 		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
@@ -1958,16 +1958,15 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 
 void http_parser_shutdown_async()
 {
-	g_async_stop = TRUE;
+	g_async_stop = true;
 }
 
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall)
 {
 	/* system is going to stop now */
-	if (TRUE == g_async_stop) {
+	if (g_async_stop)
 		return;
-	}
 	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
 	if (NULL == pvconnection) {
 		return;

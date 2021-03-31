@@ -8,6 +8,7 @@
  *  message queue to indicate there's a new mail arrived!
  */
 #define DECLARE_API_STATIC
+#include <atomic>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -54,7 +55,7 @@ static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
 static char         g_path[256];
 static int			g_msg_id;
 static pthread_t    g_flushing_thread;
-static BOOL         g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static int			g_last_flush_ID;
 static int			g_enqueued_num;
 static int			g_last_pos;
@@ -67,7 +68,7 @@ static int			g_last_pos;
 static void message_enqueue_init(const char *path)
 {
 	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
-    g_notify_stop = TRUE;
+	g_notify_stop = true;
     g_last_flush_ID = 0;
 	g_enqueued_num = 0;
 	g_last_pos = 0;
@@ -104,8 +105,7 @@ static int message_enqueue_run()
         return -6;
     }
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
-
-    g_notify_stop = FALSE;
+	g_notify_stop = false;
     pthread_attr_init(&attr);
 	int ret = pthread_create(&g_flushing_thread, &attr, thread_work_func, nullptr);
 	if (ret != 0) {
@@ -143,8 +143,8 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity)
  */
 static int message_enqueue_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_flushing_thread, NULL);
 	}
     return 0;
@@ -166,7 +166,7 @@ static int message_enqueue_retrieve_flush_ID()
 static void message_enqueue_free()
 {
     g_path[0] = '\0';
-    g_notify_stop = TRUE;
+	g_notify_stop = true;
     g_last_flush_ID = 0;
 	g_last_pos = 0;
 	g_msg_id = -1;
@@ -224,7 +224,7 @@ static void* thread_work_func(void* arg)
     FLUSH_ENTITY *pentity = NULL;
 	MSG_BUFF msg;
 
-    while (TRUE != g_notify_stop) {
+	while (!g_notify_stop) {
         if (NULL == (pentity = get_from_queue())) {
             usleep(50000);
             continue;

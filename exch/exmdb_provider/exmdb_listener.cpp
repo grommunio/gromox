@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <string>
@@ -28,7 +29,7 @@ using namespace gromox;
 
 static int g_listen_port;
 static int g_listen_sockd;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static char g_listen_ip[40];
 static std::vector<std::string> g_acl_list;
 static pthread_t g_listener_id;
@@ -57,7 +58,7 @@ static void *thread_work_func(void *param)
 			break;
 		sleep(1);	
 	}
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
         sockd = accept(g_listen_sockd, (struct sockaddr*)&peer_name, &addrlen);
@@ -99,7 +100,7 @@ void exmdb_listener_init(const char *ip, int port)
 		HX_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
 	g_listen_port = port;
 	g_listen_sockd = -1;
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 int exmdb_listener_run(const char *config_path)
@@ -130,7 +131,7 @@ int exmdb_listener_trigger_accept()
 	if (0 == g_listen_port) {
 		return 0;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_listener_id, nullptr, thread_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_provider]: failed to create exmdb listener thread: %s\n", strerror(ret));
@@ -145,8 +146,8 @@ int exmdb_listener_stop()
 	if (0 == g_listen_port) {
 		return 0;
 	}
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		shutdown(g_listen_sockd, SHUT_RDWR);
 		pthread_join(g_listener_id, NULL);
 	}

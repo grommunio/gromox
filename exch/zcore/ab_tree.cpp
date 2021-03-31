@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#include <atomic>
 #include <mutex>
 #include <new>
 #include <string>
@@ -91,7 +92,7 @@ struct SORT_ITEM {
 
 static int g_base_size;
 static int g_file_blocks;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
 static int g_cache_interval;
 static char g_org_name[256];
@@ -202,7 +203,7 @@ void ab_tree_init(const char *org_name, int base_size,
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 int ab_tree_run()
@@ -222,11 +223,11 @@ int ab_tree_run()
 		printf("[exchange_nsp]: Failed to allocate file blocks\n");
 		return -2;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		return -3;
 	}
 	pthread_setname_np(g_scan_id, "abtree/scan");
@@ -280,8 +281,8 @@ int ab_tree_stop()
 	AB_BASE **ppbase;
 	INT_HASH_ITER *iter;
 	
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_id, NULL);
 	}
 	if (NULL != g_base_hash) {
@@ -848,7 +849,7 @@ static void *scan_work_func(void *param)
 	INT_HASH_ITER *iter;
 	SINGLE_LIST_NODE *pnode;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		pbase = NULL;
 		std::unique_lock bl_hold(g_base_lock);
 		iter = int_hash_iter_init(g_base_hash);

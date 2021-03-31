@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
+#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -43,7 +44,7 @@ struct PROXY_CONTEXT {
 static int g_epoll_fd = -1;
 static pthread_t g_thread_id;
 static DOUBLE_LIST g_proxy_list;
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static struct epoll_event *g_events;
 static PROXY_CONTEXT *g_context_list;
 
@@ -188,11 +189,11 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 			printf("[mod_proxy]: Failed to allocate memory for events\n");
 			return FALSE;
 		}
-		g_notify_stop = FALSE;
+		g_notify_stop = false;
 		int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
 		if (ret != 0) {
 			printf("[mod_proxy]: failed to create epoll thread: %s\n", strerror(ret));
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			return FALSE;
 		}
 		pthread_setname_np(g_thread_id, "mod_proxy");
@@ -209,8 +210,8 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (FALSE == g_notify_stop) {
-			g_notify_stop = TRUE;
+		if (!g_notify_stop) {
+			g_notify_stop = true;
 			pthread_join(g_thread_id, NULL);
 		}
 		if (-1 != g_epoll_fd) {
@@ -255,7 +256,7 @@ static void* thread_work_func(void *pparam)
 	PROXY_CONTEXT *pcontext;
 	
 	context_num = get_context_num();
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		num = epoll_wait(g_epoll_fd, g_events, context_num, 1000);
 		if (num <= 0) {
 			continue;

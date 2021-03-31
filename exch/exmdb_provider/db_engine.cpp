@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <condition_variable>
@@ -88,7 +89,7 @@ static BOOL g_wal;
 static BOOL g_async;
 static size_t g_table_size; /* hash table size */
 static int g_threads_num;
-static BOOL g_notify_stop;		/* stop signal for scaning thread */
+static std::atomic<bool> g_notify_stop{false}; /* stop signal for scaning thread */
 static pthread_t g_scan_tid;
 static uint64_t g_mmap_size;
 static int g_cache_interval;	/* maximum living interval in table */
@@ -354,7 +355,7 @@ static void *scan_work_func(void *param)
 	time_t now_time;
 
 	count = 0;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 		if (count < 10) {
 			count ++;
@@ -437,9 +438,8 @@ static BOOL db_engine_search_folder(const char *dir,
 	sqlite3_finalize(pstmt);
 	exmdb_server_build_environment(FALSE, TRUE, dir);
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
-		if (TRUE == g_notify_stop) {
+		if (g_notify_stop)
 			break;
-		}
 		if (200 == count) {
 			pdb.reset();
 			exmdb_server_free_environment();
@@ -656,14 +656,13 @@ static void *thread_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 	POPULATING_NODE *psearch;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		std::unique_lock chold(g_cond_mutex);
 		g_waken_cond.wait(chold);
 		chold.unlock();
  NEXT_SEARCH:
-		if (TRUE == g_notify_stop) {
+		if (g_notify_stop)
 			break;
-		}
 		std::unique_lock lhold(g_list_lock);
 		pnode = double_list_pop_front(&g_populating_list);
 		if (NULL != pnode) {
@@ -698,16 +697,15 @@ static void *thread_work_func(void *param)
 			}
 		}
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			if (TRUE == g_notify_stop) {
+			if (g_notify_stop)
 				break;
-			}
 			if (FALSE == db_engine_search_folder(
 				psearch->dir, psearch->cpid, psearch->folder_id,
 				pfolder_ids->pids[i], psearch->prestriction)) {
 				break;	
 			}
 		}
-		if (FALSE == g_notify_stop) {
+		if (!g_notify_stop) {
 			auto pdb = db_engine_get_db(psearch->dir);
 			if (NULL != pdb) {
 				if (NULL != pdb->psqlite) {
@@ -760,7 +758,7 @@ static void *thread_work_func(void *param)
 void db_engine_init(size_t table_size, int cache_interval,
 	BOOL b_async, BOOL b_wal, uint64_t mmap_size, int threads_num)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	g_table_size = table_size;
 	g_cache_interval = cache_interval;
 	g_async = b_async;
@@ -793,7 +791,7 @@ int db_engine_run()
 		printf("[exmdb_provider]: Failed to initialize sqlite engine\n");
 		return -2;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_provider]: failed to create db scan thread: %s\n", strerror(ret));
@@ -821,8 +819,8 @@ int db_engine_stop()
 	DOUBLE_LIST_NODE *pnode;
 	POPULATING_NODE *psearch;
 	
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_tid, NULL);
 		g_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {

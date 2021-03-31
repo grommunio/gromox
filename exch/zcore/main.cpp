@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <memory>
@@ -39,7 +40,7 @@
 
 using namespace gromox;
 
-BOOL g_notify_stop = FALSE;
+std::atomic<bool> g_notify_stop{false};
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
@@ -64,7 +65,7 @@ static const char *const g_dfl_svc_plugins[] = {
 
 static void term_handler(int signo)
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 int main(int argc, const char **argv)
@@ -527,7 +528,7 @@ int main(int argc, const char **argv)
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGTERM, &sact, nullptr);
 	printf("[system]: zcore is now running\n");
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 	}
 	return 0;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
+#include <atomic>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -32,7 +33,7 @@ struct BACK_CONN {
 
 typedef void (*EVENT_STUB_FUNC)(char *);
 
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static char g_event_ip[40];
 static int g_event_port;
 static DOUBLE_LIST g_back_list;
@@ -56,8 +57,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		g_event_stub_func = NULL;
 		double_list_init(&g_back_list);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
@@ -103,7 +103,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		printf("[event_proxy]: event address is [%s]:%d\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
 
-		g_notify_stop = FALSE;
+		g_notify_stop = false;
 		int ret = 0;
 		for (i=0; i<conn_num; i++) {
 			pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));
@@ -123,7 +123,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		}
 
 		if (i < conn_num) {
-			g_notify_stop = TRUE;
+			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 				pback = (BACK_CONN*)pnode->pdata;
 				if (-1 != pback->sockd) {
@@ -143,8 +143,8 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (FALSE == g_notify_stop) {
-			g_notify_stop = TRUE;
+		if (!g_notify_stop) {
+			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 				pback = static_cast<BACK_CONN *>(pnode->pdata);
 				pthread_join(pback->thr_id, nullptr);
@@ -227,13 +227,13 @@ static void* thread_work_func(void *param)
 	
 	pback = (BACK_CONN*)param;
 
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		if (-1 == (pback->sockd = connect_event())) {
 			sleep(3);
 			continue;
 		}
 
-		while (FALSE == g_notify_stop) {
+		while (!g_notify_stop) {
 			if (-1 == read_line(pback->sockd, buff, MAX_CMD_LENGTH)) {
 				close(pback->sockd);
 				pback->sockd = -1;

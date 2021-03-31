@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cerrno>
 #include <cstdlib>
 #include <libHX/ctype_helper.h>
@@ -17,7 +18,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_thread_id1;
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
@@ -36,10 +37,10 @@ void engine_init(const char *domainlist_path,
 
 int engine_run()
 {
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_thread_id1, nullptr, thread_work_func1, nullptr);
 	if (ret != 0) {
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		printf("[engine]: failed to create work thread: %s\n", strerror(ret));
 		return -1;
 	}
@@ -49,8 +50,8 @@ int engine_run()
 
 int engine_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_thread_id1, NULL);
 	}
 	return 0;
@@ -68,7 +69,7 @@ static void* thread_work_func1(void *param)
 	DATA_COLLECT *pcollect;
 
 	count = 30;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		if (count < 30) {
 			count ++;
 			sleep(1);

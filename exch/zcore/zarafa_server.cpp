@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <unistd.h>
@@ -50,7 +51,7 @@ struct SINK_NODE {
 };
 
 static int g_table_size;
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;
@@ -131,7 +132,7 @@ static void* scan_work_func(void *param)
 	response.result = ecSuccess;
 	response.payload.notifdequeue.notifications.count = 0;
 	response.payload.notifdequeue.notifications.ppnotification = NULL;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 		count ++;
 		if (count >= g_ping_interval) {
@@ -718,7 +719,7 @@ int zarafa_server_run()
 			"create notify hash table\n");
 		return -3;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	if (0 != pthread_create(&g_scan_id,
 		NULL, scan_work_func, NULL)) {
 		printf("[zarafa_server]: fail to"
@@ -739,7 +740,7 @@ int zarafa_server_stop()
 	SINK_NODE *psink_node;
 	DOUBLE_LIST_NODE *pnode;
 	
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	pthread_join(g_scan_id, NULL);
 	iter = int_hash_iter_init(g_session_table);
 	for (int_hash_iter_begin(iter);

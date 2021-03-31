@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -31,7 +32,7 @@
 
 using namespace gromox;
 
-BOOL g_notify_stop = FALSE;
+std::atomic<bool> g_notify_stop{false};
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 
@@ -505,7 +506,7 @@ int main(int argc, const char **argv)
 	
 	retcode = EXIT_SUCCESS;
 	printf("[system]: POP3 DAEMON is now running\n");
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(3);
 	}
 	listener_stop_accept();

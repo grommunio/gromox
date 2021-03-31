@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
+#include <condition_variable>
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -33,7 +35,7 @@ struct ASYNC_WAIT {
 static int g_threads_num;
 static pthread_t g_scan_id;
 static pthread_t *g_thread_ids;
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 static DOUBLE_LIST g_wakeup_list;
 static STR_HASH_TABLE *g_tag_hash;
 static pthread_mutex_t g_list_lock;
@@ -94,12 +96,12 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init async user hash table\n");
 		return -4;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
 	if (ret != 0) {
 		printf("[exchange_emsmdb]: failed to create scanning thread "
 		       "for asyncemsmdb: %s\n", strerror(ret));
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		return -5;
 	}
 	pthread_setname_np(g_scan_id, "asyncems/scan");
@@ -122,8 +124,8 @@ int asyncemsmdb_interface_stop()
 {
 	int i;
 	
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_scan_id, NULL);
 		pthread_cond_broadcast(&g_waken_cond);
 		for (i=0; i<g_threads_num; i++) {
@@ -320,14 +322,13 @@ static void *thread_work_func(void *param)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		pthread_mutex_lock(&g_cond_mutex);
 		pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
 		pthread_mutex_unlock(&g_cond_mutex);
  NEXT_WAKEUP:
-		if (TRUE == g_notify_stop) {
+		if (g_notify_stop)
 			break;
-		}
 		pthread_mutex_lock(&g_list_lock);
 		pnode = double_list_pop_front(&g_wakeup_list);
 		pthread_mutex_unlock(&g_list_lock);
@@ -349,7 +350,7 @@ static void *scan_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode;
 	
 	double_list_init(&temp_list);
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		sleep(1);
 		time(&cur_time);
 		pthread_mutex_lock(&g_async_lock);

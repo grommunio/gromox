@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <cerrno>
 #include <pthread.h>
 #include <unistd.h>
@@ -16,7 +17,7 @@
 #include <cstring>
 #include <cstdio>
 
-static BOOL g_notify_stop;
+static std::atomic<bool> g_notify_stop{false};
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 
@@ -24,7 +25,7 @@ static void* thread_work_func(void *param)
 {
 	struct sockaddr_storage unix_addr;
 	
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		socklen_t len = sizeof(unix_addr);
 		memset(&unix_addr, 0, sizeof(unix_addr));
 		int clifd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr), &len);
@@ -41,7 +42,7 @@ static void* thread_work_func(void *param)
 void listener_init()
 {
 	g_listen_sockd = -1;
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 int listener_run(const char *CS_PATH)
@@ -77,7 +78,7 @@ int listener_run(const char *CS_PATH)
 		printf("[listener]: fail to listen!\n");
 		return -4;
 	}
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	int ret = pthread_create(&g_listener_id, nullptr, thread_work_func, nullptr);
 	if (ret != 0) {
 		close(g_listen_sockd);
@@ -90,7 +91,7 @@ int listener_run(const char *CS_PATH)
 
 int listener_stop()
 {
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 	shutdown(g_listen_sockd, SHUT_RDWR);
 	pthread_join(g_listener_id, NULL);
 	close(g_listen_sockd);

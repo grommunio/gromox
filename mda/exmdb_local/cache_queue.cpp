@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <cstring>
@@ -29,7 +30,7 @@ static int g_scan_interval;
 static int g_retrying_times;
 static pthread_t g_thread_id;
 static std::mutex g_id_lock;
-static BOOL g_notify_stop = TRUE;
+static std::atomic<bool> g_notify_stop{true};
 
 static int cache_queue_retrieve_mess_ID();
 static int cache_queue_increase_mess_ID();
@@ -47,7 +48,7 @@ void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
-	g_notify_stop = TRUE;
+	g_notify_stop = true;
 }
 
 /*
@@ -71,12 +72,12 @@ int cache_queue_run()
         return -2;
     }
 	g_mess_id = cache_queue_retrieve_mess_ID();
-	g_notify_stop = FALSE;
+	g_notify_stop = false;
 	pthread_attr_init(&attr);
 	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
 	if (ret != 0) {
 		pthread_attr_destroy(&attr);
-		g_notify_stop = TRUE;
+		g_notify_stop = true;
 		printf("[exmdb_local]: failed to create timer thread: %s\n", strerror(ret));
 		return -3;
 	}
@@ -93,8 +94,8 @@ int cache_queue_run()
  */
 int cache_queue_stop()
 {
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
+	if (!g_notify_stop) {
+		g_notify_stop = true;
 		pthread_join(g_thread_id, NULL);
 	}
 	return 0;
@@ -279,7 +280,7 @@ static void* thread_work_func(void* arg)
 	}
 	i = 0;
 	scan_interval = g_scan_interval;
-	while (FALSE == g_notify_stop) {
+	while (!g_notify_stop) {
 		if (i < scan_interval) {
 			i ++;
 			sleep(1);
@@ -288,9 +289,8 @@ static void* thread_work_func(void* arg)
 		seekdir(dirp, 0);
 		time(&scan_begin);
     	while ((direntp = readdir(dirp)) != NULL) {
-			if (FALSE != g_notify_stop) {
+			if (g_notify_stop)
 				break;
-			}
 			if (strcmp(direntp->d_name, ".") == 0 ||
 			    strcmp(direntp->d_name, "..") == 0)
 				continue;
