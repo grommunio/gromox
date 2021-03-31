@@ -3,6 +3,7 @@
 #	include "config.h"
 #endif
 #include <cstdint>
+#include <mutex>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -54,7 +55,7 @@ static int g_faststream_id;
 static int g_average_blocks;
 static MIME_POOL *g_mime_pool;
 static pthread_key_t g_dir_key;
-static pthread_mutex_t g_id_lock;
+static std::mutex g_id_lock;
 static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
@@ -2484,7 +2485,6 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_smtp_port = smtp_port;
 	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	g_faststream_id = 0;
-	pthread_mutex_init(&g_id_lock, NULL);
 	pthread_key_create(&g_dir_key, NULL);
 }
 
@@ -2573,7 +2573,6 @@ int common_util_stop()
 
 void common_util_free()
 {
-	pthread_mutex_destroy(&g_id_lock);
 	pthread_key_delete(g_dir_key);
 }
 
@@ -2619,10 +2618,9 @@ uint32_t common_util_get_ftstream_id()
 {
 	uint32_t last_id;
 	
-	pthread_mutex_lock(&g_id_lock);
+	std::lock_guard id_hold(g_id_lock);
 	last_id = g_faststream_id;
 	g_faststream_id ++;
-	pthread_mutex_unlock(&g_id_lock);
 	return last_id;
 }
 

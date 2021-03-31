@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
@@ -311,7 +312,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		msgchg_grouping_stop();
 		common_util_stop();
 		bounce_producer_stop();
-		rop_processor_free();
 		asyncemsmdb_interface_free();
 		emsmdb_interface_free();
 		msgchg_grouping_free();

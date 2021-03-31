@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <mutex>
 #include <gromox/defs.h>
 #include "subscription_object.h"
 #include "fastdownctx_object.h"
@@ -59,7 +60,7 @@ static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
 static std::atomic<bool> g_notify_stop{true};
-static pthread_mutex_t g_hash_lock;
+static std::mutex g_hash_lock;
 static STR_HASH_TABLE *g_logon_hash;
 static LIB_BUFFER *g_logmap_allocator;
 static LIB_BUFFER *g_handle_allocator;
@@ -152,7 +153,7 @@ static void rop_processor_release_objnode(
 	if (simple_tree_get_root(&plogitem->tree) == &pobjnode->node) {
 		proot = simple_tree_get_root(&plogitem->tree);
 		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
-		pthread_mutex_lock(&g_hash_lock);
+		std::lock_guard hl_hold(g_hash_lock);
 		pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash,
 		       logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject))));
 		if (pref != nullptr) {
@@ -161,7 +162,6 @@ static void rop_processor_release_objnode(
 				str_hash_remove(g_logon_hash, logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject)));
 			}
 		}
-		pthread_mutex_unlock(&g_hash_lock);
 		b_root = TRUE;
 	} else {
 		b_root = FALSE;
@@ -235,7 +235,7 @@ int rop_processor_create_logon_item(void *plogmap,
 		lib_buffer_put(g_logitem_allocator, plogitem);
 		return -3;
 	}
-	pthread_mutex_lock(&g_hash_lock);
+	std::lock_guard hl_hold(g_hash_lock);
 	pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash, logon_object_get_dir(plogon)));
 	if (NULL == pref) {
 		tmp_ref = 1;
@@ -243,7 +243,6 @@ int rop_processor_create_logon_item(void *plogmap,
 	} else {
 		(*pref) ++;
 	}
-	pthread_mutex_unlock(&g_hash_lock);
 	return handle;
 }
 
@@ -404,7 +403,7 @@ static void *scan_work_func(void *param)
 		} else {
 			count = 0;
 		}
-		pthread_mutex_lock(&g_hash_lock);
+		std::unique_lock hl_hold(g_hash_lock);
 		iter = str_hash_iter_init(g_logon_hash);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
@@ -421,7 +420,7 @@ static void *scan_work_func(void *param)
 			double_list_append_as_tail(&temp_list, pnode);
 		}
 		str_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_hash_lock);
+		hl_hold.unlock();
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			exmdb_client_ping_store(static_cast<char *>(pnode->pdata));
 			free(pnode->pdata);
@@ -436,7 +435,6 @@ void rop_processor_init(int average_handles, int scan_interval)
 {
 	g_average_handles = average_handles;
 	g_scan_interval = scan_interval;
-	pthread_mutex_init(&g_hash_lock, NULL);
 }
 
 int rop_processor_run()
@@ -502,11 +500,6 @@ int rop_processor_stop()
 		str_hash_free(g_logon_hash);
 	}
 	return 0;
-}
-
-void rop_processor_free()
-{
-	pthread_mutex_destroy(&g_hash_lock);
 }
 
 static int rop_processor_execute_and_push(uint8_t *pbuff,

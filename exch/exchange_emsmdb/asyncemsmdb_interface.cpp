@@ -2,6 +2,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
@@ -38,10 +39,8 @@ static pthread_t *g_thread_ids;
 static std::atomic<bool> g_notify_stop{true};
 static DOUBLE_LIST g_wakeup_list;
 static STR_HASH_TABLE *g_tag_hash;
-static pthread_mutex_t g_list_lock;
-static pthread_cond_t g_waken_cond;
-static pthread_mutex_t g_cond_mutex;
-static pthread_mutex_t g_async_lock;
+static std::mutex g_list_lock, g_async_lock;
+static std::condition_variable g_waken_cond;
 static INT_HASH_TABLE *g_async_hash;
 static LIB_BUFFER *g_wait_allocator;
 
@@ -62,10 +61,6 @@ void asyncemsmdb_interface_init(int threads_num)
 {
 	g_thread_ids = NULL;
 	g_threads_num = threads_num;
-	pthread_mutex_init(&g_async_lock, NULL);
-	pthread_mutex_init(&g_list_lock, NULL);
-	pthread_mutex_init(&g_cond_mutex, NULL);
-	pthread_cond_init(&g_waken_cond, NULL);
 	double_list_init(&g_wakeup_list);
 }
 
@@ -127,7 +122,7 @@ int asyncemsmdb_interface_stop()
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		pthread_join(g_scan_id, NULL);
-		pthread_cond_broadcast(&g_waken_cond);
+		g_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {
 			pthread_join(g_thread_ids[i], NULL);
 		}
@@ -153,10 +148,6 @@ int asyncemsmdb_interface_stop()
 
 void asyncemsmdb_interface_free()
 {
-	pthread_mutex_destroy(&g_async_lock);
-	pthread_mutex_destroy(&g_list_lock);
-	pthread_mutex_destroy(&g_cond_mutex);
-	pthread_cond_destroy(&g_waken_cond);
 	double_list_free(&g_wakeup_list);
 }
 
@@ -199,10 +190,10 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	if (0 != async_id) {
 		if (1 != int_hash_add(g_async_hash, async_id, &pwait)) {
-			pthread_mutex_unlock(&g_async_lock);
+			as_hold.unlock();
 			lib_buffer_put(g_wait_allocator, pwait);
 			pout->flags_out = 0;
 			pout->result = ecRejected;
@@ -213,13 +204,12 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		if (0 != async_id) {
 			int_hash_remove(g_async_hash, async_id);
 		}
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		lib_buffer_put(g_wait_allocator, pwait);
 		pout->flags_out = 0;
 		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
-	pthread_mutex_unlock(&g_async_lock);
 	return DISPATCH_PENDING;
 }
 
@@ -228,10 +218,9 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	char tmp_tag[256];
 	ASYNC_WAIT *pwait;
 	
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	auto ppwait = static_cast<ASYNC_WAIT **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppwait) {
-		pthread_mutex_unlock(&g_async_lock);
 		return;
 	}
 	pwait = *ppwait;
@@ -240,7 +229,7 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	HX_strlower(tmp_tag);
 	str_hash_remove(g_tag_hash, tmp_tag);
 	int_hash_remove(g_async_hash, async_id);
-	pthread_mutex_unlock(&g_async_lock);
+	as_hold.unlock();
 	lib_buffer_put(g_wait_allocator, pwait);
 }
 
@@ -258,10 +247,9 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 	}
 	sprintf(tmp_tag, "%s:%d", username, cxr);
 	HX_strlower(tmp_tag);
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_query(g_tag_hash, tmp_tag));
 	if (NULL == ppwait) {
-		pthread_mutex_unlock(&g_async_lock);
 		return;
 	}
 	pwait = *ppwait;
@@ -269,7 +257,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 		int_hash_remove(g_async_hash, pwait->async_id);
 	}
 	str_hash_remove(g_tag_hash, tmp_tag);
-	pthread_mutex_unlock(&g_async_lock);
+	as_hold.unlock();
 	lib_buffer_put(g_wait_allocator, pwait);
 }
 
@@ -300,10 +288,9 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	
 	sprintf(tmp_tag, "%s:%d", username, (int)cxr);
 	HX_strlower(tmp_tag);
-	pthread_mutex_lock(&g_async_lock);
+	std::unique_lock as_hold(g_async_lock);
 	auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_query(g_tag_hash, tmp_tag));
 	if (NULL == ppwait) {
-		pthread_mutex_unlock(&g_async_lock);
 		return;
 	}
 	pwait = *ppwait;
@@ -311,27 +298,28 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	if (0 != pwait->async_id) {
 		int_hash_remove(g_async_hash, pwait->async_id);
 	}
-	pthread_mutex_unlock(&g_async_lock);
-	pthread_mutex_lock(&g_list_lock);
+	as_hold.unlock();
+	std::unique_lock ll_hold(g_list_lock);
 	double_list_append_as_tail(&g_wakeup_list, &pwait->node);
-	pthread_mutex_unlock(&g_list_lock);
-	pthread_cond_signal(&g_waken_cond);
+	ll_hold.unlock();
+	g_waken_cond.notify_one();
 }
 
 static void *thread_work_func(void *param)
 {
 	DOUBLE_LIST_NODE *pnode;
+	std::mutex g_cond_mutex;
 	
 	while (!g_notify_stop) {
-		pthread_mutex_lock(&g_cond_mutex);
-		pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
-		pthread_mutex_unlock(&g_cond_mutex);
+		std::unique_lock cm_hold(g_cond_mutex);
+		g_waken_cond.wait(cm_hold);
+		cm_hold.unlock();
  NEXT_WAKEUP:
 		if (g_notify_stop)
 			break;
-		pthread_mutex_lock(&g_list_lock);
+		std::unique_lock ll_hold(g_list_lock);
 		pnode = double_list_pop_front(&g_wakeup_list);
-		pthread_mutex_unlock(&g_list_lock);
+		ll_hold.unlock();
 		if (NULL == pnode) {
 			continue;
 		}
@@ -353,7 +341,7 @@ static void *scan_work_func(void *param)
 	while (!g_notify_stop) {
 		sleep(1);
 		time(&cur_time);
-		pthread_mutex_lock(&g_async_lock);
+		std::unique_lock as_hold(g_async_lock);
 		iter = str_hash_iter_init(g_tag_hash);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
@@ -368,7 +356,7 @@ static void *scan_work_func(void *param)
 			}
 		}
 		str_hash_iter_free(iter);
-		pthread_mutex_unlock(&g_async_lock);
+		as_hold.unlock();
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr)
 			asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), FALSE);
 	}
