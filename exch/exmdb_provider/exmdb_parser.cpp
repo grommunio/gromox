@@ -2,8 +2,10 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
@@ -31,15 +33,26 @@
 
 static size_t g_max_threads, g_max_routers;
 static std::vector<EXMDB_ITEM> g_local_list;
-static DOUBLE_LIST g_router_list;
+static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
 static DOUBLE_LIST g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
+
+ROUTER_CONNECTION::ROUTER_CONNECTION()
+{
+	double_list_init(&datagram_list);
+}
+
+ROUTER_CONNECTION::~ROUTER_CONNECTION()
+{
+	if (sockd >= 0)
+		close(sockd);
+}
 
 int exmdb_parser_get_param(int param)
 {
 	switch (param) {
 	case ALIVE_ROUTER_CONNECTIONS:
-		return double_list_get_nodes_num(&g_router_list);
+		return g_router_list.size();
 	}
 	return -1;
 }
@@ -49,12 +62,10 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;
 	double_list_init(&g_connection_list);
-	double_list_init(&g_router_list);
 }
 
 void exmdb_parser_free()
 {
-	double_list_free(&g_router_list);
 	double_list_free(&g_connection_list);
 }
 
@@ -818,7 +829,6 @@ static void *thread_work_func(void *pparam)
 	EXMDB_REQUEST request;
 	struct pollfd pfd_read;
 	EXMDB_RESPONSE response;
-	ROUTER_CONNECTION *prouter;
 	EXMDB_CONNECTION *pconnection;
 	
 	b_private = FALSE; /* whatever for connect request */
@@ -915,38 +925,34 @@ static void *thread_work_func(void *pparam)
 					continue;
 				}
 			} else if (request.call_id == exmdb_callid::LISTEN_NOTIFICATION) {
-				prouter = me_alloc<ROUTER_CONNECTION>();
+				std::shared_ptr<ROUTER_CONNECTION> prouter;
+				try {
+					prouter = std::make_shared<ROUTER_CONNECTION>();
+					prouter->remote_id.reserve(strlen(request.payload.listen_notification.remote_id));
+				} catch (const std::bad_alloc &) {
+				}
 				if (NULL == prouter) {
 					tmp_byte = exmdb_response::LACK_MEMORY;
-				} else if (0 != g_max_routers && double_list_get_nodes_num(&g_router_list) >= g_max_routers) {
-					free(prouter);
+				} else if (g_max_routers != 0 && g_router_list.size() >= g_max_routers) {
 					tmp_byte = exmdb_response::MAX_REACHED;
 				} else {
-					HX_strlcpy(prouter->remote_id, request.payload.listen_notification.remote_id, GX_ARRAY_SIZE(prouter->remote_id));
+					prouter->remote_id = request.payload.listen_notification.remote_id;
 					exmdb_server_free_environment();
 					if (5 != write(pconnection->sockd, resp_buff, 5)) {
-						free(prouter);
 						break;
 					} else {
-						prouter->node.pdata = prouter;
-						prouter->b_stop = FALSE;
 						prouter->thr_id = pconnection->thr_id;
 						prouter->sockd = pconnection->sockd;
 						time(&prouter->last_time);
-						pthread_mutex_init(&prouter->lock, NULL);
-						pthread_mutex_init(&prouter->cond_mutex, NULL);
-						pthread_cond_init(&prouter->waken_cond, NULL);
-						double_list_init(&prouter->datagram_list);
-						std::unique_lock rhold(g_router_lock);
-						double_list_append_as_tail(
-							&g_router_list, &prouter->node);
-						rhold.unlock();
+						std::unique_lock r_hold(g_router_lock);
+						g_router_list.insert(prouter);
+						r_hold.unlock();
 						std::unique_lock chold(g_connection_lock);
 						double_list_remove(&g_connection_list,
 											&pconnection->node);
 						chold.unlock();
 						free(pconnection);
-						notification_agent_thread_work(prouter);
+						notification_agent_thread_work(std::move(prouter));
 					}
 				}
 			} else {
@@ -997,44 +1003,35 @@ void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection)
 	}
 }
 
-ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id)
+std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_get_router(const char *remote_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	ROUTER_CONNECTION *prouter;
 	std::lock_guard rhold(g_router_lock);
-
-	for (pnode=double_list_get_head(&g_router_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_router_list, pnode)) {
-		prouter = (ROUTER_CONNECTION*)pnode->pdata;
-		if (0 == strcmp(prouter->remote_id, remote_id)) {
-			double_list_remove(&g_router_list, pnode);
-			return prouter;
-		}
-	}
-	return NULL;
+	auto it = std::find_if(g_router_list.begin(), g_router_list.end(),
+	          [&](const auto &r) { return r->remote_id == remote_id; });
+	if (it == g_router_list.end())
+		return nullptr;
+	auto rt = *it;
+	g_router_list.erase(it);
+	return rt;
 }
 
-void exmdb_parser_put_router(ROUTER_CONNECTION *pconnection)
+void exmdb_parser_put_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
 {
 	std::lock_guard rhold(g_router_lock);
-	double_list_append_as_tail(&g_router_list, &pconnection->node);
+	try {
+		g_router_list.insert(std::move(pconnection));
+	} catch (const std::bad_alloc &) {
+	}
 }
 
-BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection)
+BOOL exmdb_parser_remove_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnection)
 {
-	DOUBLE_LIST_NODE *pnode;
-	ROUTER_CONNECTION *prouter;
 	std::lock_guard rhold(g_router_lock);
-
-	for (pnode=double_list_get_head(&g_router_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_router_list, pnode)) {
-		prouter = (ROUTER_CONNECTION*)pnode->pdata;
-		if (pconnection == prouter) {
-			double_list_remove(&g_router_list, pnode);
-			return TRUE;
-		}
-	}
-	return FALSE;
+	auto it = g_router_list.find(pconnection);
+	if (it == g_router_list.cend())
+		return false;
+	g_router_list.erase(it);
+	return TRUE;
 }
 
 int exmdb_parser_run(const char *config_path)
@@ -1055,7 +1052,6 @@ int exmdb_parser_stop()
 	int i, num;
 	pthread_t *pthr_ids;
 	DOUBLE_LIST_NODE *pnode;
-	ROUTER_CONNECTION *prouter;
 	EXMDB_CONNECTION *pconnection;
 	
 	if (g_local_list.size() == 0)
@@ -1086,20 +1082,18 @@ int exmdb_parser_stop()
 		pthr_ids = NULL;
 	}
 	std::unique_lock rhold(g_router_lock);
-	num = double_list_get_nodes_num(&g_router_list);
+	num = g_router_list.size();
 	if (num > 0) {
 		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			return -2;
 		}
 	}
-	for (i=0,pnode=double_list_get_head(&g_router_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		&g_router_list, pnode),i++) {
-		prouter = (ROUTER_CONNECTION*)pnode->pdata;
-		pthr_ids[i] = prouter->thr_id;
-		prouter->b_stop = TRUE;
-		pthread_cond_signal(&prouter->waken_cond);
+	i = 0;
+	for (auto &rt : g_router_list) {
+		pthr_ids[i++] = rt->thr_id;
+		rt->b_stop = TRUE;
+		rt->waken_cond.notify_one();
 	}
 	rhold.unlock();
 	for (i=0; i<num; i++) {
