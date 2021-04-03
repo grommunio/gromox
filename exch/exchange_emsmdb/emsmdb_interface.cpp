@@ -328,7 +328,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 		}
 		if (TRUE == phandle->b_occupied) {
 			gl_hold.unlock();
-			sleep(100000);
+			usleep(100000);
 		} else {
 			break;
 		}

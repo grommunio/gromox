@@ -1965,8 +1965,10 @@ void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall)
 {
 	/* system is going to stop now */
-	if (g_async_stop)
+	if (g_async_stop) {
+		printf("noticed async_stop\n");
 		return;
+	}
 	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
 	if (NULL == pvconnection) {
 		return;
