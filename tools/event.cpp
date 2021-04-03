@@ -5,8 +5,10 @@
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <condition_variable>
 #include <cstring>
 #include <new>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <libHX/option.h>
@@ -60,8 +62,8 @@ struct DEQUEUE_NODE {
 	char res_id[128]{};
 	int sockd = -1;
 	FIFO fifo{};
-	pthread_mutex_t lock{}, cond_mutex{};
-	pthread_cond_t waken_cond{};
+	std::mutex lock, cond_mutex;
+	std::condition_variable waken_cond;
 };
 
 struct HOST_NODE {
@@ -82,13 +84,9 @@ static DOUBLE_LIST g_enqueue_list1;
 static DOUBLE_LIST g_dequeue_list;
 static DOUBLE_LIST g_dequeue_list1;
 static DOUBLE_LIST g_host_list;
-static pthread_mutex_t g_enqueue_lock;
-static pthread_mutex_t g_dequeue_lock;
-static pthread_mutex_t g_host_lock;
-static pthread_mutex_t g_enqueue_cond_mutex;
-static pthread_cond_t g_enqueue_waken_cond;
-static pthread_mutex_t g_dequeue_cond_mutex;
-static pthread_cond_t g_dequeue_waken_cond;
+static std::mutex g_enqueue_lock, g_dequeue_lock, g_host_lock;
+static std::mutex g_enqueue_cond_mutex, g_dequeue_cond_mutex;
+static std::condition_variable g_enqueue_waken_cond, g_dequeue_waken_cond;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
@@ -207,13 +205,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 5;
 	}
-	pthread_mutex_init(&g_enqueue_lock, NULL);
-	pthread_mutex_init(&g_dequeue_lock, NULL);
-	pthread_mutex_init(&g_host_lock, NULL);
-	pthread_mutex_init(&g_enqueue_cond_mutex, NULL);
-	pthread_cond_init(&g_enqueue_waken_cond, NULL);
-	pthread_mutex_init(&g_dequeue_cond_mutex, NULL);
-	pthread_cond_init(&g_dequeue_waken_cond, NULL);
 	double_list_init(&g_enqueue_list);
 	double_list_init(&g_enqueue_list1);
 	double_list_init(&g_dequeue_list);
@@ -241,8 +232,8 @@ int main(int argc, const char **argv)
 
 	if (i != g_threads_num) {
 		g_notify_stop = true;
-		pthread_cond_broadcast(&g_enqueue_waken_cond);
-		pthread_cond_broadcast(&g_dequeue_waken_cond);
+		g_enqueue_waken_cond.notify_all();
+		g_dequeue_waken_cond.notify_all();
 		for (i-=1; i>=0; i--) {
 			pthread_join(en_ids[i], nullptr);
 		}
@@ -256,14 +247,6 @@ int main(int argc, const char **argv)
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
-
-		pthread_mutex_destroy(&g_enqueue_lock);
-		pthread_mutex_destroy(&g_dequeue_lock);
-		pthread_mutex_destroy(&g_host_lock);
-		pthread_mutex_destroy(&g_enqueue_cond_mutex);
-		pthread_cond_destroy(&g_enqueue_waken_cond);
-		pthread_mutex_destroy(&g_dequeue_cond_mutex);
-		pthread_cond_destroy(&g_dequeue_waken_cond);
 		return 8;
 	}
 	
@@ -282,8 +265,8 @@ int main(int argc, const char **argv)
 	
 	if (i != g_threads_num) {
 		g_notify_stop = true;
-		pthread_cond_broadcast(&g_enqueue_waken_cond);
-		pthread_cond_broadcast(&g_dequeue_waken_cond);
+		g_enqueue_waken_cond.notify_all();
+		g_dequeue_waken_cond.notify_all();
 		for (i-=1; i>=0; i--) {
 			pthread_join(de_ids[i], nullptr);
 		}
@@ -301,14 +284,6 @@ int main(int argc, const char **argv)
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
-
-		pthread_mutex_destroy(&g_enqueue_lock);
-		pthread_mutex_destroy(&g_dequeue_lock);
-		pthread_mutex_destroy(&g_host_lock);
-		pthread_mutex_destroy(&g_enqueue_cond_mutex);
-		pthread_cond_destroy(&g_enqueue_waken_cond);
-		pthread_mutex_destroy(&g_dequeue_cond_mutex);
-		pthread_cond_destroy(&g_dequeue_waken_cond);
 		return 9;
 	}
 	
@@ -321,8 +296,8 @@ int main(int argc, const char **argv)
 	} else if (ret < 0) {
 		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(-ret));
 		g_notify_stop = true;
-		pthread_cond_broadcast(&g_enqueue_waken_cond);
-		pthread_cond_broadcast(&g_dequeue_waken_cond);
+		g_enqueue_waken_cond.notify_all();
+		g_dequeue_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {
 			pthread_join(en_ids[i], nullptr);
 		}
@@ -339,13 +314,6 @@ int main(int argc, const char **argv)
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
-		pthread_mutex_destroy(&g_enqueue_lock);
-		pthread_mutex_destroy(&g_dequeue_lock);
-		pthread_mutex_destroy(&g_host_lock);
-		pthread_mutex_destroy(&g_enqueue_cond_mutex);
-		pthread_cond_destroy(&g_enqueue_waken_cond);
-		pthread_mutex_destroy(&g_dequeue_cond_mutex);
-		pthread_cond_destroy(&g_dequeue_waken_cond);
 		return 10;
 	}
 
@@ -354,8 +322,8 @@ int main(int argc, const char **argv)
 	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
 		printf("[system]: failed to create accept or scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		pthread_cond_broadcast(&g_enqueue_waken_cond);
-		pthread_cond_broadcast(&g_dequeue_waken_cond);
+		g_enqueue_waken_cond.notify_all();
+		g_dequeue_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {
 			pthread_join(en_ids[i], nullptr);
 		}
@@ -374,14 +342,6 @@ int main(int argc, const char **argv)
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
-
-		pthread_mutex_destroy(&g_enqueue_lock);
-		pthread_mutex_destroy(&g_dequeue_lock);
-		pthread_mutex_destroy(&g_host_lock);
-		pthread_mutex_destroy(&g_enqueue_cond_mutex);
-		pthread_cond_destroy(&g_enqueue_waken_cond);
-		pthread_mutex_destroy(&g_dequeue_cond_mutex);
-		pthread_cond_destroy(&g_dequeue_waken_cond);
 		return 11;
 	}
 	
@@ -395,8 +355,8 @@ int main(int argc, const char **argv)
 	}
 
 	close(sockd);
-	pthread_cond_broadcast(&g_enqueue_waken_cond);
-	pthread_cond_broadcast(&g_dequeue_waken_cond);
+	g_enqueue_waken_cond.notify_all();
+	g_dequeue_waken_cond.notify_all();
 	for (i=0; i<g_threads_num; i++) {
 		pthread_join(en_ids[i], nullptr);
 	}
@@ -441,15 +401,6 @@ int main(int argc, const char **argv)
 	double_list_free(&g_dequeue_list1);
 	
 	double_list_free(&g_host_list);
-
-	pthread_mutex_destroy(&g_enqueue_lock);
-	pthread_mutex_destroy(&g_dequeue_lock);
-	pthread_mutex_destroy(&g_host_lock);
-	pthread_mutex_destroy(&g_enqueue_cond_mutex);
-	pthread_cond_destroy(&g_enqueue_waken_cond);
-	pthread_mutex_destroy(&g_dequeue_cond_mutex);
-	pthread_cond_destroy(&g_dequeue_waken_cond);
-
 	return 0;
 }
 
@@ -473,7 +424,7 @@ static void* scan_work_func(void *param)
 		}
 		i = 0;
 		double_list_init(&temp_list);
-		pthread_mutex_lock(&g_host_lock);
+		std::unique_lock hl_hold(g_host_lock);
 		time(&cur_time);
 		ptail = double_list_get_tail(&g_host_list);
 		while ((pnode = double_list_pop_front(&g_host_list)) != nullptr) {
@@ -497,7 +448,7 @@ static void* scan_work_func(void *param)
 				break;
 			}
 		}
-		pthread_mutex_unlock(&g_host_lock);
+		hl_hold.unlock();
 		
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			phost = (HOST_NODE*)pnode->pdata;
@@ -550,10 +501,10 @@ static void* accept_work_func(void *param)
 		
 		penqueue->node.pdata = penqueue;
 		penqueue->sockd = sockd2;
-		pthread_mutex_lock(&g_enqueue_lock);
+		std::unique_lock eq_hold(g_enqueue_lock);
 		if (double_list_get_nodes_num(&g_enqueue_list) + 1 +
 			double_list_get_nodes_num(&g_enqueue_list1) >= g_threads_num) {
-			pthread_mutex_unlock(&g_enqueue_lock);
+			eq_hold.unlock();
 			delete penqueue;
 			write(sockd2, "Maximum Connection Reached!\r\n", 29);
 			close(sockd2);
@@ -561,9 +512,9 @@ static void* accept_work_func(void *param)
 		}
 		
 		double_list_append_as_tail(&g_enqueue_list1, &penqueue->node);
-		pthread_mutex_unlock(&g_enqueue_lock);
+		eq_hold.unlock();
 		write(sockd2, "OK\r\n", 4);
-		pthread_cond_signal(&g_enqueue_waken_cond);
+		g_enqueue_waken_cond.notify_one();
 	}
 	return nullptr;
 }
@@ -585,18 +536,17 @@ static void* enqueue_work_func(void *param)
 	DOUBLE_LIST_NODE *pnode1;
 	
  NEXT_LOOP:
-	pthread_mutex_lock(&g_enqueue_cond_mutex);
-	pthread_cond_wait(&g_enqueue_waken_cond, &g_enqueue_cond_mutex);
-	pthread_mutex_unlock(&g_enqueue_cond_mutex);
+	std::unique_lock cm_hold(g_enqueue_cond_mutex);
+	g_enqueue_waken_cond.wait(cm_hold);
+	cm_hold.unlock();
 	if (g_notify_stop)
 		return nullptr;
-	pthread_mutex_lock(&g_enqueue_lock);
+	std::unique_lock eq_hold(g_enqueue_lock);
 	pnode = double_list_pop_front(&g_enqueue_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_enqueue_list, pnode);
 	}
-	pthread_mutex_unlock(&g_enqueue_lock);
-
+	eq_hold.unlock();
 	if (NULL == pnode) {
 		goto NEXT_LOOP;
 	}
@@ -606,9 +556,9 @@ static void* enqueue_work_func(void *param)
 	while (TRUE) {
 		if (FALSE == read_mark(penqueue)) {
 			close(penqueue->sockd);
-			pthread_mutex_lock(&g_enqueue_lock);
+			eq_hold.lock();
 			double_list_remove(&g_enqueue_list, &penqueue->node);
-			pthread_mutex_unlock(&g_enqueue_lock);
+			eq_hold.unlock();
 			delete penqueue;
 			goto NEXT_LOOP;
 		}
@@ -629,11 +579,7 @@ static void* enqueue_work_func(void *param)
 			strncpy(pdequeue->res_id, penqueue->line + 7, 128);
 			fifo_init(&pdequeue->fifo, g_fifo_alloc, sizeof(MEM_FILE),
 				FIFO_AVERAGE_LENGTH);
-			pthread_mutex_init(&pdequeue->lock, NULL);
-			pthread_mutex_init(&pdequeue->cond_mutex, NULL);
-			pthread_cond_init(&pdequeue->waken_cond, NULL);
-		
-			pthread_mutex_lock(&g_host_lock);
+			std::unique_lock hl_hold(g_host_lock);
 			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
 				pnode=double_list_get_after(&g_host_list, pnode)) {
 				phost = (HOST_NODE*)pnode->pdata;
@@ -645,23 +591,17 @@ static void* enqueue_work_func(void *param)
 			if (NULL == pnode) {
 				phost = new(std::nothrow) HOST_NODE;
 				if (NULL == phost) {
-					pthread_mutex_unlock(&g_host_lock);
+					hl_hold.unlock();
 					fifo_free(&pdequeue->fifo);
-					pthread_mutex_destroy(&pdequeue->lock);
-					pthread_mutex_destroy(&pdequeue->cond_mutex);
-					pthread_cond_destroy(&pdequeue->waken_cond);
 					delete pdequeue;
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
 				phost->phash = str_hash_init(HASH_CAPABILITY, sizeof(time_t), NULL);
 				if (NULL == phost->phash) {
-					pthread_mutex_unlock(&g_host_lock);
+					hl_hold.unlock();
 					delete phost;
 					fifo_free(&pdequeue->fifo);
-					pthread_mutex_destroy(&pdequeue->lock);
-					pthread_mutex_destroy(&pdequeue->cond_mutex);
-					pthread_cond_destroy(&pdequeue->waken_cond);
 					delete pdequeue;
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
@@ -673,18 +613,16 @@ static void* enqueue_work_func(void *param)
 			}
 			time(&phost->last_time);
 			double_list_append_as_tail(&phost->list, &pdequeue->node_host);
-			pthread_mutex_unlock(&g_host_lock);
-			
+			hl_hold.unlock();
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			
-			pthread_mutex_lock(&g_dequeue_lock);
+			std::unique_lock dq_hold(g_dequeue_lock);
 			double_list_append_as_tail(&g_dequeue_list1, &pdequeue->node);
-			pthread_mutex_unlock(&g_dequeue_lock);
-			pthread_cond_signal(&g_dequeue_waken_cond);
-			
-			pthread_mutex_lock(&g_enqueue_lock);
+			dq_hold.unlock();
+			g_dequeue_waken_cond.notify_one();
+			eq_hold.lock();
 			double_list_remove(&g_enqueue_list, &penqueue->node);
-			pthread_mutex_unlock(&g_enqueue_lock);
+			eq_hold.unlock();
 			delete penqueue;
 			goto NEXT_LOOP;
 		} else if (0 == strncasecmp(penqueue->line, "SELECT ", 7)) {
@@ -702,7 +640,7 @@ static void* enqueue_work_func(void *param)
 			strcat(temp_string, pspace + 1);
 			
 			b_result = FALSE;
-			pthread_mutex_lock(&g_host_lock);
+			std::unique_lock hl_hold(g_host_lock);
 			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
 				pnode=double_list_get_after(&g_host_list, pnode)) {
 				phost = (HOST_NODE*)pnode->pdata;
@@ -718,7 +656,7 @@ static void* enqueue_work_func(void *param)
 					break;
 				}
 			}
-			pthread_mutex_unlock(&g_host_lock);
+			hl_hold.unlock();
 			if (TRUE == b_result) {
 				write(penqueue->sockd, "TRUE\r\n", 6);
 			} else {
@@ -739,7 +677,7 @@ static void* enqueue_work_func(void *param)
 			HX_strlower(temp_string);
 			strcat(temp_string, pspace + 1);
 			
-			pthread_mutex_lock(&g_host_lock);
+			std::unique_lock hl_hold(g_host_lock);
 			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
 				pnode=double_list_get_after(&g_host_list, pnode)) {
 				phost = (HOST_NODE*)pnode->pdata;
@@ -749,15 +687,15 @@ static void* enqueue_work_func(void *param)
 				}
 				
 			}
-			pthread_mutex_unlock(&g_host_lock);
+			hl_hold.unlock();
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			continue;
 		} else if (0 == strcasecmp(penqueue->line, "QUIT")) {
 			write(penqueue->sockd, "BYE\r\n", 5);
 			close(penqueue->sockd);
-			pthread_mutex_lock(&g_enqueue_lock);
+			eq_hold.lock();
 			double_list_remove(&g_enqueue_list, &penqueue->node);
-			pthread_mutex_unlock(&g_enqueue_lock);
+			eq_hold.unlock();
 			delete penqueue;
 			goto NEXT_LOOP;
 		} else if (0 == strcasecmp(penqueue->line, "PING")) {
@@ -790,7 +728,8 @@ static void* enqueue_work_func(void *param)
 			HX_strlower(temp_string);
 			memcpy(temp_string + temp_len, pspace1 + 1, pspace2 - pspace1 - 1);
 			temp_string[temp_len + (pspace2 - pspace1 - 1)] = '\0';
-			pthread_mutex_lock(&g_host_lock);
+
+			std::unique_lock hl_hold(g_host_lock);
 			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
 				pnode=double_list_get_after(&g_host_list, pnode)) {
 				phost = (HOST_NODE*)pnode->pdata;
@@ -805,18 +744,18 @@ static void* enqueue_work_func(void *param)
 					mem_file_init(&temp_file, g_file_alloc);
 					mem_file_write(&temp_file, penqueue->line,
 						strlen(penqueue->line));
-					pthread_mutex_lock(&pdequeue->lock);
+					std::unique_lock dl_hold(pdequeue->lock);
 					b_result = fifo_enqueue(&pdequeue->fifo, &temp_file);
-					pthread_mutex_unlock(&pdequeue->lock);
+					dl_hold.unlock();
 					if (FALSE == b_result) {
 						mem_file_free(&temp_file);
 					} else {
-						pthread_cond_signal(&pdequeue->waken_cond);
+						pdequeue->waken_cond.notify_one();
 					}
 					double_list_append_as_tail(&phost->list, pnode1);
 				}
 			}
-			pthread_mutex_unlock(&g_host_lock);
+			hl_hold.unlock();
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			continue;
 		}
@@ -832,24 +771,22 @@ static void* dequeue_work_func(void *param)
 	time_t last_time;
 	HOST_NODE *phost;
 	MEM_FILE temp_file;
-	struct timespec ts;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
 	char buff[MAX_CMD_LENGTH];
 	
  NEXT_LOOP:
-	pthread_mutex_lock(&g_dequeue_cond_mutex);
-	pthread_cond_wait(&g_dequeue_waken_cond, &g_dequeue_cond_mutex);
-	pthread_mutex_unlock(&g_dequeue_cond_mutex);
+	std::unique_lock dc_hold(g_dequeue_cond_mutex);
+	g_dequeue_waken_cond.wait(dc_hold);
+	dc_hold.unlock();
 	if (g_notify_stop)
 		return nullptr;
-	pthread_mutex_lock(&g_dequeue_lock);
+	std::unique_lock dq_hold(g_dequeue_lock);
 	pnode = double_list_pop_front(&g_dequeue_list1);
 	if (NULL != pnode) {
 		double_list_append_as_tail(&g_dequeue_list, pnode);
 	}
-	pthread_mutex_unlock(&g_dequeue_lock);
-
+	dq_hold.unlock();
 	if (NULL == pnode) {
 		goto NEXT_LOOP;
 	}
@@ -857,7 +794,7 @@ static void* dequeue_work_func(void *param)
 	time(&last_time);
 	pdequeue = (DEQUEUE_NODE*)pnode->pdata;
 	phost = NULL;
-	pthread_mutex_lock(&g_host_lock);
+	std::unique_lock hl_hold(g_host_lock);
 	for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_host_list, pnode)) {
 		phost = (HOST_NODE*)pnode->pdata;
@@ -865,69 +802,56 @@ static void* dequeue_work_func(void *param)
 			break;
 		}
 	}
-	pthread_mutex_unlock(&g_host_lock);
+	hl_hold.unlock();
 	
 	if (NULL == phost) {
-		pthread_mutex_lock(&g_dequeue_lock);
+		dq_hold.lock();
 		double_list_remove(&g_dequeue_list, &pdequeue->node);
-		pthread_mutex_unlock(&g_dequeue_lock);
-		
+		dq_hold.unlock();
 		close(pdequeue->sockd);
 		fifo_free(&pdequeue->fifo);
-		pthread_mutex_destroy(&pdequeue->lock);
-		pthread_mutex_destroy(&pdequeue->cond_mutex);
-		pthread_cond_destroy(&pdequeue->waken_cond);
 		delete pdequeue;
 		goto NEXT_LOOP;
 	}
 	
-	while (TRUE) {
-		pthread_mutex_lock(&pdequeue->cond_mutex);
-		clock_gettime(CLOCK_REALTIME, &ts);
-		ts.tv_sec ++;
-		pthread_cond_timedwait(&pdequeue->waken_cond,
-			&pdequeue->cond_mutex, &ts);
-		pthread_mutex_unlock(&pdequeue->cond_mutex);
+	while (!g_notify_stop) {
+		std::unique_lock dc_hold(pdequeue->cond_mutex);
+		pdequeue->waken_cond.wait_for(dc_hold, std::chrono::seconds(1));
+		dc_hold.unlock();
 		if (g_notify_stop)
 			break;
-		pthread_mutex_lock(&pdequeue->lock);
+		std::unique_lock dq_hold(pdequeue->lock);
 		pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo));
 		if (NULL != pfile) {
 			temp_file = *pfile;
 			fifo_dequeue(&pdequeue->fifo);
 		}
-		pthread_mutex_unlock(&pdequeue->lock);
-		
+		dq_hold.unlock();
 		time(&cur_time);
 		
 		if (NULL == pfile) {	
 			if (cur_time - last_time >= SOCKET_TIMEOUT - 3) {
 				if (6 != write(pdequeue->sockd, "PING\r\n", 6) ||
 					FALSE == read_response(pdequeue->sockd)) {
-					pthread_mutex_lock(&g_host_lock);
+					hl_hold.lock();
 					double_list_remove(&phost->list, &pdequeue->node_host);
-					pthread_mutex_unlock(&g_host_lock);
-					
-					pthread_mutex_lock(&g_dequeue_lock);
+					hl_hold.unlock();
+					dq_hold.lock();
 					double_list_remove(&g_dequeue_list, &pdequeue->node);
-					pthread_mutex_unlock(&g_dequeue_lock);
-					
+					dq_hold.unlock();
 					close(pdequeue->sockd);
 					while ((pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo))) != nullptr) {
 						mem_file_free(pfile);
 						fifo_dequeue(&pdequeue->fifo);
 					}
 					fifo_free(&pdequeue->fifo);
-					pthread_mutex_destroy(&pdequeue->lock);
-					pthread_mutex_destroy(&pdequeue->cond_mutex);
-					pthread_cond_destroy(&pdequeue->waken_cond);
 					delete pdequeue;
 					goto NEXT_LOOP;
 				}
 				last_time = cur_time;
-				pthread_mutex_lock(&g_host_lock);
+				hl_hold.lock();
 				phost->last_time = cur_time;
-				pthread_mutex_unlock(&g_host_lock);
+				hl_hold.unlock();
 			}
 			continue;
 		}
@@ -940,32 +864,26 @@ static void* dequeue_work_func(void *param)
 		mem_file_free(&temp_file);
 		if (len != write(pdequeue->sockd, buff, len) ||
 			FALSE == read_response(pdequeue->sockd)) {
-			pthread_mutex_lock(&g_host_lock);
+			hl_hold.lock();
 			double_list_remove(&phost->list, &pdequeue->node_host);
-			pthread_mutex_unlock(&g_host_lock);
-			
-			pthread_mutex_lock(&g_dequeue_lock);
+			hl_hold.unlock();
+			dq_hold.lock();
 			double_list_remove(&g_dequeue_list, &pdequeue->node);
-			pthread_mutex_unlock(&g_dequeue_lock);
-			
+			dq_hold.unlock();
 			close(pdequeue->sockd);
 			while ((pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo))) != nullptr) {
 				mem_file_free(pfile);
 				fifo_dequeue(&pdequeue->fifo);
 			}
 			fifo_free(&pdequeue->fifo);
-			pthread_mutex_destroy(&pdequeue->lock);
-			pthread_mutex_destroy(&pdequeue->cond_mutex);
-			pthread_cond_destroy(&pdequeue->waken_cond);
 			delete pdequeue;
 			goto NEXT_LOOP;
 		}
 		
 		last_time = cur_time;
-		pthread_mutex_lock(&g_host_lock);
+		hl_hold.lock();
 		phost->last_time = cur_time;
-		pthread_mutex_unlock(&g_host_lock);
-		
+		hl_hold.unlock();
 	}	
 	return NULL;
 }
