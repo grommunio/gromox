@@ -6,6 +6,7 @@
 #include <atomic>
 #include <cerrno>
 #include <cstring>
+#include <new>
 #include <string>
 #include <vector>
 #include <libHX/option.h>
@@ -47,30 +48,28 @@ using namespace gromox;
 
 struct ENQUEUE_NODE {
 	DOUBLE_LIST_NODE node;
-	char res_id[128];
-	int sockd;
-	int offset;
-	char buffer[MAX_CMD_LENGTH];
-	char line[MAX_CMD_LENGTH];
+	char res_id[128]{};
+	int sockd = -1;
+	int offset = 0;
+	char buffer[MAX_CMD_LENGTH]{};
+	char line[MAX_CMD_LENGTH]{};
 };
 
 struct DEQUEUE_NODE {
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST_NODE node_host;
-	char res_id[128];
-	int sockd;
-	FIFO fifo;
-	pthread_mutex_t lock;
-	pthread_mutex_t cond_mutex;
-	pthread_cond_t waken_cond;
+	DOUBLE_LIST_NODE node{}, node_host{};
+	char res_id[128]{};
+	int sockd = -1;
+	FIFO fifo{};
+	pthread_mutex_t lock{}, cond_mutex{};
+	pthread_cond_t waken_cond{};
 };
 
 struct HOST_NODE {
-	DOUBLE_LIST_NODE node;
-	char res_id[128];
-	time_t last_time;
-	STR_HASH_TABLE *phash;
-	DOUBLE_LIST list;
+	DOUBLE_LIST_NODE node{};
+	char res_id[128]{};
+	time_t last_time = 0;
+	STR_HASH_TABLE *phash = nullptr;
+	DOUBLE_LIST list{};
 };
 
 static std::atomic<bool> g_notify_stop{false};
@@ -412,7 +411,7 @@ int main(int argc, const char **argv)
 	while ((pnode = double_list_pop_front(&g_enqueue_list)) != nullptr) {
 		penqueue = (ENQUEUE_NODE*)pnode->pdata;
 		close(penqueue->sockd);
-		free(penqueue);
+		delete penqueue;
 	}
 
 	double_list_free(&g_enqueue_list);
@@ -420,7 +419,7 @@ int main(int argc, const char **argv)
 	while ((pnode = double_list_pop_front(&g_enqueue_list1)) != nullptr) {
 		penqueue= (ENQUEUE_NODE*)pnode->pdata;
 		close(penqueue->sockd);
-		free(penqueue);
+		delete penqueue;
 	}
 
 	double_list_free(&g_enqueue_list1);
@@ -428,7 +427,7 @@ int main(int argc, const char **argv)
 	while ((pnode = double_list_pop_front(&g_dequeue_list)) != nullptr) {
 		pdequeue = (DEQUEUE_NODE*)pnode->pdata;
 		close(pdequeue->sockd);
-		free(pdequeue);
+		delete pdequeue;
 	}
 
 	double_list_free(&g_dequeue_list);
@@ -436,7 +435,7 @@ int main(int argc, const char **argv)
 	while ((pnode = double_list_pop_front(&g_dequeue_list1)) != nullptr) {
 		pdequeue= (DEQUEUE_NODE*)pnode->pdata;
 		close(pdequeue->sockd);
-		free(pdequeue);
+		delete pdequeue;
 	}
 
 	double_list_free(&g_dequeue_list1);
@@ -504,7 +503,7 @@ static void* scan_work_func(void *param)
 			phost = (HOST_NODE*)pnode->pdata;
 			double_list_free(&phost->list);
 			str_hash_free(phost->phash);
-			free(phost);
+			delete phost;
 		}
 		double_list_free(&temp_list);
 	}
@@ -542,7 +541,7 @@ static void* accept_work_func(void *param)
 			continue;
 		}
 
-		penqueue = (ENQUEUE_NODE*)malloc(sizeof(ENQUEUE_NODE));
+		penqueue = new(std::nothrow) ENQUEUE_NODE;
 		if (NULL == penqueue) {
 			write(sockd2, "Internal Error!\r\n", 17);
 			close(sockd2);
@@ -551,15 +550,11 @@ static void* accept_work_func(void *param)
 		
 		penqueue->node.pdata = penqueue;
 		penqueue->sockd = sockd2;
-		penqueue->offset = 0;
-		penqueue->res_id[0] = '\0';
-		
-		
 		pthread_mutex_lock(&g_enqueue_lock);
 		if (double_list_get_nodes_num(&g_enqueue_list) + 1 +
 			double_list_get_nodes_num(&g_enqueue_list1) >= g_threads_num) {
 			pthread_mutex_unlock(&g_enqueue_lock);
-			free(penqueue);
+			delete penqueue;
 			write(sockd2, "Maximum Connection Reached!\r\n", 29);
 			close(sockd2);
 			continue;
@@ -614,7 +609,7 @@ static void* enqueue_work_func(void *param)
 			pthread_mutex_lock(&g_enqueue_lock);
 			double_list_remove(&g_enqueue_list, &penqueue->node);
 			pthread_mutex_unlock(&g_enqueue_lock);
-			free(penqueue);
+			delete penqueue;
 			goto NEXT_LOOP;
 		}
 		
@@ -623,7 +618,7 @@ static void* enqueue_work_func(void *param)
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			continue;
 		} else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
-			pdequeue = (DEQUEUE_NODE*)malloc(sizeof(DEQUEUE_NODE));
+			pdequeue = new(std::nothrow) DEQUEUE_NODE;
 			if (NULL == pdequeue) {
 				write(penqueue->sockd, "FALSE\r\n", 7);
 				continue;
@@ -648,26 +643,26 @@ static void* enqueue_work_func(void *param)
 			}
 			
 			if (NULL == pnode) {
-				phost = (HOST_NODE*)malloc(sizeof(HOST_NODE));
+				phost = new(std::nothrow) HOST_NODE;
 				if (NULL == phost) {
 					pthread_mutex_unlock(&g_host_lock);
 					fifo_free(&pdequeue->fifo);
 					pthread_mutex_destroy(&pdequeue->lock);
 					pthread_mutex_destroy(&pdequeue->cond_mutex);
 					pthread_cond_destroy(&pdequeue->waken_cond);
-					free(pdequeue);
+					delete pdequeue;
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
 				phost->phash = str_hash_init(HASH_CAPABILITY, sizeof(time_t), NULL);
 				if (NULL == phost->phash) {
 					pthread_mutex_unlock(&g_host_lock);
-					free(phost);
+					delete phost;
 					fifo_free(&pdequeue->fifo);
 					pthread_mutex_destroy(&pdequeue->lock);
 					pthread_mutex_destroy(&pdequeue->cond_mutex);
 					pthread_cond_destroy(&pdequeue->waken_cond);
-					free(pdequeue);
+					delete pdequeue;
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
@@ -690,7 +685,7 @@ static void* enqueue_work_func(void *param)
 			pthread_mutex_lock(&g_enqueue_lock);
 			double_list_remove(&g_enqueue_list, &penqueue->node);
 			pthread_mutex_unlock(&g_enqueue_lock);
-			free(penqueue);
+			delete penqueue;
 			goto NEXT_LOOP;
 		} else if (0 == strncasecmp(penqueue->line, "SELECT ", 7)) {
 			pspace = strchr(penqueue->line + 7, ' ');
@@ -763,7 +758,7 @@ static void* enqueue_work_func(void *param)
 			pthread_mutex_lock(&g_enqueue_lock);
 			double_list_remove(&g_enqueue_list, &penqueue->node);
 			pthread_mutex_unlock(&g_enqueue_lock);
-			free(penqueue);
+			delete penqueue;
 			goto NEXT_LOOP;
 		} else if (0 == strcasecmp(penqueue->line, "PING")) {
 			write(penqueue->sockd, "TRUE\r\n", 6);	
@@ -882,7 +877,7 @@ static void* dequeue_work_func(void *param)
 		pthread_mutex_destroy(&pdequeue->lock);
 		pthread_mutex_destroy(&pdequeue->cond_mutex);
 		pthread_cond_destroy(&pdequeue->waken_cond);
-		free(pdequeue);
+		delete pdequeue;
 		goto NEXT_LOOP;
 	}
 	
@@ -926,7 +921,7 @@ static void* dequeue_work_func(void *param)
 					pthread_mutex_destroy(&pdequeue->lock);
 					pthread_mutex_destroy(&pdequeue->cond_mutex);
 					pthread_cond_destroy(&pdequeue->waken_cond);
-					free(pdequeue);
+					delete pdequeue;
 					goto NEXT_LOOP;
 				}
 				last_time = cur_time;
@@ -962,7 +957,7 @@ static void* dequeue_work_func(void *param)
 			pthread_mutex_destroy(&pdequeue->lock);
 			pthread_mutex_destroy(&pdequeue->cond_mutex);
 			pthread_cond_destroy(&pdequeue->waken_cond);
-			free(pdequeue);
+			delete pdequeue;
 			goto NEXT_LOOP;
 		}
 		
