@@ -8,7 +8,6 @@
 #include <condition_variable>
 #include <cstring>
 #include <list>
-#include <new>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -87,7 +86,7 @@ static LIB_BUFFER *g_file_alloc;
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static std::vector<std::shared_ptr<DEQUEUE_NODE>> g_dequeue_list1;
-static DOUBLE_LIST g_host_list;
+static std::list<HOST_NODE> g_host_list;
 static std::mutex g_enqueue_lock, g_dequeue_lock, g_host_lock;
 static std::mutex g_enqueue_cond_mutex, g_dequeue_cond_mutex;
 static std::condition_variable g_enqueue_waken_cond, g_dequeue_waken_cond;
@@ -214,8 +213,6 @@ int main(int argc, const char **argv)
 		return 5;
 	}
 	g_dequeue_list1.reserve(g_threads_num);
-	double_list_init(&g_host_list);
-
 	en_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
 	
 	pthread_attr_init(&thr_attr);
@@ -246,7 +243,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_host_list);
 		return 8;
 	}
 	
@@ -279,7 +275,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_host_list);
 		return 9;
 	}
 	
@@ -305,7 +300,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_host_list);
 		return 10;
 	}
 
@@ -329,7 +323,6 @@ int main(int argc, const char **argv)
 		
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_host_list);
 		return 11;
 	}
 	
@@ -359,7 +352,7 @@ int main(int argc, const char **argv)
 	g_enqueue_list.clear();
 	g_enqueue_list1.clear();
 	g_dequeue_list1.clear();
-	double_list_free(&g_host_list);
+	g_host_list.clear();
 	return 0;
 }
 
@@ -367,10 +360,6 @@ static void* scan_work_func(void *param)
 {
 	int i = 0;
 	time_t cur_time;
-	HOST_NODE *phost;
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
 	
 	while (!g_notify_stop) {
 		if (i < SCAN_INTERVAL) {
@@ -379,15 +368,15 @@ static void* scan_work_func(void *param)
 			continue;
 		}
 		i = 0;
-		double_list_init(&temp_list);
 		std::unique_lock hl_hold(g_host_lock);
 		time(&cur_time);
-		ptail = double_list_get_tail(&g_host_list);
-		while ((pnode = double_list_pop_front(&g_host_list)) != nullptr) {
-			phost = (HOST_NODE*)pnode->pdata;
+		auto ptail = g_host_list.size() > 0 ? &g_host_list.back() : nullptr;
+		while (g_host_list.size() > 0) {
+			std::list<HOST_NODE> tmp_list;
+			auto phost = &g_host_list.front();
+			tmp_list.splice(tmp_list.end(), g_host_list, g_host_list.begin());
 			if (phost->list.size() == 0 &&
 				cur_time - phost->last_time > HOST_INTERVAL) {
-				double_list_append_as_tail(&temp_list, pnode);
 			} else {
 				for (auto it = phost->hash.begin(); it != phost->hash.end(); ) {
 					if (cur_time - it->second > SELECT_INTERVAL)
@@ -395,19 +384,12 @@ static void* scan_work_func(void *param)
 					else
 						++it;
 				}
-				double_list_append_as_tail(&g_host_list, pnode);
+				g_host_list.splice(g_host_list.end(), tmp_list);
 			}
-			if (pnode == ptail) {
+			if (phost == ptail)
 				break;
-			}
 		}
 		hl_hold.unlock();
-		
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			phost = (HOST_NODE*)pnode->pdata;
-			delete phost;
-		}
-		double_list_free(&temp_list);
 	}
 	return NULL;
 }
@@ -476,10 +458,8 @@ static void* enqueue_work_func(void *param)
 	char *pspace2;
 	BOOL b_result;
 	time_t cur_time;
-	HOST_NODE *phost;
 	MEM_FILE temp_file;
 	char temp_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	
  NEXT_LOOP:
 	std::unique_lock cm_hold(g_enqueue_cond_mutex);
@@ -507,6 +487,7 @@ static void* enqueue_work_func(void *param)
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			continue;
 		} else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
+			HOST_NODE *phost = nullptr;
 			std::shared_ptr<DEQUEUE_NODE> pdequeue;
 			try {
 				pdequeue = std::make_shared<DEQUEUE_NODE>();
@@ -518,24 +499,20 @@ static void* enqueue_work_func(void *param)
 			fifo_init(&pdequeue->fifo, g_fifo_alloc, sizeof(MEM_FILE),
 				FIFO_AVERAGE_LENGTH);
 			std::unique_lock hl_hold(g_host_lock);
-			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_host_list, pnode)) {
-				phost = (HOST_NODE*)pnode->pdata;
-				if (0 == strcmp(phost->res_id, penqueue->line + 7)) {
-					break;
-				}
-			}
-			
-			if (NULL == pnode) {
-				phost = new(std::nothrow) HOST_NODE;
-				if (NULL == phost) {
+			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
+			               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
+			if (host_it == g_host_list.end()) {
+				try {
+					g_host_list.emplace_back();
+					phost = &g_host_list.back();
+				} catch (const std::bad_alloc &) {
 					hl_hold.unlock();
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
-				phost->node.pdata = phost;
 				strncpy(phost->res_id, penqueue->line + 7, 128);
-				double_list_append_as_tail(&g_host_list, &phost->node);
+			} else {
+				phost = &*host_it;
 			}
 			time(&phost->last_time);
 			try {
@@ -576,9 +553,8 @@ static void* enqueue_work_func(void *param)
 			
 			b_result = FALSE;
 			std::unique_lock hl_hold(g_host_lock);
-			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_host_list, pnode)) {
-				phost = (HOST_NODE*)pnode->pdata;
+			for (auto &hnode : g_host_list) {
+				auto phost = &hnode;
 				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
 					time(&cur_time);
 					auto time_it = phost->hash.find(temp_string);
@@ -614,15 +590,10 @@ static void* enqueue_work_func(void *param)
 			strcat(temp_string, pspace + 1);
 			
 			std::unique_lock hl_hold(g_host_lock);
-			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_host_list, pnode)) {
-				phost = (HOST_NODE*)pnode->pdata;
-				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
-					phost->hash.erase(temp_string);
-					break;
-				}
-				
-			}
+			auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
+			             [&](const HOST_NODE &h) { return strcmp(penqueue->res_id, h.res_id) == 0; });
+			if (phost != g_host_list.end())
+				phost->hash.erase(temp_string);
 			hl_hold.unlock();
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			continue;
@@ -663,9 +634,8 @@ static void* enqueue_work_func(void *param)
 			temp_string[temp_len + (pspace2 - pspace1 - 1)] = '\0';
 
 			std::unique_lock hl_hold(g_host_lock);
-			for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
-				pnode=double_list_get_after(&g_host_list, pnode)) {
-				phost = (HOST_NODE*)pnode->pdata;
+			for (auto &hnode : g_host_list) {
+				auto phost = &hnode;
 				if (0 == strcmp(penqueue->res_id, phost->res_id) ||
 				    phost->hash.find(temp_string) == phost->hash.cend())
 					continue;
@@ -701,9 +671,7 @@ static void* dequeue_work_func(void *param)
 	MEM_FILE *pfile;
 	time_t cur_time;
 	time_t last_time;
-	HOST_NODE *phost;
 	MEM_FILE temp_file;
-	DOUBLE_LIST_NODE *pnode;
 	char buff[MAX_CMD_LENGTH];
 	
  NEXT_LOOP:
@@ -720,20 +688,12 @@ static void* dequeue_work_func(void *param)
 	dq_hold.unlock();
 	
 	time(&last_time);
-	phost = NULL;
 	std::unique_lock hl_hold(g_host_lock);
-	for (pnode=double_list_get_head(&g_host_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_host_list, pnode)) {
-		phost = (HOST_NODE*)pnode->pdata;
-		if (0 == strcmp(phost->res_id, pdequeue->res_id)) {
-			break;
-		}
-	}
-	hl_hold.unlock();
-	
-	if (NULL == phost) {
+	auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
+	             [&](const HOST_NODE &h) { return strcmp(h.res_id, pdequeue->res_id) == 0; });
+	if (phost == g_host_list.end())
 		goto NEXT_LOOP;
-	}
+	hl_hold.unlock();
 	
 	while (!g_notify_stop) {
 		std::unique_lock dc_hold(pdequeue->cond_mutex);
