@@ -9,6 +9,7 @@
 #include <cstring>
 #include <new>
 #include <mutex>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <libHX/option.h>
@@ -70,7 +71,7 @@ struct HOST_NODE {
 	DOUBLE_LIST_NODE node{};
 	char res_id[128]{};
 	time_t last_time = 0;
-	STR_HASH_TABLE *phash = nullptr;
+	std::unordered_map<std::string, time_t> hash;
 	DOUBLE_LIST list{};
 };
 
@@ -407,11 +408,8 @@ int main(int argc, const char **argv)
 static void* scan_work_func(void *param)
 {
 	int i = 0;
-	time_t *ptime;
 	time_t cur_time;
 	HOST_NODE *phost;
-	STR_HASH_ITER *iter;
-	char temp_string[256];
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
@@ -433,15 +431,12 @@ static void* scan_work_func(void *param)
 				cur_time - phost->last_time > HOST_INTERVAL) {
 				double_list_append_as_tail(&temp_list, pnode);
 			} else {
-				iter = str_hash_iter_init(phost->phash);
-				for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-					str_hash_iter_forward(iter)) {
-					ptime = (time_t*)str_hash_iter_get_value(iter, temp_string);
-					if (cur_time - *ptime > SELECT_INTERVAL) {
-						str_hash_iter_remove(iter);
-					}
+				for (auto it = phost->hash.begin(); it != phost->hash.end(); ) {
+					if (cur_time - it->second > SELECT_INTERVAL)
+						it = phost->hash.erase(it);
+					else
+						++it;
 				}
-				str_hash_iter_free(iter);
 				double_list_append_as_tail(&g_host_list, pnode);
 			}
 			if (pnode == ptail) {
@@ -453,7 +448,6 @@ static void* scan_work_func(void *param)
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			phost = (HOST_NODE*)pnode->pdata;
 			double_list_free(&phost->list);
-			str_hash_free(phost->phash);
 			delete phost;
 		}
 		double_list_free(&temp_list);
@@ -597,15 +591,6 @@ static void* enqueue_work_func(void *param)
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
-				phost->phash = str_hash_init(HASH_CAPABILITY, sizeof(time_t), NULL);
-				if (NULL == phost->phash) {
-					hl_hold.unlock();
-					delete phost;
-					fifo_free(&pdequeue->fifo);
-					delete pdequeue;
-					write(penqueue->sockd, "FALSE\r\n", 7);
-					continue;
-				}
 				phost->node.pdata = phost;
 				strncpy(phost->res_id, penqueue->line + 7, 128);
 				double_list_init(&phost->list);
@@ -646,11 +631,12 @@ static void* enqueue_work_func(void *param)
 				phost = (HOST_NODE*)pnode->pdata;
 				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
 					time(&cur_time);
-					auto ptime = static_cast<time_t *>(str_hash_query(phost->phash, temp_string));
-					if (NULL != ptime) {
-						*ptime = cur_time;
-					} else {
-						str_hash_add(phost->phash, temp_string, &cur_time);
+					auto time_it = phost->hash.find(temp_string);
+					if (time_it != phost->hash.end()) {
+						time_it->second = cur_time;
+					} else try {
+						phost->hash.emplace(temp_string, cur_time);
+					} catch (const std::bad_alloc &) {
 					}
 					b_result = TRUE;
 					break;
@@ -682,7 +668,7 @@ static void* enqueue_work_func(void *param)
 				pnode=double_list_get_after(&g_host_list, pnode)) {
 				phost = (HOST_NODE*)pnode->pdata;
 				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
-					str_hash_remove(phost->phash, temp_string);
+					phost->hash.erase(temp_string);
 					break;
 				}
 				
@@ -734,9 +720,8 @@ static void* enqueue_work_func(void *param)
 				pnode=double_list_get_after(&g_host_list, pnode)) {
 				phost = (HOST_NODE*)pnode->pdata;
 				if (0 == strcmp(penqueue->res_id, phost->res_id) ||
-					NULL == str_hash_query(phost->phash, temp_string)) {
+				    phost->hash.find(temp_string) == phost->hash.cend())
 					continue;
-				}
 				
 				pnode1 = double_list_pop_front(&phost->list);
 				if (NULL != pnode1) {
