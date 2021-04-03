@@ -51,16 +51,15 @@ Default: \fI50\fP
 .SH Event protocol
 .PP
 The event service is exposed as a line-based text protocol. Upon connection,
-the event server gratitiously writes "OK", following which the server will wait
-for commands, and execute them synchronously.
+the event server gratitiously writes "OK" and will wait for commands. Each
+connection to the event daemon starts out in Enqueue Mode, and this is the only
+mode from which commands can be issued.
 .PP
 "FALSE" may be emitted by the server if there is a syntax error.
 .PP
-Each connection to the event daemon starts out in Enqueue Mode.
-.PP
 The command "ID <res_id>" declares the particular connection to be a notification
 sender. res_id is generally the hostname and the PID. The server always
-responds with "TRUE".
+responds with "TRUE". (The connection stays in Enqueue Mode.)
 .PP
 The command "LISTEN <res_id>" declares the particular connection to be a
 notification receiver. res_id follows the same pattern. The server responds
@@ -80,7 +79,7 @@ had registered as a listener for res_id. The server always responds with
 Auxiliary self-explanatory commands available are: "QUIT" and "PING".
 .PP
 Any other input is treated as a notification item and is not interpreted by
-event(8gx) beyond checking the number of fields.
+event(8gx) beyond checking the number of fields:
 .PP
 The notification "FOLDER-TOUCH <username> <folder>" informs listeners that the
 folder metadata has changed and warrants being reloaded.
