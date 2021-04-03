@@ -9,6 +9,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "engine.h"
 #include "data_source.h"
@@ -20,6 +21,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <csignal>
+
+using namespace gromox;
 
 static std::atomic<bool> g_notify_stop{false};
 static char *opt_config_file;
@@ -112,7 +115,7 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: mysql database name is %s\n", db_name);
 	system_log_init(log_path);
-	
+	auto cl_0 = make_scope_exit(system_log_free);
 	gateway_control_init(console_path);
 	
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
@@ -122,7 +125,7 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run system log\n");
 		return 3;
 	}
-	
+	auto cl_1 = make_scope_exit(system_log_stop);
 	if (0 != gateway_control_run()) {
 		printf("[system]: failed to run gateway control\n");
 		return 4;
@@ -131,6 +134,7 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run engine\n");
 		return 6;
 	}
+	auto cl_2 = make_scope_exit(engine_stop);
 	
 	printf("[system]: ADAPTOR is now running\n");
 	struct sigaction sact{};
@@ -141,10 +145,6 @@ int main(int argc, const char **argv)
 	while (!g_notify_stop) {
 		sleep(1);
 	}
-
-	engine_stop();
-	system_log_stop();
-	system_log_free();
 	return 0;
 }
 
