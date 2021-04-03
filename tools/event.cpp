@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <condition_variable>
 #include <cstring>
+#include <list>
 #include <new>
 #include <mutex>
 #include <unordered_map>
@@ -50,7 +51,8 @@
 using namespace gromox;
 
 struct ENQUEUE_NODE {
-	DOUBLE_LIST_NODE node;
+	~ENQUEUE_NODE() { if (sockd >= 0) close(sockd); }
+
 	char res_id[128]{};
 	int sockd = -1;
 	int offset = 0;
@@ -80,8 +82,7 @@ static int g_threads_num;
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;
 static std::vector<std::string> g_acl_list;
-static DOUBLE_LIST g_enqueue_list;
-static DOUBLE_LIST g_enqueue_list1;
+static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static DOUBLE_LIST g_dequeue_list;
 static DOUBLE_LIST g_dequeue_list1;
 static DOUBLE_LIST g_host_list;
@@ -120,7 +121,6 @@ int main(int argc, const char **argv)
 	pthread_t *en_ids;
 	pthread_t *de_ids;
 	char listen_ip[40];
-	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
 	pthread_attr_t thr_attr;
@@ -206,8 +206,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 5;
 	}
-	double_list_init(&g_enqueue_list);
-	double_list_init(&g_enqueue_list1);
 	double_list_init(&g_dequeue_list);
 	double_list_init(&g_dequeue_list1);
 	double_list_init(&g_host_list);
@@ -243,8 +241,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_enqueue_list);
-		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
@@ -280,8 +276,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_enqueue_list);
-		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
@@ -310,8 +304,6 @@ int main(int argc, const char **argv)
 		close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_enqueue_list);
-		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
@@ -338,8 +330,6 @@ int main(int argc, const char **argv)
 		
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		double_list_free(&g_enqueue_list);
-		double_list_free(&g_enqueue_list1);
 		double_list_free(&g_dequeue_list);
 		double_list_free(&g_dequeue_list1);
 		double_list_free(&g_host_list);
@@ -369,22 +359,8 @@ int main(int argc, const char **argv)
 	
 	lib_buffer_free(g_file_alloc);
 	fifo_allocator_free(g_fifo_alloc);
-	while ((pnode = double_list_pop_front(&g_enqueue_list)) != nullptr) {
-		penqueue = (ENQUEUE_NODE*)pnode->pdata;
-		close(penqueue->sockd);
-		delete penqueue;
-	}
-
-	double_list_free(&g_enqueue_list);
-
-	while ((pnode = double_list_pop_front(&g_enqueue_list1)) != nullptr) {
-		penqueue= (ENQUEUE_NODE*)pnode->pdata;
-		close(penqueue->sockd);
-		delete penqueue;
-	}
-
-	double_list_free(&g_enqueue_list1);
-	
+	g_enqueue_list.clear();
+	g_enqueue_list1.clear();
 	while ((pnode = double_list_pop_front(&g_dequeue_list)) != nullptr) {
 		pdequeue = (DEQUEUE_NODE*)pnode->pdata;
 		close(pdequeue->sockd);
@@ -486,26 +462,24 @@ static void* accept_work_func(void *param)
 			continue;
 		}
 
-		penqueue = new(std::nothrow) ENQUEUE_NODE;
-		if (NULL == penqueue) {
-			write(sockd2, "Internal Error!\r\n", 17);
-			close(sockd2);
-			continue;
-		}
-		
-		penqueue->node.pdata = penqueue;
-		penqueue->sockd = sockd2;
 		std::unique_lock eq_hold(g_enqueue_lock);
-		if (double_list_get_nodes_num(&g_enqueue_list) + 1 +
-			double_list_get_nodes_num(&g_enqueue_list1) >= g_threads_num) {
+		if (g_enqueue_list.size() + 1 + g_enqueue_list1.size() >= g_threads_num) {
 			eq_hold.unlock();
-			delete penqueue;
 			write(sockd2, "Maximum Connection Reached!\r\n", 29);
 			close(sockd2);
 			continue;
 		}
-		
-		double_list_append_as_tail(&g_enqueue_list1, &penqueue->node);
+		try {
+			g_enqueue_list1.emplace_back();
+			penqueue = &g_enqueue_list1.back();
+		} catch (const std::bad_alloc &) {
+			eq_hold.unlock();
+			write(sockd2, "ENOMEM\r\n", 8);
+			close(sockd2);
+			continue;
+		}
+
+		penqueue->sockd = sockd2;
 		eq_hold.unlock();
 		write(sockd2, "OK\r\n", 4);
 		g_enqueue_waken_cond.notify_one();
@@ -524,7 +498,6 @@ static void* enqueue_work_func(void *param)
 	HOST_NODE *phost;
 	MEM_FILE temp_file;
 	char temp_string[256];
-	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
@@ -536,24 +509,17 @@ static void* enqueue_work_func(void *param)
 	if (g_notify_stop)
 		return nullptr;
 	std::unique_lock eq_hold(g_enqueue_lock);
-	pnode = double_list_pop_front(&g_enqueue_list1);
-	if (NULL != pnode) {
-		double_list_append_as_tail(&g_enqueue_list, pnode);
-	}
-	eq_hold.unlock();
-	if (NULL == pnode) {
+	if (g_enqueue_list1.size() == 0)
 		goto NEXT_LOOP;
-	}
-
-	penqueue = (ENQUEUE_NODE*)pnode->pdata;
+	auto eq_node = g_enqueue_list1.begin();
+	auto penqueue = &*eq_node;
+	g_enqueue_list.splice(g_enqueue_list.end(), g_enqueue_list1, eq_node);
+	eq_hold.unlock();
 	
 	while (TRUE) {
 		if (FALSE == read_mark(penqueue)) {
-			close(penqueue->sockd);
 			eq_hold.lock();
-			double_list_remove(&g_enqueue_list, &penqueue->node);
-			eq_hold.unlock();
-			delete penqueue;
+			g_enqueue_list.erase(eq_node);
 			goto NEXT_LOOP;
 		}
 		
@@ -600,15 +566,14 @@ static void* enqueue_work_func(void *param)
 			double_list_append_as_tail(&phost->list, &pdequeue->node_host);
 			hl_hold.unlock();
 			write(penqueue->sockd, "TRUE\r\n", 6);
+			penqueue->sockd = -1; /* fd was transferred to DEQUEUE_NODE */
 			
 			std::unique_lock dq_hold(g_dequeue_lock);
 			double_list_append_as_tail(&g_dequeue_list1, &pdequeue->node);
 			dq_hold.unlock();
 			g_dequeue_waken_cond.notify_one();
 			eq_hold.lock();
-			double_list_remove(&g_enqueue_list, &penqueue->node);
-			eq_hold.unlock();
-			delete penqueue;
+			g_enqueue_list.erase(eq_node);
 			goto NEXT_LOOP;
 		} else if (0 == strncasecmp(penqueue->line, "SELECT ", 7)) {
 			pspace = strchr(penqueue->line + 7, ' ');
@@ -678,11 +643,8 @@ static void* enqueue_work_func(void *param)
 			continue;
 		} else if (0 == strcasecmp(penqueue->line, "QUIT")) {
 			write(penqueue->sockd, "BYE\r\n", 5);
-			close(penqueue->sockd);
 			eq_hold.lock();
-			double_list_remove(&g_enqueue_list, &penqueue->node);
-			eq_hold.unlock();
-			delete penqueue;
+			g_enqueue_list.erase(eq_node);
 			goto NEXT_LOOP;
 		} else if (0 == strcasecmp(penqueue->line, "PING")) {
 			write(penqueue->sockd, "TRUE\r\n", 6);	
