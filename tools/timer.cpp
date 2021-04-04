@@ -314,6 +314,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
+	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	printf("[system]: TIMER is now running\n");
 

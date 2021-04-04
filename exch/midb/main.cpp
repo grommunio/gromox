@@ -424,6 +424,7 @@ int main(int argc, const char **argv)
 	auto cl_8 = make_scope_exit(listener_stop);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
+	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	printf("[system]: MIDB is now running\n");
 	while (!g_notify_stop) {

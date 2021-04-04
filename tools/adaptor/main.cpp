@@ -143,6 +143,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
+	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	while (!g_notify_stop) {
 		sleep(1);

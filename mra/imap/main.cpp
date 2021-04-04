@@ -85,6 +85,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGPIPE, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
+	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	g_config_file = config_file_prg(opt_config_file, "imap.cfg");
 	if (opt_config_file != nullptr && g_config_file == nullptr) {
