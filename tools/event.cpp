@@ -241,8 +241,11 @@ int main(int argc, const char **argv)
 	}
 
 	if (i != g_threads_num) {
+		g_notify_stop = true;
+		pthread_cond_broadcast(&g_enqueue_waken_cond);
+		pthread_cond_broadcast(&g_dequeue_waken_cond);
 		for (i-=1; i>=0; i--) {
-			pthread_cancel(en_ids[i]);
+			pthread_join(en_ids[i], nullptr);
 		}
 		free(en_ids);
 		
@@ -279,12 +282,15 @@ int main(int argc, const char **argv)
 	}
 	
 	if (i != g_threads_num) {
+		g_notify_stop = true;
+		pthread_cond_broadcast(&g_enqueue_waken_cond);
+		pthread_cond_broadcast(&g_dequeue_waken_cond);
 		for (i-=1; i>=0; i--) {
-			pthread_cancel(de_ids[i]);
+			pthread_join(de_ids[i], nullptr);
 		}
 		free(de_ids);
 		for (i=0; i<g_threads_num; i++) {
-			pthread_cancel(en_ids[i]);
+			pthread_join(en_ids[i], nullptr);
 		}
 		free(de_ids);
 		
@@ -315,12 +321,15 @@ int main(int argc, const char **argv)
 		g_acl_list = {"::1"};
 	} else if (ret < 0) {
 		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(-ret));
+		g_notify_stop = true;
+		pthread_cond_broadcast(&g_enqueue_waken_cond);
+		pthread_cond_broadcast(&g_dequeue_waken_cond);
 		for (i=0; i<g_threads_num; i++) {
-			pthread_cancel(en_ids[i]);
+			pthread_join(en_ids[i], nullptr);
 		}
 		free(en_ids);
 		for (i=0; i<g_threads_num; i++) {
-			pthread_cancel(de_ids[i]);
+			pthread_join(de_ids[i], nullptr);
 		}
 		free(de_ids);
 		close(sockd);
@@ -345,12 +354,15 @@ int main(int argc, const char **argv)
 	    reinterpret_cast<void *>(static_cast<intptr_t>(sockd))) != 0) ||
 	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
 		printf("[system]: failed to create accept or scanning thread: %s\n", strerror(ret));
+		g_notify_stop = true;
+		pthread_cond_broadcast(&g_enqueue_waken_cond);
+		pthread_cond_broadcast(&g_dequeue_waken_cond);
 		for (i=0; i<g_threads_num; i++) {
-			pthread_cancel(en_ids[i]);
+			pthread_join(en_ids[i], nullptr);
 		}
 		free(en_ids);
 		for (i=0; i<g_threads_num; i++) {
-			pthread_cancel(de_ids[i]);
+			pthread_join(de_ids[i], nullptr);
 		}
 		free(de_ids);
 
@@ -375,7 +387,6 @@ int main(int argc, const char **argv)
 	}
 	
 	pthread_setname_np(thr_id, "accept");
-	g_notify_stop = false;
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGTERM, &sact, nullptr);
@@ -385,13 +396,14 @@ int main(int argc, const char **argv)
 	}
 
 	close(sockd);
-
+	pthread_cond_broadcast(&g_enqueue_waken_cond);
+	pthread_cond_broadcast(&g_dequeue_waken_cond);
 	for (i=0; i<g_threads_num; i++) {
-		pthread_cancel(en_ids[i]);
+		pthread_join(en_ids[i], nullptr);
 	}
 	free(en_ids);
 	for (i=0; i<g_threads_num; i++) {
-		pthread_cancel(de_ids[i]);
+		pthread_join(de_ids[i], nullptr);
 	}
 	free(de_ids);
 	
@@ -581,7 +593,8 @@ static void* enqueue_work_func(void *param)
 	pthread_mutex_lock(&g_enqueue_cond_mutex);
 	pthread_cond_wait(&g_enqueue_waken_cond, &g_enqueue_cond_mutex);
 	pthread_mutex_unlock(&g_enqueue_cond_mutex);
-
+	if (g_notify_stop)
+		return nullptr;
 	pthread_mutex_lock(&g_enqueue_lock);
 	pnode = double_list_pop_front(&g_enqueue_list1);
 	if (NULL != pnode) {
@@ -833,7 +846,8 @@ static void* dequeue_work_func(void *param)
 	pthread_mutex_lock(&g_dequeue_cond_mutex);
 	pthread_cond_wait(&g_dequeue_waken_cond, &g_dequeue_cond_mutex);
 	pthread_mutex_unlock(&g_dequeue_cond_mutex);
-
+	if (g_notify_stop)
+		return nullptr;
 	pthread_mutex_lock(&g_dequeue_lock);
 	pnode = double_list_pop_front(&g_dequeue_list1);
 	if (NULL != pnode) {
@@ -879,7 +893,8 @@ static void* dequeue_work_func(void *param)
 		pthread_cond_timedwait(&pdequeue->waken_cond,
 			&pdequeue->cond_mutex, &ts);
 		pthread_mutex_unlock(&pdequeue->cond_mutex);
-		
+		if (g_notify_stop)
+			break;
 		pthread_mutex_lock(&pdequeue->lock);
 		pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo));
 		if (NULL != pfile) {
