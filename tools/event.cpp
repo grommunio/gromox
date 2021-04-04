@@ -20,6 +20,7 @@
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include <gromox/fifo.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/list_file.hpp>
@@ -126,8 +127,6 @@ int main(int argc, const char **argv)
 	int i;
 	int listen_port;
 	pthread_t thr_id;
-	pthread_t *en_ids;
-	pthread_t *de_ids;
 	char listen_ip[40];
 	pthread_attr_t thr_attr;
 
@@ -196,89 +195,59 @@ int main(int argc, const char **argv)
 		printf("[system]: Failed to init queue allocator\n");
 		return 3;
 	}
-	
+	auto cl_0 = make_scope_exit([&]() { fifo_allocator_free(g_fifo_alloc); });
 	g_file_alloc = lib_buffer_init(FILE_ALLOC_SIZE,
 					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_file_alloc) {
-		fifo_allocator_free(g_fifo_alloc);
 		printf("[system]: Failed to init file allocator\n");
 		return 4;
 	}
-	
+	auto cl_1 = make_scope_exit([&]() { lib_buffer_free(g_file_alloc); });
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
 	if (sockd < 0) {
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 5;
 	}
+	auto cl_2 = make_scope_exit([&]() { close(sockd); });
 	g_dequeue_list1.reserve(g_threads_num);
-	en_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
-	
 	pthread_attr_init(&thr_attr);
-
+	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
 	pthread_attr_setstacksize(&thr_attr, 1024*1024);
 	
-
+	std::vector<pthread_t> tidlist;
+	tidlist.reserve(g_threads_num * 2);
+	auto cl_4 = make_scope_exit([&]() {
+		g_enqueue_waken_cond.notify_all();
+		g_dequeue_waken_cond.notify_all();
+		for (auto tid : tidlist)
+			pthread_join(tid, nullptr);
+	});
 	for (i=0; i<g_threads_num; i++) {
-		int ret = pthread_create(&en_ids[i], &thr_attr, enqueue_work_func, nullptr);
+		pthread_t tid;
+		auto ret = pthread_create(&tid, &thr_attr, enqueue_work_func, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
 			break;
 		}
+		tidlist.push_back(tid);
 		char buf[32];
 		snprintf(buf, sizeof(buf), "enqueue/%u", i);
-		pthread_setname_np(en_ids[i], buf);
-	}
+		pthread_setname_np(tid, buf);
 
-	if (i != g_threads_num) {
-		g_notify_stop = true;
-		g_enqueue_waken_cond.notify_all();
-		g_dequeue_waken_cond.notify_all();
-		for (i-=1; i>=0; i--) {
-			pthread_join(en_ids[i], nullptr);
-		}
-		free(en_ids);
-		
-		close(sockd);
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
-		return 8;
-	}
-	
-	de_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
-	
-	for (i=0; i<g_threads_num; i++) {
-		int ret = pthread_create(&de_ids[i], &thr_attr, dequeue_work_func, nullptr);
+		ret = pthread_create(&tid, &thr_attr, dequeue_work_func, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create dequeue pool thread: %s\n", strerror(ret));
 			break;
 		}
-		char buf[32];
+		tidlist.push_back(tid);
 		snprintf(buf, sizeof(buf), "dequeue/%u", i);
-		pthread_setname_np(de_ids[i], buf);
+		pthread_setname_np(tid, buf);
 	}
 	
 	if (i != g_threads_num) {
 		g_notify_stop = true;
-		g_enqueue_waken_cond.notify_all();
-		g_dequeue_waken_cond.notify_all();
-		for (i-=1; i>=0; i--) {
-			pthread_join(de_ids[i], nullptr);
-		}
-		free(de_ids);
-		for (i=0; i<g_threads_num; i++) {
-			pthread_join(en_ids[i], nullptr);
-		}
-		free(de_ids);
-		
-		close(sockd);
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
 		return 9;
 	}
-	
-	pthread_attr_destroy(&thr_attr);
 
 	auto ret = list_file_read_fixedstrings("event_acl.txt", config_dir, g_acl_list);
 	if (ret == -ENOENT) {
@@ -287,19 +256,6 @@ int main(int argc, const char **argv)
 	} else if (ret < 0) {
 		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(-ret));
 		g_notify_stop = true;
-		g_enqueue_waken_cond.notify_all();
-		g_dequeue_waken_cond.notify_all();
-		for (i=0; i<g_threads_num; i++) {
-			pthread_join(en_ids[i], nullptr);
-		}
-		free(en_ids);
-		for (i=0; i<g_threads_num; i++) {
-			pthread_join(de_ids[i], nullptr);
-		}
-		free(de_ids);
-		close(sockd);
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
 		return 10;
 	}
 
@@ -308,21 +264,6 @@ int main(int argc, const char **argv)
 	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
 		printf("[system]: failed to create accept or scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		g_enqueue_waken_cond.notify_all();
-		g_dequeue_waken_cond.notify_all();
-		for (i=0; i<g_threads_num; i++) {
-			pthread_join(en_ids[i], nullptr);
-		}
-		free(en_ids);
-		for (i=0; i<g_threads_num; i++) {
-			pthread_join(de_ids[i], nullptr);
-		}
-		free(de_ids);
-
-		close(sockd);
-		
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
 		return 11;
 	}
 	
@@ -334,25 +275,6 @@ int main(int argc, const char **argv)
 	while (!g_notify_stop) {
 		sleep(1);
 	}
-
-	close(sockd);
-	g_enqueue_waken_cond.notify_all();
-	g_dequeue_waken_cond.notify_all();
-	for (i=0; i<g_threads_num; i++) {
-		pthread_join(en_ids[i], nullptr);
-	}
-	free(en_ids);
-	for (i=0; i<g_threads_num; i++) {
-		pthread_join(de_ids[i], nullptr);
-	}
-	free(de_ids);
-	
-	lib_buffer_free(g_file_alloc);
-	fifo_allocator_free(g_fifo_alloc);
-	g_enqueue_list.clear();
-	g_enqueue_list1.clear();
-	g_dequeue_list1.clear();
-	g_host_list.clear();
 	return 0;
 }
 
