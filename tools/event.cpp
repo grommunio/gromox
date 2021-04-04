@@ -126,7 +126,6 @@ int main(int argc, const char **argv)
 {
 	int i;
 	int listen_port;
-	pthread_t thr_id;
 	char listen_ip[40];
 	pthread_attr_t thr_attr;
 
@@ -259,15 +258,34 @@ int main(int argc, const char **argv)
 		return 10;
 	}
 
-	if ((ret = pthread_create(&thr_id, nullptr, accept_work_func,
-	    reinterpret_cast<void *>(static_cast<intptr_t>(sockd))) != 0) ||
-	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
-		printf("[system]: failed to create accept or scanning thread: %s\n", strerror(ret));
+	pthread_t acc_thr{}, scan_thr{};
+	ret = pthread_create(&acc_thr, nullptr, accept_work_func,
+	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
+	if (ret != 0) {
+		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		g_notify_stop = true;
 		return 11;
 	}
-	
-	pthread_setname_np(thr_id, "accept");
+	auto cl_5 = make_scope_exit([&]() {
+		pthread_kill(acc_thr, SIGALRM); /* kick accept() */
+		pthread_join(acc_thr, nullptr);
+	});
+	pthread_setname_np(acc_thr, "accept");
+	ret = pthread_create(&scan_thr, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[system]: failed to create scanning thread: %s\n", strerror(ret));
+		g_notify_stop = true;
+		return 11;
+	}
+	auto cl_6 = make_scope_exit([&]() {
+		pthread_kill(scan_thr, SIGALRM); /* kick sleep() */
+		pthread_join(scan_thr, nullptr);
+	});
+	pthread_setname_np(scan_thr, "scan");
+
+	sact.sa_handler = [](int) {};
+	sact.sa_flags   = 0;
+	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGTERM, &sact, nullptr);
