@@ -63,9 +63,8 @@ int system_services_stop()
 	service_release("ip_container_add", "system");
 	service_release("ip_container_remove", "system");
 	service_release("ip_filter_add", "system");
-	service_release("user_filer_add", "system");
+	service_release("user_filter_add", "system");
 	service_release("log_info", "system");
-	service_release("info_user", "system");
 	service_release("auth_login_pop3", "system");
 	service_release("list_mail", "system");
 	service_release("delete_mail", "system");

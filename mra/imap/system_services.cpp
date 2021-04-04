@@ -118,9 +118,8 @@ int system_services_stop()
 	service_release("ip_container_add", "system");
 	service_release("ip_container_remove", "system");
 	service_release("ip_filter_add", "system");
-	service_release("user_filer_add", "system");
+	service_release("user_filter_add", "system");
 	service_release("log_info", "system");
-	service_release("info_user", "system");
 	service_release("auth_login_pop3", "system");
 	service_release("get_mail_id", "system");
 	service_release("get_mail_uid", "system");
@@ -128,6 +127,7 @@ int system_services_stop()
 	service_release("make_folder", "system");
 	service_release("remove_folder", "system");
 	service_release("rename_folder", "system");
+	service_release("ping_mailbox", "system");
 	service_release("subscribe_folder", "system");
 	service_release("unsubscribe_folder", "system");
 	service_release("enum_folders", "system");
@@ -135,13 +135,13 @@ int system_services_stop()
 	service_release("insert_mail", "system");
 	service_release("remove_mail", "system");
 	service_release("list_simple", "system");
+	service_release("list_deleted", "system");
 	service_release("list_detail", "system");
-	service_release("free_list", "system");
+	service_release("free_result", "system");
 	service_release("fetch_simple", "system");
 	service_release("fetch_detail", "system");
 	service_release("fetch_simple_uid", "system");
 	service_release("fetch_detail_uid", "system");
-	service_release("free_fetch", "system");
 	service_release("set_mail_flags", "system");
 	service_release("unset_mail_flags", "system");
 	service_release("get_mail_flags", "system");

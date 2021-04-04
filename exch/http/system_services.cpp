@@ -56,7 +56,7 @@ int system_services_stop()
 	service_release("ip_container_remove", "system");
 	service_release("log_info", "system");
 	service_release("user_filter_judge", "system");
-	service_release("user_filer_add", "system");
+	service_release("user_filter_add", "system");
 	service_release("auth_login_exch", "system");
 	service_release("extension_to_mime", "system");
 	return 0;

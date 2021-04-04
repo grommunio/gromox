@@ -104,5 +104,41 @@ int system_services_run()
  */
 int system_services_stop()
 {
+#define E(b) service_release(b, "system")
+	E("get_user_lang");
+	E("set_user_lang");
+	E("get_maildir");
+	E("get_homedir");
+	E("get_timezone");
+	E("set_timezone");
+	E("get_username_from_id");
+	E("get_id_from_username");
+	E("get_domain_ids");
+	E("get_user_ids");
+	E("lang_to_charset");
+	E("cpid_to_charset");
+	E("charset_to_cpid");
+	E("lcid_to_ltag");
+	E("ltag_to_lcid");
+	E("mime_to_extension");
+	E("extension_to_mime");
+	E("auth_login_exch");
+	E("get_user_displayname");
+	E("get_org_domains");
+	E("get_domain_info");
+	E("get_domain_groups");
+	E("get_group_classes");
+	E("get_sub_classes");
+	E("get_class_users");
+	E("get_group_users");
+	E("get_domain_users");
+	E("get_mlist_ids");
+	E("get_lang");
+	E("check_same_org");
+	E("log_info");
+	E("set_password");
+	E("get_user_privilege_bits");
+	E("add_timer");
+#undef E
 	return 0;
 }

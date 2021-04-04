@@ -62,11 +62,13 @@ int system_services_stop()
 	service_release("ip_container_add", "system");
 	service_release("ip_container_remove", "system");
 	service_release("ip_filter_add", "system");
-	service_release("user_filer_add", "system");
+	service_release("user_filter_add", "system");
 	service_release("domain_list_query", "system");
 	if (NULL != system_services_check_user) {
 		service_release("check_user", "system");
 	}
+	if (system_services_check_full != nullptr)
+		service_release("check_full", "system");
 	service_release("log_info", "system");
 	return 0;
 }
