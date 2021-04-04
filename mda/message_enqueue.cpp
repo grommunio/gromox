@@ -10,6 +10,7 @@
 #define DECLARE_API_STATIC
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <libHX/string.h>
@@ -145,6 +146,7 @@ static int message_enqueue_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_flushing_thread, SIGALRM);
 		pthread_join(g_flushing_thread, NULL);
 	}
     return 0;

@@ -386,6 +386,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	PLUGIN_MAIN func;
 	DOUBLE_LIST_NODE *pnode;
 	auto pplugin = this;
+	printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -401,7 +402,6 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	double_list_free(&pplugin->list_reference);
 	if (handle != nullptr)
 		dlclose(handle);
-	printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
 }
 
 static int hpm_processor_load_library(const char *plugin_name)

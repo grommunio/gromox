@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -149,6 +150,7 @@ int exmdb_listener_stop()
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		shutdown(g_listen_sockd, SHUT_RDWR);
+		pthread_kill(g_listener_id, SIGALRM);
 		pthread_join(g_listener_id, NULL);
 	}
 	if (-1 != g_listen_sockd) {

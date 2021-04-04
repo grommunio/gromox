@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
+#include <csignal>
 #include <cstdint>
 #include <cstring>
 #include <mutex>
@@ -482,6 +483,7 @@ int rop_processor_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
 	if (NULL != g_logmap_allocator) {

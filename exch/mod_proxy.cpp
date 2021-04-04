@@ -2,6 +2,7 @@
 #define DECLARE_API_STATIC
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <libHX/string.h>
@@ -212,6 +213,7 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		if (!g_notify_stop) {
 			g_notify_stop = true;
+			pthread_kill(g_thread_id, SIGALRM);
 			pthread_join(g_thread_id, NULL);
 		}
 		if (-1 != g_epoll_fd) {

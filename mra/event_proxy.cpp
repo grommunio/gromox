@@ -2,6 +2,7 @@
 #define DECLARE_API_STATIC
 #include <atomic>
 #include <mutex>
+#include <csignal>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -139,6 +140,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		if (!g_notify_stop) {
 			g_notify_stop = true;
+			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);
 
 			while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <atomic>
+#include <csignal>
 #include <mutex>
 #include <new>
 #include <string>
@@ -283,6 +284,7 @@ int ab_tree_stop()
 	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
 	if (NULL != g_base_hash) {

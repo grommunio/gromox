@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
 #include <atomic>
+#include <csignal>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -291,6 +292,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		if (!g_notify_stop) {
 			g_notify_stop = true;
+			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);
 		}
 

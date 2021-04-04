@@ -135,7 +135,7 @@ int cmd_parser_stop()
 		pnode=double_list_get_after(&g_connection_list, pnode)) {
 		pconnection = (CONNECTION*)pnode->pdata;
 		if (TRUE == pconnection->is_selecting) {
-			pthread_cancel(pconnection->thr_id);
+			pthread_kill(pconnection->thr_id, SIGALRM);
 		} else {
 			close(pconnection->sockd);
 			pconnection->sockd = -1;

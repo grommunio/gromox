@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
 #include <atomic>
+#include <csignal>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -130,6 +131,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 					close(pback->sockd);
 					pback->sockd = -1;
 				}
+				pthread_kill(pback->thr_id, SIGALRM);
 				pthread_join(pback->thr_id, NULL);
 				free(pback);
 			}
@@ -147,6 +149,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
 				pback = static_cast<BACK_CONN *>(pnode->pdata);
+				pthread_kill(pback->thr_id, SIGALRM);
 				pthread_join(pback->thr_id, nullptr);
 			}
 		}

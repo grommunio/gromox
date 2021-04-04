@@ -11,6 +11,7 @@
  */
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <cstring>
 #include <mutex>
 #include <libHX/string.h>
@@ -260,6 +261,7 @@ void message_dequeue_put(MESSAGE *pmessage)
 int message_dequeue_stop()
 {
 	g_notify_stop = true;
+	pthread_kill(g_thread_id, SIGALRM);
 	pthread_join(g_thread_id, NULL);
 
 	message_dequeue_collect_resource();

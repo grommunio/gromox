@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <atomic>
+#include <csignal>
 #include <cstdint>
 #include <mutex>
 #include <unistd.h>
@@ -741,6 +742,7 @@ int zarafa_server_stop()
 	DOUBLE_LIST_NODE *pnode;
 	
 	g_notify_stop = true;
+	pthread_kill(g_scan_id, SIGALRM);
 	pthread_join(g_scan_id, NULL);
 	iter = int_hash_iter_init(g_session_table);
 	for (int_hash_iter_begin(iter);

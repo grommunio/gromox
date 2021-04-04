@@ -564,6 +564,7 @@ int exmdb_client_stop()
 	if (0 != g_conn_num) {
 		if (!g_notify_stop) {
 			g_notify_stop = true;
+			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);
 		}
 	}

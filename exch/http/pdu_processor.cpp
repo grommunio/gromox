@@ -3473,6 +3473,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	INTERFACE_NODE *pif_node;
 	auto pplugin = this;
 	
+	printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
 	while ((pnode = double_list_pop_front(&pplugin->interface_list)) != nullptr) {
 		pif_node = (INTERFACE_NODE*)pnode->pdata;
 		plist = &pif_node->pendpoint->interface_list;
@@ -3504,7 +3505,6 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	double_list_free(&pplugin->list_reference);
 	if (handle != nullptr)
 		dlclose(handle);
-	printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
 }
 
 static BOOL pdu_processor_register_talk(TALK_MAIN talk)

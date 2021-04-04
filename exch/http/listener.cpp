@@ -7,6 +7,7 @@
  */
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
@@ -128,9 +129,11 @@ void listener_stop_accept()
 {
 	g_stop_accept = true;
 	shutdown(g_listener_sock, SHUT_RDWR);
+	pthread_kill(g_thr_id, SIGALRM);
 	pthread_join(g_thr_id, NULL);
 	if (g_listener_ssl_port > 0) {
 		shutdown(g_listener_ssl_sock, SHUT_RDWR);
+		pthread_kill(g_thr_id, SIGALRM);
 		pthread_join(g_ssl_thr_id, NULL);
 	}
 }

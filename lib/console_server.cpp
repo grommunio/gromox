@@ -4,6 +4,7 @@
  */
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -462,6 +463,7 @@ void console_server_notify_main_stop()
 	g_terminate = true;
 	b_console = FALSE;
 	if (g_listening_tid != 0) {
+		pthread_kill(g_listening_tid, SIGALRM);
 		pthread_join(g_listening_tid, NULL);
 		g_listening_tid = 0;
 	}

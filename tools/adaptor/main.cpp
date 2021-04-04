@@ -139,6 +139,8 @@ int main(int argc, const char **argv)
 	printf("[system]: ADAPTOR is now running\n");
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = [](int) {};
+	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGTERM, &sact, nullptr);

@@ -7,6 +7,7 @@
 #include <atomic>
 #include <chrono>
 #include <climits>
+#include <csignal>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -6850,6 +6851,7 @@ int mail_engine_run()
 int mail_engine_stop()
 {
 	g_notify_stop = true;
+	pthread_kill(g_scan_tid, SIGALRM);
 	pthread_join(g_scan_tid, NULL);
 	g_hash_table.clear();
 	mime_pool_free(g_mime_pool);

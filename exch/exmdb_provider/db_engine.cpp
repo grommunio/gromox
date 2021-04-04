@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
 #include <chrono>
+#include <csignal>
 #include <cstdint>
 #include <condition_variable>
 #include <mutex>
@@ -821,6 +822,7 @@ int db_engine_stop()
 	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_scan_tid, SIGALRM);
 		pthread_join(g_scan_tid, NULL);
 		g_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {

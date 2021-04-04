@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <cstdlib>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -52,6 +53,7 @@ int engine_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_thread_id1, SIGALRM);
 		pthread_join(g_thread_id1, NULL);
 	}
 	return 0;

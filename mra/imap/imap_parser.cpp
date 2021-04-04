@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cerrno>
 #include <climits>
+#include <csignal>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -290,6 +291,7 @@ int imap_parser_run()
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
+		pthread_kill(g_thr_id, SIGALRM);
 		pthread_join(g_thr_id, NULL);
 		return -12;
 	}
@@ -310,6 +312,8 @@ int imap_parser_stop()
 	system_services_install_event_stub(nullptr);
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_thr_id, SIGALRM);
+		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_thr_id, NULL);
 		pthread_join(g_scan_id, NULL);
 	}

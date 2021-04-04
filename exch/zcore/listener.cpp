@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
 #include <cerrno>
+#include <csignal>
 #include <pthread.h>
 #include <unistd.h>
 #include <netinet/in.h>
@@ -93,6 +94,7 @@ int listener_stop()
 {
 	g_notify_stop = true;
 	shutdown(g_listen_sockd, SHUT_RDWR);
+	pthread_kill(g_listener_id, SIGALRM);
 	pthread_join(g_listener_id, NULL);
 	close(g_listen_sockd);
 	g_listen_sockd = -1;

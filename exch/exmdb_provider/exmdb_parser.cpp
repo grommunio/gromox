@@ -1056,6 +1056,7 @@ int exmdb_parser_stop()
 		pthr_ids[i++] = pconnection->thr_id;
 		pconnection->b_stop = true;
 		shutdown(pconnection->sockd, SHUT_RDWR);
+		pthread_kill(pconnection->thr_id, SIGALRM);
 	}
 	chold.unlock();
 	for (i=0; i<num; i++) {
@@ -1078,6 +1079,7 @@ int exmdb_parser_stop()
 		pthr_ids[i++] = rt->thr_id;
 		rt->b_stop = true;
 		rt->waken_cond.notify_one();
+		pthread_kill(rt->thr_id, SIGALRM);
 	}
 	rhold.unlock();
 	for (i=0; i<num; i++) {

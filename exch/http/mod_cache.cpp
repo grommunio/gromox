@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cerrno>
+#include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -222,6 +223,7 @@ int mod_cache_stop()
 	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_scan_tid, SIGALRM);
 		pthread_join(g_scan_tid, NULL);
 	}
 	g_directory_list.clear();

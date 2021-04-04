@@ -78,6 +78,8 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = [](int) {};
+	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);

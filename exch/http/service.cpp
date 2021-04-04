@@ -213,6 +213,8 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 		printf("Unbalanced refcount on %s\n", plib->file_name.c_str());
 		return;
 	}
+	if (plib->file_name.size() > 0)
+		printf("[service]: unloading %s\n", plib->file_name.c_str());
 	func = (PLUGIN_MAIN)plib->lib_main;
 	if (plib->completed_init)
 		/* notify the plugin that it will be unloaded */
@@ -233,8 +235,6 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	}
 	if (handle != nullptr)
 		dlclose(handle);
-	if (plib->file_name.size() > 0)
-		printf("[service]: unloading %s\n", plib->file_name.c_str());
 }
 
 static const char *service_get_state_path()

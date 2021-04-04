@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
+#include <csignal>
 #include <cstdint>
 #include <list>
 #include <mutex>
@@ -550,6 +551,7 @@ int exmdb_client_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
 	g_notify_stop = true;

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cerrno>
 #include <climits>
+#include <csignal>
 #include <cstring>
 #include <mutex>
 #include <unistd.h>
@@ -96,6 +97,7 @@ int cache_queue_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_thread_id, SIGALRM);
 		pthread_join(g_thread_id, NULL);
 	}
 	return 0;

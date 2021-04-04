@@ -300,6 +300,7 @@ int ab_tree_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
+		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
 	g_base_hash.clear();
