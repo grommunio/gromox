@@ -276,11 +276,14 @@ int main(int argc, const char **argv)
 		pthread_setname_np(thr_ids[i], buf);
 	}
 	auto cl_2 = make_scope_exit([&]() {
+		g_waken_cond.notify_all();
 		for (auto tid : thr_ids)
-			pthread_cancel(tid);
+			pthread_join(tid, nullptr);
 	});
-	if (thr_ids.size() != g_threads_num)
+	if (thr_ids.size() != g_threads_num) {
+		g_notify_stop = true;
 		return 8;
+	}
 
 	auto ret = list_file_read_fixedstrings("timer_acl.txt", config_dir, g_acl_list);
 	if (ret == -ENOENT) {
@@ -288,6 +291,7 @@ int main(int argc, const char **argv)
 		g_acl_list = {"::1"};
 	} else if (ret < 0) {
 		printf("[system]: list_file_initd timer_acl.txt: %s\n", strerror(-ret));
+		g_notify_stop = true;
 		return 9;
 	}
 	
@@ -295,12 +299,12 @@ int main(int argc, const char **argv)
 	          reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
+		g_notify_stop = true;
 		return 10;
 	}
 	
 	pthread_setname_np(thr_accept_id, "accept");
 	time(&last_cltime);
-	g_notify_stop = false;
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGTERM, &sact, nullptr);
@@ -470,7 +474,8 @@ static void *thread_work_func(void *param)
 	std::unique_lock cm_hold(g_cond_mutex);
 	g_waken_cond.wait(cm_hold);
 	cm_hold.unlock();
-
+	if (g_notify_stop)
+		return nullptr;
 	std::unique_lock co_hold(g_connection_lock);
 	if (g_connection_list1.size() == 0)
 		goto NEXT_LOOP;
