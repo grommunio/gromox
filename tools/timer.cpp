@@ -129,7 +129,7 @@ int main(int argc, const char **argv)
 	int listen_port;
 	time_t cur_time;
 	time_t last_cltime;
-	pthread_t thr_accept_id;
+	pthread_t thr_accept_id{};
 	std::vector<pthread_t> thr_ids;
 	char listen_ip[40];
 	char temp_path[256];
@@ -302,9 +302,16 @@ int main(int argc, const char **argv)
 		g_notify_stop = true;
 		return 10;
 	}
+	auto cl_3 = make_scope_exit([&]() {
+		pthread_kill(thr_accept_id, SIGALRM); /* kick accept() */
+		pthread_join(thr_accept_id, nullptr);
+	});
 	
 	pthread_setname_np(thr_accept_id, "accept");
 	time(&last_cltime);
+	sact.sa_handler = [](int) {};
+	sact.sa_flags   = 0;
+	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGTERM, &sact, nullptr);
