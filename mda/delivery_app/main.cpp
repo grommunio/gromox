@@ -37,7 +37,7 @@ static constexpr HXoption g_options_table[] = {
 };
 
 static constexpr const char *g_dfl_mpc_plugins[] = {
-	"libgxm_alias_translator.so",
+	"libgxm_alias_resolve.so",
 	"libgxm_exmdb_local.so",
 	"libgxm_mlist_expand.so",
 	"libgxm_remote_delivery.so",

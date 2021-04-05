@@ -29,13 +29,13 @@ tmpfiles_DATA = system/tmpfiles-gromox.conf
 unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
 
 mta_plugins = \
-	libgxm_alias_translator.la \
+	libgxm_alias_resolve.la libgxm_alias_translator.la \
 	libgxm_exmdb_local.la \
 	libgxm_mlist_expand.la \
 	libgxm_remote_delivery.la \
 	libgxs_domain_list.la
 noinst_DATA += \
-	libgxm_alias_translator.ldd \
+	libgxm_alias_resolve.ldd libgxm_alias_translator.ldd \
 	libgxm_exmdb_local.ldd \
 	libgxm_mlist_expand.ldd \
 	libgxm_remote_delivery.ldd \
@@ -118,6 +118,10 @@ delivery_SOURCES = exch/http/service.cpp lib/console_server.cpp mda/delivery_app
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 delivery_queue_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mda/message_enqueue.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
 delivery_queue_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
+libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp
+libgxm_alias_resolve_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_alias_resolve_la_LIBADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
+EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = ${default_sym}
 libgxm_alias_translator_la_SOURCES = mda/alias_translator.cpp
 libgxm_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -297,7 +301,7 @@ tests_utiltest_LDADD = libgromox_common.la
 tests_zendfake_LDADD = libmapi4zf.la
 
 man_MANS = \
-	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
+	doc/adaptor.8gx doc/alias_resolve.4gx doc/alias_translator.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/delivery.8gx doc/delivery-queue.8gx \
 	doc/domain_list.4gx \
