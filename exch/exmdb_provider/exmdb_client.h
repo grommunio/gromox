@@ -26,7 +26,7 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 
 namespace exmdb_client_local {
 #define IDLOUT
-#define EXMIDL(n) extern GX_EXPORT BOOL n
+#define EXMIDL(n, p) extern GX_EXPORT BOOL n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT

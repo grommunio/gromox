@@ -11,7 +11,7 @@ if ($provider) {
 }
 
 while (<STDIN>) {
-	next if (!m{^\s*EXMIDL\(\s*(\w+)\s*\)\s*\(const\s+char\s*\*dir(.*)\);});
+	next if (!m{^\s*EXMIDL\(\s*(\w+)\s*,\s*\(const\s+char\s*\*dir(.*)\)\)});
 	my($func, $iargs, $oargs, $iargf, $oargf) = ($1, $2, [], [], []);
 	if ($iargs =~ s{^(.*),\s*IDLOUT\s+(.*)}{$1, $2}) {
 		$iargs = $1;

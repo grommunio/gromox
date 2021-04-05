@@ -7,7 +7,7 @@ print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_rpc.hpp);
 print "#include \"$_\"\n" for qw(php.h rpc_ext.h types.h zarafa_client.h);
 
 while (<STDIN>) {
-	next if (!m{^\s*ZCIDL\(\s*(\w+)\s*\)\s*\((.*)\);});
+	next if (!m{^\s*ZCIDL\(\s*(\w+)\s*,\s*\((.*)\)\)});
 	my($func, $iargs, $oargs, $iargf, $oargf) = ($1, $2, [], [], []);
 	if ($iargs =~ s{^(.*),\s*IDLOUT\s+(.*)}{$1, $2}) {
 		$iargs = $1;

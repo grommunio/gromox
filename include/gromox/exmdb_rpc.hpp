@@ -1477,7 +1477,7 @@ extern GX_EXPORT BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXM
 
 namespace exmdb_client_remote {
 #define IDLOUT
-#define EXMIDL(n) extern GX_EXPORT BOOL n
+#define EXMIDL(n, p) extern GX_EXPORT BOOL n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT
