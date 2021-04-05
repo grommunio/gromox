@@ -26,133 +26,42 @@
 #define SERVICE_ID_GET_HANDLE								17
 
 #define E(s) decltype(exmdb_client_ ## s) exmdb_client_ ## s;
-E(ping_store)
-E(get_all_named_propids)
-E(get_named_propids)
-E(get_named_propnames)
-E(get_mapping_guid)
-E(get_mapping_replid)
-E(get_store_all_proptags)
-E(get_store_properties)
-E(set_store_properties)
-E(remove_store_properties)
-E(check_mailbox_permission)
-E(get_folder_by_class)
-E(set_folder_by_class)
-E(get_folder_class_table)
-E(check_folder_id)
-E(check_folder_deleted)
-E(get_folder_by_name)
-E(check_folder_permission)
-E(create_folder_by_properties)
-E(get_folder_all_proptags)
-E(get_folder_properties)
-E(set_folder_properties)
-E(remove_folder_properties)
-E(delete_folder)
-E(empty_folder)
-E(check_folder_cycle)
-E(copy_folder_internal)
-E(get_search_criteria)
-E(set_search_criteria)
-E(movecopy_message)
-E(movecopy_messages)
-E(movecopy_folder)
-E(delete_messages)
-E(get_message_brief)
-E(sum_hierarchy)
-E(load_hierarchy_table)
-E(sum_content)
-E(load_content_table)
-E(reload_content_table)
-E(load_permission_table)
-E(load_rule_table)
-E(unload_table)
-E(sum_table)
-E(query_table)
-E(match_table)
-E(locate_table)
-E(read_table_row)
-E(mark_table)
-E(get_table_all_proptags)
-E(expand_table)
-E(collapse_table)
-E(store_table_state)
-E(restore_table_state)
-E(check_message)
-E(check_message_deleted)
-E(load_message_instance)
-E(load_embedded_instance)
-E(get_embedded_cn)
-E(reload_message_instance)
-E(clear_message_instance)
-E(read_message_instance)
-E(write_message_instance)
-E(load_attachment_instance)
-E(create_attachment_instance)
-E(read_attachment_instance)
-E(write_attachment_instance)
-E(delete_message_instance_attachment)
-E(flush_instance)
-E(unload_instance)
-E(get_instance_all_proptags)
-E(get_instance_properties)
-E(set_instance_properties)
-E(remove_instance_properties)
-E(check_instance_cycle)
-E(empty_message_instance_rcpts)
-E(get_message_instance_rcpts_num)
-E(get_message_instance_rcpts_all_proptags)
-E(get_message_instance_rcpts)
-E(update_message_instance_rcpts)
-E(copy_instance_rcpts)
-E(empty_message_instance_attachments)
-E(get_message_instance_attachments_num)
-E(get_message_instance_attachment_table_all_proptags)
-E(query_message_instance_attachment_table)
-E(copy_instance_attachments)
-E(set_message_instance_conflict)
-E(get_message_rcpts)
-E(get_message_properties)
-E(set_message_properties)
-E(set_message_read_state)
-E(remove_message_properties)
-E(allocate_message_id)
-E(allocate_cn)
-E(get_message_group_id)
-E(set_message_group_id)
-E(save_change_indices)
-E(get_change_indices)
-E(mark_modified)
-E(try_mark_submit)
-E(clear_submit)
-E(link_message)
-E(unlink_message)
-E(rule_new_message)
-E(set_message_timer)
-E(get_message_timer)
-E(empty_folder_permission)
-E(update_folder_permission)
-E(empty_folder_rule)
-E(update_folder_rule)
-E(delivery_message)
-E(write_message)
-E(read_message)
-E(get_content_sync)
-E(get_hierarchy_sync)
-E(allocate_ids)
-E(subscribe_notification)
-E(unsubscribe_notification)
-E(transport_new_mail)
-E(check_contact_address)
-E(get_public_folder_unread_count)
+E(get_named_propid)
+E(get_named_propname)
+E(get_store_property)
+E(get_folder_property)
+E(delete_message)
+E(check_message_owner)
+E(get_instance_property)
+E(set_instance_property)
+E(remove_instance_property)
+E(get_message_property)
+E(set_message_property)
+E(remove_message_property)
 #undef E
+#define EXMIDL(n, p) decltype(exmdb_client_ ## n) exmdb_client_ ## n;
+#define IDLOUT
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
 
 int exmdb_client_run()
 {
 	void (*register_proc)(void*);
 	void (*pass_service)(int, void*);
 	
+#define EXMIDL(n, p) do { \
+	query_service2("exmdb_client_" #n, exmdb_client_ ## n); \
+	if ((exmdb_client_ ## n) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", "exmdb_client_" #n); \
+		return -1; \
+	} \
+} while (false);
+#define IDLOUT
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
+
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
@@ -160,127 +69,6 @@ int exmdb_client_run()
 		return -1; \
 	} \
 } while (false)
-
-	E(exmdb_client_ping_store, "exmdb_client_ping_store");
-	E(exmdb_client_get_all_named_propids, "exmdb_client_get_all_named_propids");
-	E(exmdb_client_get_named_propids, "exmdb_client_get_named_propids");
-	E(exmdb_client_get_named_propnames, "exmdb_client_get_named_propnames");
-	E(exmdb_client_get_mapping_guid, "exmdb_client_get_mapping_guid");
-	E(exmdb_client_get_mapping_replid, "exmdb_client_get_mapping_replid");
-	E(exmdb_client_get_store_all_proptags, "exmdb_client_get_store_all_proptags");
-	E(exmdb_client_get_store_properties, "exmdb_client_get_store_properties");
-	E(exmdb_client_set_store_properties, "exmdb_client_set_store_properties");
-	E(exmdb_client_remove_store_properties, "exmdb_client_remove_store_properties");
-	E(exmdb_client_check_mailbox_permission, "exmdb_client_check_mailbox_permission");
-	E(exmdb_client_get_folder_by_class, "exmdb_client_get_folder_by_class");
-	E(exmdb_client_set_folder_by_class, "exmdb_client_set_folder_by_class");
-	E(exmdb_client_get_folder_class_table, "exmdb_client_get_folder_class_table");
-	E(exmdb_client_check_folder_id, "exmdb_client_check_folder_id");
-	E(exmdb_client_check_folder_deleted, "exmdb_client_check_folder_deleted");
-	E(exmdb_client_get_folder_by_name, "exmdb_client_get_folder_by_name");
-	E(exmdb_client_check_folder_permission, "exmdb_client_check_folder_permission");
-	E(exmdb_client_create_folder_by_properties, "exmdb_client_create_folder_by_properties");
-	E(exmdb_client_get_folder_all_proptags, "exmdb_client_get_folder_all_proptags");
-	E(exmdb_client_get_folder_properties, "exmdb_client_get_folder_properties");
-	E(exmdb_client_set_folder_properties, "exmdb_client_set_folder_properties");
-	E(exmdb_client_remove_folder_properties, "exmdb_client_remove_folder_properties");
-	E(exmdb_client_delete_folder, "exmdb_client_delete_folder");
-	E(exmdb_client_empty_folder, "exmdb_client_empty_folder");
-	E(exmdb_client_check_folder_cycle, "exmdb_client_check_folder_cycle");
-	E(exmdb_client_copy_folder_internal, "exmdb_client_copy_folder_internal");
-	E(exmdb_client_get_search_criteria, "exmdb_client_get_search_criteria");
-	E(exmdb_client_set_search_criteria, "exmdb_client_set_search_criteria");
-	E(exmdb_client_movecopy_message, "exmdb_client_movecopy_message");
-	E(exmdb_client_movecopy_messages, "exmdb_client_movecopy_messages");
-	E(exmdb_client_movecopy_folder, "exmdb_client_movecopy_folder");
-	E(exmdb_client_delete_messages, "exmdb_client_delete_messages");
-	E(exmdb_client_get_message_brief, "exmdb_client_get_message_brief");
-	E(exmdb_client_sum_hierarchy, "exmdb_client_sum_hierarchy");
-	E(exmdb_client_load_hierarchy_table, "exmdb_client_load_hierarchy_table");
-	E(exmdb_client_sum_content, "exmdb_client_sum_content");
-	E(exmdb_client_load_content_table, "exmdb_client_load_content_table");
-	E(exmdb_client_reload_content_table, "exmdb_client_reload_content_table");
-	E(exmdb_client_load_permission_table, "exmdb_client_load_permission_table");
-	E(exmdb_client_load_rule_table, "exmdb_client_load_rule_table");
-	E(exmdb_client_unload_table, "exmdb_client_unload_table");
-	E(exmdb_client_sum_table, "exmdb_client_sum_table");
-	E(exmdb_client_query_table, "exmdb_client_query_table");
-	E(exmdb_client_match_table, "exmdb_client_match_table");
-	E(exmdb_client_locate_table, "exmdb_client_locate_table");
-	E(exmdb_client_read_table_row, "exmdb_client_read_table_row");
-	E(exmdb_client_mark_table, "exmdb_client_mark_table");
-	E(exmdb_client_get_table_all_proptags, "exmdb_client_get_table_all_proptags");
-	E(exmdb_client_expand_table, "exmdb_client_expand_table");
-	E(exmdb_client_collapse_table, "exmdb_client_collapse_table");
-	E(exmdb_client_store_table_state, "exmdb_client_store_table_state");
-	E(exmdb_client_restore_table_state, "exmdb_client_restore_table_state");
-	E(exmdb_client_check_message, "exmdb_client_check_message");
-	E(exmdb_client_check_message_deleted, "exmdb_client_check_message_deleted");
-	E(exmdb_client_load_message_instance, "exmdb_client_load_message_instance");
-	E(exmdb_client_load_embedded_instance, "exmdb_client_load_embedded_instance");
-	E(exmdb_client_get_embedded_cn, "exmdb_client_get_embedded_cn");
-	E(exmdb_client_reload_message_instance, "exmdb_client_reload_message_instance");
-	E(exmdb_client_clear_message_instance, "exmdb_client_clear_message_instance");
-	E(exmdb_client_read_message_instance, "exmdb_client_read_message_instance");
-	E(exmdb_client_write_message_instance, "exmdb_client_write_message_instance");
-	E(exmdb_client_load_attachment_instance, "exmdb_client_load_attachment_instance");
-	E(exmdb_client_create_attachment_instance, "exmdb_client_create_attachment_instance");
-	E(exmdb_client_read_attachment_instance, "exmdb_client_read_attachment_instance");
-	E(exmdb_client_write_attachment_instance, "exmdb_client_write_attachment_instance");
-	E(exmdb_client_delete_message_instance_attachment, "exmdb_client_delete_message_instance_attachment");
-	E(exmdb_client_flush_instance, "exmdb_client_flush_instance");
-	E(exmdb_client_unload_instance, "exmdb_client_unload_instance");
-	E(exmdb_client_get_instance_all_proptags, "exmdb_client_get_instance_all_proptags");
-	E(exmdb_client_get_instance_properties, "exmdb_client_get_instance_properties");
-	E(exmdb_client_set_instance_properties, "exmdb_client_set_instance_properties");
-	E(exmdb_client_remove_instance_properties, "exmdb_client_remove_instance_properties");
-	E(exmdb_client_check_instance_cycle, "exmdb_client_check_instance_cycle");
-	E(exmdb_client_empty_message_instance_rcpts, "exmdb_client_empty_message_instance_rcpts");
-	E(exmdb_client_get_message_instance_rcpts_num, "exmdb_client_get_message_instance_rcpts_num");
-	E(exmdb_client_get_message_instance_rcpts_all_proptags, "exmdb_client_get_message_instance_rcpts_all_proptags");
-	E(exmdb_client_get_message_instance_rcpts, "exmdb_client_get_message_instance_rcpts");
-	E(exmdb_client_update_message_instance_rcpts, "exmdb_client_update_message_instance_rcpts");
-	E(exmdb_client_copy_instance_rcpts, "exmdb_client_copy_instance_rcpts");
-	E(exmdb_client_empty_message_instance_attachments, "exmdb_client_empty_message_instance_attachments");
-	E(exmdb_client_get_message_instance_attachments_num, "exmdb_client_get_message_instance_attachments_num");
-	E(exmdb_client_get_message_instance_attachment_table_all_proptags, "exmdb_client_get_message_instance_attachment_table_all_proptags");
-	E(exmdb_client_query_message_instance_attachment_table, "exmdb_client_query_message_instance_attachment_table");
-	E(exmdb_client_copy_instance_attachments, "exmdb_client_copy_instance_attachments");
-	E(exmdb_client_set_message_instance_conflict, "exmdb_client_set_message_instance_conflict");
-	E(exmdb_client_get_message_rcpts, "exmdb_client_get_message_rcpts");
-	E(exmdb_client_get_message_properties, "exmdb_client_get_message_properties");
-	E(exmdb_client_set_message_properties, "exmdb_client_set_message_properties");
-	E(exmdb_client_set_message_read_state, "exmdb_client_set_message_read_state");
-	E(exmdb_client_remove_message_properties, "exmdb_client_remove_message_properties");
-	E(exmdb_client_allocate_message_id, "exmdb_client_allocate_message_id");
-	E(exmdb_client_allocate_cn, "exmdb_client_allocate_cn");
-	E(exmdb_client_get_message_group_id, "exmdb_client_get_message_group_id");
-	E(exmdb_client_set_message_group_id, "exmdb_client_set_message_group_id");
-	E(exmdb_client_save_change_indices, "exmdb_client_save_change_indices");
-	E(exmdb_client_get_change_indices, "exmdb_client_get_change_indices");
-	E(exmdb_client_mark_modified, "exmdb_client_mark_modified");
-	E(exmdb_client_try_mark_submit, "exmdb_client_try_mark_submit");
-	E(exmdb_client_clear_submit, "exmdb_client_clear_submit");
-	E(exmdb_client_link_message, "exmdb_client_link_message");
-	E(exmdb_client_unlink_message, "exmdb_client_unlink_message");
-	E(exmdb_client_rule_new_message, "exmdb_client_rule_new_message");
-	E(exmdb_client_set_message_timer, "exmdb_client_set_message_timer");
-	E(exmdb_client_get_message_timer, "exmdb_client_get_message_timer");
-	E(exmdb_client_empty_folder_permission, "exmdb_client_empty_folder_permission");
-	E(exmdb_client_update_folder_permission, "exmdb_client_update_folder_permission");
-	E(exmdb_client_empty_folder_rule, "exmdb_client_empty_folder_rule");
-	E(exmdb_client_update_folder_rule, "exmdb_client_update_folder_rule");
-	E(exmdb_client_delivery_message, "exmdb_client_delivery_message");
-	E(exmdb_client_write_message, "exmdb_client_write_message");
-	E(exmdb_client_read_message, "exmdb_client_read_message");
-	E(exmdb_client_get_content_sync, "exmdb_client_get_content_sync");
-	E(exmdb_client_get_hierarchy_sync, "exmdb_client_get_hierarchy_sync");
-	E(exmdb_client_allocate_ids, "exmdb_client_allocate_ids");
-	E(exmdb_client_subscribe_notification, "exmdb_client_subscribe_notification");
-	E(exmdb_client_unsubscribe_notification, "exmdb_client_unsubscribe_notification");
-	E(exmdb_client_transport_new_mail, "exmdb_client_transport_new_mail");
-	E(exmdb_client_check_contact_address, "exmdb_client_check_contact_address");
-	E(exmdb_client_get_public_folder_unread_count, "exmdb_client_get_public_folder_unread_count");
 
 	E(register_proc, "exmdb_client_register_proc");
 	register_proc(reinterpret_cast<void *>(emsmdb_interface_event_proc));
