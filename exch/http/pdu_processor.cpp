@@ -3473,7 +3473,8 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	INTERFACE_NODE *pif_node;
 	auto pplugin = this;
 	
-	printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
+	if (pplugin->file_name.size() > 0)
+		printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
 	while ((pnode = double_list_pop_front(&pplugin->interface_list)) != nullptr) {
 		pif_node = (INTERFACE_NODE*)pnode->pdata;
 		plist = &pif_node->pendpoint->interface_list;
