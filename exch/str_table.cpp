@@ -490,6 +490,10 @@ static BOOL svc_str_table(int reason, void **ppdata)
 		str_table_stop();
 		str_table_free();
 		return TRUE;
+	case PLUGIN_RELOAD:
+		printf("[%s]: reloading %s\n", g_module_name, g_list_path);
+		str_table_refresh();
+		return TRUE;
 	}
 	return TRUE;
 }
