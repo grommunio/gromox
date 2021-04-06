@@ -14,10 +14,14 @@
 #include <cstring>
 #include <unistd.h>
 
+namespace {
+
 struct srcitem {
 	int cpid;
 	char s[64];
 };
+
+}
 
 static std::unique_ptr<LIST_FILE> g_list_file;
 static unsigned int opt_show_version;

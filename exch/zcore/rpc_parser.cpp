@@ -27,10 +27,12 @@ enum {
 	DISPATCH_CONTINUE
 };
 
+namespace {
 struct CLIENT_NODE {
 	DOUBLE_LIST_NODE node;
 	int clifd;
 };
+}
 
 static int g_thread_num;
 static std::atomic<bool> g_notify_stop{false};

@@ -21,11 +21,13 @@
 
 using namespace std::string_literals;
 
+namespace {
 struct REFERENCE_NODE {
 	DOUBLE_LIST_NODE	node;
 	char				module_name[256];
 	int					ref_count;
 };
+}
 
 struct SVC_PLUG_ENTITY {
 	SVC_PLUG_ENTITY();
@@ -42,6 +44,7 @@ struct SVC_PLUG_ENTITY {
 	bool completed_init = false;
 };
 
+namespace {
 struct SERVICE_ENTRY {
 	DOUBLE_LIST_NODE	node_service;
 	DOUBLE_LIST_NODE	node_lib;
@@ -51,6 +54,7 @@ struct SERVICE_ENTRY {
 	const std::type_info *type_info;
 	DOUBLE_LIST			list_reference;
 };
+}
 
 static void *service_query_service(const char *service, const std::type_info &);
 static BOOL service_register_talk(TALK_MAIN talk);

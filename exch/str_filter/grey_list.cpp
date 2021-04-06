@@ -17,6 +17,8 @@
 
 DECLARE_API(extern);
 
+namespace {
+
 struct GREY_LIST_ENTRY {
 	int				current_times;
 	int				allowed_times;
@@ -29,6 +31,8 @@ struct LIST_ITEM {
 	int     allow_times;
 	char    interval[32];
 };
+
+}
 
 static void grey_list_flush();
 

@@ -23,6 +23,8 @@
 #include <ctime>
 #define SOCKET_TIMEOUT							180
 
+namespace {
+
 struct PROXY_NODE {
 	DOUBLE_LIST_NODE node;
 	char *domain;
@@ -41,6 +43,8 @@ struct PROXY_CONTEXT {
 	int buff_offset;
 	int buff_length;
 };
+
+}
 
 static int g_epoll_fd = -1;
 static pthread_t g_thread_id;

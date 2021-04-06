@@ -54,6 +54,8 @@ enum {
 	SMTP_PERMANENT_ERROR
 };
 
+namespace {
+
 struct ENVIRONMENT_CONTEXT {
 	ALLOC_CONTEXT allocator;
 	int clifd;
@@ -63,6 +65,8 @@ struct LANGMAP_ITEM {
 	char lang[32];
 	char i18n[32];
 };
+
+}
 
 static int g_max_rcpt;
 static int g_mime_num;

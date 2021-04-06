@@ -21,9 +21,11 @@
 
 using namespace gromox;
 
+namespace {
 struct dlgitem {
 	char user[256];
 };
+}
 
 BOOL exmdb_server_ping_store(const char *dir)
 {

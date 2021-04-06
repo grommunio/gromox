@@ -20,10 +20,12 @@ using namespace std::string_literals;
 using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using duration = decltype(time_point() - time_point());
 
+namespace {
 struct IP_AUDIT {
 	time_point first, last;
 	size_t times;
 };
+}
 
 static std::map<std::string, time_point> g_templist;
 static std::map<std::string, IP_AUDIT> g_auditlist;

@@ -94,7 +94,7 @@ int gx_snprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 	return ret;
 }
 
-namespace gromox {
+namespace {
 
 struct popen_fdset {
 	int in[2] = {-1, -1}, out[2] = {-1, -1}, err[2] = {-1, -1}, null = -1;
@@ -110,6 +110,10 @@ struct popen_fdset {
 		if (null != -1) close(null);
 	}
 };
+
+}
+
+namespace gromox {
 
 pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
     int *fderrp, const char *const *env)

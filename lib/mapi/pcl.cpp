@@ -5,10 +5,12 @@
 #include <cstdlib>
 #include <cstring>
 
+namespace {
 struct XID_NODE {
 	DOUBLE_LIST_NODE node;
 	SIZED_XID xid;
 };
+}
 
 static void pcl_pull_xid(const BINARY *pbin,
 	uint16_t offset, uint8_t size, XID *pxid)

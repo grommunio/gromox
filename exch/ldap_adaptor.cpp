@@ -24,17 +24,21 @@
 using namespace gromox;
 using namespace std::string_literals;
 
+namespace {
 struct ldapfree {
 	void operator()(LDAP *ld) { ldap_unbind_ext_s(ld, nullptr, nullptr); }
 	void operator()(LDAPMessage *m) { ldap_msgfree(m); }
 };
+}
 
 using ldap_msg = std::unique_ptr<LDAPMessage, ldapfree>;
 using ldap_ptr = std::unique_ptr<LDAP, ldapfree>;
 
+namespace {
 struct twoconn {
 	ldap_ptr meta, bind;
 };
+}
 
 enum {
 	USER_PRIVILEGE_POP3_IMAP = 1 << 0,

@@ -75,6 +75,8 @@ struct FASTCGI_NODE {
 	std::string sock_path;
 };
 
+namespace {
+
 struct FCGI_ENDREQUESTBODY {
 	uint32_t app_status;
 	uint8_t protocol_status;
@@ -94,6 +96,8 @@ struct RECORD_HEADER {
 	uint8_t padding_len;
 	uint8_t reserved;
 };
+
+}
 
 static int g_context_num;
 static int g_exec_timeout;

@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <cstdio>
 
+namespace {
+
 struct ENVIRONMENT_CONTEXT {
 	BOOL b_local;
 	ALLOC_CONTEXT alloc_ctx;
@@ -14,6 +16,8 @@ struct ENVIRONMENT_CONTEXT {
 	const char *dir;
 	int account_id;
 };
+
+}
 
 static pthread_key_t g_id_key;
 static pthread_key_t g_env_key;

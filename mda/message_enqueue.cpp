@@ -43,10 +43,14 @@ enum {
 	SMTP_RELAY
 };
 
+namespace {
+
 struct MSG_BUFF {
     long msg_type;
     int msg_content;
 };
+
+}
 
 static void* thread_work_func(void* arg);
 static BOOL message_enqueue_check();

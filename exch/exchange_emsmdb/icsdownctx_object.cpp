@@ -26,6 +26,8 @@ enum {
 	FUNC_ID_STATE
 };
 
+namespace {
+
 struct ICS_FLOW_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t func_id;
@@ -36,6 +38,8 @@ struct ics_group_node {
 	DOUBLE_LIST_NODE node;
 	uint32_t group_id;
 };
+
+}
 
 #define MAX_PARTIAL_ON_ROP		100	/* for limit of memory accumulation */
 

@@ -48,6 +48,8 @@
 	parsing email object into message object!
 */
 
+namespace {
+
 struct FIELD_ENUM_PARAM {
 	EXT_BUFFER_ALLOC alloc;
 	MESSAGE_CONTENT *pmsg;
@@ -94,6 +96,8 @@ struct DSN_FILEDS_INFO {
 	const char *x_display_name;
 };
 
+}
+
 enum {
 	MAIL_TYPE_NORMAL,
 	MAIL_TYPE_SIGNED,
@@ -104,6 +108,7 @@ enum {
 	MAIL_TYPE_TNEF
 };
 
+namespace {
 struct MIME_SKELETON {
 	int mail_type;
 	int body_type;
@@ -116,6 +121,7 @@ struct MIME_SKELETON {
 	const char *pmessage_class;
 	ATTACHMENT_LIST *pattachments;
 };
+}
 
 static uint8_t MACBINARY_ENCODING[] =
 	{0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B, 0x01};

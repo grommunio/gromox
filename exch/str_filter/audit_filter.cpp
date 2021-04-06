@@ -19,11 +19,13 @@
 #include <pthread.h>
 #include <sys/time.h>
 
+namespace {
 struct STR_AUDIT {
     struct timeval  first_time_stamp;/* time stamp of first time of visit */
     struct timeval  last_time_stamp; /* time stamp of last time of visit  */
     int             times;
 };
+}
 
 /* private global variable */
 static STR_HASH_TABLE *g_audit_hash;

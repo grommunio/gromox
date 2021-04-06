@@ -20,6 +20,7 @@
 
 using namespace gromox;
 
+namespace {
 struct REWRITE_NODE {
 	REWRITE_NODE() = default;
 	REWRITE_NODE(REWRITE_NODE &&);
@@ -29,6 +30,7 @@ struct REWRITE_NODE {
 	std::string replace_string;
 	bool reg_set = false;
 };
+}
 
 static std::vector<REWRITE_NODE> g_rewrite_list;
 

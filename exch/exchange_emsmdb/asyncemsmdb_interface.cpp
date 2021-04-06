@@ -22,6 +22,8 @@
 
 #define FLAG_NOTIFICATION_PENDING				0x00000001
 
+namespace {
+
 struct ASYNC_WAIT {
 	DOUBLE_LIST_NODE node;
 	time_t wait_time;
@@ -33,6 +35,8 @@ struct ASYNC_WAIT {
 		int context_id; /* when async_id is 0 */
 	} out_payload;
 };
+
+}
 
 static int g_threads_num;
 static pthread_t g_scan_id;

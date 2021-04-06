@@ -51,6 +51,8 @@ enum {
 	TYPE_MIMES
 };
 
+namespace {
+
 struct ENUM_PARAM {
 	const char *id;
 	MJSON_MIME *pmime;
@@ -64,6 +66,8 @@ struct BUILD_PARAM {
 	MIME_POOL *ppool;
 	BOOL build_result;
 };
+
+}
 
 static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
 

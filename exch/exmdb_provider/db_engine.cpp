@@ -40,6 +40,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct POPULATING_NODE {
 	DOUBLE_LIST_NODE node;
 	char *dir;
@@ -85,6 +87,8 @@ struct ROWDEL_NODE {
 	uint32_t inst_num;
 	BOOL b_read;
 };
+
+}
 
 static BOOL g_wal;
 static BOOL g_async;

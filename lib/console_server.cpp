@@ -40,6 +40,8 @@
 
 typedef struct sockaddr     SA;
 
+namespace {
+
 struct CCMD_ENTRY {
     char    cmd[MAX_CMD_LENGTH];
     COMMAND_HANDLER cmd_handler;
@@ -50,6 +52,8 @@ struct CONSOLE_NODE {
 	pthread_t			tid;
 	int					client_fd;
 };
+
+}
 
 extern std::atomic<bool> g_notify_stop;
 static std::atomic<bool> g_terminate{false};

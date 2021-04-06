@@ -17,10 +17,14 @@
 #include <cstring>
 #define MAX_LINE							73
 
+namespace {
+
 struct LINE_ITEM {
 	char *ptag;
 	char *pvalue;
 };
+
+}
 
 static char* ical_get_tag_comma(char *pstring)
 {

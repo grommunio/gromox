@@ -46,6 +46,8 @@ enum {
 	NTLMSSP_REVISION_W2K3 = 0x0F,
 };
 
+namespace {
+
 struct NTLM_AUTH_CHALLENGE {
 	DATA_BLOB blob;
 	uint8_t blob_buff[8]; /* buffer for DATA_BLOB's data */
@@ -66,6 +68,8 @@ union NTLMSSP_CRYPT_STATE {
 	NTLMSSP_CRYPT_DIRECTION ntlm;     /* NTLM */
 	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
 };
+
+}
 
 struct NTLMSSP_CTX {
 	pthread_mutex_t lock;
@@ -100,6 +104,8 @@ struct NTLMSSP_CTX {
 	NTLMSSP_GET_PASSWORD get_password;
 };
 
+namespace {
+
 struct NTLMSSP_SERVER_AUTH_STATE {
 	DATA_BLOB user_session_key;
 	uint8_t user_session_key_buff[32];
@@ -118,6 +124,8 @@ struct NTLMSSP_VERSION {
 	uint8_t reserved[3];
 	uint8_t ntlm_revers;
 };
+
+}
 
 static void ntlmssp_lm_session_key(const uint8_t lm_hash[16],
 	const uint8_t lm_resp[24], uint8_t session_key[16])

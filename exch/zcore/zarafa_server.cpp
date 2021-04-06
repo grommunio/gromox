@@ -37,6 +37,8 @@
 #include <cstdio>
 #include <poll.h>
 
+namespace {
+
 struct NOTIFY_ITEM {
 	DOUBLE_LIST notify_list;
 	GUID hsession;
@@ -50,6 +52,8 @@ struct SINK_NODE {
 	time_t until_time;
 	NOTIF_SINK sink;
 };
+
+}
 
 static int g_table_size;
 static std::atomic<bool> g_notify_stop{false};

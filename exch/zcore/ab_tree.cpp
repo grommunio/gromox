@@ -71,6 +71,8 @@
 	CLASS: classname
 */
 
+namespace {
+
 struct AB_NODE {
 	SIMPLE_TREE_NODE node;
 	uint8_t node_type;
@@ -90,6 +92,8 @@ struct SORT_ITEM {
 	SIMPLE_TREE_NODE *pnode;
 	char *string;
 };
+
+}
 
 static int g_base_size;
 static int g_file_blocks;

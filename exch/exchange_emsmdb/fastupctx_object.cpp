@@ -16,6 +16,8 @@
 #include <gromox/rop_util.hpp>
 #include <cstdlib>
 
+namespace {
+
 struct MARKER_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t marker;
@@ -25,6 +27,8 @@ struct MARKER_NODE {
 		uint64_t folder_id;
 	} data;
 };
+
+}
 
 FASTUPCTX_OBJECT* fastupctx_object_create(
 	LOGON_OBJECT *plogon, void *pobject, int root_element)

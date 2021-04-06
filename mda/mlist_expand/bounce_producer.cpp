@@ -38,6 +38,8 @@ enum{
 	TAG_TOTAL_LEN = TAG_END
 };
 
+namespace {
+
 struct ENUM_CHARSET {
 	BOOL b_found;
 	char *charset;
@@ -73,6 +75,8 @@ struct TAG_ITEM {
 	const char	*name;
 	int			length;
 };
+
+}
 
 static char g_separator[16];
 static SINGLE_LIST g_resource_list;

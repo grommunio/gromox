@@ -23,9 +23,13 @@ enum{
 	REFRESH_HASH_FAIL
 };
 
+namespace {
+
 struct addritem {
 	char a[256], b[256];
 };
+
+}
 
 static STR_HASH_TABLE *g_address_hash;
 static pthread_rwlock_t g_address_lock;

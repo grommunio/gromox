@@ -28,11 +28,15 @@
 
 #define MAX_CMD_LENGTH			64*1024
 
+namespace {
+
 struct BACK_CONN {
     DOUBLE_LIST_NODE node;
     int sockd;
 	time_t last_time;
 };
+
+}
 
 static std::atomic<bool> g_notify_stop{false};
 static char g_timer_ip[40];

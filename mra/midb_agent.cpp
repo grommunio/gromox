@@ -46,6 +46,8 @@
 
 #define FLAG_LOADED				0x80
 
+namespace {
+
 struct MITEM {
 	SINGLE_LIST_NODE node;
 	char mid[128];
@@ -83,6 +85,8 @@ struct MSG_UNIT {
 	char file_name[128];
 	BOOL b_deleted;
 };
+
+}
 
 static void* scan_work_func(void *param);
 

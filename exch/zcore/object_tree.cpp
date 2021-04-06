@@ -35,6 +35,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct ROOT_OBJECT {
 	BOOL b_touched;
 	char *maildir;
@@ -48,6 +50,8 @@ struct OBJECT_NODE {
 	uint8_t type;
 	void *pobject;
 };
+
+}
 
 static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 {

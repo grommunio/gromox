@@ -20,9 +20,13 @@ enum {
 	OP_UPGRADE,
 };
 
+namespace {
+
 struct db_deleter {
 	void operator()(MYSQL *m) { mysql_close(m); }
 };
+
+}
 
 static char *opt_config_file;
 static unsigned int g_action;

@@ -31,11 +31,15 @@
 
 #define MAX_DIGLEN		256*1024
 
+namespace {
+
 struct SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;
 	int min;
 	int max;
 };
+
+}
 
 enum {
 	TYPE_WILDS = 1,

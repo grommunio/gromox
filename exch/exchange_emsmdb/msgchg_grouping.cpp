@@ -19,6 +19,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct TAG_NODE {
 	DOUBLE_LIST_NODE node;
 	uint16_t propid;
@@ -37,6 +39,8 @@ struct INFO_NODE {
 	uint32_t group_id;
 	DOUBLE_LIST group_list;
 };
+
+}
 
 static std::string g_folder_path;
 static DOUBLE_LIST g_info_list;

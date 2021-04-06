@@ -26,11 +26,15 @@
 
 #define MAX_CMD_LENGTH			64*1024
 
+namespace {
+
 struct BACK_CONN {
     DOUBLE_LIST_NODE node;
 	pthread_t thr_id;
     int sockd;
 };
+
+}
 
 typedef void (*EVENT_STUB_FUNC)(char *);
 

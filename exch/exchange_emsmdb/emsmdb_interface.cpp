@@ -45,6 +45,8 @@
 
 #define MAX_HANDLE_PER_USER				100
 
+namespace {
+
 struct HANDLE_DATA {
 	DOUBLE_LIST_NODE node;
 	GUID guid;
@@ -65,6 +67,8 @@ struct NOTIFY_ITEM {
 	uint8_t logon_id;
 	GUID guid;
 };
+
+}
 
 static time_t g_start_time;
 static pthread_t g_scan_id;

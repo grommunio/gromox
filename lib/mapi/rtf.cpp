@@ -201,6 +201,8 @@ enum {
 	PICT_EMF
 };
 
+namespace {
+
 struct COLLECTION_NODE {
 	DOUBLE_LIST_NODE node;
 	int nr;
@@ -260,6 +262,8 @@ struct GROUP_NODE {
 	DOUBLE_LIST collection_list;
 };
 
+}
+
 enum {
 	CMD_RESULT_ERROR = -1,
 	CMD_RESULT_CONTINUE,
@@ -269,10 +273,12 @@ enum {
 
 typedef int (*CMD_PROC_FUNC)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
 
+namespace {
 struct MAP_ITEM {
 	const char *tag;
 	CMD_PROC_FUNC func;
 };
+}
 
 static STR_HASH_TABLE *g_cmd_hash;
 static const char* (*rtf_cpid_to_charset)(uint32_t cpid);

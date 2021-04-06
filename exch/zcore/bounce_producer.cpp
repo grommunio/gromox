@@ -38,6 +38,7 @@ enum{
 	TAG_TOTAL_LEN = TAG_END
 };
 
+namespace {
 struct FORMAT_DATA {
 	int	position;
 	int tag;
@@ -60,6 +61,8 @@ struct TAG_ITEM {
 	const char	*name;
 	int			length;
 };
+
+}
 
 static BOOL bounce_producer_refresh(const char *);
 

@@ -108,6 +108,8 @@ enum {
 	CONJUNCTION_NOT
 };
 
+namespace {
+
 struct CONDITION_RESULT {
 	SINGLE_LIST list;
 	SINGLE_LIST_NODE *pcur_node;
@@ -159,6 +161,8 @@ class IDB_REF {
 	IDB_ITEM *pidb = nullptr;
 };
 
+}
+
 enum {
 	FIELD_NONE = 0,
 	FIELD_UID,
@@ -170,6 +174,8 @@ enum {
 	FIELD_READ,
 	FIELD_FLAG
 };
+
+namespace {
 
 struct IDL_NODE {
 	DOUBLE_LIST_NODE node;
@@ -196,6 +202,8 @@ struct SUB_NODE {
 	char maildir[256];
 	uint32_t sub_id;
 };
+
+}
 
 static BOOL g_wal;
 static BOOL g_async;

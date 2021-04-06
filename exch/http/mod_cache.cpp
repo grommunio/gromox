@@ -32,6 +32,7 @@
 
 #define BOUNDARY_STRING				"00000000000000000001"
 
+namespace {
 struct CACHE_ITEM {
 	DOUBLE_LIST_NODE node;
 	char extention[16];
@@ -60,6 +61,8 @@ struct CACHE_CONTEXT {
 struct DIRECTORY_NODE {
 	std::string domain, path, dir;
 };
+
+}
 
 static int g_context_num;
 static std::atomic<bool> g_notify_stop{false};

@@ -10,6 +10,7 @@
 
 #define	GROWING_BLOCK_SIZE			64*1024
 
+namespace {
 struct READ_STAT {
 	uint8_t *pbuff;
 	uint32_t length;
@@ -35,6 +36,7 @@ struct WRITE_STAT {
 	uint8_t runlen;
 	uint8_t lastch;
 };
+}
 
 static char g_hqxheader[] = "(This file must be converted with BinHex 4.0)\r\n";
 

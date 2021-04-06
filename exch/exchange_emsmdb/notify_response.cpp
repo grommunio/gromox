@@ -6,6 +6,8 @@
 #include <cstring>
 #include "common_util.h"
 
+namespace {
+
 struct NOTIFICATION_DATA_MEMORY {
 	uint16_t table_event;
 	uint64_t row_folder_id;
@@ -26,6 +28,8 @@ struct NOTIFICATION_DATA_MEMORY {
 	uint32_t message_flags;
 	uint8_t unicode_flag;
 };
+
+}
 
 static inline NOTIFICATION_DATA_MEMORY *notify_to_ndm(NOTIFY_RESPONSE *z)
 {

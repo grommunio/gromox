@@ -20,11 +20,15 @@ enum {
 	POINT_TYPE_WSTRING
 };
 
+namespace {
+
 struct POINT_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t type;
 	uint32_t offset;
 };
+
+}
 
 static void ftstream_producer_try_recode_nbp(
 	FTSTREAM_PRODUCER *pstream)

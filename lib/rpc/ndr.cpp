@@ -12,12 +12,6 @@
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 
-struct PTR_NODE {
-	DOUBLE_LIST_NODE node;
-	const void *pointer;
-	uint32_t ptr_count;
-};
-
 int ndr_pull_advance(NDR_PULL *pndr, uint32_t size)
 {
 	pndr->offset += size;

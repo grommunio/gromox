@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 
+namespace {
+
 struct DSN_FIELD {
 	DOUBLE_LIST_NODE node;
 	char *tag;
@@ -16,6 +18,8 @@ struct RCPT_DSN_FIELDS {
 	DOUBLE_LIST_NODE node;
 	DSN_FIELDS fields;
 };
+
+}
 
 static void dsn_delete_rcpt_fields(DSN *, DSN_FIELDS *);
 

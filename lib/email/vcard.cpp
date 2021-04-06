@@ -10,10 +10,14 @@
 #include <gromox/vcard.hpp>
 #define MAX_LINE							73
 
+namespace {
+
 struct LINE_ITEM {
 	char *ptag;
 	char *pvalue;
 };
+
+}
 
 static char* vcard_get_comma(char *pstring)
 {

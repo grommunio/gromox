@@ -31,6 +31,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct CONNECT_REQUEST {
 	char *prefix;
 	char *remote_id;
@@ -40,6 +42,8 @@ struct CONNECT_REQUEST {
 struct UNLOAD_STORE_REQUEST {
 	const char *dir;
 };
+
+}
 
 static std::vector<EXMDB_ITEM> g_exmdb_list;
 static char *opt_config_file, *opt_datadir;

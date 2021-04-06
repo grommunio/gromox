@@ -15,6 +15,8 @@
 #include <cstring>
 #include "common_util.h"
 
+namespace {
+
 struct BOOKMARK_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t index;
@@ -23,6 +25,8 @@ struct BOOKMARK_NODE {
 	uint32_t inst_num;
 	uint32_t position;
 };
+
+}
 
 static void table_object_set_table_id(
 	TABLE_OBJECT *ptable, uint32_t table_id)

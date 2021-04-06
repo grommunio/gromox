@@ -52,6 +52,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct ENQUEUE_NODE {
 	~ENQUEUE_NODE() { if (sockd >= 0) close(sockd); }
 
@@ -79,6 +81,8 @@ struct HOST_NODE {
 	std::unordered_map<std::string, time_t> hash;
 	std::vector<std::shared_ptr<DEQUEUE_NODE>> list;
 };
+
+}
 
 static std::atomic<bool> g_notify_stop{false};
 static int g_threads_num;

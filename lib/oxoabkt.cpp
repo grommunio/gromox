@@ -14,7 +14,7 @@
 #include <gromox/oxoabkt.hpp>
 #include <gromox/textmaps.hpp>
 
-namespace gromox {
+using namespace gromox;
 
 enum TRow_ctl_type {
 	TRC_LABEL      = 0x0,
@@ -40,10 +40,12 @@ enum TRow_ctl_flags {
 	TRF_INDEX      = 1 << 6,
 };
 
+namespace {
 struct abktaux {
 	unsigned int offset = 0;
 	std::string data;
 };
+}
 
 static unsigned int abkt_cttype2int(const char *s)
 {
@@ -209,6 +211,8 @@ static void abkt_write(Json::Value &tpl, lb_writer &bin,
 		bin.w4(0);
 	bin.write(aux.data.data(), aux.data.size());
 }
+
+namespace gromox {
 
 std::string abkt_tojson(const std::string &bin, unsigned int codepage)
 {

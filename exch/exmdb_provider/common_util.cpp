@@ -54,12 +54,14 @@
 
 using namespace gromox;
 
+namespace {
 struct OPTIMIZE_STMTS {
 	sqlite3_stmt *pstmt_msg1;		/* normal message property */
 	sqlite3_stmt *pstmt_msg2;		/* string message property */
 	sqlite3_stmt *pstmt_rcpt1;		/* normal recipient property */
 	sqlite3_stmt *pstmt_rcpt2;		/* string recipient property */
 };
+}
 
 static char g_org_name[256];
 static unsigned int g_max_msg;

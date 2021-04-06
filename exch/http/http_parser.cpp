@@ -41,6 +41,7 @@
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
 
+namespace {
 struct VIRTUAL_CONNECTION {
 	~VIRTUAL_CONNECTION();
 	std::atomic<int> reference{0};
@@ -50,9 +51,11 @@ struct VIRTUAL_CONNECTION {
 	HTTP_CONTEXT *pcontext_in = nullptr, *pcontext_insucc = nullptr;
 	HTTP_CONTEXT *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
 };
+}
 
 static std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
 
+namespace {
 class VCONN_REF {
 	public:
 	VCONN_REF() = default;
@@ -69,6 +72,7 @@ class VCONN_REF {
 	std::unique_lock<std::mutex> m_hold;
 	decltype(g_vconnection_hash)::iterator m_iter;
 };
+}
 
 static size_t g_context_num;
 static std::atomic<bool> g_async_stop{false};

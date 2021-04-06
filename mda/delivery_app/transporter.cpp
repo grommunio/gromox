@@ -29,6 +29,8 @@
 #define MAX_TIMES_NOT_SERVED	5
 #define THREAD_STACK_SIZE       0x400000
 
+namespace {
+
 struct CONTROL_INFO {
     int         queue_ID;
     int         bound_type;
@@ -43,7 +45,11 @@ struct MESSAGE_CONTEXT {
     MAIL         *pmail;
 };
 
+}
+
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
+
+namespace {
 
 struct HOOK_PLUG_ENTITY {
     DOUBLE_LIST_NODE    node;
@@ -105,6 +111,8 @@ struct THREAD_DATA {
 	HOOK_FUNCTION		last_hook;
 	HOOK_FUNCTION		last_thrower;
 };
+
+}
 
 static char				g_path[256];
 static const char *const *g_plugin_names;

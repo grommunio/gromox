@@ -14,12 +14,16 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+namespace {
+
 struct CONSOLE_PORT {
 	char smtp_ip[40];
 	int smtp_port;
 	char delivery_ip[40];
 	int delivery_port;
 };
+
+}
 
 static char g_list_path[256];
 static std::vector<CONSOLE_PORT> g_console_list;

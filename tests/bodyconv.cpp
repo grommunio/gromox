@@ -18,7 +18,11 @@
 
 using namespace gromox;
 
+namespace {
+
 struct stdlib_free { void operator()(void *x) { free(x); } };
+
+}
 
 static void help()
 {

@@ -27,6 +27,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct CONDITION_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t proptag;
@@ -53,6 +55,8 @@ struct HIERARCHY_ROW_PARAM {
 	sqlite3_stmt *pstmt;
 	uint64_t folder_id;
 };
+
+}
 
 typedef BOOL (*TABLE_GET_ROW_PROPERTY)(void*, uint32_t, void **);
 

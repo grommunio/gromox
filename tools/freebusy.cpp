@@ -37,6 +37,8 @@
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define SOCKET_TIMEOUT								60
 
+namespace {
+
 struct EXMDB_NODE : public EXMDB_ITEM {
 	EXMDB_NODE(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
 	int sockd = -1;
@@ -93,6 +95,8 @@ struct EVENT_NODE {
 	EXCEPTIONINFO *pexception;
 	EXTENDEDEXCEPTION *pex_exception;
 };
+
+}
 
 using namespace gromox;
 

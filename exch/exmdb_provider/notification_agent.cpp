@@ -14,10 +14,12 @@
 #include <ctime>
 #include <poll.h>
 
+namespace {
 struct DATAGRAM_NODE {
 	DOUBLE_LIST_NODE node;
 	BINARY data_bin;
 };
+}
 
 void notification_agent_backward_notify(
 	const char *remote_id, DB_NOTIFY_DATAGRAM *pnotify)

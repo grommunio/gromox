@@ -43,6 +43,8 @@
 
 using namespace std::string_literals;
 
+namespace {
+
 /* structure for describing service reference */
 struct pdu_service_node {
 	DOUBLE_LIST_NODE node;
@@ -71,6 +73,8 @@ struct ASYNC_NODE {
 	int vconn_port;
 	char vconn_cookie[64];
 };
+
+}
 
 static BOOL g_bigendian;
 static int g_connection_num;

@@ -95,6 +95,8 @@ static const char gmt[] = "GMT";
 #define TZDEFRULESTRING ",M4.1.0,M10.5.0"
 #endif /* !defined TZDEFDST */
 
+namespace {
+
 struct ttinfo {				/* time type information */
 	long tt_gmtoff;	/* UTC offset in seconds */
 	int tt_isdst;	/* used to set tm_isdst */
@@ -107,6 +109,8 @@ struct lsinfo {				/* leap second information */
 	time_t ls_trans;	/* transition time */
 	long ls_corr;	/* correction to apply */
 };
+
+}
 
 #define BIGGEST(a, b)	(((a) > (b)) ? (a) : (b))
 
@@ -133,6 +137,7 @@ struct state {
 	struct lsinfo lsis[TZ_MAX_LEAPS];
 };
 
+namespace {
 
 struct rule {
 	int r_type;		/* type of rule--see below */
@@ -141,6 +146,8 @@ struct rule {
 	int r_mon;		/* month number of rule */
 	long r_time;		/* transition time of rule */
 };
+
+}
 
 #ifndef TZ_STRLEN_MAX
 #define TZ_STRLEN_MAX 255

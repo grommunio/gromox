@@ -32,6 +32,8 @@ enum {
 	RESP_FINAL
 };
 
+namespace {
+
 /* structure for describing service reference */
 struct hpm_service_node {
 	DOUBLE_LIST_NODE node;
@@ -58,6 +60,8 @@ struct HTTP_AUTH_INFO {
 	const char* maildir;
 	const char* lang;
 };
+
+}
 
 static int g_context_num;
 static uint64_t g_max_size;

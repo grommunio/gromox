@@ -37,6 +37,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct RULE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t sequence;
@@ -59,6 +61,8 @@ struct MESSAGE_NODE {
 	uint64_t folder_id;
 	uint64_t message_id;
 };
+
+}
 
 /* Caution: If a message is soft deleted from a public folder,
 	it also should be removed from read_states! if someone's

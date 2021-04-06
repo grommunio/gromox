@@ -81,6 +81,7 @@
 #define FMS_LOCAL								0x02
 #define FMS_HASATTACH							0x80
 
+namespace {
 struct TNEF_ATTRIBUTE {
 	uint8_t lvl;
 	uint32_t attr_id;
@@ -133,6 +134,7 @@ struct TNEF_PROPSET {
 	uint32_t count;
 	TNEF_PROPLIST **pplist;
 };
+}
 
 static uint8_t IID_IMessage[] = {
 	0x07, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,

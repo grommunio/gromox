@@ -19,7 +19,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 
-namespace gromox {
+namespace {
 
 struct icasehash {
 	size_t operator()(std::string s) const {
@@ -34,7 +34,10 @@ struct icasecmp {
 	}
 };
 
+}
+
 using namespace std::string_literals;
+using namespace gromox;
 using int_to_str_t = std::unordered_map<unsigned int, std::string>;
 using str_to_int_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
 using str_to_str_t = std::unordered_map<std::string, std::string, icasehash, icasecmp>;
@@ -103,6 +106,8 @@ static void smap_read(const char *file, const char *dirs,
 			bm.emplace(value, line);
 	}
 }
+
+namespace gromox {
 
 bool verify_cpid(uint32_t id)
 {

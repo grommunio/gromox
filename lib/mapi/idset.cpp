@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
+namespace {
 struct RANGE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t low_value;
@@ -29,6 +30,7 @@ struct STACK_NODE {
 	uint8_t common_length;
 	uint8_t *pcommon_bytes;
 };
+}
 
 IDSET* idset_init(BOOL b_serialize, uint8_t repl_type)
 {

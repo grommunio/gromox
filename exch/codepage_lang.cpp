@@ -25,6 +25,8 @@ enum {
 	RETRIEVE_END
 };
 
+namespace {
+
 struct CODEPAGE_NODE {
 	SINGLE_LIST_NODE node;
 	uint32_t codepage;
@@ -36,6 +38,8 @@ struct LANG_NODE {
 	char *tag;
 	char *value;
 };
+
+}
 
 static SINGLE_LIST g_cp_list;
 static pthread_rwlock_t g_list_lock;

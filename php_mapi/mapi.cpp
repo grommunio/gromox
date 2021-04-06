@@ -50,6 +50,8 @@
 		return; \
 	} while (false)
 
+namespace {
+
 struct MAPI_RESOURCE {
 	uint8_t type;
 	GUID hsession;
@@ -81,6 +83,8 @@ struct ICS_EXPORT_CTX {
 	uint32_t sync_steps;
 	uint32_t total_steps;
 };
+
+}
 
 #if PHP_MAJOR_VERSION < 8
 ZEND_BEGIN_ARG_INFO(first_arg_force_ref, 0)

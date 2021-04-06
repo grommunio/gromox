@@ -19,6 +19,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct LANG_FOLDER {
 	SINGLE_LIST_NODE node;
 	char lang[32];
@@ -29,6 +31,8 @@ struct LANG_FOLDER {
 	char trash[256];
 	char junk[256];
 };
+
+}
 
 static IMAP_RETURN_CODE g_default_code_table[] = {
 	{2160001, "BYE logging out"},

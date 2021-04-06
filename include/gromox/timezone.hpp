@@ -1,6 +1,7 @@
 #pragma once
 #include <ctime>
 
+struct state;
 extern const struct state *tz_alloc(const char *name);
 void tz_free(const struct state* const sp);
 struct tm* tz_localtime_r(const struct state* const sp,

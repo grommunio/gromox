@@ -25,6 +25,7 @@
 
 #define MAX_TABLE_ITEMS						1024
 
+namespace {
 struct COLOR_ITEM {
 	const char *name;
 	int value;
@@ -49,6 +50,7 @@ struct RTF_WRITER {
 	INT_HASH_TABLE *pcolor_hash;
 	DOUBLE_LIST color_table;
 };
+}
 
 static iconv_t g_conv_id;
 static STR_HASH_TABLE *g_color_hash;

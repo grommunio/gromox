@@ -23,10 +23,12 @@
 
 #define CONN_BUFFLEN        (257*1024)
 
+namespace {
 struct COMMAND_ENTRY {
 	char cmd[64];
 	MIDB_CMD_HANDLER cmd_handler;
 };
+}
 
 static int g_cmd_num;
 static size_t g_threads_num;

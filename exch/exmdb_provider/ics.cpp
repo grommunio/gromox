@@ -14,6 +14,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct ENUM_PARAM {
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
@@ -46,6 +48,8 @@ struct IDSET_CACHE {
 	sqlite3_stmt *pstmt = nullptr;
 	DOUBLE_LIST range_list;
 };
+
+}
 
 IDSET_CACHE::IDSET_CACHE()
 {

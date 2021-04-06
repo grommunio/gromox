@@ -35,6 +35,8 @@
 
 #define SOCKET_TIMEOUT								60
 
+namespace {
+
 struct REMOTE_CONN;
 struct REMOTE_SVR : public EXMDB_ITEM {
 	REMOTE_SVR(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
@@ -78,6 +80,8 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 	const char *dir;
 	const char *paddress;
 };
+
+}
 
 static int g_conn_num;
 static std::atomic<bool> g_notify_stop{false};

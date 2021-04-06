@@ -32,6 +32,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct nsp_sort_item {
 	uint32_t minid;
 	union {
@@ -43,6 +45,8 @@ struct nsp_sort_item {
 struct dlgitem {
 	char user[256];
 };
+
+}
 
 enum {
 	TI_TEMPLATE = 0x1,

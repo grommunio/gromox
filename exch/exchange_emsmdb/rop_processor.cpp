@@ -45,6 +45,8 @@
 /* maximum handle number per session */
 #define MAX_HANDLE_NUM					500
 
+namespace {
+
 struct LOGON_ITEM {
 	INT_HASH_TABLE *phash;
 	SIMPLE_TREE tree;
@@ -56,6 +58,8 @@ struct OBJECT_NODE {
 	int type;
 	void *pobject;
 };
+
+}
 
 static int g_scan_interval;
 static pthread_t g_scan_id;

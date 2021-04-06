@@ -10,6 +10,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct tbl_init {
 	const char *name, *command;
 };
@@ -18,6 +20,8 @@ struct tbl_upgradefn {
 	unsigned int v;
 	const char *command;
 };
+
+}
 
 /* If you are thinking about changing any tbl_XXX_N, with N=number, then you should rather add tbl_XXX_top. */
 static const char tbl_options_1[] =

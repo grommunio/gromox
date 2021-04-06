@@ -18,11 +18,13 @@
 
 #define THREAD_STACK_SIZE           	16 * 1024 * 1024
 
+namespace {
 struct THR_DATA {
 	DOUBLE_LIST_NODE node;
 	BOOL notify_stop;
 	pthread_t id;
 };
+}
 
 static pthread_t g_scan_id;
 static std::atomic<bool> g_notify_stop{true};

@@ -26,6 +26,7 @@
   "\r\n\\par \\pard\\plain\\f0\\fs20\\b\\i\\u\\tab"	\
   "\\tx"
 
+namespace {
 
 /* header for compressed rtf */
 struct COMPRESS_HEADER {
@@ -54,6 +55,8 @@ struct DICTIONARYREF {
 	uint8_t length;
 	uint16_t offset;
 };
+
+}
 
 static void rtfcp_init_decompress_state(uint8_t *compressed_data,
 	uint32_t in_size, DECOMPRESSION_STATE *pstate)

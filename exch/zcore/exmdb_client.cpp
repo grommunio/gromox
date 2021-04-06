@@ -35,6 +35,8 @@
 #include <ctime>
 #include <poll.h>
 
+namespace {
+
 struct REMOTE_CONN;
 struct REMOTE_SVR : public EXMDB_ITEM {
 	REMOTE_SVR(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
@@ -64,6 +66,8 @@ struct AGENT_THREAD {
 	pthread_t thr_id;
 	int sockd;
 };
+
+}
 
 static int g_conn_num;
 static int g_threads_num;

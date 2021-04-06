@@ -12,6 +12,8 @@
 #include <cstdio>
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 
+namespace {
+
 struct RFRGETNEWDSA_IN {
 	uint32_t flags;
 	char puserdn[1024];
@@ -35,6 +37,8 @@ struct RFRGETFQDNFROMLEGACYDN_OUT {
 	char serverfqdn[256];
 	uint32_t result;
 };
+
+}
 
 static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
 

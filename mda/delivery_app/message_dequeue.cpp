@@ -40,10 +40,14 @@
 
 using namespace gromox;
 
+namespace {
+
 struct MSG_BUFF {
 	long msg_type;
 	int msg_content;
 };
+
+}
 
 static char				g_path[256];    /* directory name for message queue */
 static int				g_msg_id;	    /* message queue id */

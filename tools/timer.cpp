@@ -42,6 +42,8 @@
 
 using namespace gromox;
 
+namespace {
+
 struct CONNECTION_NODE {
 	CONNECTION_NODE() = default;
 	CONNECTION_NODE(CONNECTION_NODE &&);
@@ -58,6 +60,8 @@ struct TIMER {
 	time_t exec_time;
 	std::string command;
 };
+
+}
 
 static std::atomic<bool> g_notify_stop{false};
 static size_t g_threads_num;

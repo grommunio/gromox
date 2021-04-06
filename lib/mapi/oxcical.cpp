@@ -24,10 +24,12 @@
 
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)
 
+namespace {
 struct UID_EVENTS {
 	const char *puid;
 	std::list<std::shared_ptr<ICAL_COMPONENT>> list;
 };
+}
 
 static constexpr char EncodedGlobalId_hex[] =
 	"040000008200E00074C5B7101A82E008";

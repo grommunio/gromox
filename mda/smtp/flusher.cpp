@@ -18,6 +18,7 @@
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 
+namespace {
 struct FLUSH_ENTITY {
 	STREAM           *pstream; 
 	CONNECTION       *pconn;
@@ -29,8 +30,11 @@ struct FLUSH_ENTITY {
 	SMTP_CONTEXT     *pcontext;     /* put at the last of the structure */
 	SINGLE_LIST_NODE        node;
 };
+}
 
 typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
+
+namespace {
 
 struct SERVICE_NODE {
 	SINGLE_LIST_NODE		node;
@@ -47,6 +51,8 @@ struct FLH_PLUG_ENTITY {
 	char            path[256];
 	bool completed_init;
 };
+
+}
 
 static BOOL flusher_load_plugin(char* path);
 static BOOL flusher_unload_plugin();

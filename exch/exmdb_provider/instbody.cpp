@@ -16,6 +16,7 @@
 
 using namespace gromox;
 
+namespace {
 struct instbody_free {
 	void operator()(void *x) { free(x); }
 	void operator()(BINARY *x) {
@@ -25,6 +26,7 @@ struct instbody_free {
 		free(x);
 	}
 };
+}
 
 static constexpr size_t UTF8LEN_MARKER_SIZE = sizeof(uint32_t);
 
