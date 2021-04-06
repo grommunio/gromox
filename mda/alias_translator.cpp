@@ -71,6 +71,9 @@ static BOOL hook_alias_translator(int reason, void **ppdata)
 		}
     	pthread_rwlock_destroy(&g_address_lock);
         return TRUE;
+	case PLUGIN_RELOAD:
+		address_table_refresh();
+		return TRUE;
     }
 	return TRUE;
 }
