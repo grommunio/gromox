@@ -24,7 +24,7 @@
 
 using namespace gromox;
 
-static std::atomic<bool> g_notify_stop{false};
+static std::atomic<bool> g_notify_stop{false}, g_hup_signalled{false};
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
@@ -141,12 +141,16 @@ int main(int argc, const char **argv)
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = [](int) {};
 	sigaction(SIGALRM, &sact, nullptr);
+	sact.sa_handler = [](int) { g_hup_signalled = true; };
+	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	while (!g_notify_stop) {
 		sleep(1);
+		if (g_hup_signalled.exchange(false))
+			engine_trig();
 	}
 	return 0;
 }

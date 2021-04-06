@@ -49,6 +49,11 @@ int engine_run()
 	return 0;
 }
 
+void engine_trig()
+{
+	pthread_kill(g_thread_id1, SIGALRM);
+}
+
 int engine_stop()
 {
 	if (!g_notify_stop) {
@@ -61,7 +66,6 @@ int engine_stop()
 
 static void* thread_work_func1(void *param)
 {
-	int count;
 	int fd, len;
 	char temp_domain[257];
 	char temp_line[1024];
@@ -70,14 +74,8 @@ static void* thread_work_func1(void *param)
 	ALIAS_ITEM *palias_item;
 	DATA_COLLECT *pcollect;
 
-	count = 30;
 	while (!g_notify_stop) {
-		if (count < 30) {
-			count ++;
-			sleep(1);
-			continue;
-		}
-		
+		fprintf(stderr, "[engine]: starting data collection\n");
 		pcollect = data_source_collect_init();
 	
 		if (NULL == pcollect) {
@@ -146,7 +144,7 @@ static void* thread_work_func1(void *param)
 
 		data_source_collect_clear(pcollect);
  NEXT_LOOP:
-		count = 0;
+		sleep(30);
 	}
 	return NULL;
 }

@@ -7,6 +7,7 @@ PartOf=gromox-sa.target
 Type=simple
 User=gromox
 ExecStart=@libexecdir@/gromox/adaptor
+ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target
