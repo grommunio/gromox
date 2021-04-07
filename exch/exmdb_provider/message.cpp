@@ -125,7 +125,6 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -891,7 +890,6 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*ppbrief = NULL;
 		return TRUE;
 	}
@@ -1006,12 +1004,10 @@ BOOL exmdb_server_check_message(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_exist = FALSE;
 		return TRUE;
 	}
 	tmp_val = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	*pb_exist = tmp_val == fid_val ? TRUE : false;
 	return TRUE;
 }
@@ -1042,18 +1038,15 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_del = TRUE;
 		return TRUE;
 	}
 	if (FALSE == exmdb_server_check_private()) {
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
-			pstmt.finalize();
 			*pb_del = TRUE;
 			return TRUE;
 		}
 	}
-	pstmt.finalize();
 	*pb_del = FALSE;
 	return TRUE;
 }
@@ -1234,7 +1227,6 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
-		pstmt.finalize();
 	} else {
 		common_util_set_message_read(pdb->psqlite,
 			mid_val, mark_as_read);
@@ -1317,7 +1309,6 @@ BOOL exmdb_server_get_message_group_id(const char *dir,
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
-		pstmt.finalize();
 		*ppgroup_id = NULL;
 		return TRUE;
 	}
@@ -1464,7 +1455,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				common_util_alloc, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_proptag_array(
 				&ext_pull, &tmp_indices)) {
-				pstmt.finalize();
 				proptag_array_free(ptmp_indices);
 				proptag_array_free(ptmp_proptags);
 				return FALSE;
@@ -1472,7 +1462,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 			for (i=0; i<tmp_indices.count; i++) {
 				if (!proptag_array_append(ptmp_indices,
 				    tmp_indices.pproptag[i])) {
-					pstmt.finalize();
 					proptag_array_free(ptmp_indices);
 					proptag_array_free(ptmp_proptags);
 					return FALSE;
@@ -1486,7 +1475,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				common_util_alloc, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_proptag_array(
 				&ext_pull, &tmp_proptags)) {
-				pstmt.finalize();
 				proptag_array_free(ptmp_indices);
 				proptag_array_free(ptmp_proptags);
 				return FALSE;
@@ -1494,7 +1482,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 			for (i=0; i<tmp_proptags.count; i++) {
 				if (!proptag_array_append(ptmp_proptags,
 				    tmp_proptags.pproptag[i])) {
-					pstmt.finalize();
 					proptag_array_free(ptmp_indices);
 					proptag_array_free(ptmp_proptags);
 					return FALSE;
@@ -1697,7 +1684,6 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -1801,12 +1787,10 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pptimer_id = NULL;
 		return TRUE;
 	}
 	if (SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
-		pstmt.finalize();
 		*pptimer_id = NULL;
 		return TRUE;
 	}
@@ -1838,7 +1822,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*ppmsgctnt = NULL;
 		return TRUE;
 	}
@@ -2389,7 +2372,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (pstmt == nullptr)
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			*pmessage_id = 0;
 			return TRUE;
 		}
@@ -2419,13 +2401,11 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 					return FALSE;
 				}
 				if (FALSE == b_result) {
-					pstmt.finalize();
 					*pmessage_id = 0;
 					return TRUE;
 				}
 			} else {
 				if (gx_sql_col_uint64(pstmt, 0) != parent_id) {
-					pstmt.finalize();
 					*pmessage_id = 0;
 					return TRUE;
 				}
@@ -2487,7 +2467,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		}
 		if (1 != sqlite3_column_int64(pstmt, 0)) {
-			pstmt.finalize();
 			*pmessage_id = 0;
 			return TRUE;
 		}
@@ -2570,7 +2549,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				return FALSE;
 			}
 		}
-		pstmt.finalize();
 	}
 	if (NULL != pmsgctnt->children.pattachments) {
 		sprintf(sql_string, "INSERT INTO attachments"
@@ -2602,7 +2580,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				}
 			}
 		}
-		pstmt.finalize();
 	}
 	if (TRUE == b_internal) {
 		return TRUE;
@@ -2655,9 +2632,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			}
 			parent_id = sqlite3_column_int64(pstmt2, 0);
 		}
-		pstmt.finalize();
-		pstmt1.finalize();
-		pstmt2.finalize();
 	}
 	if (original_size > message_size) {
 		if (0 == is_associated) {

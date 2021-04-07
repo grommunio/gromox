@@ -518,7 +518,6 @@ BOOL common_util_allocate_cn(sqlite3 *psqlite, uint64_t *pcn)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		return FALSE;
 	}
-	pstmt.finalize();
 	*pcn = last_cn;
 	return TRUE;
 }
@@ -547,7 +546,6 @@ BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		return FALSE;
 	}
-	pstmt.finalize();
 	*part = last_art;
 	return TRUE;
 }
@@ -565,11 +563,9 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pstmt.finalize();
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -596,7 +592,6 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		return FALSE;
 	}
-	pstmt.finalize();
 	*pcid = last_cid;
 	return TRUE;
 }
@@ -621,7 +616,6 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 			"message_id=? AND (proptag=? OR proptag=?)");
 	popt_stmts->pstmt_msg2 = gx_sql_prep(psqlite, sql_string);
 	if (popt_stmts->pstmt_msg2 == nullptr) {
-		popt_stmts->pstmt_msg1.finalize();
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT propval "
@@ -629,8 +623,6 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 				"recipient_id=? AND proptag=?");
 	popt_stmts->pstmt_rcpt1 = gx_sql_prep(psqlite, sql_string);
 	if (popt_stmts->pstmt_rcpt1 == nullptr) {
-		popt_stmts->pstmt_msg1.finalize();
-		popt_stmts->pstmt_msg2.finalize();
 		return FALSE;
 	}
 	sprintf(sql_string, "SELECT proptag, propval"
@@ -638,9 +630,6 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 		" AND (proptag=? OR proptag=?)");
 	popt_stmts->pstmt_rcpt2 = gx_sql_prep(psqlite, sql_string);
 	if (popt_stmts->pstmt_rcpt2 == nullptr) {
-		popt_stmts->pstmt_msg1.finalize();
-		popt_stmts->pstmt_msg2.finalize();
-		popt_stmts->pstmt_rcpt1.finalize();
 		return FALSE;
 	}
 	pthread_setspecific(g_opt_key, popt_stmts.release());
@@ -653,10 +642,6 @@ void common_util_end_message_optimize()
 	if (NULL == popt_stmts) {
 		return;
 	}
-	popt_stmts->pstmt_msg1.finalize();
-	popt_stmts->pstmt_msg2.finalize();
-	popt_stmts->pstmt_rcpt1.finalize();
-	popt_stmts->pstmt_rcpt2.finalize();
 	pthread_setspecific(g_opt_key, NULL);
 	delete popt_stmts;
 }
@@ -830,12 +815,10 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	guid_from_string(pguid, S2A(sqlite3_column_text(pstmt, 0)));
-	pstmt.finalize();
 	*pb_found = TRUE;
 	return TRUE;
 }
@@ -927,7 +910,6 @@ static char* common_util_calculate_folder_path(
 			return NULL;
 		}
 		tmp_fid = sqlite3_column_int64(pstmt, 0);
-		pstmt.finalize();
 	}
 	memmove(temp_path, temp_path + 4095 - len, len);
 	return common_util_dup(temp_path);
@@ -950,7 +932,6 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 		return FALSE;
 	}
 	count = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	if (count >= g_max_msg) {
 		return TRUE;
 	}
@@ -1206,13 +1187,11 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 		if (pstmt == nullptr)
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			fprintf(stderr, "W-1299: folder_type of %s:%llxh indeterminate, possible db corruption\n",
 			        dir != nullptr ? dir : "", static_cast<unsigned long long>(folder_id));
 			return FALSE;
 		}
 		*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_TYPE_GENERIC : FOLDER_TYPE_SEARCH;
-		pstmt.finalize();
 	} else {
 		*pfolder_type = folder_id == PUBLIC_FID_ROOT ? FOLDER_TYPE_ROOT : FOLDER_TYPE_GENERIC;
 	}
@@ -1301,7 +1280,6 @@ uint64_t common_util_get_folder_parent_fid(
 		return 0;
 	}
 	parent_fid = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	if (0 == parent_fid) {
 		parent_fid = folder_id;
 	}
@@ -1323,7 +1301,6 @@ static uint64_t common_util_get_folder_changenum(
 		return 0;
 	}
 	change_num = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	return rop_util_make_eid_ex(1, change_num);
 }
 
@@ -1589,7 +1566,6 @@ static uint64_t common_util_get_message_changenum(
 		return 0;
 	}
 	change_num = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	return rop_util_make_eid_ex(1, change_num);
 }
 
@@ -2842,7 +2818,6 @@ BOOL common_util_get_properties(int table_type,
 			}
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			own_stmt.finalize();
 			continue;
 		}
 		if (proptype == PT_UNSPECIFIED) {
@@ -2859,7 +2834,6 @@ BOOL common_util_get_properties(int table_type,
 											pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue = ptyped;
 			ppropvals->count ++;
-			own_stmt.finalize();
 			continue;
 		} else if (proptype == PT_STRING8) {
 			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
@@ -3076,7 +3050,6 @@ BOOL common_util_get_properties(int table_type,
 				break;
 			}
 		}
-		own_stmt.finalize();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -4258,7 +4231,6 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 			common_util_alloc, 0);
 		if (ext_buffer_pull_restriction(&ext_pull,
 		    static_cast<RESTRICTION *>(*ppvalue)) != EXT_ERR_SUCCESS) {
-			pstmt.finalize();
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -4274,7 +4246,6 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 			common_util_alloc, 0);
 		if (ext_buffer_pull_rule_actions(&ext_pull,
 		    static_cast<RULE_ACTIONS *>(*ppvalue)) != EXT_ERR_SUCCESS) {
-			pstmt.finalize();
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -4744,19 +4715,16 @@ BOOL common_util_check_descendant(sqlite3 *psqlite,
 		(FALSE == b_private && PUBLIC_FID_ROOT == folder_id))) {
 		sqlite3_bind_int64(pstmt, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			*pb_included = FALSE;
 			return TRUE;
 		}
 		folder_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt);
 		if (folder_id == outer_fid) {
-			pstmt.finalize();
 			*pb_included = TRUE;
 			return TRUE;
 		}
 	}
-	pstmt.finalize();
 	*pb_included = FALSE;
 	return TRUE;
 }
@@ -5025,7 +4993,6 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 			}
 		}
 	}
-	pstmt.finalize();
 	if (pres->rt == RES_COUNT && count == pres->count->count)
 		return TRUE;
 	return FALSE;
@@ -5438,11 +5405,9 @@ BOOL common_util_check_search_result(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_exist = FALSE;
 		return TRUE;
 	}
-	pstmt.finalize();
 	*pb_exist = TRUE;
 	return TRUE;
 }
@@ -5461,7 +5426,6 @@ BOOL common_util_get_mid_string(sqlite3 *psqlite,
 		return FALSE;
 	}
 	if (SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
-		pstmt.finalize();
 		*ppmid_string = NULL;
 		return TRUE;
 	}
@@ -5572,7 +5536,6 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -5728,20 +5691,12 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			}
 			if (FALSE == b_result) {
 				*pb_result = FALSE;
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
-				pstmt3.finalize();
 				*pb_result = FALSE;
 				return TRUE;
 			}
 		}
 		sqlite3_reset(pstmt3);
 	}
-	pstmt.finalize();
-	pstmt1.finalize();
-	pstmt2.finalize();
-	pstmt3.finalize();
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -5840,7 +5795,6 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			MAXIMUM_PROPNAME_NUMBER) {
 			b_create = FALSE;
 		}
-		pstmt.finalize();
 	}
 	sprintf(sql_string, "SELECT propid FROM "
 				"named_properties WHERE name_string=?");
@@ -5892,10 +5846,6 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		} else {
 			ppropids->ppropid[i] = 0;
 		}
-	}
-	pstmt.finalize();
-	if (TRUE == b_create) {
-		pstmt1.finalize();
 	}
 	return TRUE;
 }

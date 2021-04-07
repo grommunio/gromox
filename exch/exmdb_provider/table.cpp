@@ -95,7 +95,6 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 				return 0;
 			}
 			count = sqlite3_column_int64(pstmt, 0);
-			pstmt.finalize();
 		} else {
 			count = 0;
 			sprintf(sql_string, "SELECT folder_id FROM "
@@ -116,7 +115,6 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 				}
 				count ++;
 			}
-			pstmt.finalize();
 		}
 	} else {
 		count = 0;
@@ -142,7 +140,6 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 				sqlite3_column_int64(pstmt, 0), username, TRUE);
 			count ++;
 		}
-		pstmt.finalize();
 	}
 	return count;
 }
@@ -719,7 +716,6 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
 			b_search = TRUE;
 		}
-		pstmt.finalize();
 	}
 	if (pdb->tables.psqlite == nullptr &&
 	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
@@ -2346,7 +2342,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->count = count;
 			pset->count ++;
 		}
-		pstmt.finalize();
 		break;
 	}
 	case TABLE_TYPE_RULE: {
@@ -2414,7 +2409,6 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->count = count;
 			pset->count ++;
 		}
-		pstmt.finalize();
 		break;
 	}
 	}
@@ -2940,7 +2934,6 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				break;
 			}
 		}
-		pstmt.finalize();
 		*pposition = idx - 1;
 	} else {
 		*pposition = -1;
@@ -3020,7 +3013,6 @@ BOOL exmdb_server_locate_table(const char *dir,
 	} else {
 		idx = 0;
 	}
-	pstmt.finalize();
 	*pposition = idx - 1;
 	return TRUE;
 }
@@ -3075,7 +3067,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			return FALSE;
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			ppropvals->count = 0;
 			return TRUE;
 		}
@@ -3140,7 +3131,6 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			return FALSE;
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			ppropvals->count = 0;
 			return TRUE;
 		}
@@ -3345,7 +3335,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			"FROM folder_properties WHERE folder_id=?");
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			pstmt.finalize();
 			int_hash_free(phash);
 			return FALSE;
 		}
@@ -3403,7 +3392,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			"FROM message_properties WHERE message_id=?");
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			pstmt.finalize();
 			int_hash_free(phash);
 			return FALSE;
 		}
@@ -3624,13 +3612,11 @@ BOOL exmdb_server_expand_table(const char *dir,
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		CONTENT_ROW_HEADER != sqlite3_column_int64(pstmt, 1)) {
-		pstmt.finalize();
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	*pb_found = TRUE;
 	if (0 != sqlite3_column_int64(pstmt, 2)) {
-		pstmt.finalize();
 		*pposition = -1;
 		return TRUE;
 	}
@@ -3664,7 +3650,6 @@ BOOL exmdb_server_expand_table(const char *dir,
 			row_id, pstmt, pstmt1, prow_count)) {
 			return FALSE;
 		}
-		pstmt1.finalize();
 	}
 	pstmt.finalize();
 	sprintf(sql_string, "UPDATE t%u SET row_stat=1 "
@@ -3764,13 +3749,11 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		CONTENT_ROW_HEADER != sqlite3_column_int64(pstmt, 1)) {
-		pstmt.finalize();
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	*pb_found = TRUE;
 	if (0 == sqlite3_column_int64(pstmt, 2)) {
-		pstmt.finalize();
 		*pposition = -1;
 		return TRUE;
 	}

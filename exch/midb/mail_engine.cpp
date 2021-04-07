@@ -6160,7 +6160,6 @@ static BOOL mail_engine_add_notification_folder(
 		    decoded_name, sizeof(decoded_name))) {
 			return FALSE;
 		}
-		pstmt.finalize();
 	}
 	}
 	proptags.count = 4;
@@ -6560,7 +6559,6 @@ static void mail_engine_notification_proc(const char *dir,
 		if (pstmt == nullptr)
 			break;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			break;
 		}
 		snprintf(temp_buff, 1280, "FOLDER-TOUCH %s %s",

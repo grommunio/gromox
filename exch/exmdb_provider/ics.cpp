@@ -609,8 +609,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	if (FALSE == idset_enum_repl((IDSET*)pgiven, 1,
 		&enum_param, (REPLICA_ENUM)ics_enum_content_idset)) {
-		pstmt.finalize();
-		pstmt1.finalize();
 		eid_array_free(enum_param.pdeleted_eids);
 		eid_array_free(enum_param.pnolonger_mids);
 		return FALSE;	
@@ -1046,12 +1044,10 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		if (FALSE == idset_enum_repl((IDSET*)pgiven,
 			replids.replids[i], &enum_param,
 			(REPLICA_ENUM)ics_enum_hierarchy_idset)) {
-			pstmt.finalize();
 			eid_array_free(enum_param.pdeleted_eids);
 			return FALSE;	
 		}
 	}
-	pstmt.finalize();
 	}
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
 	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);

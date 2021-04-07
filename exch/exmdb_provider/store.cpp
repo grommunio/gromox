@@ -171,12 +171,10 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	*preplid = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	*pb_found = TRUE;
 	return TRUE;
 }

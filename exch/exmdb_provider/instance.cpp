@@ -69,7 +69,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		*ppmsgctnt = NULL;
 		return TRUE;
 	}
@@ -109,7 +108,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				return FALSE;
 			}
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
-				pstmt.finalize();
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -135,7 +133,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				return FALSE;
 			}
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
-				pstmt.finalize();
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -162,7 +159,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				return FALSE;
 			}
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
-				pstmt.finalize();
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -209,7 +205,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		" recipients_properties WHERE recipient_id=?");
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
@@ -217,14 +212,10 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		pproplist = tpropval_array_init();
 		if (NULL == pproplist) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
 		if (!tarray_set_append_internal(prcpts, pproplist)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			tpropval_array_free(pproplist);
 			message_content_free(pmsgctnt);
 			return FALSE;
@@ -232,8 +223,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		propval.proptag = PROP_TAG_ROWID;
 		propval.pvalue = &row_id;
 		if (!tpropval_array_set_propval(pproplist, &propval)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			message_content_free(pmsgctnt);
 			return FALSE;	
 		}
@@ -248,8 +237,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				&propval.pvalue) || NULL == propval.pvalue
 				||
 			    !tpropval_array_set_propval(pproplist, &propval)) {
-				pstmt.finalize();
-				pstmt1.finalize();
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -275,22 +262,17 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			" FROM messages WHERE parent_attid=?");
 	pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		pattachment = attachment_content_init();
 		if (NULL == pattachment) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
 		if (FALSE == attachment_list_append_internal(
 			pattachments, pattachment)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			attachment_content_free(pattachment);
 			message_content_free(pmsgctnt);
 			return FALSE;
@@ -298,8 +280,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		propval.proptag = PROP_TAG_ATTACHNUMBER;
 		propval.pvalue = plast_id;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			message_content_free(pmsgctnt);
 			return FALSE;	
 		}
@@ -308,8 +288,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		if (FALSE == common_util_get_proptags(
 			ATTACHMENT_PROPERTIES_TABLE,
 			attachment_id, psqlite, &proptags)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
@@ -323,15 +301,10 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					static_cast<unsigned int>(proptags.pproptag[i]));
 				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 				if (pstmt2 == nullptr) {
-					pstmt.finalize();
-					pstmt1.finalize();
 					message_content_free(pmsgctnt);
 					return FALSE;
 				}
 				if (SQLITE_ROW != sqlite3_step(pstmt2)) {
-					pstmt.finalize();
-					pstmt1.finalize();
-					pstmt2.finalize();
 					message_content_free(pmsgctnt);
 					return FALSE;
 				}
@@ -341,8 +314,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				                  ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
 				propval.pvalue = &cid;
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-					pstmt.finalize();
-					pstmt1.finalize();
 					message_content_free(pmsgctnt);
 					return FALSE;
 				}
@@ -356,8 +327,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					&propval.pvalue) || NULL == propval.pvalue
 					||
 				    !tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-					pstmt.finalize();
-					pstmt1.finalize();
 					message_content_free(pmsgctnt);
 					return FALSE;
 				}
@@ -370,8 +339,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			last_id = 0;
 			if (FALSE == instance_load_message(psqlite,
 				message_id1, &last_id, &pmsgctnt1)) {
-				pstmt.finalize();
-				pstmt1.finalize();
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -379,8 +346,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		sqlite3_reset(pstmt1);
 	}
-	pstmt.finalize();
-	pstmt1.finalize();
 	*ppmsgctnt = pmsgctnt;
 	return TRUE;
 }
