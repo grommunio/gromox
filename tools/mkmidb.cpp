@@ -184,7 +184,6 @@ int main(int argc, const char **argv)
 	sqlite3_bind_text(pstmt, 2, argv[1], -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		pstmt.finalize();
 		return 9;
 	}
 	

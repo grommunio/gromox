@@ -403,7 +403,6 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 		if (FALSE == common_util_get_property(
 			ATTACHMENT_PROPERTIES_TABLE, attachment_id, 0,
 			psqlite,PROP_TAG_ATTACHLONGFILENAME, &pvalue)) {
-			pstmt.finalize();
 			return 0;
 		}
 		if (NULL == pvalue) {
@@ -420,7 +419,6 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 			b_first = TRUE;
 		}
 	}
-	pstmt.finalize();
 	return offset;
 }
 

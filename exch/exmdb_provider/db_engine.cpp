@@ -172,7 +172,6 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 		double_list_append_as_tail(
 			&pdb->dynamic_list, &pdynamic->node);
 	}
-	pstmt.finalize();
 }
 
 /* query or create DB_ITEM in hash table */
@@ -408,7 +407,6 @@ static BOOL db_engine_search_folder(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return TRUE;
 	}
 	if (0 == sqlite3_column_int64(pstmt, 0)) {
@@ -427,14 +425,12 @@ static BOOL db_engine_search_folder(const char *dir,
 	}
 	pmessage_ids = eid_array_init();
 	if (NULL == pmessage_ids) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (!eid_array_append(pmessage_ids,
 		    sqlite3_column_int64(pstmt, 0))) {
 			eid_array_free(pmessage_ids);
-			pstmt.finalize();
 			return FALSE;
 		}
 	}
@@ -499,11 +495,9 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (!eid_array_append(pfolder_ids,
 		    sqlite3_column_int64(pstmt, 0))) {
-			pstmt.finalize();
 			return FALSE;
 		}
 	}
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -2729,7 +2723,6 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED;
 			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 			if (NULL == padded_row) {
-				pstmt.finalize();
 				return;
 			}
 			datagram.db_notify.pdata = padded_row;
@@ -2864,7 +2857,6 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
-	pstmt.finalize();
 }
 
 void db_engine_notify_folder_creation(db_item_ptr &pdb,
@@ -2990,7 +2982,6 @@ static void* db_engine_get_extremum_value(db_item_ptr &pdb,
 			}
 		}
 	}
-	pstmt.finalize();
 	return pvalue;
 }
 
@@ -3171,7 +3162,6 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			pdelnode = cu_alloc<ROWDEL_NODE>();
 			if (NULL == pdelnode) {
-				pstmt.finalize();
 				return;
 			}
 			pdelnode->node.pdata = pdelnode;
@@ -4509,8 +4499,6 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				}
 				prnode = cu_alloc<ROWINFO_NODE>();
 				if (NULL == prnode) {
-					pstmt.finalize();
-					pstmt1.finalize();
 					return;
 				}
 				prnode->node.pdata = prnode;

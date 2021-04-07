@@ -56,7 +56,6 @@ BOOL exmdb_server_get_all_named_propids(
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	total_count = sqlite3_column_int64(pstmt, 0);
@@ -82,7 +81,6 @@ BOOL exmdb_server_get_all_named_propids(
 				sqlite3_column_int64(pstmt, 0);
 		ppropids->count ++;
 	}
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -396,7 +394,6 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
@@ -618,18 +615,13 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		proptags[2]);
 	auto pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt2 == nullptr) {
-		pstmt1.finalize();
 		return FALSE;
 	}
 	if (FALSE == table_check_address_in_contact_folder(
 		pstmt1, pstmt2, PRIVATE_FID_CONTACTS, paddress,
 		pb_found)) {
-		pstmt1.finalize();
-		pstmt2.finalize();
 		return FALSE;
 	}
-	pstmt1.finalize();
-	pstmt2.finalize();
 	return TRUE;
 }
 

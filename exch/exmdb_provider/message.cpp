@@ -801,7 +801,6 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	rcpt_num = sqlite3_column_int64(pstmt, 0);
@@ -824,7 +823,6 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		" recipients_properties WHERE recipient_id=?");
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	row_id = 0;
@@ -847,8 +845,6 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 			RECIPIENT_PROPERTIES_TABLE,
 			rcpt_id, 0, psqlite, &proptags,
 			pset->pparray[pset->count])) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		/* PROP_TAG_ROWID MUST be the first */
@@ -860,16 +856,12 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		ppropval->proptag = PROP_TAG_ROWID;
 		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		*(uint32_t*)ppropval->pvalue = row_id;
 		row_id ++;
 		pset->count ++;
 	}
-	pstmt.finalize();
-	pstmt1.finalize();
 	return TRUE;
 }
 
@@ -943,7 +935,6 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	count = sqlite3_column_int64(pstmt, 0);
@@ -965,13 +956,11 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		if (FALSE == common_util_get_properties(
 			ATTACHMENT_PROPERTIES_TABLE, attachment_id, cpid,
 			pdb->psqlite, &proptags, &pattachment->proplist)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		pattachment->pembedded = NULL;
@@ -979,7 +968,6 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 			(*ppbrief)->children.pattachments->count] = pattachment;
 		(*ppbrief)->children.pattachments->count ++;
 	}
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -1335,11 +1323,9 @@ BOOL exmdb_server_get_message_group_id(const char *dir,
 	}
 	*ppgroup_id = cu_alloc<uint32_t>();
 	if (NULL == *ppgroup_id) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	**ppgroup_id = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -1392,10 +1378,8 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 		}
 		sqlite3_bind_null(pstmt, 1);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			return FALSE;
 		}
-		pstmt.finalize();
 		return TRUE;
 	}
 	sprintf(sql_string, "INSERT INTO"
@@ -1410,7 +1394,6 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 		indices_buff, sizeof(indices_buff), 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_proptag_array(
 		&ext_push, pindices)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_bind_blob(pstmt, 3, ext_push.data,
@@ -1419,16 +1402,13 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 		proptags_buff, sizeof(proptags_buff), 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_proptag_array(
 		&ext_push, pungroup_proptags)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_bind_blob(pstmt, 4, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return FALSE;
 	}
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -1832,11 +1812,9 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 	}
 	*pptimer_id = cu_alloc<uint32_t>();
 	if (NULL == *pptimer_id) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	**pptimer_id = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -1913,7 +1891,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	count = sqlite3_column_int64(pstmt, 0);
@@ -1932,7 +1909,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 			" FROM messages WHERE parent_attid=?");
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
 		return FALSE;
 	}
 	attach_num = 0;
@@ -1941,14 +1917,10 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		if (FALSE == common_util_get_proptags(
 			ATTACHMENT_PROPERTIES_TABLE, attachment_id,
 			psqlite, &tmp_proptags)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		proptags.count = tmp_proptags.count;
@@ -1960,8 +1932,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		if (FALSE == common_util_get_properties(
 			ATTACHMENT_PROPERTIES_TABLE, attachment_id, cpid,
 			psqlite, &proptags, &pattachment->proplist)) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		/* PROP_TAG_ATTACHNUMBER MUST be the first */
@@ -1973,8 +1943,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		ppropval->proptag = PROP_TAG_ATTACHNUMBER;
 		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		*(uint32_t*)ppropval->pvalue = attach_num;
@@ -1985,8 +1953,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 				sqlite3_column_int64(pstmt1, 0),
 				&pattachment->pembedded) ||
 				NULL == pattachment->pembedded) {
-				pstmt.finalize();
-				pstmt1.finalize();
 				return FALSE;
 			}
 		} else {
@@ -1997,8 +1963,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 			(*ppmsgctnt)->children.pattachments->count] = pattachment;
 		(*ppmsgctnt)->children.pattachments->count ++;
 	}
-	pstmt.finalize();
-	pstmt1.finalize();
 	return TRUE;
 }
 
@@ -2452,7 +2416,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
 				if (FALSE == common_util_check_allocated_eid(
 					psqlite, *pmessage_id, &b_result)) {
-					pstmt.finalize();
 					return FALSE;
 				}
 				if (FALSE == b_result) {
@@ -2521,7 +2484,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (pstmt == nullptr)
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		if (1 != sqlite3_column_int64(pstmt, 0)) {
@@ -2599,14 +2561,12 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
-				pstmt.finalize();
 				return FALSE;
 			}
 			tmp_id = sqlite3_last_insert_rowid(psqlite);
 			if (FALSE == common_util_set_properties(
 				RECIPIENT_PROPERTIES_TABLE, tmp_id, cpid, psqlite,
 				pmsgctnt->children.prcpts->pparray[i], &tmp_problems)) {
-				pstmt.finalize();
 				return FALSE;
 			}
 		}
@@ -2620,7 +2580,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
-				pstmt.finalize();
 				return FALSE;
 			}
 			tmp_id = sqlite3_last_insert_rowid(psqlite);
@@ -2628,7 +2587,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				ATTACHMENT_PROPERTIES_TABLE, tmp_id, cpid, psqlite,
 				&pmsgctnt->children.pattachments->pplist[i]->proplist,
 				&tmp_problems)) {
-				pstmt.finalize();
 				return FALSE;
 			}
 			if (NULL != pmsgctnt->children.pattachments->pplist[i]->pembedded) {
@@ -2636,12 +2594,10 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 					psqlite, account, cpid, TRUE, tmp_id,
 					pmsgctnt->children.pattachments->pplist[i]->pembedded,
 					&message_id)) {
-					pstmt.finalize();
 					return FALSE;
 				}
 				if (0 == message_id) {
 					*pmessage_id = 0;
-					pstmt.finalize();
 					return TRUE;
 				}
 			}
@@ -2668,41 +2624,29 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 						" attachments WHERE attachment_id=?");
 		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		sprintf(sql_string, "SELECT parent_attid, "
 			"is_associated FROM messages WHERE message_id=?");
 		auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt2 == nullptr) {
-			pstmt.finalize();
-			pstmt1.finalize();
 			return FALSE;
 		}
 		while (TRUE) {
 			sqlite3_bind_int64(pstmt1, 1, parent_id);
 			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 				*pmessage_id = 0;
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
 				return FALSE;
 			}
 			message_id = sqlite3_column_int64(pstmt1, 0);
 			sqlite3_bind_int64(pstmt, 1, message_id);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
 				return FALSE;
 			}
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt2, 1, message_id);
 			if (SQLITE_ROW != sqlite3_step(pstmt2)) {
 				*pmessage_id = 0;
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
 				return FALSE;
 			}
 			if (SQLITE_NULL == sqlite3_column_type(pstmt2, 0)) {
@@ -2782,7 +2726,6 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 		}
 		prnode = cu_alloc<RULE_NODE>();
 		if (NULL == prnode) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		prnode->node.pdata = prnode;
@@ -2795,7 +2738,6 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 		}
 		prnode->provider = common_util_dup(static_cast<char *>(pvalue));
 		if (NULL == prnode->provider) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		for (pnode=double_list_get_head(plist); NULL!=pnode;
@@ -2809,7 +2751,6 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 			double_list_append_as_tail(plist, &prnode->node);
 		}
 	}
-	pstmt.finalize();
 	return TRUE;
 }
 
@@ -2847,7 +2788,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		if (FALSE == common_util_get_property(
 			MESSAGE_PROPERTIES_TABLE, message_id, 0,
 			psqlite, PROP_TAG_MESSAGECLASS, &pvalue)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
@@ -2856,7 +2796,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		if (FALSE == common_util_get_property(
 			MESSAGE_PROPERTIES_TABLE, message_id, 0,
 			psqlite, PROP_TAG_RULEMESSAGESTATE, &pvalue)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		if (NULL == pvalue) {
@@ -2880,7 +2819,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 			MESSAGE_PROPERTIES_TABLE, message_id, 0,
 			psqlite, PROP_TAG_RULEMESSAGESEQUENCE,
 			&pvalue)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		if (NULL == pvalue) {
@@ -2891,7 +2829,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 			MESSAGE_PROPERTIES_TABLE, message_id, 0,
 			psqlite, PROP_TAG_RULEMESSAGEPROVIDER,
 			&pvalue)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		if (NULL == pvalue) {
@@ -2899,7 +2836,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		}
 		prnode = cu_alloc<RULE_NODE>();
 		if (NULL == prnode) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		prnode->node.pdata = prnode;
@@ -2923,7 +2859,6 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 			break;
 		}
 	}
-	pstmt.finalize();
 	return TRUE;
 }
 
