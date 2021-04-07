@@ -42,7 +42,6 @@ int main(int argc, const char **argv)
 	MYSQL_RES *pmyres;
 	char tmp_sql[1024];
 	char temp_path[256];
-	sqlite3_stmt* pstmt;
 	char mysql_host[256];
 	char mysql_user[256];
 	struct stat node_stat;
@@ -176,7 +175,7 @@ int main(int argc, const char **argv)
 	}
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, csql_string);
 	if (pstmt == nullptr) {
 		return 9;
 	}
@@ -185,11 +184,11 @@ int main(int argc, const char **argv)
 	sqlite3_bind_text(pstmt, 2, argv[1], -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);

@@ -78,7 +78,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	uint32_t art_num;
 	EXT_PUSH ext_push;
 	uint64_t change_num;
-	sqlite3_stmt* pstmt;
 	char sql_string[256];
 	uint8_t tmp_buff[24];
 	
@@ -97,7 +96,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sprintf(sql_string, "INSERT INTO folders "
 				"(folder_id, parent_id, change_number, "
 				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, folder_id);
@@ -110,10 +109,10 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 4, cur_eid);
 	sqlite3_bind_int64(pstmt, 5, max_eid);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	g_last_art ++;
 	art_num = g_last_art;
 	sprintf(sql_string, "INSERT INTO "
@@ -124,49 +123,49 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDCOUNTTOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDFOLDERTOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_HIERARCHYCHANGENUMBER);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_INTERNETARTICLENUMBER);
 	sqlite3_bind_int64(pstmt, 2, art_num);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_ARTICLENUMBERNEXT);
 	sqlite3_bind_int64(pstmt, 2, 1);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DISPLAYNAME);
 	sqlite3_bind_text(pstmt, 2, pdisplayname, -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_COMMENT);
 	sqlite3_bind_text(pstmt, 2, "", -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
@@ -174,7 +173,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt, 1, PROP_TAG_CONTAINERCLASS);
 		sqlite3_bind_text(pstmt, 2, pcontainer_class, -1, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			sqlite3_finalize(pstmt);
+			pstmt.finalize();
 			return FALSE;
 		}
 		sqlite3_reset(pstmt);
@@ -183,7 +182,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt, 1, PROP_TAG_ATTRIBUTEHIDDEN);
 		sqlite3_bind_int64(pstmt, 2, 1);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			sqlite3_finalize(pstmt);
+			pstmt.finalize();
 			return FALSE;
 		}
 		sqlite3_reset(pstmt);
@@ -193,28 +192,28 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CREATIONTIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LASTMODIFICATIONTIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_HIERREV);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LOCALCOMMITTIMEMAX);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
@@ -227,24 +226,24 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sqlite3_bind_blob(pstmt, 2, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	ppcl = pcl_init();
 	if (NULL == ppcl) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	if (FALSE == pcl_append(ppcl, &xid)) {
 		pcl_free(ppcl);
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	pbin = pcl_serialize(ppcl);
 	if (NULL == pbin) {
 		pcl_free(ppcl);
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	pcl_free(ppcl);
@@ -253,11 +252,11 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sqlite3_bind_blob(pstmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		rop_util_free_binary(pbin);
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	
 	return TRUE;
 }
@@ -274,7 +273,6 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	uint32_t art_num;
 	EXT_PUSH ext_push;
 	uint64_t change_num;
-	sqlite3_stmt* pstmt;
 	char sql_string[256];
 	uint8_t tmp_buff[24];
 	
@@ -283,7 +281,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	sprintf(sql_string, "INSERT INTO folders "
 		"(folder_id, parent_id, change_number, is_search,"
 		" cur_eid, max_eid) VALUES (?, ?, ?, 1, 0, 0)");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, folder_id);
@@ -294,10 +292,10 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	}
 	sqlite3_bind_int64(pstmt, 3, change_num);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	g_last_art ++;
 	art_num = g_last_art;
 	sprintf(sql_string, "INSERT INTO "
@@ -308,42 +306,42 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDCOUNTTOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDFOLDERTOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_HIERARCHYCHANGENUMBER);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_INTERNETARTICLENUMBER);
 	sqlite3_bind_int64(pstmt, 2, art_num);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DISPLAYNAME);
 	sqlite3_bind_text(pstmt, 2, pdisplayname, -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_COMMENT);
 	sqlite3_bind_text(pstmt, 2, "", -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
@@ -351,7 +349,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt, 1, PROP_TAG_CONTAINERCLASS);
 		sqlite3_bind_text(pstmt, 2, pcontainer_class, -1, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			sqlite3_finalize(pstmt);
+			pstmt.finalize();
 			return FALSE;
 		}
 		sqlite3_reset(pstmt);
@@ -362,28 +360,28 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CREATIONTIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LASTMODIFICATIONTIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_HIERREV);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LOCALCOMMITTIMEMAX);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
@@ -396,24 +394,24 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	sqlite3_bind_blob(pstmt, 2, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	ppcl = pcl_init();
 	if (NULL == ppcl) {
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	if (FALSE == pcl_append(ppcl, &xid)) {
 		pcl_free(ppcl);
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	pbin = pcl_serialize(ppcl);
 	if (NULL == pbin) {
 		pcl_free(ppcl);
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	pcl_free(ppcl);
@@ -422,11 +420,11 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	sqlite3_bind_blob(pstmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		rop_util_free_binary(pbin);
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	
 	return TRUE;
 }
@@ -450,7 +448,6 @@ int main(int argc, const char **argv)
 	char tmp_buff[256];
 	char tmp_sql[1024];
 	char temp_path[256];
-	sqlite3_stmt* pstmt;
 	char mysql_host[256];
 	char mysql_user[256];
 	struct stat node_stat;
@@ -644,7 +641,7 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, csql_string);
 	if (pstmt == nullptr) {
 		return 9;
 	}
@@ -656,12 +653,12 @@ int main(int argc, const char **argv)
 		sqlite3_bind_text(pstmt, 2, name.c_str(), -1, SQLITE_STATIC);
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
-			sqlite3_finalize(pstmt);
+			pstmt.finalize();
 			return 9;
 		}
 		sqlite3_reset(pstmt);
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
 	
@@ -675,7 +672,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 3, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -684,7 +681,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 3, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -693,7 +690,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 3, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -702,10 +699,10 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 3, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	pstmt = gx_sql_prep(psqlite, csql_string);
@@ -716,7 +713,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -724,7 +721,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -732,7 +729,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -740,7 +737,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -748,7 +745,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -756,7 +753,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -764,7 +761,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -772,10 +769,10 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_ROOT,
 		0, user_id, "Root Container", NULL, FALSE)) {
 		printf("fail to create \"root container\" folder\n");
@@ -959,7 +956,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_text(pstmt, 2, tmp_buff, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -967,7 +964,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0x100);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -975,7 +972,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, ALLOCATED_EID_RANGE);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -983,7 +980,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, g_last_cn);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -991,7 +988,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -999,7 +996,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, g_last_art);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1007,7 +1004,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1015,7 +1012,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
 	sqlite3_reset(pstmt);
@@ -1023,10 +1020,10 @@ int main(int argc, const char **argv)
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 		return 9;
 	}
-	sqlite3_finalize(pstmt);
+	pstmt.finalize();
 	
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);

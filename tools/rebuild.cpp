@@ -537,7 +537,7 @@ int main(int argc, const char **argv)
 				return 10;
 			}
 		}
-		sqlite3_finalize(pstmt);
+		pstmt.finalize();
 	}
 	}
 	
