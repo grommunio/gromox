@@ -345,12 +345,8 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pnode = double_list_get_tail(&pdb->instance_list);
 	uint32_t instance_id = pnode == nullptr ? 0 :
 	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
@@ -466,12 +462,8 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pnode = double_list_get_tail(&pdb->instance_list);
 	uint32_t instance_id = pnode == nullptr ? 0 :
 	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
@@ -582,12 +574,8 @@ BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
 {
 	INSTANCE_NODE *pinstance;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -611,12 +599,8 @@ BOOL exmdb_server_reload_message_instance(
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -686,12 +670,8 @@ BOOL exmdb_server_clear_message_instance(
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -1045,12 +1025,8 @@ BOOL exmdb_server_read_message_instance(const char *dir,
 {
 	INSTANCE_NODE *pinstance;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	memset(pmsgctnt, 0, sizeof(MESSAGE_CONTENT));
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
@@ -1128,12 +1104,8 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 	ATTACHMENT_LIST *pattachments;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -1304,12 +1276,8 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pnode = double_list_get_tail(&pdb->instance_list);
 	uint32_t instance_id = pnode == nullptr ? 0 :
 	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
@@ -1381,12 +1349,8 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pnode = double_list_get_tail(&pdb->instance_list);
 	uint32_t instance_id = pnode == nullptr ? 0 :
 	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
@@ -1452,12 +1416,8 @@ BOOL exmdb_server_read_attachment_instance(const char *dir,
 {
 	INSTANCE_NODE *pinstance;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	memset(pattctnt, 0, sizeof(ATTACHMENT_CONTENT));
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_ATTACHMENT != pinstance->type) {
@@ -1481,12 +1441,8 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_ATTACHMENT != pinstance->type) {
 		return FALSE;
@@ -1577,12 +1533,8 @@ BOOL exmdb_server_delete_message_instance_attachment(
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, message_instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -1632,12 +1584,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
 		return FALSE;
@@ -1837,12 +1785,8 @@ BOOL exmdb_server_unload_instance(
 {
 	INSTANCE_NODE *pinstance;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
 		return TRUE;
@@ -1870,12 +1814,8 @@ BOOL exmdb_server_get_instance_all_proptags(
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
 		return FALSE;
@@ -2363,12 +2303,8 @@ BOOL exmdb_server_get_instance_properties(
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
 		return FALSE;
@@ -2732,12 +2668,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
 		return FALSE;
@@ -3037,12 +2969,8 @@ BOOL exmdb_server_remove_instance_properties(
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance) {
 		return FALSE;
@@ -3160,12 +3088,8 @@ BOOL exmdb_server_check_instance_cycle(const char *dir,
 		return TRUE;
 	}
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, dst_instance_id);
 	while (NULL != pinstance && 0 != pinstance->parent_id) {
 		if (pinstance->parent_id == src_instance_id) {
@@ -3184,12 +3108,8 @@ BOOL exmdb_server_empty_message_instance_rcpts(
 	INSTANCE_NODE *pinstance;
 	MESSAGE_CONTENT *pmsgctnt;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3208,12 +3128,8 @@ BOOL exmdb_server_get_message_instance_rcpts_num(
 	INSTANCE_NODE *pinstance;
 	MESSAGE_CONTENT *pmsgctnt;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3233,12 +3149,8 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 	PROPTAG_ARRAY *pproptags1;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3283,12 +3195,8 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3352,12 +3260,8 @@ BOOL exmdb_server_update_message_instance_rcpts(
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3423,12 +3327,8 @@ BOOL exmdb_server_copy_instance_rcpts(
 	INSTANCE_NODE *pinstance_dst;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance_src = instance_get_instance(pdb, src_instance_id);
 	if (NULL == pinstance_src ||
 		INSTANCE_TYPE_MESSAGE != pinstance_src->type) {
@@ -3471,12 +3371,8 @@ BOOL exmdb_server_empty_message_instance_attachments(
 	INSTANCE_NODE *pinstance;
 	MESSAGE_CONTENT *pmsgctnt;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3495,12 +3391,8 @@ BOOL exmdb_server_get_message_instance_attachments_num(
 	INSTANCE_NODE *pinstance;
 	MESSAGE_CONTENT *pmsgctnt;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3521,12 +3413,8 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 	ATTACHMENT_LIST *pattachments;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3572,12 +3460,8 @@ BOOL exmdb_server_copy_instance_attachments(
 	ATTACHMENT_LIST *pattachments;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance_src = instance_get_instance(pdb, src_instance_id);
 	if (NULL == pinstance_src ||
 		INSTANCE_TYPE_MESSAGE != pinstance_src->type) {
@@ -3626,12 +3510,8 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 	ATTACHMENT_LIST *pattachments;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
@@ -3713,12 +3593,8 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pinstance = instance_get_instance(pdb, instance_id);
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;

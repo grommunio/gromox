@@ -271,12 +271,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (NULL != prestriction) {
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -857,12 +853,8 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (TRUE == exmdb_server_check_private()) {
 		sprintf(sql_string, "SELECT folder_id, "
 			"change_number FROM folders WHERE parent_id=?");

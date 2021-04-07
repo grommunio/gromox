@@ -43,12 +43,8 @@ BOOL exmdb_server_get_all_named_propids(
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sprintf(sql_string, "SELECT "
 			"count(*) FROM named_properties");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -85,12 +81,8 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 	PROPID_ARRAY *ppropids)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (FALSE == common_util_get_named_propids(
 		pdb->psqlite, b_create, ppropnames, ppropids)) {
@@ -107,12 +99,8 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == common_util_get_named_propnames(
 		pdb->psqlite, ppropids, ppropnames)) {
 		return FALSE;
@@ -128,12 +116,8 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 		return FALSE;
 	}
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == common_util_get_mapping_guid(
 		pdb->psqlite, replid, pb_found, pguid)) {
 		return FALSE;
@@ -153,12 +137,8 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 		return FALSE;
 	}
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	guid_to_string(&guid, guid_string, 64);
 	sprintf(sql_string, "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
@@ -179,12 +159,8 @@ BOOL exmdb_server_get_store_all_proptags(
 	const char *dir, PROPTAG_ARRAY *pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == common_util_get_proptags(
 		STORE_PROPERTIES_TABLE, 0,
 		pdb->psqlite, pproptags)) {
@@ -198,12 +174,8 @@ BOOL exmdb_server_get_store_properties(const char *dir,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == common_util_get_properties(
 		STORE_PROPERTIES_TABLE, 0, cpid, pdb->psqlite,
 		pproptags, ppropvals)) {
@@ -217,12 +189,8 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 	PROBLEM_ARRAY *pproblems)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (FALSE == common_util_set_properties(
 		STORE_PROPERTIES_TABLE, 0, cpid, pdb->psqlite,
@@ -238,12 +206,8 @@ BOOL exmdb_server_remove_store_properties(
 	const char *dir, const PROPTAG_ARRAY *pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (FALSE == common_util_remove_properties(
 		STORE_PROPERTIES_TABLE, 0, pdb->psqlite, pproptags)) {
@@ -265,12 +229,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		return FALSE;
 	}
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	*ppermission = 0;
 	sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
@@ -315,12 +275,8 @@ BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 {
 	uint64_t change_num;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
 		return FALSE;
 	}
@@ -339,12 +295,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	char sql_string[128];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sprintf(sql_string, "SELECT range_begin, "
 				"range_end, is_system FROM allocated_eids"
 				" WHERE allocate_time>=%lu",
@@ -411,12 +363,8 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pnode = double_list_get_tail(&pdb->nsub_list);
 	uint32_t last_id = pnode == nullptr ? 0 :
 	                   static_cast<NSUB_NODE *>(pnode->pdata)->sub_id;
@@ -468,12 +416,8 @@ BOOL exmdb_server_unsubscribe_notification(
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
 		pnsub = (NSUB_NODE*)pnode->pdata;
@@ -493,12 +437,8 @@ BOOL exmdb_server_transport_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	db_engine_transport_new_mail(pdb, rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), message_flags, pstr_class);
 	return TRUE;
@@ -558,12 +498,8 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	PROPERTY_NAME propname_buff[3];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
 	/* PidLidEmail1EmailAddress */

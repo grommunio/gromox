@@ -200,12 +200,8 @@ BOOL exmdb_server_sum_hierarchy(const char *dir,
 {
 	uint64_t fid_val;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	*pcount = table_sum_hierarchy(pdb->psqlite,
 					fid_val, username, b_depth);
@@ -225,12 +221,8 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	const GUID *phandle_guid;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	}
@@ -336,12 +328,8 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (TRUE == exmdb_server_check_private()) {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
@@ -1309,12 +1297,8 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 {
 	uint64_t fid_val;
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	*ptable_id = 0;
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (FALSE == table_load_content_table(pdb, cpid,
@@ -1334,12 +1318,8 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (TABLE_TYPE_CONTENT == ((TABLE_NODE*)pnode->pdata)->type
@@ -1439,12 +1419,8 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	const char *remote_id;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
@@ -1702,12 +1678,8 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	const char *remote_id;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
@@ -1799,12 +1771,8 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -1838,12 +1806,8 @@ BOOL exmdb_server_sum_table(const char *dir,
 	uint32_t table_id, uint32_t *prows)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	if (FALSE == table_sum_table_count(pdb, table_id, prows)) {
 		return FALSE;
 	}
@@ -2034,12 +1998,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	pset->count = 0;
 	pset->pparray = NULL;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -2658,12 +2618,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	HIERARCHY_ROW_PARAM hierarchy_param;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -2941,12 +2897,8 @@ BOOL exmdb_server_locate_table(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -3022,12 +2974,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -3211,12 +3159,8 @@ BOOL exmdb_server_mark_table(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	*pinst_id = 0;
 	*pinst_num = 0;
 	*prow_type = 0;
@@ -3290,12 +3234,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	uint32_t tmp_proptags[0x1000];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -3570,12 +3510,8 @@ BOOL exmdb_server_expand_table(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -3707,12 +3643,8 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -3821,12 +3753,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
@@ -4217,12 +4145,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		return TRUE;
 	}
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {

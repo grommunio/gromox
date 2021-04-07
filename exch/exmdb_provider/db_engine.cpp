@@ -394,12 +394,8 @@ static BOOL db_engine_search_folder(const char *dir,
 	EID_ARRAY *pmessage_ids;
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sprintf(sql_string, "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU(scope_fid));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -444,11 +440,7 @@ static BOOL db_engine_search_folder(const char *dir,
 			exmdb_server_free_environment();
 			sleep(1);
 			pdb = db_engine_get_db(dir);
-			if (NULL == pdb) {
-				eid_array_free(pmessage_ids);
-				return FALSE;
-			}
-			if (NULL == pdb->psqlite) {
+			if (pdb == nullptr || pdb->psqlite == nullptr) {
 				eid_array_free(pmessage_ids);
 				return FALSE;
 			}
@@ -480,12 +472,8 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	char sql_string[128];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
+	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	}
-	if (NULL == pdb->psqlite) {
-		return FALSE;
-	}
 	sprintf(sql_string, "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU(folder_id));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
