@@ -607,12 +607,8 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	if (pstmt2 == nullptr) {
 		return FALSE;
 	}
-	if (FALSE == table_check_address_in_contact_folder(
-		pstmt1, pstmt2, PRIVATE_FID_CONTACTS, paddress,
-		pb_found)) {
-		return FALSE;
-	}
-	return TRUE;
+	return table_check_address_in_contact_folder(pstmt1, pstmt2,
+	       PRIVATE_FID_CONTACTS, paddress, pb_found);
 }
 
 BOOL exmdb_server_unload_store(const char *dir)

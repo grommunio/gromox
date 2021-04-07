@@ -547,11 +547,7 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pb_result = FALSE;
-		return TRUE;
-	}
-	*pb_result = TRUE;
+	*pb_result = sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 	return TRUE;
 }
 
@@ -770,17 +766,14 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 
 static uint32_t common_util_get_store_state(sqlite3 *psqlite)
 {
-	uint32_t tmp_state;
 	char sql_string[128];
 	
 	sprintf(sql_string, "SELECT config_value "
 				"FROM configurations WHERE config_id=%d",
 				CONFIG_ID_SEARCH_STATE);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return 0;
-	tmp_state = sqlite3_column_int64(pstmt, 0);
-	return tmp_state;
+	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       sqlite3_column_int64(pstmt, 0);
 }
 
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
@@ -836,12 +829,7 @@ static BOOL common_util_check_subfolders(
 			LLU(folder_id));
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (SQLITE_ROW == sqlite3_step(pstmt)) {
-		return TRUE;
-	}
-	return FALSE;
+	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 }
 
 static char* common_util_calculate_folder_path(
@@ -890,7 +878,6 @@ static char* common_util_calculate_folder_path(
 
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 {
-	uint32_t count;
 	char sql_string[64];
 	
 	if (0 == g_max_msg) {
@@ -899,13 +886,8 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 	sprintf(sql_string, "SELECT "
 		"count(message_id) FROM messages");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return FALSE;
-	count = sqlite3_column_int64(pstmt, 0);
-	if (count >= g_max_msg) {
-		return TRUE;
-	}
-	return FALSE;
+	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) >= g_max_msg ? TRUE : false;
 }
 
 BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite)
@@ -940,7 +922,6 @@ BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite)
 static uint32_t common_util_get_store_message_count(
 	sqlite3 *psqlite, BOOL b_associated)
 {
-	uint32_t count;
 	char sql_string[64];
 	
 	if (FALSE == b_associated) {
@@ -951,31 +932,25 @@ static uint32_t common_util_get_store_message_count(
 				" FROM messages WHERE is_associated=1");
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return 0;
-	count = sqlite3_column_int64(pstmt, 0);
-	return count;
+	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       sqlite3_column_int64(pstmt, 0);
 }
 
 static uint32_t common_util_get_store_article_number(sqlite3 *psqlite)
 {
-	uint32_t cur_art;
 	char sql_string[128];
 	
 	sprintf(sql_string, "SELECT config_value "
 				"FROM configurations WHERE config_id=%u",
 				CONFIG_ID_LAST_ARTICLE_NUMBER);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return 0;
-	cur_art = sqlite3_column_int64(pstmt, 0);
-	return cur_art;
+	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       sqlite3_column_int64(pstmt, 0);
 }
 
 static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 	uint64_t folder_id, BOOL b_associated)
 {
-	uint32_t count;
 	uint32_t folder_type;
 	char sql_string[256];
 	
@@ -1001,10 +976,8 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return 0;
-	count = sqlite3_column_int64(pstmt, 0);
-	return count;
+	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       sqlite3_column_int64(pstmt, 0);
 }
 
 uint32_t common_util_get_folder_unread_count(
@@ -1031,10 +1004,8 @@ uint32_t common_util_get_folder_unread_count(
 				"read_state=0 AND is_associated=0", LLU(folder_id));
 		}
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-			return 0;
-		count = sqlite3_column_int64(pstmt, 0);
-		return count;
+		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+		       sqlite3_column_int64(pstmt, 0);
 	}
 	username = exmdb_server_get_public_username();
 	if (NULL == username) {
@@ -1057,18 +1028,14 @@ uint32_t common_util_get_folder_unread_count(
 	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return 0;
-	}
-	count -= sqlite3_column_int64(pstmt, 0);
-	return count;
+	return sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       count - sqlite3_column_int64(pstmt, 0);
 }
 
 static uint64_t common_util_get_folder_message_size(
 	sqlite3 *psqlite, uint64_t folder_id, BOOL b_normal,
 	BOOL b_associated)
 {
-	uint64_t size;
 	uint32_t folder_type;
 	char sql_string[256];
 	
@@ -1117,10 +1084,8 @@ static uint64_t common_util_get_folder_message_size(
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return 0;
-	size = sqlite3_column_int64(pstmt, 0);
-	return size;
+	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       gx_sql_col_uint64(pstmt, 0);
 }
 
 BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
@@ -1158,13 +1123,8 @@ static BOOL common_util_check_folder_rules(
 	sprintf(sql_string, "SELECT count(*) FROM "
 	          "rules WHERE folder_id=%llu", LLU(folder_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (SQLITE_ROW == sqlite3_step(pstmt) &&
-		sqlite3_column_int64(pstmt, 0) > 0) {
-		return TRUE;
-	}
-	return FALSE;
+	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) > 0 ? TRUE : false;
 }
 
 static uint32_t common_util_get_folder_flags(
@@ -1202,16 +1162,13 @@ static uint32_t common_util_get_folder_flags(
 static uint64_t common_util_get_message_size(
 	sqlite3 *psqlite, uint64_t message_id)
 {
-	uint64_t size;
 	char sql_string[128];
 	
 	sprintf(sql_string, "SELECT message_size FROM "
 	          "messages WHERE message_id=%llu", LLU(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return 0;
-	size = sqlite3_column_int64(pstmt, 0);
-	return size;
+	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       sqlite3_column_int64(pstmt, 0);
 }
 
 uint64_t common_util_get_folder_parent_fid(
@@ -1226,10 +1183,7 @@ uint64_t common_util_get_folder_parent_fid(
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
 	parent_fid = sqlite3_column_int64(pstmt, 0);
-	if (0 == parent_fid) {
-		parent_fid = folder_id;
-	}
-	return parent_fid;
+	return parent_fid != 0 ? parent_fid : folder_id;
 }
 
 static uint64_t common_util_get_folder_changenum(
@@ -1404,13 +1358,8 @@ BOOL common_util_check_message_associated(
 	sprintf(sql_string, "SELECT is_associated FROM "
 	          "messages WHERE message_id=%llu", LLU(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return FALSE;
-	if (0 == sqlite3_column_int64(pstmt, 0)) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
 }
 
 static BOOL common_util_check_message_named_properties(
@@ -1440,13 +1389,8 @@ static BOOL common_util_check_message_has_attachments(
 	sprintf(sql_string, "SELECT count(*) FROM "
 	          "attachments WHERE message_id=%llu", LLU(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return FALSE;
-	if (0 == sqlite3_column_int64(pstmt, 0)) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
 }
 
 static BOOL common_util_check_message_read(
@@ -1467,22 +1411,13 @@ static BOOL common_util_check_message_read(
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			return TRUE;
-		} else {
-			return FALSE;
-		}
+		return sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 	}
 	sprintf(sql_string, "SELECT read_state FROM "
 	          "messages WHERE message_id=%llu", LLU(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return FALSE;
-	if (0 == sqlite3_column_int64(pstmt, 0)) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
+	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
 }
 
 static uint64_t common_util_get_message_changenum(
@@ -3059,11 +2994,7 @@ static BOOL common_util_update_message_cid(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, cid);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	return TRUE;
-	
+	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
 static BOOL common_util_set_message_subject(
@@ -3279,10 +3210,7 @@ static BOOL common_util_update_attachment_cid(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, cid);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	return TRUE;
+	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
 static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
@@ -4909,9 +4837,7 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 			}
 		}
 	}
-	if (pres->rt == RES_COUNT && count == pres->count->count)
-		return TRUE;
-	return FALSE;
+	return pres->rt == RES_COUNT && count == pres->count->count ? TRUE : false;
 }
 
 static BOOL common_util_evaluate_subobject_restriction(
@@ -5320,11 +5246,7 @@ BOOL common_util_check_search_result(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pb_exist = FALSE;
-		return TRUE;
-	}
-	*pb_exist = TRUE;
+	*pb_exist = sqlite3_step(pstmt) == SQLITE_ROW;
 	return TRUE;
 }
 
@@ -5343,10 +5265,7 @@ BOOL common_util_get_mid_string(sqlite3 *psqlite,
 		return TRUE;
 	}
 	*ppmid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
-	if (NULL == *ppmid_string) {
-		return FALSE;
-	}
-	return TRUE;
+	return *ppmid_string != nullptr ? TRUE : false;
 }
 
 BOOL common_util_set_mid_string(sqlite3 *psqlite,
@@ -5360,10 +5279,7 @@ BOOL common_util_set_mid_string(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_text(pstmt, 1, pmid_string, -1, SQLITE_STATIC);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	return TRUE;
+	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
 BOOL common_util_check_message_owner(sqlite3 *psqlite,
@@ -5603,7 +5519,6 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 				return FALSE;
 			}
 			if (FALSE == b_result) {
-				*pb_result = FALSE;
 				*pb_result = FALSE;
 				return TRUE;
 			}

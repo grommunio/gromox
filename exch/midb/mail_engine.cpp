@@ -1852,11 +1852,8 @@ static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
 	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, name, -1, SQLITE_STATIC);
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return 0;
-	}
-	folder_id = sqlite3_column_int64(pstmt, 0);
-	return folder_id;
+	return sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+	       sqlite3_column_int64(pstmt, 0);
 }
 
 static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,

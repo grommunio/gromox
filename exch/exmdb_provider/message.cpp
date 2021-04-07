@@ -1030,17 +1030,9 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pb_del = TRUE;
-		return TRUE;
-	}
-	if (FALSE == exmdb_server_check_private()) {
-		if (0 != sqlite3_column_int64(pstmt, 0)) {
-			*pb_del = TRUE;
-			return TRUE;
-		}
-	}
-	*pb_del = FALSE;
+	*pb_del = sqlite3_step(pstmt) != SQLITE_ROW ||
+	          (!exmdb_server_check_private() &&
+	          sqlite3_column_int64(pstmt, 0) != 0) ? TRUE : false;
 	return TRUE;
 }
 
@@ -1361,10 +1353,7 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 			return FALSE;
 		}
 		sqlite3_bind_null(pstmt, 1);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
-		return TRUE;
+		return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 	}
 	sprintf(sql_string, "INSERT INTO"
 		" message_changes VALUES (?, ?, ?, ?)");
@@ -1390,10 +1379,7 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 	}
 	sqlite3_bind_blob(pstmt, 4, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	return TRUE;
+	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
 /* if count of indices and ungroup_proptags are both 0 means full change */
