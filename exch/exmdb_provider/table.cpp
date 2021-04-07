@@ -68,11 +68,8 @@ static BOOL table_sum_table_count(db_item_ptr &pdb,
 	sprintf(sql_string, "SELECT "
 			"count(idx) FROM t%u", table_id);
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-	if (pstmt == nullptr)
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	*prows = sqlite3_column_int64(pstmt, 0);
 	return TRUE;
 }
@@ -89,11 +86,8 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 			sprintf(sql_string, "SELECT count(*) FROM"
 			          " folders WHERE parent_id=%llu", LLU(folder_id));
 			auto pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr)
+			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				return 0;
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
-				return 0;
-			}
 			count = sqlite3_column_int64(pstmt, 0);
 		} else {
 			count = 0;
@@ -360,12 +354,8 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 			LLU(fid_val), !!b_fai, !!b_deleted);
 	}
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	*pcount = sqlite3_column_int64(pstmt, 0);
 	return TRUE;
 }

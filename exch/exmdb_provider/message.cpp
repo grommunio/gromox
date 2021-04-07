@@ -797,11 +797,8 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 	sprintf(sql_string, "SELECT count(*) FROM"
 	          " recipients WHERE message_id=%llu", LLU(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	rcpt_num = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pset->count = 0;
@@ -929,12 +926,8 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	sprintf(sql_string, "SELECT count(*) FROM "
 	          "attachments WHERE message_id=%llu", LLU(mid_val));
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	(*ppbrief)->children.pattachments->count = 0;
@@ -1786,11 +1779,8 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pptimer_id = NULL;
-		return TRUE;
-	}
-	if (SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
+	if (sqlite3_step(pstmt) != SQLITE_ROW ||
+	    sqlite3_column_type(pstmt, 0) == SQLITE_NULL) {
 		*pptimer_id = NULL;
 		return TRUE;
 	}
@@ -1871,11 +1861,8 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	sprintf(sql_string, "SELECT count(*) FROM "
 	          "attachments WHERE message_id=%llu", LLU(message_id));
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	(*ppmsgctnt)->children.pattachments->count = 0;
@@ -2461,11 +2448,8 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		sprintf(sql_string, "SELECT count(*) FROM "
 		          "attachments WHERE attachment_id=%llu", LLU(parent_id));
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr)
+		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
 		if (1 != sqlite3_column_int64(pstmt, 0)) {
 			*pmessage_id = 0;
 			return TRUE;

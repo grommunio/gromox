@@ -538,12 +538,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	sprintf(sql_string, "SELECT count(*) FROM changes");
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pchg_mids->count = 0;
@@ -649,12 +645,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	pdb.reset();
 	sprintf(sql_string, "SELECT count(*) FROM existence");
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pgiven_mids->count = 0;
@@ -682,12 +674,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (NULL != pread) {
 		sprintf(sql_string, "SELECT count(*) FROM reads");
 		pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
 		count = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		pread_mids->count = 0;
@@ -922,12 +910,8 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "SELECT count(*) FROM changes");
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	pfldchgs->count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	if (0 != pfldchgs->count) {
@@ -989,12 +973,8 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	pdb.reset();
 	sprintf(sql_string, "SELECT count(*) FROM existence");
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pgiven_fids->count = 0;

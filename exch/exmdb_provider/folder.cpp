@@ -119,15 +119,9 @@ BOOL exmdb_server_set_folder_by_class(const char *dir,
 	sprintf(sql_string, "SELECT "
 			"count(*) FROM receive_table");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ||
+	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_RECIEVE_FOLDERS)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	if (sqlite3_column_int64(pstmt, 0) > MAXIMUM_RECIEVE_FOLDERS) {
-		return FALSE;
-	}
 	pstmt.finalize();
 	sprintf(sql_string, "REPLACE INTO receive_table"
 			" VALUES (?, ?, %lu)", rop_util_current_nttime());
@@ -162,12 +156,8 @@ BOOL exmdb_server_get_folder_class_table(
 	sprintf(sql_string, "SELECT "
 			"count(*) FROM receive_table");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	total_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	if (0 == total_count) {
@@ -645,12 +635,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		sprintf(sql_string, "SELECT "
 			"max(range_end) FROM allocated_eids");
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
 		max_eid = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		max_eid ++;
@@ -1332,12 +1318,8 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		sprintf(sql_string, "SELECT count(*) FROM "
 		          "folders WHERE parent_id=%llu", LLU(fid_val));
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
 			*pb_result = FALSE;
 			return TRUE;
@@ -1352,12 +1334,8 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 							" is_deleted=0", LLU(fid_val));
 		}
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
 			*pb_result = FALSE;
 			return TRUE;
@@ -1575,11 +1553,8 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	sprintf(sql_string, "SELECT "
 		"max(range_end) FROM allocated_eids");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	last_eid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	sprintf(sql_string, "INSERT INTO allocated_eids"
@@ -2544,12 +2519,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	sprintf(sql_string, "SELECT search_flags FROM"
 	          " folders WHERE folder_id=%llu", LLU(fid_val));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	original_flags = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -2896,12 +2867,9 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				goto PERMISSION_FAILURE;
-			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+			if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 				continue;
-			}
-			if (gx_sql_col_uint64(pstmt1, 0) != fid_val) {
-				continue;
-			}
 			pstmt1.finalize();
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);
@@ -2963,12 +2931,9 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
 					goto PERMISSION_FAILURE;
-				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+				if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+				    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 					continue;
-				}
-				if (gx_sql_col_uint64(pstmt1, 0) != fid_val) {
-					continue;
-				}
 				pstmt1.finalize();
 				sprintf(sql_string, "DELETE FROM permissions"
 				        " WHERE member_id=%llu", LLU(member_id));
@@ -3045,12 +3010,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	sprintf(sql_string, "SELECT count(*) "
 	          "FROM rules WHERE folder_id=%llu", LLU(fid_val));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	size_t rule_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	*pb_exceed = FALSE;
@@ -3169,12 +3130,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				goto RULE_FAILURE;
-			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+			if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 				continue;
-			}
-			if (gx_sql_col_uint64(pstmt1, 0) != fid_val) {
-				continue;
-			}
 			pstmt1.finalize();
 			pprovider = static_cast<char *>(common_util_get_propvals(
 			            &prow[i].propvals, PROP_TAG_RULEPROVIDER));
@@ -3307,12 +3265,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				goto RULE_FAILURE;
-			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+			if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 				continue;
-			}
-			if (gx_sql_col_uint64(pstmt1, 0) != fid_val) {
-				continue;
-			}
 			pstmt1.finalize();
 			sprintf(sql_string, "DELETE FROM rules"
 			        " WHERE rule_id=%llu", LLU(rule_id));

@@ -103,11 +103,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
 				PROP_TAG_BODY, LLU(message_id), PROP_TAG_BODY_STRING8);
 			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr) {
-				message_content_free(pmsgctnt);
-				return FALSE;
-			}
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -128,11 +124,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				"message_properties WHERE message_id=%llu AND "
 				"proptag=%u", LLU(message_id), UI(proptags.pproptag[i]));
 			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr) {
-				message_content_free(pmsgctnt);
-				return FALSE;
-			}
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -154,11 +146,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				PROP_TAG_TRANSPORTMESSAGEHEADERS, LLU(message_id),
 				PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr) {
-				message_content_free(pmsgctnt);
-				return FALSE;
-			}
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -300,11 +288,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
 					static_cast<unsigned int>(proptags.pproptag[i]));
 				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
-				if (pstmt2 == nullptr) {
-					message_content_free(pmsgctnt);
-					return FALSE;
-				}
-				if (SQLITE_ROW != sqlite3_step(pstmt2)) {
+				if (pstmt2 == nullptr || sqlite3_step(pstmt2) != SQLITE_ROW) {
 					message_content_free(pmsgctnt);
 					return FALSE;
 				}
