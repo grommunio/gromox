@@ -4,12 +4,24 @@
 #include <sqlite3.h>
 
 struct xstmt {
-	void finalize() {
+	xstmt() = default;
+	xstmt(xstmt &&o) : m_ptr(o.m_ptr) { o.m_ptr = nullptr; }
+	~xstmt() {
+		if (m_ptr != nullptr)
+			sqlite3_finalize(m_ptr);
+	}
+	void finalize() { *this = nullptr; }
+	void operator=(std::nullptr_t) {
 		if (m_ptr != nullptr)
 			sqlite3_finalize(m_ptr);
 		m_ptr = nullptr;
 	}
-	void operator=(sqlite3_stmt *s) { m_ptr = s; }
+	void operator=(xstmt &&o) {
+		if (m_ptr != nullptr)
+			sqlite3_finalize(m_ptr);
+		m_ptr = o.m_ptr;
+		o.m_ptr = nullptr;
+	}
 	operator sqlite3_stmt *() { return m_ptr; }
 	sqlite3_stmt *m_ptr = nullptr;
 };
