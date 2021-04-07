@@ -3151,7 +3151,6 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	}
 	size_t rule_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	pstmt = NULL;
 	*pb_exceed = FALSE;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	for (i=0; i<count; i++) {

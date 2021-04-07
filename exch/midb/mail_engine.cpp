@@ -2609,7 +2609,6 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	pstmt.finalize();
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	pstmt = NULL;
 	sqlite3_exec(pidb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sprintf(sql_string, "SELECT folder_id, "
 				"parent_fid, commit_max FROM folders");
@@ -2720,13 +2719,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		}
 	}
 	pstmt.finalize();
-	pstmt = NULL;
 	pstmt1.finalize();
-	pstmt1 = NULL;
 	pstmt2.finalize();
-	pstmt2 = NULL;
 	pstmt3.finalize();
-	pstmt3 = NULL;
 	sprintf(sql_string, "SELECT folder_id FROM folders");
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
@@ -2793,9 +2788,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		}
 	}
 	pstmt.finalize();
-	pstmt = NULL;
 	pstmt1.finalize();
-	pstmt1 = NULL;
 	if (0 != double_list_get_nodes_num(&temp_list)) {
 		sprintf(sql_string, "DELETE"
 			" FROM folders WHERE folder_id=?");

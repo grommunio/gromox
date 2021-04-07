@@ -1253,9 +1253,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	}
 	pstmt.finalize();
-	pstmt = NULL;
 	pstmt1.finalize();
-	pstmt1 = NULL;
 	if (NULL != psorts) {
 		sql_len = sprintf(sql_string, "INSERT INTO t%u "
 			"(inst_id, row_type, row_stat, parent_id, depth, "
@@ -1277,9 +1275,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			return false;
 		}
 		pstmt.finalize();
-		pstmt = NULL;
 		pstmt1.finalize();
-		pstmt1 = NULL;
 		sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
 		psqlite = NULL;
@@ -1321,9 +1317,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				i ++;
 			}
 			pstmt.finalize();
-			pstmt = NULL;
 			pstmt1.finalize();
-			pstmt1 = NULL;
 		} else {
 			sprintf(sql_string, "UPDATE t%u SET idx=row_id", table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,

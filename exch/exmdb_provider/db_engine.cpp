@@ -1569,12 +1569,10 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				continue;
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
 				pstmt.finalize();
-				pstmt = NULL;
 				continue;
 			}
 			idx = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
-			pstmt = NULL;
 			if (0 == idx) {
 				row_id = 0;
 				inst_id = 0;
@@ -1590,13 +1588,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					continue;
 				if (SQLITE_ROW != sqlite3_step(pstmt)) {
 					pstmt.finalize();
-					pstmt = NULL;
 					continue;
 				}
 				row_id = sqlite3_column_int64(pstmt, 0);
 				inst_id = sqlite3_column_int64(pstmt, 1);
 				pstmt.finalize();
-				pstmt = NULL;
 				sprintf(sql_string, "INSERT INTO t%u (inst_id, prev_id, "
 					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
 					" %u, 0, 0, %u)", ptable->table_id, LLU(message_id), LLU(row_id),
@@ -1690,7 +1686,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 			}
 			pstmt.finalize();
-			pstmt = NULL;
 			if (0 == idx) {
 				sprintf(sql_string, "INSERT INTO t%u (inst_id, prev_id,"
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
@@ -1870,7 +1865,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr) {
 				pstmt.finalize();
-				pstmt = NULL;
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
@@ -1880,9 +1874,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt2 == nullptr) {
 				pstmt.finalize();
-				pstmt = NULL;
 				pstmt1.finalize();
-				pstmt1 = NULL;
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
@@ -1892,11 +1884,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			auto pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt3 == nullptr) {
 				pstmt.finalize();
-				pstmt = NULL;
 				pstmt1.finalize();
-				pstmt1 = NULL;
 				pstmt2.finalize();
-				pstmt2 = NULL;
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
@@ -1907,13 +1896,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				pstmt4 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 				if (pstmt4 == nullptr) {
 					pstmt.finalize();
-					pstmt = NULL;
 					pstmt1.finalize();
-					pstmt1 = NULL;
 					pstmt2.finalize();
-					pstmt2 = NULL;
 					pstmt3.finalize();
-					pstmt3 = NULL;
 					sqlite3_exec(pdb->tables.psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
 					continue;
@@ -2258,14 +2243,10 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 			}
 			pstmt.finalize();
-			pstmt = NULL;
 			pstmt1.finalize();
-			pstmt1 = NULL;
 			pstmt2.finalize();
-			pstmt2 = NULL;
 			if (NULL != pstmt4) {
 				pstmt4.finalize();
-				pstmt4 = NULL;
 			}
 			sprintf(sql_string, "UPDATE t%u SET idx=NULL", ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
@@ -2301,14 +2282,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 			}
 			pstmt.finalize();
-			pstmt = NULL;
 			pstmt1.finalize();
-			pstmt1 = NULL;
 			sqlite3_exec(pdb->tables.psqlite,
 				"COMMIT TRANSACTION", NULL, NULL, NULL);
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				pstmt3.finalize();
-				pstmt3 = NULL;
 				continue;
 			}
 			datagram.id_array.pl = &ptable->table_id;
@@ -2329,7 +2307,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 				if (pstmt == nullptr) {
 					pstmt3.finalize();
-					pstmt3 = NULL;
 					continue;
 				}
 				while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
@@ -2422,10 +2399,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					sqlite3_reset(pstmt3);
 				}
 				pstmt.finalize();
-				pstmt = NULL;
 			}
 			pstmt3.finalize();
-			pstmt3 = NULL;
 		}
 	}
 }
