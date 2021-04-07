@@ -1289,9 +1289,7 @@ BOOL exmdb_server::set_message_timer(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" timer_id=%u WHERE message_id=%llu",
 		XUI{timer_id}, LLU{rop_util_get_gc_value(message_id)});
-	if (pdb->exec(sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /* private only */

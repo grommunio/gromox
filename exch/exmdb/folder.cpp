@@ -1103,11 +1103,8 @@ BOOL exmdb_server::is_descendant_folder(const char *dir,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
-	if (!cu_is_descendant_folder(pdb->psqlite,
-	    rop_util_get_gc_value(child_fid), rop_util_get_gc_value(parent_fid),
-	    b_status))
-		return FALSE;
-	return TRUE;
+	return cu_is_descendant_folder(pdb->psqlite, rop_util_get_gc_value(child_fid),
+	       rop_util_get_gc_value(parent_fid), b_status) ? TRUE : false;
 }
 
 /**
@@ -2026,9 +2023,7 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 	/* Only one SQL operation, no transaction needed. */
 	snprintf(sql_string, 1024, "DELETE FROM permissions WHERE"
 	         " folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	if (pdb->exec(sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 static uint32_t permission_adjust(uint32_t v, bool adjust_fb = false)
@@ -2243,9 +2238,7 @@ BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 	/* Only one SQL operation, no transaction needed. */
 	snprintf(sql_string, 1024, "DELETE FROM rules WHERE "
 	         "folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	if (pdb->exec(sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /* after updating the database, update the table too! */

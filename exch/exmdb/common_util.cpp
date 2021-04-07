@@ -291,9 +291,7 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	snprintf(sql_string, std::size(sql_string), "UPDATE configurations SET"
 		" config_value=%llu WHERE config_id=%u",
 		LLU{cur_eid}, CONFIG_ID_CURRENT_EID);
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return gx_sql_exec(psqlite, sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /**
@@ -331,9 +329,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET cur_eid=%llu,"
 		" max_eid=%llu WHERE folder_id=%llu", LLU{cur_eid},
 		LLU{max_eid}, LLU{folder_id});
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return gx_sql_exec(psqlite, sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /**
