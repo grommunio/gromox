@@ -4,7 +4,11 @@
 #include <sqlite3.h>
 
 struct xstmt {
-	void finalize() { sqlite3_finalize(m_ptr); m_ptr = nullptr; }
+	void finalize() {
+		if (m_ptr != nullptr)
+			sqlite3_finalize(m_ptr);
+		m_ptr = nullptr;
+	}
 	void operator=(sqlite3_stmt *s) { m_ptr = s; }
 	operator sqlite3_stmt *() { return m_ptr; }
 	sqlite3_stmt *m_ptr = nullptr;

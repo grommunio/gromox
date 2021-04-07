@@ -810,10 +810,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	auto cl_0 = make_scope_exit([&]() {
 		if (all_ok)
 			return;
-		if (pstmt != nullptr)
-			pstmt.finalize();
-		if (pstmt1 != nullptr)
-			pstmt1.finalize();
+		pstmt.finalize();
+		pstmt1.finalize();
 		if (psqlite != nullptr) {
 			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			sqlite3_close(psqlite);
@@ -2243,12 +2241,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == pset->pparray[pset->count]) {
 				pstmt.finalize();
-				if (NULL != pstmt1) {
-					pstmt1.finalize();
-				}
-				if (NULL != pstmt2) {
-					pstmt2.finalize();
-				}
+				pstmt1.finalize();
+				pstmt2.finalize();
 				common_util_end_message_optimize();
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
@@ -2257,12 +2251,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				pstmt.finalize();
-				if (NULL != pstmt1) {
-					pstmt1.finalize();
-				}
-				if (NULL != pstmt2) {
-					pstmt2.finalize();
-				}
+				pstmt1.finalize();
+				pstmt2.finalize();
 				common_util_end_message_optimize();
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
@@ -2280,12 +2270,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 						MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
 						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 						pstmt.finalize();
-						if (NULL != pstmt1) {
-							pstmt1.finalize();
-						}
-						if (NULL != pstmt2) {
-							pstmt2.finalize();
-						}
+						pstmt1.finalize();
+						pstmt2.finalize();
 						common_util_end_message_optimize();
 						sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 						return FALSE;
@@ -2316,12 +2302,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->count ++;
 		}
 		pstmt.finalize();
-		if (NULL != pstmt1) {
-			pstmt1.finalize();
-		}
-		if (NULL != pstmt2) {
-			pstmt2.finalize();
-		}
+		pstmt1.finalize();
+		pstmt2.finalize();
 		common_util_end_message_optimize();
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		break;
@@ -2890,12 +2872,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 				if (NULL == ppropvals->ppropval) {
 					pstmt.finalize();
-					if (NULL != pstmt1) {
-						pstmt1.finalize();
-					}
-					if (NULL != pstmt2) {
-						pstmt2.finalize();
-					}
+					pstmt1.finalize();
+					pstmt2.finalize();
 					common_util_end_message_optimize();
 					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 					return FALSE;
@@ -2912,12 +2890,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 							MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
 							pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 							pstmt.finalize();
-							if (NULL != pstmt1) {
-								pstmt1.finalize();
-							}
-							if (NULL != pstmt2) {
-								pstmt2.finalize();
-							}
+							pstmt1.finalize();
+							pstmt2.finalize();
 							common_util_end_message_optimize();
 							sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 							return FALSE;
@@ -2948,12 +2922,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			}
 		}
 		pstmt.finalize();
-		if (NULL != pstmt1) {
-			pstmt1.finalize();
-		}
-		if (NULL != pstmt2) {
-			pstmt2.finalize();
-		}
+		pstmt1.finalize();
+		pstmt2.finalize();
 		common_util_end_message_optimize();
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		*pposition = idx - 1;
@@ -3242,12 +3212,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (NULL == ppropvals->ppropval) {
 			pstmt.finalize();
-			if (NULL != pstmt1) {
-				pstmt1.finalize();
-			}
-			if (NULL != pstmt2) {
-				pstmt2.finalize();
-			}
+			pstmt1.finalize();
+			pstmt2.finalize();
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
@@ -3263,12 +3229,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 					MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
 					pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					pstmt.finalize();
-					if (NULL != pstmt1) {
-						pstmt1.finalize();
-					}
-					if (NULL != pstmt2) {
-						pstmt2.finalize();
-					}
+					pstmt1.finalize();
+					pstmt2.finalize();
 					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 					return FALSE;
 				}
@@ -3295,12 +3257,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		}
 		ppropvals->count = count;
 		pstmt.finalize();
-		if (NULL != pstmt1) {
-			pstmt1.finalize();
-		}
-		if (NULL != pstmt2) {
-			pstmt2.finalize();
-		}
+		pstmt1.finalize();
+		pstmt2.finalize();
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	} else {
 		ppropvals->count = 0;

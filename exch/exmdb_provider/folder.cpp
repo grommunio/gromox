@@ -3072,17 +3072,13 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			break;
 		}
 	}
-	if (NULL != pstmt) {
-		pstmt.finalize();
-	}
+	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	return TRUE;
 	
  PERMISSION_FAILURE:
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-	if (NULL != pstmt) {
-		pstmt.finalize();
-	}
+	pstmt.finalize();
 	return FALSE;
 }
 
@@ -3160,9 +3156,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				COMMON_UTIL_MAX_RULE_NUMBER)) {
 				*pb_exceed = TRUE;
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-				if (NULL != pstmt) {
-					pstmt.finalize();
-				}
+				pstmt.finalize();
 				return TRUE;
 			}
 			pname = static_cast<char *>(common_util_get_propvals(
@@ -3436,9 +3430,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	
  RULE_FAILURE:
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-	if (NULL != pstmt) {
-		pstmt.finalize();
-	}
+	pstmt.finalize();
 	return FALSE;
 }
 

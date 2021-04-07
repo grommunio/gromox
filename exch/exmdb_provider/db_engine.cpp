@@ -1505,8 +1505,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	auto cl_0 = make_scope_exit([&]() {
 		if (b_optimize)
 			common_util_end_message_optimize();
-		if (pstmt4 != nullptr)
-			pstmt4.finalize();
+		pstmt4.finalize();
 	});
 	BOOL b_fai = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
@@ -2245,9 +2244,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			pstmt.finalize();
 			pstmt1.finalize();
 			pstmt2.finalize();
-			if (NULL != pstmt4) {
-				pstmt4.finalize();
-			}
+			pstmt4.finalize();
 			sprintf(sql_string, "UPDATE t%u SET idx=NULL", ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
@@ -2732,9 +2729,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED;
 			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 			if (NULL == padded_row) {
-				if (NULL != pstmt) {
-					pstmt.finalize();
-				}
+				pstmt.finalize();
 				return;
 			}
 			datagram.db_notify.pdata = padded_row;
@@ -2869,9 +2864,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
-	if (NULL != pstmt) {
-		pstmt.finalize();
-	}
+	pstmt.finalize();
 }
 
 void db_engine_notify_folder_creation(db_item_ptr &pdb,

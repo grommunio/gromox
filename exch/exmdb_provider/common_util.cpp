@@ -1708,8 +1708,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 			}
 		}
 	}
-	if (own_stmt != nullptr)
-		own_stmt.finalize();
+	own_stmt.finalize();
 	*ppmessage_flags = cu_alloc<uint32_t>();
 	if (NULL == *ppmessage_flags) {
 		return FALSE;
@@ -1764,8 +1763,7 @@ static BOOL common_util_get_message_subject(
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		pnormalized_subject = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 		if (NULL == pnormalized_subject) {
-			if (own_stmt != nullptr)
-				own_stmt.finalize();
+			own_stmt.finalize();
 			return FALSE;
 		}
 	} else {
@@ -1785,8 +1783,7 @@ static BOOL common_util_get_message_subject(
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		psubject_prefix = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 		if (NULL == psubject_prefix) {
-			if (own_stmt != nullptr)
-				own_stmt.finalize();
+			own_stmt.finalize();
 			return FALSE;
 		}
 	} else {
@@ -1800,8 +1797,7 @@ static BOOL common_util_get_message_subject(
 				S2A(sqlite3_column_text(pstmt, 0)));
 		}
 	}
-	if (own_stmt != nullptr)
-		own_stmt.finalize();
+	own_stmt.finalize();
 	if (NULL == pnormalized_subject) {
 		pnormalized_subject = "";
 	}
@@ -2910,30 +2906,26 @@ BOOL common_util_get_properties(int table_type,
 			}
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			if (own_stmt != nullptr)
-				own_stmt.finalize();
+			own_stmt.finalize();
 			continue;
 		}
 		if (proptype == PT_UNSPECIFIED) {
 			ptyped = cu_alloc<TYPED_PROPVAL>();
 			if (NULL == ptyped) {
-				if (own_stmt != nullptr)
-					own_stmt.finalize();
+				own_stmt.finalize();
 				return FALSE;
 			}
 			ptyped->type = PROP_TYPE(sqlite3_column_int64(pstmt, 0));
 			ptyped->pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
 			if (NULL == ptyped->pvalue) {
-				if (own_stmt != nullptr)
-					own_stmt.finalize();
+				own_stmt.finalize();
 				return FALSE;
 			}
 			ppropvals->ppropval[ppropvals->count].proptag = 
 											pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue = ptyped;
 			ppropvals->count ++;
-			if (own_stmt != nullptr)
-				own_stmt.finalize();
+			own_stmt.finalize();
 			continue;
 		} else if (proptype == PT_STRING8) {
 			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
@@ -2997,8 +2989,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_guid(&ext_pull,
 					    static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3012,8 +3003,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_svreid(&ext_pull,
 					    static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3027,8 +3017,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_restriction(&ext_pull,
 					    static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3042,8 +3031,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_rule_actions(&ext_pull,
 					    static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3056,8 +3044,7 @@ BOOL common_util_get_properties(int table_type,
 					bv->cb = sqlite3_column_bytes(pstmt, 0);
 					bv->pv = common_util_alloc(bv->cb);
 					if (bv->pv == nullptr) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 					auto blob = sqlite3_column_blob(pstmt, 0);
@@ -3075,8 +3062,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_short_array(&ext_pull,
 					    static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3090,8 +3076,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_long_array(&ext_pull,
 					    static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3105,8 +3090,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_longlong_array(&ext_pull,
 					    static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3121,16 +3105,14 @@ BOOL common_util_get_properties(int table_type,
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_wstring_array(&ext_pull, sa) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 					if (proptype == PT_MV_STRING8) {
 						for (size_t j = 0; j < sa->count; ++j) {
 							pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
 							if (NULL == pstring) {
-								if (own_stmt != nullptr)
-									own_stmt.finalize();
+								own_stmt.finalize();
 								return FALSE;
 							}
 							sa->ppstr[j] = pstring;
@@ -3148,8 +3130,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_guid_array(&ext_pull,
 					    static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3163,8 +3144,7 @@ BOOL common_util_get_properties(int table_type,
 						common_util_alloc, 0);
 					if (ext_buffer_pull_binary_array(&ext_pull,
 					    static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
-						if (own_stmt != nullptr)
-							own_stmt.finalize();
+						own_stmt.finalize();
 						return FALSE;
 					}
 				}
@@ -3174,8 +3154,7 @@ BOOL common_util_get_properties(int table_type,
 				break;
 			}
 		}
-		if (own_stmt != nullptr)
-			own_stmt.finalize();
+		own_stmt.finalize();
 		if (NULL == pvalue) {
 			return FALSE;
 		}
