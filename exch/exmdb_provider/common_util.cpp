@@ -1886,14 +1886,336 @@ BOOL common_util_get_property(int table_type, uint64_t id,
 	return TRUE;
 }
 
+namespace {
+enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
+}
+
+static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
+{
+	pv.proptag = tag;
+	switch (tag) {
+	case PROP_TAG_STORERECORDKEY:
+		pv.pvalue = common_util_get_mailbox_guid(db);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PROP_TAG_STORESTATE:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_state(db);
+		return GP_ADV;
+	case PROP_TAG_CONTENTCOUNT:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_message_count(db, false);
+		return GP_ADV;
+	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_message_count(db, TRUE);
+		return GP_ADV;
+	case PROP_TAG_INTERNETARTICLENUMBER:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_article_number(db);
+		return GP_ADV;
+	}
+	return GP_UNHANDLED;
+}
+
+static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
+    sqlite3 *db, uint64_t id)
+{
+	pv.proptag = tag;
+	switch (tag) {
+	case PROP_TAG_ENTRYID:
+		pv.pvalue = common_util_to_folder_entryid(db, id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PROP_TAG_FOLDERID:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) =
+			(id & 0xFF00000000000000ULL) == 0 ?
+			rop_util_make_eid_ex(1, id) :
+			rop_util_make_eid_ex(id >> 48, id & 0x00FFFFFFFFFFFFFFULL);
+		return GP_ADV;
+	case PROP_TAG_PARENTFOLDERID: {
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		auto tmp_id = common_util_get_folder_parent_fid(db, id);
+		if (tmp_id == 0)
+			return GP_SKIP;
+		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, tmp_id);
+		return GP_ADV;
+	}
+	case PROP_TAG_PARENTENTRYID: {
+		auto tmp_id = common_util_get_folder_parent_fid(db, id);
+		if (tmp_id == 0)
+			return GP_SKIP;
+		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	}
+	case PROP_TAG_CHANGENUMBER:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_changenum(db, id);
+		return GP_ADV;
+	case PROP_TAG_FOLDERFLAGS:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_flags(db, id);
+		return GP_ADV;
+	case PROP_TAG_SUBFOLDERS:
+		pv.pvalue = cu_alloc<uint8_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_subfolders(db, id);
+		return GP_ADV;
+	case PROP_TAG_CONTENTCOUNT:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_count(db, id, false);
+		return GP_ADV;
+	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_count(db, id, TRUE);
+		return GP_ADV;
+	case PROP_TAG_FOLDERCHILDCOUNT:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_calculate_childcount(id, db);
+		return GP_ADV;
+	case PROP_TAG_CONTENTUNREADCOUNT:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_unread_count(db, id);
+		return GP_ADV;
+	case PROP_TAG_FOLDERTYPE:
+		pv.pvalue = cu_alloc<uint32_t>();
+		return pv.pvalue != nullptr && common_util_get_folder_type(db,
+		       id, static_cast<uint32_t *>(pv.pvalue)) ? GP_ADV : GP_ERR;
+	case PROP_TAG_HASRULES:
+		pv.pvalue = cu_alloc<uint8_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_folder_rules(db, id);
+		return GP_ADV;
+	case PROP_TAG_FOLDERPATHNAME:
+		pv.pvalue = common_util_calculate_folder_path(id, db);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PROP_TAG_MESSAGESIZEEXTENDED:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, TRUE, TRUE);
+		return GP_ADV;
+	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, false, TRUE);
+		return GP_ADV;
+	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, TRUE, false);
+		return GP_ADV;
+	}
+	return GP_UNHANDLED;
+}
+
+static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
+    uint64_t id, uint32_t cpid)
+{
+	pv.proptag = tag;
+	switch (tag) {
+	case PROP_TAG_ENTRYID:
+		pv.pvalue = common_util_to_message_entryid(db, id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PROP_TAG_PARENTENTRYID: {
+		uint64_t tmp_id;
+		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
+			return GP_ERR;
+		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	}
+	case PROP_TAG_FOLDERID:
+	case PROP_TAG_PARENTFOLDERID: {
+		uint64_t tmp_id;
+		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
+			return GP_ERR;
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, tmp_id);
+		return GP_ADV;
+	}
+	case PROP_TAG_INSTANCESVREID: {
+		uint64_t tmp_id;
+		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
+			return GP_ERR;
+		auto se = cu_alloc<SVREID>();
+		pv.pvalue = se;
+		if (se == nullptr)
+			return GP_ERR;
+		se->pbin = nullptr;
+		se->folder_id = rop_util_make_eid_ex(1, tmp_id);
+		se->message_id = rop_util_make_eid_ex(1, id);
+		se->instance = 0;
+		return GP_ADV;
+	}
+	case PROP_TAG_PARENTDISPLAY:
+		pv.pvalue = common_util_get_message_parent_display(db, id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PROP_TAG_PARENTDISPLAY_STRING8: {
+		auto pstring = static_cast<char *>(common_util_get_message_parent_display(db, id));
+		if (pstring == nullptr)
+			return GP_ERR;
+		pv.pvalue = common_util_convert_copy(false, cpid, pstring);
+		return pv.pvalue != nullptr ? GP_ADV : GP_UNHANDLED;
+	}
+	case PROP_TAG_MESSAGESIZE:
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_message_size(db, id);
+		return GP_ADV;
+	case PROP_TAG_ASSOCIATED:
+		pv.pvalue = cu_alloc<uint8_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_associated(db, id);
+		return GP_ADV;
+	case PROP_TAG_CHANGENUMBER:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_message_changenum(db, id);
+		return GP_ADV;
+	case PROP_TAG_READ:
+		pv.pvalue = cu_alloc<uint8_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_read(db, id);
+		return GP_ADV;
+	case PROP_TAG_HASNAMEDPROPERTIES:
+		pv.pvalue = cu_alloc<uint8_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_named_properties(db, id);
+		return GP_ADV;
+	case PROP_TAG_HASATTACHMENTS:
+		pv.pvalue = cu_alloc<uint8_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_has_attachments(db, id);
+		return GP_ADV;
+	case PROP_TAG_MID:
+		pv.pvalue = cu_alloc<uint64_t>();
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, id);
+		return GP_ADV;
+	case PROP_TAG_MESSAGEFLAGS:
+		if (!common_util_get_message_flags(db, id, false,
+		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
+			return GP_ERR;
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	case PROP_TAG_SUBJECT:
+	case PROP_TAG_SUBJECT_STRING8:
+		if (!common_util_get_message_subject(db, cpid, id, tag, &pv.pvalue))
+			return GP_ERR;
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	case PROP_TAG_DISPLAYTO:
+	case PROP_TAG_DISPLAYCC:
+	case PROP_TAG_DISPLAYBCC:
+	case PROP_TAG_DISPLAYTO_STRING8:
+	case PROP_TAG_DISPLAYCC_STRING8:
+	case PROP_TAG_DISPLAYBCC_STRING8:
+		if (!common_util_get_message_display_recipients(db, cpid, id, tag, &pv.pvalue))
+			return GP_ERR;
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	case PROP_TAG_BODY:
+	case PROP_TAG_BODY_STRING8:
+		pv.pvalue = common_util_get_message_body(db, cpid, id, tag);
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	case PROP_TAG_HTML:
+	case PROP_TAG_RTFCOMPRESSED:
+		pv.pvalue = common_util_get_message_cid_value(db, id, tag);
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	case PROP_TAG_TRANSPORTMESSAGEHEADERS:
+	case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+		pv.pvalue = common_util_get_message_header(db, cpid, id, tag);
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	case PROP_TAG_MIDSTRING: /* self-defined proptag */
+		return common_util_get_mid_string(db, id, reinterpret_cast<char **>(&pv.pvalue)) &&
+		       pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	}
+	return GP_UNHANDLED;
+}
+
+static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
+    sqlite3 *db, uint64_t id)
+{
+	pv.proptag = tag;
+	switch (tag) {
+	case PROP_TAG_RECORDKEY: {
+		auto ptmp_bin = cu_alloc<BINARY>();
+		if (ptmp_bin == nullptr)
+			return GP_ERR;
+		ptmp_bin->cb = sizeof(uint64_t);
+		ptmp_bin->pv = common_util_alloc(ptmp_bin->cb);
+		if (ptmp_bin->pv == nullptr)
+			return GP_ERR;
+		*static_cast<uint64_t *>(ptmp_bin->pv) = id;
+		pv.pvalue = ptmp_bin;
+		return GP_ADV;
+	}
+	case PROP_TAG_ATTACHDATABINARY:
+	case PROP_TAG_ATTACHDATAOBJECT:
+		pv.pvalue = common_util_get_attachment_cid_value(db, id, tag);
+		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+	}
+	return GP_UNHANDLED;
+}
+
+static GP_RESULT gp_spectableprop(unsigned int table_type, uint32_t tag,
+    TAGGED_PROPVAL &pv, sqlite3 *db, uint64_t id, uint32_t cpid)
+{
+	switch (table_type) {
+	case STORE_PROPERTIES_TABLE:
+		return gp_storeprop(tag, pv, db);
+	case FOLDER_PROPERTIES_TABLE:
+		return gp_folderprop(tag, pv, db, id);
+	case MESSAGE_PROPERTIES_TABLE:
+		return gp_msgprop(tag, pv, db, id, cpid);
+	case RECIPIENT_PROPERTIES_TABLE:
+		return GP_UNHANDLED;
+	case ATTACHMENT_PROPERTIES_TABLE:
+		return gp_atxprop(tag, pv, db, id);
+	default:
+		return GP_UNHANDLED;
+	}
+}
+
 BOOL common_util_get_properties(int table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	void *pvalue;
 	char *pstring;
-	uint64_t tmp_id;
-	BINARY *ptmp_bin;
 	uint32_t proptag;
 	uint16_t proptype;
 	EXT_PULL ext_pull;
@@ -1913,548 +2235,15 @@ BOOL common_util_get_properties(int table_type,
 			continue;
 		}
 		/* begin of special properties */
-		switch (table_type) {
-		case STORE_PROPERTIES_TABLE:
-			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_STORERECORDKEY:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_get_mailbox_guid(psqlite);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_STORESTATE:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-									common_util_get_store_state(psqlite);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_CONTENTCOUNT:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_get_store_message_count(psqlite, FALSE);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_get_store_message_count(psqlite, TRUE);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_INTERNETARTICLENUMBER:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_store_article_number(psqlite);
-				ppropvals->count ++;
-				continue;
-			}
-			break;
-		case FOLDER_PROPERTIES_TABLE:
-			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_ENTRYID:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_to_folder_entryid(psqlite, id);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_FOLDERID:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint64_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					(id & 0xFF00000000000000ULL) == 0 ?
-					rop_util_make_eid_ex(1, id) :
-					rop_util_make_eid_ex(id >> 48, id & 0x00FFFFFFFFFFFFFFULL);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_PARENTFOLDERID:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				tmp_id = common_util_get_folder_parent_fid(psqlite, id);
-				if (0 == tmp_id) {
-					continue;
-				}
-				*(uint64_t*)ppropvals->ppropval[
-					ppropvals->count].pvalue =
-					rop_util_make_eid_ex(1, tmp_id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_PARENTENTRYID:
-				tmp_id = common_util_get_folder_parent_fid(psqlite, id);
-				if (0 == tmp_id) {
-					continue;
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_to_folder_entryid(psqlite, tmp_id);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_CHANGENUMBER:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_folder_changenum(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_FOLDERFLAGS:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-								common_util_get_folder_flags(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_SUBFOLDERS:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint8_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					!!common_util_check_subfolders(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_CONTENTCOUNT:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_get_folder_count(psqlite, id, FALSE);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_get_folder_count(psqlite, id, TRUE);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_FOLDERCHILDCOUNT:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_calculate_childcount(id, psqlite);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_CONTENTUNREADCOUNT:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_get_folder_unread_count(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_FOLDERTYPE:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				if (FALSE == common_util_get_folder_type(psqlite, id,
-				    static_cast<uint32_t *>(ppropvals->ppropval[ppropvals->count].pvalue)))
-					return FALSE;
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_HASRULES:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint8_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					!!common_util_check_folder_rules(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_FOLDERPATHNAME:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_calculate_folder_path(id, psqlite);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_MESSAGESIZEEXTENDED:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-									common_util_get_folder_message_size(
-												psqlite, id, TRUE, TRUE);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-									common_util_get_folder_message_size(
-												psqlite, id, FALSE, TRUE);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-									common_util_get_folder_message_size(
-												psqlite, id, TRUE, FALSE);
-				ppropvals->count ++;
-				continue;
-			}
-			break;
-		case MESSAGE_PROPERTIES_TABLE:
-			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_ENTRYID:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_to_message_entryid(psqlite, id);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_PARENTENTRYID:
-				if (FALSE == common_util_get_message_parent_folder(
-					psqlite, id, &tmp_id) || 0 ==  tmp_id) {
-					return FALSE;	
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_to_folder_entryid(psqlite, tmp_id);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_FOLDERID:
-			case PROP_TAG_PARENTFOLDERID:
-				if (FALSE == common_util_get_message_parent_folder(
-					psqlite, id, &tmp_id) || 0 == tmp_id) {
-					return FALSE;	
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[
-					ppropvals->count].pvalue =
-					rop_util_make_eid_ex(1, tmp_id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_INSTANCESVREID: {
-				if (FALSE == common_util_get_message_parent_folder(
-					psqlite, id, &tmp_id) || 0 == tmp_id) {
-					return FALSE;	
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				auto se = cu_alloc<SVREID>();
-				ppropvals->ppropval[ppropvals->count].pvalue = se;
-				if (se == nullptr)
-					return FALSE;
-				se->pbin = nullptr;
-				se->folder_id = rop_util_make_eid_ex(1, tmp_id);
-				se->message_id = rop_util_make_eid_ex(1, id);
-				se->instance = 0;
-				ppropvals->count ++;
-				continue;
-			}
-			case PROP_TAG_PARENTDISPLAY:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_get_message_parent_display(psqlite, id);
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_PARENTDISPLAY_STRING8:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				pstring = static_cast<char *>(common_util_get_message_parent_display(psqlite, id));
-				if (NULL == pstring) {
-					return FALSE;
-				}
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy(FALSE, cpid, pstring);
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->count ++;
-					continue;
-				}
-				break;
-			case PROP_TAG_MESSAGESIZE:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-								common_util_get_message_size(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_ASSOCIATED:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint8_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					!!common_util_check_message_associated(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_CHANGENUMBER:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_message_changenum(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_READ:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint8_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					!!common_util_check_message_read(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_HASNAMEDPROPERTIES:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint8_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					!!common_util_check_message_named_properties(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_HASATTACHMENTS:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint8_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*static_cast<uint8_t *>(ppropvals->ppropval[ppropvals->count].pvalue) =
-					!!common_util_check_message_has_attachments(psqlite, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_MID:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
-					return FALSE;
-				}
-				*(uint64_t*)ppropvals->ppropval[
-					ppropvals->count].pvalue =
-					rop_util_make_eid_ex(1, id);
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_MESSAGEFLAGS:
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				if (FALSE == common_util_get_message_flags(psqlite, id, FALSE,
-					(uint32_t**)&ppropvals->ppropval[ppropvals->count].pvalue)) {
-					return FALSE;
-				}
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->count ++;
-				}
-				continue;
-			case PROP_TAG_SUBJECT:
-			case PROP_TAG_SUBJECT_STRING8:
-				if (FALSE == common_util_get_message_subject(
-					psqlite, cpid, id, pproptags->pproptag[i],
-					&ppropvals->ppropval[ppropvals->count].pvalue)) {
-					return FALSE;
-				}
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			case PROP_TAG_DISPLAYTO:
-			case PROP_TAG_DISPLAYCC:
-			case PROP_TAG_DISPLAYBCC:
-			case PROP_TAG_DISPLAYTO_STRING8:
-			case PROP_TAG_DISPLAYCC_STRING8:
-			case PROP_TAG_DISPLAYBCC_STRING8:
-				if (FALSE == common_util_get_message_display_recipients(
-					psqlite, cpid, id, pproptags->pproptag[i],
-					&ppropvals->ppropval[ppropvals->count].pvalue)) {
-					return FALSE;
-				}
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			case PROP_TAG_BODY:
-			case PROP_TAG_BODY_STRING8:
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_message_body(psqlite,
-							cpid, id, pproptags->pproptag[i]);
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			case PROP_TAG_HTML:
-			case PROP_TAG_RTFCOMPRESSED:
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_message_cid_value(
-							psqlite, id, pproptags->pproptag[i]);
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			case PROP_TAG_TRANSPORTMESSAGEHEADERS:
-			case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_message_header(psqlite,
-							cpid, id, pproptags->pproptag[i]);
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			case PROP_TAG_MIDSTRING: /* self-defined proptag */
-				if (TRUE == common_util_get_mid_string(psqlite, id,
-					(char**)&ppropvals->ppropval[ppropvals->count].pvalue) &&
-					NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			}
-			break;
-		case RECIPIENT_PROPERTIES_TABLE:
-			break;
-		case ATTACHMENT_PROPERTIES_TABLE:
-			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_RECORDKEY:
-				ptmp_bin = cu_alloc<BINARY>();
-				if (NULL == ptmp_bin) {
-					return FALSE;
-				}
-				ptmp_bin->cb = sizeof(uint64_t);
-				ptmp_bin->pv = common_util_alloc(ptmp_bin->cb);
-				if (ptmp_bin->pv == nullptr)
-					return FALSE;
-				*static_cast<uint64_t *>(ptmp_bin->pv) = id;
-				ppropvals->ppropval[ppropvals->count].pvalue = ptmp_bin;
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->count ++;
-				continue;
-			case PROP_TAG_ATTACHDATABINARY:
-			case PROP_TAG_ATTACHDATAOBJECT:
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_get_attachment_cid_value(
-							psqlite, id, pproptags->pproptag[i]);
-				if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->count ++;
-				}
-				continue;
-			}
-			break;
+		auto ret = gp_spectableprop(table_type, pproptags->pproptag[i],
+		           ppropvals->ppropval[ppropvals->count], psqlite, id, cpid);
+		if (ret == GP_ERR)
+			return false;
+		if (ret == GP_SKIP)
+			continue;
+		if (ret == GP_ADV) {
+			++ppropvals->count;
+			continue;
 		}
 		/* end of special properties */
 		xstmt own_stmt;
