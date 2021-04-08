@@ -265,7 +265,7 @@ timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
 libphp_mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
 libphp_mapi_la_SOURCES = php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/zarafa_client.cpp php_mapi/zarafa_rpc.cpp
-libphp_mapi_la_LIBADD = ${HX_LIBS} libgromox_common.la
+libphp_mapi_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_mapi.la
 mapi_la_SOURCES =
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la

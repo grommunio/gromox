@@ -13,64 +13,40 @@
 using PULL_CTX = EXT_PULL;
 using PUSH_CTX = EXT_PUSH;
 
-void ext_pack_pull_init(PULL_CTX *pctx,
-	const uint8_t *pdata, uint32_t data_size);
-	
-zend_bool ext_pack_pull_advance(PULL_CTX *pctx, uint32_t size);
+inline void *ext_pack_pull_alloc(size_t z) { return emalloc(z); }
 
-zend_bool ext_pack_pull_uint8(PULL_CTX *pctx, uint8_t *v);
+#define ext_pack_pull_init(c, d, s) ext_buffer_pull_init((c), (d), (s), ext_pack_pull_alloc, EXT_FLAG_WCOUNT)
+#define ext_pack_pull_advance(c, s) (ext_buffer_pull_advance((c), (s)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_uint8(c, v) (ext_buffer_pull_uint8((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_uint16(c, v) (ext_buffer_pull_uint16((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_uint32(c, v) (ext_buffer_pull_uint32((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_uint64(c, v) (ext_buffer_pull_uint64((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_float(c, v) (ext_buffer_pull_float((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_double(c, v) (ext_buffer_pull_double((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_bytes(c, v, z) (ext_buffer_pull_bytes((c), (v), (z)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_guid(c, v) (ext_buffer_pull_guid((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_string(c, v) (ext_buffer_pull_string((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_wstring(c, v) (ext_buffer_pull_wstring((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_binary(c, v) (ext_buffer_pull_binary((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_short_array(c, v) (ext_buffer_pull_short_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_long_array(c, v) (ext_buffer_pull_long_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_longlong_array(c, v) (ext_buffer_pull_longlong_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_binary_array(c, v) (ext_buffer_pull_binary_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_string_array(c, v) (ext_buffer_pull_string_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_guid_array(c, v) (ext_buffer_pull_guid_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_proptag_array(c, v) (ext_buffer_pull_proptag_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_restriction(c, v) (ext_buffer_pull_restriction((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_rule_actions(c, v) (ext_buffer_pull_rule_actions((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_tagged_propval(c, v) (ext_buffer_pull_tagged_propval((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_propval(c, v) (ext_buffer_pull_propval((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_property_name(c, v) (ext_buffer_pull_property_name((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_propname_array(c, v) (ext_buffer_pull_propname_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_propid_array(c, v) (ext_buffer_pull_propid_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_tpropval_array(c, v) (ext_buffer_pull_tpropval_array((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_tarray_set(c, v) (ext_buffer_pull_tarray_set((c), (v)) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_oneoff_entryid(c, v) (ext_buffer_pull_oneoff_entryid((c), (v)) == EXT_ERR_SUCCESS)
 
-zend_bool ext_pack_pull_uint16(PULL_CTX *pctx, uint16_t *v);
-
-zend_bool ext_pack_pull_uint32(PULL_CTX *pctx, uint32_t *v);
-zend_bool ext_pack_pull_uint64(PULL_CTX *pctx, uint64_t *v);
-
-zend_bool ext_pack_pull_float(PULL_CTX *pctx, float *v);
-
-zend_bool ext_pack_pull_double(PULL_CTX *pctx, double *v);
-
-zend_bool ext_pack_pull_bytes(PULL_CTX *pctx, uint8_t *data, uint32_t n);
-
-zend_bool ext_pack_pull_guid(PULL_CTX *pctx, GUID *r);
-
-zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr);
-
-zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr);
-
-zend_bool ext_pack_pull_binary(PULL_CTX *pctx, BINARY *r);
-
-zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r);
-
-zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r);
-
-zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r);
-
-zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r);
-
-zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r);
-zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r);
-
-zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r);
-
-zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r);
-zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r);
-
-zend_bool ext_pack_pull_tagged_propval(PULL_CTX *pctx, TAGGED_PROPVAL *r);
-
-zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval);
-
-zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r);
-
-zend_bool ext_pack_pull_propname_array(PULL_CTX *pctx, PROPNAME_ARRAY *r);
-
-zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r);
-
-zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r);
-
-zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r);
 zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r);
-zend_bool ext_pack_pull_oneoff_entryid(PULL_CTX *pctx, ONEOFF_ENTRYID *r);
-
 zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r);
 
 zend_bool ext_pack_pull_znotification_array(
