@@ -18,6 +18,7 @@ typedef void (*TALK_MAIN)(int, char**, char*, int);
 	x const char *(*get_state_path)(); \
 	x int (*get_context_num)(); \
 	x const char *(*get_host_ID)(); \
+	x const char *(*get_prog_id)(); \
 	x void *(*ndr_stack_alloc)(int, size_t);
 #define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(*(f)))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
@@ -39,6 +40,7 @@ DECLARE_API(extern);
 	query_service1(get_state_path); \
 	query_service1(get_context_num); \
 	query_service1(get_host_ID); \
+	query_service1(get_prog_id); \
 	query_service1(ndr_stack_alloc);
 #define SVC_ENTRY(s) BOOL SVC_LibMain(int r, void **p) { return (s)((r), (p)); }
 

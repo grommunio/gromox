@@ -100,10 +100,16 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 
 		str_value = config_file_get_value(pfile, "schema_upgrades");
 		enum sql_schema_upgrade upg = S_ABORT;
-		if (str_value != nullptr && strcmp(str_value, "skip") == 0)
-			upg = S_SKIP;
-		else if (str_value != nullptr && strcmp(str_value, "autoupgrade") == 0)
+		auto prog_id = get_prog_id();
+		if (str_value != nullptr && strncmp(str_value, "host:", 5) == 0 &&
+		    prog_id != nullptr && strcmp(prog_id, "http") == 0 &&
+		    strcmp(str_value + 5, get_host_ID()) == 0) {
 			upg = S_AUTOUP;
+		} else if (str_value != nullptr && strcmp(str_value, "skip") == 0) {
+			upg = S_SKIP;
+		} else if (str_value != nullptr && strcmp(str_value, "autoupgrade") == 0) {
+			upg = S_AUTOUP;
+		}
 		
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
 			db_name, mysql_port, conn_num, timeout, upg});

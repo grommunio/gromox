@@ -532,7 +532,7 @@ int main(int argc, const char **argv)
 	}
 	service_init({service_plugin_path, config_dir, data_dir, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr, context_num});
+		svcplug_ignerr, context_num, "http"});
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
 	    typeid(*pdu_processor_ndr_stack_alloc))) {

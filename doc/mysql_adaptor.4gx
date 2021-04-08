@@ -47,6 +47,10 @@ Do perform automatic schema upgrades when mysql_adaptor is started. This option
 can potentially be harmful if multiple programs try to upgrade the database at
 the same time.
 .TP
+\fBhost:\fP\fIxyz\fP
+Perform automatic schema upgrades, but only when executing from http(8gx)
+and only when http.cfg's \fBhost_id\fP value matches \fIxyz\fP.
+.TP
 \fBskip\fP
 No automatic schema upgrades are performed. The initialization will report
 completion and the program continues execution. The mysql_adaptor plugin may

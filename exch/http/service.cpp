@@ -69,9 +69,11 @@ static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
-static const char *const *g_plugin_names;
+static const char *const *g_plugin_names, *g_program_identifier;
 static bool g_ign_loaderr;
 static SVC_PLUG_ENTITY g_system_image;
+
+static const char *service_get_prog_id() { return g_program_identifier; }
 
 /*
  *  init the service module with the path specified where
@@ -86,6 +88,7 @@ void service_init(const struct service_init_param &parm)
 	HX_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
 	g_plugin_names = parm.plugin_list;
 	g_ign_loaderr = parm.plugin_ignloaderr;
+	g_program_identifier = parm.prog_id;
 	double_list_init(&g_list_service);
 	double_list_init(&g_system_image.list_service);
 }
@@ -279,6 +282,8 @@ static void *service_query_service(const char *service, const std::type_info &ti
 	if (0 == strcmp(service, "get_host_ID")) {
 		return reinterpret_cast<void *>(service_get_host_ID);
 	}
+	if (strcmp(service, "get_prog_id") == 0)
+		return reinterpret_cast<void *>(service_get_prog_id);
 	return service_query(service, nullptr, ti);
 }
 
