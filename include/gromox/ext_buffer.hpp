@@ -1,7 +1,8 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
-#include <gromox/mapi_types.hpp>
-#include <gromox/element_data.hpp>
+#include <gromox/common_types.hpp>
+#include <gromox/mapidefs.h>
 
 #define EXT_ERR_SUCCESS						0
 #define EXT_ERR_FORMAT						1
@@ -59,6 +60,35 @@ struct RPC_HEADER_EXT {
 	uint16_t size;
 	uint16_t size_actual;
 };
+
+struct ADDRESSBOOK_ENTRYID;
+struct APPOINTMENTRECURRENCEPATTERN;
+struct EID_ARRAY;
+struct EXT_RULE_ACTIONS;
+struct FLAGGED_PROPVAL;
+struct FOLDER_ENTRYID;
+struct GLOBALOBJECTID;
+struct LONG_TERM_ID;
+struct LONG_TERM_ID_ARRAY;
+struct LONG_TERM_ID_RANGE;
+struct MESSAGE_CONTENT;
+struct MESSAGE_ENTRYID;
+struct MODIFYRECIPIENT_ROW;
+struct NAMEDPROPERTY_INFOMATION;
+struct OPENRECIPIENT_ROW;
+struct PERMISSION_DATA;
+struct PERSISTDATA_ARRAY;
+struct PROBLEM_ARRAY;
+struct PROPERTY_ROW;
+struct READRECIPIENT_ROW;
+struct RECIPIENT_ROW;
+struct STORE_ENTRYID;
+struct SYSTEMTIME;
+struct TIMEZONEDEFINITION;
+struct TIMEZONESTRUCT;
+struct TYPED_PROPVAL;
+struct TYPED_STRING;
+struct XID;
 
 extern void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	uint32_t data_size, EXT_BUFFER_ALLOC alloc, uint32_t flags);

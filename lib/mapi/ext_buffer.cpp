@@ -4,7 +4,9 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
 #include <cstdlib>
 #include <cstring>
