@@ -28,7 +28,7 @@ struct EXT_PULL {
 	template<typename T> inline T *anew() { return static_cast<T *>(alloc(sizeof(T))); }
 	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(alloc(sizeof(T) * elem)); }
 	union {
-		const uint8_t *data;
+		const uint8_t *data, *udata;
 		const char *cdata;
 		const void *vdata;
 	};
@@ -40,7 +40,7 @@ struct EXT_PULL {
 struct EXT_PUSH {
 	BOOL b_alloc;
 	union {
-		uint8_t *data;
+		uint8_t *data, *udata;
 		char *cdata;
 		void *vdata;
 	};

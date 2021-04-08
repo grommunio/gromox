@@ -1664,7 +1664,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	pbin_out->cb = push_ctx.offset;
 	push_ctx.offset = 0;
 	ext_pack_push_uint32(&push_ctx, pbin_out->cb - sizeof(uint32_t));
-	pbin_out->pv = push_ctx.data;
+	pbin_out->pv = push_ctx.vdata;
 	return 1;
 }
 

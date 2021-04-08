@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/ext_buffer.hpp>
 #include "types.h"
 #include "php.h"
 #undef slprintf
@@ -9,25 +10,8 @@
 #undef vasprintf
 #undef asprintf
 
-struct PULL_CTX {
-	union {
-		const void *data;
-		const char *sdata;
-		const uint8_t *udata;
-	};
-	uint32_t data_size;
-	uint32_t offset;
-};
-
-struct PUSH_CTX {
-	union {
-		void *data;
-		char *sdata;
-		uint8_t *udata;
-	};
-	uint32_t alloc_size;
-	uint32_t offset;
-};
+using PULL_CTX = EXT_PULL;
+using PUSH_CTX = EXT_PUSH;
 
 void ext_pack_pull_init(PULL_CTX *pctx,
 	const uint8_t *pdata, uint32_t data_size);

@@ -55,7 +55,7 @@ static zend_bool utf16le_to_utf8(const char *src,
 void ext_pack_pull_init(PULL_CTX *pctx,
 	const uint8_t *pdata, uint32_t data_size)
 {
-	pctx->data = pdata;
+	pctx->vdata = pdata;
 	pctx->data_size = data_size;
 	pctx->offset = 0;
 }
@@ -162,7 +162,7 @@ zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 	if (pctx->offset >= pctx->data_size) {
 		return 0;
 	}
-	auto len = strnlen(&pctx->sdata[pctx->offset], pctx->data_size - pctx->offset);
+	auto len = strnlen(&pctx->cdata[pctx->offset], pctx->data_size - pctx->offset);
 	if (len + 1 > pctx->data_size - pctx->offset) {
 		return 0;
 	}
@@ -171,7 +171,7 @@ zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 	if (NULL == *ppstr) {
 		return 0;
 	}
-	memcpy(*ppstr, &pctx->sdata[pctx->offset], len);
+	memcpy(*ppstr, &pctx->cdata[pctx->offset], len);
 	return ext_pack_pull_advance(pctx, len);
 }
 
@@ -185,8 +185,8 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 	}
 	max_len = pctx->data_size - pctx->offset;
 	for (i=0; i<max_len-1; i+=2) {
-		if (pctx->sdata[pctx->offset+i] == '\0' &&
-		    pctx->sdata[pctx->offset+i+1] == '\0')
+		if (pctx->cdata[pctx->offset+i] == '\0' &&
+		    pctx->cdata[pctx->offset+i+1] == '\0')
 			break;
 	}
 	if (i >= max_len - 1) {
@@ -200,7 +200,7 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 	auto pbuff = static_cast<char *>(malloc(len));
 	if (pbuff == nullptr)
 		return 0;
-	memcpy(pbuff, &pctx->sdata[pctx->offset], len);
+	memcpy(pbuff, &pctx->cdata[pctx->offset], len);
 	if (0 == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
 		free(pbuff);
 		return 0;
@@ -1108,17 +1108,16 @@ zend_bool ext_pack_pull_znotification_array(
 zend_bool ext_pack_push_init(PUSH_CTX *pctx)
 {	
 	pctx->alloc_size = GROWING_BLOCK_SIZE;
-	pctx->data = emalloc(GROWING_BLOCK_SIZE);
-	if (NULL == pctx->data) {
+	pctx->vdata = emalloc(GROWING_BLOCK_SIZE);
+	if (pctx->vdata == nullptr)
 		return 0;
-	}
 	pctx->offset = 0;
 	return 1;
 }
 
 void ext_pack_push_free(PUSH_CTX *pctx)
 {
-	efree(pctx->data);
+	efree(pctx->vdata);
 }
 
 static zend_bool ext_pack_push_check_overflow(PUSH_CTX *pctx, uint32_t extra_size)
@@ -1132,11 +1131,11 @@ static zend_bool ext_pack_push_check_overflow(PUSH_CTX *pctx, uint32_t extra_siz
 	}
 	for (alloc_size=pctx->alloc_size; alloc_size<size;
 		alloc_size+=GROWING_BLOCK_SIZE);
-	auto pdata = static_cast<uint8_t *>(erealloc(pctx->data, alloc_size));
+	auto pdata = static_cast<uint8_t *>(erealloc(pctx->vdata, alloc_size));
 	if (NULL == pdata) {
 		return 0;
 	}
-	pctx->data = pdata;
+	pctx->vdata = pdata;
 	pctx->alloc_size = alloc_size;
 	return 1;
 }
