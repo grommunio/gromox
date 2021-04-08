@@ -9,7 +9,7 @@ lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgr
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_rpc.ldd libgromox_mapi.ldd
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
-pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
+pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
 plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS${NO_VSYM}}
@@ -266,6 +266,9 @@ timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 libphp_mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
 libphp_mapi_la_SOURCES = php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/zarafa_client.cpp php_mapi/zarafa_rpc.cpp
 libphp_mapi_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_mapi.la
+libmapi4zf_la_SOURCES =
+libmapi4zf_la_LDFLAGS = ${PHP_LDFLAGS}
+libmapi4zf_la_LIBADD = libphp_mapi.la
 mapi_la_SOURCES =
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
@@ -278,7 +281,7 @@ tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 tests_icalparse_SOURCES = tests/icalparse.cpp
 tests_icalparse_LDADD = libgromox_common.la libgromox_email.la libgromox_mapi.la
-tests_zendfake_LDADD = libphp_mapi.la
+tests_zendfake_LDADD = libmapi4zf.la
 
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
@@ -319,6 +322,9 @@ lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 
 exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl -p <$< >$@
+
+install-exec-hook:
+	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${pkgdatadir}/http/php
