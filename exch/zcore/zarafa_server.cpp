@@ -2094,7 +2094,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MESSAGESIZEEXTENDED;
-	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
+	proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
 	proptag_buff[2] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 	if (FALSE == store_object_get_properties(
@@ -2102,8 +2102,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_PROHIBITSENDQUOTA);
+	pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
 	int64_t max_quota = pvalue == nullptr ? -1 : static_cast<int64_t>(*static_cast<uint32_t *>(pvalue)) * 1024;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_MESSAGESIZEEXTENDED);

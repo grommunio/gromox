@@ -890,7 +890,7 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 	       sqlite3_column_int64(pstmt, 0) >= g_max_msg ? TRUE : false;
 }
 
-BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite)
+BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 {
 	uint64_t quota;
 	PROPTAG_ARRAY proptags;
@@ -899,7 +899,7 @@ BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite)
 	
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_PROHIBITRECEIVEQUOTA;
+	proptag_buff[0] = qtag;
 	proptag_buff[1] = PROP_TAG_MESSAGESIZEEXTENDED;
 	if (FALSE == common_util_get_properties(STORE_PROPERTIES_TABLE,
 		0, 0, psqlite, &proptags, &propvals)) {
@@ -907,8 +907,7 @@ BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite)
 	}
 	auto ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals,
 	              PROP_TAG_MESSAGESIZEEXTENDED));
-	auto pvalue = static_cast<uint32_t *>(common_util_get_propvals(&propvals,
-	              PROP_TAG_PROHIBITRECEIVEQUOTA));
+	auto pvalue = static_cast<uint32_t *>(common_util_get_propvals(&propvals, qtag));
 	if (NULL != ptotal && NULL != pvalue) {
 		quota = *(uint32_t*)pvalue;
 		quota *= 1024;

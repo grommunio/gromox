@@ -98,7 +98,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (FALSE == b_move &&
-		TRUE == common_util_check_msgsize_overflow(pdb->psqlite) &&
+	    cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_STORAGEQUOTALIMIT) &&
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pb_result = FALSE;
 		return TRUE;		
@@ -4789,7 +4789,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (TRUE == common_util_check_msgsize_overflow(pdb->psqlite) ||
+	if (cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_PROHIBITRECEIVEQUOTA) ||
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*presult = 1;
 		return TRUE;
@@ -4980,7 +4980,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (TRUE == common_util_check_msgsize_overflow(pdb->psqlite) ||
+	if (cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_STORAGEQUOTALIMIT) ||
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pe_result = GXERR_OVER_QUOTA;
 		return TRUE;	

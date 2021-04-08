@@ -2986,14 +2986,14 @@ static int mail_engine_mquta(int argc, char **argv, int sockd)
 	proptags.count = 3;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PROP_TAG_MESSAGESIZEEXTENDED;
-	tmp_proptags[1] = PROP_TAG_PROHIBITRECEIVEQUOTA;
+	tmp_proptags[1] = PROP_TAG_STORAGEQUOTALIMIT;
 	tmp_proptags[2] = PROP_TAG_CONTENTCOUNT;
 	if (!exmdb_client::get_store_properties(
 		argv[1], 0, &proptags, &propvals)) {
 		return 4;	
 	}
 	ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PROP_TAG_MESSAGESIZEEXTENDED));
-	pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_PROHIBITRECEIVEQUOTA));
+	pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_STORAGEQUOTALIMIT));
 	pcount = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_CONTENTCOUNT));
 	if (NULL == ptotal || NULL == pmax || NULL == pcount) {
 		return 4;

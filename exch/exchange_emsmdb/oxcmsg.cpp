@@ -276,15 +276,14 @@ uint32_t rop_createmessage(uint16_t cpid,
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MESSAGESIZEEXTENDED;
-	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
+	proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
 	proptag_buff[2] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 	if (FALSE == logon_object_get_properties(
 		plogon, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_PROHIBITSENDQUOTA);
+	pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
 	uint64_t max_quota = ULLONG_MAX;
 	if (pvalue != nullptr) {
 		max_quota = *static_cast<uint32_t *>(pvalue);

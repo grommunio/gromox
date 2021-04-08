@@ -160,9 +160,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
 
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
-
-BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite);
-
+extern BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag);
 uint32_t common_util_get_folder_unread_count(
 	sqlite3 *psqlite, uint64_t folder_id);
 extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);

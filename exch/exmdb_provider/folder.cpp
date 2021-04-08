@@ -2122,7 +2122,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (TRUE == b_copy &&
-		TRUE == common_util_check_msgsize_overflow(pdb->psqlite) &&
+	    cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_STORAGEQUOTALIMIT) &&
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pb_partial = TRUE;
 		return TRUE;		
