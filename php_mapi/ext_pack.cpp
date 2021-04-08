@@ -529,13 +529,13 @@ zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r)
 	}
 }
 
-static zend_bool ext_pack_pull_movecopy_action(PULL_CTX *pctx, MOVECOPY_ACTION *r)
+static zend_bool ext_pack_pull_movecopy_action(PULL_CTX *pctx, ZMOVECOPY_ACTION *r)
 {
 	BTRY(ext_pack_pull_binary(pctx, &r->store_eid));
 	return ext_pack_pull_binary(pctx, &r->folder_eid);
 }
 
-static zend_bool ext_pack_pull_reply_action(PULL_CTX *pctx, REPLY_ACTION *r)
+static zend_bool ext_pack_pull_reply_action(PULL_CTX *pctx, ZREPLY_ACTION *r)
 {
 	BTRY(ext_pack_pull_binary(pctx, &r->message_eid));
 	return ext_pack_pull_guid(pctx, &r->template_guid);
@@ -592,19 +592,19 @@ static zend_bool ext_pack_pull_action_block(PULL_CTX *pctx, ACTION_BLOCK *r)
 	switch (r->type) {
 	case OP_MOVE:
 	case OP_COPY:
-		r->pdata = emalloc(sizeof(MOVECOPY_ACTION));
+		r->pdata = emalloc(sizeof(ZMOVECOPY_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_movecopy_action(pctx, static_cast<MOVECOPY_ACTION *>(r->pdata));
+		return ext_pack_pull_movecopy_action(pctx, static_cast<ZMOVECOPY_ACTION *>(r->pdata));
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		r->pdata = emalloc(sizeof(REPLY_ACTION));
+		r->pdata = emalloc(sizeof(ZREPLY_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
 		return ext_pack_pull_reply_action(pctx,
-		       static_cast<REPLY_ACTION *>(r->pdata));
+		       static_cast<ZREPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = emalloc(tmp_len);
@@ -1430,14 +1430,14 @@ zend_bool ext_pack_push_restriction(PUSH_CTX *pctx, const RESTRICTION *r)
 }
 
 static zend_bool ext_pack_push_movecopy_action(PUSH_CTX *pctx,
-    const MOVECOPY_ACTION *r)
+    const ZMOVECOPY_ACTION *r)
 {
 	BTRY(ext_pack_push_binary(pctx, &r->store_eid));
 	return ext_pack_push_binary(pctx, &r->folder_eid);
 }
 
 static zend_bool ext_pack_push_reply_action(
-	PUSH_CTX *pctx, const REPLY_ACTION *r)
+	PUSH_CTX *pctx, const ZREPLY_ACTION *r)
 {	
 	BTRY(ext_pack_push_binary(pctx, &r->message_eid));
 	return ext_pack_push_guid(pctx, &r->template_guid);
@@ -1489,11 +1489,11 @@ static zend_bool ext_pack_push_action_block(
 	switch (r->type) {
 	case OP_MOVE:
 	case OP_COPY:
-		BTRY(ext_pack_push_movecopy_action(pctx, static_cast<MOVECOPY_ACTION *>(r->pdata)));
+		BTRY(ext_pack_push_movecopy_action(pctx, static_cast<ZMOVECOPY_ACTION *>(r->pdata)));
 		break;
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		BTRY(ext_pack_push_reply_action(pctx, static_cast<REPLY_ACTION *>(r->pdata)));
+		BTRY(ext_pack_push_reply_action(pctx, static_cast<ZREPLY_ACTION *>(r->pdata)));
 		break;
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);

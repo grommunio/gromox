@@ -33,48 +33,8 @@
 #define STATUS_PRIMARY_STORE						0x00001000
 #define STATUS_SECONDARY_STORE						0x00002000
 
-struct ZMOVECOPY_ACTION {
-	BINARY store_eid;
-	BINARY folder_eid;
-};
-
-struct ZREPLY_ACTION {
-	BINARY message_eid;
-	GUID template_guid;
-};
-
-#define MODRECIP_ADD								0x00000002
-#define MODRECIP_MODIFY								0x00000004
-#define MODRECIP_REMOVE								0x00000008
-
-#define MAPI_ROOT									0
-#define MAPI_TABLE									1
-#define MAPI_MESSAGE								2
-#define MAPI_ATTACHMENT								3
-#define MAPI_ABCONT									4
-#define MAPI_FOLDER									5
-#define MAPI_SESSION								6
-#define MAPI_ADDRESSBOOK							7
-#define MAPI_STORE									8
-#define MAPI_MAILUSER								9
-#define MAPI_DISTLIST								10
-#define MAPI_PROFPROPERTY							11
-#define MAPI_ICSDOWNCTX								13
-#define MAPI_ICSUPCTX								14
-#define MAPI_INVALID								255
-
-#define EVENT_TYPE_NEWMAIL							0x00000002
-#define EVENT_TYPE_OBJECTCREATED					0x00000004
-#define EVENT_TYPE_OBJECTDELETED					0x00000008
-#define EVENT_TYPE_OBJECTMODIFIED					0x00000010
-#define EVENT_TYPE_OBJECTMOVED						0x00000020
-#define EVENT_TYPE_OBJECTCOPIED						0x00000040
-#define EVENT_TYPE_SEARCHCOMPLETE					0x00000080
-
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
-#define ICS_TYPE_CONTENTS							1
-#define ICS_TYPE_HIERARCHY							2
 
 #define FLAG_SOFT_DELETE            				0x00000002
 #define FLAG_ASSOCIATED								0x00000040

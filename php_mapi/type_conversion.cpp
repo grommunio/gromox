@@ -520,8 +520,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			switch (pblock->type) {
 			case OP_MOVE:
 			case OP_COPY: {
-				pblock->pdata = emalloc(sizeof(MOVECOPY_ACTION));
-				auto xq = static_cast<MOVECOPY_ACTION *>(pblock->pdata);
+				pblock->pdata = emalloc(sizeof(ZMOVECOPY_ACTION));
+				auto xq = static_cast<ZMOVECOPY_ACTION *>(pblock->pdata);
 				if (xq == nullptr)
 					return NULL;
 
@@ -554,8 +554,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				if (data_entry == nullptr)
 					return NULL;
 				zstrplus str1(zval_get_string(data_entry));
-				pblock->pdata = emalloc(sizeof(REPLY_ACTION));
-				auto xq = static_cast<REPLY_ACTION *>(pblock->pdata);
+				pblock->pdata = emalloc(sizeof(ZREPLY_ACTION));
+				auto xq = static_cast<ZREPLY_ACTION *>(pblock->pdata);
 				if (xq == nullptr)
 					return NULL;
 				xq->message_eid.cb = str1->len;
@@ -1314,7 +1314,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 				switch (prule->pblock[j].type) {
 				case OP_MOVE:
 				case OP_COPY: {
-					auto xq = static_cast<MOVECOPY_ACTION *>(prule->pblock[j].pdata);
+					auto xq = static_cast<ZMOVECOPY_ACTION *>(prule->pblock[j].pdata);
 					add_assoc_stringl(&pzactval, "storeentryid",
 						reinterpret_cast<char *>(xq->store_eid.pb),
 						xq->store_eid.cb);
@@ -1325,7 +1325,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 				}
 				case OP_REPLY:
 				case OP_OOF_REPLY: {
-					auto xq = static_cast<REPLY_ACTION *>(prule->pblock[j].pdata);
+					auto xq = static_cast<ZREPLY_ACTION *>(prule->pblock[j].pdata);
 					add_assoc_stringl(&pzactval, "replyentryid",
 						reinterpret_cast<char *>(xq->message_eid.pb),
 						xq->message_eid.cb);

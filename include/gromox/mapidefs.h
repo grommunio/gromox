@@ -93,9 +93,25 @@ enum {
 };
 
 enum {
+	EVENT_TYPE_NEWMAIL = 1U << 1,
+	EVENT_TYPE_OBJECTCREATED = 1U << 2,
+	EVENT_TYPE_OBJECTDELETED = 1U << 3,
+	EVENT_TYPE_OBJECTMODIFIED = 1U << 4,
+	EVENT_TYPE_OBJECTMOVED = 1U << 5,
+	EVENT_TYPE_OBJECTCOPIED = 1U << 6,
+	EVENT_TYPE_SEARCHCOMPLETE = 1U << 7,
+};
+
+enum {
 	MNID_ID = 0,
 	MNID_STRING = 1,
 	KIND_NONE = 0xff,
+};
+
+enum {
+	MODRECIP_ADD = 1U << 1,
+	MODRECIP_MODIFY = 1U << 2,
+	MODRECIP_REMOVE = 1U << 3,
 };
 
 enum relop {
@@ -123,6 +139,30 @@ enum res_type {
 	RES_COMMENT = 0x0a,
 	RES_COUNT = 0x0b,
 	RES_NULL = 0xff,
+};
+
+enum zics_type {
+	ICS_TYPE_CONTENTS = 1,
+	ICS_TYPE_HIERARCHY = 2,
+};
+
+enum zmapi_group {
+	MAPI_ROOT = 0,
+	MAPI_TABLE = 1,
+	MAPI_MESSAGE = 2,
+	MAPI_ATTACHMENT = 3,
+	MAPI_ABCONT = 4,
+	MAPI_FOLDER = 5,
+	MAPI_SESSION = 6,
+	MAPI_ADDRESSBOOK = 7,
+	MAPI_STORE = 8,
+	MAPI_MAILUSER = 9,
+	MAPI_DISTLIST = 10,
+	MAPI_PROFPROPERTY = 11,
+	MAPI_ADVISESINK = 12,
+	MAPI_ICSDOWNCTX = 13,
+	MAPI_ICSUPCTX = 14,
+	MAPI_INVALID = 255,
 };
 
 enum STREAM_SEEK {
@@ -170,6 +210,14 @@ enum {
 	RIGHT_MODIFY = 1U << 1,
 	RIGHT_DELETED = 1U << 2,
 	RIGHT_AUTOUPDATE_DENIED = 1U << 3,
+};
+
+struct ACTION_BLOCK {
+	uint16_t length;
+	uint8_t type;
+	uint32_t flavor;
+	uint32_t flags;
+	void *pdata;
 };
 
 struct ADVISE_INFO {
@@ -324,6 +372,13 @@ struct STRING_ARRAY {
 	char **ppstr;
 };
 
+struct SVREID {
+	BINARY *pbin;
+	uint64_t folder_id;
+	uint64_t message_id;
+	uint32_t instance;
+};
+
 struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
@@ -354,6 +409,12 @@ struct OBJECT_ZNOTIFICATION {
 	BINARY *pold_entryid;
 	BINARY *pold_parentid;
 	PROPTAG_ARRAY *pproptags;
+};
+
+struct RECIPIENT_BLOCK {
+	uint8_t reserved;
+	uint16_t count;
+	TAGGED_PROPVAL *ppropval;
 };
 
 struct RESTRICTION_AND_OR;
@@ -445,6 +506,11 @@ struct RESTRICTION_COUNT {
 	RESTRICTION sub_res;
 };
 
+struct RULE_ACTIONS {
+	uint16_t count;
+	ACTION_BLOCK *pblock;
+};
+
 struct RULE_DATA {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
@@ -455,6 +521,11 @@ struct RULE_LIST {
 	RULE_DATA *prule;
 };
 
+struct ZMOVECOPY_ACTION {
+	BINARY store_eid; /* zarafa specific */
+	BINARY folder_eid; /* zarafa specific */
+};
+
 struct ZNOTIFICATION {
 	uint32_t event_type;
 	void *pnotification_data; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
@@ -463,4 +534,15 @@ struct ZNOTIFICATION {
 struct ZNOTIFICATION_ARRAY {
 	uint16_t count;
 	ZNOTIFICATION **ppnotification;
+};
+
+/* reply or OOF action */
+struct ZREPLY_ACTION {
+	BINARY message_eid; /* zarafa specific */
+	GUID template_guid;
+};
+
+struct FORWARDDELEGATE_ACTION {
+	uint16_t count;
+	RECIPIENT_BLOCK *pblock;
 };

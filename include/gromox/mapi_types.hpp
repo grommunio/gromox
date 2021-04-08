@@ -5,13 +5,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/mapidefs.h>
 
-struct SVREID {
-	BINARY *pbin;
-	uint64_t folder_id;
-	uint64_t message_id;
-	uint32_t instance;
-};
-
 struct STORE_ENTRYID {
 	uint32_t flags;
 	 /* 38.A1.BB.10.05.E5.10.1A.A1.BB.08.00.2B.2A.56.C2 */
@@ -89,17 +82,6 @@ struct EXT_REPLY_ACTION {
 #define BOUNCE_CODE_MESSAGE_NOT_DISPLAYED			0x0000001f
 #define BOUNCE_CODE_MESSAGE_DENIED					0x00000026
 
-struct RECIPIENT_BLOCK {
-	uint8_t reserved;
-	uint16_t count;
-	TAGGED_PROPVAL *ppropval;
-};
-
-struct FORWARDDELEGATE_ACTION {
-	uint16_t count;
-	RECIPIENT_BLOCK *pblock;
-};
-
 struct EXT_RECIPIENT_BLOCK {
 	uint8_t reserved;
 	uint32_t count;
@@ -119,25 +101,12 @@ struct EXT_FORWARDDELEGATE_ACTION {
 #define ACTION_FLAVOR_NS							0x00000001
 #define ACTION_FLAVOR_ST							0x00000002
 
-struct ACTION_BLOCK {
-	uint16_t length;
-	uint8_t type;
-	uint32_t flavor;
-	uint32_t flags;
-	void *pdata;
-};
-
 struct EXT_ACTION_BLOCK {
 	uint32_t length;
 	uint8_t type;
 	uint32_t flavor;
 	uint32_t flags;
 	void *pdata;
-};
-
-struct RULE_ACTIONS {
-	uint16_t count;
-	ACTION_BLOCK *pblock;
 };
 
 struct EXT_RULE_ACTIONS {
