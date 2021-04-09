@@ -23,6 +23,12 @@
 
 typedef void* (*EXT_BUFFER_ALLOC)(size_t);
 
+struct EXT_BUFFER_MGT {
+	void *(*alloc)(size_t);
+	void *(*realloc)(void *, size_t);
+	void (*free)(void *);
+};
+
 struct EXT_PULL {
 	EXT_BUFFER_ALLOC alloc;
 	template<typename T> inline T *anew() { return static_cast<T *>(alloc(sizeof(T))); }
@@ -47,6 +53,7 @@ struct EXT_PUSH {
 	uint32_t alloc_size;
 	uint32_t offset;
 	uint32_t flags;
+	EXT_BUFFER_MGT mgt;
 };
 
 /* bitmap RPC_HEADER_EXT flags */
@@ -229,8 +236,7 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r);
 
 int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *pmsg);
-extern BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata,
-	uint32_t alloc_size, uint32_t flags);
+extern BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size, uint32_t flags, const EXT_BUFFER_MGT *mgt = nullptr);
 void ext_buffer_push_free(EXT_PUSH *pext);
 
 int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size);

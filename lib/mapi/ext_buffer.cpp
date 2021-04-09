@@ -2134,9 +2134,11 @@ int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *r)
 	return EXT_ERR_SUCCESS;
 }
 
-BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata,
-	uint32_t alloc_size, uint32_t flags)
+BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size,
+    uint32_t flags, const EXT_BUFFER_MGT *mgt)
 {
+	const EXT_BUFFER_MGT default_mgt = {malloc, realloc, free};
+	pext->mgt = mgt != nullptr ? *mgt : default_mgt;
 	if (NULL == pdata) {
 		pext->b_alloc = TRUE;
 		if (0 == alloc_size) {
@@ -2144,7 +2146,7 @@ BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata,
 		} else {
 			pext->alloc_size = GROWING_BLOCK_SIZE;
 		}
-		pext->data = static_cast<uint8_t *>(malloc(pext->alloc_size));
+		pext->data = static_cast<uint8_t *>(pext->mgt.alloc(pext->alloc_size));
 		if (NULL == pext->data) {
 			pext->alloc_size = 0;
 			return FALSE;
@@ -2162,7 +2164,7 @@ BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata,
 void ext_buffer_push_free(EXT_PUSH *pext)
 {
 	if (TRUE == pext->b_alloc) {
-		free(pext->data);
+		pext->mgt.free(pext->data);
 	}
 }
 
@@ -2189,7 +2191,7 @@ BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size)
 	}
 	for (alloc_size=pext->alloc_size; alloc_size<size;
 		alloc_size+=GROWING_BLOCK_SIZE);
-	auto pdata = static_cast<uint8_t *>(realloc(pext->data, alloc_size));
+	auto pdata = static_cast<uint8_t *>(pext->mgt.realloc(pext->data, alloc_size));
 	if (NULL == pdata) {
 		return FALSE;
 	}
