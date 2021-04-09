@@ -9,6 +9,8 @@
 #include "rops.h"
 #include <gromox/util.hpp>
 
+static unsigned int g_rop_debug;
+
 int rop_dispatch(ROP_REQUEST *prequest,
 	ROP_RESPONSE **ppresponse,
 	uint32_t *phandles, uint8_t hnum)
@@ -1692,5 +1694,9 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			prequest->rop_id);
 		return ecError;
 	}
+	if (g_rop_debug == 0)
+		return ecSuccess;
+	if ((*ppresponse)->result != 0 || g_rop_debug == 2)
+		fprintf(stderr, "ROP %s %xh\n", rop_idtoname(prequest->rop_id), (*ppresponse)->result);
 	return ecSuccess;
 }
