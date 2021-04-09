@@ -41,7 +41,7 @@ static DOUBLE_LIST g_conn_list;
 static pthread_cond_t g_waken_cond;
 static std::mutex g_conn_lock;
 static pthread_mutex_t g_cond_mutex;
-
+static unsigned int g_zrpc_debug;
 
 void rpc_parser_init(int thread_num)
 {
@@ -643,6 +643,11 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 	default:
 		return DISPATCH_FALSE;
 	}
+	if (g_zrpc_debug == 0)
+		return DISPATCH_TRUE;
+	if (presponse->result != 0 || g_zrpc_debug == 2)
+		fprintf(stderr, "ZRPC %s %xh\n", zcore_rpc_idtoname(prequest->call_id),
+		        presponse->result);
 	return DISPATCH_TRUE;
 }
 
