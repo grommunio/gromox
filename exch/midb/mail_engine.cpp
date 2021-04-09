@@ -4926,10 +4926,14 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	}
 	first = atoi(argv[5]);
 	last = atoi(argv[6]);
-	if ((first < 1 && -1 != first) || (last < 1 && -1 != last) ||
-		(-1 == first && -1 != last) || (-1 != last && last < first)) {
+	if (first < 1 && first != -1)
 		return 1;
-	}
+	if (last < 1 && last != -1)
+		return 1;
+	if (first == -1 && last != -1)
+		return 1;
+	if (last != -1 && last < first)
+		return 1;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (NULL == pidb) {
 		return 2;
