@@ -37,6 +37,7 @@ static std::vector<EXMDB_ITEM> g_local_list;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
 static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
+static unsigned int g_exrpc_debug;
 
 EXMDB_CONNECTION::~EXMDB_CONNECTION()
 {
@@ -91,16 +92,11 @@ static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
 	return TRUE;
 }
 
-static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
+static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 	EXMDB_RESPONSE *presponse)
 {
 	BOOL b_return;
 	
-	presponse->call_id = prequest->call_id;
-	if (access(prequest->dir, R_OK | X_OK) < 0)
-		printf("exmdb rpc %s accessing %s: %s\n", exmdb_rpc_idtoname(prequest->call_id),
-		       prequest->dir, strerror(errno));
-	exmdb_server_set_dir(prequest->dir);
 	switch (prequest->call_id) {
 	case exmdb_callid::PING_STORE:
 		return exmdb_server_ping_store(prequest->dir);
@@ -806,6 +802,23 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 	default:
 		return FALSE;
 	}
+}
+
+static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
+	EXMDB_RESPONSE *presponse)
+{
+	presponse->call_id = prequest->call_id;
+	if (access(prequest->dir, R_OK | X_OK) < 0)
+		printf("exmdb rpc %s accessing %s: %s\n", exmdb_rpc_idtoname(prequest->call_id),
+		       prequest->dir, strerror(errno));
+	exmdb_server_set_dir(prequest->dir);
+	auto ret = exmdb_parser_dispatch2(prequest, presponse);
+	if (g_exrpc_debug == 0)
+		return ret;
+	if (!ret || g_exrpc_debug == 2)
+		fprintf(stderr, "EXRPC %s %xh\n", exmdb_rpc_idtoname(prequest->call_id),
+		        static_cast<unsigned int>(ret));
+	return ret;
 }
 
 static void *thread_work_func(void *pparam)
