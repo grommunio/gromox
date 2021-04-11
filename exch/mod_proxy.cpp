@@ -112,13 +112,13 @@ static bool mod_proxy_read_txt()
 		if (NULL == ptoken) {
 			ptoken = phost + strlen(phost);
 		}
-		size_t remotehostlen = ptoken - phost + 1;
-		pxnode->remote_host = static_cast<char *>(malloc(remotehostlen));
+		size_t remotehostlen = ptoken - phost;
+		pxnode->remote_host = static_cast<char *>(malloc(remotehostlen + 1));
 		if (NULL == pxnode->remote_host) {
 			break;
 		}
-		memcpy(pxnode->remote_host, phost, path_len);
-		pxnode->remote_host[path_len] = '\0';
+		memcpy(pxnode->remote_host, phost, remotehostlen);
+		pxnode->remote_host[remotehostlen] = '\0';
 		if ('\0' == ptoken[0] || '\0' == ptoken[1]) {
 			pxnode->remote_path = NULL;
 		} else {
