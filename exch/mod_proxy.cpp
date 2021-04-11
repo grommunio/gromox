@@ -71,9 +71,6 @@ static void* thread_work_func(void *pparam);
 static bool mod_proxy_read_txt()
 {
 	int i;
-	int tmp_len;
-	char *ptoken;
-	char *ptoken1;
 	PROXY_NODE *pxnode;
 	DOUBLE_LIST_NODE *pnode;
 
@@ -100,45 +97,44 @@ static bool mod_proxy_read_txt()
 		if (NULL == pxnode->path) {
 			break;
 		}
-		tmp_len = strlen(pxnode->path);
-		if ('/' == pxnode->path[tmp_len - 1]) {
-			pxnode->path[tmp_len - 1] = '\0';
-		}
+		auto path_len = strlen(pxnode->path);
+		if (pxnode->path[path_len-1] == '/')
+			pxnode->path[path_len-1] = '\0';
+		const char *phost;
 		if (strncasecmp(pitem[i].dest, "http://", 7) == 0) {
-			ptoken1 = pitem[i].dest + 7;
+			phost = pitem[i].dest + 7;
 		} else {
 			printf("[mod_proxy]: scheme of destination in '%s' "
 			       "unsupported, can only be http\n", pitem[i].dest);
 			break;
 		}
-		ptoken = strchr(ptoken1, '/');
+		auto ptoken = strchr(phost, '/');
 		if (NULL == ptoken) {
-			ptoken = ptoken1 + strlen(ptoken1);
+			ptoken = phost + strlen(phost);
 		}
-		size_t remotehostlen = ptoken - ptoken1 + 1;
+		size_t remotehostlen = ptoken - phost + 1;
 		pxnode->remote_host = static_cast<char *>(malloc(remotehostlen));
 		if (NULL == pxnode->remote_host) {
 			break;
 		}
-		memcpy(pxnode->remote_host, ptoken1, tmp_len);
-		pxnode->remote_host[tmp_len] = '\0';
+		memcpy(pxnode->remote_host, phost, path_len);
+		pxnode->remote_host[path_len] = '\0';
 		if ('\0' == ptoken[0] || '\0' == ptoken[1]) {
 			pxnode->remote_path = NULL;
 		} else {
 			ptoken ++;
-			tmp_len = strlen(ptoken);
-			if ('/' == ptoken[tmp_len - 1]) {
-				tmp_len --;
-			}
-			if (0 == tmp_len) {
+			auto destpath_len = strlen(ptoken);
+			if (ptoken[destpath_len-1] == '/')
+				--destpath_len;
+			if (destpath_len == 0) {
 				pxnode->remote_path = NULL;
 			} else {
-				pxnode->remote_path = static_cast<char *>(malloc(tmp_len + 1));
+				pxnode->remote_path = static_cast<char *>(malloc(destpath_len + 1));
 				if (NULL == pxnode->remote_path) {
 					break;
 				}
-				memcpy(pxnode->remote_path, ptoken, tmp_len);
-				pxnode->remote_path[tmp_len] = '\0';
+				memcpy(pxnode->remote_path, ptoken, destpath_len);
+				pxnode->remote_path[destpath_len] = '\0';
 			}
 		}
 		pxnode->remote_port = 80;
@@ -147,7 +143,7 @@ static bool mod_proxy_read_txt()
 			  &pxnode->remote_port);
 		if (ret < 0) {
 			printf("[mod_proxy]: host format error near \"%s\": %s\n",
-			       ptoken1, strerror(-ret));
+			       phost, strerror(-ret));
 			break;
 		}
 		double_list_append_as_tail(&g_proxy_list, &pxnode->node);
