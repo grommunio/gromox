@@ -99,8 +99,6 @@ enum {
 	IMAP_CODE_2200010
 };
 
-extern void resource_init();
-extern void resource_free();
 extern int resource_run();
 extern int resource_stop();
 extern const char *resource_get_imap_code(int code_type, int n, int *len);

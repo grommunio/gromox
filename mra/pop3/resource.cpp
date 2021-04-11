@@ -5,6 +5,7 @@
  *
  */
 #include <cerrno>
+#include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
@@ -50,24 +51,13 @@ static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
 
 /* private global variables */
 static POP3_ERROR_CODE *g_error_code_table, *g_def_code_table;
-static pthread_rwlock_t g_error_table_lock;
+static std::shared_mutex g_error_table_lock;
 
 static int resource_find_pop3_code_index(int native_code);
 
 static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable);
 
 static int resource_parse_pop3_line(char* dest, char* src_str, int len);
-
-void resource_init()
-{
-    pthread_rwlock_init(&g_error_table_lock, NULL);
-}
-
-void resource_free()
-{   
-    /* to avoid memory leak because of not stop */
-    pthread_rwlock_destroy(&g_error_table_lock);
-}
 
 int resource_run()
 {
@@ -288,7 +278,7 @@ char* resource_get_pop3_code(int code_type, int n, int *len)
 #define FIRST_PART      1
 #define SECOND_PART     2
 
-    pthread_rwlock_rdlock(&g_error_table_lock);
+	std::shared_lock rd_hold(g_error_table_lock);
     if (NULL == g_error_code_table || g_error_code_table[code_type].code
         == -1) {
         pitem = &g_def_code_table[code_type];
@@ -299,7 +289,6 @@ char* resource_get_pop3_code(int code_type, int n, int *len)
     ret_ptr = &(pitem->comment[1]);
     if (FIRST_PART == n)    {
         *len = ret_len - 1;
-        pthread_rwlock_unlock(&g_error_table_lock);
         return ret_ptr;
     }
     if (SECOND_PART == n)   {
@@ -308,11 +297,9 @@ char* resource_get_pop3_code(int code_type, int n, int *len)
 
         if (ret_len > 0) {
             *len = ret_len - 1;
-            pthread_rwlock_unlock(&g_error_table_lock);
             return ret_ptr;
         }
     }
-    pthread_rwlock_unlock(&g_error_table_lock);
     debug_info("[resource]: not exits nth in resource_get_pop3_code");
     return NULL;
 }
@@ -326,12 +313,11 @@ BOOL resource_refresh_pop3_code_table()
         return FALSE;
     }
 
-    pthread_rwlock_wrlock(&g_error_table_lock);
+	std::unique_lock wr_hold(g_error_table_lock);
     if (NULL != g_error_code_table) {
         free(g_error_code_table);
     }
     g_error_code_table = pnew_table;
-    pthread_rwlock_unlock(&g_error_table_lock);
     return TRUE;
 }
 

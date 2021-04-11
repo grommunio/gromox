@@ -4,6 +4,7 @@
  *  programmer to set and get the configuration dynamicly
  *
  */
+#include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -128,7 +129,7 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 
 /* private global variables */
 static IMAP_RETURN_CODE *g_return_code_table, *g_def_code_table;
-static pthread_rwlock_t g_return_table_lock;
+static std::shared_mutex g_return_table_lock;
 static SINGLE_LIST* g_lang_list;
 
 static int resource_find_imap_code_index(int native_code);
@@ -139,18 +140,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist);
 
 static int resource_parse_imap_line(char* dest, char* src_str, int len);
 static BOOL resource_load_imap_lang_list();
-
-void resource_init()
-{
-	g_lang_list = NULL;
-    pthread_rwlock_init(&g_return_table_lock, NULL);
-}
-
-void resource_free()
-{   
-    /* to avoid memory leak because of not stop */
-    pthread_rwlock_destroy(&g_return_table_lock);
-}
 
 int resource_run()
 {
@@ -386,7 +375,7 @@ const char *resource_get_imap_code(int code_type, int n, int *len)
 #define FIRST_PART      1
 #define SECOND_PART     2
 
-    pthread_rwlock_rdlock(&g_return_table_lock);
+	std::shared_lock rd_hold(g_return_table_lock);
     if (NULL == g_return_code_table || g_return_code_table[code_type].code
         == -1) {
         pitem = &g_def_code_table[code_type];
@@ -397,7 +386,6 @@ const char *resource_get_imap_code(int code_type, int n, int *len)
     ret_ptr = &(pitem->comment[1]);
     if (FIRST_PART == n)    {
         *len = ret_len - 1;
-        pthread_rwlock_unlock(&g_return_table_lock);
         return ret_ptr;
     }
     if (SECOND_PART == n)   {
@@ -406,11 +394,9 @@ const char *resource_get_imap_code(int code_type, int n, int *len)
 
         if (ret_len > 0) {
             *len = ret_len - 1;
-            pthread_rwlock_unlock(&g_return_table_lock);
             return ret_ptr;
         }
     }
-    pthread_rwlock_unlock(&g_return_table_lock);
     debug_info("[resource]: not exits nth in resource_get_imap_code");
 	*len = 15;
 	return "unknown error\r\n";
@@ -425,12 +411,11 @@ BOOL resource_refresh_imap_code_table()
         return FALSE;
     }
 
-    pthread_rwlock_wrlock(&g_return_table_lock);
+	std::unique_lock wr_hold(g_return_table_lock);
     if (NULL != g_return_code_table) {
         free(g_return_code_table);
     }
     g_return_code_table = pnew_table;
-    pthread_rwlock_unlock(&g_return_table_lock);
     return TRUE;
 }
 
