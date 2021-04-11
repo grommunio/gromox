@@ -83,7 +83,7 @@ int listener_run()
  *  trigger the listener to accept the connection
  *
  */
-int listerner_trigger_accept()
+int listener_trigger_accept()
 {
 	pthread_attr_t  attr;
 

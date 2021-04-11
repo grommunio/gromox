@@ -506,7 +506,7 @@ int main(int argc, const char **argv)
 	auto cleanup_18 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
-	if (0 != listerner_trigger_accept()) {
+	if (listener_trigger_accept() != 0) {
 		printf("[system]: fail trigger accept\n");
 		return EXIT_FAILURE;
 	}
