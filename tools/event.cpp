@@ -85,7 +85,7 @@ struct HOST_NODE {
 }
 
 static std::atomic<bool> g_notify_stop{false};
-static int g_threads_num;
+static unsigned int g_threads_num;
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;
 static std::vector<std::string> g_acl_list;
@@ -128,7 +128,6 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 
 int main(int argc, const char **argv)
 {
-	int i;
 	int listen_port;
 	char listen_ip[40];
 	pthread_attr_t thr_attr;
@@ -178,7 +177,7 @@ int main(int argc, const char **argv)
 		g_threads_num = 50;
 		config_file_set_value(pconfig, "EVENT_THREADS_NUM", "50");
 	} else {
-		g_threads_num = atoi(str_value);
+		g_threads_num = strtoul(str_value, nullptr, 0);
 		if (g_threads_num < 1) {
 			g_threads_num = 1;
 			config_file_set_value(pconfig, "EVENT_THREADS_NUM", "20");
@@ -225,6 +224,7 @@ int main(int argc, const char **argv)
 		for (auto tid : tidlist)
 			pthread_join(tid, nullptr);
 	});
+	size_t i;
 	for (i=0; i<g_threads_num; i++) {
 		pthread_t tid;
 		auto ret = pthread_create(&tid, &thr_attr, enqueue_work_func, nullptr);
@@ -234,7 +234,7 @@ int main(int argc, const char **argv)
 		}
 		tidlist.push_back(tid);
 		char buf[32];
-		snprintf(buf, sizeof(buf), "enqueue/%u", i);
+		snprintf(buf, sizeof(buf), "enqueue/%zu", i);
 		pthread_setname_np(tid, buf);
 
 		ret = pthread_create(&tid, &thr_attr, dequeue_work_func, nullptr);
@@ -243,7 +243,7 @@ int main(int argc, const char **argv)
 			break;
 		}
 		tidlist.push_back(tid);
-		snprintf(buf, sizeof(buf), "dequeue/%u", i);
+		snprintf(buf, sizeof(buf), "dequeue/%zu", i);
 		pthread_setname_np(tid, buf);
 	}
 	

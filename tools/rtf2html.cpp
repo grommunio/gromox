@@ -17,7 +17,7 @@
 namespace {
 
 struct srcitem {
-	int cpid;
+	unsigned int cpid;
 	char s[64];
 };
 

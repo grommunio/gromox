@@ -1493,7 +1493,6 @@ static void output_event(time_t start_time, time_t end_time,
 
 static BOOL get_freebusy(const char *dir)
 {
-	int i;
 	int sockd;
 	void *pvalue;
 	BOOL b_first;
@@ -1831,7 +1830,7 @@ static BOOL get_freebusy(const char *dir)
 	       "\"detailed\", " : "\"simple\", ");
 	printf("\"events\":[");
 	b_first = FALSE;
-	for (i=0; i<tmp_set.count; i++) {
+	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pvalue = tpropval_array_get_propval(
 			tmp_set.pparray[i], pidlidappointmentstartwhole);
 		if (NULL == pvalue) {

@@ -391,7 +391,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 
 int main(int argc, const char **argv)
 {
-	int user_id, i, j;
+	int user_id;
 	char *err_msg;
 	char lang[32];
 	MYSQL *pmysql;
@@ -518,13 +518,13 @@ int main(int argc, const char **argv)
 	}
 	auto line_num = pfile->get_size();
 	auto pline = static_cast<char *>(pfile->get_list());
-	for (i=0; i<line_num; i++) {
+	size_t i;
+	for (i = 0; i < line_num; ++i) {
 		if (0 != strcasecmp(pline + 1088*i, lang)) {
 			continue;
 		}
-		for (j=0; j<RES_TOTAL_NUM; j++) {
+		for (size_t j = 0; j < RES_TOTAL_NUM; ++j)
 			HX_strlcpy(folder_lang[j], pline + 1088 * i + 64 * (j + 1), GX_ARRAY_SIZE(folder_lang[j]));
-		}
 		break;
 	}
 	pfile.reset();
