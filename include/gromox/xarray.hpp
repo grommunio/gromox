@@ -20,16 +20,13 @@ struct XARRAY {
 	DOUBLE_LIST  hash_lists[XARRAY_HASHITEM_NUMBER];
 };
 
-void xarray_init(XARRAY* pxarray, LIB_BUFFER* pbuf_pool, int data_size);
-
+extern GX_EXPORT void xarray_init(XARRAY *, LIB_BUFFER *pool, size_t data_size);
 void xarray_free(XARRAY* pxarray);
-extern GX_EXPORT LIB_BUFFER *xarray_allocator_init(int data_size, int max_size, bool thread_safe);
+extern GX_EXPORT LIB_BUFFER *xarray_allocator_init(size_t data_size, size_t max_size, bool thread_safe);
 void xarray_allocator_free(LIB_BUFFER* buf);
 
 int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag);
-
-void* xarray_get_item(XARRAY* pxarray, int index);
+extern GX_EXPORT void *xarray_get_item(XARRAY* pxarray, size_t index);
 void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag);
-int xarray_get_capacity(XARRAY* pxarray);
-
+extern size_t xarray_get_capacity(XARRAY *);
 void xarray_clear(XARRAY* pxarray);

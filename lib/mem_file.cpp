@@ -306,9 +306,8 @@ ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
 		if (offset < 0) {
 			return 0;
 		}
-		if (offset > pfile->file_total_len) {
+		if (static_cast<size_t>(offset) > pfile->file_total_len)
 			offset = pfile->file_total_len;
-		}
 		pnode = double_list_get_head(&pfile->list);
 		if (MEM_FILE_READ_PTR == type) {
 			if (offset < FILE_BLOCK_SIZE){
@@ -447,13 +446,12 @@ ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
 		if (offset >0) {
 			return 0;
 		}
-		if (-offset > pfile->file_total_len) {
+		if (static_cast<size_t>(-offset) > pfile->file_total_len)
 			offset = -pfile->file_total_len;
-		}
 		pnode = double_list_get_tail(&pfile->list);
 		end = pfile->file_total_len%FILE_BLOCK_SIZE;
 		if (MEM_FILE_READ_PTR == type) {
-			if (-offset <= end){
+			if (static_cast<size_t>(-offset) <= end) {
 				pfile->pnode_rd = pnode;
 				pfile->rd_block_pos = end + offset;
 			} else {
@@ -470,7 +468,7 @@ ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
 			ret_val = pfile->file_total_len + offset - pfile->rd_total_pos; 
 			pfile->rd_total_pos = pfile->file_total_len + offset;
 		} else {
-			if (-offset <= end){
+			if (static_cast<size_t>(-offset) <= end) {
 				pfile->pnode_wr = pnode;
 				pfile->wr_block_pos = end + offset;
 			} else {

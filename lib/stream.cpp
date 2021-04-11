@@ -697,7 +697,7 @@ int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *psize)
 			if (actual_size > buf_size) {
 				actual_size = buf_size;
 				*psize = actual_size;
-				if (actual_size >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
+				if (actual_size >= 0 && static_cast<size_t>(actual_size) >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
 					i = actual_size - (STREAM_BLOCK_SIZE - 
 							pstream->rd_block_pos);
 					memcpy(pbuff, (char*)pstream->pnode_rd->pdata + 

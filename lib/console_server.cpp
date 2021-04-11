@@ -423,25 +423,24 @@ static void console_server_execve_command(char* cmdline)
 {
     char *cmd = NULL;
     char *argv[MAXARGS]; /* cmd argv to do */
-    int  i = 0, argc = 0;
 
     memset(argv, 0, sizeof(argv));
     /* parse command line */
 	std::unique_lock xc_hold(g_execute_lock);
-    argc = console_server_parse_line(cmdline, argv);
+	auto argc = console_server_parse_line(cmdline, argv);
     cmd = argv[0];
     if (0 == argc) {
         return; /* ignore empty lines */
     }
 	/* compare build-in command */
-    for (i = 0; i < g_cmd_num; i++) {
+	for (size_t i = 0; i < g_cmd_num; ++i) {
         if ('\0' != *(g_cmd_entry[i].cmd) && 
 			0 == strcmp(g_cmd_entry[i].cmd, cmd)) {
             g_cmd_entry[i].cmd_handler(argc, argv);
             return;
         }
     }
-    for (i = 0; i < g_cmd_num; i++) {
+	for (size_t i = 0; i < g_cmd_num; ++i) {
         if ('\0' == *(g_cmd_entry[i].cmd) &&
 			TRUE == g_cmd_entry[i].cmd_handler(argc, argv)) {
 			return;

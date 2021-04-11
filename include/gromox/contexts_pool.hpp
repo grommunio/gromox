@@ -44,10 +44,7 @@ struct SCHEDULE_CONTEXT {
 	int polling_mask;
 };
 
-void contexts_pool_init(void *pcontexts, int context_num,
-	int unit_offset, int (*get_socket)(void*),
-	struct timeval (*get_timestamp)(void*),
-	int contexts_per_thr, int timeout);
+extern GX_EXPORT void contexts_pool_init(void *pcontexts, int context_num, unsigned int unit_offset, int (*get_socket)(void *), struct timeval (*get_timestamp)(void *), int contexts_per_thr, int timeout);
 extern int contexts_pool_run();
 extern int contexts_pool_stop();
 extern void contexts_pool_free();

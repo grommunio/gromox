@@ -318,7 +318,7 @@ BOOL config_file_set_value(std::shared_ptr<CONFIG_FILE> cfg_file,
 
 BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg_file)
 {
-	size_t i, fd, size, len, written;
+	size_t i, size, len, written;
 	struct stat node_stat;
 	char *ptr, *psearch;
 	char *plf, *psharp;
@@ -340,7 +340,7 @@ BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg_file)
 	if (NULL == pbuff) {
 		return FALSE;
 	}
-	fd = open(cfg_file->file_name, O_RDWR);
+	auto fd = open(cfg_file->file_name, O_RDWR);
 	if (-1 == fd) {
 		free(pbuff);
 		return FALSE;
@@ -402,7 +402,7 @@ BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg_file)
 			size += len;
 		} else {
 			len = strlen(cfg_file->config_table[i].value);
-			if (len < plf2 - pequal - 1) {
+			if (len < static_cast<size_t>(plf2 - pequal - 1)) {
 				pequal[1] = ' ';
 				memcpy(pequal + 2, cfg_file->config_table[i].value, len);
 				memset (pequal + 2 + len, ' ', plf2 - pequal - 2 - len);

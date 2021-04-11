@@ -411,31 +411,27 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 	ptr1 ++;
 	while (' ' == *ptr1 || '\t' == *ptr1) {
 		ptr1 ++;
-		if (ptr1 - src >= length) {
+		if (static_cast<size_t>(ptr1 - src) >= length)
 			return FALSE;
-		}
 	}
 	ptr2 = ptr1;
 	if ('"' == *ptr2) {
 		do {
 			ptr2 ++;
-			if (ptr2 - src >= length) {
+			if (static_cast<size_t>(ptr2 - src) >= length)
 				return FALSE;
-			}
 		} while ('"' != *ptr2 || '\\' == *(ptr2 - 1));
 	}
 	while (',' != *ptr2 && '}' != *ptr2) {
 		ptr2 ++;
-		if (ptr2 - src >= length) {
+		if (static_cast<size_t>(ptr2 - src) >= length)
 			return FALSE;
-		}
 	}
 
-	if (ptr2 - ptr1 <= buff_len - 1) {
+	if (static_cast<size_t>(ptr2 - ptr1) <= buff_len - 1)
 		len = ptr2 - ptr1;
-	} else {
+	else
 		len = buff_len - 1;
-	}
 	memcpy(buff, ptr1, len);
 	buff[len] = '\0';
 	if ('"' == buff[0]) {
@@ -472,25 +468,22 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	ptr1 ++;
 	
 	while (' ' == *ptr1 || '\t' == *ptr1) {
-		if (ptr1 - src >= temp_len) {
+		if (static_cast<size_t>(ptr1 - src) >= temp_len)
 			return FALSE;
-		}
 		ptr1 ++;
 	}
 	ptr2 = ptr1;
 	if ('"' == *ptr2) {
 		do {
 			ptr2 ++;
-			if (ptr2 - src >= temp_len) {
+			if (static_cast<size_t>(ptr2 - src) >= temp_len)
 				return FALSE;
-			}
 		} while ('"' != *ptr2 || '\\' == *(ptr2 - 1));
 	}
 	while (',' != *ptr2 && '}' != *ptr2) {
 		ptr2 ++;
-		if (ptr2 - src >= temp_len) {
+		if (static_cast<size_t>(ptr2 - src) >= temp_len)
 			return FALSE;
-		}
 	}
 
 	len = strlen(value);
@@ -500,13 +493,10 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	if (temp_len1 > length) {
 		return FALSE;
 	}
-
-	if (ptr2 - ptr1 < len) {
+	if (static_cast<size_t>(ptr2 - ptr1) < len)
 		memmove(ptr1 + len, ptr2, temp_len1 - (ptr1 - src + len));
-	} else if (ptr2 - ptr1 > len) {
+	else if (static_cast<size_t>(ptr2 - ptr1) > len)
 		memmove(ptr1 + len, ptr2, src + temp_len - ptr2);
-	}
-		
 	memcpy(ptr1, value, len);
 	return TRUE;
 }
@@ -1673,7 +1663,7 @@ void encode_hex_int(int id, char *out)
 	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 							'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	char t_char;
-	int i, j;
+	size_t i, j;
 	
 	for (i=0,j=0; i<sizeof(int); i++,j+=2) {
 		t_char = (id >> i*8) & 0xFF;
@@ -1685,7 +1675,6 @@ void encode_hex_int(int id, char *out)
 
 int decode_hex_int(const char *in)
 {
-	int i;
 	int retval;
 	char t_buff[3];
 	
@@ -1694,7 +1683,7 @@ int decode_hex_int(const char *in)
 	}
 
 	retval = 0;
-	for (i=0; i<sizeof(int); i++) {
+	for (size_t i = 0; i < sizeof(int); ++i) {
 		t_buff[0] = in[2*i];
 		t_buff[1] = in[2*i+1];
 		t_buff[2] = '\0';

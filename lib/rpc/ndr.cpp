@@ -69,16 +69,12 @@ void ndr_pull_destroy(NDR_PULL *pndr)
 
 static bool ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 {
-	int i;
 	size_t ofs2;
 
 	ofs2 = (pndr->offset + (n - 1)) & ~(n - 1);
-	
-	for (i=pndr->offset; i<ofs2; i++) {
-		if (pndr->data[i] != 0) {
+	for (size_t i = pndr->offset; i < ofs2; ++i)
+		if (pndr->data[i] != 0)
 			return false;
-		}
-	}
 	return true;
 }
 

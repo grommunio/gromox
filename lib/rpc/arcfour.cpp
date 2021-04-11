@@ -25,15 +25,12 @@
 /* initialise the arcfour sbox with key */
 void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey) 
 {
-	int i;
 	uint8_t tc;
 	uint8_t j = 0;
 	
-	for (i=0; i<sizeof(pstate->sbox); i++) {
+	for (size_t i = 0; i < sizeof(pstate->sbox); ++i)
 		pstate->sbox[i] = (uint8_t)i;
-	}
-	
-	for (i=0; i<sizeof(pstate->sbox); i++) {
+	for (size_t i = 0; i < sizeof(pstate->sbox); ++i) {
 		j += (pstate->sbox[i] + pkey->data[i%pkey->length]);
 		
 		tc = pstate->sbox[i];

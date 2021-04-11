@@ -19,7 +19,7 @@ static int g_context_num;
 static int g_epoll_fd = -1;
 static pthread_t g_scan_id;
 static void *g_context_list;
-static int g_context_offset;
+static unsigned int g_context_offset;
 static pthread_t g_thread_id;
 static int g_contexts_per_thr;
 static std::atomic<bool> g_notify_stop{true};
@@ -186,7 +186,7 @@ static void *scan_work_func(void *pparam)
 }
 
 void contexts_pool_init(void *pcontexts, int context_num,
-	int unit_offset, int (*get_socket)(void*),
+    unsigned int unit_offset, int (*get_socket)(void*),
 	struct timeval (*get_timestamp)(void*),
 	int contexts_per_thr, int timeout)
 {

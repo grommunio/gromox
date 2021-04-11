@@ -16,7 +16,7 @@
  *							memory core
  *		data_size			the data elements size
  */
-void xarray_init(XARRAY* pxarray, LIB_BUFFER* pbuf_pool, int data_size)
+void xarray_init(XARRAY *pxarray, LIB_BUFFER *pbuf_pool, size_t data_size)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pxarray || NULL == pbuf_pool) {
@@ -69,7 +69,8 @@ void xarray_free(XARRAY* pxarray)
  *	@return
  *		the allocator pointer, NULL if fail
  */
-LIB_BUFFER *xarray_allocator_init(int data_size, int max_size, bool thread_safe)
+LIB_BUFFER *xarray_allocator_init(size_t data_size, size_t max_size,
+    bool thread_safe)
 {
 	return lib_buffer_init(data_size + EXTRA_XARRAYNODE_SIZE, 
 	       max_size, thread_safe ? TRUE : false);
@@ -151,10 +152,8 @@ int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
  *	@return
  *		pointer to the item data
  */
-void* xarray_get_item(XARRAY* pxarray, int index)
+void *xarray_get_item(XARRAY* pxarray, size_t index)
 {
-	int i;
-	
 #ifdef _DEBUG_UMTA
 	if (NULL == pxarray) {
 		debug_info("[xarray]: NULL pointer found in xarray_get_item");
@@ -172,9 +171,8 @@ void* xarray_get_item(XARRAY* pxarray, int index)
 	}
 	auto punit = reinterpret_cast<XARRAY_UNIT *>(static_cast<char *>(pxarray->cache_ptrs[XARRAY_CACHEITEM_NUMBER-1]) - sizeof(XARRAY_UNIT));
 	auto pnode = &punit->node;
-	for(i=XARRAY_CACHEITEM_NUMBER; i<=index; i++) {
+	for (size_t i = XARRAY_CACHEITEM_NUMBER; i <= index; ++i)
 		pnode = double_list_get_after(&pxarray->mlist, pnode);
-	}
 	return static_cast<char *>(pnode->pdata) + sizeof(XARRAY_UNIT);
 }
 
@@ -224,12 +222,12 @@ void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag)
  *	@return
  *		number of items
  */
-int xarray_get_capacity(XARRAY* pxarray)
+size_t xarray_get_capacity(XARRAY* pxarray)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pxarray) {
 		debug_info("[xarray]: NULL pointer found in xarray_get_capacity");
-		return -1;
+		return 0;
 	}
 #endif
 	return pxarray->cur_size;

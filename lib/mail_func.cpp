@@ -4,6 +4,7 @@
 /*
  *	  Addr_kids, for parse the email addr
  */
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -191,7 +192,7 @@ const char *extract_ip(const char *buff_in, char *buff_out)
  */
 void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 {
-	int i, j;
+	int i;
 	int tokenloc;
 	int bgettoken;
 	int lasttokenloc;
@@ -224,8 +225,9 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 	}
 	
 	/* check if two quotation marks are found */
-	if (0 == bgettoken || tokenloc - lasttokenloc >
-		sizeof(e_addr->display_name)) {
+	size_t j = 0;
+	if (bgettoken == 0 || (tokenloc - lasttokenloc >= 0 &&
+	    static_cast<size_t>(tokenloc - lasttokenloc) > sizeof(e_addr->display_name))) {
 		tmp_ptr = loc_ptr;
 		e_addr->display_name[0] = '\0';
 	} else {
@@ -270,8 +272,8 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 	}
 	
 	/* check if at token is found */
-	if (0 == bgettoken || tokenloc - lasttokenloc >
-		sizeof(e_addr->local_part)) {
+	if (bgettoken == 0 || (tokenloc - lasttokenloc >= 0 &&
+	    static_cast<size_t>(tokenloc - lasttokenloc) > sizeof(e_addr->local_part))) {
 		e_addr->local_part[0] = '\0';
 		tmp_ptr = loc_ptr;
 	} else {
@@ -517,8 +519,7 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
  */
 void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 {
-	int i, j;
-	int tmp_len;
+	int i, tmp_len;
 	int bquoted;
 	int tokenloc;
 	int bgettoken;
@@ -546,8 +547,8 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 		}
 		tmp_ptr ++;
 	}
-	if (0 == bgettoken || 0 == tokenloc ||
-		tokenloc >= sizeof(e_addr->display_name)) {
+	if (0 == bgettoken || 0 == tokenloc || (tokenloc >= 0 &&
+	    static_cast<size_t>(tokenloc) >= sizeof(e_addr->display_name))) {
 		tmp_ptr = email;
 		e_addr->display_name[0] = '\0';
 	} else {
@@ -618,8 +619,9 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 	}
 	
 	/* check if at token is found */
-	if (0 == bgettoken || tokenloc - lasttokenloc >
-		sizeof(e_addr->local_part)) {
+	size_t j = 0;
+	if (bgettoken == 0 || (tokenloc - lasttokenloc >= 0 &&
+	    static_cast<size_t>(tokenloc - lasttokenloc) > sizeof(e_addr->local_part))) {
 		e_addr->local_part[0] = '\0';
 		tmp_ptr = loc_ptr;
 	} else {
@@ -759,11 +761,11 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 	return 0;
 }
 
-void parse_mime_encode_string(char *in_buff, long buff_len,
+void parse_mime_encode_string(char *in_buff, long ibuff_len,
 	ENCODE_STRING *pencode_string)
 {
-	long i = 0, tmp_begin; 
-	long charset_begin, charset_len, title_begin, title_len;
+	assert(ibuff_len >= 0);
+	size_t i = 0, buff_len = ibuff_len;
 	
 	memset(pencode_string, 0, sizeof(ENCODE_STRING));
 	/* first ignore the ' ' in the buffer */
@@ -782,14 +784,13 @@ void parse_mime_encode_string(char *in_buff, long buff_len,
 	if (in_buff[i] != '=' || in_buff[i+1] != '?') {
 		strcpy(pencode_string->charset, "default");
 		strcpy(pencode_string->encoding, "none");
-		title_len = (buff_len > sizeof(pencode_string->title) - 1) ? 
-				sizeof(pencode_string->title) - 1 : buff_len;
+		auto title_len = std::max(buff_len, sizeof(pencode_string->title) - 1);
 		memcpy(pencode_string->title, in_buff, title_len);
 		pencode_string->title[title_len] = '\0';
 		return;
 	}
-	charset_begin = i + 2;
-	tmp_begin = charset_begin;
+	auto charset_begin = i + 2;
+	auto tmp_begin = charset_begin;
 	for (i=tmp_begin; i<buff_len; i++) {
 		if (in_buff[i] == '?') {
 			break;
@@ -799,7 +800,7 @@ void parse_mime_encode_string(char *in_buff, long buff_len,
 		return;
 	}
 	/* copy charset to parsed structure */
-	charset_len = i - charset_begin;
+	auto charset_len = i - charset_begin;
 	if (charset_len > sizeof(pencode_string->charset) - 1) {
 		return;
 	}
@@ -826,13 +827,13 @@ void parse_mime_encode_string(char *in_buff, long buff_len,
 	if (in_buff[tmp_begin] == '?') {
 		tmp_begin ++;
 	}
-	title_begin = tmp_begin;
+	auto title_begin = tmp_begin;
 	for (i=tmp_begin; i<buff_len; i++) {
 		if (in_buff[i] == '?' && in_buff[i+1] == '=') {
 			break;
 		}
 	}
-	title_len = i - title_begin;
+	auto title_len = i - title_begin;
 	if (title_len > sizeof(pencode_string->title) - 1) {
 		title_len = sizeof(pencode_string->title) - 1;
 	}
@@ -1095,9 +1096,9 @@ int utf8_to_utf7 (const char *u8, size_t u8len, char *u7, size_t u7len)
 {
   char *u7end;
   char *buf, *p;
-  int ch;
-  int n, i, b = 0, k = 0;
+	int ch, b = 0, k = 0;
   int base64 = 0;
+	size_t n;
 
   /*
    * In the worst case we convert 2 chars to 7 chars. For example:
@@ -1131,8 +1132,7 @@ int utf8_to_utf7 (const char *u8, size_t u8len, char *u7, size_t u7len)
 	u8++, u8len--;
 	if (n > u8len)
 	  return -1;
-	for (i = 0; i < n; i++)
-	{
+	for (size_t i = 0; i < n; ++i) {
 	  if ((u8[i] & 0xc0) != 0x80)
 		return -1;
 	  ch = (ch << 6) | (u8[i] & 0x3f);
@@ -1503,22 +1503,18 @@ static BOOL encode_strings_to_utf8(
 BOOL mime_string_to_utf8(const char *charset,
 	const char *mime_string, char *out_string)
 {
-	int i, buff_len;
+	size_t i;
 	char *in_buff, *out_buff;
 	ENCODE_STRING encode_string;
 	char temp_buff[MIME_FIELD_LEN];
-	int last_pos, begin_pos, end_pos;
-	size_t offset, decode_len, tmp_len;
-	
-	
-	buff_len = strlen(mime_string);
+	ssize_t begin_pos = -1, end_pos = -1;
+	size_t offset, decode_len, tmp_len, last_pos = 0;
+	auto buff_len = strlen(mime_string);
 	in_buff = (char*)mime_string;
 	out_buff = out_string;
 	offset = 0;
-	begin_pos = -1;
-	end_pos = -1;
-	last_pos = 0;
-	for (i=0; i<buff_len-1&&offset<2*buff_len+1; i++) {
+
+	for (i = 0; buff_len > 0 && i < buff_len - 1 && offset < 2 * buff_len + 1; ++i) {
 		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
 			begin_pos = i;
 			if (i > last_pos) {
@@ -1589,17 +1585,16 @@ void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len)
 {
 	char *p;
-	int len;
 	int len1;
 	int offset;
 	int nofill;
-	int paramct;
-	int c, i, j;
+	int paramct, c;
 	char token[62];
 	
 	paramct = 0;
 	nofill = 0;
-	len = strlen(enriched_txt);
+	auto len = strlen(enriched_txt);
+	size_t i;
 	for (i=0,offset=0; i<len&&offset<max_len-2; i++) {
 		c = enriched_txt[i];
 		if('<' == c) {
@@ -1615,6 +1610,7 @@ void enriched_to_html(const char *enriched_txt,
 				memcpy(html + offset, "&lt;", 4);
 				offset += 4;
 			} else {
+				size_t j;
 				for (j=0, p=token; (c=enriched_txt[i+j])!='\0'&&c!='>'; j++) {
 					if (j < sizeof(token)-1) {
 						*p++ = HX_isupper(c) ? HX_tolower(c) : c;
@@ -1733,6 +1729,7 @@ void enriched_to_html(const char *enriched_txt,
 			offset += 5;
 		} else {
 			if('\n' == c && nofill <= 0 && paramct <= 0) {
+				size_t j;
 				for (j=i+1; j<len; j++) {
 					if ('\n' == enriched_txt[j]) {
 						if (offset + 4 >= max_len - 2) {

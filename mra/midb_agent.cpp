@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
 #include <atomic>
+#include <cassert>
 #include <csignal>
 #include <mutex>
 #include <libHX/string.h>
@@ -1992,7 +1993,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
-	int i, num;
 	int value;
 	int lines;
 	int count;
@@ -2043,7 +2043,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 		offset += read_len;
 		
 		if (-1 == lines) {
-			for (i=0; i<offset-1&&i<36; i++) {
+			for (int i = 0; i < offset - 1 && i < 36; ++i) {
 				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
 					if (0 == strncmp(buff, "TRUE ", 5)) {
 						memcpy(num_buff, buff + 5, i - 5);
@@ -2072,7 +2072,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			}
 		}
 
-		for (i=last_pos; i<offset; i++) {
+		for (int i = last_pos; i < offset; ++i) {
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -2134,8 +2134,8 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
 			if (TRUE == b_format_error) {
-				num = xarray_get_capacity(pxarray);
-				for (i=0; i<num; i++) {
+				auto num = xarray_get_capacity(pxarray);
+				for (size_t i = 0; i < num; ++i) {
 					auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 					if (NULL != pitem) {
 						mem_file_free(&pitem->f_digest);
@@ -2173,8 +2173,8 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	num = xarray_get_capacity(pxarray);
-	for (i=0; i<num; i++) {
+	auto num = xarray_get_capacity(pxarray);
+	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
@@ -2186,10 +2186,8 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 
 static void free_result(XARRAY *pxarray)
 {
-	int i, num;
-	
-	num = xarray_get_capacity(pxarray);
-	for (i=0; i<num; i++) {
+	auto num = xarray_get_capacity(pxarray);
+	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
@@ -2200,9 +2198,7 @@ static void free_result(XARRAY *pxarray)
 static int fetch_simple(const char *path, const char *folder,
     DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int i;
 	int uid;
-	int num;
 	int lines;
 	int count;
 	int offset;
@@ -2267,7 +2263,7 @@ static int fetch_simple(const char *path, const char *folder,
 			offset += read_len;
 			
 			if (-1 == lines) {
-				for (i=0; i<offset-1&&i<36; i++) {
+				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
 						if (0 == strncmp(buff, "TRUE ", 5)) {
 							memcpy(num_buff, buff + 5, i - 5);
@@ -2296,7 +2292,7 @@ static int fetch_simple(const char *path, const char *folder,
 				}
 			}
 
-			for (i=last_pos; i<offset; i++) {
+			for (int i = last_pos; i < offset; ++i) {
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -2311,7 +2307,8 @@ static int fetch_simple(const char *path, const char *folder,
 							pspace1 ++;
 							uid = atoi(pspace);
 							if (xarray_append(pxarray, &mitem, uid) >= 0) {
-								num = xarray_get_capacity(pxarray);
+								auto num = xarray_get_capacity(pxarray);
+								assert(num > 0);
 								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
@@ -2399,8 +2396,6 @@ static int fetch_simple(const char *path, const char *folder,
 static int fetch_detail(const char *path, const char *folder,
     DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int i;
-	int num;
 	int value;
 	int lines;
 	int count;
@@ -2468,7 +2463,7 @@ static int fetch_detail(const char *path, const char *folder,
 			offset += read_len;
 			
 			if (-1 == lines) {
-				for (i=0; i<offset-1&&i<36; i++) {
+				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
 						if (0 == strncmp(buff, "TRUE ", 5)) {
 							memcpy(num_buff, buff + 5, i - 5);
@@ -2486,8 +2481,8 @@ static int fetch_detail(const char *path, const char *folder,
 								&pback->node);
 							sv_hold.unlock();
 							*perrno = atoi(buff + 6);
-							num = xarray_get_capacity(pxarray);
-							for (i=0; i<num; i++) {
+							auto num = xarray_get_capacity(pxarray);
+							for (size_t i = 0; i < num; ++i) {
 								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 								mem_file_free(&pitem->f_digest);
 							}
@@ -2504,7 +2499,7 @@ static int fetch_detail(const char *path, const char *folder,
 				}
 			}
 
-			for (i=last_pos; i<offset; i++) {
+			for (int i = last_pos; i < offset; ++i) {
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -2512,7 +2507,8 @@ static int fetch_detail(const char *path, const char *folder,
 						mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
 						temp_line, line_pos, "uid", &mitem.uid)) {
 						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
-							num = xarray_get_capacity(pxarray);
+							auto num = xarray_get_capacity(pxarray);
+							assert(num > 0);
 							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED;
@@ -2570,8 +2566,8 @@ static int fetch_detail(const char *path, const char *folder,
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 					sv_hold.unlock();
 					*perrno = -1;
-					num = xarray_get_capacity(pxarray);
-					for (i=0; i<num; i++) {
+					auto num = xarray_get_capacity(pxarray);
+					for (size_t i = 0; i < num; ++i) {
 						auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 						mem_file_free(&pitem->f_digest);
 					}
@@ -2610,8 +2606,8 @@ static int fetch_detail(const char *path, const char *folder,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	num = xarray_get_capacity(pxarray);
-	for (i=0; i<num; i++) {
+	auto num = xarray_get_capacity(pxarray);
+	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		mem_file_free(&pitem->f_digest);
 	}
@@ -2622,9 +2618,7 @@ static int fetch_detail(const char *path, const char *folder,
 static int fetch_simple_uid(const char *path, const char *folder,
     DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int i;
 	int uid;
-	int num;
 	int lines;
 	int count;
 	int offset;
@@ -2679,7 +2673,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 			offset += read_len;
 
 			if (-1 == lines) {
-				for (i=0; i<offset-1&&i<36; i++) {
+				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
 						if (0 == strncmp(buff, "TRUE ", 5)) {
 							memcpy(num_buff, buff + 5, i - 5);
@@ -2708,7 +2702,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 				}
 			}
 
-			for (i=last_pos; i<offset; i++) {
+			for (int i = last_pos; i < offset; ++i) {
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -2727,7 +2721,8 @@ static int fetch_simple_uid(const char *path, const char *folder,
 								pspace2 ++;
 								uid = atoi(pspace1);
 								if (xarray_append(pxarray, &mitem, uid) >= 0) {
-									num = xarray_get_capacity(pxarray);
+									auto num = xarray_get_capacity(pxarray);
+									assert(num > 0);
 									auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 									pitem->uid = uid;
 									pitem->id = atoi(temp_line) + 1;
@@ -2818,8 +2813,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 static int fetch_detail_uid(const char *path, const char *folder,
     DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int i;
-	int num;
 	int value;
 	int lines;
 	int count;
@@ -2877,7 +2870,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 			offset += read_len;
 
 			if (-1 == lines) {
-				for (i=0; i<offset-1&&i<36; i++) {
+				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
 						if (0 == strncmp(buff, "TRUE ", 5)) {
 							memcpy(num_buff, buff + 5, i - 5);
@@ -2895,8 +2888,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 								&pback->node);
 							sv_hold.unlock();
 							*perrno = atoi(buff + 6);
-							num = xarray_get_capacity(pxarray);
-							for (i=0; i<num; i++) {
+							auto num = xarray_get_capacity(pxarray);
+							for (size_t i = 0; i < num; ++i) {
 								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 								mem_file_free(&pitem->f_digest);
 							}
@@ -2913,7 +2906,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				}
 			}
 
-			for (i=last_pos; i<offset; i++) {
+			for (int i = last_pos; i < offset; ++i) {
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -2926,7 +2919,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						*pspace = '\0';
 						pspace ++;
 						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
-							num = xarray_get_capacity(pxarray);
+							auto num = xarray_get_capacity(pxarray);
+							assert(num > 0);
 							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 							pitem->id = atoi(temp_line) + 1;
 							pitem->flag_bits = FLAG_LOADED;
@@ -2984,8 +2978,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 					sv_hold.unlock();
 					*perrno = -1;
-					num = xarray_get_capacity(pxarray);
-					for (i=0; i<num; i++) {
+					auto num = xarray_get_capacity(pxarray);
+					for (size_t i = 0; i < num; ++i) {
 						auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 						mem_file_free(&pitem->f_digest);
 					}
@@ -3024,8 +3018,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	num = xarray_get_capacity(pxarray);
-	for (i=0; i<num; i++) {
+	auto num = xarray_get_capacity(pxarray);
+	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		mem_file_free(&pitem->f_digest);
 	}

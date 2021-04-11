@@ -3681,7 +3681,6 @@ int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	int i, num;
 	int result;
 	int del_num;
 	XARRAY xarray;
@@ -3748,9 +3747,9 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	num = xarray_get_capacity(&xarray);
+	auto num = xarray_get_capacity(&xarray);
 	single_list_init(&temp_list);
-	for (i=0; i<num; i++) {
+	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<MITEM *>(xarray_get_item(&xarray, i));
 		if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED)) {
 			continue;
@@ -3765,7 +3764,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	case MIDB_RESULT_OK:
 		stream_clear(&pcontext->stream);
 		del_num = 0;
-		for (i=0; i<xarray_get_capacity(&xarray); i++) {
+		for (size_t i = 0; i < xarray_get_capacity(&xarray); ++i) {
 			auto pitem = static_cast<MITEM *>(xarray_get_item(&xarray, i));
 			if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED)) {
 				continue;
@@ -4865,7 +4864,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	int i, num;
 	int result;
 	int del_num;
 	int max_uid;
@@ -4944,7 +4942,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	num = xarray_get_capacity(&xarray);
+	auto num = xarray_get_capacity(&xarray);
 	if (0 == num) {
 		xarray_free(&xarray);
 		imap_parser_echo_modify(pcontext, NULL);
@@ -4959,7 +4957,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto pitem = static_cast<MITEM *>(xarray_get_item(&xarray, num - 1));
 	max_uid = pitem->uid;
 	single_list_init(&temp_list);
-	for (i=0; i<num; i++) {
+	for (size_t i = 0; i < num; ++i) {
 		pitem = static_cast<MITEM *>(xarray_get_item(&xarray, i));
 		if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED) ||
 		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
@@ -4976,7 +4974,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	case MIDB_RESULT_OK:
 		stream_clear(&pcontext->stream);
 		del_num = 0;
-		for (i=0; i<xarray_get_capacity(&xarray); i++) {
+		for (size_t i = 0; i < xarray_get_capacity(&xarray); ++i) {
 			pitem = static_cast<MITEM *>(xarray_get_item(&xarray, i));
 			if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED) ||
 			    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
