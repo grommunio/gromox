@@ -132,8 +132,7 @@ static IMAP_RETURN_CODE *g_return_code_table, *g_def_code_table;
 static std::shared_mutex g_return_table_lock;
 static SINGLE_LIST* g_lang_list;
 
-static int resource_find_imap_code_index(int native_code);
-
+static ssize_t resource_find_imap_code_index(int native_code);
 static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable);
 
 static int resource_construct_lang_list(SINGLE_LIST *plist);
@@ -206,7 +205,7 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
 	char *pbackup, *ptr, code[32];
-	int index, native_code, len;
+	ssize_t index, native_code, len;
 	const char *filename = resource_get_string("IMAP_RETURN_CODE_PATH");
 	if (NULL == filename) {
 		filename = "imap_code.txt";
@@ -245,8 +244,7 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
             len++;
             ptr++;
         }
-
-        if (len <= 0 || len > sizeof(code) - 1) {
+		if (len <= 0 || static_cast<size_t>(len) > sizeof(code) - 1) {
             printf("[resource]: invalid native code format, file: %s line: "
                     "%d, %s\n", filename, total + 1, line);
 
@@ -429,7 +427,7 @@ static BOOL resource_load_imap_lang_list()
     return TRUE;
 }
 
-static int resource_find_imap_code_index(int native_code)
+static ssize_t resource_find_imap_code_index(int native_code)
 {
 	for (size_t i = 0; i < GX_ARRAY_SIZE(g_default_code_table); ++i)
 		if (g_default_code_table[i].code == native_code)

@@ -259,8 +259,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
     time_t cur_time;
 	struct tm tm_buff;
 	FILE *fp;
-	size_t mess_len;
-	int j, write_len, tmp_len, smtp_type, copy_result;
+	size_t mess_len, write_len, utmp_len;
+	int j, tmp_len, smtp_type, copy_result;
 	unsigned int size;
 
 	if (NULL == pentity->pflusher->flush_ptr) {
@@ -287,17 +287,15 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
         	pentity->penvelop->hello_domain, pentity->penvelop->parsed_domain,
             pentity->pconnection->client_ip, get_host_ID(), time_buff);
 		write_len = fwrite(tmp_buff, 1, tmp_len, fp);
-		if (write_len != tmp_len) {
-        	goto REMOVE_MESS;
-        }
+		if (write_len != static_cast<size_t>(tmp_len))
+			goto REMOVE_MESS;
 		for (j=0; j<get_extra_num(pentity->context_ID); j++) {
 			tmp_len = sprintf(tmp_buff, "%s: %s\r\n",
 					get_extra_tag(pentity->context_ID, j),
 					get_extra_value(pentity->context_ID, j));
 			write_len = fwrite(tmp_buff, 1, tmp_len, fp);
-			if (write_len != tmp_len) {
+			if (write_len != static_cast<size_t>(tmp_len))
 				goto REMOVE_MESS;
-			}
 		}
 	} else {
 		fp = (FILE*)pentity->pflusher->flush_ptr;
@@ -353,21 +351,17 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		goto REMOVE_MESS;
 	}	
 	/* write envelop from */
-	tmp_len = strlen(pentity->penvelop->from);
-    tmp_len ++;
-	if (tmp_len != fwrite(pentity->penvelop->from, 1, tmp_len, fp)) {
+	utmp_len = strlen(pentity->penvelop->from) + 1;
+	if (fwrite(pentity->penvelop->from, 1, utmp_len, fp) != utmp_len)
 		goto REMOVE_MESS;
-	}
     /* write envelop rcpts */
     mem_file_seek(&pentity->penvelop->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 		MEM_FILE_SEEK_BEGIN);
-    while (MEM_END_OF_FILE != (tmp_len = mem_file_readline(
-    	&pentity->penvelop->f_rcpt_to, tmp_buff, 256))) {
-		tmp_buff[tmp_len] = 0;
-		tmp_len ++;
-        if (tmp_len != fwrite(tmp_buff, 1, tmp_len, fp)) {
+	while ((utmp_len = mem_file_readline(&pentity->penvelop->f_rcpt_to, tmp_buff, 256)) != MEM_END_OF_FILE) {
+		tmp_buff[utmp_len] = 0;
+		++utmp_len;
+		if (fwrite(tmp_buff, 1, utmp_len, fp) != utmp_len)
 			goto REMOVE_MESS;
-		}
 	}
 	/* last null character for indicating end of rcpt to array */
 	*tmp_buff = 0;

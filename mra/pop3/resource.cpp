@@ -152,7 +152,7 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
             ptr++;
         }
 
-        if (len <= 0 || len > sizeof(code) - 1) {
+        if (len <= 0 || static_cast<size_t>(len) > sizeof(code) - 1) {
             printf("[resource]: invalid native code format, file: %s line: "
                     "%d, %s\n", filename, total + 1, line);
 

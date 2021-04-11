@@ -112,10 +112,8 @@ void auto_response_reply(const char *user_home,
 	if (0 != stat(template_path, &node_stat)) {
 		return;
 	}
-	if (node_stat.st_size > sizeof(buff) - 1 ||
-		0 == node_stat.st_size) {
+	if (static_cast<size_t>(node_stat.st_size) > sizeof(buff) - 1 || node_stat.st_size == 0)
 		return;
-	}
 	fd = open(template_path, O_RDONLY);
 	if (-1 == fd) {
 		return;

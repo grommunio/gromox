@@ -231,7 +231,7 @@ struct timeval pop3_parser_get_context_timestamp(POP3_CONTEXT *pcontext)
 
 int pop3_parser_process(POP3_CONTEXT *pcontext)
 {
-    int i, len;
+	int len;
 	unsigned int tmp_len;
 	int read_len;
 	int ssl_errno;
@@ -243,6 +243,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	char temp_command[1024];
 	char reply_buf[1024];
     struct timeval current_time;
+	size_t ub;
 	
 	if (TRUE == pcontext->is_stls) {
 		if (NULL == pcontext->connection.ssl) {
@@ -458,7 +459,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	
 	pcontext->connection.last_timestamp = current_time;	
 	pcontext->read_offset += read_len;
-	for (i=0; i<pcontext->read_offset-1; i++) {
+	ub = pcontext->read_offset > 0 ? pcontext->read_offset - 1 : 0;
+	for (size_t i = 0; i < ub; ++i) {
 		if ('\r' == pcontext->read_buffer[i] &&
 			'\n' == pcontext->read_buffer[i + 1]) {
 			memcpy(temp_command, pcontext->read_buffer, i);

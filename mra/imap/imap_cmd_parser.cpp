@@ -63,14 +63,13 @@ static BOOL imap_cmd_parser_hint_sequence(DOUBLE_LIST *plist,
 					return TRUE;
 				}
 			} else {
-				if (num >= pseq->min) {
+				if (num >= static_cast<size_t>(pseq->min))
 					return TRUE;
-				}
 			}
 		} else {
-			if (pseq->max >= num && pseq->min <= num) {
+			if (pseq->max >= 0 && static_cast<size_t>(pseq->max) >= num &&
+			    pseq->min >= 0 && static_cast<size_t>(pseq->min) <= num)
 				return TRUE;
-			}
 		}
 	}
 	return FALSE;
@@ -484,7 +483,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 
 static int imap_cmd_parser_match_field(const char *cmd_tag,
 	const char *file_path, size_t offset, size_t length, BOOL b_not,
-	char *tags, size_t offset1, size_t length1, char *value, int val_len)
+	char *tags, size_t offset1, ssize_t length1, char *value, size_t val_len)
 {
 	int i;
 	BOOL b_hit;
@@ -513,7 +512,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		tmp_argc = parse_imap_args(temp_buff,
 			strlen(tags), tmp_argv, sizeof(tmp_argv));
 	}
-	if (length != read(fd, buff, length)) {
+	auto ret = read(fd, buff, length);
+	if (ret < 0 || static_cast<size_t>(ret) != length) {
 		close(fd);
 		return -1;
 	}
@@ -558,16 +558,12 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		len = gx_snprintf(value, val_len,
 			"BODY%s {%ld}\r\n%s", pbody, length1, buff1 + offset1);
 	}
-	if (len >= val_len - 1) {
-		return -1;
-	} else {
-		return len;
-	}
+	return len >= 0 && static_cast<size_t>(len) >= val_len - 1 ? -1 : len;
 }
 
 static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 	MJSON *pjson, char *cmd_tag, char *buff, int max_len, const char *pbody,
-	const char *temp_id, char *temp_tag, size_t offset, size_t length,
+	const char *temp_id, char *temp_tag, size_t offset, ssize_t length,
 	const char *storage_path)
 {
 	int len;
@@ -766,7 +762,6 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 {
 	char *ptr;
 	int errnum;
-	int i, len;
 	char *pdot;
 	char *pend;
 	char *pbody;
@@ -791,7 +786,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	if (pitem->flag_bits & FLAG_LOADED) {
 		mem_file_seek(&pitem->f_digest,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		len = mem_file_read(&pitem->f_digest, buff, MAX_DIGLEN);
+		auto len = mem_file_read(&pitem->f_digest, buff, MAX_DIGLEN);
 		if (MEM_END_OF_FILE == len) {
 			return;
 		}
@@ -823,7 +818,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					"%s/tmp/imap.rfc822", pcontext->maildir);
 				if (TRUE == mjson_rfc822_build(&mjson,
 					imap_parser_get_mpool(), temp_path)) {
-					len = mjson_rfc822_fetch(&mjson, temp_path,
+					auto len = mjson_rfc822_fetch(&mjson, temp_path,
 						resource_get_default_charset(pcontext->lang),
 						FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 					if (-1 == len) {
@@ -836,7 +831,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				}
 			} else {
  FETCH_BODY_SIMPLE:
-				len = mjson_fetch_structure(&mjson,
+				auto len = mjson_fetch_structure(&mjson,
 					resource_get_default_charset(pcontext->lang),
 					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (-1 == len) {
@@ -854,7 +849,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					"%s/tmp/imap.rfc822", pcontext->maildir);
 				if (TRUE == mjson_rfc822_build(&mjson,
 					imap_parser_get_mpool(), temp_path)) {
-					len = mjson_rfc822_fetch(&mjson, temp_path,
+					auto len = mjson_rfc822_fetch(&mjson, temp_path,
 						resource_get_default_charset(pcontext->lang),
 						TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 					if (-1 == len) {
@@ -867,7 +862,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				}
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
-				len = mjson_fetch_structure(&mjson,
+				auto len = mjson_fetch_structure(&mjson,
 					resource_get_default_charset(pcontext->lang),
 					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (-1 == len) {
@@ -880,7 +875,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "ENVELOPE ");
-			len = mjson_fetch_envelope(&mjson,
+			auto len = mjson_fetch_envelope(&mjson,
 				resource_get_default_charset(pcontext->lang),
 				buff + buff_len, MAX_DIGLEN - buff_len);
 			if (-1 == len) {
@@ -975,11 +970,11 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					*(pdot + 1) = '\0';
 				}
 			}
-			len = pend - ptr;
+			auto len = pend - ptr;
 			memcpy(temp_buff, ptr, len);
 			temp_buff[len] = '\0';
 			ptr = NULL;
-			for (i=0; i<len; i++) {
+			for (decltype(len) i = 0; i < len; ++i) {
 				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
 					continue;
 				ptr = temp_buff + i - 1;
