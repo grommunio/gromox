@@ -234,7 +234,6 @@ static const PROXY_NODE *find_proxy_node(const char *domain, const char *uri_pat
 
 static BOOL proxy_preproc(int context_id)
 {
-	int tmp_len;
 	char *ptoken;
 	char domain[256];
 	char tmp_buff[8192];
@@ -243,7 +242,7 @@ static BOOL proxy_preproc(int context_id)
 	CONNECTION *pconnection;
 	
 	prequest = get_request(context_id);
-	tmp_len = mem_file_get_total_length(&prequest->f_host);
+	auto tmp_len = mem_file_get_total_length(&prequest->f_host);
 	if (tmp_len >= sizeof(domain)) {
 		return FALSE;
 	}
@@ -309,9 +308,9 @@ static BOOL proxy_preproc(int context_id)
 	return TRUE;
 }
 
-static int read_header(PROXY_CONTEXT *pcontext, void *pbuff, int length)
+static int read_header(PROXY_CONTEXT *pcontext, void *pbuff, unsigned int length)
 {
-	int offset;
+	size_t offset;
 	int tv_msec;
 	int read_len;
 	struct pollfd pfd_read;
@@ -342,8 +341,6 @@ static int read_header(PROXY_CONTEXT *pcontext, void *pbuff, int length)
 static BOOL proxy_proc(int context_id,
 	const void *pcontent, uint64_t length)
 {
-	int offset;
-	int tmp_len;
 	char *ptoken;
 	char *ptoken1;
 	BOOL b_connection;
@@ -351,7 +348,6 @@ static BOOL proxy_proc(int context_id,
 	char tmp_uri[8192];
 	BOOL b_forward_for;
 	char tmp_host[256];
-	int tag_len, val_len;
 	HTTP_REQUEST *prequest;
 	char tmp_buff[64*1024];
 	PROXY_CONTEXT *pcontext;
@@ -369,7 +365,7 @@ static BOOL proxy_proc(int context_id,
 	pcontext->pmore_buff = NULL;
 	pcontext->buff_length = 0;
 	pcontext->buff_offset = 0;
-	offset = strlen(prequest->method);
+	auto offset = strlen(prequest->method);
 	memcpy(tmp_buff, prequest->method, offset);
 	tmp_buff[offset] = ' ';
 	offset ++;
@@ -378,7 +374,7 @@ static BOOL proxy_proc(int context_id,
 	offset += sprintf(tmp_buff + offset,
 		" HTTP/%s\r\n", prequest->version);
 	if (0 != mem_file_get_total_length(&prequest->f_host)) {
-		tmp_len = mem_file_read(&prequest->f_host,
+		auto tmp_len = mem_file_read(&prequest->f_host,
 					tmp_host, sizeof(tmp_host) - 1);
 		tmp_host[tmp_len] = '\0';
 		offset += sprintf(tmp_buff + offset, "Host: %s\r\n", tmp_host);
@@ -484,8 +480,9 @@ static BOOL proxy_proc(int context_id,
 	}
 	b_forward_for = FALSE;
 	b_connection = FALSE;
+	uint32_t tag_len;
 	while (MEM_END_OF_FILE != mem_file_read(
-		&prequest->f_others, &tag_len, sizeof(int))) {
+	    &prequest->f_others, &tag_len, sizeof(uint32_t))) {
 		if (tag_len >= sizeof(tmp_tag)) {
 			close(pcontext->sockd);
 			pcontext->sockd = -1;
@@ -495,6 +492,7 @@ static BOOL proxy_proc(int context_id,
 		tmp_tag[tag_len] = '\0';
 		if (0 == strcasecmp(tmp_tag, "X-Forwarded-Proto") ||
 			0 == strcasecmp(tmp_tag, "X-Real-IP")) {
+			uint32_t val_len;
 			mem_file_read(&prequest->f_others, &val_len, sizeof(int));
 			mem_file_seek(&prequest->f_others, MEM_FILE_READ_PTR,
 									val_len, MEM_FILE_SEEK_CUR);
@@ -506,7 +504,8 @@ static BOOL proxy_proc(int context_id,
 			pcontext->sockd = -1;
 			return FALSE;
 		}
-		mem_file_read(&prequest->f_others, &val_len, sizeof(int));
+		uint32_t val_len;
+		mem_file_read(&prequest->f_others, &val_len, sizeof(uint32_t));
 		if (val_len >= sizeof(tmp_buff) - offset) {
 			close(pcontext->sockd);
 			pcontext->sockd = -1;
@@ -542,12 +541,19 @@ static BOOL proxy_proc(int context_id,
 	
 	memcpy(tmp_buff + offset, "\r\n", 2);
 	offset += 2;
-	if (offset != write(pcontext->sockd, tmp_buff, offset)
-		|| (length > 0 && length != write(pcontext->sockd,
-		pcontent, length))) {
+	auto ret = write(pcontext->sockd, tmp_buff, offset);
+	if (ret < 0 || static_cast<size_t>(ret) != offset) {
 		close(pcontext->sockd);
 		pcontext->sockd = -1;
 		return FALSE;
+	}
+	if (length > 0) {
+		ret = write(pcontext->sockd, pcontent, length);
+		if (ret < 0 || static_cast<size_t>(ret)) {
+			close(pcontext->sockd);
+			pcontext->sockd = -1;
+			return FALSE;
+		}
 	}
 	time(&pcontext->last_time);
 	offset = read_header(pcontext, tmp_buff, sizeof(tmp_buff));
@@ -566,8 +572,8 @@ static BOOL proxy_proc(int context_id,
 	if (0 == strncmp(ptoken, "101", 3)) {
 		pcontext->b_upgraded = TRUE;
 		ptoken = static_cast<char *>(memmem(tmp_buff, offset, "\r\n\r\n", 4));
-		if (offset > ptoken + 4 - tmp_buff) {
-			tmp_len = tmp_buff + offset - (ptoken + 4);
+		if (offset > static_cast<size_t>(ptoken + 4 - tmp_buff)) {
+			auto tmp_len = tmp_buff + offset - (ptoken + 4);
 			pcontext->pmore_buff = static_cast<char *>(malloc(tmp_len));
 			if (NULL == pcontext->pmore_buff) {
 				close(pcontext->sockd);
@@ -594,7 +600,8 @@ static BOOL proxy_proc(int context_id,
 			ptoken ++;
 		} while (' ' == *ptoken);
 		ptoken1 = static_cast<char *>(memmem(ptoken, offset - (ptoken - tmp_buff), "\r\n", 2));
-		if (NULL == ptoken1 || ptoken1 - ptoken >= sizeof(tmp_uri)) {
+		if (ptoken1 == nullptr ||
+		    static_cast<size_t>(ptoken1 - ptoken) >= sizeof(tmp_uri)) {
 			write_response(context_id, tmp_buff, offset);
 			return TRUE;
 		}
@@ -667,12 +674,11 @@ static BOOL proxy_send(int context_id, const void *pbuff, int length)
 
 static int proxy_receive(int context_id, void *pbuff, int max_length)
 {
-	int tmp_len;
 	PROXY_CONTEXT *pcontext;
 	
 	pcontext = &g_context_list[context_id];
 	if (NULL != pcontext->pmore_buff) {
-		tmp_len = pcontext->buff_length - pcontext->buff_offset;
+		auto tmp_len = pcontext->buff_length - pcontext->buff_offset;
 		if (max_length < tmp_len) {
 			tmp_len = max_length;
 		}
@@ -686,7 +692,7 @@ static int proxy_receive(int context_id, void *pbuff, int max_length)
 		}
 		return tmp_len;
 	}
-	tmp_len = read(pcontext->sockd, pbuff, max_length);
+	auto tmp_len = read(pcontext->sockd, pbuff, max_length);
 	if (0 == tmp_len) {
 		epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, pcontext->sockd, NULL);
 		close(pcontext->sockd);
