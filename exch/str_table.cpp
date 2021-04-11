@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <shared_mutex>
 #include <string>
 #include <fcntl.h>
 #include <unistd.h>
@@ -32,7 +33,7 @@ static void str_table_echo(const char *, ...);
 static int str_table_refresh();
 
 static STR_HASH_TABLE *g_string_list_table;
-static pthread_rwlock_t g_refresh_lock;
+static std::shared_mutex g_refresh_lock;
 static char g_list_path[256];
 static BOOL g_case_sensitive;
 static char g_module_name[256];
@@ -70,7 +71,6 @@ static void str_table_free()
  */
 static int str_table_run()
 {
-    pthread_rwlock_init(&g_refresh_lock, NULL);
     if (STR_TABLE_REFRESH_OK != str_table_refresh()) {
         return -1;
     }
@@ -89,7 +89,6 @@ static int str_table_stop()
         str_hash_free(g_string_list_table);
         g_string_list_table = NULL;
     }
-    pthread_rwlock_destroy(&g_refresh_lock);
     return 0;
 }
 
@@ -115,12 +114,10 @@ static BOOL str_table_query(const char* str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_rwlock_rdlock(&g_refresh_lock);
+	std::shared_lock rd_hold(g_refresh_lock);
     if (NULL != str_hash_query(g_string_list_table, temp_string)) {
-		pthread_rwlock_unlock(&g_refresh_lock);
         return TRUE;
     }
-	pthread_rwlock_unlock(&g_refresh_lock);
     return FALSE;
 }
 
@@ -160,14 +157,12 @@ static int str_table_refresh()
 		str_hash_add(phash, pitem[i].s, &i);
     }
 	
-	pthread_rwlock_wrlock(&g_refresh_lock);
+	std::lock_guard wr_hold(g_refresh_lock);
 	if (NULL != g_string_list_table) {
 		str_hash_free(g_string_list_table);
 	}
     g_string_list_table = phash;
 	g_hash_cap = hash_cap;
-    pthread_rwlock_unlock(&g_refresh_lock);
-
     return STR_TABLE_REFRESH_OK;
 }
 
@@ -209,31 +204,27 @@ static BOOL str_table_add(const char* str)
 	string_len = j;
 	file_item[string_len] = '\n';
 	string_len ++;
-	pthread_rwlock_wrlock(&g_refresh_lock);
+
+	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is already in the table */
 	if (NULL != str_hash_query(g_string_list_table, temp_string)) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
 	fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == fd) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	if (string_len != write(fd, file_item, string_len)) {
 		close(fd);
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	close(fd);
 	if (str_hash_add(g_string_list_table, temp_string, &dummy_val) > 0) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
 	hash_cap = g_hash_cap + g_growing_num;
 	phash = str_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	iter = str_hash_iter_init(g_string_list_table);
@@ -247,10 +238,8 @@ static BOOL str_table_add(const char* str)
 	g_string_list_table = phash;
 	g_hash_cap = hash_cap;
 	if (str_hash_add(g_string_list_table, temp_string, &dummy_val) > 0) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
-	pthread_rwlock_unlock(&g_refresh_lock);
 	return FALSE;
 }
 
@@ -278,19 +267,17 @@ static BOOL str_table_remove(const char* str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_rwlock_wrlock(&g_refresh_lock);
+
+	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is in hash table */
 	if (NULL == str_hash_query(g_string_list_table, temp_string)) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
 	if (1 != str_hash_remove(g_string_list_table, temp_string)) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	fd = open(g_list_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	iter = str_hash_iter_init(g_string_list_table);
@@ -313,7 +300,6 @@ static BOOL str_table_remove(const char* str)
 	}
 	str_hash_iter_free(iter);
 	close(fd);
-	pthread_rwlock_unlock(&g_refresh_lock);
 	return TRUE;
 }
 

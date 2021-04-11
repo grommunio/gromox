@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <shared_mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -37,7 +38,7 @@ struct LIST_ITEM {
 static void grey_list_flush();
 
 static STR_HASH_TABLE *g_grey_table;
-static pthread_rwlock_t  g_refresh_lock;
+static std::shared_mutex g_refresh_lock;
 static char g_list_path[256]; 
 static BOOL g_case_sensitive;
 static int g_growing_num;
@@ -52,7 +53,6 @@ void grey_list_init(BOOL case_sensitive, const char *path, int growing_num)
 	HX_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
 	g_growing_num = growing_num;
 	g_hash_cap = 0;
-    pthread_rwlock_init(&g_refresh_lock, NULL);
 }
 
 /*
@@ -60,7 +60,6 @@ void grey_list_init(BOOL case_sensitive, const char *path, int growing_num)
  */
 void grey_list_free()
 {
-    pthread_rwlock_destroy(&g_refresh_lock);
     g_list_path[0] ='\0';
 	g_growing_num = 0;
 	g_hash_cap = 0;
@@ -124,18 +123,16 @@ int grey_list_query(const char *str, BOOL b_count)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-    pthread_rwlock_rdlock(&g_refresh_lock);
+
+	std::shared_lock rd_hold(g_refresh_lock);
 	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
     if (NULL == pentry) {
-		pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_NOT_FOUND; /* not in grey list */
     }
     if (0 == pentry->allowed_times) {
-		pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_DENY; /* deny it */
     }
     if (0 == pentry->interval) {
-		pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_ALLOW; 
     }
     gettimeofday(&current_time, NULL);
@@ -145,7 +142,6 @@ int grey_list_query(const char *str, BOOL b_count)
 			pentry->last_access = current_time;
 			pentry->current_times = 0;
 		} else {
-			pthread_rwlock_unlock(&g_refresh_lock);
 			return GREY_LIST_ALLOW;
 		}
 	}
@@ -153,10 +149,8 @@ int grey_list_query(const char *str, BOOL b_count)
 		pentry->current_times ++;
 	}
     if (pentry->current_times <= pentry->allowed_times) {
-		pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_ALLOW;
 	} else {
-        pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_DENY;
 	}
 }
@@ -187,39 +181,34 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-    pthread_rwlock_rdlock(&g_refresh_lock);
+
+	std::shared_lock rd_hold(g_refresh_lock);
 	gettimeofday(&current_time, NULL);
 	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
     if (NULL == pentry) {
 		*ptimes = 0;
 		*pinterval = 0;
-		pthread_rwlock_unlock(&g_refresh_lock);
         return FALSE; /* not in grey list */
     }
     if (0 == pentry->allowed_times) {
 		*ptimes = 0;
 		*pinterval = 0;
-		pthread_rwlock_unlock(&g_refresh_lock);
         return TRUE;
     }
     if (0 == pentry->interval) {
 		*ptimes = 1;
 		*pinterval = 0;
-		pthread_rwlock_unlock(&g_refresh_lock);
         return FALSE;
     }
 	*ptimes = pentry->allowed_times;
 	*pinterval = pentry->interval;
 	if (CALCULATE_INTERVAL(current_time, pentry->last_access) >
 		pentry->interval) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	} else {
 		if (pentry->current_times <= pentry->allowed_times) {
-			pthread_rwlock_unlock(&g_refresh_lock);
 			return FALSE;
 		} else {
-			pthread_rwlock_unlock(&g_refresh_lock);
 			return TRUE;
 		}
 	}
@@ -267,13 +256,13 @@ int grey_list_refresh()
 		}
         str_hash_add(phash, pitem->string, &entry);
     }
-    pthread_rwlock_wrlock(&g_refresh_lock);
+
+	std::lock_guard wr_hold(g_refresh_lock);
     if (NULL != g_grey_table) {
         str_hash_free(g_grey_table);
     }
     g_grey_table = phash;
 	g_hash_cap = hash_cap;
-    pthread_rwlock_unlock(&g_refresh_lock);
     return GREY_REFRESH_OK;
 }
 
@@ -325,23 +314,20 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	file_item[string_len] = '\n';
 	string_len ++;
 	/* check first if the string is already in the table */
-	pthread_rwlock_wrlock(&g_refresh_lock);
+	std::lock_guard wr_hold(g_refresh_lock);
 	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
 	if (NULL != pentry) {
 		pentry->allowed_times = times;
 		pentry->interval = interval;
 		grey_list_flush();
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
 	fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == fd) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	if (string_len != write(fd, file_item, string_len)) {
 		close(fd);
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	close(fd);
@@ -352,13 +338,11 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	entry.allowed_times = times;
 	entry.interval = interval;
 	if (str_hash_add(g_grey_table, temp_string, &entry) > 0) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
 	hash_cap = g_hash_cap + g_growing_num;
 	phash = str_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	iter = str_hash_iter_init(g_grey_table);
@@ -372,10 +356,8 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	g_grey_table = phash;
 	g_hash_cap = hash_cap;
 	if (str_hash_add(g_grey_table, temp_string, &entry) > 0) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
-	pthread_rwlock_unlock(&g_refresh_lock);
 	return FALSE;
 }
 
@@ -403,18 +385,15 @@ BOOL grey_list_remove_string(const char* str)
 		HX_strlower(temp_string);
 	}
 	/* check first if the string is in hash table */
-	pthread_rwlock_wrlock(&g_refresh_lock);
+	std::lock_guard wr_hold(g_refresh_lock);
 	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
 	if (NULL == pentry) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
 	}
 	if (1 != str_hash_remove(g_grey_table, temp_string)) {
-		pthread_rwlock_unlock(&g_refresh_lock);
 		return FALSE;
 	}
 	grey_list_flush();
-	pthread_rwlock_unlock(&g_refresh_lock);
 	return TRUE;
 }
 
@@ -478,7 +457,8 @@ BOOL grey_list_dump(const char *path)
 	if (-1 == fd) {
 		return FALSE;
 	}
-	pthread_rwlock_rdlock(&g_refresh_lock);
+
+	std::unique_lock wr_hold(g_refresh_lock);
 	gettimeofday(&current_times, NULL);
 	iter = str_hash_iter_init(g_grey_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
@@ -505,7 +485,7 @@ BOOL grey_list_dump(const char *path)
 		}
 	}
 	str_hash_iter_free(iter);
-	pthread_rwlock_unlock(&g_refresh_lock);
+	wr_hold.unlock();
 	close(fd);
 	return TRUE;
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
 #include <cerrno>
+#include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -42,7 +43,7 @@ struct LANG_NODE {
 }
 
 static SINGLE_LIST g_cp_list;
-static pthread_rwlock_t g_list_lock;
+static std::shared_mutex g_list_lock;
 
 static void codepage_lang_unload_langlist(SINGLE_LIST *plist)
 {
@@ -246,7 +247,6 @@ static void codepage_lang_unload_cplist(SINGLE_LIST *plist)
 static int codepage_lang_run(const char *filename, const char *sdlist)
 {
 	single_list_init(&g_cp_list);
-	pthread_rwlock_init(&g_list_lock, NULL);
 	if (!codepage_lang_load_cplist(filename, sdlist, &g_cp_list))
 		return -1;
 	return 0;
@@ -261,7 +261,6 @@ static int codepage_lang_stop()
 static void codepage_lang_free()
 {
 	single_list_free(&g_cp_list);
-	pthread_rwlock_destroy(&g_list_lock);
 }
 
 static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
@@ -273,7 +272,7 @@ static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	CODEPAGE_NODE *pcodepage;
 	
 	pdefault = NULL;
-	pthread_rwlock_rdlock(&g_list_lock);
+	std::lock_guard rd_hold(g_list_lock);
 	for (pnode=single_list_get_head(&g_cp_list); NULL!=pnode;
 		pnode=single_list_get_after(&g_cp_list, pnode)) {
 		pcodepage = (CODEPAGE_NODE*)pnode->pdata;
@@ -292,11 +291,9 @@ static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 		plang = (LANG_NODE*)pnode->pdata;
 		if (0 == strcasecmp(plang->tag, tag)) {
 			strncpy(value, plang->value, len);
-			pthread_rwlock_unlock(&g_list_lock);
 			return TRUE;
 		}
 	}
-	pthread_rwlock_unlock(&g_list_lock);
 	return FALSE;
 }
 
