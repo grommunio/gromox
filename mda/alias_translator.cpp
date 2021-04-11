@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/hook_common.h>
@@ -32,7 +33,7 @@ struct addritem {
 }
 
 static STR_HASH_TABLE *g_address_hash;
-static pthread_rwlock_t g_address_lock;
+static std::shared_mutex g_address_lock;
 static char g_address_path[256];
 
 static int address_table_refresh();
@@ -51,7 +52,6 @@ static BOOL hook_alias_translator(int reason, void **ppdata)
 		LINK_API(ppdata);
 		snprintf(g_address_path, sizeof(g_address_path),
 		         "%s/alias_addresses.txt", get_state_path());
-		pthread_rwlock_init(&g_address_lock, NULL);
 		g_address_hash = NULL;
 		if (REFRESH_OK != address_table_refresh()) {
 			printf("[alias_translator]: Failed to load address alias table\n");
@@ -69,7 +69,6 @@ static BOOL hook_alias_translator(int reason, void **ppdata)
 			str_hash_free(g_address_hash);
 			g_address_hash = NULL;
 		}
-    	pthread_rwlock_destroy(&g_address_lock);
         return TRUE;
 	case PLUGIN_RELOAD:
 		address_table_refresh();
@@ -173,12 +172,11 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	HX_strlower(temp_string);
 	
-	pthread_rwlock_rdlock(&g_address_lock);
+	std::shared_lock rd_hold(g_address_lock);
 	auto presult = static_cast<char *>(str_hash_query(g_address_hash, temp_string));
 	if (NULL != presult) {
 		strcpy(mainname, presult);
 	}
-	pthread_rwlock_unlock(&g_address_lock);
 	if (NULL != presult) {
         return TRUE;
     } else {
@@ -208,13 +206,11 @@ static int address_table_refresh()
 		HX_strlower(pitem[i].a);
 		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
-	pthread_rwlock_wrlock(&g_address_lock);
+	std::lock_guard wr_hold(g_address_lock);
 	if (NULL != g_address_hash) {
 		str_hash_free(g_address_hash);
 	}
     g_address_hash = phash;
-    pthread_rwlock_unlock(&g_address_lock);
-
     return REFRESH_OK;
 }
 

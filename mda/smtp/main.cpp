@@ -108,12 +108,10 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	resource_init();
 	if (0 != resource_run()) { 
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_1 = make_scope_exit(resource_free);
 	auto cleanup_2 = make_scope_exit(resource_stop);
 	
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
