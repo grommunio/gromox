@@ -149,7 +149,7 @@ void mod_cache_init(int context_num)
 
 static int mod_cache_defaults()
 {
-	printf("[mod_cache]: defualting to built-in list of handled paths\n");
+	printf("[mod_cache]: defaulting to built-in list of handled paths\n");
 	DIRECTORY_NODE node;
 	node.domain = "*";
 	node.path = "/web";
