@@ -68,113 +68,124 @@ static void proxy_term(int context_id);
 
 static void* thread_work_func(void *pparam);
 
-static BOOL hpm_mod_proxy(int reason, void **ppdata)
+static bool mod_proxy_read_txt()
 {
 	int i;
 	int tmp_len;
 	char *ptoken;
 	char *ptoken1;
-	int context_num;
 	PROXY_NODE *pxnode;
 	DOUBLE_LIST_NODE *pnode;
+
+	struct srcitem { char domain[256], uri_path[256], dest[256]; };
+	auto pfile = list_file_initd("proxy.txt", get_config_path(), "%s:256%s:256%s:256");
+	if (NULL == pfile) {
+		printf("[mod_proxy]: list_file_initd proxy.txt: %s\n", strerror(errno));
+		return FALSE;
+	}
+	auto item_num = pfile->get_size();
+	auto pitem = static_cast<srcitem *>(pfile->get_list());
+	for (i=0; i<item_num; i++) {
+		pxnode = static_cast<PROXY_NODE *>(malloc(sizeof(PROXY_NODE)));
+		if (NULL == pxnode) {
+			continue;
+		}
+		memset(pxnode, 0, sizeof(PROXY_NODE));
+		pxnode->node.pdata = pxnode;
+		pxnode->domain = strdup(pitem[i].domain);
+		if (NULL == pxnode->domain) {
+			break;
+		}
+		pxnode->path = strdup(pitem[i].uri_path);
+		if (NULL == pxnode->path) {
+			break;
+		}
+		tmp_len = strlen(pxnode->path);
+		if ('/' == pxnode->path[tmp_len - 1]) {
+			pxnode->path[tmp_len - 1] = '\0';
+		}
+		if (strncasecmp(pitem[i].dest, "http://", 7) == 0) {
+			ptoken1 = pitem[i].dest + 7;
+		} else {
+			printf("[mod_proxy]: scheme of destination in '%s' "
+			       "unsupported, can only be http\n", pitem[i].dest);
+			break;
+		}
+		ptoken = strchr(ptoken1, '/');
+		if (NULL == ptoken) {
+			ptoken = ptoken1 + strlen(ptoken1);
+		}
+		size_t remotehostlen = ptoken - ptoken1 + 1;
+		pxnode->remote_host = static_cast<char *>(malloc(remotehostlen));
+		if (NULL == pxnode->remote_host) {
+			break;
+		}
+		memcpy(pxnode->remote_host, ptoken1, tmp_len);
+		pxnode->remote_host[tmp_len] = '\0';
+		if ('\0' == ptoken[0] || '\0' == ptoken[1]) {
+			pxnode->remote_path = NULL;
+		} else {
+			ptoken ++;
+			tmp_len = strlen(ptoken);
+			if ('/' == ptoken[tmp_len - 1]) {
+				tmp_len --;
+			}
+			if (0 == tmp_len) {
+				pxnode->remote_path = NULL;
+			} else {
+				pxnode->remote_path = static_cast<char *>(malloc(tmp_len + 1));
+				if (NULL == pxnode->remote_path) {
+					break;
+				}
+				memcpy(pxnode->remote_path, ptoken, tmp_len);
+				pxnode->remote_path[tmp_len] = '\0';
+			}
+		}
+		pxnode->remote_port = 80;
+		int ret = gx_addrport_split(pxnode->remote_host,
+			  pxnode->remote_host, remotehostlen,
+			  &pxnode->remote_port);
+		if (ret < 0) {
+			printf("[mod_proxy]: host format error near \"%s\": %s\n",
+			       ptoken1, strerror(-ret));
+			break;
+		}
+		double_list_append_as_tail(&g_proxy_list, &pxnode->node);
+	}
+	pfile.reset();
+	if (i < item_num) {
+		if (NULL != pxnode->domain) {
+			free(pxnode->domain);
+		}
+		if (NULL != pxnode->path) {
+			free(pxnode->path);
+		}
+		if (NULL != pxnode->remote_host) {
+			free(pxnode->remote_host);
+		}
+		if (NULL != pxnode->remote_path) {
+			free(pxnode->remote_path);
+		}
+		free(pxnode);
+		return FALSE;
+	}
+	return true;
+}
+
+static BOOL hpm_mod_proxy(int reason, void **ppdata)
+{
+	int i;
+	int context_num;
 	HPM_INTERFACE interface;
+	PROXY_NODE *pxnode;
+	DOUBLE_LIST_NODE *pnode;
 	
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		double_list_init(&g_proxy_list);
-		struct srcitem { char domain[256], uri_path[256], dest[256]; };
-		auto pfile = list_file_initd("proxy.txt", get_config_path(), "%s:256%s:256%s:256");
-		if (NULL == pfile) {
-			printf("[mod_proxy]: list_file_initd proxy.txt: %s\n", strerror(errno));
+		if (!mod_proxy_read_txt())
 			return FALSE;
-		}
-		auto item_num = pfile->get_size();
-		auto pitem = static_cast<srcitem *>(pfile->get_list());
-		for (i=0; i<item_num; i++) {
-			pxnode = static_cast<PROXY_NODE *>(malloc(sizeof(PROXY_NODE)));
-			if (NULL == pxnode) {
-				continue;
-			}
-			memset(pxnode, 0, sizeof(PROXY_NODE));
-			pxnode->node.pdata = pxnode;
-			pxnode->domain = strdup(pitem[i].domain);
-			if (NULL == pxnode->domain) {
-				break;
-			}
-			pxnode->path = strdup(pitem[i].uri_path);
-			if (NULL == pxnode->path) {
-				break;
-			}
-			tmp_len = strlen(pxnode->path);
-			if ('/' == pxnode->path[tmp_len - 1]) {
-				pxnode->path[tmp_len - 1] = '\0';
-			}
-			if (strncasecmp(pitem[i].dest, "http://", 7) == 0) {
-				ptoken1 = pitem[i].dest + 7;
-			} else {
-				printf("[mod_proxy]: scheme of destination in '%s' "
-				       "unsupported, can only be http\n", pitem[i].dest);
-				break;
-			}
-			ptoken = strchr(ptoken1, '/');
-			if (NULL == ptoken) {
-				ptoken = ptoken1 + strlen(ptoken1);
-			}
-			size_t remotehostlen = ptoken - ptoken1 + 1;
-			pxnode->remote_host = static_cast<char *>(malloc(remotehostlen));
-			if (NULL == pxnode->remote_host) {
-				break;
-			}
-			memcpy(pxnode->remote_host, ptoken1, tmp_len);
-			pxnode->remote_host[tmp_len] = '\0';
-			if ('\0' == ptoken[0] || '\0' == ptoken[1]) {
-				pxnode->remote_path = NULL;
-			} else {
-				ptoken ++;
-				tmp_len = strlen(ptoken);
-				if ('/' == ptoken[tmp_len - 1]) {
-					tmp_len --;
-				}
-				if (0 == tmp_len) {
-					pxnode->remote_path = NULL;
-				} else {
-					pxnode->remote_path = static_cast<char *>(malloc(tmp_len + 1));
-					if (NULL == pxnode->remote_path) {
-						break;
-					}
-					memcpy(pxnode->remote_path, ptoken, tmp_len);
-					pxnode->remote_path[tmp_len] = '\0';
-				}
-			}
-			pxnode->remote_port = 80;
-			int ret = gx_addrport_split(pxnode->remote_host,
-			          pxnode->remote_host, remotehostlen,
-			          &pxnode->remote_port);
-			if (ret < 0) {
-				printf("[mod_proxy]: host format error near \"%s\": %s\n",
-				       ptoken1, strerror(-ret));
-				break;
-			}
-			double_list_append_as_tail(&g_proxy_list, &pxnode->node);
-		}
-		pfile.reset();
-		if (i < item_num) {
-			if (NULL != pxnode->domain) {
-				free(pxnode->domain);
-			}
-			if (NULL != pxnode->path) {
-				free(pxnode->path);
-			}
-			if (NULL != pxnode->remote_host) {
-				free(pxnode->remote_host);
-			}
-			if (NULL != pxnode->remote_path) {
-				free(pxnode->remote_path);
-			}
-			free(pxnode);
-			return FALSE;
-		}
 		context_num = get_context_num();
 		g_context_list = static_cast<PROXY_CONTEXT *>(malloc(sizeof(PROXY_CONTEXT) * context_num));
 		if (NULL == g_context_list) {
