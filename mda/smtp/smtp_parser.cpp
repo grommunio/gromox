@@ -61,8 +61,7 @@ static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
 	char *reason, int length);
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
-static int g_context_num;
-static int g_threads_num;
+static unsigned int g_context_num, g_threads_num;
 static int g_ssl_port;
 static BOOL g_domainlist_valid;
 static BOOL g_need_auth;
@@ -98,7 +97,7 @@ static pthread_mutex_t *g_ssl_mutex_buf;
  *        auth_times         maximum authentification times, session permit
  *        blktime_auths      block interval if max auths is exceeded
  */
-void smtp_parser_init(int context_num, int threads_num,
+void smtp_parser_init(unsigned int context_num, unsigned int threads_num,
 	BOOL dm_valid, BOOL need_auth, size_t max_mail_length,
 	size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size,
 	size_t timeout,  size_t auth_times, size_t blktime_auths,
@@ -155,8 +154,6 @@ static void smtp_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int smtp_parser_run()
 {
-	int i;
-	
 	if (TRUE == g_support_starttls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
@@ -197,9 +194,8 @@ int smtp_parser_run()
 			printf("[smtp_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
-		for (i=0; i<CRYPTO_num_locks(); i++) {
-			pthread_mutex_init(&g_ssl_mutex_buf[i], NULL);
-		}
+		for (int j = 0; j < CRYPTO_num_locks(); ++j)
+			pthread_mutex_init(&g_ssl_mutex_buf[j], NULL);
 		CRYPTO_THREADID_set_callback(smtp_parser_ssl_id);
 		CRYPTO_set_locking_callback(smtp_parser_ssl_locking);
 	}
@@ -208,9 +204,8 @@ int smtp_parser_run()
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
 	}
-	for (i=0; i<g_context_num; i++) {
+	for (size_t i = 0; i < g_context_num; ++i)
 		smtp_parser_context_init(g_context_list + i);
-	}
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	return 0;
@@ -224,12 +219,9 @@ int smtp_parser_run()
  */
 int smtp_parser_stop()
 {
-	int i;
-
 	if (NULL != g_context_list) {
-		for (i=0; i<g_context_num; i++) {
+		for (size_t i = 0; i < g_context_num; ++i)
 			smtp_parser_context_free(g_context_list + i);
-		}
 		free(g_context_list);
 		g_context_list = NULL;        
 	}
@@ -242,9 +234,8 @@ int smtp_parser_stop()
 	if (TRUE == g_support_starttls && NULL != g_ssl_mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
-		for (i=0; i<CRYPTO_num_locks(); i++) {
-			pthread_mutex_destroy(&g_ssl_mutex_buf[i]);
-		}
+		for (int j = 0; j < CRYPTO_num_locks(); ++j)
+			pthread_mutex_destroy(&g_ssl_mutex_buf[j]);
 		free(g_ssl_mutex_buf);
 		g_ssl_mutex_buf = NULL;
 	}

@@ -28,9 +28,7 @@ struct THR_DATA {
 
 static pthread_t g_scan_id;
 static std::atomic<bool> g_notify_stop{true};
-static int g_threads_pool_min_num;
-static int g_threads_pool_max_num;
-static int g_threads_pool_cur_thr_num;
+static unsigned int g_threads_pool_min_num, g_threads_pool_max_num, g_threads_pool_cur_thr_num;
 static LIB_BUFFER* g_threads_data_buff;
 static DOUBLE_LIST g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
@@ -44,12 +42,9 @@ static void* scan_work_func(void *pparam);
 
 static int (*threads_pool_process_func)(SCHEDULE_CONTEXT*);
 
-
-void threads_pool_init(int init_pool_num,
-	int (*process_func)(SCHEDULE_CONTEXT*))
+void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_CONTEXT *))
 {
-	int contexts_max_num;
-	int contexts_per_thr;
+	unsigned int contexts_max_num, contexts_per_thr;
 	
 	g_threads_pool_min_num = init_pool_num;
 	threads_pool_process_func = process_func;
@@ -73,7 +68,6 @@ void threads_pool_init(int init_pool_num,
 
 int threads_pool_run()
 {
-	int i;
 	THR_DATA *pdata;
 	int created_thr_num;
 	pthread_attr_t attr;
@@ -97,7 +91,7 @@ int threads_pool_run()
 	pthread_setname_np(g_scan_id, "ep_pool/scan");
 	pthread_attr_init(&attr);
 	created_thr_num = 0;
-	for (i=0; i<g_threads_pool_min_num; i++) {
+	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
 		pdata = (THR_DATA*)lib_buffer_get(g_threads_data_buff);
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
@@ -108,7 +102,7 @@ int threads_pool_run()
 			printf("[threads_pool]: failed to create a pool thread: %s\n", strerror(ret));
 		} else {
 			char buf[32];
-			snprintf(buf, sizeof(buf), "ep_pool/%u", i);
+			snprintf(buf, sizeof(buf), "ep_pool/%zu", i);
 			pthread_setname_np(pdata->id, buf);
 			created_thr_num ++;
 			double_list_append_as_tail(&g_threads_data_list, &pdata->node);
@@ -201,9 +195,10 @@ static void* thread_work_func(void* pparam)
 		if (NULL == pcontext) {
 			if (MAX_TIMES_NOT_SERVED == cannot_served_times) {
 				pthread_mutex_lock(&g_threads_pool_data_lock);
-				if (g_threads_pool_cur_thr_num > g_threads_pool_min_num
-					&& g_threads_pool_cur_thr_num * contexts_per_threads
-					> contexts_pool_get_param(CUR_VALID_CONTEXTS)) {
+				int gpr;
+				if (g_threads_pool_cur_thr_num > g_threads_pool_min_num &&
+				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS) >= 0 &&
+				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr))) {
 					double_list_remove(&g_threads_data_list, &pdata->node);
 					lib_buffer_put(g_threads_data_buff, pdata);
 					g_threads_pool_cur_thr_num --;

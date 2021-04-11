@@ -62,7 +62,7 @@ int main(int argc, const char **argv)
 	size_t max_mem;
 	int retcode = EXIT_FAILURE;
 	unsigned int threads_min, threads_max;
-	int free_contexts, mime_ratio;
+	unsigned int free_contexts, mime_ratio;
     const char *dequeue_path, *mpc_plugin_path, *service_plugin_path; 
     const char *console_server_ip, *user_name, *str_val, *admin_mb;
 	char temp_buff[256];
@@ -171,7 +171,7 @@ int main(int argc, const char **argv)
     }
     printf("[system]: maximum working threads number is %d\n", threads_max);
 
-	if (!resource_get_integer("FREE_CONTEXT_NUM", &free_contexts)) {
+	if (!resource_get_uint("FREE_CONTEXT_NUM", &free_contexts)) {
         free_contexts = threads_max; 
 		resource_set_integer("FREE_CONTEXT_NUM", free_contexts);
     } else {
@@ -182,7 +182,7 @@ int main(int argc, const char **argv)
 	}
     printf("[system]: free contexts number is %d\n", free_contexts);
     
-	if (!resource_get_integer("CONTEXT_AVERAGE_MIME", &mime_ratio)) {
+	if (!resource_get_uint("CONTEXT_AVERAGE_MIME", &mime_ratio)) {
         mime_ratio = 8; 
 		resource_set_integer("CONTEXT_AVERAGE_MIME", mime_ratio);
     } else {

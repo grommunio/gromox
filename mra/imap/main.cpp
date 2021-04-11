@@ -62,7 +62,7 @@ int main(int argc, const char **argv)
 	int autologout_time, context_aver_mitem;
 	unsigned int context_num, context_aver_mem, context_max_mem;
 	int imap_auth_times, imap_conn_timeout;
-	int thread_init_num, thread_charge_num; 
+	unsigned int thread_init_num, thread_charge_num;
 	int imap_support_stls, imap_force_stls;
 	const char *service_plugin_path; 
 	const char *console_server_ip, *user_name;
@@ -141,7 +141,7 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
-	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
+	if (!resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
@@ -156,7 +156,7 @@ int main(int argc, const char **argv)
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
+	if (!resource_get_uint("THREAD_INIT_NUM", &thread_init_num)) {
 		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}

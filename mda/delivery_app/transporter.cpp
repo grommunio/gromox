@@ -118,14 +118,11 @@ static char				g_path[256];
 static const char *const *g_plugin_names;
 static char				g_local_path[256];
 static HOOK_FUNCTION	g_local_hook;
-static int				g_threads_max;
-static int				g_threads_min;
-static int				g_mime_num;
+static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
 static std::atomic<bool> g_notify_stop{false};
 static BOOL             g_domainlist_valid;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
-static int				g_free_num;
 static SINGLE_LIST		g_free_list;
 static SINGLE_LIST		g_queue_list;
 static DOUBLE_LIST		g_lib_list;
@@ -188,8 +185,8 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const cha
  *		mime_ratio				how many mimes will be allocated per context
  */
 void transporter_init(const char *path, const char *const *names,
-    int threads_min, int threads_max, int free_num, int mime_radito,
-    BOOL dm_valid, bool ignerr)
+    unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
+    unsigned int mime_radito, BOOL dm_valid, bool ignerr)
 {
 	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = names;
@@ -227,7 +224,6 @@ void transporter_init(const char *path, const char *const *names,
 int transporter_run()
 {
 	size_t size;
-	int i, j;
 	pthread_attr_t attr;
 	FREE_CONTEXT *pcontext;
 	ANTI_LOOP *panti;
@@ -248,12 +244,12 @@ int transporter_run()
 		return -2;
 	}
 	memset(g_data_ptr, 0, size);
-	for (i=0; i<g_threads_max; i++) {
+	for (size_t i = 0; i < g_threads_max; ++i) {
 		(g_data_ptr + i)->node.pdata = g_data_ptr + i;
 		panti = &(g_data_ptr + i)->anti_loop;
 		double_list_init(&panti->free_list);
 		double_list_init(&panti->throwed_list);
-		for (j=0; j<MAX_THROWING_NUM; j++) {
+		for (size_t j = 0; j < MAX_THROWING_NUM; ++j) {
 			pcircle = g_circles_ptr + i*MAX_THROWING_NUM + j;
 			pcircle->node.pdata = pcircle;
 			double_list_append_as_tail(&panti->free_list, &pcircle->node);
@@ -268,7 +264,7 @@ int transporter_run()
         return -3;
 	}
 	memset(g_free_ptr, 0, size);
-	for (i=0; i<g_free_num; i++) {
+	for (size_t i = 0; i < g_free_num; ++i) {
 		pcontext = g_free_ptr + i;
 		pcontext->node.pdata = pcontext;
 		single_list_append_as_tail(&g_free_list, &pcontext->node);
@@ -287,7 +283,7 @@ int transporter_run()
 		printf("[transporter]: Failed to init file allocator\n");
         return -5;
     }
-	for (i=0; i<g_threads_max; i++) {
+	for (size_t i = 0; i < g_threads_max; ++i) {
 		mem_file_init(&(g_data_ptr + i)->fake_context.mail_control.f_rcpt_to,
 			g_file_allocator);
 		mail_init(&(g_data_ptr + i)->fake_context.mail, g_mime_pool);
@@ -296,7 +292,7 @@ int transporter_run()
         (g_data_ptr + i)->fake_context.context.pcontrol =
 				&(g_data_ptr + i)->fake_context.mail_control;
 	}
-	for (i=0; i<g_free_num; i++) {
+	for (size_t i = 0; i < g_free_num; ++i) {
 		mem_file_init(&(g_free_ptr + i)->mail_control.f_rcpt_to,
             g_file_allocator);
 		mail_init(&(g_free_ptr + i)->mail, g_mime_pool);
@@ -320,10 +316,9 @@ int transporter_run()
 		return -8;
 	}
 
-	for (i=g_threads_min; i<g_threads_max; i++) {
+	for (size_t i = g_threads_min; i < g_threads_max; ++i)
 		double_list_append_as_tail(&g_free_threads, &(g_data_ptr + i)->node);
-	}
-    for (i=0; i<g_threads_min; i++) {
+	for (size_t i = 0; i < g_threads_min; ++i) {
 		(g_data_ptr + i)->wait_on_event = TRUE;
 		pthread_attr_init(&attr);
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
@@ -331,12 +326,12 @@ int transporter_run()
 		if (ret != 0) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
-			printf("[transporter]: failed to create transport thread %d: %s\n",
+			printf("[transporter]: failed to create transport thread %zu: %s\n",
 			       i, strerror(ret));
 			return -10;
         }
 		char buf[32];
-		snprintf(buf, sizeof(buf), "xprt/%u", i);
+		snprintf(buf, sizeof(buf), "xprt/%zu", i);
 		pthread_setname_np(g_data_ptr[i].id, buf);
 		pthread_attr_destroy(&attr);
 		double_list_append_as_tail(&g_threads_list, &(g_data_ptr + i)->node);
@@ -417,7 +412,6 @@ static void transporter_collect_resource()
  */
 int transporter_stop()
 {
-	int i;
 	DOUBLE_LIST_NODE *pnode;
 	THREAD_DATA *pthr;
 
@@ -431,12 +425,10 @@ int transporter_stop()
 	pthread_mutex_unlock(&g_threads_list_mutex);
 	pthread_cancel(g_scan_id);
 	transporter_collect_hooks();
-    for (i=0; i<g_threads_max; i++) {
-        mail_free(&(g_data_ptr + i)->fake_context.mail);
-    }
-	for (i=0; i<g_free_num; i++) {
+	for (size_t i = 0; i < g_threads_max; ++i)
+		mail_free(&(g_data_ptr + i)->fake_context.mail);
+	for (size_t i = 0; i < g_free_num; ++i)
 		mail_free(&(g_free_ptr + i)->mail);
-	}
 	transporter_collect_resource();
     return 0;
 }

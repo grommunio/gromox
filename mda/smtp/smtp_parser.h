@@ -165,7 +165,7 @@ struct SMTP_CONTEXT {
     MAIL_INFO        mail;         /* for recording the mail information */
     FLUSH_INFO       flusher;      /* the flusher for saving mail information */
     BOOL             is_spam;      /* whether the mail is spam */
-    int              session_num;  /* session number of the context */
+	unsigned int session_num; /* session number of the context */
     size_t           total_length; /* mail total length */
     char             last_bytes[4];/* last bytes for part mail */
     PARSING_BLOCK    block_info;   /* parsing block information */
@@ -173,12 +173,7 @@ struct SMTP_CONTEXT {
     EXT_DATA         ext_data;
 };
 
-extern void smtp_parser_init(int context_num, int threads_num,
-	BOOL dm_valid, BOOL need_auth, size_t max_mail_length,
-	size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size,
-	size_t timeout,  size_t auth_times, size_t blktime_auths,
-	BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void smtp_parser_init(unsigned int context_num, unsigned int threads_num, BOOL dm_valid, BOOL need_auth, size_t max_mail_length, size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size, size_t timeout, size_t auth_times, size_t blktime_auths, BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern int smtp_parser_stop();

@@ -15,13 +15,12 @@
 #include <cerrno>
 
 static int g_time_out;
-static int g_context_num;
+static unsigned int g_context_num, g_contexts_per_thr;
 static int g_epoll_fd = -1;
 static pthread_t g_scan_id;
 static void *g_context_list;
 static unsigned int g_context_offset;
 static pthread_t g_thread_id;
-static int g_contexts_per_thr;
 static std::atomic<bool> g_notify_stop{true};
 static struct epoll_event *g_events;
 static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
@@ -185,12 +184,11 @@ static void *scan_work_func(void *pparam)
 	return nullptr;
 }
 
-void contexts_pool_init(void *pcontexts, int context_num,
+void contexts_pool_init(void *pcontexts, unsigned int context_num,
     unsigned int unit_offset, int (*get_socket)(void*),
-	struct timeval (*get_timestamp)(void*),
-	int contexts_per_thr, int timeout)
+    struct timeval (*get_timestamp)(void*),
+    unsigned int contexts_per_thr, int timeout)
 {
-	int i;
 	SCHEDULE_CONTEXT* pcontext;
 	
 	g_context_list = pcontexts;
@@ -200,23 +198,21 @@ void contexts_pool_init(void *pcontexts, int context_num,
 	contexts_pool_get_context_timestamp = get_timestamp;
 	g_contexts_per_thr = contexts_per_thr;
 	g_time_out = timeout;
-	for (i=CONTEXT_BEGIN; i<CONTEXT_TYPES; i++) {
+	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_init(&g_context_lists[i]);
-	}
 	if (g_context_offset < sizeof(SCHEDULE_CONTEXT)) {
 		debug_info("[contexts_pool]: contexts offset"
 				" error passed into contexts pool\n");
 	}
-	for (i=0; i<g_context_num; i++) {
+	for (size_t i = 0; i < g_context_num; ++i) {
 		pcontext = (SCHEDULE_CONTEXT*)((char*)
 			g_context_list + i*g_context_offset);
 		context_init(pcontext);
 		double_list_append_as_tail(
 			&g_context_lists[CONTEXT_FREE], &pcontext->node);
 	}
-	for (i=CONTEXT_BEGIN; i<CONTEXT_TYPES; i++) {
+	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		pthread_mutex_init(&g_context_locks[i], NULL);
-	}
 }
 
 int contexts_pool_run()
@@ -277,18 +273,13 @@ int contexts_pool_stop()
 
 void contexts_pool_free()
 {
-	int i;
-	
-	for (i=0; i<g_context_num; i++) {
+	for (size_t i = 0; i < g_context_num; ++i)
 		context_free((SCHEDULE_CONTEXT*)((char*)
 			g_context_list + i * g_context_offset));
-	}
-	for (i=CONTEXT_BEGIN; i<CONTEXT_TYPES; i++) {
+	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		pthread_mutex_destroy(&g_context_locks[i]);
-	}
-	for (i=CONTEXT_BEGIN; i<CONTEXT_TYPES; i++) {
+	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_free(&g_context_lists[i]);
-	}
 	g_context_list = NULL;
 	
 	g_context_num = 0;

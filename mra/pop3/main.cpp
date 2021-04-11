@@ -64,7 +64,7 @@ int main(int argc, const char **argv)
 	size_t context_aver_mem;
 	int listen_port, listen_ssl_port;
 	int pop3_auth_times, pop3_conn_timeout;
-	int thread_init_num, thread_charge_num; 
+	unsigned int thread_init_num, thread_charge_num;
 	int pop3_support_stls, pop3_force_stls;
 	const char *service_plugin_path, *cdn_cache_path; 
 	const char *console_server_ip, *user_name;
@@ -143,7 +143,7 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
-	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
+	if (!resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
@@ -158,7 +158,7 @@ int main(int argc, const char **argv)
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
+	if (!resource_get_uint("THREAD_INIT_NUM", &thread_init_num)) {
 		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}

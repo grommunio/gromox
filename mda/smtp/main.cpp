@@ -73,7 +73,7 @@ int main(int argc, const char **argv)
 	int smtp_auth_times, smtp_conn_timeout;
 	BOOL smtp_need_auth, smtp_support_pipeline,
 		smtp_support_starttls, smtp_force_starttls;
-	int thread_init_num, thread_charge_num, threads_max_num; 
+	unsigned int thread_init_num, thread_charge_num, threads_max_num; 
 	const char *certificate_path, *cb_passwd, *private_key_path;
 	const char *service_plugin_path; 
 	const char *console_server_ip, *flusher_plugin_path, *user_name;
@@ -159,7 +159,7 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
-	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
+	if (!resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
@@ -174,7 +174,7 @@ int main(int argc, const char **argv)
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
+	if (!resource_get_uint("THREAD_INIT_NUM", &thread_init_num)) {
 		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
