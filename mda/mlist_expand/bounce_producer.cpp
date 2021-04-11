@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <shared_mutex>
 #include <typeinfo>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -81,7 +82,7 @@ struct TAG_ITEM {
 static char g_separator[16];
 static SINGLE_LIST g_resource_list;
 static RESOURCE_NODE *g_default_resource;
-static pthread_rwlock_t g_list_lock;
+static std::shared_mutex g_list_lock;
 static const char *g_resource_table[] = {
 	"BOUNCE_MLIST_SPECIFIED",
     "BOUNCE_MLIST_INTERNAL",
@@ -157,7 +158,6 @@ int bounce_producer_run(const char *datadir)
 #undef E
 
 	single_list_init(&g_resource_list);
-	pthread_rwlock_init(&g_list_lock, NULL);
 	if (!bounce_producer_refresh(datadir))
 		return -5;
 	return 0;
@@ -230,11 +230,11 @@ BOOL bounce_producer_refresh(const char *datadir)
 		single_list_free(&resource_list);
 		return FALSE;
 	}
-	pthread_rwlock_wrlock(&g_list_lock);
+	std::unique_lock wr_hold(g_list_lock);
 	temp_list = g_resource_list;
 	g_resource_list = resource_list;
 	g_default_resource = pdefault;
-	pthread_rwlock_unlock(&g_list_lock);
+	wr_hold.unlock();
 	bounce_producer_unload_list(&temp_list);
 	single_list_free(&temp_list);	
 	return TRUE;
@@ -448,7 +448,6 @@ static void bounce_producer_load_subdir(const char *basedir,
 void bounce_producer_stop()
 {
 	bounce_producer_unload_list(&g_resource_list);
-	pthread_rwlock_destroy(&g_list_lock);
 	single_list_free(&g_resource_list);
 }
 
@@ -521,7 +520,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		strcpy(charset, mcharset);
 	}
 	presource = NULL;
-	pthread_rwlock_rdlock(&g_list_lock);
+	std::shared_lock rd_hold(g_list_lock);
 	for (pnode=single_list_get_head(&g_resource_list); NULL!=pnode;
         pnode=single_list_get_after(&g_resource_list, pnode)) {
         if (0 == strcasecmp(((RESOURCE_NODE*)pnode->pdata)->charset, charset)) {
@@ -583,7 +582,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	ptr += len;
 	phead = mail_add_head(pmail);
 	if (NULL == phead) {
-		pthread_rwlock_unlock(&g_list_lock);
 		printf("[mlist_expand]: fatal error, there's no mime "
 			"in mime pool\n");
 		return;
@@ -608,7 +606,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	
 	pmime = mail_add_child(pmail, phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
-		pthread_rwlock_unlock(&g_list_lock);
 		printf("[mlist_expand]: fatal error, there's no mime "
 			"in mime pool\n");
 		return;
@@ -617,7 +614,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		strlen(presource->content_type[bounce_type]),
 		tmp_buff, 256, &pmime->f_type_params);
 	mime_set_content_type(pmime, tmp_buff);
-	pthread_rwlock_unlock(&g_list_lock);
+	rd_hold.unlock();
 	mime_set_content_param(pmime, "charset", "\"utf-8\"");
 	if (FALSE == mime_write_content(pmime, original_ptr,
 		ptr - original_ptr, MIME_ENCODING_BASE64)) {

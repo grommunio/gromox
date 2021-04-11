@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "bounce_producer.h"
@@ -68,7 +69,7 @@ struct TAG_ITEM {
 static char g_separator[16];
 static SINGLE_LIST g_resource_list;
 static RESOURCE_NODE *g_default_resource;
-static pthread_rwlock_t g_list_lock;
+static std::shared_mutex g_list_lock;
 static const char *g_resource_table[] = {
 	"BOUNCE_AUTO_RESPONSE",
 	"BOUNCE_MAIL_TOO_LARGE",
@@ -97,7 +98,6 @@ void bounce_producer_init(const char* separator)
 int bounce_producer_run(const char *data_path)
 {
 	single_list_init(&g_resource_list);
-	pthread_rwlock_init(&g_list_lock, NULL);
 	if (!bounce_producer_refresh(data_path))
 		return -1;
 	return 0;
@@ -165,11 +165,11 @@ BOOL bounce_producer_refresh(const char *data_path)
 		single_list_free(&resource_list);
 		return FALSE;
 	}
-	pthread_rwlock_wrlock(&g_list_lock);
+	std::unique_lock wr_hold(g_list_lock);
 	temp_list = g_resource_list;
 	g_resource_list = resource_list;
 	g_default_resource = pdefault;
-	pthread_rwlock_unlock(&g_list_lock);
+	wr_hold.unlock();
 	bounce_producer_unload_list(&temp_list);
 	single_list_free(&temp_list);
 	return TRUE;
@@ -372,7 +372,6 @@ static void bounce_producer_load_subdir(const char *basedir,
 void bounce_producer_stop()
 {
 	bounce_producer_unload_list(&g_resource_list);
-	pthread_rwlock_destroy(&g_list_lock);
 	single_list_free(&g_resource_list);
 }
 
@@ -489,7 +488,7 @@ BOOL bounce_producer_make_content(const char *from,
 		}
 	}
 	presource = NULL;
-	pthread_rwlock_rdlock(&g_list_lock);
+	std::shared_lock rd_hold(g_list_lock);
 	for (pnode=single_list_get_head(&g_resource_list); NULL!=pnode;
 		pnode=single_list_get_after(&g_resource_list, pnode)) {
 		if (0 == strcasecmp(((RESOURCE_NODE*)pnode->pdata)->charset, charset)) {
@@ -525,7 +524,6 @@ BOOL bounce_producer_make_content(const char *from,
 			if (FALSE == common_util_get_property(
 				MESSAGE_PROPERTIES_TABLE, message_id, 0,
 				psqlite, PROP_TAG_SUBJECT, &pvalue)) {
-				pthread_rwlock_unlock(&g_list_lock);
 				return FALSE;
 			}
 			if (NULL != pvalue) {
@@ -557,7 +555,6 @@ BOOL bounce_producer_make_content(const char *from,
 	if (NULL != content_type) {
 		strcpy(content_type, presource->content_type[bounce_type]);
 	}
-	pthread_rwlock_unlock(&g_list_lock);
 	*ptr = '\0';
 	return TRUE;
 }
