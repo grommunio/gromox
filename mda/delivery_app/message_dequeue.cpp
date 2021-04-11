@@ -162,7 +162,6 @@ int message_dequeue_run()
 {
 	size_t size;
 	key_t k_msg;
-	int i;
     char name[256];
 	MESSAGE *pmessage;
 	pthread_attr_t attr;
@@ -196,7 +195,7 @@ int message_dequeue_run()
 	}
 	memset(g_message_ptr, 0, size);
 	/* append rest of message node into free list */
-	for (i=0; i<g_message_units; i++) {
+	for (size_t i = 0; i < g_message_units; ++i) {
 		pmessage = g_message_ptr + i;
         pmessage->node.pdata = pmessage;
 		single_list_append_as_tail(&g_free_list, &pmessage->node);

@@ -143,8 +143,6 @@ static BOOL resource_load_imap_lang_list();
 
 int resource_run()
 {
-    int i;
-
 	g_def_code_table = static_cast<IMAP_RETURN_CODE *>(malloc(sizeof(g_default_code_table)));
     if (NULL == g_def_code_table) {
 		printf("[resource]: Failed to allocate default code table\n");
@@ -159,7 +157,7 @@ int resource_run()
         printf("[resource]: Failed to load IMAP codes\n");
 		return -4;
     }
-    for (i=0; i<sizeof(g_default_code_table)/sizeof(IMAP_RETURN_CODE); i++) {
+	for (size_t i = 0; i < GX_ARRAY_SIZE(g_default_code_table); ++i) {
         g_def_code_table[i].code =
                     g_default_code_table[i].code;
 
@@ -226,8 +224,7 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
                 " table\n");
         return -1;
     }
-
-	for (int total = 0; total < GX_ARRAY_SIZE(g_default_code_table); ++total) {
+	for (size_t total = 0; total < GX_ARRAY_SIZE(g_default_code_table); ++total) {
         code_table[total].code              = -1;
         memset(code_table[total].comment, 0, 512);
     }
@@ -434,13 +431,9 @@ static BOOL resource_load_imap_lang_list()
 
 static int resource_find_imap_code_index(int native_code)
 {
-    int i;
-
-    for (i=0; i<sizeof(g_default_code_table)/sizeof(IMAP_RETURN_CODE); i++) {
-        if (g_default_code_table[i].code == native_code) {
-            return i;
-        }
-    }
+	for (size_t i = 0; i < GX_ARRAY_SIZE(g_default_code_table); ++i)
+		if (g_default_code_table[i].code == native_code)
+			return i;
     return -1;
 }
 

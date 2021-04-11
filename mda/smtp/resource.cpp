@@ -192,8 +192,7 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
             len++;
             ptr++;
         }
-
-        if (len <= 0 || len > sizeof(code) - 1) {
+	if (len <= 0 || static_cast<size_t>(len) > sizeof(code) - 1) {
 			printf("[resource]: invalid native code format, file smtp_code.txt line: %d, %s\n", total + 1, line);
             continue;
         }

@@ -441,8 +441,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	}
 	
 	n = atoi(temp_command + 5);
-	
-	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
+	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %s\r\n", n,
 							punit->file_name);
@@ -546,8 +545,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	}
 	
 	n = atoi(temp_command + 5);
-	
-	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
+	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
 			
 		string_length = sprintf(temp_buff, "+OK %d %ld\r\n", n, punit->size);	
@@ -619,8 +617,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	n = atoi(temp_command + 5);
 	pcontext->cur_line = -1;
 	pcontext->until_line = 0x7FFFFFFF;
-	
-	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
+	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
 		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
 			punit->file_name);
@@ -712,8 +709,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	}
 	
 	n = atoi(temp_command + 5);
-	
-	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
+	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
 		if (FALSE == punit->b_deleted) {
 			punit->b_deleted = TRUE;
@@ -801,8 +797,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		pcontext->until_line = atoi(ptoken + 1);
 	}
 	pcontext->cur_line = -1;
-
-	if (n > 0 && n <= array_get_capacity(&pcontext->array)) {
+	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
 		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
 		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
 			punit->file_name);
