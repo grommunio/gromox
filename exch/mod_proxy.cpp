@@ -5,6 +5,8 @@
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
+#include <string>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/double_list.hpp>
 #include <gromox/defs.h>
@@ -26,16 +28,12 @@
 namespace {
 
 struct PROXY_NODE {
-	DOUBLE_LIST_NODE node;
-	char *domain;
-	char *path;
-	char *remote_host;
+	std::string domain, path, remote_host, remote_path;
 	uint16_t remote_port;
-	char *remote_path;
 };
 
 struct PROXY_CONTEXT {
-	PROXY_NODE *pxnode;
+	const PROXY_NODE *pxnode;
 	int sockd;
 	time_t last_time;
 	BOOL b_upgraded;
@@ -48,7 +46,7 @@ struct PROXY_CONTEXT {
 
 static int g_epoll_fd = -1;
 static pthread_t g_thread_id;
-static DOUBLE_LIST g_proxy_list;
+static std::vector<PROXY_NODE> g_proxy_list;
 static std::atomic<bool> g_notify_stop{true};
 static struct epoll_event *g_events;
 static PROXY_CONTEXT *g_context_list;
@@ -68,12 +66,8 @@ static void proxy_term(int context_id);
 
 static void* thread_work_func(void *pparam);
 
-static bool mod_proxy_read_txt()
+static bool mod_proxy_read_txt() try
 {
-	int i;
-	PROXY_NODE *pxnode;
-	DOUBLE_LIST_NODE *pnode;
-
 	struct srcitem { char domain[256], uri_path[256], dest[256]; };
 	auto pfile = list_file_initd("proxy.txt", get_config_path(), "%s:256%s:256%s:256");
 	if (NULL == pfile) {
@@ -82,90 +76,46 @@ static bool mod_proxy_read_txt()
 	}
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (i=0; i<item_num; i++) {
-		pxnode = static_cast<PROXY_NODE *>(malloc(sizeof(PROXY_NODE)));
-		if (NULL == pxnode) {
-			continue;
-		}
-		memset(pxnode, 0, sizeof(PROXY_NODE));
-		pxnode->node.pdata = pxnode;
-		pxnode->domain = strdup(pitem[i].domain);
-		if (NULL == pxnode->domain) {
-			break;
-		}
-		pxnode->path = strdup(pitem[i].uri_path);
-		if (NULL == pxnode->path) {
-			break;
-		}
-		auto path_len = strlen(pxnode->path);
-		if (pxnode->path[path_len-1] == '/')
-			pxnode->path[path_len-1] = '\0';
+	for (size_t i = 0; i < item_num; ++i) {
+		PROXY_NODE node;
+		node.domain = pitem[i].domain;
+		node.path = pitem[i].uri_path;
+		if (node.path.size() > 0 && node.path.back() == '/')
+			node.path.pop_back();
 		const char *phost;
 		if (strncasecmp(pitem[i].dest, "http://", 7) == 0) {
 			phost = pitem[i].dest + 7;
 		} else {
 			printf("[mod_proxy]: scheme of destination in '%s' "
 			       "unsupported, can only be http\n", pitem[i].dest);
-			break;
+			return false;
 		}
 		auto ptoken = strchr(phost, '/');
 		if (NULL == ptoken) {
 			ptoken = phost + strlen(phost);
 		}
 		size_t remotehostlen = ptoken - phost;
-		pxnode->remote_host = static_cast<char *>(malloc(remotehostlen + 1));
-		if (NULL == pxnode->remote_host) {
-			break;
+		node.remote_host.assign(phost, remotehostlen);
+		if (ptoken[0] != '\0' && ptoken[1] != '\0') {
+			node.remote_path = ptoken + 1;
+			if (node.remote_path.size() > 0 && node.remote_path.back() == '/')
+				node.remote_path.pop_back();
 		}
-		memcpy(pxnode->remote_host, phost, remotehostlen);
-		pxnode->remote_host[remotehostlen] = '\0';
-		if ('\0' == ptoken[0] || '\0' == ptoken[1]) {
-			pxnode->remote_path = NULL;
-		} else {
-			ptoken ++;
-			auto destpath_len = strlen(ptoken);
-			if (ptoken[destpath_len-1] == '/')
-				--destpath_len;
-			if (destpath_len == 0) {
-				pxnode->remote_path = NULL;
-			} else {
-				pxnode->remote_path = static_cast<char *>(malloc(destpath_len + 1));
-				if (NULL == pxnode->remote_path) {
-					break;
-				}
-				memcpy(pxnode->remote_path, ptoken, destpath_len);
-				pxnode->remote_path[destpath_len] = '\0';
-			}
-		}
-		pxnode->remote_port = 80;
-		int ret = gx_addrport_split(pxnode->remote_host,
-			  pxnode->remote_host, remotehostlen,
-			  &pxnode->remote_port);
+		node.remote_port = 80;
+		int ret = gx_addrport_split(node.remote_host.data(),
+			  node.remote_host.data(), node.remote_host.size(),
+			  &node.remote_port);
 		if (ret < 0) {
 			printf("[mod_proxy]: host format error near \"%s\": %s\n",
 			       phost, strerror(-ret));
-			break;
+			return false;
 		}
-		double_list_append_as_tail(&g_proxy_list, &pxnode->node);
-	}
-	pfile.reset();
-	if (i < item_num) {
-		if (NULL != pxnode->domain) {
-			free(pxnode->domain);
-		}
-		if (NULL != pxnode->path) {
-			free(pxnode->path);
-		}
-		if (NULL != pxnode->remote_host) {
-			free(pxnode->remote_host);
-		}
-		if (NULL != pxnode->remote_path) {
-			free(pxnode->remote_path);
-		}
-		free(pxnode);
-		return FALSE;
+		g_proxy_list.push_back(std::move(node));
 	}
 	return true;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "W-1290: ENOMEM\n");
+	return false;
 }
 
 static BOOL hpm_mod_proxy(int reason, void **ppdata)
@@ -173,13 +123,10 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 	int i;
 	int context_num;
 	HPM_INTERFACE interface;
-	PROXY_NODE *pxnode;
-	DOUBLE_LIST_NODE *pnode;
 	
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		double_list_init(&g_proxy_list);
 		if (!mod_proxy_read_txt())
 			return FALSE;
 		context_num = get_context_num();
@@ -245,17 +192,6 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 			free(g_context_list);
 			g_context_list = NULL;
 		}
-		while ((pnode = double_list_pop_front(&g_proxy_list)) != nullptr) {
-			pxnode = (PROXY_NODE*)pnode->pdata;
-			free(pxnode->domain);
-			free(pxnode->path);
-			free(pxnode->remote_host);
-			if (NULL != pxnode->remote_path) {
-				free(pxnode->remote_path);
-			}
-			free(pxnode);
-		}
-		double_list_free(&g_proxy_list);
 		return TRUE;
 	}
 	return TRUE;
@@ -282,26 +218,16 @@ static void* thread_work_func(void *pparam)
 	return nullptr;
 }
 
-static PROXY_NODE* find_proxy_node(
-	const char *domain, const char *uri_path)
+static const PROXY_NODE *find_proxy_node(const char *domain, const char *uri_path)
 {
-	int tmp_len;
-	PROXY_NODE *pxnode;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_proxy_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_proxy_list, pnode)) {
-		pxnode = (PROXY_NODE*)pnode->pdata;
-		if (0 == wildcard_match(domain, pxnode->domain, TRUE)) {
+	for (const auto &node : g_proxy_list) {
+		if (!wildcard_match(domain, node.domain.c_str(), TRUE))
 			continue;
-		}
-		tmp_len = strlen(pxnode->path);
-		if (0 != strncasecmp(uri_path, pxnode->path,
-			tmp_len) || ('/' != uri_path[tmp_len] &&
-			'\0' != uri_path[tmp_len])) {
+		auto len = node.path.size();
+		if (strncasecmp(uri_path, node.path.c_str(), len) != 0 ||
+		    (uri_path[len] != '/' && uri_path[len]) != '\0')
 			continue;
-		}
-		return pxnode;
+		return &node;
 	}
 	return NULL;
 }
@@ -311,7 +237,6 @@ static BOOL proxy_preproc(int context_id)
 	int tmp_len;
 	char *ptoken;
 	char domain[256];
-	PROXY_NODE *pxnode;
 	char tmp_buff[8192];
 	char request_uri[8192];
 	HTTP_REQUEST *prequest;
@@ -347,34 +272,34 @@ static BOOL proxy_preproc(int context_id)
 	if (NULL != ptoken) {
 		*ptoken = '\0';
 	}
-	pxnode = find_proxy_node(domain, request_uri);
+	auto pxnode = find_proxy_node(domain, request_uri);
 	if (NULL == pxnode) {
 		return FALSE;
 	}
 	mem_file_clear(&prequest->f_request_uri);
-	tmp_len = strlen(pxnode->path);
+	tmp_len = pxnode->path.size();
 	if (NULL == ptoken) {
-		if (NULL == pxnode->remote_path) {
+		if (pxnode->remote_path.empty()) {
 			tmp_buff[0] = '/';
 			tmp_len = 1;
 		} else {
-			tmp_len = sprintf(tmp_buff, "/%s/", pxnode->remote_path);
+			tmp_len = sprintf(tmp_buff, "/%s/", pxnode->remote_path.c_str());
 		}
 	} else {
 		if ('\0' == request_uri[tmp_len]) {
-			if (NULL == pxnode->remote_path) {
+			if (pxnode->remote_path.empty()) {
 				tmp_len = sprintf(tmp_buff, "/%s", ptoken + 1);
 			} else {
 				tmp_len = sprintf(tmp_buff, "/%s/%s",
-					pxnode->remote_path, ptoken + 1);
+				          pxnode->remote_path.c_str(), ptoken + 1);
 			}
 		} else {
-			if (NULL == pxnode->remote_path) {
+			if (pxnode->remote_path.empty()) {
 				tmp_len = sprintf(tmp_buff, "/%s/%s",
 					request_uri + tmp_len + 1, ptoken + 1);
 			} else {
 				tmp_len = sprintf(tmp_buff,
-					"/%s/%s/%s", pxnode->remote_path,
+				          "/%s/%s/%s", pxnode->remote_path.c_str(),
 					request_uri + tmp_len + 1, ptoken + 1);
 			}
 		}
@@ -435,7 +360,7 @@ static BOOL proxy_proc(int context_id,
 	pconnection = get_connection(context_id);
 	prequest = get_request(context_id);
 	pcontext = &g_context_list[context_id];
-	pcontext->sockd = gx_inet_connect(pcontext->pxnode->remote_host, pcontext->pxnode->remote_port, 0);
+	pcontext->sockd = gx_inet_connect(pcontext->pxnode->remote_host.c_str(), pcontext->pxnode->remote_port, 0);
 	if (pcontext->sockd < 0) {
 		pcontext->sockd = -1;
 		return FALSE;
