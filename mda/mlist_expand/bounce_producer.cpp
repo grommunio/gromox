@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <memory>
 #include <shared_mutex>
 #include <typeinfo>
+#include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "bounce_producer.h"
-#include <gromox/single_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
@@ -63,12 +66,11 @@ struct FORMAT_DATA {
  * <subject> <parts> <length>
  */
 struct RESOURCE_NODE {
-	SINGLE_LIST_NODE	node;
 	char				charset[32];
 	char				from[BOUNCE_TOTAL_NUM][256];
 	char				subject[BOUNCE_TOTAL_NUM][256];
 	char				content_type[BOUNCE_TOTAL_NUM][256];
-	char*				content[BOUNCE_TOTAL_NUM];	
+	std::unique_ptr<char[]> content[BOUNCE_TOTAL_NUM];
 	FORMAT_DATA			format[BOUNCE_TOTAL_NUM][TAG_TOTAL_LEN + 1];
 };
 
@@ -80,7 +82,7 @@ struct TAG_ITEM {
 }
 
 static char g_separator[16];
-static SINGLE_LIST g_resource_list;
+static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
 static std::shared_mutex g_list_lock;
 static const char *g_resource_table[] = {
@@ -120,8 +122,7 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset);
 static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
 static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_name);
-static void bounce_producer_load_subdir(const char *basedir, const char *dir_name, SINGLE_LIST *plist);
-static void bounce_producer_unload_list(SINGLE_LIST *plist);
+static void bounce_producer_load_subdir(const char *basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
 /*
  *	bounce producer's construct function
@@ -156,31 +157,9 @@ int bounce_producer_run(const char *datadir)
 	E(bounce_producer_get_timezone, "get_timezone");
 	E(bounce_producer_lang_to_charset, "lang_to_charset");
 #undef E
-
-	single_list_init(&g_resource_list);
 	if (!bounce_producer_refresh(datadir))
 		return -5;
 	return 0;
-}
-
-/*
- *	unload the list of resource
- *	@param
- *		plist [in]			list object
- */
-static void bounce_producer_unload_list(SINGLE_LIST *plist)
-{
-	int i;
-	SINGLE_LIST_NODE *pnode;
-	RESOURCE_NODE *presource;
-
-	while ((pnode = single_list_pop_front(plist)) != nullptr) {
-		presource = (RESOURCE_NODE*)pnode->pdata;
-		for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
-        	free(presource->content[i]);
-        }
-		free(presource);
-	}
 }
 
 /*
@@ -192,12 +171,8 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist)
 BOOL bounce_producer_refresh(const char *datadir)
 {
     struct dirent *direntp;
-	SINGLE_LIST_NODE *pnode;
-	RESOURCE_NODE *presource;
-	SINGLE_LIST resource_list, temp_list;
-	RESOURCE_NODE *pdefault;
+	std::vector<RESOURCE_NODE> resource_list;
 
-	single_list_init(&resource_list);
 	auto dinfo = opendir_sd("mlist_bounce", datadir);
 	if (dinfo.m_dir == nullptr) {
 		printf("[mlist_expand]: opendir_sd(mlist_expand) %s: %s\n",
@@ -210,33 +185,19 @@ BOOL bounce_producer_refresh(const char *datadir)
 			continue;
 		if (!bounce_producer_check_subdir(dinfo.m_path.c_str(), direntp->d_name))
 			continue;
-		bounce_producer_load_subdir(dinfo.m_path.c_str(), direntp->d_name, &resource_list);
+		bounce_producer_load_subdir(dinfo.m_path.c_str(), direntp->d_name, resource_list);
     }
 
-	pdefault = NULL;
-	/* check "ascii" charset */
-	for (pnode=single_list_get_head(&resource_list); NULL!=pnode;
-		pnode=single_list_get_after(&resource_list, pnode)) {
-		presource = (RESOURCE_NODE*)pnode->pdata;
-		if (0 == strcasecmp(presource->charset, "ascii")) {
-			pdefault = presource;
-			break;
-		}
-	}
-	if (NULL == pdefault) {
+	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
+	                [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, "ascii") == 0; });
+	if (pdefault == resource_list.end()) {
 		printf("[mlist_expand]: there are no \"ascii\" bounce mail "
 			"templates in %s\n", dinfo.m_path.c_str());
-		bounce_producer_unload_list(&resource_list);
-		single_list_free(&resource_list);
 		return FALSE;
 	}
 	std::unique_lock wr_hold(g_list_lock);
-	temp_list = g_resource_list;
-	g_resource_list = resource_list;
-	g_default_resource = pdefault;
-	wr_hold.unlock();
-	bounce_producer_unload_list(&temp_list);
-	single_list_free(&temp_list);	
+	g_default_resource = &*pdefault;
+	std::swap(g_resource_list, resource_list);
 	return TRUE;
 }
 
@@ -293,31 +254,24 @@ static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_na
  *		plist [out]				resource will be appended into this list
  */
 static void bounce_producer_load_subdir(const char *basedir,
-    const char *dir_name, SINGLE_LIST *plist)
+    const char *dir_name, std::vector<RESOURCE_NODE> &plist)
 {
 	DIR *sub_dirp;
-	RESOURCE_NODE *presource;
     struct dirent *sub_direntp;
 	struct stat node_stat;
     char dir_buff[256], sub_buff[256];
 	int i, j, k, until_tag;
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
+	RESOURCE_NODE rnode, *presource = &rnode;
 
-	presource = (RESOURCE_NODE*)malloc(sizeof(RESOURCE_NODE));
-	if (NULL == presource) {
-		printf("[mlist_expand]: Failed to allocate resource node memory\n");
-		return;
-	}
 	/* fill the struct with initial data */
 	for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
-		presource->content[i] = NULL;
 		for (j=0; j<TAG_TOTAL_LEN; j++) {
 			presource->format[i][j].position = -1;
 			presource->format[i][j].tag = j;
 		}
 	}
-	presource->node.pdata = presource;
 	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir, dir_name);
     sub_dirp = opendir(dir_buff);
     while ((sub_direntp = readdir(sub_dirp)) != NULL) {
@@ -339,20 +293,21 @@ static void bounce_producer_load_subdir(const char *basedir,
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		presource->content[i] = static_cast<char *>(malloc(node_stat.st_size));
-		if (NULL == presource->content[i]) {
+		try {
+			presource->content[i] = std::make_unique<char[]>(node_stat.st_size);
+		} catch (const std::bad_alloc &) {
     		closedir(sub_dirp);
-			goto FREE_RESOURCE;
+			return;
 		}
-		if (read(fd.get(), presource->content[i], node_stat.st_size) != node_stat.st_size) {
+		if (read(fd.get(), presource->content[i].get(), node_stat.st_size) != node_stat.st_size) {
     		closedir(sub_dirp);
-			goto FREE_RESOURCE;
+			return;
 		}
 		fd.close();
 		
 		j = 0;
 		while (j < node_stat.st_size) {
-			auto parsed_length = parse_mime_field(presource->content[i] + j,
+			auto parsed_length = parse_mime_field(&presource->content[i][j],
 			                     node_stat.st_size - j, &mime_field);
         	j += parsed_length;
         	if (0 != parsed_length) {
@@ -384,7 +339,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 				printf("[mlist_expand]: bounce mail %s format error\n",
 					sub_buff);
     			closedir(sub_dirp);
-				goto FREE_RESOURCE;
+				return;
 			}
 		}
 		/* find tags in file content and mark the position */
@@ -392,8 +347,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 		for (; j<node_stat.st_size; j++) {
 			if ('<' == presource->content[i][j]) {
 				for (k=0; k<TAG_TOTAL_LEN; k++) {
-					if (0 == strncasecmp(presource->content[i] + j,
-						g_tags[k].name, g_tags[k].length)) {
+					if (strncasecmp(&presource->content[i][j], g_tags[k].name, g_tags[k].length) == 0) {
 						presource->format[i][k + 1].position = j;
 						break;
 					}
@@ -409,7 +363,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 				printf("[mlist_expand]: format error in %s, lack of "
 						"tag %s\n", sub_buff, g_tags[j-1].name);
     			closedir(sub_dirp);
-				goto FREE_RESOURCE;
+				return;
 			}
 		}
 
@@ -427,36 +381,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 	}
     closedir(sub_dirp);
 	HX_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
-	single_list_append_as_tail(plist, &presource->node);
-	return;
-
- FREE_RESOURCE:
-	for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
- 		if (NULL != presource->content[i]) {
-			free(presource->content[i]);
-		}
-	}
-	free(presource);
-}
-
-/*
- *	stop the module
- *	@return
- *		 0				OK
- *		<>0				fail
- */
-void bounce_producer_stop()
-{
-	bounce_producer_unload_list(&g_resource_list);
-	single_list_free(&g_resource_list);
-}
-
-/*
- *	bounce producer's destruct function
- */
-void bounce_producer_free()
-{
-	g_default_resource = NULL;
+	plist.push_back(std::move(rnode));
 }
 
 /*
@@ -481,8 +406,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	int i, len, until_tag;
 	const struct state *sp;
 	DSN_FIELDS *pdsn_fields;
-	SINGLE_LIST_NODE *pnode;
-	RESOURCE_NODE *presource;
 	char original_ptr[256*1024];
 	char lang[32], time_zone[64];
 	
@@ -519,23 +442,15 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	if ('\0' == charset[0]) {
 		strcpy(charset, mcharset);
 	}
-	presource = NULL;
 	std::shared_lock rd_hold(g_list_lock);
-	for (pnode=single_list_get_head(&g_resource_list); NULL!=pnode;
-        pnode=single_list_get_after(&g_resource_list, pnode)) {
-        if (0 == strcasecmp(((RESOURCE_NODE*)pnode->pdata)->charset, charset)) {
-			presource = (RESOURCE_NODE*)pnode->pdata;
-			break;
-		}
-    }
-	if (NULL == presource) {
-		presource = g_default_resource;
-	}
+	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
+	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
+	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
 	int prev_pos = presource->format[bounce_type][TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;
 	for (i=TAG_BEGIN+1; i<until_tag; i++) {
 		len = presource->format[bounce_type][i].position - prev_pos;
-		memcpy(ptr, presource->content[bounce_type] + prev_pos, len);
+		memcpy(ptr, &presource->content[bounce_type][prev_pos], len);
 		prev_pos = presource->format[bounce_type][i].position +
 					g_tags[presource->format[bounce_type][i].tag-1].length;
 		ptr += len;
@@ -578,7 +493,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		}
 	}
 	len = presource->format[bounce_type][TAG_END].position - prev_pos;
-	memcpy(ptr, presource->content[bounce_type] + prev_pos, len);
+	memcpy(ptr, &presource->content[bounce_type][prev_pos], len);
 	ptr += len;
 	phead = mail_add_head(pmail);
 	if (NULL == phead) {

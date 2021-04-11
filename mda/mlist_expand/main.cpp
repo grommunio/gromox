@@ -45,8 +45,6 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 		printf("[mlist_expand]: plugin is loaded into system\n");
         return TRUE;
     case PLUGIN_FREE:
-		bounce_producer_stop();
-		bounce_producer_free();
         return TRUE;
 	case SYS_THREAD_CREATE:
 		return TRUE;

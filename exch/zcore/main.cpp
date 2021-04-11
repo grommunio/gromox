@@ -249,7 +249,6 @@ int main(int argc, const char **argv)
 	HX_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
 	
 	bounce_producer_init(separator);
-	auto cl_0a = make_scope_exit([&]() { bounce_producer_free(); });
 	str_value = config_file_get_value(pconfig, "ZARAFA_MIME_NUMBER");
 	if (NULL == str_value) {
 		mime_num = 4096;
@@ -493,7 +492,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run bounce producer\n");
 		return 6;
 	}
-	auto cl_3 = make_scope_exit(bounce_producer_stop);
 	if (0 != msgchg_grouping_run()) {
 		printf("[system]: failed to run msgchg grouping\n");
 		return 7;

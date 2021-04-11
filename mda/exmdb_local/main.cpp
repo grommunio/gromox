@@ -235,14 +235,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
         return TRUE;
 	}
     case PLUGIN_FREE:
-		exmdb_local_stop();
-		exmdb_local_free();
 		exmdb_client_stop();
 		cache_queue_stop();
 		cache_queue_free();
 		bounce_audit_stop();
-		bounce_producer_stop();
-		bounce_producer_free();
 		net_failure_free();
         return TRUE;
     }

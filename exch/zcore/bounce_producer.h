@@ -10,6 +10,4 @@ enum{
 
 extern void bounce_producer_init(const char *separator);
 extern int bounce_producer_run(const char *data_path);
-extern void bounce_producer_stop();
-extern void bounce_producer_free();
 extern BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *brief, int bounce_type, MAIL *);

@@ -311,12 +311,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		emsmdb_interface_stop();
 		msgchg_grouping_stop();
 		common_util_stop();
-		bounce_producer_stop();
 		asyncemsmdb_interface_free();
 		emsmdb_interface_free();
 		msgchg_grouping_free();
 		common_util_free();
-		bounce_producer_free();
 		return TRUE;
 	}
 	return TRUE;
