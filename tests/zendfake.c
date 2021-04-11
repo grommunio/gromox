@@ -1,5 +1,6 @@
 int main() { return 0; }
 __attribute__((unused)) char
+__zend_malloc,
 _call_user_function_impl,
 _ecalloc,
 _efree,
