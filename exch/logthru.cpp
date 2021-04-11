@@ -8,7 +8,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/svc_common.h>
 static unsigned int g_max_loglevel = 4;
-static void xlog_info(int level, const char *fmt, ...)
+static void xlog_info(unsigned int level, const char *fmt, ...)
 {
 	if (level > g_max_loglevel)
 		return;

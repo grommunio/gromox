@@ -55,7 +55,7 @@ typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x int (*get_queue_length)(); \
-	x void (*log_info)(int, const char *, ...); \
+	x void (*log_info)(unsigned int, const char *, ...); \
 	x BOOL (*feedback_entity)(FLUSH_ENTITY *); \
 	x BOOL (*register_cancel)(CANCEL_FUNCTION); \
 	x FLUSH_ENTITY *(*get_from_queue)(); \

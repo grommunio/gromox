@@ -34,7 +34,7 @@ typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 	x BOOL (*register_hook)(HOOK_FUNCTION); \
 	x BOOL (*register_local)(HOOK_FUNCTION); \
 	x BOOL (*register_talk)(TALK_MAIN); \
-	x void (*log_info)(int, const char *, ...); \
+	x void (*log_info)(unsigned int, const char *, ...); \
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_default_domain)(); \
 	x const char *(*get_admin_mailbox)(); \

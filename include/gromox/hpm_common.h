@@ -69,7 +69,7 @@ struct HTTP_AUTH_INFO {
 	x BOOL (*write_response)(int, const void *, int); \
 	x void (*wakeup_context)(int); \
 	x void (*activate_context)(int); \
-	x void (*log_info)(int, const char *, ...); \
+	x void (*log_info)(unsigned int, const char *, ...); \
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_default_domain)(); \
 	x const char *(*get_plugin_name)(); \

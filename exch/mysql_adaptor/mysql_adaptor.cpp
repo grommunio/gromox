@@ -341,7 +341,6 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password)
 {
-	int j, k;
 	int temp_type;
 	int temp_status;
 	const char *pdomain;
@@ -420,7 +419,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	if (pmyres1 == nullptr)
 		return false;
 	size_t rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
-	for (k=0; k<rows1; k++) {
+	for (size_t k = 0; k < rows1; ++k) {
 		auto myrow1 = pmyres1.fetch_row();
 		HX_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
 		pat = strchr(virtual_address, '@') + 1;
@@ -430,8 +429,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 				" WHERE username='%s'", encrypt_passwd, temp_name);
 		conn.res.query(sql_string);
 	}
-
-	for (j=0; j<rows; j++) {
+	for (size_t j = 0; j < rows; ++j) {
 		auto myrow = pmyres.fetch_row();
 		mysql_adaptor_encode_squote(myrow[0], temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
@@ -439,7 +437,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		if (!conn.res.query(sql_string))
 			continue;
 		mysql_data_seek(pmyres1.get(), 0);
-		for (k=0; k<rows1; k++) {
+		for (size_t k = 0; k < rows1; ++k) {
 			auto myrow1 = pmyres1.fetch_row();
 			HX_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
 			pat = strchr(virtual_address, '@') + 1;

@@ -98,9 +98,8 @@ static BOOL codepage_lang_load_langlist(SINGLE_LIST *plist,
 					return FALSE;
 				}
 				rstat = RETRIEVE_TAG_END;
-				if (i - last_pos > sizeof(temp_tag)) {
+				if (static_cast<size_t>(i - last_pos) > sizeof(temp_tag))
 					return FALSE;
-				}
 				memcpy(temp_tag, digest_buff + last_pos, i - last_pos);
 				temp_tag[i - last_pos] = '\0';
 			}
@@ -122,9 +121,8 @@ static BOOL codepage_lang_load_langlist(SINGLE_LIST *plist,
 			break;
 		case RETRIEVE_VALUE_FOUND:
 			if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
-				if (i < last_pos || i - last_pos >= sizeof(temp_value)) {
+				if (i < last_pos || static_cast<size_t>(i - last_pos) >= sizeof(temp_value))
 					return FALSE;
-				}
 				val_len = i - last_pos;
 				memcpy(temp_value, digest_buff + last_pos, val_len);
 				temp_value[val_len] = '\0';

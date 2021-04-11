@@ -34,7 +34,7 @@ static std::atomic<bool> g_notify_stop{true};
 static char *g_log_buf_ptr;
 static int g_current_size;
 static int g_log_buf_size;
-static int g_log_level;
+static unsigned int g_log_level;
 static int g_files_num;
 static char *g_files_name;
 static FILE *g_redirect_fp;
@@ -162,7 +162,7 @@ static int log_plugin_stop()
  *		level			log level
  *		format [in]		format string
  */
-static void log_plugin_log_info(int level, const char *format, ...)
+static void log_plugin_log_info(unsigned int level, const char *format, ...)
 {
 	char log_buf[LOG_LEN];
 	time_t time_now;
