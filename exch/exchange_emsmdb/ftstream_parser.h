@@ -16,9 +16,7 @@ struct FTSTREAM_PARSER {
 };
 
 FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon);
-	
 void ftstream_parser_free(FTSTREAM_PARSER *pstream);
-
 BOOL ftstream_parser_write_buffer(
 	FTSTREAM_PARSER *pstream,
 	const BINARY *ptransfer_data);

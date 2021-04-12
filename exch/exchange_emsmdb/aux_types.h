@@ -4,8 +4,6 @@
 #include <gromox/double_list.hpp>
 #define AUX_VERSION_1								0x1
 #define AUX_VERSION_2								0x2
-
-
 #define AUX_TYPE_PERF_REQUESTID						0x01
 #define AUX_TYPE_PERF_CLIENTINFO					0x02
 #define AUX_TYPE_PERF_SERVERINFO					0x03
@@ -34,7 +32,6 @@
 #define AUX_TYPE_CLIENT_CONNECTION_INFO				0x4A
 #define AUX_TYPE_SERVER_SESSION_INFO				0x4B
 #define AUX_TYPE_PROTOCOL_DEVICE_ID					0x4E
-
 
 struct AUX_PERF_REQUESTID {
 	uint16_t session_id;
@@ -248,7 +245,6 @@ struct AUX_HEADER {
 	uint8_t type;
 	void *ppayload;
 };
-
 
 /* bitmap pulFlags */
 #define PUL_FLAGS_NOCOMPRESSION						0x00000001

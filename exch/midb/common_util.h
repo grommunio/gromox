@@ -24,14 +24,11 @@ extern const char* common_util_get_maildir();
 char* common_util_dup(const char *pstr);
 void* common_util_get_propvals(
 	const TPROPVAL_ARRAY *parray, uint32_t proptag);
-
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-	
 BOOL common_util_create_folder(const char *dir, int user_id,
 	uint64_t parent_id, const char *folder_name, uint64_t *pfolder_id);
-
 BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);
 extern BOOL common_util_get_propids_create(const PROPNAME_ARRAY *, PROPID_ARRAY *);

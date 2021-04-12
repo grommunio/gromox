@@ -15,32 +15,23 @@ struct DOUBLE_LIST {
 };
 
 void double_list_init(DOUBLE_LIST* plist);
-
 void double_list_free(DOUBLE_LIST* plist);
-
 /* insert a node into the double list and treat it as list head */
 void double_list_insert_as_head(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode);
-
 /* append a node into the double list and treat it as list tail */
 void double_list_append_as_tail(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode);
-
 /* inset a node before pbase_node */
 void double_list_insert_before(DOUBLE_LIST *plist, 
     DOUBLE_LIST_NODE *pbase_node, DOUBLE_LIST_NODE *pnode);
-
 /* append a node after pbsae_node */
 void double_list_append_after(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pbase_node,
     DOUBLE_LIST_NODE *pnode);
-
 /* remove the node from the list */
 void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode);
-
 /* get head node and remove it from list */
 extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_front(DOUBLE_LIST *);
-
 /* get tail node and remove it from list */
 extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_back(DOUBLE_LIST *);
-
 /* merge the plist into plist_des */
 void double_list_append_list(DOUBLE_LIST *plist_des, DOUBLE_LIST *plist);
 

@@ -17,7 +17,6 @@
 #define NODE_TYPE_ROOM						0x3
 #define NODE_TYPE_EQUIPMENT					0x4
 #define NODE_TYPE_FOLDER					0x5
-
 #define USER_MAIL_ADDRESS					0
 #define USER_REAL_NAME						1
 #define USER_JOB_TITLE						2
@@ -53,42 +52,27 @@ extern void ab_tree_init(const char *org_name, size_t base_size, int cache_inter
 extern int ab_tree_run();
 extern int ab_tree_stop();
 AB_BASE* ab_tree_get_base(int base_id);
-
 void ab_tree_put_base(AB_BASE *pbase);
-
 uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
-
 void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid);
-
 BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
-
 SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn);
-
 SIMPLE_TREE_NODE* ab_tree_uid_to_node(AB_BASE *pbase, int user_id);
-
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid);
-
 uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode);
-
 uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
-
 void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, char *str_dname);
 extern std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *, unsigned int type);
 extern void ab_tree_get_user_info(SIMPLE_TREE_NODE *, int type, char *value, size_t vsize);
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
 	char *mail_address, char *create_day, int *plist_privilege);
-
 void ab_tree_get_mlist_title(uint32_t codepage, char *str_title);
-
 void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address);
-
 void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode,
 	char *str_name);
-
 void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length);
-
 int ab_tree_get_guid_base_id(GUID guid);
 extern ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *, unsigned int codepage, unsigned int proptag, PROPERTY_VALUE *);
 extern void ab_tree_invalidate_cache();

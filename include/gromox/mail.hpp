@@ -18,30 +18,19 @@ struct MAIL {
 };
 
 void mail_init(MAIL *pmail, MIME_POOL *pmime_pool);
-
 void mail_clear(MAIL *pmail);
-
 BOOL mail_retrieve(MAIL *pmail, char *in_buff, size_t length);
 BOOL mail_serialize(MAIL *pmail, STREAM *pstream);
-
 BOOL mail_to_file(MAIL *pmail, int fd);
-
 BOOL mail_to_ssl(MAIL *pmail, SSL *ssl);
-
 BOOL mail_check_dot(MAIL *pmail);
-
 BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst);
 extern GX_EXPORT ssize_t mail_get_length(MAIL *);
 void mail_free(MAIL *pmail);
-
 MIME* mail_add_head(MAIL *pmail);
-
 MIME* mail_get_head(MAIL *pmail);
-
 BOOL mail_get_charset(MAIL *pmail, char *charset);
-
 int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length);
 MIME* mail_add_child(MAIL *pmail, MIME *pmime_base, int opt);
-
 void mail_enum_mime(MAIL *pmail, MAIL_MIME_ENUM enum_func, void *param);
 BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst);

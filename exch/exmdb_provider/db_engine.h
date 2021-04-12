@@ -8,7 +8,6 @@
 #include <gromox/mapi_types.hpp>
 #include <pthread.h>
 #include <sqlite3.h>
-
 #define CONTENT_ROW_HEADER						1
 #define CONTENT_ROW_MESSAGE						2
 
@@ -121,12 +120,10 @@ using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
 
 extern db_item_ptr db_engine_get_db(const char *dir);
 BOOL db_engine_unload_db(const char *path);
-
 BOOL db_engine_enqueue_populating_criteria(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	BOOL b_recursive, const RESTRICTION *prestriction,
 	const LONGLONG_ARRAY *pfolder_ids);
-
 BOOL db_engine_check_populating(const char *dir, uint64_t folder_id);
 extern void db_engine_update_dynamic(db_item_ptr &, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 extern void db_engine_delete_dynamic(db_item_ptr &, uint64_t folder_id);

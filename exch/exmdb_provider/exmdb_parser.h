@@ -8,7 +8,6 @@
 #include <gromox/double_list.hpp>
 #include <pthread.h>
 
-
 enum {
 	ALIVE_ROUTER_CONNECTIONS
 };

@@ -18,11 +18,8 @@ struct DIR_TREE {
 typedef void (*DIR_TREE_ENUM)(DIR_NODE*, void*);
 
 LIB_BUFFER* dir_tree_allocator_init(size_t max_size, BOOL thread_safe);
-
 void dir_tree_allocator_free(LIB_BUFFER *pallocator);
-
 void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator);
-
 void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile);
 DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path);
 DIR_NODE* dir_tree_get_child(DIR_NODE* pdir);

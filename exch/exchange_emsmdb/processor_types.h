@@ -1067,4 +1067,3 @@ struct ROP_BUFFER {
 	uint8_t hnum;
 	uint32_t *phandles;
 };
-

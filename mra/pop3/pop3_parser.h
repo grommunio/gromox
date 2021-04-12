@@ -6,9 +6,7 @@
 #include <gromox/array.hpp>
 #include <sys/time.h>
 #include <openssl/ssl.h>
-
 #define MAX_LINE_LENGTH    64*1024
-
 
 /* enumeration of pop3_parser */
 enum{
@@ -69,15 +67,11 @@ int pop3_parser_process(POP3_CONTEXT *pcontext);
 extern int pop3_parser_stop();
 extern void pop3_parser_free();
 int pop3_parser_get_context_socket(POP3_CONTEXT *pcontext);
-
 struct timeval pop3_parser_get_context_timestamp(POP3_CONTEXT *pcontext);
-
 int pop3_parser_get_param(int param);
-
 int pop3_parser_set_param(int param, int value);
 extern POP3_CONTEXT *pop3_parser_get_contexts_list();
 int pop3_parser_threads_event_proc(int action);
-
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
 extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...);
 extern char *pop3_parser_cdn_path();

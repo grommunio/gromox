@@ -19,11 +19,7 @@ extern int grey_list_stop();
 extern void grey_list_free();
 extern int grey_list_refresh();
 int grey_list_query(const char *str, BOOL b_count);
-
 BOOL grey_list_add_string(const char *str, int times, int interval);
-
 BOOL grey_list_remove_string(const char *str);
-
 BOOL grey_list_dump(const char *path);
-
 BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval);

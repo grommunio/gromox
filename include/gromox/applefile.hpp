@@ -4,7 +4,6 @@
 #include <gromox/ext_buffer.hpp>
 #define APPLESINGLE_MAGIC	0x00051600
 #define APPLEDOUBLE_MAGIC	0x00051607
-
 #define APPLEFILE_VERSION	0x00020000
 
 /* 
@@ -13,7 +12,6 @@
 * for applications to define their own entry types.  "Apple does
 * not arbitrate the use of the rest of the range."
 */
-
 #define AS_DATA			1	/* data fork */
 #define AS_RESOURCE		2	/* resource fork */
 #define AS_REALNAME		3	/* File's name on home file system */
@@ -226,5 +224,4 @@ struct APPLEFILE {
 };
 
 int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r);
-
 int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r);

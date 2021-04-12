@@ -8,7 +8,6 @@
 #define SOCKET_TIMEOUT								60
 
 /* ---------------------- defined by zarafa ---------------------- */
-
 #define MAPI_STORE_PROVIDER							33
 #define MAPI_AB										34
 #define MAPI_AB_PROVIDER							35
@@ -47,7 +46,6 @@
 #define FLAG_COPY_SUBFOLDERS						0x00000010
 #define FLAG_CREATE									0x00000002
 #define FLAG_CONVENIENT_DEPTH						0x00000001
-
 
 #define STORE_ENTRYID_UNIQUE						0x00000001
 #define STORE_READONLY								0x00000002
@@ -146,53 +144,38 @@ extern const char *common_util_get_freebusy_path();
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
-
 BOOL common_util_check_message_class(const char *str_class);
-
 BOOL common_util_check_delegate(
 	MESSAGE_OBJECT *pmessage, char *username);
-
 BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir);
-
 BOOL common_util_check_delegate_permission_ex(
 	const char *account, const char *account_representing);
 extern gxerr_t common_util_rectify_message(MESSAGE_OBJECT *, const char *representing_username);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
-
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
-	
 void* common_util_get_propvals(
 	const TPROPVAL_ARRAY *parray, uint32_t proptag);
-
 int common_util_index_proptags(
 	const PROPTAG_ARRAY *pproptags, uint32_t proptag);
-
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor);
 BOOL common_util_essdn_to_username(const char *pessdn, char *username);
-
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
-
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id);
-
 BOOL common_util_entryid_to_username(
 	const BINARY *pbin, char *username);
-
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
-
 BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);
 BOOL common_util_username_to_essdn(const char *username, char *pessdn);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn);
-
 void common_util_exmdb_locinfo_to_string(
 	uint8_t type, int db_id, uint64_t eid,
 	char *loc_string);
-
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid);
@@ -206,48 +189,34 @@ template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(s
 void common_util_set_clifd(int clifd);
 extern int common_util_get_clifd();
 char* common_util_dup(const char *pstr);
-
 ZNOTIFICATION* common_util_dup_znotification(
 	ZNOTIFICATION *pnotification, BOOL b_temp);
-
 void common_util_free_znotification(ZNOTIFICATION *pnotification);
 BOOL common_util_addressbook_entryid_to_username(
 	BINARY entryid_bin, char *username);
-
 BOOL common_util_parse_addressbook_entryid(
 	BINARY entryid_bin, uint32_t *ptype, char *pessdn);
-
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
-
 BOOL common_util_from_folder_entryid(BINARY bin,
 	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);
-
 BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id);
-
 BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore);
-
 BINARY* common_util_to_folder_entryid(
 	STORE_OBJECT *pstore, uint64_t folder_id);
-
 BINARY* common_util_calculate_folder_sourcekey(
 	STORE_OBJECT *pstore, uint64_t folder_id);
-
 BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	uint64_t folder_id, uint64_t message_id);
-	
 BINARY* common_util_calculate_message_sourcekey(
 	STORE_OBJECT *pstore, uint64_t message_id);
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
-
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
-
 BINARY* common_util_guid_to_binary(GUID guid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
 void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief);
-
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 BOOL common_util_convert_to_zrule_data(STORE_OBJECT *, TPROPVAL_ARRAY *);
@@ -256,19 +225,14 @@ extern gxerr_t common_util_remote_copy_folder(STORE_OBJECT *s0, uint64_t folder_
 extern const uint8_t *common_util_get_muidecsab();
 extern const uint8_t *common_util_get_muidzcsab();
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
-
 BOOL common_util_send_message(STORE_OBJECT *pstore,
 	uint64_t message_id, BOOL b_submit);
-
 BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *peml_bin);
-
 MESSAGE_CONTENT* common_util_rfc822_to_message(
 	STORE_OBJECT *pstore, const BINARY *peml_bin);
-
 BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *pical_bin);
-
 MESSAGE_CONTENT* common_util_ical_to_message(
 	STORE_OBJECT *pstore, const BINARY *pical_bin);
 extern BOOL common_util_message_to_vcf(MESSAGE_OBJECT *, BINARY *vcfout);

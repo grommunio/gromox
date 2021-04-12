@@ -8,17 +8,12 @@
 #include <gromox/double_list.hpp>
 #include "pdu_ndr.h"
 #include <pthread.h>
-
-
 #define DCERPC_CALL_STAT_FLAG_HEADER_SIGNING		0x04
 #define DCERPC_CALL_STAT_FLAG_MULTIPLEXED			0x10
-
 #define DCERPC_BASE_MARSHALL_SIZE					(16*1024)
-
 #define DISPATCH_FAIL								0
 #define DISPATCH_SUCCESS							1
 #define DISPATCH_PENDING							2
-
 
 enum {
 	PDU_PROCESSOR_ERROR,
@@ -142,48 +137,30 @@ extern int pdu_processor_run();
 extern int pdu_processor_stop();
 extern void pdu_processor_free();
 PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port);
-
 void pdu_processor_destroy(PDU_PROCESSOR *pprocessor);
-
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint16_t length, DCERPC_CALL **ppcall);
-	
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	DCERPC_CALL **ppcall);
-
 void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream);
-
 void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list);
-
 void pdu_processor_free_blob(BLOB_NODE *pbnode);
-
 void pdu_processor_free_call(DCERPC_CALL *pcall);
-
 BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size);
-
 BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall);
-
 BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall);
-
 BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall);
-
 BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall);
-
 BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall);
-
 void pdu_processor_rts_echo(char *pbuff);
-
 BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie);
-
 int pdu_processor_console_talk(int argc, char** argv,
 	char *result, int length);
 void pdu_processor_enum_endpoints(void (*enum_ep)(DCERPC_ENDPOINT*));
-
 void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
 	void (*enum_if)(DCERPC_INTERFACE*));
-
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern BOOL pdu_processor_rpc_new_environment();
 extern void pdu_processor_rpc_free_environment();

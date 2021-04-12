@@ -8,9 +8,7 @@
 #include <ctime>
 #include <sys/time.h>
 #include <openssl/ssl.h>
-
 #define MAX_LINE_LENGTH			64*1024
-
 #define FLAG_RECENT				0x1
 #define FLAG_ANSWERED			0x2
 #define FLAG_FLAGGED			0x4
@@ -21,12 +19,8 @@
 /* bits for controlling of f_digest, if not set, 
 means mem_file is not initialized. */
 #define FLAG_LOADED				0x80
-
-
 #define MIDB_RDWR_ERROR          2
-
 #define MIDB_NO_SERVER           1
-
 #define MIDB_RESULT_OK           0
 
 /* enumeration of imap_parser */
@@ -47,7 +41,6 @@ enum {
 	PROTO_STAT_AUTH,
 	PROTO_STAT_SELECT
 };
-
 
 enum {
 	SCHED_STAT_NONE = 0,
@@ -125,35 +118,24 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	unsigned int timeout, unsigned int autologout_time, int max_auth_times,
 	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path);
-
 extern int imap_parser_run();
 int imap_parser_process(IMAP_CONTEXT *pcontext);
 extern int imap_parser_stop();
 extern void imap_parser_free();
 int imap_parser_get_context_socket(IMAP_CONTEXT *pcontext);
-
 struct timeval imap_parser_get_context_timestamp(IMAP_CONTEXT *pcontext);
-
 int imap_parser_get_param(int param);
-
 int imap_parser_set_param(int param, int value);
 extern IMAP_CONTEXT *imap_parser_get_contexts_list();
 int imap_parser_threads_event_proc(int action);
-
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder);
-
 void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream);
-
 void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string);
-
 void imap_parser_add_select(IMAP_CONTEXT *pcontext);
-
 void imap_parser_remove_select(IMAP_CONTEXT *pcontext);
-
 void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t count);
 extern LIB_BUFFER *imap_parser_get_allocator();
 extern MIME_POOL *imap_parser_get_mpool();
-
 /* get allocator for mjson mime */
 extern LIB_BUFFER *imap_parser_get_jpool();
 extern LIB_BUFFER *imap_parser_get_xpool();

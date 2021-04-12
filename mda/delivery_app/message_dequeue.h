@@ -43,7 +43,5 @@ extern int message_dequeue_stop();
 extern void message_dequeue_free();
 extern MESSAGE *message_dequeue_get();
 void message_dequeue_put(MESSAGE *pmessage);
-
 int message_dequeue_get_param(int param);
-
 void message_dequeue_save(MESSAGE *pmessage);

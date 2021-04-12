@@ -71,55 +71,35 @@ enum {
 };
 
 LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe);
-
 void mjson_allocator_free(LIB_BUFFER *pallocator);
-
 void mjson_init(MJSON *pjson, LIB_BUFFER *ppool);
-
 void mjson_clear(MJSON *pjson);
-
 BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
 	int length, const char *path);
-
 void mjson_free(MJSON *pjson);
-
 int mjson_fetch_structure(MJSON *pjson, const char *charset,
 	BOOL b_ext, char *buff, int length);
-
 int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	char *buff, int length);
-
 BOOL mjson_rfc822_check(MJSON *pjson);
-
 BOOL mjson_rfc822_build(MJSON *pjson, MIME_POOL *ppool,
 	const char *storage_path);
-
 BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 	const char *storage_path, const char *id, char *mjson_id, char *mime_id);
-	
 int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
-
 int mjson_seek_fd(MJSON *pjson, const char *id, int whence);
-
 void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param);
 const char* mjson_get_mail_filename(MJSON *pjson);
 const char* mjson_get_mail_received(MJSON *pjson);
 const char* mjson_get_mail_messageid(MJSON *pjson);
 size_t mjson_get_mail_length(MJSON *pjson);
 int mjson_get_mime_mtype(MJSON_MIME *pmime);
-
 const char* mjson_get_mime_ctype(MJSON_MIME *pmime);
-
 const char* mjson_get_mime_charset(MJSON_MIME *pmime);
-
 const char* mjson_get_mime_filename(MJSON_MIME *pmime);
 const char* mjson_get_mime_encoding(MJSON_MIME *pmime);
-
 const char* mjson_get_mime_id(MJSON_MIME *pmime);
-
 size_t mjson_get_mime_length(MJSON_MIME *pmime, int param);
-
 size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param);
-
 MJSON_MIME *mjson_get_mime(MJSON *pjson, const char *id);

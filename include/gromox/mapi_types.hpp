@@ -1323,28 +1323,16 @@ struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 #define ADDRESS_TYPE_EQUIPMENT						5
 
 typedef BOOL (*GET_PROPIDS)(const PROPNAME_ARRAY*, PROPID_ARRAY*);
-
 /* if it returns TRUE, PROPERTY_NAME must be available */
 typedef BOOL (*GET_PROPNAME)(uint16_t, PROPERTY_NAME**);
-
 typedef uint32_t (*LTAG_TO_LCID)(const char*);
-
 typedef const char* (*LCID_TO_LTAG)(uint32_t);
-
 typedef uint32_t (*CHARSET_TO_CPID)(const char*);
-
 typedef const char* (*CPID_TO_CHARSET)(uint32_t);
-
 typedef const char* (*MIME_TO_EXTENSION)(const char*);
-
 typedef const char* (*EXTENSION_TO_MIME)(const char*);
-
 typedef BOOL (*GET_USER_IDS)(const char*, int*, int*, int*);
-
 typedef BOOL (*GET_USERNAME)(int, char*);
-
 typedef BOOL (*USERNAME_TO_ENTRYID)(const char*, const char*, BINARY*, int*);
-
 typedef BOOL (*ENTRYID_TO_USERNAME)(const BINARY*, void*(*)(size_t), char*);
-
 typedef BOOL (*ESSDN_TO_USERNAME)(const char*, char*);

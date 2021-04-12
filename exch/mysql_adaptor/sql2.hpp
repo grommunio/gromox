@@ -55,7 +55,6 @@ struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
 };
 
 extern MYSQL *sql_make_conn();
-
 extern sqlconnpool g_sqlconn_pool;
 
 static inline const char *z_null(const char *s)

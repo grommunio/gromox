@@ -2,7 +2,6 @@
 #include <gromox/double_list.hpp>
 #include <pthread.h>
 
-
 struct CONNECTION {
 	DOUBLE_LIST_NODE node;
 	int sockd;

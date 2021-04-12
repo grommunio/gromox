@@ -5,7 +5,6 @@
 #include <gromox/mem_file.hpp>
 #include <sys/time.h>
 #include <openssl/ssl.h>
-
 #define MAX_BLOCK_MIME_LEN                  4096
 #define MAX_EXTRA_DATA_INDEX                8
 #define MAX_EXTRA_DATA_TAGLEN               16
@@ -15,7 +14,6 @@
 enum{
     STEP_BEGIN = 0,
     CONTEXT_ACHIEVED,   /* context is completely read and no need to schedule*/
-
     CONTEXT_FLUSHED,    /*
                          context is written to hard disk, need to informate
                          client OK
@@ -82,7 +80,6 @@ enum {
 };
 
 //////////////////////////////////////////////////////////////////////////
-
 struct ENVELOP_INFO {
     char        parsed_domain[256];/* parsed domain according connection*/
     char        hello_domain[256]; /* domain name after helo */
@@ -187,22 +184,15 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern int smtp_parser_stop();
 extern void smtp_parser_free();
 long smtp_parser_get_param(int param);
-
 int smtp_parser_set_param(int param, long value);
-
 int smtp_parser_get_context_socket(SMTP_CONTEXT *pcontext);
-
 struct timeval smtp_parser_get_context_timestamp(SMTP_CONTEXT *pcontext);
-
 BOOL smtp_parser_validate_domainlist(BOOL b_valid);
 extern BOOL smtp_parser_domainlist_valid();
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
-
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
-
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
 extern SMTP_CONTEXT *smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
-
 void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);

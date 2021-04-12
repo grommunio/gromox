@@ -31,50 +31,33 @@ struct TABLE_OBJECT {
 
 TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags);
-
 void table_object_free(TABLE_OBJECT *ptable);
-
 const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable);
-
 BOOL table_object_set_columns(TABLE_OBJECT *ptable,
 	const PROPTAG_ARRAY *pcolumns);
-
 BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
 	const SORTORDER_SET *psorts);
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable);
-
 void table_object_unload(TABLE_OBJECT *ptable);
-
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset);
-
 BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
 	const RESTRICTION *prestriction);
-
 void table_object_seek_current(TABLE_OBJECT *ptable,
 	BOOL b_forward, uint32_t row_count);
-
 uint8_t table_object_get_table_type(TABLE_OBJECT *ptable);
 uint32_t table_object_get_position(TABLE_OBJECT *ptable);
-
 void table_object_set_position(TABLE_OBJECT *ptable, uint32_t position);
-
 void table_object_clear_position(TABLE_OBJECT *ptable);
-
 uint32_t table_object_get_total(TABLE_OBJECT *ptable);
-
 BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex);
-
 void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index);
-
 void table_object_clear_bookmarks(TABLE_OBJECT *ptable);
-
 BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
 	uint32_t index, BOOL *pb_exist);
 BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 	uint32_t count, const RESTRICTION *pres,
 	const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset);
-
 BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition);

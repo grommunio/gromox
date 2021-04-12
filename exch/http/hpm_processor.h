@@ -43,22 +43,14 @@ extern int hpm_processor_stop();
 extern void hpm_processor_free();
 int hpm_processor_console_talk(int argc, char **argv, char *result, int length);
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp);
-
 void hpm_processor_put_context(HTTP_CONTEXT *phttp);
-
 BOOL hpm_processor_check_context(HTTP_CONTEXT *phttp);
-
 BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp);
-
 BOOL hpm_processor_check_end_of_request(HTTP_CONTEXT *phttp);
-
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);
-
 int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp);
-
 BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
 	const void *pbuff, int length);
-
 int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length);
 extern void hpm_processor_reload();

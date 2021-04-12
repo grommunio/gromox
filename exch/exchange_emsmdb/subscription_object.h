@@ -16,8 +16,6 @@ SUBSCRIPTION_OBJECT* subscription_object_create(
 	LOGON_OBJECT *plogon, uint8_t logon_id,
 	uint16_t notification_types, BOOL b_whole,
 	uint64_t folder_id, uint64_t message_id);
-
 void subscription_object_set_handle(
 	SUBSCRIPTION_OBJECT *psub, uint32_t handle);
-	
 void subscription_object_free(SUBSCRIPTION_OBJECT *psub);

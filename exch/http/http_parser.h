@@ -10,8 +10,6 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <openssl/ssl.h>
-
-
 #define OUT_CHANNEL_MAX_WAIT						10
 
 /* enumeration of http_parser */
@@ -72,7 +70,6 @@ enum {
 	CHANNEL_TYPE_OUT
 };
 
-
 struct HTTP_CONTEXT {
 	SCHEDULE_CONTEXT	sched_context;
 	CONNECTION			connection;
@@ -132,37 +129,27 @@ extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern int http_parser_stop();
 int http_parser_get_context_socket(HTTP_CONTEXT *pcontext);
-
 void http_parser_set_context(int context_id);
-
 struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext);
-
 int http_parser_get_param(int param);
-
 int http_parser_set_param(int param, int value);
 extern HTTP_CONTEXT *http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
 BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext);
-
 void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	uint32_t bytes_received, uint32_t available_window);
-
 BOOL http_parser_recycle_inchannel(
 	HTTP_CONTEXT *pcontext, char *predecessor_cookie);
-
 BOOL http_parser_recycle_outchannel(
 	HTTP_CONTEXT *pcontext, char *predecessor_cookie);
-
 BOOL http_parser_activate_inrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie);
-
 BOOL http_parser_activate_outrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie);
 extern HTTP_CONTEXT *http_parser_get_context();
 extern void http_parser_shutdown_async();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
-
 void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive);
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));

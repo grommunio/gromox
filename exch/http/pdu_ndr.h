@@ -190,9 +190,6 @@ struct DCERPC_NCACN_PACKET {
 int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r);
 extern void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r);
 int pdu_ndr_push_dcerpc_auth(NDR_PUSH *pndr, const DCERPC_AUTH *r);
-
 int pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt);
-
 void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt);
-
 int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt);

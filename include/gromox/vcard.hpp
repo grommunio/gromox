@@ -24,26 +24,16 @@ struct VCARD_LINE {
 };
 
 void vcard_init(VCARD *pvcard);
-
 void vcard_free(VCARD *pvcard);
-
 BOOL vcard_retrieve(VCARD *pvcard, char *in_buff);
-
 BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length);
-
 VCARD_LINE* vcard_new_line(const char *name);
-
 void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline);
 VCARD_PARAM* vcard_new_param(const char*name);
-
 BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval);
-
 void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam);
 extern VCARD_VALUE *vcard_new_value();
 BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval);
-
 void vcard_append_value(VCARD_LINE *pvline, VCARD_VALUE *pvvalue);
-
 const char* vcard_get_first_subvalue(VCARD_LINE *pvline);
-
 VCARD_LINE* vcard_new_simple_line(const char *name, const char *value);

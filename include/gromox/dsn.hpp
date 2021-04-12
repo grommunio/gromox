@@ -15,9 +15,7 @@ struct DSN {
 void dsn_init(DSN *pdsn);
 extern GX_EXPORT bool dsn_retrieve(DSN *, char *in_buff, size_t length);
 void dsn_clear(DSN *pdsn);
-
 DSN_FIELDS* dsn_get_message_fileds(DSN *pdsn);
-
 DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn);
 extern GX_EXPORT bool dsn_append_field(DSN_FIELDS *, const char *tag, const char *value);
 extern GX_EXPORT bool dsn_enum_rcpts_fields(DSN *, RCPTS_FIELDS_ENUM, void *pparam);

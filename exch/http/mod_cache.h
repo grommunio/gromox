@@ -7,11 +7,7 @@ extern int mod_cache_run();
 extern int mod_cache_stop();
 extern void mod_cache_free();
 BOOL mod_cache_check_caching(HTTP_CONTEXT *phttp);
-
 BOOL mod_cache_get_context(HTTP_CONTEXT *phttp);
-
 void mod_cache_put_context(HTTP_CONTEXT *phttp);
-
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp);
-
 BOOL mod_cache_read_response(HTTP_CONTEXT *phttp);

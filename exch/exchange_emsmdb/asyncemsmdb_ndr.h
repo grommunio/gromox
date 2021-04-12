@@ -14,6 +14,5 @@ struct ECDOASYNCWAITEX_OUT {
 
 int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr,
 	ECDOASYNCWAITEX_IN *r);
-	
 int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
 	const ECDOASYNCWAITEX_OUT *r);

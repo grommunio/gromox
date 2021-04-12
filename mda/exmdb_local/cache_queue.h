@@ -14,5 +14,4 @@ extern int cache_queue_stop();
 extern void cache_queue_free();
 extern int cache_queue_put(MESSAGE_CONTEXT *, const char *rcpt, time_t orig_time);
 int cache_queue_get_param(int param);
-
 void cache_queue_set_param(int param, int val);

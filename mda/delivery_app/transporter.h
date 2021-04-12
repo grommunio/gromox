@@ -17,11 +17,8 @@ extern int transporter_stop();
 extern void transporter_free();
 extern void transporter_wakeup_one_thread();
 int transporter_unload_library(const char* path);
-
 int transporter_load_library(const char* path);
-
 int transporter_console_talk(int argc, char** argv, char *result, int length);
 int transporter_get_param(int param);
-
 void transporter_validate_domainlist(BOOL b_valid);
 extern BOOL transporter_domainlist_valid();

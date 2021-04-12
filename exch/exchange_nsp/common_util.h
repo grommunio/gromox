@@ -76,34 +76,24 @@
 extern const uint8_t *common_util_get_nspi_guid();
 extern GUID common_util_get_server_guid();
 void common_util_day_to_filetime(const char *day, FILETIME *pftime);
-
 int common_util_from_utf8(uint32_t codepage,
 	const char *src, char *dst, size_t len);
-	
 int common_util_to_utf8(uint32_t codepage,
 	const char *src, char *dst, size_t len);
-	
 void common_util_guid_to_binary(GUID *pguid, BINARY *pbin);
-
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid);
-	
 BOOL common_util_set_permanententryid(uint32_t display_type,
 	const GUID *pobj_guid, const char *pdn, PERMANENT_ENTRYID *ppermeid);
-
 BOOL common_util_permanent_entryid_to_binary(
 	const PERMANENT_ENTRYID *ppermeid, BINARY *pbin);
-	
 BOOL common_util_ephemeral_entryid_to_binary(
 	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin);
 extern NSP_ROWSET *common_util_proprowset_init();
 NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset);
-
 NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow);
-
 PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow);
 extern LPROPTAG_ARRAY *common_util_proptagarray_init();
 uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags);
-
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern int common_util_run();

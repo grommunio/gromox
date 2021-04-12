@@ -80,59 +80,40 @@ struct FOLDER_CHANGES {
 extern ATTACHMENT_CONTENT *attachment_content_init();
 extern void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *, MESSAGE_CONTENT *embed);
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
-
 ATTACHMENT_CONTENT* attachment_content_dup(
 	ATTACHMENT_CONTENT *pattachment);
 extern ATTACHMENT_LIST *attachment_list_init();
 void attachment_list_free(ATTACHMENT_LIST *plist);
-
 void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index);
-
 BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment);
-
 ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist);
 extern FOLDER_CONTENT *folder_content_init();
 void folder_content_free(FOLDER_CONTENT *pfldctnt);
-
 BOOL folder_content_append_subfolder_internal(
 	FOLDER_CONTENT *pfldctnt, FOLDER_CONTENT *psubfld);
-	
 TPROPVAL_ARRAY* folder_content_get_proplist(FOLDER_CONTENT *pfldctnt);
-
 void folder_content_append_failist_internal(
 	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist);
-
 void folder_content_append_normallist_internal(
 	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist);
 extern MESSAGE_CONTENT *message_content_init();
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);
-
 TPROPVAL_ARRAY* message_content_get_proplist(MESSAGE_CONTENT *pmsgctnt);
-
 void message_content_set_rcpts_internal(
 	MESSAGE_CONTENT *pmsgctnt, TARRAY_SET *prcpts);
-
 void message_content_set_attachments_internal(
 	MESSAGE_CONTENT *pmsgctnt, ATTACHMENT_LIST *pattachments);
-
 void message_content_free_internal(MESSAGE_CONTENT *pmsgctnt);
-
 void message_content_free(MESSAGE_CONTENT *pmsgctnt);
 extern MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *);
 uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt);
-
 PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id);
-
 BOOL property_groupinfo_init_internal(
 	PROPERTY_GROUPINFO *pgpinfo, uint32_t group_id);
-
 BOOL property_groupinfo_append_internal(
 	PROPERTY_GROUPINFO *pgpinfo, PROPTAG_ARRAY *pgroup);
-
 BOOL property_groupinfo_get_partial_index(PROPERTY_GROUPINFO *pgpinfo,
 	uint32_t proptag, uint32_t *pindex);
-
 void property_groupinfo_free(PROPERTY_GROUPINFO *pgpinfo);
-
 void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo);

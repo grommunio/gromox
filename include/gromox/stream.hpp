@@ -53,29 +53,18 @@ struct STREAM {
 };
 
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc);
-
 int stream_has_newline(STREAM *pstream);
-
 unsigned int stream_readline(STREAM *pstream, char **ppline);
-
 void stream_clear(STREAM *pstream);
-
 void stream_free(STREAM *pstream);
-
 void stream_try_mark_line(STREAM *pstream);
-
 void stream_try_mark_eom(STREAM *pstream);
-
 int stream_has_eom(STREAM *pstream);
-
 void stream_split_eom(STREAM *pstream, STREAM *pstream_second);
 extern void *stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize);
 unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset);
-
 unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset);
-
 unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset);
-
 unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset);
 extern void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize);
 void stream_reset_reading(STREAM *pstream);

@@ -130,15 +130,10 @@ extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);
 int ical_get_monthweekorder(int day);
-
 int ical_get_negative_monthweekorder(int year, int month, int day);
-
 int ical_get_yearweekorder(int year, int month, int day);
-
 int ical_get_negative_yearweekorder(int year, int month, int day);
-
 int ical_get_dayofmonth(int year, int month, int order, int dayofweek);
-
 void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime);
 extern GX_EXPORT bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder);
 extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *pseconds);
@@ -146,15 +141,11 @@ extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TI
 extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
 int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2);
-
 void ical_add_year(ICAL_TIME *pitime, int years);
 void ical_add_month(ICAL_TIME *pitime, int months);
 void ical_add_day(ICAL_TIME *pitime, int days);
-
 void ical_subtract_day(ICAL_TIME *pitime, int days);
-
 int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2);
-
 void ical_add_hour(ICAL_TIME *pitime, int hours);
 void ical_add_minute(ICAL_TIME *pitime, int minutes);
 void ical_add_second(ICAL_TIME *pitime, int seconds);
@@ -163,16 +154,11 @@ extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
 int ical_rrule_weekstart(ICAL_RRULE *pirrule);
 extern GX_EXPORT bool ical_rrule_endless(ICAL_RRULE *);
 const ICAL_TIME* ical_rrule_until_itime(ICAL_RRULE *pirrule);
-
 int ical_rrule_total_count(ICAL_RRULE *pirrule);
 extern GX_EXPORT bool ical_rrule_exceptional(ICAL_RRULE *);
 ICAL_TIME ical_rrule_base_itime(ICAL_RRULE *pirrule);
-
 int ical_rrule_sequence(ICAL_RRULE *pirrule);
-
 ICAL_TIME ical_rrule_instance_itime(ICAL_RRULE *pirrule);
-
 int ical_rrule_interval(ICAL_RRULE *pirrule);
-
 int ical_rrule_frequency(ICAL_RRULE *pirrule);
 extern GX_EXPORT bool ical_rrule_check_bymask(ICAL_RRULE *, int rrule_by);

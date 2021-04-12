@@ -58,5 +58,4 @@ struct MACBINARY {
 };
 
 int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r);
-
 int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r);

@@ -1,7 +1,6 @@
 #pragma once
 #include <gromox/plugin.hpp>
 #include "smtp_parser.h"
-
 #define FLUSHING_INVALID_FD -1
 
 enum {
@@ -28,5 +27,4 @@ extern void flusher_free();
 extern int flusher_run();
 extern int flusher_stop();
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);
-
 void flusher_cancel(SMTP_CONTEXT *pcontext);

@@ -15,10 +15,8 @@ int exmdb_client_delivery_message(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest);
-
 int exmdb_client_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found);
-	
 BOOL exmdb_client_get_exmdb_information(
 	const char *dir, char *ip_addr, int *pport,
 	int *pconn_num, int *palive_conn);

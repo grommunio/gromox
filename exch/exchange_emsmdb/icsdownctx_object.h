@@ -40,23 +40,15 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 	FOLDER_OBJECT *pfolder, uint8_t sync_type, uint8_t send_options,
 	uint16_t sync_flags, const RESTRICTION *prestriction,
 	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags);
-
 BOOL icsdownctx_object_begin_state_stream(ICSDOWNCTX_OBJECT *pctx,
 	uint32_t state_property);
-
 BOOL icsdownctx_object_continue_state_stream(ICSDOWNCTX_OBJECT *pctx,
 	const BINARY *pstream_data);
-
 BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx);
-
 BOOL icsdownctx_object_check_started(ICSDOWNCTX_OBJECT *pctx);
-	
 BOOL icsdownctx_object_make_sync(ICSDOWNCTX_OBJECT *pctx);
-
 ICS_STATE* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx);
-
 void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx);
-
 BOOL icsdownctx_object_get_buffer(ICSDOWNCTX_OBJECT *pctx,
 	void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal);

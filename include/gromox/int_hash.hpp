@@ -32,36 +32,25 @@ struct INT_HASH_ITER {
  be used
  */
 extern INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size);
-
 /* free the specified hash table */
 void int_hash_free(INT_HASH_TABLE* ptbl);
-
 /* add the key and value into the specified hash table */
 int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value);
-
 /* query if the key is exist in the hash table */
 void* int_hash_query(INT_HASH_TABLE* ptbl, int key);
-
 /* remove the specified key from the hash table */
 int int_hash_remove(INT_HASH_TABLE* ptbl, int key);
-
 /* init a hash iterator object */
 INT_HASH_ITER* int_hash_iter_init(INT_HASH_TABLE *ptbl);
-
 /* free a hash iterator object */
 void int_hash_iter_free(INT_HASH_ITER *piter);
-
 /* like C++ std list, this begin a hash iterator */
 void int_hash_iter_begin(INT_HASH_ITER *piter);
-
 /* query if the iterator has reached the last item in hash table */
 int int_hash_iter_done(INT_HASH_ITER *piter);
-
 /* return the data and key at the current iterator position */
 void* int_hash_iter_get_value(INT_HASH_ITER *piter, int *key);
-
 /* remove the key at the current iterator position */
 int int_hash_iter_remove(INT_HASH_ITER *piter);
-
 /* forward the iterator by one item */
 int int_hash_iter_forward(INT_HASH_ITER *piter);

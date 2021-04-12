@@ -52,60 +52,37 @@ struct NDR_PUSH {
 };
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
-
 uint32_t ndr_pull_get_ptrcnt(NDR_PULL *pndr);
 extern void ndr_pull_init(NDR_PULL *pndr, void *pdata,
 	uint32_t data_size, uint32_t flags);
-
 void ndr_pull_destroy(NDR_PULL *pndr);
-
 int ndr_pull_advance(NDR_PULL *pndr, uint32_t size);
-
 int ndr_pull_align(NDR_PULL *pndr, size_t size);
-
 int ndr_pull_union_align(NDR_PULL *pndr, size_t size);
-
 int ndr_pull_trailer_align(NDR_PULL *pndr, size_t size);
-
 int ndr_pull_string(NDR_PULL *pndr, char *buff, uint32_t inbytes);
 int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v);
 int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v);
-
 int ndr_pull_int32(NDR_PULL *pndr, int32_t *v);
-
 int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v);
 int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v);
 int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v);
-
 int ndr_pull_array_uint8(NDR_PULL *pndr, uint8_t *data, uint32_t n);
-
 int ndr_pull_guid(NDR_PULL *pndr, GUID *r);
-
 int ndr_pull_syntax_id(NDR_PULL *pndr, SYNTAX_ID *r);
-
 int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob);
-
 void ndr_free_data_blob(DATA_BLOB *pblob);
-
 int ndr_pull_check_string(NDR_PULL *pndr,
 	uint32_t count, uint32_t element_size);
-
 int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v);
-
 int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r);
-
 void ndr_push_set_ptrcnt(NDR_PUSH *pndr, uint32_t ptr_count);
 extern void ndr_push_init(NDR_PUSH *pndr, void *pdata,
 	uint32_t alloc_size, uint32_t flags);
-
 void ndr_push_destroy(NDR_PUSH *pndr);
-
 int ndr_push_align(NDR_PUSH *pndr, size_t size);
-
 int ndr_push_union_align(NDR_PUSH *pndr, size_t size);
-
 int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size);
-
 int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required);
 int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v);
 int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v);
@@ -113,16 +90,10 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v);
 int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v);
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v);
 int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v);
-
 int ndr_push_array_uint8(NDR_PUSH *pndr, const uint8_t *data, uint32_t n);
-
 int ndr_push_guid(NDR_PUSH *pndr, const GUID *r);
-
 int ndr_push_syntax_id(NDR_PUSH *pndr, const SYNTAX_ID *r);
-
 int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob);
-
 int ndr_push_zero(NDR_PUSH *pndr, uint32_t n);
-
 int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p);
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);

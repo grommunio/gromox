@@ -58,29 +58,19 @@ void ab_tree_init(const char *org_name, int base_size,
 extern int ab_tree_run();
 extern int ab_tree_stop();
 AB_BASE* ab_tree_get_base(int base_id);
-
 void ab_tree_put_base(AB_BASE *pbase);
 uint32_t ab_tree_make_minid(uint8_t type, int value);
-
 uint8_t ab_tree_get_minid_type(uint32_t minid);
-
 int ab_tree_get_minid_value(uint32_t minid);
-
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid);
-
 SIMPLE_TREE_NODE* ab_tree_guid_to_node(
 	AB_BASE *pbase, GUID guid);
-
 uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode);
-
 uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
-
 BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode);
 BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-
 BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 	char *pstr, SINGLE_LIST *presult_list);
-
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids);

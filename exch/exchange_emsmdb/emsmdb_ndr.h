@@ -2,7 +2,6 @@
 #include <cstdint>
 #include "emsmdb_interface.h"
 
-
 struct ECDODISCONNECT_IN {
 	CXH cxh;
 };
@@ -93,28 +92,18 @@ struct ECDOASYNCCONNECTEX_OUT {
 };
 
 int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r);
-
 int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
 	const ECDODISCONNECT_OUT *r);
-
 int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	ECRREGISTERPUSHNOTIFICATION_IN *r);
-
 int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 	const ECRREGISTERPUSHNOTIFICATION_OUT *r);
-
 int emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r);
-
 int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r);
-
 int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr, const ECDOCONNECTEX_OUT *r);
-
 int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r);
-
 int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r);
-
 int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
 	ECDOASYNCCONNECTEX_IN *r);
-
 int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
 	const ECDOASYNCCONNECTEX_OUT *r);

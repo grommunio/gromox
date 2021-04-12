@@ -49,7 +49,6 @@ extern const struct EXT_BUFFER_MGT ext_buffer_mgt;
 
 zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r);
 zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r);
-
 zend_bool ext_pack_pull_znotification_array(
 	PULL_CTX *pctx, ZNOTIFICATION_ARRAY *r);
 
@@ -88,10 +87,8 @@ zend_bool ext_pack_pull_znotification_array(
 #define ext_pack_push_oneoff_entryid(c, v) (ext_buffer_push_oneoff_entryid((c), (v)) == EXT_ERR_SUCCESS)
 zend_bool ext_pack_push_permission_set(
 	PUSH_CTX *pctx, const PERMISSION_SET *r);
-
 zend_bool ext_pack_push_rule_data(
 	PUSH_CTX *pctx, const RULE_DATA *r);
-
 zend_bool ext_pack_push_rule_list(
 	PUSH_CTX *pctx, const RULE_LIST *r);
 zend_bool ext_pack_push_state_array(

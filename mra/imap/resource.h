@@ -104,7 +104,6 @@ extern int resource_stop();
 extern const char *resource_get_imap_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_imap_code_table();
 char** resource_get_folder_strings(const char*lang);
-
 const char* resource_get_default_charset(const char *lang);
 extern const char *resource_get_error_string(int);
 
