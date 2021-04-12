@@ -3,7 +3,7 @@
 #include "service.h"
 #include <cstdio>
 
-void (*system_services_log_info)(int, const char *, ...);
+void (*system_services_log_info)(unsigned int, const char *, ...);
 BOOL (*system_services_check_domain)(const char*);
 
 /*

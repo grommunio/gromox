@@ -47,4 +47,4 @@ extern void (*system_services_install_event_stub)(void (*)(char *));
 extern void (*system_services_broadcast_event)(const char*);
 extern void (*system_services_broadcast_select)(const char*, const char*);
 extern void (*system_services_broadcast_unselect)(const char*, const char*);
-extern void (*system_services_log_info)(int, const char *, ...);
+extern void (*system_services_log_info)(unsigned int, const char *, ...);

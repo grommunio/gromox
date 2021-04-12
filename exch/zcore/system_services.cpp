@@ -40,7 +40,7 @@ decltype(mysql_adaptor_get_mlist_ids) *system_services_get_mlist_ids;
 BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 decltype(mysql_adaptor_check_same_org) *system_services_check_same_org;
 int (*system_services_add_timer)(const char *, int);
-void (*system_services_log_info)(int, const char *, ...);
+void (*system_services_log_info)(unsigned int, const char *, ...);
 
 /*
  *	run system services module

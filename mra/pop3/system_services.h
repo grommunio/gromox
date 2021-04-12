@@ -16,4 +16,4 @@ extern BOOL (*system_services_auth_login)(const char*, const char*, char*, char*
 extern int (*system_services_list_mail)(const char *, const char *, ARRAY *, int *pnum, uint64_t *psize);
 extern int (*system_services_delete_mail)(const char *, const char *, SINGLE_LIST *);
 extern void (*system_services_broadcast_event)(const char*);
-extern void (*system_services_log_info)(int, const char *, ...);
+extern void (*system_services_log_info)(unsigned int, const char *, ...);
