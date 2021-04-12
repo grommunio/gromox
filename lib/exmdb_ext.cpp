@@ -6437,8 +6437,9 @@ static int exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 		return EXT_ERR_BAD_SWITCH;
 	}
 	pbin_out->cb = ext_push.offset;
+	ext_push.offset = 0;
+	ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t));
 	pbin_out->pb = ext_buffer_push_release(&ext_push);
-	*(uint32_t *)pbin_out->pb = ext_push.offset - sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
