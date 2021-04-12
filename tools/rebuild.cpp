@@ -13,7 +13,6 @@
 #include <gromox/socket.h>
 #include <gromox/list_file.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/double_list.hpp>
 #include <cstdio>
 #include <fcntl.h>
 #include <cerrno>

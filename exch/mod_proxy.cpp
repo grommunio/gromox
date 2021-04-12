@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/double_list.hpp>
 #include <gromox/defs.h>
 #include <gromox/hpm_common.h>
 #include <gromox/socket.h>

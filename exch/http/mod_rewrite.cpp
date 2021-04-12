@@ -9,7 +9,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include "mod_rewrite.h"
-#include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>

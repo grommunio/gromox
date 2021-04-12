@@ -16,8 +16,6 @@
 #include <gromox/socket.h>
 #include <libHX/string.h>
 #include "exmdb_client.h"
-#include <gromox/config_file.hpp>
-#include <gromox/double_list.hpp>
 #include "common_util.h"
 #include <gromox/list_file.hpp>
 #include "exmdb_ext.h"

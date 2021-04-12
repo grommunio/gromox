@@ -3,7 +3,7 @@
  *    files allocator is a memory pool for mem files
  */
 #include <gromox/common_types.hpp>
-#include <gromox/mem_file.hpp>
+#include <gromox/double_list.hpp>
 #include <gromox/files_allocator.hpp>
 
 static size_t g_blocks_num;

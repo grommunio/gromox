@@ -2,9 +2,9 @@
 #include <cstdio>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/scope.hpp>
 #include "file_operation.h"
-#include <gromox/list_file.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

@@ -14,7 +14,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include "exmdb_client.h"
-#include <gromox/double_list.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/socket.h>

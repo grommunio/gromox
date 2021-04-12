@@ -15,7 +15,6 @@
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "exmdb_server.h"
-#include <gromox/config_file.hpp>
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include "db_engine.h"

@@ -4,8 +4,6 @@
 #include <gromox/double_list.hpp>
 #include <sys/types.h>
 
-#define FILE_BLOCK_SIZE         0x100
-#define FILE_ALLOC_SIZE    (FILE_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 #define MEM_END_OF_FILE         0xFFFFFFFF      
 
 /* enumeration for indicating the seek relative position */

@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
-#include <gromox/double_list.hpp>
 
 IDSET* idset_init(BOOL b_serialize, uint8_t repl_type);
 BOOL idset_register_mapping(IDSET *pset,

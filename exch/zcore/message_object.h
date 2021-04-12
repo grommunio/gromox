@@ -3,7 +3,6 @@
 #include <gromox/defs.h>
 #include "ics_state.h"
 #include <gromox/mapi_types.hpp>
-#include <gromox/double_list.hpp>
 #include "store_object.h"
 
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,

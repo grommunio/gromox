@@ -4,7 +4,6 @@
 #include <gromox/plugin.hpp>
 #include <gromox/ntlmssp.hpp>
 #include <gromox/stream.hpp>
-#include <gromox/int_hash.hpp>
 #include <gromox/double_list.hpp>
 #include "pdu_ndr.h"
 #include <pthread.h>

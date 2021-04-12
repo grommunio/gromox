@@ -11,7 +11,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/common_types.hpp>
-#include <gromox/config_file.hpp>
 #include "str_filter.h"
 #include "audit_filter.h"
 #include "grey_list.h"

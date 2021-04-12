@@ -2,7 +2,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <gromox/mem_file.hpp>
+#include <gromox/common_types.hpp>
 
 enum {
 	USER_PRIVILEGE_POP3_IMAP = 1 << 0,

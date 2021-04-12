@@ -5,11 +5,9 @@
 #include <string>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include <gromox/common_types.hpp>
-#include <gromox/double_list.hpp>
 #include "cmd_parser.h"
 #include <gromox/list_file.hpp>
 #include "listener.h"

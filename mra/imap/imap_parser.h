@@ -1,7 +1,6 @@
 #pragma once
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
-#include <gromox/xarray.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>

@@ -15,7 +15,6 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/list_file.hpp>
-#include <gromox/config_file.hpp>
 #include "cache_queue.h"
 #include "exmdb_local.h"
 #include "net_failure.h"

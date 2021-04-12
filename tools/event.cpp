@@ -21,7 +21,6 @@
 #include <gromox/util.hpp>
 #include <gromox/fifo.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/config_file.hpp>

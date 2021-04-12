@@ -21,7 +21,6 @@
 #include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>

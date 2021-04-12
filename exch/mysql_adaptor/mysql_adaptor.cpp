@@ -14,7 +14,6 @@
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include "mysql_adaptor.h"
-#include <gromox/mem_file.hpp>
 #include <gromox/util.hpp>
 #include <cstdio>
 #include <unistd.h>

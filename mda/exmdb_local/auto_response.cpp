@@ -9,7 +9,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 #include <pthread.h>
 #include <sys/types.h>

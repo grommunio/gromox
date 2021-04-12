@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include "logon_object.h"
 #include <gromox/mapi_types.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/mail.hpp>
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2

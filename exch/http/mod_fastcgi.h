@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <ctime>
 #include <gromox/common_types.hpp>
-#include <gromox/double_list.hpp>
 #define RESPONSE_TIMEOUT				-1
 #define RESPONSE_WAITING				0
 #define RESPONSE_AVAILABLE				1

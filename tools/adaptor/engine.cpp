@@ -10,7 +10,6 @@
 #include "file_operation.h"
 #include <gromox/gateway_control.h>
 #include "data_source.h"
-#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstring>
 #include <pthread.h>
