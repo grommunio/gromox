@@ -62,8 +62,7 @@ static BOOL proxy_send(int context_id, const void *pbuff, int length);
 static int proxy_receive(int context_id, void *pbuff, int max_length);
 
 static void proxy_term(int context_id);
-
-static void* thread_work_func(void *pparam);
+static void *proxy_thrwork(void *);
 
 static bool mod_proxy_read_txt() try
 {
@@ -148,7 +147,7 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 			return FALSE;
 		}
 		g_notify_stop = false;
-		int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+		auto ret = pthread_create(&g_thread_id, nullptr, proxy_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[mod_proxy]: failed to create epoll thread: %s\n", strerror(ret));
 			g_notify_stop = true;
@@ -197,7 +196,7 @@ static BOOL hpm_mod_proxy(int reason, void **ppdata)
 }
 HPM_ENTRY(hpm_mod_proxy);
 
-static void* thread_work_func(void *pparam)
+static void *proxy_thrwork(void *pparam)
 {
 	int i, num;
 	int context_num;

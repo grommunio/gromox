@@ -47,11 +47,8 @@
 
 #define SELECT_INTERVAL			20*60
 
-
-static void* thread_work_func(void *argp);
-
-static void* scan_work_func(void *argp);
-
+static void *imps_thrwork(void *);
+static void *imps_scanwork(void *);
 static void imap_parser_event_proc(char *event);
 
 static void imap_parser_event_touch(char *username, char *folder);
@@ -279,7 +276,7 @@ int imap_parser_run()
 		g_ssl_port = 0;
 	
 	g_notify_stop = false;
-	int ret = pthread_create(&g_thr_id, nullptr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_thr_id, nullptr, imps_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create sleeping list scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -287,7 +284,7 @@ int imap_parser_run()
 	}
 	pthread_setname_np(g_thr_id, "parser/worker");
 	
-	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, imps_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -1692,7 +1689,7 @@ static void imap_parser_context_free(IMAP_CONTEXT *pcontext)
 			fprintf(stderr, "W-1351: chmod %s: %s\n", pcontext->file_path, strerror(errno));
 }
 
-static void* thread_work_func(void *argp)
+static void *imps_thrwork(void *argp)
 {
 	int peek_len;
 	char tmp_buff;
@@ -1859,7 +1856,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	}
 }
 
-static void* scan_work_func(void *argp)
+static void *imps_scanwork(void *argp)
 {
 	int i = 0;
 	int err_num;

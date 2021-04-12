@@ -246,7 +246,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	return -1;
 }
 
-static void *scan_work_func(void *pparam)
+static void *zccl_scanwork(void *pparam)
 {
 	int tv_msec;
 	time_t now_time;
@@ -336,7 +336,7 @@ static void *scan_work_func(void *pparam)
 	return NULL;
 }
 
-static void *thread_work_func(void *pparam)
+static void *zccl_thrwork(void *pparam)
 {
 	int tv_msec;
 	BINARY tmp_bin;
@@ -515,7 +515,7 @@ int exmdb_client_run(const char *configdir)
 			ag.sockd = -1;
 			static_assert(std::is_same_v<decltype(g_agent_list), std::list<decltype(g_agent_list)::value_type>>,
 				"addrof AGENT_THREADs must not change; other thread has its address in use");
-			if (pthread_create(&ag.thr_id, nullptr, thread_work_func, &ag) != 0) {
+			if (pthread_create(&ag.thr_id, nullptr, zccl_thrwork, &ag) != 0) {
 				printf("[exmdb_client]: fail to "
 					"create agent thread for exmdb\n");
 				g_notify_stop = true;
@@ -530,7 +530,7 @@ int exmdb_client_run(const char *configdir)
 	if (0 == g_conn_num) {
 		return 0;
 	}
-	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, zccl_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_client]: failed to create proxy scan thread: %s\n", strerror(ret));
 		g_notify_stop = true;

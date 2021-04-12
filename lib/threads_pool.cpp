@@ -36,9 +36,8 @@ static pthread_mutex_t g_threads_pool_data_lock;
 static pthread_cond_t g_threads_pool_waken_cond;
 static pthread_mutex_t g_threads_pool_cond_mutex;
 
-static void* thread_work_func(void* pparam);
-
-static void* scan_work_func(void *pparam);
+static void *tpol_thrwork(void *);
+static void *tpol_scanwork(void *);
 
 static int (*threads_pool_process_func)(SCHEDULE_CONTEXT*);
 
@@ -81,7 +80,7 @@ int threads_pool_run()
 	}
 	/* list is also protected by g_threads_pool_data_lock */
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
 		lib_buffer_free(g_threads_data_buff);
@@ -97,7 +96,7 @@ int threads_pool_run()
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-		ret = pthread_create(&pdata->id, &attr, thread_work_func, pdata);
+		ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 		if (ret != 0) {
 			printf("[threads_pool]: failed to create a pool thread: %s\n", strerror(ret));
 		} else {
@@ -172,7 +171,7 @@ int threads_pool_get_param(int type)
 	}
 }
 
-static void* thread_work_func(void* pparam)
+static void *tpol_thrwork(void *pparam)
 {
 	THR_DATA *pdata;
 	struct timespec ts;
@@ -280,7 +279,7 @@ void threads_pool_wakeup_all_threads()
 	pthread_cond_broadcast(&g_threads_pool_waken_cond);
 }
 
-static void* scan_work_func(void *pparam)
+static void *tpol_scanwork(void *pparam)
 {
 	THR_DATA *pdata;
 	int not_empty_times;
@@ -306,8 +305,7 @@ static void* scan_work_func(void *pparam)
 				pdata->notify_stop = FALSE;
 				pthread_attr_init(&attr);
 				pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-				if (0 != pthread_create(&pdata->id, &attr,
-					thread_work_func, (void*)pdata)){
+				if (pthread_create(&pdata->id, &attr, tpol_thrwork, pdata) != 0) {
 					debug_info("[threads_pool]: fail "
 						"to increase a pool thread\n");
 					lib_buffer_put(g_threads_data_buff, pdata);

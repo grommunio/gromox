@@ -52,7 +52,7 @@ struct MSG_BUFF {
 
 }
 
-static void* thread_work_func(void* arg);
+static void *meq_thrwork(void *);
 static BOOL message_enqueue_check();
 static int message_enqueue_retrieve_max_ID();
 static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
@@ -112,7 +112,7 @@ static int message_enqueue_run()
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
 	g_notify_stop = false;
     pthread_attr_init(&attr);
-	int ret = pthread_create(&g_flushing_thread, &attr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_flushing_thread, &attr, meq_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[message_enqueue]: failed to create flushing thread: %s\n", strerror(ret));
         return -7;
@@ -225,7 +225,7 @@ static BOOL message_enqueue_check()
 *    @param
 *        arg [in]    argument passed by thread creator
 */
-static void* thread_work_func(void* arg)
+static void *meq_thrwork(void *arg)
 {
     FLUSH_ENTITY *pentity = NULL;
 	MSG_BUFF msg;

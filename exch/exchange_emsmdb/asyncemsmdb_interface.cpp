@@ -49,10 +49,8 @@ static std::condition_variable g_waken_cond;
 static INT_HASH_TABLE *g_async_hash;
 static LIB_BUFFER *g_wait_allocator;
 
-
-static void *scan_work_func(void *param);
-
-static void *thread_work_func(void *param);
+static void *aemsi_scanwork(void *);
+static void *aemsi_thrwork(void *);
 
 static void (*active_hpm_context)(int context_id, BOOL b_pending);
 
@@ -97,7 +95,7 @@ int asyncemsmdb_interface_run()
 		return -4;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exchange_emsmdb]: failed to create scanning thread "
 		       "for asyncemsmdb: %s\n", strerror(ret));
@@ -106,7 +104,7 @@ int asyncemsmdb_interface_run()
 	}
 	pthread_setname_np(g_scan_id, "asyncems/scan");
 	for (i=0; i<g_threads_num; i++) {
-		ret = pthread_create(g_thread_ids + i, nullptr, thread_work_func, nullptr);
+		ret = pthread_create(&g_thread_ids[i], nullptr, aemsi_thrwork, nullptr);
 		if (ret != 0) {
 			g_threads_num = i;
 			printf("[exchange_emsmdb]: failed to create wake up "
@@ -311,7 +309,7 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	g_waken_cond.notify_one();
 }
 
-static void *thread_work_func(void *param)
+static void *aemsi_thrwork(void *param)
 {
 	DOUBLE_LIST_NODE *pnode;
 	std::mutex g_cond_mutex;
@@ -335,7 +333,7 @@ static void *thread_work_func(void *param)
 	return nullptr;
 }
 
-static void *scan_work_func(void *param)
+static void *aemsi_scanwork(void *param)
 {
 	time_t cur_time;
 	ASYNC_WAIT *pwait;

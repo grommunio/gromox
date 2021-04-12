@@ -29,9 +29,8 @@
 #include <pthread.h>
 #include <cstring>
 
-static void* thread_work_func(void* arg);
-
-static void* thread_work_ssl_func(void* arg);
+static void *imls_thrwork(void *);
+static void *imls_thrworkssl(void *);
 
 static pthread_t g_thr_id;
 static std::atomic<bool> g_stop_accept{false};
@@ -88,7 +87,7 @@ int listener_trigger_accept()
 	pthread_attr_t attr;
 
 	pthread_attr_init(&attr);
-	int ret = pthread_create(&g_thr_id, &attr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_thr_id, &attr, imls_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
 		pthread_attr_destroy(&attr);
@@ -96,7 +95,7 @@ int listener_trigger_accept()
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, &attr, thread_work_ssl_func, nullptr);
+		ret = pthread_create(&g_ssl_thr_id, &attr, imls_thrworkssl, nullptr);
 		if (ret != 0) {
 			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
 			pthread_attr_destroy(&attr);
@@ -128,7 +127,7 @@ void listener_stop_accept()
  * listener's thread work function
  *
  */
-static void* thread_work_func(void* arg)
+static void *imls_thrwork(void *arg)
 {
 	socklen_t addrlen;
 	int sockd2, client_port;
@@ -270,7 +269,7 @@ static void* thread_work_func(void* arg)
  * ssl listener's thread work function
  *
  */
-static void* thread_work_ssl_func(void* arg)
+static void *imls_thrworkssl(void *arg)
 {
 	socklen_t addrlen;
 	int sockd2, client_port;

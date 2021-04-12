@@ -44,9 +44,7 @@ static int g_event_port;
 static DOUBLE_LIST g_back_list;
 static EVENT_STUB_FUNC g_event_stub_func;
 
-
-static void* thread_work_func(void *param);
-
+static void *evst_thrwork(void *);
 static int read_line(int sockd, char *buff, int length);
 static int connect_event();
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
@@ -115,7 +113,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			if (NULL != pback) {
 		        pback->node.pdata = pback;
 				pback->sockd = -1;
-				ret = pthread_create(&pback->thr_id, nullptr, thread_work_func, pback);
+				ret = pthread_create(&pback->thr_id, nullptr, evst_thrwork, pback);
 				if (ret != 0) {
 					free(pback);
 					break;
@@ -226,8 +224,7 @@ static int connect_event()
 	return sockd;
 }
 
-
-static void* thread_work_func(void *param)
+static void *evst_thrwork(void *param)
 {
 	BACK_CONN *pback;
 	char buff[MAX_CMD_LENGTH];	

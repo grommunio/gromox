@@ -352,7 +352,7 @@ DB_ITEM::~DB_ITEM()
 	}
 }
 
-static void *scan_work_func(void *param)
+static void *mdpeng_scanwork(void *param)
 {
 	int count;
 	time_t now_time;
@@ -631,7 +631,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 	}
 }
 
-static void *thread_work_func(void *param)
+static void *mdpeng_thrwork(void *param)
 {
 	int table_num;
 	TABLE_NODE *ptable;
@@ -776,15 +776,14 @@ int db_engine_run()
 		return -2;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_tid, nullptr, mdpeng_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_provider]: failed to create db scan thread: %s\n", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
 	for (i=0; i<g_threads_num; i++) {
-		if (0 != pthread_create(g_thread_ids + i,
-			NULL, thread_work_func, NULL)) {
+		if (pthread_create(&g_thread_ids[i], nullptr, mdpeng_thrwork, nullptr) != 0) {
 			g_threads_num = i;
 			printf("[exmdb_provider]: fail to "
 				"create populating thread\n");

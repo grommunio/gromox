@@ -71,7 +71,7 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage);
 static void message_dequeue_put_to_used(MESSAGE *pmessage);
 static void message_dequeue_load_from_mess(int mess);
 static void message_dequeue_collect_resource();
-static void* thread_work_func(void* arg);
+static void *mdq_thrwork(void *);
 
 /* 
  * message dequeue's construct function
@@ -207,7 +207,7 @@ int message_dequeue_run()
 		return -8;
 	}
 	pthread_attr_init(&attr);
-	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_thread_id, &attr, mdq_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[message_dequeue]: failed to create message dequeue thread: %s\n", strerror(ret));
 		message_dequeue_collect_resource();
@@ -436,7 +436,7 @@ static void message_dequeue_load_from_mess(int mess)
 	int_hash_add(g_mess_hash, mess, pmessage);
 }
 
-static void* thread_work_func(void* arg)
+static void *mdq_thrwork(void *arg)
 {
 	MSG_BUFF msg;
 	size_t size;

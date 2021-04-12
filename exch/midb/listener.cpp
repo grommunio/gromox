@@ -30,7 +30,7 @@ static int g_listen_sockd;
 static std::atomic<bool> g_notify_stop{false};
 static std::vector<std::string> g_acl_list;
 
-static void *thread_work_func(void *param);
+static void *midls_thrwork(void *);
 
 void listener_init(const char *ip, int port)
 {
@@ -70,7 +70,7 @@ int listener_trigger_accept()
 	pthread_t thr_id;
 
 	g_notify_stop = false;
-	int ret = pthread_create(&thr_id, nullptr, thread_work_func, nullptr);
+	auto ret = pthread_create(&thr_id, nullptr, midls_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
 		return -1;
@@ -92,8 +92,7 @@ void listener_free(){
 	g_listen_port = 0;
 }
 
-
-static void *thread_work_func(void *param)
+static void *midls_thrwork(void *param)
 {
 	int sockd;
 	socklen_t addrlen;

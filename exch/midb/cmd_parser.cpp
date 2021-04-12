@@ -41,9 +41,7 @@ static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
 static COMMAND_ENTRY g_cmd_entry[128];
 
-
-static void *thread_work_func(void *param);
-
+static void *midcp_thrwork(void *);
 static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
 
 static int cmd_parser_ping(int argc, char **argv, int sockd);
@@ -102,7 +100,7 @@ int cmd_parser_run()
 
 	for (i=0; i<g_threads_num; i++) {
 		int ret = pthread_create(&g_thread_ids[i], &thr_attr,
-		          thread_work_func, nullptr);
+		          midcp_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
 			goto FAILURE_EXIT;
@@ -170,8 +168,7 @@ void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER handler)
 	g_cmd_num ++;
 }
 
-
-static void *thread_work_func(void *param)
+static void *midcp_thrwork(void *param)
 {
 	int i, j;
 	int argc;

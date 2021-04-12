@@ -83,10 +83,8 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static void *accept_work_func(void *param);
-
-static void *thread_work_func(void *param);
-
+static void *tmr_acceptwork(void *);
+static void *tmr_thrwork(void *);
 static void execute_timer(TIMER *ptimer);
 
 static int parse_line(char *pbuff, const char* cmdline, char** argv);
@@ -269,7 +267,7 @@ int main(int argc, const char **argv)
 	thr_ids.reserve(g_threads_num);
 	for (size_t i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		int ret = pthread_create(&tid, nullptr, thread_work_func, nullptr);
+		auto ret = pthread_create(&tid, nullptr, tmr_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			break;
@@ -299,8 +297,8 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	
-	ret = pthread_create(&thr_accept_id, nullptr, accept_work_func,
-	          reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
+	ret = pthread_create(&thr_accept_id, nullptr, tmr_acceptwork,
+	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -387,7 +385,7 @@ int main(int argc, const char **argv)
 	return 0;
 }
 
-static void *accept_work_func(void *param)
+static void *tmr_acceptwork(void *param)
 {
 	int sockd, sockd2;
 	socklen_t addrlen;
@@ -475,7 +473,7 @@ static void execute_timer(TIMER *ptimer)
 	write(g_list_fd, temp_buff, len);
 }
 
-static void *thread_work_func(void *param)
+static void *tmr_thrwork(void *param)
 {
 	int t_id;
 	int temp_len;

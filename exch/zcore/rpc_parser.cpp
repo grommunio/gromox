@@ -651,7 +651,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 	return DISPATCH_TRUE;
 }
 
-static void *thread_work_func(void *param)
+static void *zcrp_thrwork(void *param)
 {
 	int clifd;
 	void *pbuff;
@@ -794,7 +794,7 @@ int rpc_parser_run()
 	g_notify_stop = false;
 	int ret = 0;
 	for (i=0; i<g_thread_num; i++) {
-		ret = pthread_create(&g_thread_ids[i], nullptr, thread_work_func, nullptr);
+		ret = pthread_create(&g_thread_ids[i], nullptr, zcrp_thrwork, nullptr);
 		if (ret != 0)
 			break;
 		char buf[32];

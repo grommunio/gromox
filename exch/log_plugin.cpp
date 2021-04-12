@@ -50,7 +50,7 @@ static void log_plugin_cache_log(const char *log, int length);
 static BOOL log_plugin_flush_log();
 static int log_plugin_open_redirect(const char *filename);
 static int log_plugin_close_redirect();
-static void* thread_work_func(void *arg);
+static void *logplug_thrwork(void *);
 
 /*
  *	log plugin's construct function
@@ -120,7 +120,7 @@ static int log_plugin_run()
 	}
 	g_notify_stop = false;
 	pthread_attr_init(&attr);
-	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_thread_id, &attr, logplug_thrwork, nullptr);
 	if (ret != 0) {
 		pthread_attr_destroy(&attr);
 		printf("[log_plugin]: failed to create thread: %s\n", strerror(ret));
@@ -199,7 +199,7 @@ static void log_plugin_log_info(unsigned int level, const char *format, ...)
 /*
  *	clean up smtp and delivery logs over 30days
  */
-static void* thread_work_func(void *arg)
+static void *logplug_thrwork(void *arg)
 {
 	int i;
 	BOOL should_delete;

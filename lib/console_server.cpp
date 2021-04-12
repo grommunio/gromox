@@ -70,8 +70,8 @@ static CCMD_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
 static void console_server_execve_command(char* cmdline);
 static int  console_server_parse_line(const char* cmdline, char** argv);
-static void* thread_work_func(void *argp);
-static void* console_work_func(void *argp);
+static void *consrv_thrwork(void *);
+static void *consrv_work(void *);
 
 /*
  *	console server's construct function
@@ -126,8 +126,8 @@ int console_server_run()
 		double_list_append_as_tail(&g_free_list, &pnodes[i].node);
 	}
 	/* create accepting thread */
-	int ret = pthread_create(&g_listening_tid, nullptr, thread_work_func,
-	          reinterpret_cast<void *>(static_cast<intptr_t>(sock)));
+	auto ret = pthread_create(&g_listening_tid, nullptr, consrv_thrwork,
+	           reinterpret_cast<void *>(static_cast<intptr_t>(sock)));
 	if (ret != 0) {
 		printf("[console_server]: failed to create accepting thread: %s\n", strerror(ret));
 		free(pnodes);
@@ -186,7 +186,7 @@ int console_server_reply_to_client(const char* format, ...)
  *  @param  
  *      vargp       server listening socket
  */
-static void *thread_work_func(void *argp)
+static void *consrv_thrwork(void *argp)
 {
 	fd_set myset;
 	struct timeval tv;
@@ -221,8 +221,7 @@ static void *thread_work_func(void *argp)
 		}
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
 		pconsole->client_fd = client_fd;
-		if (0 != pthread_create(&pconsole->tid, NULL,
-			console_work_func, pconsole)) {
+		if (pthread_create(&pconsole->tid, nullptr, consrv_work, pconsole) != 0) {
 			double_list_append_as_tail(&g_free_list, pnode);
 			ll_hold.unlock();
 			write(client_fd, ERROR_STRING, sizeof(ERROR_STRING) - 1);
@@ -241,7 +240,7 @@ static void *thread_work_func(void *argp)
  *  @param
  *      argp [in]        console thread information
  */
-static void* console_work_func(void *argp)
+static void *consrv_work(void *argp)
 {
     int offset;
     int read_len;

@@ -35,7 +35,7 @@ static std::atomic<bool> g_notify_stop{true};
 
 static int cache_queue_retrieve_mess_ID();
 static int cache_queue_increase_mess_ID();
-static void* thread_work_func(void* arg);
+static void *mdl_thrwork(void *);
 
 /*
  *	timer queue's construct function
@@ -75,7 +75,7 @@ int cache_queue_run()
 	g_mess_id = cache_queue_retrieve_mess_ID();
 	g_notify_stop = false;
 	pthread_attr_init(&attr);
-	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_thread_id, &attr, mdl_thrwork, nullptr);
 	if (ret != 0) {
 		pthread_attr_destroy(&attr);
 		g_notify_stop = true;
@@ -255,7 +255,7 @@ static int cache_queue_increase_mess_ID()
     return current_id;
 }
 
-static void* thread_work_func(void* arg)
+static void *mdl_thrwork(void *arg)
 {
 	DIR *dirp;
 	int i, times, size, bounce_type = 0;

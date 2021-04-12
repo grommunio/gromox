@@ -821,7 +821,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 	return ret;
 }
 
-static void *thread_work_func(void *pparam)
+static void *mdpps_thrwork(void *pparam)
 {
 	int status;
 	int tv_msec;
@@ -999,7 +999,8 @@ void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection
 	std::unique_lock chold(g_connection_lock);
 	auto [it, _] = g_connection_list.insert(pconnection);
 	chold.unlock();
-	if (pthread_create(&pconnection->thr_id, nullptr, thread_work_func, pconnection.get()) == 0)
+	if (pthread_create(&pconnection->thr_id, nullptr, mdpps_thrwork,
+	    pconnection.get()) == 0)
 		return;
 	chold.lock();
 	g_connection_list.erase(it);

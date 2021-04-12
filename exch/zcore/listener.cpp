@@ -22,7 +22,7 @@ static std::atomic<bool> g_notify_stop{false};
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 
-static void* thread_work_func(void *param)
+static void *zcls_thrwork(void *param)
 {
 	struct sockaddr_storage unix_addr;
 	
@@ -80,7 +80,7 @@ int listener_run(const char *CS_PATH)
 		return -4;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_listener_id, nullptr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_listener_id, nullptr, zcls_thrwork, nullptr);
 	if (ret != 0) {
 		close(g_listen_sockd);
 		printf("[listener]: failed to create accept thread: %s\n", strerror(ret));

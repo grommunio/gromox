@@ -72,7 +72,7 @@ int contexts_pool_get_param(int type)
 	}
 }
 
-static void* thread_work_func(void *pparam)
+static void *ctxp_thrwork(void *pparam)
 {
 	int i, num;
 	SCHEDULE_CONTEXT *pcontext;
@@ -113,7 +113,7 @@ static void* thread_work_func(void *pparam)
 	return nullptr;
 }
 
-static void *scan_work_func(void *pparam)
+static void *ctxp_scanwork(void *pparam)
 {
 	int num;
 	DOUBLE_LIST temp_list;
@@ -230,7 +230,7 @@ int contexts_pool_run()
 		return -2;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+	auto ret = pthread_create(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[contexts_pool]: failed to create epoll thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -241,7 +241,7 @@ int contexts_pool_run()
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "epollctx/work");
-	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
 		g_notify_stop = true;

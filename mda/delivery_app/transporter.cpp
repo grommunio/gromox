@@ -148,9 +148,8 @@ static bool g_ign_loaderr;
 
 static void transporter_collect_resource();
 static void transporter_collect_hooks();
-static void* thread_work_func(void* arg);
-
-static void* scan_work_func(void* arg);
+static void *dxp_thrwork(void *);
+static void *dxp_scanwork(void *);
 static void *transporter_queryservice(const char *service, const std::type_info &);
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
@@ -322,7 +321,7 @@ int transporter_run()
 		(g_data_ptr + i)->wait_on_event = TRUE;
 		pthread_attr_init(&attr);
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-		int ret = pthread_create(&g_data_ptr[i].id, &attr, thread_work_func, g_data_ptr + i);
+		auto ret = pthread_create(&g_data_ptr[i].id, &attr, dxp_thrwork, &g_data_ptr[i]);
 		if (ret != 0) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
@@ -338,7 +337,7 @@ int transporter_run()
     }
 	/* create the scanning thread */
 	pthread_attr_init(&attr);
-	int ret = pthread_create(&g_scan_id, &attr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_id, &attr, dxp_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		transporter_collect_hooks();
@@ -538,7 +537,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
  *    @param
  *        arg [in]    argument passed by thread creator
  */
-static void* thread_work_func(void* arg)
+static void *dxp_thrwork(void *arg)
 {
 	char *ptr;
 	int len, cannot_served_times;
@@ -658,7 +657,7 @@ static void* thread_work_func(void* arg)
  *    @param
  *        arg [in]    argument passed by thread creator
  */
-static void* scan_work_func(void* arg)
+static void *dxp_scanwork(void *arg)
 {
 	THREAD_DATA *pthr_data;
 	DOUBLE_LIST_NODE *pnode;
@@ -683,8 +682,7 @@ static void* scan_work_func(void* arg)
 			pthr_data = (THREAD_DATA*)pnode->pdata;
 			pthread_attr_init(&attr);
 			pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-			if (0 == pthread_create(&pthr_data->id, &attr, thread_work_func,
-				pthr_data)) {
+			if (pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data) == 0) {
 				pthread_setname_np(pthr_data->id, "xprt/+");
 				pthread_mutex_lock(&g_threads_list_mutex);
 				double_list_append_as_tail(&g_threads_list, &pthr_data->node);
