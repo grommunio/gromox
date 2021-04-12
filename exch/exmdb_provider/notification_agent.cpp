@@ -106,7 +106,6 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 			}
 			free(pdnode->data_bin.pb);
 			free(pdnode);
-			cn_hold.unlock();
 			std::lock_guard rt_lock(prouter->lock);
 			pnode = double_list_pop_front(&prouter->datagram_list);
 			if (NULL == pnode) {
