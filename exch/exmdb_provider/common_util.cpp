@@ -1709,12 +1709,13 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	wrapfd fd = open(path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
-	auto pbuff = cu_alloc<char>(node_stat.st_size);
+	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (NULL == pbuff) {
 		return NULL;
 	}
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
+	pbuff[node_stat.st_size] = 0;
 	if (PROP_TAG_BODY == proptag1) {
 		pbuff += sizeof(int);
 	}
@@ -1760,12 +1761,13 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	wrapfd fd = open(path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
-	auto pbuff = cu_alloc<char>(node_stat.st_size);
+	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (NULL == pbuff) {
 		return NULL;
 	}
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) 
 		return NULL;
+	pbuff[node_stat.st_size] = 0;
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag1) {
 		pbuff += sizeof(int);
 	}
