@@ -705,7 +705,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	if (pstmt == nullptr)
 		return FALSE;
 	b_subject = FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt) && i < sizeof(proptags)) {
+	while (sqlite3_step(pstmt) == SQLITE_ROW && i < GX_ARRAY_SIZE(proptags)) {
 		proptags[i] = sqlite3_column_int64(pstmt, 0);
 		if (MESSAGE_PROPERTIES_TABLE == table_type &&
 			PROP_TAG_MESSAGEFLAGS == proptags[i]) {
