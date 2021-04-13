@@ -2770,7 +2770,9 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-	sqlite3_step(pstmt);
+	auto ret = sqlite3_step(pstmt);
+	if (ret != SQLITE_DONE)
+		fprintf(stderr, "W-1274: %s\n", sqlite3_errstr(ret));
 }
 
 static BOOL common_util_update_message_cid(sqlite3 *psqlite,
