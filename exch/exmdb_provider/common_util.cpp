@@ -182,11 +182,11 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[256];
+	char tmp_name[324];
 	char hex_string[16];
 	char hex_string2[16];
 	
-	strncpy(tmp_name, username, 256);
+	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
