@@ -28,6 +28,7 @@ Makefile.in
 /freebusy
 /gromox-dbop
 /gromox-mailq
+/gromox-pffimport
 /http
 /imap
 /midb

@@ -85,6 +85,9 @@ agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
+if HAVE_PFF
+sbin_PROGRAMS += gromox-pffimport
+endif
 pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
 
 BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
@@ -248,6 +251,8 @@ mkprivate_SOURCES = tools/mkprivate.cpp
 mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 mkpublic_SOURCES = tools/mkpublic.cpp
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+gromox_pffimport_SOURCES = tools/pffimport.cpp
+gromox_pffimport_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_exrpc.la
 rebuild_SOURCES = tools/rebuild.cpp
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 timer_SOURCES = tools/timer.cpp
@@ -282,7 +287,8 @@ man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 \
-	doc/gromox-dbop.8gx doc/gromox-mailq.8gx doc/http.8gx \
+	doc/gromox-dbop.8gx doc/gromox-mailq.8gx doc/gromox-pffimport.8 \
+	doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \

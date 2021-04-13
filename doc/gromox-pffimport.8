@@ -1,0 +1,31 @@
+.TH gromox\-pffimport 8gx "" "Gromox" "Gromox admin reference"
+.SH Synopsis
+.PP
+\fBgromox\-pffimport\fP [\fB\-nt \-u\fP \fIuser@company\fP]
+\fIinput.pst\fP...
+.SH Description
+.PP
+gromox\-pffimport reads files in the Personal Folder File (PFF) and the Offline
+Folder File (OFF) format and writes their data into a Gromox mail store. The
+PFF format is used in several file types:
+.IP \(bu 4
+PAB (Personal Address Book)
+.IP \(bu 4
+PST (Personal Storage Table)
+.IP \(bu 4
+OST (Offline Storage Table)
+.SH Options
+.TP
+\fB\-n\fP
+Dry run, do not contact server.
+.TP
+\fB\-t\fP
+Output tree analysis of the PFF file.
+.TP
+\fB\-u\fP \fIuser@company\fP
+Target mail store which to import mails to.
+.PP
+All remaining arguments specify PFF files to be read.
+.SH See also
+.PP
+\fBgromox\fP(7)
