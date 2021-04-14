@@ -936,7 +936,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 	} else {
-		sql_len = sprintf(sql_string, "INSERT INTO t%u (inst_id,"
+		sprintf(sql_string, "INSERT INTO t%u (inst_id,"
 			" prev_id, row_type, depth, inst_num, idx) VALUES "
 			"(?, ?, %u, 0, 0, ?)", table_id, CONTENT_ROW_MESSAGE);
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -945,71 +945,70 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	}
 	if (TRUE == exmdb_server_check_private()) {
 		if (table_flags & TABLE_FLAG_SOFTDELETES) {
-			sql_len = sprintf(sql_string, "SELECT "
-			          "message_id FROM messages WHERE 0");
+			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
 		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
 			if (FALSE == b_search) {
-				sql_len = sprintf(sql_string, "SELECT message_id "
-				          "FROM messages WHERE parent_fid=%llu "
-				          "AND is_associated=1", LLU(fid_val));
+				sprintf(sql_string, "SELECT message_id "
+				        "FROM messages WHERE parent_fid=%llu "
+				        "AND is_associated=1", LLU(fid_val));
 			} else {
-				sql_len = sprintf(sql_string, "SELECT "
-				          "messages.message_id FROM messages"
-				          " JOIN search_result ON "
-				          "search_result.folder_id=%llu AND "
-				          "search_result.message_id=messages.message_id"
-				          " AND messages.is_associated=1", LLU(fid_val));
+				sprintf(sql_string, "SELECT "
+				        "messages.message_id FROM messages"
+				        " JOIN search_result ON "
+				        "search_result.folder_id=%llu AND "
+				        "search_result.message_id=messages.message_id"
+				        " AND messages.is_associated=1", LLU(fid_val));
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 			if (TRUE == b_conversation) {
 				encode_hex_binary(((BINARY *)pres->propval.pvalue)->pb,
 					16, tmp_string, sizeof(tmp_string));
-				sql_len = sprintf(sql_string, "SELECT message_id "
-				          "FROM message_properties WHERE proptag=%u AND"
-				          " propval=x'%s'", PROP_TAG_CONVERSATIONID,
-				          tmp_string);
+				sprintf(sql_string, "SELECT message_id "
+				        "FROM message_properties WHERE proptag=%u AND"
+				        " propval=x'%s'", PROP_TAG_CONVERSATIONID,
+				        tmp_string);
 			} else {
-				sql_len = sprintf(sql_string, "SELECT message_id"
-				          " FROM messages WHERE parent_fid IS NOT NULL"
-				          " AND is_associated=0");
+				strcpy(sql_string, "SELECT message_id"
+				       " FROM messages WHERE parent_fid IS NOT NULL"
+				       " AND is_associated=0");
 			}
 		} else if (!b_search) {
-			sql_len = sprintf(sql_string, "SELECT message_id "
-			          "FROM messages WHERE parent_fid=%llu "
-			          "AND is_associated=0", LLU(fid_val));
+			sprintf(sql_string, "SELECT message_id "
+			        "FROM messages WHERE parent_fid=%llu "
+			        "AND is_associated=0", LLU(fid_val));
 		} else {
-			sql_len = sprintf(sql_string, "SELECT "
-			          "messages.message_id FROM messages"
-			          " JOIN search_result ON "
-			          "search_result.folder_id=%llu AND "
-			          "search_result.message_id=messages.message_id"
-			          " AND messages.is_associated=0", LLU(fid_val));
+			sprintf(sql_string, "SELECT "
+			        "messages.message_id FROM messages"
+			        " JOIN search_result ON "
+			        "search_result.folder_id=%llu AND "
+			        "search_result.message_id=messages.message_id"
+			        " AND messages.is_associated=0", LLU(fid_val));
 		}
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
-		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-		          "SELECT message_id "
-		          "FROM messages WHERE parent_fid=%llu "
-		          " AND is_deleted=%u AND is_associated=%u",
-		          LLU(fid_val),
-		          !!(table_flags & TABLE_FLAG_SOFTDELETES),
-		          !!(table_flags & TABLE_FLAG_ASSOCIATED));
+		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		            "SELECT message_id "
+		            "FROM messages WHERE parent_fid=%llu "
+		            " AND is_deleted=%u AND is_associated=%u",
+		            LLU(fid_val),
+		            !!(table_flags & TABLE_FLAG_SOFTDELETES),
+		            !!(table_flags & TABLE_FLAG_ASSOCIATED));
 	} else if (b_conversation) {
 		encode_hex_binary(((BINARY *)pres->propval.pvalue)->pb,
 			16, tmp_string, sizeof(tmp_string));
-		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-		          "SELECT message_properties.message_id "
-		          "FROM message_properties JOIN messages ON "
-		          "messages.message_id=message_properties.message_id"
-		          " WHERE message_properties.proptag=%u AND"
-		          " message_properties.propval=x'%s' AND "
-		          "messages.is_deleted=%u", PROP_TAG_CONVERSATIONID,
-		          tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
+		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		            "SELECT message_properties.message_id "
+		            "FROM message_properties JOIN messages ON "
+		            "messages.message_id=message_properties.message_id"
+		            " WHERE message_properties.proptag=%u AND"
+		            " message_properties.propval=x'%s' AND "
+		            "messages.is_deleted=%u", PROP_TAG_CONVERSATIONID,
+		            tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	} else {
-		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
-		          "SELECT message_id"
-		          " FROM messages WHERE parent_fid IS NOT NULL"
-		          " AND is_associated=0 AND is_deleted=%u",
-		          !!(table_flags & TABLE_FLAG_SOFTDELETES));
+		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		            "SELECT message_id"
+		            " FROM messages WHERE parent_fid IS NOT NULL"
+		            " AND is_associated=0 AND is_deleted=%u",
+		            !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	}
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -1207,15 +1206,15 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	pstmt.finalize();
 	pstmt1.finalize();
 	if (NULL != psorts) {
-		sql_len = sprintf(sql_string, "INSERT INTO t%u "
-			"(inst_id, row_type, row_stat, parent_id, depth, "
-			"count, inst_num, value, extremum, prev_id) VALUES"
-			" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
+		sprintf(sql_string, "INSERT INTO t%u "
+			    "(inst_id, row_type, row_stat, parent_id, depth, "
+			    "count, inst_num, value, extremum, prev_id) VALUES"
+			    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
 			return false;
-		sql_len = sprintf(sql_string, "UPDATE t%u SET"
-				" unread=? WHERE row_id=?", table_id);
+		sprintf(sql_string, "UPDATE t%u SET"
+		        " unread=? WHERE row_id=?", table_id);
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
@@ -1233,14 +1232,14 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		psqlite = NULL;
 		/* index the content table */
 		if (psorts->ccategories > 0) {
-			sql_len = sprintf(sql_string, "SELECT row_id,"
-				" row_type, row_stat, depth, prev_id FROM"
-				" t%u ORDER BY row_id", table_id);
+			sprintf(sql_string, "SELECT row_id,"
+			        " row_type, row_stat, depth, prev_id FROM"
+			        " t%u ORDER BY row_id", table_id);
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr)
 				return false;
-			sql_len = sprintf(sql_string, "UPDATE t%u SET "
-					"idx=? WHERE row_id=?", table_id);
+			sprintf(sql_string, "UPDATE t%u SET "
+			        "idx=? WHERE row_id=?", table_id);
 			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				return false;
