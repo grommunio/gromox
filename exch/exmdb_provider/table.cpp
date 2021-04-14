@@ -3736,7 +3736,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 {
 	int i;
 	int depth;
-	int sql_len;
 	void *pvalue;
 	uint16_t type;
 	uint64_t row_id;
@@ -3810,11 +3809,11 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_exec(psqlite, "PRAGMA synchronous=OFF", NULL, NULL, NULL);
 	}
 	if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
-		sql_len = sprintf(sql_string, "SELECT state_id FROM "
+		strcpy(sql_string, "SELECT state_id FROM "
 			"state_info WHERE folder_id=? AND table_flags=? "
 			"AND sorts=?");
 	} else {
-		sql_len = sprintf(sql_string, "SELECT state_id FROM "
+		strcpy(sql_string, "SELECT state_id FROM "
 			"state_info WHERE folder_id=? AND table_flags=? "
 			"AND sorts IS NULL");
 	}
@@ -3843,7 +3842,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	pstmt.finalize();
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (0 == *pstate_id) {
-		sql_len = sprintf(sql_string, "INSERT INTO state_info"
+		strcpy(sql_string, "INSERT INTO state_info"
 			"(folder_id, table_flags, sorts) VALUES (?, ?, ?)");
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr) {
@@ -3908,7 +3907,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		return TRUE;
 	}
-	sql_len = sprintf(sql_string, "CREATE TABLE s%u "
+	auto sql_len = sprintf(sql_string, "CREATE TABLE s%u "
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (i=0; i<ptnode->psorts->ccategories; i++) {
 		tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
