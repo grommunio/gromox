@@ -2244,16 +2244,14 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, PROP_TAG_PARENTFOLDERID,
 		&pvalue) || NULL == pvalue) {
-		log_err("Cannot get parent folder_id "
-			"of message %llu when sending it", LLU(message_id));
+		log_err("W-1289: Cannot get parent folder_id of mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
 	parent_id = *(uint64_t*)pvalue;
 	if (FALSE == exmdb_client_read_message(
 		logon_object_get_dir(plogon), NULL, cpid,
 		message_id, &pmsgctnt) || NULL == pmsgctnt) {
-		log_err("Failed to read message %llu"
-			" from exmdb when sending it", LLU(message_id));
+		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU(message_id));
 		return FALSE;
 	}
 	if (NULL == common_util_get_propvals(
@@ -2272,16 +2270,14 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
 	if (NULL == pvalue) {
-		log_err("Failed to get message_flag"
-			" of message %llu when sending it", LLU(message_id));
+		log_err("W-1287: Failed to get message_flag of mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
 	message_flags = *(uint32_t*)pvalue;
 	BOOL b_resend = (message_flags & MESSAGE_FLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
-		log_err("Missing recipients"
-			" when sending message %llu", LLU(message_id));
+		log_err("W-1286: Missing recipients for message mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
 	double_list_init(&temp_list);
@@ -2323,13 +2319,11 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			pvalue = common_util_get_propvals(
 				prcpts->pparray[i], PROP_TAG_ENTRYID);
 			if (NULL == pvalue) {
-				log_err("Cannot get recipient "
-					"entryid when sending message %llu", LLU(message_id));
+				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU(message_id));
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username)) {
-				log_err("Cannot convert recipient entryid "
-					"to smtp address when sending message %llu", LLU(message_id));
+				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:0x%llx", LLU(message_id));
 				return FALSE;	
 			}
 			auto tmp_len = strlen(username) + 1;
@@ -2343,9 +2337,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 				pnode->pdata = common_util_get_propvals(
 					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
 				if (NULL == pnode->pdata) {
-					log_err("Cannot get email address "
-						"of recipient of SMTP address type when sending"
-						" message %llu", LLU(message_id));
+					log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU(message_id));
 					return FALSE;
 				}
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
@@ -2369,8 +2361,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		double_list_append_as_tail(&temp_list, pnode);
 	}
 	if (0 == double_list_get_nodes_num(&temp_list)) {
-		log_err("Empty converted recipients "
-			"list when sending message %llu", LLU(message_id));
+		log_err("W-1282: Empty converted recipients list while sending mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
@@ -2391,15 +2382,13 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 		body_type, g_mime_pool, &imail, common_util_alloc,
 		common_util_get_propids, common_util_get_propname)) {
-		log_err("Failed to export to RFC5322"
-			" mail when sending message %llu", LLU(message_id));
+		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:0x%llx", LLU(message_id));
 		return FALSE;	
 	}
 	if (FALSE == common_util_send_mail(&imail,
 		logon_object_get_account(plogon), &temp_list)) {
 		mail_free(&imail);
-		log_err("Failed to send "
-			"message %llu via SMTP", LLU(message_id));
+		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU(message_id));
 		return FALSE;
 	}
 	mail_free(&imail);
@@ -2416,15 +2405,13 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(
 			plogon, ptarget, &folder_id, &new_id)) {
-			log_err("Failed to retrieve target "
-				"entryid when sending message %llu", LLU(message_id));
+			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU(message_id));
 			return FALSE;	
 		}
 		if (FALSE == exmdb_client_clear_submit(
 			logon_object_get_dir(plogon),
 			message_id, FALSE)) {
-			log_err("Failed to clear submit "
-				"flag when sending message %llu", LLU(message_id));
+			log_err("W-1278: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
 		if (FALSE == exmdb_client_movecopy_message(
@@ -2432,8 +2419,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			logon_object_get_account_id(plogon),
 			cpid, message_id, folder_id, new_id,
 			TRUE, &b_result)) {
-			log_err("Failed to move to target "
-				"folder when sending message %llu", LLU(message_id));
+			log_err("W-1277: Failed to move to target folder while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
 	} else if (TRUE == b_delete) {
@@ -2445,8 +2431,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		if (FALSE == exmdb_client_clear_submit(
 			logon_object_get_dir(plogon),
 			message_id, FALSE)) {
-			log_err("Failed to clear submit "
-				"flag when sending message %llu", LLU(message_id));
+			log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
 		ids.count = 1;
@@ -2457,8 +2442,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			cpid, FALSE, NULL, parent_id,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
 			FALSE, &ids, &b_partial)) {
-			log_err("Failed to move to \"Sent\""
-				" folder when sending message %llu", LLU(message_id));
+			log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:0x%llx", LLU(message_id));
 			return FALSE;	
 		}
 	}
