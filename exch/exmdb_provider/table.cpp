@@ -2266,9 +2266,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					proptag = PROP_TAG_MEMBERNAME;
 				}
 				if (FALSE == common_util_get_permission_property(member_id,
-					pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
+				    pdb->psqlite, proptag, &pvalue))
 					return FALSE;
-				}
 				if (PROP_TAG_MEMBERRIGHTS == pproptags->pproptag[i]
 					&& 0 == (ptnode->table_flags &
 					PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY)) {
