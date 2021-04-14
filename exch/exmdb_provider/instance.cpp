@@ -36,6 +36,12 @@
 
 using namespace gromox;
 
+namespace {
+struct msg_delete {
+	void operator()(MESSAGE_CONTENT *msg) { message_content_free(msg); }
+};
+}
+
 static BOOL instance_read_message(
 	const MESSAGE_CONTENT *pmsgctnt1, MESSAGE_CONTENT *pmsgctnt);
 
@@ -1678,8 +1684,9 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			if (NULL != pvalue) {
 				propval.proptag = PROP_TAG_BODY;
 				propval.pvalue = pvalue;
-				tpropval_array_set_propval(&((MESSAGE_CONTENT*)
-					pinstance->pcontent)->proplist, &propval);
+				if(!tpropval_array_set_propval(&((MESSAGE_CONTENT*)
+					pinstance->pcontent)->proplist, &propval))
+					return FALSE;
 			}
 		}
 	}
@@ -1702,6 +1709,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	if (NULL == pmsgctnt) {
 		return FALSE;	
 	}
+	std::unique_ptr<MESSAGE_CONTENT, msg_delete> upmsgctnt(pmsgctnt);
 	pbin = static_cast<BINARY *>(tpropval_array_get_propval(&pmsgctnt->proplist,
 	       PROP_TAG_SENTREPRESENTINGENTRYID));
 	if (NULL != pbin && NULL == tpropval_array_get_propval(
@@ -1713,24 +1721,28 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 				pbin, address_type, tmp_buff)) {
 				propval.proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
 				propval.pvalue = address_type;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 				propval.pvalue = tmp_buff;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			if (TRUE == common_util_addressbook_entryid_to_essdn(
 				pbin, tmp_buff)) {
 				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 				propval.pvalue = tmp_buff;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			if (TRUE == common_util_addressbook_entryid_to_username(
 				pbin, tmp_buff)) {
 				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 				propval.pvalue = tmp_buff;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 			}
 		}
 	}
@@ -1745,24 +1757,28 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 				pbin, address_type, tmp_buff)) {
 				propval.proptag = PROP_TAG_SENDERADDRESSTYPE;
 				propval.pvalue = address_type;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
 				propval.pvalue = tmp_buff;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			if (TRUE == common_util_addressbook_entryid_to_essdn(
 				pbin, tmp_buff)) {
 				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
 				propval.pvalue = tmp_buff;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			if (TRUE == common_util_addressbook_entryid_to_username(
 				pbin, tmp_buff)) {
 				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
 				propval.pvalue = tmp_buff;
-				tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+					return FALSE;
 			}
 		}
 	}
@@ -1776,7 +1792,6 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
 	                pmsgctnt, pe_result);
 	common_util_set_tls_var(NULL);
-	message_content_free(pmsgctnt);
 	return b_result;
 }
 	
