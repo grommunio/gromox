@@ -3640,7 +3640,8 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		propval.proptag = PROP_TAG_INCONFLICT;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
-		tpropval_array_set_propval(&pattachment->proplist, &propval);
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			/* ignore; reevaluate another time */;
 	} else {
 		if (NULL == pmsg->children.pattachments) {
 			pattachments = attachment_list_init();
@@ -3671,7 +3672,8 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	propval.proptag = PROP_TAG_INCONFLICT;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	tpropval_array_set_propval(&pattachment->proplist, &propval);
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		/* ignore; reevaluate */;
 	propval.proptag = PROP_TAG_MESSAGESTATUS;
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_MESSAGESTATUS);
@@ -3682,6 +3684,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		*(uint32_t*)pvalue |= MESSAGE_STATUS_IN_CONFLICT;
 		propval.pvalue = pvalue;
 	}
-	tpropval_array_set_propval(&pmsg->proplist, &propval);
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+		/* ignore; reevaluate */;
 	return TRUE;
 }
