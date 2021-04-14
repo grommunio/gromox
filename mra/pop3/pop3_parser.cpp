@@ -3,6 +3,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <cerrno>
+#include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -53,8 +54,7 @@ static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
-static pthread_mutex_t *g_ssl_mutex_buf;
-
+static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
 void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls,
@@ -86,9 +86,9 @@ static void pop3_parser_ssl_locking(int mode,
 	int n, const char *file, int line)
 {
 	if (mode & CRYPTO_LOCK)
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+		g_ssl_mutex_buf[n].lock();
 	else
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+		g_ssl_mutex_buf[n].unlock();
 }
 
 static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
@@ -143,13 +143,11 @@ int pop3_parser_run()
 			return -4;
 		}
 
-		g_ssl_mutex_buf = static_cast<pthread_mutex_t *>(malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t)));
-		if (NULL == g_ssl_mutex_buf) {
+		try {
+			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
+		} catch (const std::bad_alloc &) {
 			printf("[pop3_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
-		}
-		for (i=0; i<CRYPTO_num_locks(); i++) {
-			pthread_mutex_init(&g_ssl_mutex_buf[i], NULL);
 		}
 		CRYPTO_THREADID_set_callback(pop3_parser_ssl_id);
 		CRYPTO_set_locking_callback(pop3_parser_ssl_locking);
@@ -194,11 +192,7 @@ int pop3_parser_stop()
 	if (TRUE == g_support_stls && NULL != g_ssl_mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
-		for (i=0; i<CRYPTO_num_locks(); i++) {
-			pthread_mutex_destroy(&g_ssl_mutex_buf[i]);
-		}
-		free(g_ssl_mutex_buf);
-		g_ssl_mutex_buf = NULL;
+		g_ssl_mutex_buf.reset();
 	}
     return 0;
 }
