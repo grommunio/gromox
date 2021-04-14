@@ -1,3 +1,25 @@
+0.20 (2021-04-14)
+=================
+Enhancements:
+* daemons: SIGHUP support / `systemctl reload` is now possible for
+  a general reload action
+* http: much speedier shutdown, and hence `systemctl restart`
+* exchange_nsp: reload now causes the Outlook-facing AB cache to empty
+* domain_list: reload now causes rereading of domain_list.txt
+* alias_translator: reload now causes rereading of alias_addresses.txt
+* adaptor: reload now causes immediate regeneration of all txt files
+  that adaptor would normally generate only periodocally
+* mysql_adaptor: the "schema_upgrades" config gained an option for "host:"
+Fixes:
+* exmdb_provider: the wrong store quota property was evaluated when
+  copying/moving messages
+* exmdb_provider: fix a mutex double unlock
+* exchange_emsmdb: fix a crash during rop_getpropertiesall
+* mod_proxy: fix an out-of-bounds access while parsing proxy.txt
+* imap: fix a double-free that occurred during shutdown
+* lib: fix use-after-destruction near ext_buffer_push_release
+
+
 0.19 (2021-03-30)
 =================
 Changes:
