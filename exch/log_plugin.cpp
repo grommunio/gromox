@@ -2,6 +2,7 @@
 #define DECLARE_API_STATIC
 #include <atomic>
 #include <cerrno>
+#include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -43,8 +44,7 @@ static char g_file_name[256];
 static char g_file_suffix[256];
 static char g_log_dir[256];
 static pthread_t g_thread_id;
-static pthread_mutex_t g_buffer_lock;
-static pthread_mutex_t g_redirect_lock;
+static std::mutex g_buffer_lock, g_redirect_lock;
 
 static void log_plugin_cache_log(const char *log, int length);
 static BOOL log_plugin_flush_log();
@@ -84,18 +84,6 @@ static void log_plugin_init(const char *log_file_name,
 		memcpy(g_log_dir, log_file_name, psearch - log_file_name);
 		g_log_dir[psearch - log_file_name] = '\0';
 	}
-	
-	pthread_mutex_init(&g_buffer_lock, NULL);
-	pthread_mutex_init(&g_redirect_lock, NULL);
-}
-
-/*
- *	log plugin's destruct function
- */
-static void log_plugin_free()
-{
-	pthread_mutex_destroy(&g_buffer_lock);
-	pthread_mutex_destroy(&g_redirect_lock);
 }
 
 /*
@@ -187,13 +175,12 @@ static void log_plugin_log_info(unsigned int level, const char *format, ...)
 	log_plugin_cache_log(log_buf, len);
 
 	/* log redirect operation */
-	pthread_mutex_lock(&g_redirect_lock);
+	std::lock_guard rd_hold(g_redirect_lock);
 	if (NULL != g_redirect_fp) {
 		fd = fileno(g_redirect_fp);
 		write(fd, log_buf, len);
 		fsync(fd);
 	}
-	pthread_mutex_unlock(&g_redirect_lock);
 }
 
 /*
@@ -328,9 +315,9 @@ static void log_plugin_console_talk(int argc, char **argv, char *result, int len
 		}
 	}
 	if (2 == argc && 0 == strcmp("flush", argv[1])) {
-		pthread_mutex_lock(&g_buffer_lock);
+		std::unique_lock bf_hold(g_buffer_lock);
 		flush_result = log_plugin_flush_log();
-		pthread_mutex_unlock(&g_buffer_lock);
+		bf_hold.unlock();
 		if (FALSE == flush_result) {
 			strncpy(result, "550 flush failed", length);
 		} else {
@@ -398,9 +385,8 @@ static int log_plugin_open_redirect(const char *filename)
 		return REDIRECT_FAIL_OPEN;
 	}
 	HX_strlcpy(g_redirect_name, filename, GX_ARRAY_SIZE(g_redirect_name));
-	pthread_mutex_lock(&g_redirect_lock);
+	std::lock_guard rd_hold(g_redirect_lock);
 	g_redirect_fp = fp;
-	pthread_mutex_unlock(&g_redirect_lock);
 	return REDIRECT_OPEN_OK;
 }
 
@@ -420,14 +406,13 @@ static int log_plugin_close_redirect()
 	}
 	
 	strcpy(g_redirect_name, "off");
-	pthread_mutex_lock(&g_redirect_lock);
+	std::lock_guard rd_hold(g_redirect_lock);
 	if (0 != fclose(g_redirect_fp)) {
 		ret_value = REDIRECT_FAIL_CLOSE;
 	} else {
 		ret_value = REDIRECT_CLOSE_OK;
 		g_redirect_fp = NULL;
 	}
-	pthread_mutex_unlock(&g_redirect_lock);
 	return ret_value;
 }
 
@@ -442,16 +427,14 @@ static void log_plugin_cache_log(const char *log, int length)
 {
 		   
 	if (g_current_size + length > g_log_buf_size) {
-		pthread_mutex_lock(&g_buffer_lock);
+		std::lock_guard bf_hold(g_buffer_lock);
 		if (g_current_size + length > g_log_buf_size) {
 			log_plugin_flush_log();
 		}
-		pthread_mutex_unlock(&g_buffer_lock);
 	}
-	pthread_mutex_lock(&g_buffer_lock);
+	std::lock_guard bf_hold(g_buffer_lock);
 	memcpy(g_log_buf_ptr + g_current_size, log, length);
 	g_current_size += length;
-	pthread_mutex_unlock(&g_buffer_lock);
 }
 
 /*
@@ -578,7 +561,6 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 	}
 	case PLUGIN_FREE:
 		log_plugin_stop();
-		log_plugin_free();
 		return TRUE;
 	}
 	return TRUE;

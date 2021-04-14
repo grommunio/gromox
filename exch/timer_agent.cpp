@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cerrno>
 #include <csignal>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -42,7 +43,7 @@ static std::atomic<bool> g_notify_stop{false};
 static char g_timer_ip[40];
 static int g_timer_port;
 static pthread_t g_scan_id;
-static pthread_mutex_t g_back_lock;
+static std::mutex g_back_lock;
 static DOUBLE_LIST g_back_list;
 static DOUBLE_LIST g_lost_list;
 
@@ -70,8 +71,6 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 		g_notify_stop = true;
 		double_list_init(&g_back_list);
 		double_list_init(&g_lost_list);
-
-		pthread_mutex_init(&g_back_lock, NULL);
 		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
@@ -156,9 +155,6 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 				free(pback);
 			}
 		}
-
-		pthread_mutex_destroy(&g_back_lock);
-
 		double_list_free(&g_lost_list);
 		double_list_free(&g_back_list);
 
@@ -182,7 +178,7 @@ static void *scan_work_func(void *param)
 
 	double_list_init(&temp_list);
 	while (!g_notify_stop) {
-		pthread_mutex_lock(&g_back_lock);
+		std::unique_lock bk_hold(g_back_lock);
 		time(&now_time);
 		ptail = double_list_get_tail(&g_back_list);
 		while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
@@ -197,7 +193,7 @@ static void *scan_work_func(void *param)
 				break;
 			}
 		}
-		pthread_mutex_unlock(&g_back_lock);
+		bk_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
@@ -209,34 +205,34 @@ static void *scan_work_func(void *param)
 				read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
-				pthread_mutex_lock(&g_back_lock);
+				bk_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pback->node);
-				pthread_mutex_unlock(&g_back_lock);
+				bk_hold.unlock();
 			} else {
 				time(&pback->last_time);
-				pthread_mutex_lock(&g_back_lock);
+				bk_hold.lock();
 				double_list_append_as_tail(&g_back_list, &pback->node);
-				pthread_mutex_unlock(&g_back_lock);
+				bk_hold.unlock();
 			}
 		}
 
-		pthread_mutex_lock(&g_back_lock);
+		bk_hold.lock();
 		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
 			double_list_append_as_tail(&temp_list, pnode);
-		pthread_mutex_unlock(&g_back_lock);
+		bk_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			pback = (BACK_CONN*)pnode->pdata;
 			pback->sockd = connect_timer();
 			if (-1 != pback->sockd) {
 				time(&pback->last_time);
-				pthread_mutex_lock(&g_back_lock);
+				bk_hold.lock();
 				double_list_append_as_tail(&g_back_list, &pback->node);
-				pthread_mutex_unlock(&g_back_lock);
+				bk_hold.unlock();
 			} else {
-				pthread_mutex_lock(&g_back_lock);
+				bk_hold.lock();
 				double_list_append_as_tail(&g_lost_list, &pback->node);
-				pthread_mutex_unlock(&g_back_lock);
+				bk_hold.unlock();
 			}
 		}
 		sleep(1);
@@ -251,38 +247,33 @@ static int add_timer(const char *command, int interval)
 	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_CMD_LENGTH];
 
-	
-	pthread_mutex_lock(&g_back_lock);
+	std::unique_lock bk_hold(g_back_lock);
 	pnode = double_list_pop_front(&g_back_list);
-	pthread_mutex_unlock(&g_back_lock);
-
 	if (NULL == pnode) {
 		return 0;
 	}
-
+	bk_hold.unlock();
 	pback = (BACK_CONN*)pnode->pdata;
 	len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), "ADD %d %s\r\n",
 			interval, command);
 	if (len != write(pback->sockd, temp_buff, len)) {
 		close(pback->sockd);
 		pback->sockd = -1;
-		pthread_mutex_lock(&g_back_lock);
+		bk_hold.lock();
 		double_list_append_as_tail(&g_lost_list, &pback->node);
-		pthread_mutex_unlock(&g_back_lock);
 		return 0;
 	}
 	if (0 != read_line(pback->sockd, temp_buff, 1024)) {
 		close(pback->sockd);
 		pback->sockd = -1;
-		pthread_mutex_lock(&g_back_lock);
+		bk_hold.lock();
 		double_list_append_as_tail(&g_lost_list, &pback->node);
-		pthread_mutex_unlock(&g_back_lock);
 		return 0;
 	}
 	time(&pback->last_time);
-	pthread_mutex_lock(&g_back_lock);
+	bk_hold.lock();
 	double_list_append_as_tail(&g_back_list, &pback->node);
-	pthread_mutex_unlock(&g_back_lock);
+	bk_hold.unlock();
 	if (0 == strncasecmp(temp_buff, "TRUE ", 5)) {
 		return atoi(temp_buff + 5);
 	}
@@ -296,37 +287,32 @@ static BOOL cancel_timer(int timer_id)
 	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_CMD_LENGTH];
 
-	
-	pthread_mutex_lock(&g_back_lock);
+	std::unique_lock bk_hold(g_back_lock);
 	pnode = double_list_pop_front(&g_back_list);
-	pthread_mutex_unlock(&g_back_lock);
-
 	if (NULL == pnode) {
 		return FALSE;
 	}
-
+	bk_hold.unlock();
 	pback = (BACK_CONN*)pnode->pdata;
 	len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), "CANCEL %d\r\n", timer_id);
 	if (len != write(pback->sockd, temp_buff, len)) {
 		close(pback->sockd);
 		pback->sockd = -1;
-		pthread_mutex_lock(&g_back_lock);
+		bk_hold.lock();
 		double_list_append_as_tail(&g_lost_list, &pback->node);
-		pthread_mutex_unlock(&g_back_lock);
 		return FALSE;
 	}
 	if (0 != read_line(pback->sockd, temp_buff, 1024)) {
 		close(pback->sockd);
 		pback->sockd = -1;
-		pthread_mutex_lock(&g_back_lock);
+		bk_hold.lock();
 		double_list_append_as_tail(&g_lost_list, &pback->node);
-		pthread_mutex_unlock(&g_back_lock);
 		return FALSE;
 	}
 	time(&pback->last_time);
-	pthread_mutex_lock(&g_back_lock);
+	bk_hold.lock();
 	double_list_append_as_tail(&g_back_list, &pback->node);
-	pthread_mutex_unlock(&g_back_lock);
+	bk_hold.unlock();
 	if (0 == strcasecmp(temp_buff, "TRUE")) {
 		return TRUE;
 	}

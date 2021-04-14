@@ -8,6 +8,7 @@
  *  it will never pass through this module.
  *
  */
+#include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "str_filter.h"
@@ -33,7 +34,7 @@ static STR_HASH_TABLE *g_audit_hash;
 static int g_audit_num;
 static int g_audit_interval;         /*  connecting times  per interval */ 
 static int g_max_within_interval;    /*  max times within the interval  */  
-static pthread_mutex_t g_audit_mutex_lock;
+static std::mutex g_audit_mutex_lock;
 static BOOL g_case_sensitive;
 
 
@@ -53,7 +54,6 @@ void audit_filter_init(BOOL case_sensitive, int audit_num, int audit_interval,
     g_audit_num             = audit_num;
     g_audit_interval        = audit_interval;
     g_max_within_interval   = audit_times;
-	pthread_mutex_init(&g_audit_mutex_lock, NULL);
 }
 
 int audit_filter_run()
@@ -113,11 +113,6 @@ int audit_filter_stop()
     return 0;
 }
 
-void audit_filter_free()
-{
-	pthread_mutex_destroy(&g_audit_mutex_lock);
-}
-
 /*
  *  query and audit string in audit hash map
  *  @param  
@@ -140,7 +135,7 @@ BOOL audit_filter_judge(const char *str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);	
 	}
-	pthread_mutex_lock(&g_audit_mutex_lock); 
+	std::lock_guard am_hold(g_audit_mutex_lock); 
     paudit = (STR_AUDIT*)str_hash_query(g_audit_hash, temp_string);
     gettimeofday(&current_time, NULL);                  
     if (NULL != paudit) {
@@ -161,11 +156,9 @@ BOOL audit_filter_judge(const char *str)
             } else {
 				paudit->times ++;
                 paudit->last_time_stamp = current_time;
-				pthread_mutex_unlock(&g_audit_mutex_lock);
                 return FALSE;  
             }
         }
-		pthread_mutex_unlock(&g_audit_mutex_lock);
         return TRUE;
     }
     /* paduit == NULL, not found in the str_hash_table */
@@ -177,12 +170,10 @@ BOOL audit_filter_judge(const char *str)
             /* still cannot find one unit for auditing, give up */
             debug_info("[str_filter]: still cannot find one unit "
                         "for auditing, give up");
-			pthread_mutex_unlock(&g_audit_mutex_lock);
             return TRUE;
         }
         str_hash_add(g_audit_hash, temp_string, &new_audit);
     }
-	pthread_mutex_unlock(&g_audit_mutex_lock);
     return TRUE;
 }
 
@@ -208,23 +199,19 @@ BOOL audit_filter_query(const char *str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);	
 	}
-	pthread_mutex_lock(&g_audit_mutex_lock); 
+	std::lock_guard am_hold(g_audit_mutex_lock);
 	gettimeofday(&current_time, NULL);
     paudit = (STR_AUDIT*)str_hash_query(g_audit_hash, temp_string);
 	if (NULL == paudit) {
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return FALSE;
 	}
     if (paudit->times < g_max_within_interval) {
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return FALSE;
 	} else {
         if (CALCULATE_INTERVAL(current_time, 
             paudit->last_time_stamp) > g_audit_interval) {
-			pthread_mutex_unlock(&g_audit_mutex_lock);
 			return FALSE;
 		} else {
-			pthread_mutex_unlock(&g_audit_mutex_lock);
 			return TRUE;
 		}
 	}
@@ -285,12 +272,11 @@ BOOL audit_filter_echo(const char *str, time_t *pfirst_access,
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_mutex_lock(&g_audit_mutex_lock);
+	std::lock_guard am_hold(g_audit_mutex_lock);
     gettimeofday(&current_time, NULL);           
 	/* first remove the overdue items */
 	paudit = (STR_AUDIT*)str_hash_query(g_audit_hash, temp_string);
 	if (NULL == paudit) {
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return FALSE;
 	}
     if (paudit->times > g_max_within_interval && CALCULATE_INTERVAL(
@@ -298,10 +284,8 @@ BOOL audit_filter_echo(const char *str, time_t *pfirst_access,
 		*pfirst_access = paudit->first_time_stamp.tv_sec;
 		*plast_access = paudit->last_time_stamp.tv_sec;
 		*ptimes = paudit->times;
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return TRUE;
 	} else {
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return FALSE;
 	}
 }
@@ -326,16 +310,13 @@ BOOL audit_filter_remove_string(const char *str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_mutex_lock(&g_audit_mutex_lock);
+	std::lock_guard am_hold(g_audit_mutex_lock);
 	if (NULL == str_hash_query(g_audit_hash, temp_string)) {
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return TRUE;
 	}
 	if (str_hash_remove(g_audit_hash, temp_string) != 1) {
-		pthread_mutex_unlock(&g_audit_mutex_lock);
 		return FALSE;
 	}
-	pthread_mutex_unlock(&g_audit_mutex_lock);
 	return TRUE;
 }
 
@@ -354,7 +335,7 @@ BOOL audit_filter_dump(const char *path)
 	if (-1 == fd) {
 		return FALSE;
 	}
-	pthread_mutex_lock(&g_audit_mutex_lock);
+	std::unique_lock am_hold(g_audit_mutex_lock);
 	gettimeofday(&current_time, NULL);
     iter = str_hash_iter_init(g_audit_hash); 
     for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
@@ -389,7 +370,7 @@ BOOL audit_filter_dump(const char *path)
 		}
     }
     str_hash_iter_free(iter);
-	pthread_mutex_unlock(&g_audit_mutex_lock);
+	am_hold.unlock();
 	close(fd);
 	return TRUE;
 }

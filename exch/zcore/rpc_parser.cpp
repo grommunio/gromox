@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <mutex>
 #include <gromox/defs.h>
@@ -38,23 +39,14 @@ static int g_thread_num;
 static std::atomic<bool> g_notify_stop{false};
 static pthread_t *g_thread_ids;
 static DOUBLE_LIST g_conn_list;
-static pthread_cond_t g_waken_cond;
-static std::mutex g_conn_lock;
-static pthread_mutex_t g_cond_mutex;
+static std::condition_variable g_waken_cond;
+static std::mutex g_conn_lock, g_cond_mutex;
 static unsigned int g_zrpc_debug;
 
 void rpc_parser_init(int thread_num)
 {
 	g_notify_stop = true;
 	g_thread_num = thread_num;
-	pthread_mutex_init(&g_cond_mutex, NULL);
-	pthread_cond_init(&g_waken_cond, NULL);
-}
-
-void rpc_parser_free()
-{
-	pthread_mutex_destroy(&g_cond_mutex);
-	pthread_cond_destroy(&g_waken_cond);
 }
 
 BOOL rpc_parser_activate_connection(int clifd)
@@ -68,7 +60,7 @@ BOOL rpc_parser_activate_connection(int clifd)
 	std::unique_lock cl_hold(g_conn_lock);
 	double_list_append_as_tail(&g_conn_list, &pclient->node);
 	cl_hold.unlock();
-	pthread_cond_signal(&g_waken_cond);
+	g_waken_cond.notify_one();
 	return TRUE;
 }
 
@@ -668,9 +660,9 @@ static void *zcrp_thrwork(void *param)
 
 
  WAIT_CLIFD:
-	pthread_mutex_lock(&g_cond_mutex);
-	pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
-	pthread_mutex_unlock(&g_cond_mutex);
+	std::unique_lock cm_hold(g_cond_mutex);
+	g_waken_cond.wait(cm_hold);
+	cm_hold.unlock();
  NEXT_CLIFD:
 	std::unique_lock cl_hold(g_conn_lock);
 	pnode = double_list_pop_front(&g_conn_list);
@@ -818,7 +810,7 @@ int rpc_parser_stop()
 	int i;
 	
 	g_notify_stop = true;
-	pthread_cond_broadcast(&g_waken_cond);
+	g_waken_cond.notify_all();
 	for (i=0; i<g_thread_num; i++) {
 		pthread_join(g_thread_ids[i], NULL);
 	}

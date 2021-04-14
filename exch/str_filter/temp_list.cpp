@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "temp_list.h"
@@ -15,7 +16,7 @@ static int temp_list_collect_string_entry();
 
 /* private global variable */
 static STR_HASH_TABLE *g_string_hash;
-static pthread_mutex_t	g_string_mutex_lock;
+static std::mutex g_string_mutex_lock;
 static int				g_size;
 static BOOL				g_case_sensitive;
 
@@ -23,7 +24,6 @@ void temp_list_init(BOOL case_sensitive, int size)
 {
 	g_size = size;
 	g_case_sensitive = case_sensitive;
-	pthread_mutex_init(&g_string_mutex_lock, NULL);
 }
 
 /*
@@ -70,7 +70,6 @@ int temp_list_stop()
 void temp_list_free() 
 {
 	g_size = 0;
-	pthread_mutex_destroy(&g_string_mutex_lock);
 }
 
 /*
@@ -100,24 +99,20 @@ BOOL temp_list_add_string(const char *str, int interval)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_mutex_lock(&g_string_mutex_lock);
-	
+
+	std::lock_guard sm_hold(g_string_mutex_lock);
 	time(&current_time);
 	when = current_time + interval;
 	if (str_hash_add(g_string_hash, temp_string, &when) > 0) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return TRUE;
 	}
 	if (0 == temp_list_collect_string_entry()) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return FALSE;
 	}
 
 	if (str_hash_add(g_string_hash, temp_string, &when) > 0) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return TRUE;
 	}
-	pthread_mutex_unlock(&g_string_mutex_lock);
 	return FALSE;
 }
 
@@ -141,16 +136,14 @@ BOOL temp_list_remove_string(const char *str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_mutex_lock(&g_string_mutex_lock);
+
+	std::lock_guard sm_hold(g_string_mutex_lock);
 	if (NULL == str_hash_query(g_string_hash, temp_string)) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return TRUE;
 	}
 	if (str_hash_remove(g_string_hash, temp_string) != 1) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return FALSE;
 	}
-	pthread_mutex_unlock(&g_string_mutex_lock);
 	return TRUE;
 }
 
@@ -177,20 +170,18 @@ BOOL temp_list_query(const char *str)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_mutex_lock(&g_string_mutex_lock);
+
+	std::lock_guard sm_hold(g_string_mutex_lock);
 	pwhen = (time_t*)str_hash_query(g_string_hash, temp_string);
 	if (NULL == pwhen) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return FALSE; /* not found */
 	}
 	
 	time(&current_time);
 	if (current_time <= *pwhen) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return TRUE; /* found, in temp list */
 	}
 	str_hash_remove(g_string_hash, temp_string);
-	pthread_mutex_unlock(&g_string_mutex_lock);
 	return FALSE; /* is overdue */
 }
 
@@ -244,16 +235,15 @@ BOOL temp_list_echo(const char *str, time_t *puntil)
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
-	pthread_mutex_lock(&g_string_mutex_lock);
+
+	std::lock_guard sm_hold(g_string_mutex_lock);
 	/* first remove the overdue items */
 	temp_list_collect_string_entry();
     pwhen = (time_t*)str_hash_query(g_string_hash, temp_string);
 	if (NULL == pwhen) {
-		pthread_mutex_unlock(&g_string_mutex_lock);
 		return FALSE;
 	}
 	*puntil = *pwhen;
-	pthread_mutex_unlock(&g_string_mutex_lock);
 	return TRUE;
 }
 
@@ -272,7 +262,8 @@ BOOL temp_list_dump(const char *path)
 	if (-1 == fd) {
 		return FALSE;
 	}
-	pthread_mutex_lock(&g_string_mutex_lock);
+
+	std::unique_lock sm_hold(g_string_mutex_lock);
 	time(&current_time);
 	iter = str_hash_iter_init(g_string_hash); 
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
@@ -292,7 +283,7 @@ BOOL temp_list_dump(const char *path)
 		}
 	}
 	str_hash_iter_free(iter);
-	pthread_mutex_unlock(&g_string_mutex_lock);
+	sm_hold.unlock();
 	close(fd);
 	return TRUE;
 }

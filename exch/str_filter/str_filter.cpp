@@ -61,7 +61,6 @@ void str_filter_init(const char *module_name,
 void str_filter_free()
 {
     grey_list_free();
-    audit_filter_free();
     temp_list_free();
 }
 

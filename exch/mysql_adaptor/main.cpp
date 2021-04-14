@@ -165,7 +165,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 
     case PLUGIN_FREE:
 		mysql_adaptor_stop();
-		mysql_adaptor_free();
         return TRUE;
     }
 	return TRUE;

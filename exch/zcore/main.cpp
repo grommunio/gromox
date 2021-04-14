@@ -390,8 +390,6 @@ int main(int argc, const char **argv)
 	
 		
 	rpc_parser_init(threads_num);
-	auto cleanup_1 = make_scope_exit(rpc_parser_free);
-	
 	str_value = config_file_get_value(pconfig, "USER_TABLE_SIZE");
 	if (NULL == str_value) {
 		table_size = 5000;

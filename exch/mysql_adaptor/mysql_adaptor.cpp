@@ -5,6 +5,7 @@
 #include <cstring>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <utility>
@@ -42,7 +43,7 @@ static char g_user[256];
 static char *g_password;
 static char g_password_buff[256];
 static char g_db_name[256];
-static pthread_mutex_t g_crypt_lock;
+static std::mutex g_crypt_lock;
 static enum sql_schema_upgrade g_schema_upgrade;
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
@@ -75,7 +76,6 @@ void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 	}
 	HX_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
 	g_schema_upgrade = parm.schema_upgrade;
-	pthread_mutex_init(&g_crypt_lock, NULL);
 }
 
 static bool db_upgrade_check_2(MYSQL *conn)
@@ -152,11 +152,6 @@ int mysql_adaptor_stop()
 {
 	g_sqlconn_pool.clear();
 	return 0;
-}
-
-void mysql_adaptor_free()
-{
-	pthread_mutex_destroy(&g_crypt_lock);
 }
 
 BOOL mysql_adaptor_meta(const char *username, const char *password,
@@ -236,9 +231,9 @@ static BOOL firsttime_password(const char *username, const char *password,
 	}
 	pdomain++;
 
-	pthread_mutex_lock(&g_crypt_lock);
+	std::unique_lock cr_hold(g_crypt_lock);
 	strcpy(encrypt_passwd, md5_crypt_wrapper(password));
-	pthread_mutex_unlock(&g_crypt_lock);
+	cr_hold.unlock();
 
 	char sql_string[1024], temp_name[512];
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -310,12 +305,11 @@ static BOOL firsttime_password(const char *username, const char *password,
 static BOOL verify_password(const char *username, const char *password,
     const char *encrypt_passwd, char *reason, int length)
 {
-		pthread_mutex_lock(&g_crypt_lock);
+	std::unique_lock cr_hold(g_crypt_lock);
 		if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
-			pthread_mutex_unlock(&g_crypt_lock);
 			return TRUE;
 		} else {
-			pthread_mutex_unlock(&g_crypt_lock);
+			cr_hold.unlock();
 			snprintf(reason, length, "password error, please check it "
 				"and retry");
 			return FALSE;
@@ -378,24 +372,21 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
 	
-	pthread_mutex_lock(&g_crypt_lock);
+	std::unique_lock cr_hold(g_crypt_lock);
 	if ('\0' != encrypt_passwd[0] && 0 != strcmp(crypt(
 		password, encrypt_passwd), encrypt_passwd)) {
-		pthread_mutex_unlock(&g_crypt_lock);
 		return FALSE;
 	}
-	pthread_mutex_unlock(&g_crypt_lock);
-	
+	cr_hold.unlock();
 	pdomain = strchr(username, '@');
 	if (NULL == pdomain) {
 		return FALSE;
 	}
 	pdomain ++;
-	
-	pthread_mutex_lock(&g_crypt_lock);
-	HX_strlcpy(encrypt_passwd, md5_crypt_wrapper(new_password), GX_ARRAY_SIZE(encrypt_passwd));
-	pthread_mutex_unlock(&g_crypt_lock);
 
+	cr_hold.lock();
+	HX_strlcpy(encrypt_passwd, md5_crypt_wrapper(new_password), GX_ARRAY_SIZE(encrypt_passwd));
+	cr_hold.unlock();
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 			" WHERE username='%s'", encrypt_passwd, temp_name);
 	if (!conn.res.query(sql_string))
