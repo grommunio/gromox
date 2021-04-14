@@ -6,6 +6,7 @@
  *	The comments is start with '#' at the leading of each comment line
  *
  */
+#include <algorithm>
 #include <cerrno>
 #include <memory>
 #include <libHX/defs.h>
@@ -316,114 +317,18 @@ BOOL config_file_set_value(std::shared_ptr<CONFIG_FILE> cfg_file,
 	return TRUE;
 }
 
-BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg_file)
+BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg)
 {
-	size_t i, size, len, written;
-	struct stat node_stat;
-	char *ptr, *psearch;
-	char *plf, *psharp;
-	char *pequal = nullptr, *plf2 = nullptr;
-
-	for (i=0; i<cfg_file->num_entries; i++) {
-		if (TRUE == cfg_file->config_table[i].is_touched) {
-			break;
-		}
-	}
-	if (i == cfg_file->num_entries) {
+	auto tbl = cfg->config_table;
+	if (std::none_of(&tbl[0], &tbl[cfg->num_entries],
+	    [&](const CONFIG_ENTRY &x) { return x.is_touched; }))
 		return TRUE;
-	}
-	if (0 != stat(cfg_file->file_name, &node_stat) ||
-		0 == S_ISREG(node_stat.st_mode)) {
+	std::unique_ptr<FILE, file_deleter> fp(fopen(cfg->file_name, "w"));
+	if (fp == nullptr)
 		return FALSE;
-	}
-	auto pbuff = static_cast<char *>(malloc(node_stat.st_size + MAX_LINE_LEN * EXT_ENTRY_NUM));
-	if (NULL == pbuff) {
-		return FALSE;
-	}
-	auto fd = open(cfg_file->file_name, O_RDWR);
-	if (-1 == fd) {
-		free(pbuff);
-		return FALSE;
-	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		free(pbuff);
-		close(fd);
-		return FALSE;
-	}
-	size = node_stat.st_size;
-	for (i=0; i<cfg_file->num_entries; i++) {
-		if (FALSE == cfg_file->config_table[i].is_touched) {
-			continue;
-		}
-		psearch = pbuff - 1;
-		while ((psearch = search_string(psearch + 1,
-		       cfg_file->config_table[i].keyname, size)) != NULL) {
-			plf = (char*)memrchr(pbuff, '\n', psearch - pbuff);
-			psharp = (char*)memrchr(pbuff, '#', psearch - pbuff);
-			if (NULL == psharp || psharp < plf) {
-				pequal = static_cast<char *>(memchr(psearch, '=', size - (psearch - pbuff)));
-				if (NULL == pequal) {
-					continue;
-				}
-				plf2 = static_cast<char *>(memchr(psearch, '\n', size - (psearch - pbuff)));
-				if (NULL == plf2) {
-					plf2 = pbuff + size;
-				}
-				psharp = static_cast<char *>(memchr(psearch, '#', size - (psearch - pbuff)));
-				if (NULL == psharp) {
-					psharp = pbuff + size;
-				}
-				if (plf2 < pequal || psharp < pequal) {
-					continue;
-				}
-				for (ptr=psearch+strlen(cfg_file->config_table[i].keyname);
-					ptr<pequal; ptr++) {
-					if (*ptr != ' ' && *ptr != '\t') {
-						break;
-					}
-				}
-				if (ptr == pequal) {
-					break;
-				}
-			}
-		}
-		if (NULL == psearch) {
-			if ('\n' != pbuff[size - 1]) {
-				pbuff[size] = '\n';
-				size ++;
-			}
-			len = strlen(cfg_file->config_table[i].keyname);
-			memcpy(pbuff + size, cfg_file->config_table[i].keyname, len);
-			size += len;
-			memcpy(pbuff + size, " = ", 3);
-			size += 3;
-			len = strlen(cfg_file->config_table[i].value);
-			memcpy(pbuff + size, cfg_file->config_table[i].value, len);
-			size += len;
-		} else {
-			len = strlen(cfg_file->config_table[i].value);
-			if (len < static_cast<size_t>(plf2 - pequal - 1)) {
-				pequal[1] = ' ';
-				memcpy(pequal + 2, cfg_file->config_table[i].value, len);
-				memset (pequal + 2 + len, ' ', plf2 - pequal - 2 - len);
-			} else {
-				memmove(pequal + len + 2, plf2, size - (plf2 - pbuff));
-				pequal[1] = ' ';
-				memcpy(pequal + 2, cfg_file->config_table[i].value, len);
-				size += len + 1 - (plf2 - pequal - 1);
-			}
-		}
-		cfg_file->config_table[i].is_touched = FALSE;
-	}
-	lseek(fd, 0, SEEK_SET);
-	written = write(fd, pbuff, size);
-	free(pbuff);
-	close(fd);
-	if (written != size ) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	for (size_t i = 0; i < cfg->num_entries; ++i)
+		fprintf(fp.get(), "%s = %s\n", tbl[i].keyname, tbl[i].value);
+	return TRUE;
 }
 
 BOOL config_file_get_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int *value)
