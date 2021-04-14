@@ -12,6 +12,7 @@ dependencies are needed:
 * libHX
 * Linux-PAM
 * MariaDB Connector/C or compatible
+* OpenLDAP or similar headers
 * OpenSSL or compatible
 * PHP 7/8 headers
 * SQLite3
