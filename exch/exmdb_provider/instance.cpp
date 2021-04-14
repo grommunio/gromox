@@ -3647,6 +3647,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 			if (NULL == pattachments) {
 				return FALSE;
 			}
+			pmsg->children.pattachments = pattachments;
 		} else {
 			pattachments = pmsg->children.pattachments;
 		}
