@@ -293,7 +293,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		if (!message_object_get_properties(msg, size_limit,
 		    ptmp_proptags, ppropvals))
 			return ecError;
-		cpid = attachment_object_get_cpid(static_cast<ATTACHMENT_OBJECT *>(pobject));
+		cpid = message_object_get_cpid(msg);
 		break;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
