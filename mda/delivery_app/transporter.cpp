@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
+#include <condition_variable>
 #include <cstring>
+#include <mutex>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -128,10 +130,9 @@ static SINGLE_LIST		g_queue_list;
 static DOUBLE_LIST		g_lib_list;
 static DOUBLE_LIST		 g_hook_list;
 static DOUBLE_LIST		 g_unloading_list;
-static pthread_mutex_t	 g_free_threads_mutex;
-static pthread_mutex_t	 g_threads_list_mutex;
-static pthread_mutex_t	 g_context_lock;
-static pthread_mutex_t	 g_queue_lock;
+static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
+static std::mutex g_queue_lock, g_cond_mutex, g_mpc_list_lock, g_count_lock;
+static std::condition_variable g_waken_cond;
 static pthread_key_t	 g_tls_key;
 static pthread_t		 g_scan_id;
 static LIB_BUFFER		 *g_file_allocator;
@@ -140,10 +141,6 @@ static THREAD_DATA		 *g_data_ptr;
 static FREE_CONTEXT		 *g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
 static CIRCLE_NODE		 *g_circles_ptr;
-static pthread_cond_t	 g_waken_cond;
-static pthread_mutex_t	 g_cond_mutex;
-static pthread_mutex_t	 g_mpc_list_lock;
-static pthread_mutex_t	 g_count_lock;
 static bool g_ign_loaderr;
 
 static void transporter_collect_resource();
@@ -198,20 +195,12 @@ void transporter_init(const char *path, const char *const *names,
 	g_domainlist_valid = dm_valid;
 	g_ign_loaderr = ignerr;
 	single_list_init(&g_free_list);
-	pthread_mutex_init(&g_context_lock, NULL);
-	pthread_mutex_init(&g_queue_lock, NULL);
 	double_list_init(&g_hook_list);
 	double_list_init(&g_lib_list);
 	double_list_init(&g_unloading_list);
 	pthread_key_create(&g_tls_key, NULL);
-	pthread_cond_init(&g_waken_cond, NULL);
-	pthread_mutex_init(&g_cond_mutex, NULL);
 	double_list_init(&g_threads_list);
 	double_list_init(&g_free_threads);
-	pthread_mutex_init(&g_threads_list_mutex, NULL);
-	pthread_mutex_init(&g_free_threads_mutex, NULL);
-	pthread_mutex_init(&g_mpc_list_lock, NULL);
-	pthread_mutex_init(&g_count_lock, NULL);
 }
 
 /*
@@ -348,7 +337,7 @@ int transporter_run()
 	pthread_setname_np(g_scan_id, "xprt/scan");
     pthread_attr_destroy(&attr);
 	/* make all thread wake up */
-	pthread_cond_broadcast(&g_waken_cond);
+	g_waken_cond.notify_all();
 	return 0;
 }
 
@@ -415,13 +404,13 @@ int transporter_stop()
 	THREAD_DATA *pthr;
 
 	g_notify_stop = true;
-	pthread_mutex_lock(&g_threads_list_mutex);
+	std::unique_lock tl_hold(g_threads_list_mutex);
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
 		pthr = (THREAD_DATA*)pnode->pdata;
-		pthread_cond_broadcast(&g_waken_cond);
+		g_waken_cond.notify_all();
         pthread_cancel(pthr->id);
 	}
-	pthread_mutex_unlock(&g_threads_list_mutex);
+	tl_hold.unlock();
 	pthread_cancel(g_scan_id);
 	transporter_collect_hooks();
 	for (size_t i = 0; i < g_threads_max; ++i)
@@ -443,20 +432,12 @@ void transporter_free()
 	g_threads_max = 0;
 	g_mime_num = 0;
 	single_list_free(&g_free_list);
-	pthread_mutex_destroy(&g_context_lock);
-	pthread_mutex_destroy(&g_queue_lock);
 	double_list_free(&g_hook_list);
 	double_list_free(&g_lib_list);
 	double_list_free(&g_unloading_list);
 	pthread_key_delete(g_tls_key);
-	pthread_cond_destroy(&g_waken_cond);
-	pthread_mutex_destroy(&g_cond_mutex);
 	double_list_free(&g_threads_list);
 	double_list_free(&g_free_threads);
-	pthread_mutex_destroy(&g_threads_list_mutex);
-	pthread_mutex_destroy(&g_free_threads_mutex);
-	pthread_mutex_destroy(&g_mpc_list_lock);
-	pthread_mutex_destroy(&g_count_lock);
 }
 
 /*
@@ -464,7 +445,7 @@ void transporter_free()
  */
 void transporter_wakeup_one_thread()
 {
-	pthread_cond_signal(&g_waken_cond);
+	g_waken_cond.notify_one();
 }
 
 /*
@@ -484,10 +465,10 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	 *	first get the head and tail of list, this will be thread safe because 
 	 *	the list is growing list, all new nodes will be appended at tail
 	 */
-	pthread_mutex_lock(&g_mpc_list_lock);
+	std::unique_lock ml_hold(g_mpc_list_lock);
 	phead = double_list_get_head(&g_hook_list);
 	ptail = double_list_get_tail(&g_hook_list);
-	pthread_mutex_unlock(&g_mpc_list_lock);
+	ml_hold.unlock();
 	
 	hook_result = FALSE;
 	for (pnode=phead; NULL!=pnode;
@@ -499,15 +480,15 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 				goto NEXT_LOOP;
 			}
 			pthr_data->last_hook = phook->hook_addr;
-			pthread_mutex_lock(&g_count_lock);
+			std::unique_lock ct_hold(g_count_lock);
 			phook->count ++;
-			pthread_mutex_unlock(&g_count_lock);
+			ct_hold.unlock();
 			mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 				MEM_FILE_SEEK_BEGIN);
 			hook_result = phook->hook_addr(pcontext);
-			pthread_mutex_lock(&g_count_lock);
+			ct_hold.lock();
 			phook->count --;
-			pthread_mutex_unlock(&g_count_lock);
+			ct_hold.unlock();
 			if (TRUE == hook_result) {
 				break;
 			}
@@ -557,9 +538,8 @@ static void *dxp_thrwork(void *arg)
 	}
 	cannot_served_times = 0;
 	if (TRUE == pthr_data->wait_on_event) {
-		pthread_mutex_lock(&g_cond_mutex);
-		pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
-		pthread_mutex_unlock(&g_cond_mutex);
+		std::unique_lock cm_hold(g_cond_mutex);
+		g_waken_cond.wait(cm_hold);
 	}
 	
 	while (!g_notify_stop) {
@@ -572,11 +552,11 @@ static void *dxp_thrwork(void *arg)
 					sleep(1);
 				/* decrease threads pool */
 				} else {
-					pthread_mutex_lock(&g_threads_list_mutex);
+					std::unique_lock tl_hold(g_threads_list_mutex);
 					if (double_list_get_nodes_num(&g_threads_list) >
 						g_threads_min) {
 						double_list_remove(&g_threads_list, &pthr_data->node);
-						pthread_mutex_unlock(&g_threads_list_mutex);
+						tl_hold.unlock();
 						for (pnode=double_list_get_head(&g_lib_list);
 							NULL!=pnode;
 							pnode=double_list_get_after(&g_lib_list, pnode)) {
@@ -584,17 +564,15 @@ static void *dxp_thrwork(void *arg)
 							((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_DESTROY,
 														  NULL);
 						}
-						pthread_mutex_lock(&g_free_threads_mutex);
+						std::unique_lock ft_hold(g_free_threads_mutex);
 						double_list_append_as_tail(&g_free_threads,
 							&pthr_data->node);
-						pthread_mutex_unlock(&g_free_threads_mutex);
+						ft_hold.unlock();
 						pthread_detach(pthread_self());
 						return nullptr;
 					}
-					pthread_mutex_unlock(&g_threads_list_mutex);
-					pthread_mutex_lock(&g_cond_mutex);
-					pthread_cond_wait(&g_waken_cond, &g_cond_mutex);
-					pthread_mutex_unlock(&g_cond_mutex);
+					std::unique_lock cm_hold(g_cond_mutex);
+					g_waken_cond.wait(cm_hold);
 				}
 				continue;
 			}
@@ -666,16 +644,15 @@ static void *dxp_scanwork(void *arg)
 	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);
 		if (0 != message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING)) {
-			pthread_mutex_lock(&g_threads_list_mutex);
+			std::unique_lock tl_hold(g_threads_list_mutex);
 			if (g_threads_max==double_list_get_nodes_num(&g_threads_list)) {
-				pthread_mutex_unlock(&g_threads_list_mutex);
 				continue;
 			}
-			pthread_mutex_unlock(&g_threads_list_mutex);
+			tl_hold.unlock();
 			/* get a thread data node from free list */
-			pthread_mutex_lock(&g_free_threads_mutex);
+			std::unique_lock ft_hold(g_free_threads_mutex);
 			pnode = double_list_pop_front(&g_free_threads);
-			pthread_mutex_unlock(&g_free_threads_mutex);
+			ft_hold.unlock();
 			if (NULL == pnode) {
 				continue;
 			}
@@ -684,13 +661,13 @@ static void *dxp_scanwork(void *arg)
 			pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 			if (pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data) == 0) {
 				pthread_setname_np(pthr_data->id, "xprt/+");
-				pthread_mutex_lock(&g_threads_list_mutex);
+				tl_hold.lock();
 				double_list_append_as_tail(&g_threads_list, &pthr_data->node);
-				pthread_mutex_unlock(&g_threads_list_mutex);
+				tl_hold.unlock();
 			} else {
-				pthread_mutex_lock(&g_free_threads_mutex);
+				tl_hold.lock();
 				double_list_append_as_tail(&g_free_threads, &pthr_data->node);
-				pthread_mutex_unlock(&g_free_threads_mutex);
+				tl_hold.unlock();
 			}
 			pthread_attr_destroy(&attr);
 		}
@@ -977,9 +954,9 @@ static MESSAGE_CONTEXT* transporter_get_context()
 	SINGLE_LIST_NODE *pnode;
 	MESSAGE_CONTEXT *pcontext;
 
-	pthread_mutex_lock(&g_context_lock);
+	std::unique_lock ctx_hold(g_context_lock);
 	pnode = single_list_pop_front(&g_free_list);	
-	pthread_mutex_unlock(&g_context_lock);
+	ctx_hold.unlock();
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -1007,9 +984,8 @@ static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 	mail_clear(pcontext->pmail);	
 	pnode = (SINGLE_LIST_NODE*)((char*)pcontext -
 				(long)(&((FREE_CONTEXT*)0)->context));
-	pthread_mutex_lock(&g_context_lock);
+	std::lock_guard ctx_hold(g_context_lock);
     single_list_append_as_tail(&g_free_list, pnode);
-    pthread_mutex_unlock(&g_context_lock);
 }
 
 /*
@@ -1029,11 +1005,11 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 	}
 	pnode = (SINGLE_LIST_NODE*)((char*)pcontext -
 				(long)(&((FREE_CONTEXT*)0)->context));
-	pthread_mutex_lock(&g_queue_lock);
+	std::unique_lock q_hold(g_queue_lock);
     single_list_append_as_tail(&g_queue_list, pnode);
-    pthread_mutex_unlock(&g_queue_lock);
+	q_hold.unlock();
 	/* wake up one thread */
-	pthread_cond_signal(&g_waken_cond);
+	g_waken_cond.notify_one();
 }
 
 /*
@@ -1045,9 +1021,9 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
 {
 	SINGLE_LIST_NODE *pnode;
 
-	pthread_mutex_lock(&g_queue_lock);
+	std::unique_lock q_hold(g_queue_lock);
 	pnode = single_list_pop_front(&g_queue_list);	
-	pthread_mutex_unlock(&g_queue_lock);
+	q_hold.unlock();
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -1186,9 +1162,8 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     double_list_append_as_tail(&g_cur_lib->list_hook, &phook->node_lib);
 	if (FALSE == found_hook) {
     	/* aquire write lock when to modify the hooks list */
-		pthread_mutex_lock(&g_mpc_list_lock);
+		std::lock_guard ml_hold(g_mpc_list_lock);
     	double_list_append_as_tail(&g_hook_list, &phook->node_hook);
-		pthread_mutex_unlock(&g_mpc_list_lock);
     	/* append also the hook into lib's hook list */
 	}
 	/* validate the hook node */

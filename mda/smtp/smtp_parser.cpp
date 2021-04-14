@@ -81,7 +81,7 @@ static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
-static pthread_mutex_t *g_ssl_mutex_buf;
+static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
 /* 
  * construct a smtp parser object
@@ -135,9 +135,9 @@ void smtp_parser_init(unsigned int context_num, unsigned int threads_num,
 static void smtp_parser_ssl_locking(int mode, int n, const char *file, int line)
 {
 	if (mode & CRYPTO_LOCK)
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+		g_ssl_mutex_buf[n].lock();
 	else
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+		g_ssl_mutex_buf[n].unlock();
 }
 
 static void smtp_parser_ssl_id(CRYPTO_THREADID* id)
@@ -189,13 +189,12 @@ int smtp_parser_run()
 			return -4;
 		}
 
-		g_ssl_mutex_buf = static_cast<pthread_mutex_t *>(malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t)));
-		if (NULL == g_ssl_mutex_buf) {
+		try {
+			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
+		} catch (const std::bad_alloc &) {
 			printf("[smtp_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
-		for (int j = 0; j < CRYPTO_num_locks(); ++j)
-			pthread_mutex_init(&g_ssl_mutex_buf[j], NULL);
 		CRYPTO_THREADID_set_callback(smtp_parser_ssl_id);
 		CRYPTO_set_locking_callback(smtp_parser_ssl_locking);
 	}
@@ -234,10 +233,7 @@ int smtp_parser_stop()
 	if (TRUE == g_support_starttls && NULL != g_ssl_mutex_buf) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
-		for (int j = 0; j < CRYPTO_num_locks(); ++j)
-			pthread_mutex_destroy(&g_ssl_mutex_buf[j]);
-		free(g_ssl_mutex_buf);
-		g_ssl_mutex_buf = NULL;
+		g_ssl_mutex_buf.reset();
 	}
 	return 0;
 }
