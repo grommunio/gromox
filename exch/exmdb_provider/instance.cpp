@@ -399,8 +399,13 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		propval.proptag = PROP_TAG_MESSAGESTATUS;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		tpropval_array_set_propval(&((MESSAGE_CONTENT*)
-			pinstance->pcontent)->proplist, &propval);
+		if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval)) {
+			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+			if (pinstance->username != nullptr)
+				free(pinstance->username);
+			free(pinstance);
+			return false;
+		}
 		double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
 		*pinstance_id = instance_id;
 		return TRUE;
