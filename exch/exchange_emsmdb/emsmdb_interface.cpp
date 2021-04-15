@@ -636,8 +636,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	*pretry_delay = 0;
 	*pcxr = 0;
 	pdisplayname[0] = '\0';
-	memset(pserver_vers, 0, 3);
-	memset(pbest_vers, 0, 3);
+	memset(pserver_vers, 0, 3 * sizeof(*pserver_vers));
+	memset(pbest_vers, 0, 3 * sizeof(*pbest_vers));
 	*ptimestamp = 0;
 	return result;
 }
