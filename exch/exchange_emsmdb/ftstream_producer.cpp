@@ -154,6 +154,7 @@ static BOOL ftstream_producer_write_internal(
 			pstream->fd = open(pstream->path,
 				O_CREAT|O_RDWR|O_TRUNC, 0666);
 			if (-1 == pstream->fd) {
+				fprintf(stderr, "E-1429: open %s: %s\n", pstream->path, strerror(errno));
 				return FALSE;
 			}
 		}

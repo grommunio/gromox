@@ -503,7 +503,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	if (-1 == fd) {
 		return -1;
 	}
-	lseek(fd, offset, SEEK_SET);
+	if (lseek(fd, offset, SEEK_SET) < 0)
+		fprintf(stderr, "E-1431: lseek: %s\n", strerror(errno));
 	HX_strlcpy(temp_buff, tags, GX_ARRAY_SIZE(temp_buff));
 	if ('(' == tags[0]) {
 		tmp_argc = parse_imap_args(temp_buff + 1,

@@ -1981,7 +1981,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		return;
 	}
 	
-	lseek(fd, mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT), SEEK_SET);
+	if (lseek(fd, mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT), SEEK_SET) < 0)
+		fprintf(stderr, "E-1430: lseek: %s\n", strerror(errno));
 	auto rdlen = read(fd, pbuff, length);
 	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
 		close(fd);

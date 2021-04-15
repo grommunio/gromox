@@ -830,7 +830,8 @@ static BOOL ftstream_parser_truncate_fd(
 		pstream->offset = 0;
 		return TRUE;
 	}
-	lseek(pstream->fd, pstream->offset, SEEK_SET);
+	if (lseek(pstream->fd, pstream->offset, SEEK_SET) < 0)
+		fprintf(stderr, "W-1425: lseek: %s\n", strerror(errno));
 	len = read(pstream->fd, buff, sizeof(buff));
 	if (len <= 0) {
 		return FALSE;
@@ -902,26 +903,23 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 	DCERPC_INFO rpc_info;
 	struct stat node_stat;
 	
+	stream_id = common_util_get_ftstream_id();
+	rpc_info = get_rpc_info();
+	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
+	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1428: mkdir %s: %s\n", path, strerror(errno));
+		return nullptr;
+	}
 	auto pstream = me_alloc<FTSTREAM_PARSER>();
 	if (NULL == pstream) {
 		return NULL;
 	}
 	pstream->offset = 0;
 	pstream->st_size = 0;
-	stream_id = common_util_get_ftstream_id();
-	rpc_info = get_rpc_info();
-	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
-	if (0 != stat(path, &node_stat)) {
-		mkdir(path, 0777);
-	} else {
-		if (0 == S_ISDIR(node_stat.st_mode)) {
-			remove(path);
-			mkdir(path, 0777);
-		}
-	}
 	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
 	pstream->fd = open(pstream->path, O_CREAT | O_RDWR | O_TRUNC, 0666);
 	if (-1 == pstream->fd) {
+		fprintf(stderr, "E-1429: open %s: %s\n", pstream->path, strerror(errno));
 		free(pstream);
 		return NULL;
 	}

@@ -379,7 +379,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
     pentity->pflusher->flush_ptr = NULL;
 	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path,
 	         pentity->pflusher->flush_ID);
-	remove(name);
+	if (remove(name) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1424: remove %s: %s\n", name, strerror(errno));
 	return FALSE;
 }
 

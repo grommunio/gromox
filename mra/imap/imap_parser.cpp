@@ -1112,7 +1112,8 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						memcpy(pcontext->write_buff + pcontext->write_length, "NIL", 3);
 						pcontext->write_length += 3;
 					} else {
-						lseek(pcontext->message_fd, atol(ptr + 1), SEEK_SET);
+						if (lseek(pcontext->message_fd, atol(ptr + 1), SEEK_SET) < 0)
+							fprintf(stderr, "E-1426: lseek: %s\n", strerror(errno));
 						pcontext->literal_len = atol(ptr1 + 1);
 						pcontext->current_len = 0;
 						len = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1154,7 +1155,8 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						memcpy(pcontext->write_buff + pcontext->write_length, "NIL", 3);
 						pcontext->write_length += 3;
 					} else {
-						lseek(pcontext->message_fd, atol(ptr + 1), SEEK_SET);
+						if (lseek(pcontext->message_fd, atol(ptr + 1), SEEK_SET) < 0)
+							fprintf(stderr, "E-1427: lseek: %s\n", strerror(errno));
 						pcontext->literal_len = atol(ptr1 + 1);
 						pcontext->current_len = 0;
 						len = MAX_LINE_LENGTH - pcontext->write_length;

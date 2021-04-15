@@ -1393,7 +1393,8 @@ zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 	
 	array_init(pret);
 	for (size_t i = 0; i < pset->count; ++i) {
-		tpropval_array_to_php(pset->pparray[i], &pzpropval);
+		if (!tpropval_array_to_php(pset->pparray[i], &pzpropval))
+			return 0;
 		zend_hash_next_index_insert(HASH_OF(pret), &pzpropval);
 	}
 	return 1;

@@ -136,7 +136,9 @@ static void* thread_work_func1(void *param)
 		close(fd);
 
 		if (0 != file_operation_compare(temp_path, g_aliasaddress_path)) {
-			rename(temp_path, g_aliasaddress_path);
+			if (rename(temp_path, g_aliasaddress_path) < 0)
+				fprintf(stderr, "E-1423: rename %s %s: %s\n",
+				        temp_path, g_aliasaddress_path, strerror(errno));
 			gateway_control_notify("libgxm_alias_translator.so reload addresses",
 				NOTIFY_DELIVERY);
 		}

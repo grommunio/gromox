@@ -28,7 +28,10 @@ int main(int argc, const char **argv)
 {
 	auto data = slurp_file(argc >= 2 ? argv[1] : nullptr);
 	ICAL ical;
-	ical_init(&ical);
+	if (ical_init(&ical) < 0) {
+		printf("BAD ical_init\n");
+		return EXIT_FAILURE;
+	}
 	if (!ical_retrieve(&ical, data.data()))
 		printf("BAD retrieve\n");
 	auto msg = oxcical_import("UTC", &ical, malloc, get_propids, un_to_eid);

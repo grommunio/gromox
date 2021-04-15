@@ -827,8 +827,8 @@ ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.pdisplay_name = pdisplayname;
 	tmp_entry.paddress_type = ptype;
 	tmp_entry.pmail_address = paddress;
-	ext_pack_push_init(&push_ctx);
-	if (!ext_pack_push_oneoff_entryid(&push_ctx, &tmp_entry)) {
+	if (!ext_pack_push_init(&push_ctx) ||
+	    !ext_pack_push_oneoff_entryid(&push_ctx, &tmp_entry)) {
 		MAPI_G(hr) = ecError;
 		ext_pack_push_free(&push_ctx);
 		THROW_EXCEPTION;
