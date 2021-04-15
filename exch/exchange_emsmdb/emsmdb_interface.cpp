@@ -259,6 +259,9 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		return FALSE;
 	}
 	phandle = static_cast<HANDLE_DATA *>(str_hash_query(g_handle_hash, guid_string));
+	if (phandle == nullptr)
+		/* Should never occur; the value was recently added successfully. */
+		return false;
 	phandle->node.pdata = phandle;
 	
 	phandle->last_handle = 0;
@@ -279,6 +282,9 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			return FALSE;
 		}
 		plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_user_hash, temp_handle.username));
+		if (plist == nullptr)
+			/* Should never occur; the value was recently added successfully. */
+			return false;
 		double_list_init(plist);
 	} else {
 		if (double_list_get_nodes_num(plist) >= MAX_HANDLE_PER_USER) {
