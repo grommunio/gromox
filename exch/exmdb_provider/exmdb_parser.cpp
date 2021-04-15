@@ -1055,8 +1055,6 @@ int exmdb_parser_stop()
 	size_t i = 0;
 	pthread_t *pthr_ids;
 	
-	if (g_local_list.size() == 0)
-		return 0;
 	pthr_ids = NULL;
 	std::unique_lock chold(g_connection_lock);
 	size_t num = g_connection_list.size();
@@ -1065,7 +1063,6 @@ int exmdb_parser_stop()
 		if (NULL == pthr_ids) {
 			return -1;
 		}
-	}
 	for (auto &pconnection : g_connection_list) {
 		pthr_ids[i++] = pconnection->thr_id;
 		pconnection->b_stop = true;
@@ -1080,6 +1077,7 @@ int exmdb_parser_stop()
 		free(pthr_ids);
 		pthr_ids = NULL;
 	}
+	}
 	std::unique_lock rhold(g_router_lock);
 	num = g_router_list.size();
 	if (num > 0) {
@@ -1087,7 +1085,6 @@ int exmdb_parser_stop()
 		if (NULL == pthr_ids) {
 			return -2;
 		}
-	}
 	i = 0;
 	for (auto &rt : g_router_list) {
 		pthr_ids[i++] = rt->thr_id;
@@ -1102,6 +1099,7 @@ int exmdb_parser_stop()
 	if (NULL != pthr_ids) {
 		free(pthr_ids);
 		pthr_ids = NULL;
+	}
 	}
 	return 0;
 }
