@@ -467,13 +467,12 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	
 	while (TRUE) {
 		std::unique_lock as_hold(g_async_lock);
-		if (pprocessor->async_num > 0) {
-			as_hold.unlock();
-			usleep(100000);
-		} else {
+		if (pprocessor->async_num <= 0) {
 			pprocessor->async_num = -1;
 			break;
 		}
+		as_hold.unlock();
+		usleep(100000);
 	}
 	
 	while ((pnode = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
