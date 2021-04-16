@@ -202,7 +202,7 @@ static bool ldap_adaptor_load()
 	auto val = config_file_get_value(pfile, "data_connections");
 	if (val != nullptr) {
 		conn_num = strtoul(val, nullptr, 0);
-		if (conn_num < 0)
+		if (conn_num == 0)
 			conn_num = 1;
 	}
 	printf("[ldap_adaptor]: using up to %d connections\n", 2 * conn_num);
