@@ -1862,10 +1862,9 @@ static BOOL message_rectify_message(const char *account,
 	static uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED; /* modified by common_util_set_properties */
 	
 	pmsgctnt1->proplist.count = 0;
-	pmsgctnt1->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);
-	if (NULL == pmsgctnt1->proplist.ppropval) {
+	auto *vc = pmsgctnt1->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);
+	if (vc == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		switch (pmsgctnt->proplist.ppropval[i].proptag) {
 		case PROP_TAG_MID:
@@ -1883,24 +1882,18 @@ static BOOL message_rectify_message(const char *account,
 			}
 			break;
 		}
-		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count] =
-									pmsgctnt->proplist.ppropval[i];
+		*vc++ = pmsgctnt->proplist.ppropval[i];
 		pmsgctnt1->proplist.count ++;
 	}
-	pmsgctnt1->proplist.ppropval[
-		pmsgctnt1->proplist.count].proptag =
-		PROP_TAG_MESSAGESTATUS;
-	pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-		deconst(&fake_int32);
+	vc->proptag = PROP_TAG_MESSAGESTATUS;
+	vc->pvalue = deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS)) {
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].proptag =
-			PROP_TAG_MESSAGEFLAGS;
-		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-			deconst(&fake_flags);
+		vc->proptag = PROP_TAG_MESSAGEFLAGS;
+		vc->pvalue = deconst(&fake_flags);
 		pmsgctnt1->proplist.count ++;
+		++vc;
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_SEARCHKEY)) {
@@ -1915,11 +1908,8 @@ static BOOL message_rectify_message(const char *account,
 		tmp_guid = guid_random_new();
 		ext_buffer_push_init(&ext_push, pbin->pb, 16, 0);
 		ext_buffer_push_guid(&ext_push, &tmp_guid);
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].proptag =
-			PROP_TAG_SEARCHKEY;
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].pvalue = pbin;
+		vc->proptag = PROP_TAG_SEARCHKEY;
+		vc->pvalue = pbin;
 		pmsgctnt1->proplist.count ++;
 	}
 	if (NULL == common_util_get_propvals(
@@ -1940,12 +1930,10 @@ static BOOL message_rectify_message(const char *account,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].proptag =
-			PROP_TAG_BODYCONTENTID;
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].pvalue = pvalue;
+		vc->proptag = PROP_TAG_BODYCONTENTID;
+		vc->pvalue = pvalue;
 		pmsgctnt1->proplist.count ++;
+		++vc;
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CREATORNAME)) {
@@ -1956,12 +1944,10 @@ static BOOL message_rectify_message(const char *account,
 				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGNAME);
 		}
 		if (NULL != pvalue) {
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].proptag =
-				PROP_TAG_CREATORNAME;
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].pvalue = pvalue;
+			vc->proptag = PROP_TAG_CREATORNAME;
+			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
+			++vc;
 		}
 	}
 	if (NULL == common_util_get_propvals(
@@ -1973,12 +1959,10 @@ static BOOL message_rectify_message(const char *account,
 				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGENTRYID);
 		}
 		if (NULL != pvalue) {
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].proptag =
-				PROP_TAG_CREATORENTRYID;
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].pvalue = pvalue;
+			vc->proptag = PROP_TAG_CREATORENTRYID;
+			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
+			++vc;
 		}
 	}
 	if (NULL == common_util_get_propvals(
@@ -1990,12 +1974,10 @@ static BOOL message_rectify_message(const char *account,
 				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGNAME);
 		}
 		if (NULL != pvalue) {
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].proptag =
-				PROP_TAG_LASTMODIFIERNAME;
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].pvalue = pvalue;
+			vc->proptag = PROP_TAG_LASTMODIFIERNAME;
+			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
+			++vc;
 		}
 	}
 	if (NULL == common_util_get_propvals(
@@ -2007,22 +1989,18 @@ static BOOL message_rectify_message(const char *account,
 				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGENTRYID);
 		}
 		if (NULL != pvalue) {
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].proptag =
-				PROP_TAG_LASTMODIFIERENTRYID;
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].pvalue = pvalue;
+			vc->proptag = PROP_TAG_LASTMODIFIERENTRYID;
+			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
+			++vc;
 		}
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_READ)) {
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].proptag =
-			PROP_TAG_READ;
-		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-			deconst(&fake_false);
+		vc->proptag = PROP_TAG_READ;
+		vc->pvalue = deconst(&fake_false);
 		pmsgctnt1->proplist.count ++;
+		++vc;
 	}
 	pbin1 = static_cast<BINARY *>(common_util_get_propvals(
 	        &pmsgctnt->proplist, PROP_TAG_CONVERSATIONINDEX));
@@ -2047,18 +2025,14 @@ static BOOL message_rectify_message(const char *account,
 			ext_buffer_push_guid(&ext_push, &tmp_guid);
 		}
 	}
-	pmsgctnt1->proplist.ppropval[
-		pmsgctnt1->proplist.count].proptag =
-		PROP_TAG_CONVERSATIONID;
-	pmsgctnt1->proplist.ppropval[
-		pmsgctnt1->proplist.count].pvalue = pbin;
+	vc->proptag = PROP_TAG_CONVERSATIONID;
+	vc->pvalue = pbin;
 	pmsgctnt1->proplist.count ++;
-	pmsgctnt1->proplist.ppropval[
-		pmsgctnt1->proplist.count].proptag =
-		PROP_TAG_CONVERSATIONINDEXTRACKING;
-	pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-		deconst(&fake_true);
+	++vc;
+	vc->proptag = PROP_TAG_CONVERSATIONINDEXTRACKING;
+	vc->pvalue = deconst(&fake_true);
 	pmsgctnt1->proplist.count ++;
+	++vc;
 	if (NULL == pbin1) {
 		pbin1 = cu_alloc<BINARY>();
 		if (NULL == pbin1) {
@@ -2077,12 +2051,10 @@ static BOOL message_rectify_message(const char *account,
 		ext_buffer_push_uint32(&ext_push, 0xFFFFFFFF);
 		ext_buffer_push_uint8(&ext_push, nt_time & 0xFF);
 		pbin1->cb = 27;
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].proptag =
-			PROP_TAG_CONVERSATIONINDEX;
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].pvalue = pbin1;
+		vc->proptag = PROP_TAG_CONVERSATIONINDEX;
+		vc->pvalue = pbin1;
 		pmsgctnt1->proplist.count ++;
+		++vc;
 	}
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CONVERSATIONTOPIC);
@@ -2097,20 +2069,16 @@ static BOOL message_rectify_message(const char *account,
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 							PROP_TAG_NORMALIZEDSUBJECT_STRING8);
 			if (NULL != pvalue) {
-				pmsgctnt1->proplist.ppropval[
-					pmsgctnt1->proplist.count].proptag =
-					PROP_TAG_CONVERSATIONTOPIC_STRING8;
-				pmsgctnt1->proplist.ppropval[
-					pmsgctnt1->proplist.count].pvalue = pvalue;
+				vc->proptag = PROP_TAG_CONVERSATIONTOPIC_STRING8;
+				vc->pvalue = pvalue;
 				pmsgctnt1->proplist.count ++;
+				++vc;
 			}
 		} else {
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].proptag =
-				PROP_TAG_CONVERSATIONTOPIC;
-			pmsgctnt1->proplist.ppropval[
-				pmsgctnt1->proplist.count].pvalue = pvalue;
+			vc->proptag = PROP_TAG_CONVERSATIONTOPIC;
+			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
+			++vc;
 		}
 	}
 	pmsgctnt1->children.prcpts = pmsgctnt->children.prcpts;
