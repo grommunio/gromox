@@ -40,88 +40,88 @@ ICS_STATE* ics_state_create(LOGON_OBJECT *plogon, int type)
 	tmp_bin.pv = &plogon;
 	pstate->pseen = idset_init(TRUE, REPL_TYPE_GUID);
 	if (NULL == pstate->pseen) {
-		ics_state_clear(pstate);
+		ics_state_free(pstate);
 		return NULL;
 	}
 	if (FALSE == idset_register_mapping(pstate->pseen,
 		&tmp_bin, common_util_mapping_replica)) {
-		ics_state_clear(pstate);
+		ics_state_free(pstate);
 		return NULL;
 	}
 	switch (type) {
 	case ICS_STATE_CONTENTS_DOWN:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pgiven,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pseen_fai,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pread,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		break;
 	case ICS_STATE_HIERARCHY_DOWN:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pgiven,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		break;
 	case ICS_STATE_CONTENTS_UP:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pgiven,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pseen_fai,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pread,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_clear(pstate);
+			ics_state_free(pstate);
 			return NULL;
 		}
 		break;
