@@ -275,8 +275,8 @@ void* propval_dup(uint16_t type, void *pvi)
 				}
 				preturn->pbin[i].pv = malloc(psrc->pbin[i].cb);
 				if (preturn->pbin[i].pv == nullptr) {
-					for (i -= 1; i >= 0; --i)
-						free(preturn->pbin[i].pv);
+					while (i > 0)
+						free(preturn->pbin[--i].pv);
 					free(preturn->pbin);
 					free(preturn);
 					return NULL;
