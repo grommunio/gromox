@@ -3369,9 +3369,9 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			}
 		}
 	}
-	snprintf(pcontext->mid, 127, "%ld.%d.%s", time(NULL),
+	snprintf(pcontext->mid, GX_ARRAY_SIZE(pcontext->mid), "%ld.%d.%s", time(nullptr),
 		imap_parser_get_sequence_ID(), resource_get_string("HOST_ID"));
-	snprintf(pcontext->file_path, 255, "%s/tmp/%s",
+	snprintf(pcontext->file_path, GX_ARRAY_SIZE(pcontext->file_path), "%s/tmp/%s",
 				pcontext->maildir, pcontext->mid);
 	fd = open(pcontext->file_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == fd) {
