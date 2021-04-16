@@ -222,17 +222,17 @@ BOOL common_util_essdn_to_username(const char *pessdn, char *username)
 	return TRUE;
 }
 
-BOOL common_util_username_to_essdn(const char *username, char *pessdn)
+BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	int user_id;
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[256];
+	char tmp_name[324];
 	char hex_string[16];
 	char hex_string2[16];
 	
-	strncpy(tmp_name, username, 256);
+	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -245,7 +245,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	}
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
+	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
@@ -258,7 +258,7 @@ BOOL common_util_essdn_to_public(const char *pessdn, char *domainname)
 	return FALSE;
 }
 
-BOOL common_util_public_to_essdn(const char *username, char *pessdn)
+BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	//TODO
 	return FALSE;
@@ -279,9 +279,9 @@ const char* common_util_essdn_to_domain(const char *pessdn)
 	return pessdn + tmp_len;
 }
 
-void common_util_domain_to_essdn(const char *pdomain, char *pessdn)
+void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax)
 {
-	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
+	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 		"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn="
 		"f98430ae-22ad-459a-afba-68c972eefc56@%s", g_org_name, pdomain);
 }
@@ -348,9 +348,8 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	if (FALSE == common_util_username_to_essdn(username, x500dn)) {
+	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
-	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 							tmp_entryid.provider_uid);
@@ -379,9 +378,8 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	if (FALSE == common_util_public_to_essdn(domainname, x500dn)) {
+	if (!common_util_public_to_essdn(domainname, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
-	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 							tmp_entryid.provider_uid);

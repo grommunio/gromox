@@ -1055,15 +1055,13 @@ static BOOL store_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
 		if (TRUE == pstore->b_private) {
-			if (FALSE == common_util_username_to_essdn(
-				pstore->account, temp_buff)) {
+			if (!common_util_username_to_essdn(pstore->account,
+			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
 				return FALSE;	
-			}
 		} else {
-			if (FALSE == common_util_public_to_essdn(
-				pstore->account, temp_buff)) {
+			if (!common_util_public_to_essdn(pstore->account,
+			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
 				return FALSE;	
-			}
 		}
 		*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
 		if (NULL == *ppvalue) {

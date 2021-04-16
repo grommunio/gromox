@@ -176,7 +176,7 @@ BOOL common_util_essdn_to_username(const char *pessdn, char *username)
 	return TRUE;
 }
 
-BOOL common_util_username_to_essdn(const char *username, char *pessdn)
+BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	int user_id;
 	int domain_id;
@@ -199,7 +199,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	}
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
+	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
@@ -4033,8 +4033,8 @@ BOOL common_util_addressbook_entryid_to_username(
 			tmp_entryid.px500dn, username);
 }
 
-BOOL common_util_addressbook_entryid_to_essdn(
-	const BINARY *pentryid_bin, char *pessdn)
+BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
+    char *pessdn, size_t dnmax)
 {
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
@@ -4045,7 +4045,7 @@ BOOL common_util_addressbook_entryid_to_essdn(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
 	}
-	strncpy(pessdn, tmp_entryid.px500dn, 1024);
+	HX_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
 	return TRUE;
 }
 
@@ -4307,9 +4307,8 @@ BINARY* common_util_username_to_addressbook_entryid(
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	if (FALSE == common_util_username_to_essdn(username, x500dn)) {
+	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
-	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 							tmp_entryid.provider_uid);

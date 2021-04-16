@@ -4136,10 +4136,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
 					PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
 					memcpy(essdn_buff, "EX:", 3);
-					if (FALSE == common_util_username_to_essdn(
-						account, essdn_buff + 3)) {
+					if (!common_util_username_to_essdn(account,
+					    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 						return FALSE;
-					}
 					HX_strupper(essdn_buff);
 					pvalue = common_util_username_to_addressbook_entryid(
 																account);
@@ -4582,10 +4581,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
 					PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
 					memcpy(essdn_buff, "EX:", 3);
-					if (FALSE == common_util_username_to_essdn(
-						account, essdn_buff + 3)) {
+					if (!common_util_username_to_essdn(account,
+					    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 						return FALSE;
-					}
 					pvalue = common_util_username_to_addressbook_entryid(
 																account);
 					if (NULL == pvalue) {
@@ -4831,10 +4829,9 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			return FALSE;	
 		}
 		memcpy(essdn_buff, "EX:", 3);
-		if (FALSE == common_util_username_to_essdn(
-			account, essdn_buff + 3)) {
+		if (!common_util_username_to_essdn(account,
+		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return FALSE;
-		}
 		HX_strupper(essdn_buff);
 		propval.proptag = PROP_TAG_RECEIVEDBYENTRYID;
 		propval.pvalue = pentryid;

@@ -53,9 +53,8 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].pvalue = (void*)account;
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
 	propval_buff[5].pvalue  = deconst("EX");
-	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
+	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
 		return GXERR_CALL_FAILED;
-	}
 	if (FALSE == common_util_get_user_displayname(account, tmp_display)) {
 		return GXERR_CALL_FAILED;
 	}
@@ -74,10 +73,9 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[9].proptag = PROP_TAG_SENDERSEARCHKEY;
 	propval_buff[9].pvalue = &search_bin;
 	if (0 != strcasecmp(account, representing_username)) {
-		if (FALSE == common_util_username_to_essdn(
-			representing_username, essdn_buff1)) {
+		if (!common_util_username_to_essdn(representing_username,
+		    essdn_buff1, GX_ARRAY_SIZE(essdn_buff1)))
 			return GXERR_CALL_FAILED;
-		}
 		if (FALSE == common_util_get_user_displayname(
 			representing_username, tmp_display1)) {
 			return GXERR_CALL_FAILED;

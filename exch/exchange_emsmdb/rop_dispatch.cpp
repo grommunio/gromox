@@ -62,7 +62,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pmb->logon_flags = rq->logon_flags;
 			(*ppresponse)->result = rop_logon_pmb(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
-				rdr->pserver_name, pmb->folder_ids,
+				rdr->pserver_name, GX_ARRAY_SIZE(rdr->pserver_name), pmb->folder_ids,
 				&pmb->response_flags, &pmb->mailbox_guid,
 				&pmb->replica_id, &pmb->replica_guid,
 				&pmb->logon_time, &pmb->gwart_time,

@@ -3,13 +3,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/ext_buffer.hpp>
 
-uint32_t rop_logon_pmb(uint8_t logon_flags,
-	uint32_t open_flags, uint32_t store_stat, char *pessdn,
-	uint64_t *pfolder_id, uint8_t *presponse_flags,
-	GUID *pmailbox_guid, uint16_t *preplica_id,
-	GUID *preplica_guid, LOGON_TIME *plogon_time,
-	uint64_t *pgwart_time, uint32_t *pstore_stat,
-	void *plogmap, uint8_t logon_id, uint32_t *phout);
+extern uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, size_t dnmax, uint64_t *folder_id, uint8_t *response_flags, GUID *mailbox_guid, uint16_t *replica_id, GUID *preplica_guid, LOGON_TIME *logon_time, uint64_t *pgwart_time, uint32_t *store_stat_out, void *plogmap, uint8_t logon_id, uint32_t *hout);
 uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	uint32_t store_stat, char *pessdn, uint64_t *pfolder_id,
 	uint16_t *preplica_id, GUID *preplica_guid, GUID *pper_user_guid,

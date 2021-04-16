@@ -159,9 +159,8 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		}
 		rop_util_get_gc_array(folder_id,
 			long_term_id.global_counter);
-		common_util_domain_to_essdn(
-			logon_object_get_account(plogon),
-			tmp_essdn);
+		common_util_domain_to_essdn(logon_object_get_account(plogon),
+			tmp_essdn, GX_ARRAY_SIZE(tmp_essdn));
 		pbin = common_util_to_folder_replica(
 				&long_term_id, tmp_essdn);
 		if (NULL == pbin) {

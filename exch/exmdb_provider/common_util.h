@@ -72,8 +72,7 @@ void* common_util_get_propvals(
 	const TPROPVAL_ARRAY *parray, uint32_t proptag);
 BOOL common_util_essdn_to_username(
 	const char *pessdn, char *username);
-BOOL common_util_username_to_essdn(
-	const char *username, char *pessdn);
+extern BOOL common_util_username_to_essdn(const char *username, char *dn, size_t);
 void common_util_pass_service(int service_id, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
@@ -146,8 +145,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read);
 BOOL common_util_addressbook_entryid_to_username(
 	const BINARY *pentryid_bin, char *username);
-BOOL common_util_addressbook_entryid_to_essdn(
-	const BINARY *pentryid_bin, char *pessdn);
+extern BOOL common_util_addressbook_entryid_to_essdn(const BINARY *eid, char *dn, size_t);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 BOOL common_util_entryid_to_username(

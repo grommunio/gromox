@@ -131,8 +131,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				}
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_EMAILADDRESS) >= 0 && TRUE ==
-					common_util_username_to_essdn(username,
-					tmp_buff)) {
+				    common_util_username_to_essdn(username,
+				    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 					ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_EMAILADDRESS;
 					ppropvals->ppropval[ppropvals->count].pvalue =

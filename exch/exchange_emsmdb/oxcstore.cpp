@@ -11,10 +11,9 @@
 #include "rop_processor.h"
 
 
-uint32_t rop_logon_pmb(uint8_t logon_flags,
-	uint32_t open_flags, uint32_t store_stat, char *pessdn,
-	uint64_t *pfolder_id, uint8_t *presponse_flags,
-	GUID *pmailbox_guid, uint16_t *preplica_id,
+uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
+    uint32_t store_stat, char *pessdn, size_t dnmax, uint64_t *pfolder_id,
+    uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *preplica_id,
 	GUID *preplica_guid, LOGON_TIME *plogon_time,
 	uint64_t *pgwart_time, uint32_t *pstore_stat,
 	void *plogmap, uint8_t logon_id, uint32_t *phout)
@@ -42,7 +41,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 			return ecUnknownUser;
 		}
 		pdomain ++;
-		common_util_domain_to_essdn(pdomain, pessdn);
+		common_util_domain_to_essdn(pdomain, pessdn, dnmax);
 		return ecWrongServer;
 	}
 	if (FALSE == common_util_essdn_to_username(pessdn, username)) {
@@ -447,13 +446,13 @@ uint32_t rop_getowningservers(
 	} else {
 		domain_id = logon_object_get_account_id(plogon);
 	}
-	pghost->ppservers[0] = cu_alloc<char>(256);
+	static constexpr size_t dnmax = 256;
+	pghost->ppservers[0] = cu_alloc<char>(dnmax);
 	if (NULL == pghost->ppservers[0]) {
 		return ecMAPIOOM;
 	}
-	common_util_domain_to_essdn(
-		logon_object_get_account(plogon),
-		pghost->ppservers[0]);
+	common_util_domain_to_essdn(logon_object_get_account(plogon),
+		pghost->ppservers[0], dnmax);
 	return ecSuccess;
 }
 

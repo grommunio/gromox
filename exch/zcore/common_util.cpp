@@ -263,9 +263,8 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].pvalue = deconst(account);
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
 	propval_buff[5].pvalue  = deconst("EX");
-	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
+	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
 		return GXERR_CALL_FAILED;
-	}
 	if (FALSE == system_services_get_user_displayname(
 		account, tmp_display)) {
 		return GXERR_CALL_FAILED;
@@ -285,10 +284,9 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[9].proptag = PROP_TAG_SENDERSEARCHKEY;
 	propval_buff[9].pvalue = &search_bin;
 	if (0 != strcasecmp(account, representing_username)) {
-		if (FALSE == common_util_username_to_essdn(
-			representing_username, essdn_buff1)) {
+		if (!common_util_username_to_essdn(representing_username,
+		    essdn_buff1, GX_ARRAY_SIZE(essdn_buff1)))
 			return GXERR_CALL_FAILED;
-		}
 		if (FALSE == system_services_get_user_displayname(
 			representing_username, tmp_display1)) {
 			return GXERR_CALL_FAILED;
@@ -476,7 +474,7 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	return TRUE;	
 }
 
-BOOL common_util_username_to_essdn(const char *username, char *pessdn)
+BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	int user_id;
 	int domain_id;
@@ -499,14 +497,14 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	}
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
+	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
 }
 
-BOOL common_util_public_to_essdn(const char *username, char *pessdn)
+BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	//TODO
 	return FALSE;
@@ -1060,9 +1058,8 @@ BINARY* common_util_username_to_addressbook_entryid(
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	if (FALSE == common_util_username_to_essdn(username, x500dn)) {
+	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
-	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 							tmp_entryid.provider_uid);
@@ -2274,10 +2271,9 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 			store_entryid.wrapped_provider_uid);
 		store_entryid.wrapped_type = 0x0000000C;
 		store_entryid.pserver_name = deconst(store_object_get_account(pstore));
-		if (FALSE == common_util_username_to_essdn(
-			store_object_get_account(pstore), tmp_buff)) {
+		if (!common_util_username_to_essdn(store_object_get_account(pstore),
+		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
-		}
 	} else {
 		rop_util_get_provider_uid(
 			PROVIDER_UID_WRAPPED_PUBLIC,
@@ -2285,10 +2281,9 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 		store_entryid.wrapped_type = 0x00000006;
 		store_entryid.pserver_name = g_hostname;
 		pinfo = zarafa_server_get_info();
-		if (FALSE == common_util_username_to_essdn(
-			pinfo->username, tmp_buff)) {
+		if (!common_util_username_to_essdn(pinfo->username, tmp_buff,
+		    GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
-		}
 	}
 	store_entryid.pmailbox_dn = tmp_buff;
 	auto pbin = cu_alloc<BINARY>();

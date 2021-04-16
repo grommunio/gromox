@@ -917,9 +917,8 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 		username, display_name) ||
 		FALSE == system_services_get_user_privilege_bits(
 		username, pprivilege_bits) || FALSE ==
-		common_util_username_to_essdn(username, x500dn)) {
+	    common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return ecNotFound;
-	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 							tmp_entryid.provider_uid);
@@ -3270,10 +3269,9 @@ uint32_t zarafa_server_getstoreentryid(
 		}
 	} else {
 		HX_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
-		if (FALSE == common_util_username_to_essdn(
-			username, tmp_buff)) {
+		if (!common_util_username_to_essdn(username,
+		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return ecError;
-		}
 		mailbox_dn = tmp_buff;
 	}
 	store_entryid.flags = 0;

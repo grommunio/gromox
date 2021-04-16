@@ -29,11 +29,11 @@ int common_util_convert_string(BOOL to_utf8,
 	const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_username(const char *pessdn, char *username);
-BOOL common_util_username_to_essdn(const char *username, char *pessdn);
+BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
-BOOL common_util_public_to_essdn(const char *username, char *pessdn);
+BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
 const char* common_util_essdn_to_domain(const char *pessdn);
-void common_util_domain_to_essdn(const char *pdomain, char *pessdn);
+void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t);
 BOOL common_util_entryid_to_username(const BINARY *pbin, char *username);
 void common_util_get_domain_server(const char *account_name, char *pserver);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
