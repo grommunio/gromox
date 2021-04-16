@@ -415,7 +415,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2160004: BYE Disconnected by autologout */
 		imap_reply_str = resource_get_imap_code(IMAP_CODE_2160004, 1, &string_length);
 		goto END_PROCESSING;
-	} else if (SCHED_STAT_DISCINNECTED == pcontext->sched_stat) {
+	} else if (SCHED_STAT_DISCONNECTED == pcontext->sched_stat) {
 		imap_parser_log_info(pcontext, 8, "connection lost");
 		imap_reply_str = NULL;
 		goto END_PROCESSING;
@@ -1742,7 +1742,7 @@ static void *imps_thrwork(void *argp)
 					ll_hold.unlock();
 				}
 			} else {
-				pcontext->sched_stat = SCHED_STAT_DISCINNECTED;
+				pcontext->sched_stat = SCHED_STAT_DISCONNECTED;
 				contexts_pool_wakeup_context(
 					(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
 			}
