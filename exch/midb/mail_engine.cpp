@@ -5506,7 +5506,7 @@ static void mail_engine_add_notification_message(
 			HX_strlcpy(mid_string, S2A(sqlite3_column_text(pstmt, 0)), sizeof(mid_string));
 			pvalue = sqlite3_column_text(pstmt, 1);
 			if (NULL != pvalue) {
-				strcpy(flags_buff, static_cast<const char *>(pvalue));
+				HX_strlcpy(flags_buff, static_cast<const char *>(pvalue), GX_ARRAY_SIZE(flags_buff));
 			}
 			pvalue = mid_string;
 		}

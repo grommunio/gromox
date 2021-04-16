@@ -736,7 +736,8 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		}
 
 		if ('\0' == pcontext->lang[0]) {
-			strcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"));
+			HX_strlcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"),
+			           GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->b_authed = TRUE;
 		http_parser_log_info(pcontext, 6, "login success");
@@ -816,7 +817,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 		return X_LOOP;
 	}
 	ptoken1++;
-	strcpy(pcontext->host, ptoken);
+	HX_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
 	pcontext->port = atoi(ptoken1);
 
 	if (FALSE == pcontext->b_authed) {

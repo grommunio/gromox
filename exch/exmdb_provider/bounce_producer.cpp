@@ -92,7 +92,7 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 
 void bounce_producer_init(const char* separator)
 {
-	strcpy(g_separator, separator);
+	HX_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
 	g_default_resource = NULL;
 }
 
