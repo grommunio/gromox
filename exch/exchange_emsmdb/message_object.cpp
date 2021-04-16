@@ -643,13 +643,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propvals.count ++;
 	
 	if (0 != pmessage->message_id && NULL == pmessage->pstate) {
-		if (TRUE == logon_object_check_private(pmessage->plogon)) {
-			tmp_xid.guid = rop_util_make_user_guid(
-				logon_object_get_account_id(pmessage->plogon));
-		} else {
-			tmp_xid.guid = rop_util_make_domain_guid(
-				logon_object_get_account_id(pmessage->plogon));
-		}
+		tmp_xid.guid = logon_object_guid(pmessage->plogon);
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 												PROP_TAG_CHANGEKEY;

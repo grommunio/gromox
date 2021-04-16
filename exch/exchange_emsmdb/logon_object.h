@@ -27,6 +27,7 @@ LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
 	const char *account, const char *dir, GUID mailbox_guid);
 void logon_object_free(LOGON_OBJECT *plogon);
 BOOL logon_object_check_private(LOGON_OBJECT *plogon);
+extern GUID logon_object_guid(LOGON_OBJECT *);
 int logon_object_get_mode(LOGON_OBJECT *plogon);
 int logon_object_get_account_id(LOGON_OBJECT *plogon);
 const char* logon_object_get_account(LOGON_OBJECT *plogon);

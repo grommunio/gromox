@@ -276,13 +276,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
-		if (TRUE == logon_object_check_private(plogon)) {
-			tmp_xid.guid = rop_util_make_user_guid(
-				logon_object_get_account_id(plogon));
-		} else {
-			tmp_xid.guid = rop_util_make_domain_guid(
-				logon_object_get_account_id(plogon));
-		}
+		tmp_xid.guid = logon_object_guid(plogon);
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -785,13 +779,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		(void**)&pbin_pcl) || NULL == pbin_pcl) {
 		return ecError;
 	}
-	if (TRUE == logon_object_check_private(plogon)) {
-		tmp_xid.guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
-	}
+	tmp_xid.guid = logon_object_guid(plogon);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {

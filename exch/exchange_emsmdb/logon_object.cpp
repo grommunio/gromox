@@ -211,6 +211,13 @@ BOOL logon_object_check_private(LOGON_OBJECT *plogon)
 	return (plogon->logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false;
 }
 
+GUID logon_object_guid(LOGON_OBJECT *l)
+{
+	auto id = logon_object_get_account_id(l);
+	return logon_object_check_private(l) ? rop_util_make_user_guid(id) :
+	       rop_util_make_domain_guid(id);
+}
+
 int logon_object_get_mode(LOGON_OBJECT *plogon)
 {
 	return plogon->logon_mode;

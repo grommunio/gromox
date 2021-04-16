@@ -577,13 +577,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (TRUE == logon_object_check_private(plogon)) {
-		longid.guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
-	} else {
-		longid.guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
-	}
+	longid.guid = logon_object_guid(plogon);
 	rop_util_get_gc_array(message_id, longid.global_counter);
 	ext_buffer_push_init(&ext_push, pbin->pv, 22, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
@@ -1850,13 +1844,7 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 		logon_object_get_dir(plogon), &change_num)) {
 		return FALSE;	
 	}
-	if (TRUE == logon_object_check_private(plogon)) {
-		tmp_xid.guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
-	} else {
-		tmp_xid.guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
-	}
+	tmp_xid.guid = logon_object_guid(plogon);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	tmp_propvals.count = 2;
 	tmp_propvals.ppropval = propval_buff;

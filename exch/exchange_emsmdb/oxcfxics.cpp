@@ -1079,13 +1079,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return ecError;
 	}
-	if (TRUE == logon_object_check_private(plogon)) {
-		tmp_guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
-	} else {
-		tmp_guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
-	}
+	tmp_guid = logon_object_guid(plogon);
 	if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 		return ecInvalidParam;
 	}
@@ -1287,13 +1281,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 			&pread_stat[i].message_xid, &tmp_xid)) {
 			return ecError;
 		}
-		if (TRUE == logon_object_check_private(plogon)) {
-			tmp_guid = rop_util_make_user_guid(
-				logon_object_get_account_id(plogon));
-		} else {
-			tmp_guid = rop_util_make_domain_guid(
-				logon_object_get_account_id(plogon));
-		}
+		tmp_guid = logon_object_guid(plogon);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			continue;
 		}
@@ -1930,13 +1918,7 @@ uint32_t rop_syncimportmessagemove(
 		pdst_message_id, &xid_dst)) {
 		return ecError;
 	}
-	if (TRUE == logon_object_check_private(plogon)) {
-		tmp_guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
-	} else {
-		tmp_guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
-	}
+	tmp_guid = logon_object_guid(plogon);
 	if (0 != guid_compare(&tmp_guid, &xid_fsrc.guid) ||
 		0 != guid_compare(&tmp_guid, &xid_src.guid) ||
 		0 != guid_compare(&tmp_guid, &xid_dst.guid)) {
@@ -2209,13 +2191,7 @@ uint32_t rop_getlocalreplicaids(uint32_t count,
 	if (0 == begin_eid) {
 		return ecError;
 	}
-	if (TRUE == logon_object_check_private(plogon)) {
-		*pguid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
-	} else {
-		*pguid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
-	}
+	*pguid = logon_object_guid(plogon);
 	rop_util_get_gc_array(begin_eid, pglobal_count);
 	return ecSuccess;
 }
