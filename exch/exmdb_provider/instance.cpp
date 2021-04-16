@@ -2108,66 +2108,58 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 	for (i=0; i<pproptags->count; i++) {
 		pvalue = tpropval_array_get_propval(
 			&pattachment->proplist, pproptags->pproptag[i]);
+		auto &vc = ppropvals->ppropval[ppropvals->count];
 		if (NULL != pvalue) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue =
-													pvalue;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}
-		ppropvals->ppropval[ppropvals->count].pvalue = NULL;
+		vc.pvalue = NULL;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy(false,
+				            cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy(TRUE, cpid, static_cast<char *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy(TRUE,
+				            cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
 			pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy_string_array(
-						FALSE, cpid, static_cast<STRING_ARRAY *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy_string_array(false,
+				            cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
 			pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy_string_array(
-						TRUE, cpid, static_cast<STRING_ARRAY *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy_string_array(TRUE,
+				            cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
+				vc.proptag = pproptags->pproptag[i];
 				auto tp = cu_alloc<TYPED_PROPVAL>();
-				ppropvals->ppropval[ppropvals->count].pvalue = tp;
+				vc.pvalue = tp;
 				if (tp == nullptr)
 					return FALSE;	
 				tp->type = PT_UNICODE;
@@ -2177,10 +2169,9 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, proptag);
 				if (NULL != pvalue) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
+					vc.proptag = pproptags->pproptag[i];
 					auto tp = cu_alloc<TYPED_PROPVAL>();
-					ppropvals->ppropval[ppropvals->count].pvalue = tp;
+					vc.pvalue = tp;
 					if (tp == nullptr)
 						return FALSE;	
 					tp->type = PT_UNICODE;
@@ -2188,7 +2179,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				}
 			}
 		}
-		if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
+		if (vc.pvalue != nullptr) {
 			ppropvals->count ++;
 			continue;
 		}
@@ -2196,26 +2187,24 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 		case PROP_TAG_MID:
 			if (NULL != pmessage_id) {
 				auto pv = cu_alloc<uint64_t>();
-				ppropvals->ppropval[ppropvals->count].pvalue = pv;
+				vc.pvalue = pv;
 				if (pv == nullptr)
 					return FALSE;
 				*pv = rop_util_make_eid_ex(1, *pmessage_id);
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
+				vc.proptag = pproptags->pproptag[i];
 				ppropvals->count ++;
 				continue;
 			}
 			break;
 		case PROP_TAG_ATTACHSIZE:
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
+			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_attachment_size(pattachment);
 			pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 			*(uint32_t*)pvalue = length;
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		case PROP_TAG_ATTACHDATA_UNSPECIFIED:
@@ -2264,10 +2253,9 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				}
 			}
 			if (NULL != pbin) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
+				vc.proptag = pproptags->pproptag[i];
 				auto tp = cu_alloc<TYPED_PROPVAL>();
-				ppropvals->ppropval[ppropvals->count].pvalue = tp;
+				vc.pvalue = tp;
 				if (tp == nullptr)
 					return FALSE;	
 				tp->type = proptype;
@@ -2297,9 +2285,8 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				}
 				pbin->cb = length;
 				pbin->pv = pvalue;
-				ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = pbin;
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = pbin;
 				ppropvals->count ++;
 				continue;
 			}
@@ -2351,97 +2338,76 @@ BOOL exmdb_server_get_instance_properties(
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
+		auto &vc = ppropvals->ppropval[ppropvals->count];
 		if (PROP_TAG_MESSAGEFLAGS == pproptags->pproptag[i]) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-			if (NULL == ppropvals->ppropval[
-				ppropvals->count].pvalue) {
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = cu_alloc<uint32_t>();
+			if (vc.pvalue == nullptr)
 				return FALSE;
-			}
-			*(uint32_t*)ppropvals->ppropval[
-				ppropvals->count].pvalue =
-				instance_get_message_flags(pmsgctnt);
+			*static_cast<uint32_t *>(vc.pvalue) = instance_get_message_flags(pmsgctnt);
 			ppropvals->count ++;
 			continue;
 		}
 		pvalue = tpropval_array_get_propval(
 			&pmsgctnt->proplist, pproptags->pproptag[i]);
 		if (NULL != pvalue) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue =
-													pvalue;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}
-		ppropvals->ppropval[ppropvals->count].pvalue = NULL;
+		vc.pvalue = nullptr;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-								common_util_convert_copy(FALSE,
-					pinstance->cpid, static_cast<char *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy(false,
+				            pinstance->cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-								common_util_convert_copy(TRUE,
-					pinstance->cpid, static_cast<char *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy(TRUE,
+				            pinstance->cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy_string_array(
-					FALSE, pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy_string_array(false,
+				            pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					common_util_convert_copy_string_array(
-					TRUE, pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = common_util_convert_copy_string_array(TRUE,
+				            pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}	
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
 			propid = PROP_ID(pproptags->pproptag[i]);
 			for (j=0; j<pmsgctnt->proplist.count; j++) {
 				if (PROP_ID(pmsgctnt->proplist.ppropval[j].proptag) == propid) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-					ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					vc.proptag = pproptags->pproptag[i];
+					vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+					if (vc.pvalue == nullptr)
 						return FALSE;	
-					}
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->type =
-						PROP_TYPE(pmsgctnt->proplist.ppropval[j].proptag);
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->pvalue =
-						pmsgctnt->proplist.ppropval[j].pvalue;
+					static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PROP_TYPE(pmsgctnt->proplist.ppropval[j].proptag);
+					static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pmsgctnt->proplist.ppropval[j].pvalue;
 					break;
 				}
 			}
 		}
-		if (NULL != ppropvals->ppropval[ppropvals->count].pvalue) {
+		if (vc.pvalue != nullptr) {
 			ppropvals->count ++;
 			continue;
 		}
@@ -2467,18 +2433,12 @@ BOOL exmdb_server_get_instance_properties(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-					PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
-				if (NULL == ppropvals->ppropval[
-					ppropvals->count].pvalue) {
+				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
+				vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+				if (vc.pvalue == nullptr)
 					return FALSE;	
-				}
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->type = PT_UNICODE;
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->pvalue =
-					static_cast<char *>(pvalue) + sizeof(int);
+				static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_UNICODE;
+				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = static_cast<char *>(pvalue) + sizeof(int);
 				ppropvals->count ++;
 				continue;
 			} else {
@@ -2490,17 +2450,12 @@ BOOL exmdb_server_get_instance_properties(
 					if (NULL == pvalue) {
 						return FALSE;
 					}
-					ppropvals->ppropval[ppropvals->count].proptag =
-						PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
-					ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<TYPED_PROPVAL>();
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
+					vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+					if (vc.pvalue == nullptr)
 						return FALSE;	
-					}
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->type = PT_STRING8;
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->pvalue =	pvalue;
+					static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_STRING8;
+					static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pvalue;
 					ppropvals->count ++;
 					continue;
 				}
@@ -2514,10 +2469,8 @@ BOOL exmdb_server_get_instance_properties(
 				return FALSE;	
 			}
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-														pvalue;
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = pvalue;
 				ppropvals->count ++;
 				continue;
 			}
@@ -2531,9 +2484,8 @@ BOOL exmdb_server_get_instance_properties(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_TRANSPORTMESSAGEHEADERS;
-				ppropvals->ppropval[ppropvals->count].pvalue = static_cast<char *>(pvalue) + sizeof(int);
+				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+				vc.pvalue = static_cast<char *>(pvalue) + sizeof(int);
 				ppropvals->count ++;
 				continue;
 			}
@@ -2545,13 +2497,10 @@ BOOL exmdb_server_get_instance_properties(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_TRANSPORTMESSAGEHEADERS;
-				ppropvals->ppropval[ppropvals->count].pvalue =
-									common_util_convert_copy(TRUE,
-					pinstance->cpid, static_cast<char *>(pvalue));
-				if (NULL != ppropvals->ppropval[
-					ppropvals->count].pvalue) {
+				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+				vc.pvalue = common_util_convert_copy(TRUE,
+				            pinstance->cpid, static_cast<char *>(pvalue));
+				if (vc.pvalue != nullptr) {
 					ppropvals->count ++;
 					continue;	
 				}
@@ -2566,9 +2515,8 @@ BOOL exmdb_server_get_instance_properties(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-							PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
-				ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+				vc.pvalue = pvalue;
 				ppropvals->count ++;
 				continue;
 			}
@@ -2580,13 +2528,10 @@ BOOL exmdb_server_get_instance_properties(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-						PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_convert_copy(FALSE,
-					pinstance->cpid, static_cast<char *>(pvalue) + sizeof(int));
-				if (NULL != ppropvals->ppropval[
-					ppropvals->count].pvalue) {
+				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+				vc.pvalue = common_util_convert_copy(false,
+				            pinstance->cpid, static_cast<char *>(pvalue) + sizeof(int));
+				if (vc.pvalue != nullptr) {
 					ppropvals->count ++;
 					continue;	
 				}
@@ -2594,31 +2539,23 @@ BOOL exmdb_server_get_instance_properties(
 			break;
 		case PROP_TAG_FOLDERID:
 			if (0 == pinstance->parent_id) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-				if (NULL == ppropvals->ppropval[
-					ppropvals->count].pvalue) {
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = cu_alloc<uint64_t>();
+				if (vc.pvalue == nullptr)
 					return FALSE;	
-				}
-				*(uint64_t*)ppropvals->ppropval[
-					ppropvals->count].pvalue =
-					rop_util_make_eid_ex(1, pinstance->folder_id);
+				*static_cast<uint64_t *>(vc.pvalue) = rop_util_make_eid_ex(1, pinstance->folder_id);
 				ppropvals->count ++;
 				continue;
 			}
 			break;
 		case PROP_TAG_CODEPAGEID:
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue =
-											&pinstance->cpid;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = &pinstance->cpid;
 			ppropvals->count ++;
 			continue;
 		case PROP_TAG_MESSAGESIZE:
 		case PROP_TAG_MESSAGESIZEEXTENDED:
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
+			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_message_size(pmsgctnt);
 			if (PROP_TAG_MESSAGESIZE == pproptags->pproptag[i]) {
 				pvalue = cu_alloc<uint32_t>();
@@ -2633,17 +2570,16 @@ BOOL exmdb_server_get_instance_properties(
 				}
 				*(uint64_t*)pvalue = length;
 			}
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		case PROP_TAG_HASATTACHMENTS:
-			ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
+			vc.proptag = pproptags->pproptag[i];
 			pvalue = cu_alloc<uint8_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			*static_cast<uint8_t *>(pvalue) = pmsgctnt->children.pattachments == nullptr ||
 				pmsgctnt->children.pattachments->count == 0 ? 0 : 1;
@@ -2660,10 +2596,8 @@ BOOL exmdb_server_get_instance_properties(
 					pproptags->pproptag[i], &pvalue)) {
 					return FALSE;
 				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-														pvalue;
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = pvalue;
 				ppropvals->count ++;
 				continue;
 			}

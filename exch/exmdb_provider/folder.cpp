@@ -291,24 +291,23 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			return FALSE;
 		}
 		message_id = sqlite3_column_int64(pstmt, 0);
-		ppropvals->ppropval[ppropvals->count].proptag = PROP_TAG_MID;
-		ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-		if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+		auto *pv = &ppropvals->ppropval[ppropvals->count];
+		pv->proptag = PROP_TAG_MID;
+		pv->pvalue = cu_alloc<uint64_t>();
+		if (pv->pvalue == nullptr) {
 			pstmt.finalize();
 			pstmt1.finalize();
 			sqlite3_exec(pdb->psqlite,
 				"COMMIT TRANSACTION", NULL, NULL, NULL);
 			return FALSE;
 		}
-		*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-								rop_util_make_eid_ex(1, message_id);
+		*static_cast<uint64_t *>(pv->pvalue) = rop_util_make_eid_ex(1, message_id);
 		ppropvals->count ++;
+		++pv;
 		if (SQLITE_NULL != sqlite3_column_type(pstmt, 2)) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-										PROP_TAG_MIDSTRING;
-			ppropvals->ppropval[ppropvals->count].pvalue =
-				common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 2)));
-			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+			pv->proptag = PROP_TAG_MIDSTRING;
+			pv->pvalue = common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 2)));
+			if (pv->pvalue == nullptr) {
 				pstmt.finalize();
 				pstmt1.finalize();
 				sqlite3_exec(pdb->psqlite,
@@ -316,6 +315,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 				return FALSE;
 			}
 			ppropvals->count ++;
+			++pv;
 		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
@@ -331,55 +331,52 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			if (0 != sqlite3_column_int64(pstmt, 1)) {
 				message_flags |= MESSAGE_FLAG_READ;
 			}
-			ppropvals->ppropval[ppropvals->count].proptag =
-									PROP_TAG_MESSAGEFLAGS;
-			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint32_t>();
-			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+			pv->proptag = PROP_TAG_MESSAGEFLAGS;
+			pv->pvalue = cu_alloc<uint32_t>();
+			if (pv->pvalue == nullptr) {
 				pstmt.finalize();
 				pstmt1.finalize();
 				sqlite3_exec(pdb->psqlite,
 					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
-			*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-														message_flags;
+			*static_cast<uint32_t *>(pv->pvalue) = message_flags;
 			ppropvals->count ++;
+			++pv;
 		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_LASTMODIFICATIONTIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-							PROP_TAG_LASTMODIFICATIONTIME;
-			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+			pv->proptag = PROP_TAG_LASTMODIFICATIONTIME;
+			pv->pvalue = cu_alloc<uint64_t>();
+			if (pv->pvalue == nullptr) {
 				pstmt.finalize();
 				pstmt1.finalize();
 				sqlite3_exec(pdb->psqlite,
 					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
-			*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-										sqlite3_column_int64(pstmt1, 0);
+			*static_cast<uint64_t *>(pv->pvalue) = sqlite3_column_int64(pstmt1, 0);
 			ppropvals->count ++;
+			++pv;
 		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_LASTMODIFICATIONTIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_MESSAGEDELIVERYTIME;
-			ppropvals->ppropval[ppropvals->count].pvalue = cu_alloc<uint64_t>();
-			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+			pv->proptag = PROP_TAG_MESSAGEDELIVERYTIME;
+			pv->pvalue = cu_alloc<uint64_t>();
+			if (pv->pvalue == nullptr) {
 				pstmt.finalize();
 				pstmt1.finalize();
 				sqlite3_exec(pdb->psqlite,
 					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
-			*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-										sqlite3_column_int64(pstmt1, 0);
+			*static_cast<uint64_t *>(pv->pvalue) = sqlite3_column_int64(pstmt1, 0);
 			ppropvals->count ++;
+			++pv;
 		}
 	}
 	pstmt.finalize();

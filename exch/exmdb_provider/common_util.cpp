@@ -2237,8 +2237,9 @@ BOOL common_util_get_properties(int table_type,
 			continue;
 		}
 		/* begin of special properties */
+		auto &pv = ppropvals->ppropval[ppropvals->count];
 		auto ret = gp_spectableprop(table_type, pproptags->pproptag[i],
-		           ppropvals->ppropval[ppropvals->count], psqlite, id, cpid);
+		           pv, psqlite, id, cpid);
 		if (ret == GP_ERR)
 			return false;
 		if (ret == GP_SKIP)
@@ -2474,9 +2475,8 @@ BOOL common_util_get_properties(int table_type,
 			if (NULL == ptyped->pvalue) {
 				return FALSE;
 			}
-			ppropvals->ppropval[ppropvals->count].proptag = 
-											pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = ptyped;
+			pv.proptag = pproptags->pproptag[i];
+			pv.pvalue = ptyped;
 			ppropvals->count ++;
 			continue;
 		} else if (proptype == PT_STRING8) {
@@ -2697,9 +2697,8 @@ BOOL common_util_get_properties(int table_type,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		ppropvals->ppropval[ppropvals->count].proptag = 
-									pproptags->pproptag[i];
-		ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+		pv.proptag = pproptags->pproptag[i];
+		pv.pvalue = pvalue;
 		ppropvals->count ++;
 	}
 	return TRUE;
