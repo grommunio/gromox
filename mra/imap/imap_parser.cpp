@@ -1426,6 +1426,8 @@ int imap_parser_get_param(int param)
 		return g_support_starttls;
 	case IMAP_FORCE_STARTTLS:
 		return g_force_starttls;
+	case IMAP_SUPPORT_RFC2971:
+		return parse_bool(resource_get_string("enable_rfc2971_commands"));
     default:
         return 0;
     }

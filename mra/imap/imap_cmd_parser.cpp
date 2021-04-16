@@ -1408,13 +1408,15 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	imap_reply_str = resource_get_imap_code(IMAP_CODE_2170001, 1, &string_length);
-	char starttls_str[16]{};
+	char ext_str[16]{};
 	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS))
-		HX_strlcpy(starttls_str, " STARTTLS", GX_ARRAY_SIZE(starttls_str));
+		HX_strlcat(ext_str, " STARTTLS", GX_ARRAY_SIZE(ext_str));
+	if (imap_parser_get_param(IMAP_SUPPORT_RFC2971))
+		HX_strlcat(ext_str, " ID", GX_ARRAY_SIZE(ext_str));
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 	                "* CAPABILITY IMAP4rev1 XLIST SPECIAL-USE "
-	                "ID UNSELECT UIDPLUS IDLE AUTH=LOGIN%s\r\n%s %s",
-	                starttls_str, argv[0], imap_reply_str);
+	                "UNSELECT UIDPLUS IDLE AUTH=LOGIN%s\r\n%s %s",
+	                ext_str, argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1428,7 +1430,7 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
-	if (parse_bool(resource_get_string("enable_rfc2971_commands"))) {
+	if (imap_parser_get_param(IMAP_SUPPORT_RFC2971)) {
 		/* IMAP_CODE_2170029: OK ID completed */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2170029, 1, &string_length);
