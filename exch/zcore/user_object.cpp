@@ -76,23 +76,23 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
-			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
+			auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 			if (NULL == ppropvals->ppropval) {
 				return FALSE;
 			}
 			if (common_util_index_proptags(pproptags,
 				PROP_TAG_OBJECTTYPE) >= 0) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-											PROP_TAG_OBJECTTYPE;
-				ppropvals->ppropval[ppropvals->count].pvalue = deconst(&fake_type);
+				vc->proptag = PROP_TAG_OBJECTTYPE;
+				vc->pvalue = deconst(&fake_type);
 				ppropvals->count ++;
+				++vc;
 			}
 			if (common_util_index_proptags(pproptags,
 				PROP_TAG_ADDRESSTYPE) >= 0) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-											PROP_TAG_ADDRESSTYPE;
-				ppropvals->ppropval[ppropvals->count].pvalue = deconst("EX");
+				vc->proptag = PROP_TAG_ADDRESSTYPE;
+				vc->pvalue = deconst("EX");
 				ppropvals->count ++;
+				++vc;
 			}
 			if ((common_util_index_proptags(pproptags,
 				PROP_TAG_SMTPADDRESS) >= 0 ||
@@ -107,41 +107,32 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				ab_tree_get_minid_value(puser->minid), username)) {
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_SMTPADDRESS) >= 0) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-												PROP_TAG_SMTPADDRESS;
-					ppropvals->ppropval[ppropvals->count].pvalue =
-										common_util_dup(username);
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					vc->proptag = PROP_TAG_SMTPADDRESS;
+					vc->pvalue = common_util_dup(username);
+					if (vc->pvalue == nullptr)
 						return FALSE;
-					}
 					ppropvals->count ++;
+					++vc;
 				}
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_ACCOUNT) >= 0) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-													PROP_TAG_ACCOUNT;
-					ppropvals->ppropval[ppropvals->count].pvalue =
-										common_util_dup(username);
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					vc->proptag = PROP_TAG_ACCOUNT;
+					vc->pvalue = common_util_dup(username);
+					if (vc->pvalue == nullptr)
 						return FALSE;
-					}
 					ppropvals->count ++;
+					++vc;
 				}
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_EMAILADDRESS) >= 0 && TRUE ==
 				    common_util_username_to_essdn(username,
 				    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-					ppropvals->ppropval[ppropvals->count].proptag =
-											PROP_TAG_EMAILADDRESS;
-					ppropvals->ppropval[ppropvals->count].pvalue =
-										common_util_dup(tmp_buff);
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					vc->proptag = PROP_TAG_EMAILADDRESS;
+					vc->pvalue = common_util_dup(tmp_buff);
+					if (vc->pvalue == nullptr)
 						return FALSE;
-					}
 					ppropvals->count ++;
+					++vc;
 				}
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_DISPLAYNAME) >= 0 && TRUE ==
@@ -150,15 +141,12 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 					if ('\0' == tmp_buff[0]) {
 						strcpy(tmp_buff, username);
 					}
-					ppropvals->ppropval[ppropvals->count].proptag =
-											PROP_TAG_DISPLAYNAME;
-					ppropvals->ppropval[ppropvals->count].pvalue =
-										common_util_dup(tmp_buff);
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
+					vc->proptag = PROP_TAG_DISPLAYNAME;
+					vc->pvalue = common_util_dup(tmp_buff);
+					if (vc->pvalue == nullptr)
 						return FALSE;
-					}
 					ppropvals->count ++;	
+					++vc;
 				}
 			}
 		} else {
