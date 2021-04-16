@@ -1629,10 +1629,10 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag,
 		TRY(ndr_pull_union_align(pndr, 5));
 		switch (*ptype) {
 		case RES_AND:
-			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_and));
+			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
 			break;
 		case RES_OR:
-			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_or));
+			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
 			break;
 		case RES_NOT:
 			TRY(nsp_ndr_pull_restriction_not(pndr, FLAG_HEADER, &r->res_not));
@@ -1666,10 +1666,10 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, int flag,
 	if (flag & FLAG_CONTENT) {
 		switch (*ptype) {
 		case RES_AND:
-			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_and));
+			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
 			break;
 		case RES_OR:
-			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_or));
+			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
 			break;
 		case RES_NOT:
 			TRY(nsp_ndr_pull_restriction_not(pndr, FLAG_CONTENT, &r->res_not));
@@ -1707,10 +1707,10 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag,
 		TRY(ndr_push_union_align(pndr, 5));
 		switch (type) {
 		case RES_AND:
-			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_and));
+			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
 			break;
 		case RES_OR:
-			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_or));
+			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
 			break;
 		case RES_NOT:
 			TRY(nsp_ndr_push_restriction_not(pndr, FLAG_HEADER, &r->res_not));
@@ -1744,10 +1744,10 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, int flag,
 	if (flag & FLAG_CONTENT) {
 		switch (type) {
 			case RES_AND:
-				TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_and));
+				TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
 				break;
 			case RES_OR:
-				TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_or));
+				TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
 				break;
 			case RES_NOT:
 				TRY(nsp_ndr_push_restriction_not(pndr, FLAG_CONTENT, &r->res_not));

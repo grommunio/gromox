@@ -132,7 +132,7 @@ struct NSPRES_SUB {
 };
 
 union NSPRES_UNION {
-	NSPRES_AND_OR res_and, res_or;
+	NSPRES_AND_OR res_andor;
 	NSPRES_NOT res_not;
 	NSPRES_CONTENT res_content;
 	NSPRES_PROPERTY res_property;

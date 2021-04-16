@@ -1283,17 +1283,17 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 	
 	switch (pfilter->res_type) {
 	case RES_AND:
-		for (size_t i = 0; i < pfilter->res.res_and.cres; ++i) {
+		for (size_t i = 0; i < pfilter->res.res_andor.cres; ++i) {
 			if (FALSE == nsp_interface_match_node(pnode,
-				codepage, &pfilter->res.res_and.pres[i])) {
+				codepage, &pfilter->res.res_andor.pres[i])) {
 				return FALSE;
 			}
 		}
 		return TRUE;
 	case RES_OR:
-		for (size_t i = 0; i < pfilter->res.res_and.cres; ++i) {
+		for (size_t i = 0; i < pfilter->res.res_andor.cres; ++i) {
 			if (TRUE == nsp_interface_match_node(pnode,
-				codepage, &pfilter->res.res_or.pres[i])) {
+				codepage, &pfilter->res.res_andor.pres[i])) {
 				return TRUE;
 			}
 		}
