@@ -391,22 +391,8 @@ int imap_parser_threads_event_proc(int action)
 
 int imap_parser_process(IMAP_CONTEXT *pcontext)
 {
-	int err;
-	int argc;
-	int exists;
-	int recent;
-    int i, len;
-	int read_len;
-	int temp_len;
-	int ssl_errno;
-	int written_len;
-	size_t total_len;
 	int string_length;
-	const char *host_ID, *imap_reply_str = nullptr, *imap_reply_str2;
-	char* argv[128];
-	char temp_buff[4096];
-	char *ptr, *pbuff;
-    struct timeval current_time;
+	const char *imap_reply_str = nullptr;
 	
  CONTEXT_PROCESSING:
 	if (SCHED_STAT_AUTOLOGOUT == pcontext->sched_stat) {
@@ -437,9 +423,10 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		}
 		
 		if (-1 == SSL_accept(pcontext->connection.ssl)) {
-			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
+			auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
+				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) < g_timeout) {
@@ -464,9 +451,9 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			if (pcontext->connection.server_port == g_ssl_port) {
 				/* IMAP_CODE_2170000: OK <domain> Service ready */
 				int s1len = 0, s2len = 0;
-				imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1, &s1len);
-				imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2, &s2len);
-				host_ID = resource_get_string("HOST_ID");
+				auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1, &s1len);
+				auto imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2, &s2len);
+				auto host_ID = resource_get_string("HOST_ID");
 				SSL_write(pcontext->connection.ssl, "* ", 2);
 				SSL_write(pcontext->connection.ssl, imap_reply_str, s1len);
 				SSL_write(pcontext->connection.ssl, host_ID, strlen(host_ID));
@@ -475,9 +462,11 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 	} else if (SCHED_STAT_NOTIFYING == pcontext->sched_stat) {
+		int exists = 0, recent = 0, err = 0;
 		if (MIDB_RESULT_OK == system_services_summary_folder(pcontext->maildir,
 			pcontext->selected_folder, &exists, &recent, NULL, NULL, NULL, NULL, &err)) {
-			len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
+			char temp_buff[64];
+			auto len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
 							"* %d RECENT\r\n"
 							"* %d EXISTS\r\n",
 							recent, exists);
@@ -494,6 +483,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 	} else if (SCHED_STAT_RDCMD == pcontext->sched_stat ||
 		SCHED_STAT_APPENDED == pcontext->sched_stat ||
 		SCHED_STAT_IDLING == pcontext->sched_stat) {
+		ssize_t read_len;
 		if (NULL != pcontext->connection.ssl) {
 			read_len = SSL_read(pcontext->connection.ssl, pcontext->read_buffer +
 						pcontext->read_offset, 64*1024 - pcontext->read_offset);
@@ -501,6 +491,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			read_len = read(pcontext->connection.sockd, pcontext->read_buffer +
 						pcontext->read_offset, 64*1024 - pcontext->read_offset);
 		}
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (0 == read_len) {
 			imap_parser_log_info(pcontext, 8, "connection lost");
@@ -541,7 +532,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		if (NULL != pcontext->literal_ptr) {
 			if (pcontext->read_buffer + pcontext->read_offset - pcontext->literal_ptr >= 
 				pcontext->literal_len) {
-				temp_len = pcontext->literal_ptr + pcontext->literal_len - pcontext->read_buffer;
+				auto temp_len = pcontext->literal_ptr + pcontext->literal_len - pcontext->read_buffer;
 				if (temp_len <=0 || temp_len >= 64*1024 ||
 					pcontext->command_len + temp_len >= 64*1024) {
 					/* IMAP_CODE_2180017: BAD literal size too large */
@@ -565,7 +556,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			}
 		}
  LITERAL_PROCESSING:
-		for (i=0; i<pcontext->read_offset-3; i++) {
+		for (ssize_t i = 0; i < pcontext->read_offset - 3; ++i) {
+			char *ptr;
 			if (pcontext->read_buffer[i] == '{' &&
 			    (ptr = static_cast<char *>(memchr(pcontext->read_buffer + i, '}', pcontext->read_offset - 2 - i))) != nullptr &&
 			    ptr[1] == '\r' && ptr[2] == '\n') {
@@ -576,7 +568,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				}
 				
 				pcontext->literal_ptr = ptr;
-				temp_len = ptr - pcontext->read_buffer - i - 1;
+				auto temp_len = ptr - pcontext->read_buffer - i - 1;
+				char temp_buff[4096];
 				memcpy(temp_buff, pcontext->read_buffer + i + 1, temp_len);
 				temp_buff[temp_len] = '\0';
 				pcontext->literal_len = atoi(temp_buff);
@@ -593,8 +586,9 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					memcpy(pcontext->command_buffer + pcontext->command_len,
 						pcontext->read_buffer, i);
 					pcontext->command_len += i;
-					argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
-							argv, sizeof(argv)/sizeof(char*));
+					char *argv[128];
+					auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
+					            argv, GX_ARRAY_SIZE(argv));
 					if (argc >= 4 && 0 == strcasecmp(argv[1], "APPEND")) {
 						switch (imap_cmd_parser_append_begin(argc, argv, pcontext)) {
 						case DISPATCH_CONTINUE:
@@ -671,7 +665,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			}
 		}
  CMD_PROCESSING:
-		for (i=0; i<pcontext->read_offset-1; i++) {
+		for (ssize_t i = 0; i < pcontext->read_offset - 1; ++i) {
 			if ('\r' == pcontext->read_buffer[i] &&
 				'\n' == pcontext->read_buffer[i + 1]) {
 				if (i >= 64*1024 || pcontext->command_len + i >= 64*1024) {
@@ -692,6 +686,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					pcontext->read_offset = 0;
 				}
 					
+				char *argv[128];
 				if (PROTO_STAT_USERNAME == pcontext->proto_stat) {
 					argv[0] = pcontext->command_buffer;
 					argv[1] = NULL;
@@ -711,9 +706,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					}
 				}
 				
-				argc = parse_imap_args(pcontext->command_buffer,
-					pcontext->command_len, argv, sizeof(argv)/sizeof(char*));
-				
+				auto argc = parse_imap_args(pcontext->command_buffer,
+				            pcontext->command_len, argv, GX_ARRAY_SIZE(argv));
 				if (SCHED_STAT_APPENDED == pcontext->sched_stat) {
 					if (0 != argc) {
 						if (-1 != pcontext->message_fd) {
@@ -831,18 +825,21 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		}
 		return PROCESS_CONTINUE;
 	} else if (SCHED_STAT_APPENDING == pcontext->sched_stat) {
-		pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, reinterpret_cast<unsigned int *>(&len)));
+		unsigned int len;
+		auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, &len));
 		if (NULL == pbuff) {
 			imap_parser_log_info(pcontext, 8, "out of memory");
 			/* IMAP_CODE_2180009: BAD internal error: fail to get stream buffer */
 			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180009, 1, &string_length);
 			goto END_PROCESSING;
 		}
+		ssize_t read_len;
 		if (NULL != pcontext->connection.ssl) {
 			read_len = SSL_read(pcontext->connection.ssl, pbuff, len);
 		} else {
 			read_len = read(pcontext->connection.sockd, pbuff, len);
 		}
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (0 == read_len) {
 			imap_reply_str = NULL;
@@ -851,7 +848,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		} else if (read_len > 0) {
 			pcontext->connection.last_timestamp = current_time;
 			if (pcontext->literal_len <= pcontext->current_len + read_len) {
-				temp_len = pcontext->current_len + read_len - pcontext->literal_len;
+				ssize_t temp_len = pcontext->current_len + read_len - pcontext->literal_len;
 				memcpy(pcontext->read_buffer, pbuff + read_len - temp_len, temp_len);
 				pcontext->read_offset = temp_len;
 				stream_forward_writing_ptr(&pcontext->stream, read_len - temp_len);
@@ -862,7 +859,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				pcontext->current_len += read_len;
 			}
 			
-			total_len = stream_get_total_length(&pcontext->stream);
+			auto total_len = stream_get_total_length(&pcontext->stream);
 		    if (total_len >= g_cache_size || 
 				pcontext->literal_len == pcontext->current_len) {
 				if (STREAM_DUMP_OK != stream_dump(&pcontext->stream, pcontext->message_fd)) {
@@ -902,6 +899,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		if (0 == pcontext->write_length) {
 			imap_parser_wrdat_retrieve(pcontext);
 		}
+		ssize_t written_len;
 		if (NULL != pcontext->connection.ssl) {
 			written_len = SSL_write(pcontext->connection.ssl,
 				pcontext->write_buff + pcontext->write_offset,
@@ -912,6 +910,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				pcontext->write_length - pcontext->write_offset);
 		}
 			
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 			
 		if (0 == written_len) {
@@ -943,11 +942,11 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		}
 		
 		if (-1 != pcontext->message_fd) {
-			len = pcontext->literal_len - pcontext->current_len;
+			auto len = pcontext->literal_len - pcontext->current_len;
 			if (len > 64*1024) {
 				len = 64*1024;
 			}
-			read_len = read(pcontext->message_fd, pcontext->write_buff, len);
+			auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 			if (read_len != len) {
 				imap_parser_log_info(pcontext, 8, "fail to read message file");
 				/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
@@ -990,11 +989,11 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		return PROCESS_CONTINUE;
 	} else if (SCHED_STAT_WRLST == pcontext->sched_stat) {
 		if (0 == pcontext->write_length) {
-			temp_len = MAX_LINE_LENGTH;
-			pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream,
-			                       reinterpret_cast<unsigned int *>(&temp_len)));
+			unsigned int temp_len = MAX_LINE_LENGTH;
+			pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &temp_len));
 			pcontext->write_length = temp_len;
 		}
+		ssize_t written_len;
 		if (NULL != pcontext->connection.ssl) {
 			written_len = SSL_write(pcontext->connection.ssl,
 				pcontext->write_buff + pcontext->write_offset,
@@ -1005,6 +1004,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				pcontext->write_length - pcontext->write_offset);
 		}
 			
+		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		
 		if (0 == written_len) {
@@ -1036,9 +1036,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		}
 
 		pcontext->write_offset = 0;
-		temp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
-		                       &pcontext->stream, reinterpret_cast<unsigned int *>(&temp_len)));
+		unsigned int temp_len = MAX_LINE_LENGTH;
+		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &temp_len));
 		pcontext->write_length = temp_len;
 		if (NULL == pcontext->write_buff) {
 			stream_clear(&pcontext->stream);
