@@ -486,13 +486,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		if (FALSE == pmessage->b_new && NULL == pbin_pcl) {
 			return GXERR_CALL_FAILED;
 		}
-		if (TRUE == store_object_check_private(pmessage->pstore)) {
-			tmp_xid.guid = rop_util_make_user_guid(
-				store_object_get_account_id(pmessage->pstore));
-		} else {
-			tmp_xid.guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pmessage->pstore));
-		}
+		tmp_xid.guid = store_object_guid(pmessage->pstore);
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 										PROP_TAG_CHANGEKEY;

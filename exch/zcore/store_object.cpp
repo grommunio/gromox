@@ -254,6 +254,13 @@ BOOL store_object_check_private(STORE_OBJECT *pstore)
 	return pstore->b_private;
 }
 
+GUID store_object_guid(STORE_OBJECT *s)
+{
+	auto id = store_object_get_account_id(s);
+	return store_object_check_private(s) ? rop_util_make_user_guid(id) :
+	       rop_util_make_domain_guid(id);
+}
+
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
 {
 	USER_INFO *pinfo;

@@ -1487,13 +1487,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (TRUE == store_object_check_private(pstore)) {
-		longid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pstore));
-	} else {
-		longid.guid = rop_util_make_domain_guid(
-			store_object_get_account_id(pstore));
-	}
+	longid.guid = store_object_guid(pstore);
 	rop_util_get_gc_array(message_id, longid.global_counter);
 	ext_buffer_push_init(&ext_push, pbin->pv, 22, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
@@ -2449,9 +2443,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	tmp_xid.guid = store_object_check_private(pstore) ?
-	               rop_util_make_user_guid(store_object_get_account_id(pstore)) :
-	               rop_util_make_domain_guid(store_object_get_account_id(pstore));
+	tmp_xid.guid = store_object_guid(pstore);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -2544,9 +2536,7 @@ static BOOL common_util_create_folder(
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
-	tmp_xid.guid = store_object_check_private(pstore) ?
-	               rop_util_make_user_guid(store_object_get_account_id(pstore)) :
-	               rop_util_make_domain_guid(store_object_get_account_id(pstore));
+	tmp_xid.guid = store_object_guid(pstore);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {

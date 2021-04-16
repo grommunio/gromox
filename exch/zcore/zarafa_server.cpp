@@ -2792,13 +2792,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
-		if (TRUE == store_object_check_private(pstore)) {
-			tmp_xid.guid = rop_util_make_user_guid(
-				store_object_get_account_id(pstore));
-		} else {
-			tmp_xid.guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pstore));
-		}
+		tmp_xid.guid = store_object_guid(pstore);
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -6271,13 +6265,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
-		if (TRUE == store_object_check_private(pstore)) {
-			tmp_guid = rop_util_make_user_guid(
-				store_object_get_account_id(pstore));
-		} else {
-			tmp_guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pstore));
-		}
+		tmp_guid = store_object_guid(pstore);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			zarafa_server_put_user_info(pinfo);
 			return ecInvalidParam;
@@ -7016,13 +7004,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			zarafa_server_put_user_info(pinfo);
 			return ecNotSupported;
 		}
-		if (TRUE == store_object_check_private(pstore)) {
-			tmp_guid = rop_util_make_user_guid(
-				store_object_get_account_id(pstore));
-		} else {
-			tmp_guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pstore));
-		}
+		tmp_guid = store_object_guid(pstore);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			continue;
 		}

@@ -714,9 +714,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 		(void**)&pbin_pcl) || NULL == pbin_pcl) {
 		return FALSE;
 	}
-	tmp_xid.guid = store_object_check_private(pfolder->pstore) ?
-	               rop_util_make_user_guid(store_object_get_account_id(pfolder->pstore)) :
-	               rop_util_make_domain_guid(store_object_get_account_id(pfolder->pstore));
+	tmp_xid.guid = store_object_guid(pfolder->pstore);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
@@ -801,9 +799,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	}
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	tmp_xid.guid = store_object_check_private(pfolder->pstore) ?
-	               rop_util_make_user_guid(store_object_get_account_id(pfolder->pstore)) :
-	               rop_util_make_domain_guid(store_object_get_account_id(pfolder->pstore));
+	tmp_xid.guid = store_object_guid(pfolder->pstore);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
