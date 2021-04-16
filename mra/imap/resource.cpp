@@ -4,6 +4,7 @@
  *  programmer to set and get the configuration dynamicly
  *
  */
+#include <cerrno>
 #include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>

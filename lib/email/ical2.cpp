@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cerrno>
 #include <cstring>
 #include <optional>
 #include <string>

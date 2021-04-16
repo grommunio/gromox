@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <cerrno>
 #include <list>
 #include <new>
 #include <optional>
