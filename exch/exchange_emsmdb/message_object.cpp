@@ -1354,16 +1354,15 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
+		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (TRUE == message_object_get_calculated_property(
 			pmessage, pproptags->pproptag[i], &pvalue)) {
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+				pv.proptag = pproptags->pproptag[i];
+				pv.pvalue = pvalue;
 			} else {
-				ppropvals->ppropval[ppropvals->count].proptag =
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
-				ppropvals->ppropval[ppropvals->count].pvalue = deconst(&err_code);
+				pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+				pv.pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 			continue;
@@ -1371,9 +1370,8 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		pvalue = message_object_get_stream_property_value(
 							pmessage, pproptags->pproptag[i]);
 		if (NULL != pvalue) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+			pv.proptag = pproptags->pproptag[i];
+			pv.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}	
@@ -1400,32 +1398,28 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		PROP_TAG_SOURCEKEY) >= 0 && NULL ==
 		common_util_get_propvals(ppropvals,
 		PROP_TAG_SOURCEKEY)) {
-		ppropvals->ppropval[ppropvals->count].proptag =
-									PROP_TAG_SOURCEKEY;
-		ppropvals->ppropval[ppropvals->count].pvalue =
-				common_util_calculate_message_sourcekey(
-				pmessage->plogon, pmessage->message_id);
-		if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+		auto &pv = ppropvals->ppropval[ppropvals->count];
+		pv.proptag = PROP_TAG_SOURCEKEY;
+		pv.pvalue = common_util_calculate_message_sourcekey(pmessage->plogon, pmessage->message_id);
+		if (pv.pvalue == nullptr)
 			return FALSE;
-		}
 		ppropvals->count ++;
 	}
 	if (common_util_index_proptags(pproptags,
 		PROP_TAG_MESSAGELOCALEID) >= 0 &&
 		NULL == common_util_get_propvals(
 		ppropvals, PROP_TAG_MESSAGELOCALEID)) {
-		ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_MESSAGELOCALEID;
+		auto &pv = ppropvals->ppropval[ppropvals->count];
+		pv.proptag = PROP_TAG_MESSAGELOCALEID;
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (TRUE == exmdb_client_get_instance_property(
 			logon_object_get_dir(pmessage->plogon),
 			pmessage->instance_id, PROP_TAG_INTERNETCODEPAGE,
 			&pvalue) && NULL != pvalue && pinfo->cpid ==
 			*(uint32_t*)pvalue) {
-			ppropvals->ppropval[ppropvals->count].pvalue =
-										&pinfo->lcid_string;
+			pv.pvalue = &pinfo->lcid_string;
 		} else {
-			ppropvals->ppropval[ppropvals->count].pvalue = deconst(&lcid_default);
+			pv.pvalue = deconst(&lcid_default);
 		}
 		ppropvals->count ++;
 	}
@@ -1433,10 +1427,9 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		PROP_TAG_MESSAGECODEPAGE) >= 0 &&
 		NULL == common_util_get_propvals(
 		ppropvals, PROP_TAG_MESSAGECODEPAGE)) {
-		ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_MESSAGECODEPAGE;
-		ppropvals->ppropval[ppropvals->count].pvalue =
-										&pmessage->cpid;
+		auto &pv = ppropvals->ppropval[ppropvals->count];
+		pv.proptag = PROP_TAG_MESSAGECODEPAGE;
+		pv.pvalue = &pmessage->cpid;
 		ppropvals->count ++;
 	}
 	return TRUE;	

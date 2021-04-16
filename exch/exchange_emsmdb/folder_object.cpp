@@ -636,17 +636,15 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
+		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (TRUE == folder_object_get_calculated_property(
 			pfolder, pproptags->pproptag[i], &pvalue)) {
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+				pv.proptag = pproptags->pproptag[i];
+				pv.pvalue = pvalue;
 			} else {
-				ppropvals->ppropval[ppropvals->count].proptag =
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					deconst(&err_code);
+				pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+				pv.pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 		} else {
@@ -673,14 +671,11 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 		PROP_TAG_SOURCEKEY) >= 0 && NULL ==
 		common_util_get_propvals(ppropvals,
 		PROP_TAG_SOURCEKEY)) {
-		ppropvals->ppropval[ppropvals->count].proptag =
-									PROP_TAG_SOURCEKEY;
-		ppropvals->ppropval[ppropvals->count].pvalue =
-			common_util_calculate_folder_sourcekey(
-			pfolder->plogon, pfolder->folder_id);
-		if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+		auto &pv = ppropvals->ppropval[ppropvals->count];
+		pv.proptag = PROP_TAG_SOURCEKEY;
+		pv.pvalue = common_util_calculate_folder_sourcekey(pfolder->plogon, pfolder->folder_id);
+		if (pv.pvalue == nullptr)
 			return FALSE;
-		}
 		ppropvals->count ++;
 	}
 	return TRUE;	

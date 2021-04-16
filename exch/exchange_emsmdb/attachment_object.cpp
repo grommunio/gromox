@@ -377,16 +377,15 @@ BOOL attachment_object_get_properties(
 	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
+		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (TRUE == attachment_object_get_calculated_property(
 			pattachment, pproptags->pproptag[i], &pvalue)) {
 			if (NULL != pvalue) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+				pv.proptag = pproptags->pproptag[i];
+				pv.pvalue = pvalue;
 			} else {
-				ppropvals->ppropval[ppropvals->count].proptag =
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
-				ppropvals->ppropval[ppropvals->count].pvalue = deconst(&err_code);
+				pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+				pv.pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 			continue;
@@ -394,9 +393,8 @@ BOOL attachment_object_get_properties(
 		pvalue = attachment_object_get_stream_property_value(
 						pattachment, pproptags->pproptag[i]);
 		if (NULL != pvalue) {
-			ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+			pv.proptag = pproptags->pproptag[i];
+			pv.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}
