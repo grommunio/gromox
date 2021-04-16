@@ -164,9 +164,8 @@ void* array_get_item(ARRAY* parray, size_t index)
 	if (NULL == parray) {
 		return NULL;
 	}
-	if (index + 1> parray->cur_size || index < 0) {
+	if (index + 1 > parray->cur_size)
 		return NULL;
-	}
 	if (NULL != parray->cache_ptrs) {
 		if (index < ARRAY_CACHEITEM_NUMBER) {
 			return parray->cache_ptrs[index];

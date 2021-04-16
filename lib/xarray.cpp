@@ -162,10 +162,8 @@ void *xarray_get_item(XARRAY* pxarray, size_t index)
 	if (NULL == pxarray) {
 		return NULL;
 	}
-	if (index + 1 > pxarray->cur_size || index < 0) {
+	if (index + 1 > pxarray->cur_size)
 		return NULL;
-	}
-
 	if (index < XARRAY_CACHEITEM_NUMBER) {
 		return pxarray->cache_ptrs[index];
 	}
