@@ -550,16 +550,17 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	if (-1 == length1) {
 		length1 = len1;
 	}
+	int l2;
 	if (offset1 >= len1) {
-		len = gx_snprintf(value, val_len, "BODY%s NIL", pbody);
+		l2 = gx_snprintf(value, val_len, "BODY%s NIL", pbody);
 	} else {
 		if (offset1 + length1 > len1) {
 			length1 = len1 - offset1;
 		}
-		len = gx_snprintf(value, val_len,
+		l2 = gx_snprintf(value, val_len,
 			"BODY%s {%ld}\r\n%s", pbody, length1, buff1 + offset1);
 	}
-	return len >= 0 && static_cast<size_t>(len) >= val_len - 1 ? -1 : len;
+	return l2 >= 0 && static_cast<size_t>(l2) >= val_len - 1 ? -1 : l2;
 }
 
 static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
