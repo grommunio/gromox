@@ -405,7 +405,6 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 	const char *host_ID, *imap_reply_str = nullptr, *imap_reply_str2;
 	char* argv[128];
 	char temp_buff[4096];
-	char reply_buff[1024];
 	char *ptr, *pbuff;
     struct timeval current_time;
 	
@@ -448,8 +447,8 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				}
 				/* IMAP_CODE_2180011: BAD time out */
 				imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
-				len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
-				write(pcontext->connection.sockd, reply_buff, len);
+				write(pcontext->connection.sockd, "* ", 2);
+				write(pcontext->connection.sockd, imap_reply_str, string_length);
 				imap_parser_log_info(pcontext, 0, "time out");
 				SLEEP_BEFORE_CLOSE;
 			}
@@ -464,12 +463,14 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			pcontext->sched_stat = SCHED_STAT_RDCMD;
 			if (pcontext->connection.server_port == g_ssl_port) {
 				/* IMAP_CODE_2170000: OK <domain> Service ready */
-				imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1, &string_length);
-				imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2, &string_length);
+				int s1len = 0, s2len = 0;
+				imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1, &s1len);
+				imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2, &s2len);
 				host_ID = resource_get_string("HOST_ID");
-				len = sprintf(reply_buff, "* %s%s%s",
-					imap_reply_str, host_ID, imap_reply_str2);
-				SSL_write(pcontext->connection.ssl, reply_buff, len);
+				SSL_write(pcontext->connection.ssl, "* ", 2);
+				SSL_write(pcontext->connection.ssl, imap_reply_str, s1len);
+				SSL_write(pcontext->connection.ssl, host_ID, strlen(host_ID));
+				SSL_write(pcontext->connection.ssl, imap_reply_str2, s2len);
 			}
 			return PROCESS_CONTINUE;
 		}
@@ -636,11 +637,12 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					
 					/* IMAP_CODE_2180017: BAD literal size too large */
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
-					len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 					if (NULL != pcontext->connection.ssl) {
-						SSL_write(pcontext->connection.ssl, reply_buff, len);
+						SSL_write(pcontext->connection.ssl, "* ", 2);
+						SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 					} else {
-						write(pcontext->connection.sockd, reply_buff, len);
+						write(pcontext->connection.sockd, "* ", 2);
+						write(pcontext->connection.sockd, imap_reply_str, string_length);
 					}
 					pcontext->read_offset -= (ptr + 3 - pcontext->read_buffer);
 					if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
@@ -724,12 +726,14 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 						}
 						imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1,
 											&string_length);
-						string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s",
-											pcontext->tag_string, imap_reply_str);
 						if (NULL != pcontext->connection.ssl) {
-							SSL_write(pcontext->connection.ssl, reply_buff, string_length);
+							SSL_write(pcontext->connection.ssl, pcontext->tag_string, strlen(pcontext->tag_string));
+							SSL_write(pcontext->connection.ssl, " ", 1);
+							SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 						} else {
-							write(pcontext->connection.sockd, reply_buff, string_length);
+							write(pcontext->connection.sockd, pcontext->tag_string, strlen(pcontext->tag_string));
+							write(pcontext->connection.sockd, " ", 1);
+							write(pcontext->connection.sockd, imap_reply_str, string_length);
 						}
 					} else {
 						imap_cmd_parser_append_end(argc, argv, pcontext);
@@ -753,12 +757,14 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 						imap_reply_str = resource_get_imap_code(IMAP_CODE_2170027, 1,
 											&string_length);
 					}
-					string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s",
-								pcontext->tag_string, imap_reply_str);
 					if (NULL != pcontext->connection.ssl) {
-						SSL_write(pcontext->connection.ssl, reply_buff, string_length);
+						SSL_write(pcontext->connection.ssl, pcontext->tag_string, strlen(pcontext->tag_string));
+						SSL_write(pcontext->connection.ssl, " ", 1);
+						SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 					} else {
-						write(pcontext->connection.sockd, reply_buff, string_length);
+						write(pcontext->connection.sockd, pcontext->tag_string, strlen(pcontext->tag_string));
+						write(pcontext->connection.sockd, " ", 1);
+						write(pcontext->connection.sockd, imap_reply_str, string_length);
 					}
 					pcontext->command_len = 0;
 					goto LITERAL_PROCESSING;
@@ -768,14 +774,23 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				if (argc < 2 || strlen(argv[0]) >= 32) {
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 					if (argc <= 0 || strlen(argv[0]) >= 32) {
-						string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
+						if (pcontext->connection.ssl != nullptr) {
+							SSL_write(pcontext->connection.ssl, "* ", 2);
+							SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
+						} else {
+							write(pcontext->connection.sockd, "* ", 2);
+							write(pcontext->connection.sockd, imap_reply_str, string_length);
+						}
 					} else {
-						string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s", argv[0], imap_reply_str);
-					}
-					if (NULL != pcontext->connection.ssl) {
-						SSL_write(pcontext->connection.ssl, reply_buff, string_length);
-					} else {
-						write(pcontext->connection.sockd, reply_buff, string_length);
+						if (pcontext->connection.ssl != nullptr) {
+							SSL_write(pcontext->connection.ssl, argv[0], strlen(argv[0]));
+							SSL_write(pcontext->connection.ssl, " ", 1);
+							SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
+						} else {
+							write(pcontext->connection.sockd, argv[0], strlen(argv[0]));
+							write(pcontext->connection.sockd, " ", 1);
+							write(pcontext->connection.sockd, imap_reply_str, string_length);
+						}
 					}
 					pcontext->command_len = 0;
 					goto LITERAL_CHECKING;
@@ -1037,11 +1052,12 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 
  END_PROCESSING:
 	if (NULL != imap_reply_str) {
-		len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_buff, len);
+			SSL_write(pcontext->connection.ssl, "* ", 2);
+			SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 		} else {
-			write(pcontext->connection.sockd, reply_buff, len);
+			write(pcontext->connection.sockd, "* ", 2);
+			write(pcontext->connection.sockd, imap_reply_str, string_length);
 		}
 	}
 	if (NULL != pcontext->connection.ssl) {
