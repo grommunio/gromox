@@ -857,7 +857,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 
 static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 {
-	unsigned int len;
+	unsigned int len = STREAM_BLOCK_SIZE;
 	auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, &len));
 	if (NULL == pbuff) {
 		imap_parser_log_info(pcontext, 8, "out of memory");
