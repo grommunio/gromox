@@ -316,7 +316,6 @@ int main(int argc, const char **argv)
 	const char *presult;
 	char temp_path[256];
 	char temp_path1[256];
-	struct stat node_stat;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (2 != argc) {
@@ -329,9 +328,8 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", argv[1]);
-	if (0 != stat(temp_path, &node_stat)) {
-		printf("can not find sotre database,"
-			" %s does not exit\n", temp_path);
+	if (access(temp_path, R_OK) < 0) {
+		printf("%s: %s\n", temp_path, strerror(errno));
 		return 1;
 	}
 
