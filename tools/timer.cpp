@@ -278,9 +278,13 @@ int main(int argc, const char **argv)
 		pthread_setname_np(thr_ids[i], buf);
 	}
 	auto cl_2 = make_scope_exit([&]() {
+		/* thread might be waiting at the condvar */
 		g_waken_cond.notify_all();
-		for (auto tid : thr_ids)
+		for (auto tid : thr_ids) {
+			/* thread might be waiting in read_mark/select */
+			pthread_kill(tid, SIGALRM);
 			pthread_join(tid, nullptr);
+		}
 	});
 	if (thr_ids.size() != g_threads_num) {
 		g_notify_stop = true;
@@ -478,6 +482,8 @@ static void *tmr_thrwork(void *param)
 	char *pspace, temp_line[1024];
 	
  NEXT_LOOP:
+	if (g_notify_stop)
+		return nullptr;
 	std::unique_lock cm_hold(g_cond_mutex);
 	g_waken_cond.wait(cm_hold);
 	cm_hold.unlock();
