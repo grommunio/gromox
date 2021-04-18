@@ -1215,7 +1215,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	while (ptr - cmdline < cmdlen && argc < argmax - 1) {
 		if ('{' == *ptr && NULL == last_quota) {
 			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
-			if (last_brace == nullptr) {
+			if (last_brace != nullptr) {
 				*last_brace = '\0';
 				length = atoi(ptr + 1);
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
