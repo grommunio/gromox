@@ -109,16 +109,13 @@ void auto_response_reply(const char *user_home,
 	if (FALSE == bounce_audit_check(audit_buff)) {
 		return;
 	}
-	if (0 != stat(template_path, &node_stat)) {
-		return;
-	}
-	if (static_cast<size_t>(node_stat.st_size) > sizeof(buff) - 1 || node_stat.st_size == 0)
-		return;
 	fd = open(template_path, O_RDONLY);
 	if (-1 == fd) {
 		return;
 	}
-	if (node_stat.st_size != read(fd, buff, node_stat.st_size)) {
+	if (fstat(fd, &node_stat) != 0 || node_stat.st_size == 0 ||
+	    static_cast<size_t>(node_stat.st_size) > sizeof(buff) - 1 ||
+	    read(fd, buff, node_stat.st_size) != node_stat.st_size) {
 		close(fd);
 		return;
 	}
