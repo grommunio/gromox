@@ -228,8 +228,9 @@ db_item_ptr db_engine_get_db(const char *path)
 		pdb->tables.b_batch = FALSE;
 		pdb->tables.psqlite = NULL;
 		sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
-		if (SQLITE_OK != sqlite3_open_v2(db_path,
-			&pdb->psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+		auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "E-1434: sqlite3_open %s: %s\n", db_path, sqlite3_errstr(ret));
 			pdb->psqlite = NULL;
 		} else {
 			sqlite3_exec(pdb->psqlite, "PRAGMA foreign_keys=ON",

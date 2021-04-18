@@ -3768,8 +3768,9 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	sprintf(tmp_path, "%s/tmp/state.sqlite3", exmdb_server_get_dir());
 	if (0 != stat(tmp_path, &node_stat)) {
-		if (SQLITE_OK != sqlite3_open_v2(tmp_path, &psqlite,
-			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "E-1435: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
 		}
 		sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
@@ -3800,8 +3801,9 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			return FALSE;
 		}
 	} else {
-		if (SQLITE_OK != sqlite3_open_v2(tmp_path,
-			&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "E-1436: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
 		}
 		sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
@@ -4161,8 +4163,9 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (0 != stat(tmp_path, &node_stat)) {
 		return TRUE;
 	}
-	if (SQLITE_OK != sqlite3_open_v2(tmp_path,
-		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+	auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "E-1437: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
 		return FALSE;
 	}
 	sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
