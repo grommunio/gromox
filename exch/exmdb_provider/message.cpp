@@ -1888,6 +1888,7 @@ static BOOL message_rectify_message(const char *account,
 	vc->proptag = PROP_TAG_MESSAGESTATUS;
 	vc->pvalue = deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
+	++vc;
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS)) {
 		vc->proptag = PROP_TAG_MESSAGEFLAGS;
@@ -1911,6 +1912,7 @@ static BOOL message_rectify_message(const char *account,
 		vc->proptag = PROP_TAG_SEARCHKEY;
 		vc->pvalue = pbin;
 		pmsgctnt1->proplist.count ++;
+		++vc;
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_BODYCONTENTID)) {
