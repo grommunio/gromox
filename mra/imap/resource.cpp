@@ -393,7 +393,7 @@ const char *resource_get_imap_code(int code_type, int n, int *len)
             return ret_ptr;
         }
     }
-    debug_info("[resource]: not exits nth in resource_get_imap_code");
+	debug_info("[resource]: rcode does not exist (resource_get_imap_code)");
 	*len = 15;
 	return "unknown error\r\n";
 }

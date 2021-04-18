@@ -333,7 +333,7 @@ char* resource_get_smtp_code(int code_type, int n, int *len)
             return ret_ptr;
         }
     }
-    debug_info("[resource]: not exits nth in resource_get_smtp_code");
+	debug_info("[resource]: rcode does not exist (resource_get_smtp_code)");
     return NULL;
 }
 
