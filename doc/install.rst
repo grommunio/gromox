@@ -73,14 +73,12 @@ Have a PEM-encoded certificate and key ready. The cert file should contain any
 necessary sections of the certificate chain (in case those CAs are not already
 available by way of ``/etc/ssl/certs``). openSSL generally allows having the
 cert and the key in the same file, if you wish to do so. Add to
-`/etc/gromox/http.cfg`:
+`/etc/gromox/http.cfg`::
 
-```
-listen_ssl_port = 443
-http_support_ssl = true
-http_certificate_path = /etc/gromox/mydomain.pem
-http_private_key_path = /etc/gromox/mydomain.key
-```
+	listen_ssl_port = 443
+	http_support_ssl = true
+	http_certificate_path = /etc/gromox/mydomain.pem
+	http_private_key_path = /etc/gromox/mydomain.key
 
 The Gromox Autodiscover handler `forces`__ a HTTPS redirect, which is why a
 certificate should indeed be set up. Then, since you already have the
@@ -134,12 +132,10 @@ outgoing SMTP. gromox-smtp listens on port 25 by default, but it is only the
 LDA, so such setup would only allow to send mail locally. To enable Internet
 mail or to add spam filtration, you will have reconfigure gromox-smtp to listen
 on port 24 rather than 25, and install a full MTA like Postfix with
-configuration directives similar to:
+configuration directives similar to::
 
-```
-virtual_mailbox_domains = mydomain.de myotherdomain.com
-virtual_transport = smtp:localhost:24
-```
+	virtual_mailbox_domains = mydomain.de myotherdomain.com
+	virtual_transport = smtp:localhost:24
 
 
 Service start
