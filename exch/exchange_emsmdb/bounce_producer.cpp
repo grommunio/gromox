@@ -143,18 +143,15 @@ BOOL bounce_producer_refresh(const char *data_path)
 
 static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_name)
 {
-	DIR *sub_dirp;
 	struct dirent *sub_direntp;
 	struct stat node_stat;
 	char dir_buff[256], sub_buff[256];
 	int i, item_num;
 
 	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir, dir_name);
-	if (0 != stat(dir_buff, &node_stat) ||
-		0 == S_ISDIR(node_stat.st_mode)) {
+	auto sub_dirp = opendir(dir_buff);
+	if (sub_dirp == nullptr)
 		return FALSE;
-	}
-	sub_dirp = opendir(dir_buff);
 	item_num = 0;
 	while ((sub_direntp = readdir(sub_dirp)) != NULL) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
