@@ -2201,15 +2201,20 @@ BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 		*pdot = '\0';
 		snprintf(temp_path, 256, "%s/%s/%s.dgt", storage_path,
 			pjson_base->filename, mjson_id);
-		if (0 == stat(temp_path, &node_stat)) {
-			if (0 == S_ISREG(node_stat.st_mode) ||
-				node_stat.st_size > MAX_DIGLEN) {
-				return FALSE;
-			}
-			fd = open(temp_path, O_RDONLY);
-			if (-1 == fd) {
-				return FALSE;
-			}
+		fd = open(temp_path, O_RDONLY);
+		if (-1 == fd) {
+			if (errno == ENOENT || errno == EISDIR)
+				continue;
+			return FALSE;
+		}
+		if (fstat(fd, &node_stat) != 0) {
+			close(fd);
+			return false;
+		}
+		if (!S_ISREG(node_stat.st_mode) || node_stat.st_size > MAX_DIGLEN) {
+			close(fd);
+			return FALSE;
+		}
 			if (node_stat.st_size != read(fd, digest_buff,
 				node_stat.st_size)) {
 				close(fd);
@@ -2224,7 +2229,6 @@ BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 			}
 			strcpy(mime_id, pdot + 1);
 			return TRUE;
-		}
 	}
 	return FALSE;
 }
