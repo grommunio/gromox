@@ -389,21 +389,32 @@ int imap_parser_threads_event_proc(int action)
     return 0;
 }
 
+enum {
+	X_CONTEXT_PROCESSING = -1,
+	X_CMD_PROCESSING = -2,
+	X_LITERAL_CHECKING = -3,
+	X_LITERAL_PROCESSING = -4,
+};
+
 static int ps_end_processing(IMAP_CONTEXT *, const char * = nullptr, ssize_t = 0);
 
-int imap_parser_process(IMAP_CONTEXT *pcontext)
+static int ps_stat_autologout(IMAP_CONTEXT *pcontext)
 {
- CONTEXT_PROCESSING:
-	if (SCHED_STAT_AUTOLOGOUT == pcontext->sched_stat) {
 		imap_parser_log_info(pcontext, 8, "auto logout");
 		/* IMAP_CODE_2160004: BYE Disconnected by autologout */
 		int string_length;
 		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2160004, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
-	} else if (SCHED_STAT_DISCONNECTED == pcontext->sched_stat) {
+}
+
+static int ps_stat_disconnected(IMAP_CONTEXT *pcontext)
+{
 		imap_parser_log_info(pcontext, 8, "connection lost");
 		return ps_end_processing(pcontext);
-	} else if (SCHED_STAT_STLS == pcontext->sched_stat) {
+}
+
+static int ps_stat_stls(IMAP_CONTEXT *pcontext)
+{
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
@@ -462,7 +473,10 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			}
 			return PROCESS_CONTINUE;
 		}
-	} else if (SCHED_STAT_NOTIFYING == pcontext->sched_stat) {
+}
+
+static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
+{
 		int exists = 0, recent = 0, err = 0;
 		if (MIDB_RESULT_OK == system_services_summary_folder(pcontext->maildir,
 			pcontext->selected_folder, &exists, &recent, NULL, NULL, NULL, NULL, &err)) {
@@ -481,9 +495,10 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 		double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
 		pcontext->sched_stat = SCHED_STAT_IDLING;
 		return PROCESS_SLEEPING;
-	} else if (SCHED_STAT_RDCMD == pcontext->sched_stat ||
-		SCHED_STAT_APPENDED == pcontext->sched_stat ||
-		SCHED_STAT_IDLING == pcontext->sched_stat) {
+}
+
+static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
+{
 		ssize_t read_len;
 		if (NULL != pcontext->connection.ssl) {
 			read_len = SSL_read(pcontext->connection.ssl, pcontext->read_buffer +
@@ -525,10 +540,13 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 
 		if (SCHED_STAT_APPENDED == pcontext->sched_stat ||
 			SCHED_STAT_IDLING == pcontext->sched_stat) {
-			goto CMD_PROCESSING;
+			return X_CMD_PROCESSING;
 		}
-		
- LITERAL_CHECKING:		
+		return X_LITERAL_CHECKING;
+}
+
+static int ps_literal_checking(IMAP_CONTEXT *pcontext)
+{
 		if (NULL != pcontext->literal_ptr) {
 			if (pcontext->read_buffer + pcontext->read_offset - pcontext->literal_ptr >= 
 				pcontext->literal_len) {
@@ -556,7 +574,11 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				return PROCESS_CONTINUE;
 			}
 		}
- LITERAL_PROCESSING:
+		return X_LITERAL_PROCESSING;
+}
+
+static int ps_literal_processing(IMAP_CONTEXT *pcontext)
+{
 		for (ssize_t i = 0; i < pcontext->read_offset - 3; ++i) {
 			char *ptr;
 			if (pcontext->read_buffer[i] == '{' &&
@@ -630,7 +652,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 							pcontext->literal_ptr = NULL;
 							pcontext->literal_len = 0;
 							pcontext->command_len = 0;
-							goto LITERAL_PROCESSING;
+							return X_LITERAL_PROCESSING;
 						}
 					}
 					
@@ -653,7 +675,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					pcontext->literal_ptr = NULL;
 					pcontext->literal_len = 0;
 					pcontext->command_len = 0;
-					goto LITERAL_PROCESSING;
+					return X_LITERAL_PROCESSING;
 				}
 				pcontext->read_offset -= 2;
 				temp_len = pcontext->read_offset - (ptr + 1 - pcontext->read_buffer);
@@ -668,10 +690,14 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				} else {
 					write(pcontext->connection.sockd, imap_reply_str, string_length);
 				}
-				goto LITERAL_CHECKING;
+				return X_LITERAL_CHECKING;
 			}
 		}
- CMD_PROCESSING:
+		return X_CMD_PROCESSING;
+}
+
+static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
+{
 		for (ssize_t i = 0; i < pcontext->read_offset - 1; ++i) {
 			if ('\r' == pcontext->read_buffer[i] &&
 				'\n' == pcontext->read_buffer[i + 1]) {
@@ -700,7 +726,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					argv[1] = NULL;
 					imap_cmd_parser_username(1, argv, pcontext);
 					pcontext->command_len = 0;
-					goto LITERAL_PROCESSING;
+					return X_LITERAL_PROCESSING;
 				} else if (PROTO_STAT_PASSWORD == pcontext->proto_stat) {
 					argv[0] = pcontext->command_buffer;
 					argv[1] = NULL;
@@ -709,7 +735,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 						return ps_end_processing(pcontext);
 					} else {
 						pcontext->command_len = 0;
-						goto LITERAL_PROCESSING;
+						return X_LITERAL_PROCESSING;
 					}
 				}
 				
@@ -743,7 +769,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 					pcontext->literal_ptr = NULL;
 					pcontext->literal_len = 0;
 					pcontext->command_len = 0;
-					goto LITERAL_PROCESSING;
+					return X_LITERAL_PROCESSING;
 				}
 				
 				if (SCHED_STAT_IDLING == pcontext->sched_stat) {
@@ -770,7 +796,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 						write(pcontext->connection.sockd, imap_reply_str, string_length);
 					}
 					pcontext->command_len = 0;
-					goto LITERAL_PROCESSING;
+					return X_LITERAL_PROCESSING;
 				}
 				
 				
@@ -797,16 +823,16 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 						}
 					}
 					pcontext->command_len = 0;
-					goto LITERAL_CHECKING;
+					return X_LITERAL_CHECKING;
 				}
 				
 				switch (imap_parser_dispatch_cmd(argc, argv, pcontext)) {
 				case DISPATCH_CONTINUE:
 					pcontext->command_len = 0;
-					goto LITERAL_PROCESSING;
+					return X_LITERAL_PROCESSING;
 				case DISPATCH_BREAK:
 					pcontext->command_len = 0;
-					goto CONTEXT_PROCESSING;
+					return X_CONTEXT_PROCESSING;
 				case DISPATCH_SHOULD_CLOSE:
 					return ps_end_processing(pcontext);
 				}
@@ -833,7 +859,10 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			return PROCESS_SLEEPING;
 		}
 		return PROCESS_CONTINUE;
-	} else if (SCHED_STAT_APPENDING == pcontext->sched_stat) {
+}
+
+static int ps_stat_appending(IMAP_CONTEXT *pcontext)
+{
 		unsigned int len;
 		auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, &len));
 		if (NULL == pbuff) {
@@ -883,7 +912,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			if (SCHED_STAT_APPENDED == pcontext->sched_stat) {
 				pcontext->literal_ptr = NULL;
 				pcontext->literal_len = 0;
-				goto CMD_PROCESSING;
+				return X_CMD_PROCESSING;
 			} else {
 				return PROCESS_CONTINUE;
 			}
@@ -904,8 +933,10 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				return PROCESS_POLLING_RDONLY;
 			}
 		}
-	
-	} else if (SCHED_STAT_WRDAT == pcontext->sched_stat) {
+}
+
+static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
+{
 		if (0 == pcontext->write_length) {
 			imap_parser_wrdat_retrieve(pcontext);
 		}
@@ -986,7 +1017,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 				stream_clear(&pcontext->stream);
 				if (0 == pcontext->write_length) {
 					pcontext->sched_stat = SCHED_STAT_RDCMD;
-					goto LITERAL_CHECKING;
+					return X_LITERAL_CHECKING;
 				}
 				break;
 			case IMAP_RETRIEVE_OK:
@@ -999,7 +1030,10 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			}
 		}
 		return PROCESS_CONTINUE;
-	} else if (SCHED_STAT_WRLST == pcontext->sched_stat) {
+}
+
+static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
+{
 		if (0 == pcontext->write_length) {
 			unsigned int temp_len = MAX_LINE_LENGTH;
 			pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &temp_len));
@@ -1055,11 +1089,43 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 			pcontext->write_length = 0;
 			pcontext->write_offset = 0;
 			pcontext->sched_stat = SCHED_STAT_RDCMD;
-			goto LITERAL_CHECKING;
+			return X_LITERAL_CHECKING;
 		}
 		return PROCESS_CONTINUE;
+}
+
+int imap_parser_process(IMAP_CONTEXT *ctx)
+{
+	int ret = X_CONTEXT_PROCESSING;
+	while (ret < 0) {
+		if (ret == X_CMD_PROCESSING)
+			ret = ps_cmd_processing(ctx);
+		else if (ret == X_LITERAL_CHECKING)
+			ret = ps_literal_checking(ctx);
+		else if (ret == X_LITERAL_PROCESSING)
+			ret = ps_literal_processing(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_AUTOLOGOUT)
+			ret = ps_stat_autologout(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_DISCONNECTED)
+			ret = ps_stat_disconnected(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_STLS)
+			ret = ps_stat_stls(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_NOTIFYING)
+			ret = ps_stat_notifying(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_RDCMD ||
+		    ctx->sched_stat == SCHED_STAT_APPENDED ||
+		    ctx->sched_stat == SCHED_STAT_IDLING)
+			ret = ps_stat_rdcmd(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_APPENDING)
+			ret = ps_stat_appending(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_WRDAT)
+			ret = ps_stat_wrdat(ctx);
+		else if (ctx->sched_stat == SCHED_STAT_WRLST)
+			ret = ps_stat_wrlst(ctx);
+		else
+			ret = ps_end_processing(ctx);
 	}
-	return ps_end_processing(pcontext);
+	return ret;
 }
 
 static int ps_end_processing(IMAP_CONTEXT *pcontext,
