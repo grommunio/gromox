@@ -379,9 +379,6 @@ int main(int argc, const char **argv)
 		sleep(1);
 
 	}
-
-	g_connection_list.clear();
-	g_connection_list1.clear();
 	return 0;
 }
 
@@ -490,7 +487,7 @@ static void *tmr_thrwork(void *param)
 	if (g_connection_list1.size() == 0)
 		goto NEXT_LOOP;
 	g_connection_list.splice(g_connection_list.end(), g_connection_list1, g_connection_list1.begin());
-	auto pconnection = std::prev(g_connection_list.rbegin().base());
+	auto pconnection = std::prev(g_connection_list.end());
 	co_hold.unlock();
 
 	while (TRUE) {
