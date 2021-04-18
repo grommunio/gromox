@@ -1596,21 +1596,20 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 
 BOOL common_util_load_file(const char *path, BINARY *pbin)
 {
-	int fd;
 	struct stat node_state;
 	
-	if (0 != stat(path, &node_state)) {
+	auto fd = open(path, O_RDONLY);
+	if (-1 == fd) {
+		return FALSE;
+	}
+	if (fstat(fd, &node_state) != 0) {
+		close(fd);
 		return FALSE;
 	}
 	pbin->cb = node_state.st_size;
 	pbin->pv = common_util_alloc(node_state.st_size);
-	if (pbin->pv == nullptr)
-		return FALSE;
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
-		return FALSE;
-	}
-	if (read(fd, pbin->pv, node_state.st_size) != node_state.st_size) {
+	if (pbin->pv == nullptr ||
+	    read(fd, pbin->pv, node_state.st_size) != node_state.st_size) {
 		close(fd);
 		return FALSE;
 	}
