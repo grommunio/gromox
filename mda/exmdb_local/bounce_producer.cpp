@@ -241,7 +241,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
     struct dirent *sub_direntp;
 	struct stat node_stat;
     char dir_buff[256], sub_buff[256];
-	int fd, i, j, k, until_tag;
+	int i, j, k, until_tag;
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
 	RESOURCE_NODE rnode, *presource = &rnode;
@@ -259,12 +259,6 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
-		         dir_buff, sub_direntp->d_name);
-        if (0 != stat(sub_buff, &node_stat) ||
-            0 == S_ISREG(node_stat.st_mode)) {
-            continue;
-        }
 		/* compare file name with the resource table and get the index */
         for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
             if (0 == strcmp(g_resource_table[i], sub_direntp->d_name)) {
@@ -274,25 +268,23 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
+		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
+		         dir_buff, sub_direntp->d_name);
+		wrapfd fd = open(sub_buff, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+		    !S_ISREG(node_stat.st_mode))
+			continue;
 		try {
 			presource->content[i] = std::make_unique<char[]>(node_stat.st_size);
 		} catch (const std::bad_alloc &) {
-    		closedir(sub_dirp);
+			closedir(sub_dirp);
 			return;
 		}
-		fd = open(sub_buff, O_RDONLY);
-		if (-1 == fd) {
-    		closedir(sub_dirp);
+		if (read(fd.get(), presource->content[i].get(), node_stat.st_size) != node_stat.st_size) {
+			closedir(sub_dirp);
 			return;
 		}
-		if (read(fd, presource->content[i].get(), node_stat.st_size) != node_stat.st_size) {
-			close(fd);
-    		closedir(sub_dirp);
-			return;
-		}
-		close(fd);
-		fd = -1;
-		
+		fd.close();
 		j = 0;
 		while (j < node_stat.st_size) {
 			auto parsed_length = parse_mime_field(&presource->content[i][j],

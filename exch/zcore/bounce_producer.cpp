@@ -205,8 +205,6 @@ static void bounce_producer_load_subdir(const char *basedir,
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
-		         dir_buff, sub_direntp->d_name);
 		/* compare file name with the resource table and get the index */
 		for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
 			if (0 == strcmp(g_resource_table[i], sub_direntp->d_name)) {
@@ -216,6 +214,8 @@ static void bounce_producer_load_subdir(const char *basedir,
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
+		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
+		         dir_buff, sub_direntp->d_name);
 		wrapfd fd = open(sub_buff, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
@@ -231,7 +231,6 @@ static void bounce_producer_load_subdir(const char *basedir,
 			return;
 		}
 		fd.close();
-		
 		j = 0;
 		while (j < node_stat.st_size) {
 			auto parsed_length = parse_mime_field(&presource->content[i][j],
