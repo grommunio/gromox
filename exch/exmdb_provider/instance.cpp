@@ -709,7 +709,6 @@ BOOL exmdb_server_clear_message_instance(
 
 void *instance_read_cid_content(uint64_t cid, uint32_t *plen)
 {
-	int fd;
 	char *pbuff;
 	char path[256];
 	const char *dir;
@@ -717,18 +716,17 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen)
 	
 	dir = exmdb_server_get_dir();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, static_cast<unsigned long long>(cid));
-	if (0 != stat(path, &node_stat)) {
-		return NULL;
-	}
-	pbuff = cu_alloc<char>(node_stat.st_size);
-	if (NULL == pbuff) {
-		return NULL;
-	}
-	fd = open(path, O_RDONLY);
+	auto fd = open(path, O_RDONLY);
 	if (-1 == fd) {
 		return NULL;
 	}
-	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+	if (fstat(fd, &node_stat) != 0) {
+		close(fd);
+		return NULL;
+	}
+	pbuff = cu_alloc<char>(node_stat.st_size);
+	if (pbuff == nullptr ||
+	    node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
 		close(fd);
 		return NULL;
 	}
