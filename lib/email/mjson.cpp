@@ -2139,7 +2139,6 @@ BOOL mjson_rfc822_build(MJSON *pjson, MIME_POOL *ppool,
 	const char *storage_path)
 {
 	char temp_path[256];
-	struct stat node_stat;
 	BUILD_PARAM build_param;
 	
 	if (FALSE == mjson_rfc822_check(pjson)) {
@@ -2151,15 +2150,8 @@ BOOL mjson_rfc822_build(MJSON *pjson, MIME_POOL *ppool,
 	}
 	
 	snprintf(temp_path, 256, "%s/%s", storage_path, pjson->filename);
-	if (0 == stat(temp_path, &node_stat)) {
-		if (0 == S_ISDIR(node_stat.st_mode)) {
-			return FALSE;
-		} else {
-			return TRUE;
-		}
-	}
-	
-	if (0 != mkdir(temp_path, 0777)) {
+	if (mkdir(temp_path, 0777) != 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1433: mkdir %s: %s\n", temp_path, strerror(errno));
 		return FALSE;
 	}
 	build_param.filename = pjson->filename;
