@@ -410,7 +410,6 @@ int main(int argc, const char **argv)
 	char temp_path[256];
 	char mysql_host[256];
 	char mysql_user[256];
-	struct stat node_stat;
 	static char folder_lang[RES_TOTAL_NUM][64];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -553,7 +552,14 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", dir);
-	if (0 == stat(temp_path, &node_stat)) {
+	/*
+	 * sqlite3_open does not expose O_EXCL, so let's create the file under
+	 * EXCL semantics ahead of time.
+	 */
+	auto tfd = open(temp_path, O_RDWR | O_CREAT | O_EXCL, 0600);
+	if (tfd >= 0) {
+		close(tfd);
+	} else if (errno == EEXIST) {
 		printf("can not create store database,"
 			" %s already exists\n", temp_path);
 		return 6;
