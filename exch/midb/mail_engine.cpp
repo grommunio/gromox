@@ -2804,9 +2804,10 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	auto pidb = &xp.first->second;
 	if (xp.second) {
 		sprintf(temp_path, "%s/exmdb/midb.sqlite3", path);
-		if (SQLITE_OK != sqlite3_open_v2(temp_path,
-			&pidb->psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+		auto ret = sqlite3_open_v2(temp_path, &pidb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		if (ret != SQLITE_OK) {
 			g_hash_table.erase(xp.first);
+			fprintf(stderr, "E-1438: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 			return {};
 		}
 		sqlite3_exec(pidb->psqlite, "PRAGMA foreign_keys=ON",
@@ -5332,8 +5333,9 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	}
 	pidb.put();
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
-	if (SQLITE_OK != sqlite3_open_v2(temp_path,
-		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "E-1439: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 		mail_engine_ct_destroy(ptree);
 		return 2;
 	}
@@ -5417,8 +5419,9 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	}
 	pidb.put();
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
-	if (SQLITE_OK != sqlite3_open_v2(temp_path,
-		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "E-1440: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 		mail_engine_ct_destroy(ptree);
 		return 2;
 	}
