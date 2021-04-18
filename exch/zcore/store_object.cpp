@@ -816,14 +816,15 @@ static void* store_object_get_oof_property(
 		         proptag == PROP_TAG_OOFINTERNALREPLY ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
-		if (0 != stat(temp_path, &node_stat)) {
-			return NULL;
-		}
-		buff_len = node_stat.st_size;
 		fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
 			return NULL;
 		}
+		if (fstat(fd, &node_stat) != 0) {
+			close(fd);
+			return nullptr;
+		}
+		buff_len = node_stat.st_size;
 		pbuff = cu_alloc<char>(buff_len + 1);
 		if (NULL == pbuff) {
 			close(fd);
