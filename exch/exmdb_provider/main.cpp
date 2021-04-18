@@ -58,9 +58,9 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	}
 	if (3 == argc && 0 == strcmp("unload", argv[1])) {
 		if (TRUE == exmdb_server_unload_store(argv[2])) {
-			strncpy(result, "250 unload sotre OK", length);
+			strncpy(result, "250 unload store OK", length);
 		} else {
-			strncpy(result, "550 fail to unload sotre", length);
+			strncpy(result, "550 failed to unload store", length);
 		}
 		return;
 	}

@@ -554,7 +554,7 @@ int main(int argc, const char **argv)
 	}
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", dir);
 	if (0 == stat(temp_path, &node_stat)) {
-		printf("can not create sotre database,"
+		printf("can not create store database,"
 			" %s already exists\n", temp_path);
 		return 6;
 	}
