@@ -391,33 +391,33 @@ static void *midcl_thrwork(void *pparam)
 				break;
 			}
 			offset += read_len;
-			if (offset == buff_len) {
-				tmp_bin.cb = buff_len;
-				tmp_bin.pb = buff;
-				common_util_build_environment("");
-				if (EXT_ERR_SUCCESS == exmdb_ext_pull_db_notify(
-					&tmp_bin, &notify)) {
-					resp_code = exmdb_response::SUCCESS;
-				} else {
-					resp_code = exmdb_response::PULL_ERROR;
-				}
-				if (1 != write(pagent->sockd, &resp_code, 1)) {
-					close(pagent->sockd);
-					pagent->sockd = -1;
-					common_util_free_environment();
-					break;
-				}
-				if (resp_code == exmdb_response::SUCCESS) {
-					for (size_t i = 0; i < notify.id_array.count; ++i) {
-						common_util_set_maildir(notify.dir);
-						exmdb_client_event_proc(notify.dir,
-							notify.b_table, notify.id_array.pl[i],
-							&notify.db_notify);
-					}
-				}
-				common_util_free_environment();
-				buff_len = 0;
+			if (offset != buff_len)
+				continue;
+			tmp_bin.cb = buff_len;
+			tmp_bin.pb = buff;
+			common_util_build_environment("");
+			if (EXT_ERR_SUCCESS == exmdb_ext_pull_db_notify(
+			    &tmp_bin, &notify)) {
+				resp_code = exmdb_response::SUCCESS;
+			} else {
+				resp_code = exmdb_response::PULL_ERROR;
 			}
+			if (1 != write(pagent->sockd, &resp_code, 1)) {
+				close(pagent->sockd);
+				pagent->sockd = -1;
+				common_util_free_environment();
+				break;
+			}
+			if (resp_code == exmdb_response::SUCCESS) {
+				for (size_t i = 0; i < notify.id_array.count; ++i) {
+					common_util_set_maildir(notify.dir);
+					exmdb_client_event_proc(notify.dir,
+						notify.b_table, notify.id_array.pl[i],
+						&notify.db_notify);
+				}
+			}
+			common_util_free_environment();
+			buff_len = 0;
 		}
 	}
 	return nullptr;
