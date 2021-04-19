@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <csignal>
 #include <cstdint>
 #include <list>
@@ -82,6 +83,7 @@ static void (*exmdb_client_event_proc)(const char *dir,
 int exmdb_client_get_param(int param)
 {
 	int total_num;
+	std::lock_guard sv_hold(g_server_lock);
 	
 	switch (param) {
 	case ALIVE_PROXY_CONNECTIONS:
@@ -426,13 +428,14 @@ static void *midcl_thrwork(void *pparam)
 static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 {
 	REMOTE_CONN_floating fc;
+	std::unique_lock sv_hold(g_server_lock);
 	auto i = std::find_if(g_server_list.begin(), g_server_list.end(),
 	         [&](const REMOTE_SVR &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
 	if (i == g_server_list.end()) {
+		sv_hold.unlock();
 		printf("[exmdb_client]: cannot find remote server for %s\n", dir);
 		return fc;
 	}
-	std::unique_lock sv_hold(g_server_lock);
 	if (i->conn_list.size() == 0) {
 		sv_hold.unlock();
 		printf("[exmdb_client]: no alive connection for [%s]:%hu/%s\n",
@@ -440,7 +443,6 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
-	sv_hold.unlock();
 	return fc;
 }
 
@@ -448,14 +450,15 @@ void REMOTE_CONN_floating::reset(bool lost)
 {
 	if (tmplist.size() == 0)
 		return;
+	assert(tmplist.size() == 1);
 	auto pconn = &tmplist.front();
 	if (!lost) {
-		std::unique_lock sv_hold(g_server_lock);
+		std::lock_guard sv_hold(g_server_lock);
 		pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 	} else {
 		close(pconn->sockd);
 		pconn->sockd = -1;
-		std::unique_lock sv_hold(g_server_lock);
+		std::lock_guard sv_hold(g_server_lock);
 		g_lost_list.splice(g_lost_list.end(), tmplist, tmplist.begin());
 	}
 	tmplist.clear();
