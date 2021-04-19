@@ -49,7 +49,7 @@ struct REMOTE_CONN {
 
 struct REMOTE_CONN_floating {
 	REMOTE_CONN_floating() = default;
-	REMOTE_CONN_floating(REMOTE_CONN_floating &&);
+	REMOTE_CONN_floating(REMOTE_CONN_floating &&) = default;
 	~REMOTE_CONN_floating() { reset(true); }
 	REMOTE_CONN *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
 	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
@@ -459,12 +459,6 @@ void REMOTE_CONN_floating::reset(bool lost)
 		g_lost_list.splice(g_lost_list.end(), tmplist, tmplist.begin());
 	}
 	tmplist.clear();
-}
-
-REMOTE_CONN_floating::REMOTE_CONN_floating(REMOTE_CONN_floating &&o)
-{
-	reset(true);
-	tmplist = std::move(o.tmplist);
 }
 
 void exmdb_client_init(int conn_num, int threads_num)
