@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <unistd.h>
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -24,20 +25,23 @@ static BOOL login_gen(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
 	char ep[40];
-	uint8_t xip = false;
-	auto ret = fptr_mysql_meta(username, password, maildir, lang, reason,
-	           length, mode, ep, sizeof(ep), &xip);
-	if (ret == FALSE)
-		return FALSE;
+	uint8_t have_xid = 0xFF;
+	BOOL auth = false;
+	auto meta = fptr_mysql_meta(username, password, maildir, lang, reason,
+	            length, mode, ep, sizeof(ep), &have_xid);
 	if (am_choice == A_MYSQL)
-		return fptr_mysql_login(username, password, ep, sizeof(ep),
+		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length);
 	else if (am_choice == A_LDAP)
-		return fptr_ldap_login(username, password);
-	if (xip)
-		return fptr_ldap_login(username, password);
-	return fptr_mysql_login(username, password, ep, sizeof(ep),
-	       reason, length);
+		auth = fptr_ldap_login(username, password);
+	else if (have_xid == 0xFF)
+		sleep(1);
+	else if (have_xid > 0)
+		auth = fptr_ldap_login(username, password);
+	else
+		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
+		       reason, length);
+	return meta && auth ? TRUE : false;
 }
 
 static BOOL login_exch(const char *username, const char *password,
