@@ -590,7 +590,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 
-		pcontext->literal_ptr = ptr;
+		pcontext->literal_ptr = ptr + 1; /* skip over brace */
 		auto temp_len = ptr - pcontext->read_buffer - i - 1;
 		char temp_buff[4096];
 		memcpy(temp_buff, pcontext->read_buffer + i + 1, temp_len);
