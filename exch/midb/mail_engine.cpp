@@ -2902,7 +2902,6 @@ static void *scan_work_func(void *param)
 {
 	int count;
 	char path[256];
-	char htag[256];
 	SUB_NODE *psub;
 	time_t now_time;
 	DOUBLE_LIST temp_list;
@@ -2929,7 +2928,7 @@ static void *scan_work_func(void *param)
 				++it;
 				continue;
 			}
-				swap_string(path, htag);
+			swap_string(path, it->first.c_str());
 				if (0 != pidb->sub_id) {
 					psub = me_alloc<SUB_NODE>();
 					if (NULL != psub) {
@@ -2956,7 +2955,7 @@ static void *scan_work_func(void *param)
 	std::unique_lock hhold(g_hash_lock);
 	for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 		auto pidb = &it->second;
-		swap_string(path, htag);
+		swap_string(path, it->first.c_str());
 		if (0 != pidb->sub_id) {
 			exmdb_client::unsubscribe_notification(
 								path, pidb->sub_id);
