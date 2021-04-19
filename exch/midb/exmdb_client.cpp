@@ -42,9 +42,9 @@ struct REMOTE_SVR : public EXMDB_ITEM {
 };
 
 struct REMOTE_CONN {
-	time_t last_time;
-	REMOTE_SVR *psvr;
-	int sockd;
+	time_t last_time = 0;
+	REMOTE_SVR *psvr = nullptr;
+	int sockd = -1;
 };
 
 struct REMOTE_CONN_floating {
@@ -60,9 +60,9 @@ struct REMOTE_CONN_floating {
 };
 
 struct AGENT_THREAD {
-	REMOTE_SVR *pserver;
-	pthread_t thr_id;
-	int sockd;
+	REMOTE_SVR *pserver = nullptr;
+	pthread_t thr_id = 0;
+	int sockd = -1;
 };
 
 }
