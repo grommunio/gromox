@@ -110,7 +110,7 @@ static decltype(mysql_adaptor_get_mlist_ids) *get_mlist_ids;
 static BOOL (*get_lang)(uint32_t codepage,
 	const char *tag, char *value, int len);
 
-static void* scan_work_func(void *param);
+static void *nspab_scanwork(void *);
 
 static uint32_t ab_tree_make_minid(uint8_t type, int value)
 {
@@ -247,7 +247,7 @@ int ab_tree_run()
 		return -3;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_id, nullptr, nspab_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -854,7 +854,7 @@ void ab_tree_put_base(AB_BASE *pbase)
 	pbase->reference --;
 }
 
-static void *scan_work_func(void *param)
+static void *nspab_scanwork(void *param)
 {
 	AB_BASE *pbase;
 	SINGLE_LIST_NODE *pnode;

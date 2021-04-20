@@ -104,14 +104,10 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static void* accept_work_func(void *param);
-
-static void* enqueue_work_func(void *param);
-
-static void* dequeue_work_func(void *param);
-
-static void* scan_work_func(void *param);
-
+static void *ev_acceptwork(void *);
+static void *ev_enqwork(void *);
+static void *ev_deqwork(void *);
+static void *ev_scanwork(void *);
 static BOOL read_response(int sockd);
 
 static BOOL read_mark(ENQUEUE_NODE *penqueue);
@@ -226,7 +222,7 @@ int main(int argc, const char **argv)
 	size_t i;
 	for (i=0; i<g_threads_num; i++) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, &thr_attr, enqueue_work_func, nullptr);
+		auto ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
 			break;
@@ -236,7 +232,7 @@ int main(int argc, const char **argv)
 		snprintf(buf, sizeof(buf), "enqueue/%zu", i);
 		pthread_setname_np(tid, buf);
 
-		ret = pthread_create(&tid, &thr_attr, dequeue_work_func, nullptr);
+		ret = pthread_create(&tid, &thr_attr, ev_deqwork, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create dequeue pool thread: %s\n", strerror(ret));
 			break;
@@ -262,7 +258,7 @@ int main(int argc, const char **argv)
 	}
 
 	pthread_t acc_thr{}, scan_thr{};
-	ret = pthread_create(&acc_thr, nullptr, accept_work_func,
+	ret = pthread_create(&acc_thr, nullptr, ev_acceptwork,
 	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
@@ -274,7 +270,7 @@ int main(int argc, const char **argv)
 		pthread_join(acc_thr, nullptr);
 	});
 	pthread_setname_np(acc_thr, "accept");
-	ret = pthread_create(&scan_thr, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&scan_thr, nullptr, ev_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[system]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -300,7 +296,7 @@ int main(int argc, const char **argv)
 	return 0;
 }
 
-static void* scan_work_func(void *param)
+static void *ev_scanwork(void *param)
 {
 	int i = 0;
 	time_t cur_time;
@@ -338,7 +334,7 @@ static void* scan_work_func(void *param)
 	return NULL;
 }
 
-static void* accept_work_func(void *param)
+static void *ev_acceptwork(void *param)
 {
 	socklen_t addrlen;
 	int sockd, sockd2;
@@ -394,7 +390,7 @@ static void* accept_work_func(void *param)
 	return nullptr;
 }
 
-static void* enqueue_work_func(void *param)
+static void *ev_enqwork(void *param)
 {
 	int temp_len;
 	char *pspace;
@@ -609,7 +605,7 @@ static void* enqueue_work_func(void *param)
 	return NULL;
 }
 
-static void* dequeue_work_func(void *param)
+static void *ev_deqwork(void *param)
 {
 	int len;
 	MEM_FILE *pfile;

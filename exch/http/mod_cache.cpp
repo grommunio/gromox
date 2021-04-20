@@ -74,7 +74,7 @@ static STR_HASH_TABLE *g_cache_hash;
 static CACHE_CONTEXT *g_context_list;
 
 
-static void* scan_work_func(void *pparam)
+static void *mod_cache_scanwork(void *pparam)
 {
 	int count;
 	char tmp_key[1024];
@@ -207,7 +207,7 @@ int mod_cache_run()
 		return -3;
 	}
 	g_notify_stop = false;
-	ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[mod_cache]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;

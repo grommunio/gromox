@@ -2898,7 +2898,7 @@ IDB_ITEM::~IDB_ITEM()
 		sqlite3_close(psqlite);
 }
 
-static void *scan_work_func(void *param)
+static void *midbme_scanwork(void *param)
 {
 	int count;
 	char path[256];
@@ -6151,7 +6151,7 @@ int mail_engine_run()
 		return -4;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
 		mime_pool_free(g_mime_pool);
 		lib_buffer_free(g_alloc_mjson);

@@ -24,7 +24,7 @@ static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
 static char g_unchkusr_path[256];
 
-static void* thread_work_func1(void *param);
+static void *adap_thrwork(void *);
 
 void engine_init(const char *domainlist_path,
     const char *aliasaddress_path, const char *unchkusr_path)
@@ -38,7 +38,7 @@ void engine_init(const char *domainlist_path,
 int engine_run()
 {
 	g_notify_stop = false;
-	int ret = pthread_create(&g_thread_id1, nullptr, thread_work_func1, nullptr);
+	auto ret = pthread_create(&g_thread_id1, nullptr, adap_thrwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		printf("[engine]: failed to create work thread: %s\n", strerror(ret));
@@ -63,7 +63,7 @@ int engine_stop()
 	return 0;
 }
 
-static void* thread_work_func1(void *param)
+static void *adap_thrwork(void *param)
 {
 	int fd, len;
 	char temp_domain[257];

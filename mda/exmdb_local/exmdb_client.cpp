@@ -352,7 +352,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	return -1;
 }
 
-static void *scan_work_func(void *pparam)
+static void *exmlc_scanwork(void *pparam)
 {
 	fd_set myset;
 	time_t now_time;
@@ -540,7 +540,7 @@ int exmdb_client_run()
 			}
 		}
 	}
-	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, exmlc_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_local]: failed to create proxy scan thread: %s\n", strerror(ret));
 		g_notify_stop = true;

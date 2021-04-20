@@ -89,8 +89,7 @@ struct MSG_UNIT {
 
 }
 
-static void* scan_work_func(void *param);
-
+static void *midbag_scanwork(void *);
 static BOOL read_line(int sockd, char *buff, int length);
 
 static int connect_midb(const char *ip_addr, int port);
@@ -262,7 +261,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		}
 
 		g_notify_stop = false;
-		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+		auto ret = pthread_create(&g_scan_id, nullptr, midbag_scanwork, nullptr);
 		if (ret != 0) {
 			printf("[midb_agent]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
@@ -328,7 +327,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 }
 SVC_ENTRY(svc_midb_agent);
 
-static void *scan_work_func(void *param)
+static void *midbag_scanwork(void *param)
 {
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;

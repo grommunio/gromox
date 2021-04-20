@@ -47,9 +47,7 @@ static std::mutex g_back_lock;
 static DOUBLE_LIST g_back_list;
 static DOUBLE_LIST g_lost_list;
 
-
-
-static void* scan_work_func(void *param);
+static void *tmrag_scanwork(void *);
 
 static int read_line(int sockd, char *buff, int length);
 static int connect_timer();
@@ -124,7 +122,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 		}
 
 		g_notify_stop = false;
-		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+		auto ret = pthread_create(&g_scan_id, nullptr, tmrag_scanwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr)
@@ -164,7 +162,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 }
 SVC_ENTRY(svc_timer_agent);
 
-static void *scan_work_func(void *param)
+static void *tmrag_scanwork(void *param)
 {
 	int tv_msec;
 	BACK_CONN *pback;

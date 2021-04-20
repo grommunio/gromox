@@ -110,7 +110,7 @@ static void zarafa_server_put_user_info(USER_INFO *pinfo)
 	pthread_setspecific(g_info_key, NULL);
 }
 
-static void* scan_work_func(void *param)
+static void *zcorezs_scanwork(void *param)
 {
 	int count;
 	int tv_msec;
@@ -725,8 +725,7 @@ int zarafa_server_run()
 		return -3;
 	}
 	g_notify_stop = false;
-	if (0 != pthread_create(&g_scan_id,
-		NULL, scan_work_func, NULL)) {
+	if (pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr) != 0) {
 		printf("[zarafa_server]: fail to"
 			" create scanning thread\n");
 		str_hash_free(g_user_table);

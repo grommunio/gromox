@@ -78,7 +78,7 @@ static STR_HASH_TABLE *g_user_hash;
 static STR_HASH_TABLE *g_handle_hash;
 static STR_HASH_TABLE *g_notify_hash;
 
-static void* scan_work_func(void *pparam);
+static void *emsi_scanwork(void *);
 
 static uint32_t emsmdb_interface_get_timestamp()
 {
@@ -392,7 +392,7 @@ int emsmdb_interface_run()
 		return -3;
 	}
 	g_notify_stop = false;
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
+	if (pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr) != 0) {
 		g_notify_stop = true;
 		printf("[exchange_emsmdb]: fail create scanning thread\n");
 		return -4;
@@ -1234,7 +1234,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 }
 
-static void* scan_work_func(void *pparam)
+static void *emsi_scanwork(void *pparam)
 {
 	CXH cxh;
 	time_t cur_time;

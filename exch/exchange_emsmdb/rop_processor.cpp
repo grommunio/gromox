@@ -389,7 +389,7 @@ LOGON_OBJECT* rop_processor_get_logon_object(void *plogmap, uint8_t logon_id)
 	return static_cast<LOGON_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 }
 
-static void *scan_work_func(void *param)
+static void *emsrop_scanwork(void *param)
 {
 	int count;
 	char tmp_dir[256];
@@ -472,7 +472,7 @@ int rop_processor_run()
 		return -4;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		printf("[exchange_emsmdb]: failed to create scanning thread "

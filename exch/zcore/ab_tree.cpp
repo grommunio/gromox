@@ -109,8 +109,7 @@ static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
 									   0xB4, 0xB9, 0x08, 0x00,
 									   0x2B, 0x2F, 0xE1, 0x82};
 
-static void* scan_work_func(void *param);
-
+static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, char *str_dname);
 static void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_t vsize);
@@ -229,7 +228,7 @@ int ab_tree_run()
 		return -2;
 	}
 	g_notify_stop = false;
-	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	auto ret = pthread_create(&g_scan_id, nullptr, zcoreab_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -848,7 +847,7 @@ void ab_tree_put_base(AB_BASE *pbase)
 	pbase->reference --;
 }
 
-static void *scan_work_func(void *param)
+static void *zcoreab_scanwork(void *param)
 {
 	AB_BASE *pbase;
 	AB_BASE **ppbase;
