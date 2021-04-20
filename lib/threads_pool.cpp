@@ -135,6 +135,7 @@ int threads_pool_stop()
 		pthr->notify_stop = TRUE;
 		/* wake up all thread waiting on the event */
 		g_threads_pool_waken_cond.notify_all();
+		pthread_kill(thr_id, SIGALRM); /* may be in nanosleep */
 		pthread_join(thr_id, NULL);
 		if (TRUE == b_should_exit) {
 			break;

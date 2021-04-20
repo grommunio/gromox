@@ -436,7 +436,7 @@ static BACK_CONN *get_connection(const char *prefix)
 	sv_hold.unlock();
 	if (pnode != nullptr)
 		return static_cast<BACK_CONN *>(pnode->pdata);
-	for (i = 0; i < SOCKET_TIMEOUT; i++) {
+	for (i = 0; i < SOCKET_TIMEOUT && !g_notify_stop; ++i) {
 		sleep(1);
 		sv_hold.lock();
 		pnode = double_list_pop_front(&pserver->conn_list);
