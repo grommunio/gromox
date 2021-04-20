@@ -264,7 +264,6 @@ static BOOL notify_response_specify_message_modified(
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
 	pmemory->message_id = rop_util_make_eid_ex(1, message_id);
 	pnotify->notification_data.pproptags = &pmemory->proptags;
-	pnotify->notification_data.pproptags = &pmemory->proptags;
 	pmemory->proptags.count = pproptags->count;
 	if (0 == pmemory->proptags.count) {
 		pmemory->proptags.pproptag = NULL;
