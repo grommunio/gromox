@@ -715,6 +715,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			}
 			pbin = idset_serialize(pidset);
 			idset_free(pidset);
+			if (pbin == nullptr)
+				return false;
 			pproplist_deletions = &tmp_proplist;
 			pproplist_deletions->count = 1;
 			pproplist_deletions->ppropval = &tmp_propval;
