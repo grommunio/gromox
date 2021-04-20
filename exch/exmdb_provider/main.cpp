@@ -37,7 +37,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 						 "\t    --print the module information";
 
 	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
+		HX_strlcpy(result, "550 too few arguments", length);
 		return;
 	}
 	if (2 == argc && 0 == strcmp("--help", argv[1])) {
@@ -58,9 +58,9 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	}
 	if (3 == argc && 0 == strcmp("unload", argv[1])) {
 		if (TRUE == exmdb_server_unload_store(argv[2])) {
-			strncpy(result, "250 unload store OK", length);
+			HX_strlcpy(result, "250 unload store OK", length);
 		} else {
-			strncpy(result, "550 failed to unload store", length);
+			HX_strlcpy(result, "550 failed to unload store", length);
 		}
 		return;
 	}

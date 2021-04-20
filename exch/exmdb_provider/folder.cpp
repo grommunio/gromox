@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
+#include <libHX/string.h>
 #include <gromox/database.h>
 #include "exmdb_server.h"
 #include "common_util.h"
@@ -2622,7 +2623,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	void *pvalue;
 	uint64_t fid_val;
 	uint64_t member_id;
-	char username[256];
+	char username[324];
 	uint32_t permission = 0;
 	xstmt pstmt;
 	char sql_string[128];
@@ -2647,7 +2648,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				if (NULL == pvalue) {
 					continue;
 				}
-				strncpy(username, static_cast<char *>(pvalue), sizeof(username));
+				HX_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
 			}
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);

@@ -1835,8 +1835,7 @@ static void message_md5_string(const char *string, uint8_t *pdgt)
 	char tmp_string[256];
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
 	
-	strncpy(tmp_string, string, 255);
-	tmp_string[255] = '\0';
+	HX_strlcpy(tmp_string, string, GX_ARRAY_SIZE(tmp_string));
 	HX_strupper(tmp_string);
 	MD5_Init(&ctx);
 	MD5_Update(&ctx, tmp_string, strlen(tmp_string));
