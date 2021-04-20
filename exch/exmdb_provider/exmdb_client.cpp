@@ -536,9 +536,9 @@ int exmdb_client_run(const char *config_path)
 			ag.sockd = -1;
 			static_assert(std::is_same_v<decltype(g_agent_list), std::list<decltype(g_agent_list)::value_type>>,
 				"addrof AGENT_THREADs must not change; other thread has its address in use");
-			if (pthread_create(&ag.thr_id, nullptr, mdpcl_thrwork, &ag) != 0) {
-				printf("[exmdb_provider]: fail to "
-					"create agent thread for exmdb\n");
+			auto ret = pthread_create(&ag.thr_id, nullptr, mdpcl_thrwork, &ag);
+			if (ret != 0) {
+				printf("[exmdb_provider]: E-1449: pthread_create: %s\n", strerror(ret));
 				g_notify_stop = true;
 				g_agent_list.pop_back();
 				return 8;

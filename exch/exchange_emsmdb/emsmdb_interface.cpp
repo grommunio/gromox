@@ -392,9 +392,10 @@ int emsmdb_interface_run()
 		return -3;
 	}
 	g_notify_stop = false;
-	if (pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr) != 0) {
+	auto ret = pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr);
+	if (ret != 0) {
 		g_notify_stop = true;
-		printf("[exchange_emsmdb]: fail create scanning thread\n");
+		printf("[exchange_emsmdb]: E-1447: pthread_create: %s\n", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_id, "emsmdb/scan");

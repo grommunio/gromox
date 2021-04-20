@@ -221,7 +221,9 @@ static void *consrv_thrwork(void *argp)
 		}
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
 		pconsole->client_fd = client_fd;
-		if (pthread_create(&pconsole->tid, nullptr, consrv_work, pconsole) != 0) {
+		auto ret = pthread_create(&pconsole->tid, nullptr, consrv_work, pconsole);
+		if (ret != 0) {
+			fprintf(stderr, "W-1444: pthread_create: %s\n", strerror(ret));
 			double_list_append_as_tail(&g_free_list, pnode);
 			ll_hold.unlock();
 			write(client_fd, ERROR_STRING, sizeof(ERROR_STRING) - 1);

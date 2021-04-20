@@ -4,6 +4,7 @@
 #include <atomic>
 #include <csignal>
 #include <cstdint>
+#include <cstring>
 #include <mutex>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -725,9 +726,9 @@ int zarafa_server_run()
 		return -3;
 	}
 	g_notify_stop = false;
-	if (pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr) != 0) {
-		printf("[zarafa_server]: fail to"
-			" create scanning thread\n");
+	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
+	if (ret != 0) {
+		printf("[zarafa_server]: E-1443: pthread_create: %s\n", strerror(ret));
 		str_hash_free(g_user_table);
 		int_hash_free(g_session_table);
 		return -4;

@@ -659,12 +659,14 @@ static void *dxp_scanwork(void *arg)
 			pthr_data = (THREAD_DATA*)pnode->pdata;
 			pthread_attr_init(&attr);
 			pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-			if (pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data) == 0) {
+			auto ret = pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data);
+			if (ret == 0) {
 				pthread_setname_np(pthr_data->id, "xprt/+");
 				tl_hold.lock();
 				double_list_append_as_tail(&g_threads_list, &pthr_data->node);
 				tl_hold.unlock();
 			} else {
+				fprintf(stderr, "W-1446: pthread_create: %s\n", strerror(ret));
 				tl_hold.lock();
 				double_list_append_as_tail(&g_free_threads, &pthr_data->node);
 				tl_hold.unlock();

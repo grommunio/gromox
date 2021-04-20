@@ -784,10 +784,10 @@ int db_engine_run()
 	}
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
 	for (i=0; i<g_threads_num; i++) {
-		if (pthread_create(&g_thread_ids[i], nullptr, mdpeng_thrwork, nullptr) != 0) {
+		ret = pthread_create(&g_thread_ids[i], nullptr, mdpeng_thrwork, nullptr);
+		if (ret != 0) {
 			g_threads_num = i;
-			printf("[exmdb_provider]: fail to "
-				"create populating thread\n");
+			printf("[exmdb_provider]: E-1448: pthread_create: %s\n", strerror(ret));
 			return -5;
 		}
 		char buf[32];
