@@ -2,6 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/string.h>
 #include "console_cmd_handler.h"
 #include <gromox/console_server.hpp>
 #include "zarafa_server.h"
@@ -109,9 +110,8 @@ BOOL cmd_handler_service_plugins(int argc, char** argv)
 	if (PLUGIN_TALK_OK == 
 		service_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
-			strncpy(buf, "550 service plugin console talk is error "
-					"implemented", sizeof(buf) - 1);
-			buf[sizeof(buf) - 1] = '\0';
+			HX_strlcpy(buf, "550 service plugin console talk is error "
+					"implemented", GX_ARRAY_SIZE(buf));
 		}
 		console_server_reply_to_client("%s", buf);
 		return TRUE;

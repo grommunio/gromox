@@ -7,7 +7,7 @@
 struct STORE_OBJECT {
 	BOOL b_private;
 	int account_id;
-	char account[256];
+	char account[324];
 	char dir[256];
 	GUID mailbox_guid;
 	PROPERTY_GROUPINFO *pgpinfo;

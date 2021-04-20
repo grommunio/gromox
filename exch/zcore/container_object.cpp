@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include "container_object.h"
 #include "zarafa_server.h"
@@ -347,7 +348,7 @@ BOOL container_object_load_user_table(
 	USER_INFO *pinfo;
 	uint32_t table_id;
 	uint8_t mapi_type;
-	char username[256];
+	char username[324];
 	TARRAY_SET tmp_set;
 	char *pdisplayname;
 	char *paddress_type;
@@ -518,7 +519,7 @@ BOOL container_object_load_user_table(
 					continue;
 				}
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
-				strncpy(username, paddress, sizeof(username));
+				HX_strlcpy(username, paddress, GX_ARRAY_SIZE(username));
 			} else {
 				continue;
 			}

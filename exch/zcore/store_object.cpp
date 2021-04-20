@@ -202,8 +202,8 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	}
 	pstore->b_private = b_private;
 	pstore->account_id = account_id;
-	strncpy(pstore->account, account, 256);
-	strncpy(pstore->dir, dir, 256);
+	HX_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
+	HX_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
 	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	pstore->pgpinfo = NULL;
 	pstore->ppropid_hash = NULL;
