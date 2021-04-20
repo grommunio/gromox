@@ -2767,10 +2767,10 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	auto pidb = &it->second;
 	pidb->reference ++;
 	hhold.unlock();
-	std::unique_lock phold(pidb->lock);
+	pidb->lock.lock();
 	if (NULL == pidb->psqlite) {
 		pidb->last_time = 0;
-		phold.unlock();
+		pidb->lock.unlock();
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
@@ -3958,6 +3958,10 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (NULL == pidb) {
 		return 2;
 	}
+	printf("I have a ref on %s\n", argv[1]);
+	volatile bool y = 1;
+	while (y)
+		;
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return 4;
 	if (0 != mail_engine_get_folder_id(pidb, argv[2])) {
