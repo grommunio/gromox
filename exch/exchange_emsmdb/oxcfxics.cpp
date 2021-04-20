@@ -694,8 +694,10 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject)))
+		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
+			fastdownctx_object_free(pctx);
 			return ecError;
+		}
 		if (FALSE == exmdb_client_read_message_instance(
 			logon_object_get_dir(plogon),
 		    message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pobject)), &msgctnt)) {
@@ -727,8 +729,10 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		}
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject)))
+		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+			fastdownctx_object_free(pctx);
 			return ecError;
+		}
 		if (FALSE == exmdb_client_read_attachment_instance(
 			logon_object_get_dir(plogon),
 		    attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pobject)), &attctnt)) {
@@ -865,8 +869,10 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject)))
+		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
+			fastdownctx_object_free(pctx);
 			return ecError;
+		}
 		if (FALSE == exmdb_client_read_message_instance(
 			logon_object_get_dir(plogon),
 		    message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pobject)), &msgctnt)) {
@@ -902,8 +908,10 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		}
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject)))
+		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+			fastdownctx_object_free(pctx);
 			return ecError;
+		}
 		if (FALSE == exmdb_client_read_attachment_instance(
 			logon_object_get_dir(plogon),
 		    attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pobject)), &attctnt)) {
