@@ -2611,10 +2611,10 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				pdir = dir_tree_match(&temp_tree, temp_name);
 				if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
 					len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-						"* LIST (\\HasChildren) \"/\" \"%s\"\r\n", temp_name);
+						"* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 				} else {
 					len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-						"* LIST (\\HasNoChildren) \"/\" \"%s\"\r\n", temp_name);
+						"* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 				}
 			}
 		}
@@ -2669,7 +2669,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			if (TRUE == imap_cmd_parser_wildcard_match(
 				temp_name, search_pattern)) {
 				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* LIST () \"/\" \"%s\"\r\n", temp_name);
+					"* LIST () \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			}
 		}
 		mem_file_free(&temp_file);
@@ -2801,10 +2801,10 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			pdir = dir_tree_match(&temp_tree, temp_name);
 			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
 				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* XLIST (\\HasChildren) \"/\" \"%s\"\r\n", temp_name);
+					"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			} else {
 				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* XLIST (\\HasNoChildren) \"/\" \"%s\"\r\n", temp_name);
+					"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			}
 		}
 	}
@@ -2935,10 +2935,10 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			pdir = dir_tree_match(&temp_tree, temp_name);
 			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
 				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* LSUB (\\HasChildren) \"/\" \"%s\"\r\n", temp_name);
+					"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			} else {
 				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* LSUB (\\HasNoChildren) \"/\" \"%s\"\r\n", temp_name);
+					"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			}
 		}
 	}
@@ -3043,7 +3043,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170014: OK STATUS completed */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2170014, 1, &string_length);
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* STATUS %s (", argv[2]);
+	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* STATUS {%zu}\r\n%s (", strlen(argv[2]), argv[2]);
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
 		if (FALSE == b_first) {
