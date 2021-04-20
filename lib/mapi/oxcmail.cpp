@@ -4955,7 +4955,7 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 
 static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
 	EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
-	uint32_t proptag3, uint32_t proptag4, char *username)
+    uint32_t proptag3, uint32_t proptag4, char *username, size_t ulen)
 {
 	void *pvalue;
 
@@ -4986,7 +4986,7 @@ static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
 			}
 		}
 	}
-	strncpy(username, static_cast<char *>(pvalue), 256);
+	HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
 	return TRUE;
 }
 
@@ -4995,7 +4995,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 {
 	size_t offset = 0;
 	void *pvalue;
-	char username[256];
+	char username[324];
 	char *pdisplay_name;
 	TPROPVAL_ARRAY *prcpt;
 	
@@ -5033,7 +5033,8 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 		}
 		if (TRUE == oxcmail_get_smtp_address(prcpt, alloc,
 			PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
-			PROP_TAG_EMAILADDRESS, PROP_TAG_ENTRYID, username)) {
+		    PROP_TAG_EMAILADDRESS, PROP_TAG_ENTRYID, username,
+		    GX_ARRAY_SIZE(username))) {
 			if (NULL != pdisplay_name) {
 				offset += std::max(0, gx_snprintf(field + offset,
 				          fdsize - offset,
@@ -5125,12 +5126,12 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
     const char *charset, char *field, size_t fdsize)
 {
 	int offset;
-	char address[256];
+	char address[324];
 	
 	offset = 0;
 	auto pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag1));
 	if (NULL != pvalue) {
-		if (strlen(pvalue) >= 256) {
+		if (strlen(pvalue) >= GX_ARRAY_SIZE(address)) {
 			goto EXPORT_ADDRESS;
 		}
 		field[offset] = '"';
@@ -5142,8 +5143,8 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
 		field[offset] = '\0';
 	}
  EXPORT_ADDRESS:
-	if (TRUE == oxcmail_get_smtp_address(&pmsg->proplist, alloc,
-		proptag4, proptag2, proptag3, proptag5, address)) {
+	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, proptag4, proptag2,
+	    proptag3, proptag5, address, GX_ARRAY_SIZE(address))) {
 		if (0 == offset) {
 			offset = gx_snprintf(field, fdsize, "<%s>", address);
 		} else {
@@ -6286,9 +6287,10 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 		strcpy(tmp_buff, "rfc822;");
-		if (FALSE == oxcmail_get_smtp_address(prcpts->pparray[i],
-			alloc, PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
-			PROP_TAG_EMAILADDRESS, PROP_TAG_ENTRYID, tmp_buff + 7)) {
+		if (!oxcmail_get_smtp_address(prcpts->pparray[i], alloc,
+		    PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
+		    PROP_TAG_EMAILADDRESS, PROP_TAG_ENTRYID, tmp_buff + 7,
+		    GX_ARRAY_SIZE(tmp_buff) - 7)) {
 			dsn_free(&dsn);
 			return FALSE;
 		}
