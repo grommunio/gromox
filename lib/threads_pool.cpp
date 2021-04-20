@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <csignal>
 #include <cstring>
+#include <mutex>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -32,9 +35,8 @@ static unsigned int g_threads_pool_min_num, g_threads_pool_max_num, g_threads_po
 static LIB_BUFFER* g_threads_data_buff;
 static DOUBLE_LIST g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
-static pthread_mutex_t g_threads_pool_data_lock;
-static pthread_cond_t g_threads_pool_waken_cond;
-static pthread_mutex_t g_threads_pool_cond_mutex;
+static std::mutex g_threads_pool_data_lock, g_threads_pool_cond_mutex;
+static std::condition_variable g_threads_pool_waken_cond;
 
 static void *tpol_thrwork(void *);
 static void *tpol_scanwork(void *);
@@ -59,9 +61,6 @@ void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_
 	g_threads_pool_cur_thr_num = 0;
 	g_threads_data_buff = NULL;
 	g_threads_event_proc = NULL;
-	pthread_mutex_init(&g_threads_pool_data_lock, NULL);
-	pthread_cond_init(&g_threads_pool_waken_cond, NULL);
-	pthread_mutex_init(&g_threads_pool_cond_mutex, NULL);
 	double_list_init(&g_threads_data_list);
 }
 
@@ -124,18 +123,18 @@ int threads_pool_stop()
 	pthread_join(g_scan_id, NULL);
 	while (TRUE) {
 		/* get a thread from list */
-		pthread_mutex_lock(&g_threads_pool_data_lock);
+		std::unique_lock tpd_hold(g_threads_pool_data_lock);
 		pnode = double_list_get_head(&g_threads_data_list);
 		if (1 == double_list_get_nodes_num(&g_threads_data_list)) {
 			b_should_exit = TRUE;
 		}
-		pthread_mutex_unlock(&g_threads_pool_data_lock);
+		tpd_hold.unlock();
 		pthr = (THR_DATA*)pnode->pdata;
 		thr_id = pthr->id;
 		/* notify this thread to exit */
 		pthr->notify_stop = TRUE;
 		/* wake up all thread waiting on the event */
-		pthread_cond_broadcast(&g_threads_pool_waken_cond);
+		g_threads_pool_waken_cond.notify_all();
 		pthread_join(thr_id, NULL);
 		if (TRUE == b_should_exit) {
 			break;
@@ -152,9 +151,6 @@ void threads_pool_free()
 	g_threads_pool_max_num = 0;
 	g_threads_pool_cur_thr_num = 0;
 	g_threads_event_proc = NULL;
-	pthread_mutex_destroy(&g_threads_pool_data_lock);
-	pthread_cond_destroy(&g_threads_pool_waken_cond);
-	pthread_mutex_destroy(&g_threads_pool_cond_mutex);
 }
 
 int threads_pool_get_param(int type)
@@ -174,7 +170,6 @@ int threads_pool_get_param(int type)
 static void *tpol_thrwork(void *pparam)
 {
 	THR_DATA *pdata;
-	struct timespec ts;
 	int cannot_served_times;
 	int max_contexts_per_thr;
 	int contexts_per_threads;
@@ -193,7 +188,7 @@ static void *tpol_thrwork(void *pparam)
 		pcontext = contexts_pool_get_context(CONTEXT_TURNING);
 		if (NULL == pcontext) {
 			if (MAX_TIMES_NOT_SERVED == cannot_served_times) {
-				pthread_mutex_lock(&g_threads_pool_data_lock);
+				std::unique_lock tpd_hold(g_threads_pool_data_lock);
 				int gpr;
 				if (g_threads_pool_cur_thr_num > g_threads_pool_min_num &&
 				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS) >= 0 &&
@@ -201,24 +196,19 @@ static void *tpol_thrwork(void *pparam)
 					double_list_remove(&g_threads_data_list, &pdata->node);
 					lib_buffer_put(g_threads_data_buff, pdata);
 					g_threads_pool_cur_thr_num --;
-					pthread_mutex_unlock(&g_threads_pool_data_lock);
+					tpd_hold.unlock();
 					if (NULL != g_threads_event_proc) {
 						g_threads_event_proc(THREAD_DESTROY);
 					}
 					pthread_detach(pthread_self());
 					return nullptr;
 				}
-				pthread_mutex_unlock(&g_threads_pool_data_lock);
 			} else {
 				cannot_served_times ++;
 			}
 			/* wait context */
-			clock_gettime(CLOCK_REALTIME, &ts);
-			ts.tv_sec ++;
-			pthread_mutex_lock(&g_threads_pool_cond_mutex);
-			pthread_cond_timedwait(&g_threads_pool_waken_cond, 
-							&g_threads_pool_cond_mutex, &ts);
-			pthread_mutex_unlock(&g_threads_pool_cond_mutex);
+			std::unique_lock tpc_hold(g_threads_pool_cond_mutex);
+			g_threads_pool_waken_cond.wait_for(tpc_hold, std::chrono::seconds(1));
 			continue;
 		}
 		cannot_served_times = 0;
@@ -254,11 +244,11 @@ static void *tpol_thrwork(void *pparam)
 		}
 	}
 	
-	pthread_mutex_lock(&g_threads_pool_data_lock);
+	std::unique_lock tpd_hold(g_threads_pool_data_lock);
 	double_list_remove(&g_threads_data_list, &pdata->node);
 	lib_buffer_put(g_threads_data_buff, pdata);
 	g_threads_pool_cur_thr_num --;
-	pthread_mutex_unlock(&g_threads_pool_data_lock);
+	tpd_hold.unlock();
 	if (NULL != g_threads_event_proc) {
 		g_threads_event_proc(THREAD_DESTROY);
 	}
@@ -269,14 +259,14 @@ void threads_pool_wakeup_thread()
 {
 	if (g_notify_stop)
 		return;
-	pthread_cond_signal(&g_threads_pool_waken_cond);
+	g_threads_pool_waken_cond.notify_one();
 }
 
 void threads_pool_wakeup_all_threads()
 {
 	if (g_notify_stop)
 		return;
-	pthread_cond_broadcast(&g_threads_pool_waken_cond);
+	g_threads_pool_waken_cond.notify_all();
 }
 
 static void *tpol_scanwork(void *pparam)
@@ -293,9 +283,8 @@ static void *tpol_scanwork(void *pparam)
 			if (not_empty_times < MAX_NOT_EMPTY_TIMES) {
 				continue;
 			}
-			pthread_mutex_lock(&g_threads_pool_data_lock);
+			std::lock_guard tpd_hold(g_threads_pool_data_lock);
 			if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
-				pthread_mutex_unlock(&g_threads_pool_data_lock);
 				continue;
 			}
 			pdata = (THR_DATA*)lib_buffer_get(g_threads_data_buff);
@@ -320,7 +309,6 @@ static void *tpol_scanwork(void *pparam)
 				debug_info("[threads_pool]: fatal error,"
 					" threads pool memory conflicts!\n");
 			}
-			pthread_mutex_unlock(&g_threads_pool_data_lock);
 		}
 		not_empty_times = 0;
 	}

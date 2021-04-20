@@ -2,6 +2,7 @@
 #include <atomic>
 #include <csignal>
 #include <cstring>
+#include <mutex>
 #include <gromox/defs.h>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/threads_pool.hpp>
@@ -24,7 +25,7 @@ static pthread_t g_thread_id;
 static std::atomic<bool> g_notify_stop{true};
 static struct epoll_event *g_events;
 static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
-static pthread_mutex_t g_context_locks[CONTEXT_TYPES];
+static std::mutex g_context_locks[CONTEXT_TYPES];
 
 static int (*contexts_pool_get_context_socket)(void *pcontext);
 
@@ -84,24 +85,22 @@ static void *ctxp_thrwork(void *pparam)
 		}
 		for (i=0; i<num; i++) {
 			pcontext = static_cast<SCHEDULE_CONTEXT *>(g_events[i].data.ptr);
-			pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
+			std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
 			if (CONTEXT_POLLING != pcontext->type) {
 				/* context may be waked up and modified by
 				scan_work_func or context_pool_activate_context */
-				pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
 				continue;
 			}
 			if (FALSE == pcontext->b_waiting) {
 				debug_info("[contexts_pool]: fatal error in context"
 					" queue! b_waiting mismatch in thread_work_func"
 					" conext: %p\n", pcontext);
-				pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
 				continue;
 			}
 			double_list_remove(&g_context_lists[CONTEXT_POLLING],
 				&pcontext->node);
 			pcontext->type = CONTEXT_SWITCHING;
-			pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
+			poll_hold.unlock();
 			contexts_pool_put_context(pcontext, CONTEXT_TURNING);
 		}
 		if (1 == num) {
@@ -124,7 +123,7 @@ static void *ctxp_scanwork(void *pparam)
 	
 	double_list_init(&temp_list);
 	while (!g_notify_stop) {
-		pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
+		std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
 		gettimeofday(&current_time, NULL);
 		ptail = double_list_get_tail(
 			&g_context_lists[CONTEXT_POLLING]);
@@ -156,23 +155,23 @@ static void *ctxp_scanwork(void *pparam)
 				break;
 			}
 		}
-		pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
-		pthread_mutex_lock(&g_context_locks[CONTEXT_IDLING]);
+		poll_hold.unlock();
+		std::unique_lock idle_hold(g_context_locks[CONTEXT_IDLING]);
 		while ((pnode = double_list_pop_front(&g_context_lists[CONTEXT_IDLING])) != nullptr) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
 			pcontext->type = CONTEXT_SWITCHING;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
-		pthread_mutex_unlock(&g_context_locks[CONTEXT_IDLING]);
+		idle_hold.unlock();
 		num = 0;
-		pthread_mutex_lock(&g_context_locks[CONTEXT_TURNING]);
+		std::unique_lock turn_hold(g_context_locks[CONTEXT_TURNING]);
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			((SCHEDULE_CONTEXT*)pnode->pdata)->type = CONTEXT_TURNING;
 			double_list_append_as_tail(
 				&g_context_lists[CONTEXT_TURNING], pnode);
 			num ++;
 		}
-		pthread_mutex_unlock(&g_context_locks[CONTEXT_TURNING]);
+		turn_hold.unlock();
 		if (1 == num) {
 			threads_pool_wakeup_thread();
 		} else if (num > 1) {
@@ -211,8 +210,6 @@ void contexts_pool_init(void *pcontexts, unsigned int context_num,
 		double_list_append_as_tail(
 			&g_context_lists[CONTEXT_FREE], &pcontext->node);
 	}
-	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
-		pthread_mutex_init(&g_context_locks[i], NULL);
 }
 
 int contexts_pool_run()
@@ -277,8 +274,6 @@ void contexts_pool_free()
 		context_free((SCHEDULE_CONTEXT*)((char*)
 			g_context_list + i * g_context_offset));
 	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
-		pthread_mutex_destroy(&g_context_locks[i]);
-	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_free(&g_context_lists[i]);
 	g_context_list = NULL;
 	
@@ -299,7 +294,7 @@ SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
 	if (CONTEXT_FREE != type && CONTEXT_TURNING != type) {
 		return NULL;
 	}
-	pthread_mutex_lock(&g_context_locks[type]);
+	std::lock_guard xhold(g_context_locks[type]);
 	pnode = double_list_pop_front(&g_context_lists[type]);
 	if (NULL != pnode) {
 		pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
@@ -307,7 +302,6 @@ SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
 		pcontext = NULL;
 	}
 	/* do not change context type under this circumstance */
-	pthread_mutex_unlock(&g_context_locks[type]);
 	return pcontext;
 }
 
@@ -342,7 +336,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 	}
 	
 	/* append the context at the tail of the corresponding list */
-	pthread_mutex_lock(&g_context_locks[type]);
+	std::lock_guard xhold(g_context_locks[type]);
 	orignal_type = pcontext->type;
 	pcontext->type = type;
 	tmp_ev.events = 0;
@@ -390,19 +384,17 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 	}
 	double_list_append_as_tail(&g_context_lists[type], 
 									&pcontext->node);
-	pthread_mutex_unlock(&g_context_locks[type]);
 }
 
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
 {
-	pthread_mutex_lock(&g_context_locks[CONTEXT_IDLING]);
+	std::unique_lock idle_hold(g_context_locks[CONTEXT_IDLING]);
 	if (CONTEXT_IDLING != pcontext->type) {
-		pthread_mutex_unlock(&g_context_locks[CONTEXT_IDLING]);
 		return;
 	}
 	double_list_remove(&g_context_lists[CONTEXT_IDLING], &pcontext->node);
 	pcontext->type = CONTEXT_SWITCHING;
-	pthread_mutex_unlock(&g_context_locks[CONTEXT_IDLING]);
+	idle_hold.unlock();
 	contexts_pool_put_context(pcontext, CONTEXT_TURNING);
 	threads_pool_wakeup_thread();
 }
@@ -432,9 +424,9 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 		debug_info("[contexts_pool]: waiting context"
 			" %p to be CONTEXT_SLEEPING\n", pcontext);
 	}
-	pthread_mutex_lock(&g_context_locks[CONTEXT_SLEEPING]);
+	std::unique_lock sleep_hold(g_context_locks[CONTEXT_SLEEPING]);
 	double_list_remove(&g_context_lists[CONTEXT_SLEEPING], &pcontext->node);
-	pthread_mutex_unlock(&g_context_locks[CONTEXT_SLEEPING]);
+	sleep_hold.unlock();
 	/* put the context into waiting queue */
 	contexts_pool_put_context(pcontext, type);
 	if (CONTEXT_TURNING == type) {
@@ -451,19 +443,18 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
  */
 void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
 {
-	pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
+	std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
 	if (CONTEXT_POLLING != pcontext->type) {
-		pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
 		return;
 	}
 	double_list_remove(&g_context_lists[CONTEXT_POLLING], &pcontext->node);
 	pcontext->type = CONTEXT_SWITCHING;
-	pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
-	pthread_mutex_lock(&g_context_locks[CONTEXT_TURNING]);
+	poll_hold.unlock();
+	std::unique_lock turn_hold(g_context_locks[CONTEXT_TURNING]);
 	pcontext->type = CONTEXT_TURNING;
 	double_list_append_as_tail(
 		&g_context_lists[CONTEXT_TURNING],
 		&pcontext->node);
-	pthread_mutex_unlock(&g_context_locks[CONTEXT_TURNING]);
+	turn_hold.unlock();
 	threads_pool_wakeup_thread();
 }
