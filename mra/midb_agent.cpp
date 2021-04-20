@@ -434,19 +434,19 @@ static BACK_CONN *get_connection(const char *prefix)
 	std::unique_lock sv_hold(g_server_lock);
 	pnode = double_list_pop_front(&pserver->conn_list);
 	sv_hold.unlock();
+	if (pnode != nullptr)
+		return static_cast<BACK_CONN *>(pnode->pdata);
+	for (i = 0; i < SOCKET_TIMEOUT; i++) {
+		sleep(1);
+		sv_hold.lock();
+		pnode = double_list_pop_front(&pserver->conn_list);
+		sv_hold.unlock();
+		if (NULL != pnode) {
+			break;
+		}
+	}
 	if (NULL == pnode) {
-		for (i=0; i<SOCKET_TIMEOUT; i++) {
-			sleep(1);
-			sv_hold.lock();
-			pnode = double_list_pop_front(&pserver->conn_list);
-			sv_hold.unlock();
-			if (NULL != pnode) {
-				break;
-			}
-		}
-		if (NULL == pnode) {
-			return NULL;
-		}
+		return NULL;
 	}
 	return (BACK_CONN*)pnode->pdata;
 }
