@@ -442,13 +442,10 @@ static BACK_CONN *get_connection(const char *prefix)
 		pnode = double_list_pop_front(&pserver->conn_list);
 		sv_hold.unlock();
 		if (NULL != pnode) {
-			break;
+			return static_cast<BACK_CONN *>(pnode->pdata);
 		}
 	}
-	if (NULL == pnode) {
-		return NULL;
-	}
-	return (BACK_CONN*)pnode->pdata;
+	return NULL;
 }
 
 static int list_mail(const char *path, const char *folder, ARRAY *parray,
