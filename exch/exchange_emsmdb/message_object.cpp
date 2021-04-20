@@ -802,15 +802,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	proptag_array_free(pungroup_proptags);
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	/* trigger the rule evaluation under public mode 
-		when the message is first saved to the folder */
-	if (TRUE == b_new && FALSE == b_fai && 0 != pmessage->message_id
-		&& FALSE == logon_object_check_private(pmessage->plogon)) {
-		exmdb_client_rule_new_message(
-			logon_object_get_dir(pmessage->plogon), rpc_info.username,
-			logon_object_get_account(pmessage->plogon), pmessage->cpid,
-			pmessage->folder_id, pmessage->message_id);
-	}
 	return GXERR_SUCCESS;
 	
  SAVE_FULL_CHANGE:
