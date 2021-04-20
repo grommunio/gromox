@@ -4048,8 +4048,8 @@ BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
 	return TRUE;
 }
 
-BOOL common_util_entryid_to_username(
-	const BINARY *pbin, char *username)
+BOOL common_util_entryid_to_username(const BINARY *pbin,
+    char *username, size_t ulen)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
@@ -4094,7 +4094,7 @@ BOOL common_util_entryid_to_username(
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		strncpy(username, oneoff_entry.pmail_address, 128);
+		HX_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
 	return FALSE;
@@ -5674,12 +5674,12 @@ BOOL common_util_recipients_to_list(
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			pnode->pdata = common_util_alloc(128);
+			pnode->pdata = common_util_alloc(324);
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-			    static_cast<char *>(pnode->pdata)))
+			    static_cast<char *>(pnode->pdata), 324))
 				return FALSE;
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
