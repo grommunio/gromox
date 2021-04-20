@@ -1,6 +1,8 @@
 0.20 (2021-04-14)
 =================
+
 Enhancements:
+
 * daemons: SIGHUP support / `systemctl reload` is now possible for
   a general reload action
 * http: much speedier shutdown, and hence `systemctl restart`
@@ -10,7 +12,9 @@ Enhancements:
 * adaptor: reload now causes immediate regeneration of all txt files
   that adaptor would normally generate only periodocally
 * mysql_adaptor: the "schema_upgrades" config gained an option for "host:"
+
 Fixes:
+
 * exmdb_provider: the wrong store quota property was evaluated when
   copying/moving messages
 * exmdb_provider: fix a mutex double unlock
@@ -22,9 +26,13 @@ Fixes:
 
 0.19 (2021-03-30)
 =================
+
 Changes:
+
 * exmdb_provider: allow reduction of cache_interval down to 1s
+
 Fixes:
+
 * dbop: classes.filter column was not created on dbop -C
 * exchange_emsmdb: fix integer multiplication overflow during quota check
 * exchange_emsmdb: fix ftstream_parser_create running into EISDIR error
@@ -34,7 +42,9 @@ Fixes:
 
 0.18 (2021-03-26)
 =================
+
 Changes:
+
 * http: Split some unspecific HTTP 500 errors into 500, 502, 503, 504.
 * http: Incomplete RTF documents are now decoded rather than "Not Found"
   being emitted.
@@ -43,7 +53,9 @@ Changes:
 * mod_fastcgi: changed the underlying path of the built-in rule for
   /web to /usr/share/grammm-web
 * The systemd .target units were removed
+
 Fixes:
+
 * zcore: moving mails between two stores had erroneously used the
   old mail folder's id for deletion and failed.
 * daemons: Fix a crash when programs shut down before entering the mainloop.
@@ -51,14 +63,20 @@ Fixes:
 
 0.17 (2021-03-06)
 =================
+
 Enhancements:
+
 * http: Raise max_router_connections & max_rpc_stub_threads limits
   to cope with reconnect storms from midb and zcore.
 * doc: manpage for autodiscover
+
 Changes:
+
 * all daemons: Disabled the ip6_container and ip6_filter plugins
   for now; the default settings block too many connections.
+
 Fixes:
+
 * http: fix crash when user_default_lang is unset
 * imap: advertise STARTTLS when indeed supported
 * all daemons: avoid rejecting IPv6 connections from long addresses
