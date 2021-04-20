@@ -235,7 +235,7 @@ static BOOL notify_response_specify_folder_modified(
 		pnotify->notification_data.notification_flags |=
 								NOTIFICATION_FLAG_MOST_UNREAD;
 		pnotify->notification_data.punread_count = &pmemory->unread_count;
-		pmemory->total_count = *punread;
+		pmemory->unread_count = *punread;
 	}
 	pnotify->notification_data.pproptags = &pmemory->proptags;
 	pmemory->proptags.count = pproptags->count;
