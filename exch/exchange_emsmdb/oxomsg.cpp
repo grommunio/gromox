@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <libHX/string.h>
 #include <gromox/fileio.h>
 #include "emsmdb_interface.h"
 #include "message_object.h"
@@ -110,7 +111,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	return message_object_save(pmessage);
 }
 
-static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
+static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t ulen)
 {
 	void *pvalue;
 	uint32_t proptag_buff[4];
@@ -144,7 +145,7 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				strncpy(username, static_cast<char *>(pvalue), 256);
+				HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
 			}
 		}
@@ -152,7 +153,7 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
 	if (NULL != pvalue) {
-		strncpy(username, static_cast<char *>(pvalue), 256);
+		HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
@@ -204,7 +205,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	time_t cur_time;
 	uint32_t tmp_num;
 	uint16_t rcpt_num;
-	char username[256];
+	char username[324];
 	int32_t max_length;
 	EMSMDB_INFO *pinfo;
 	const char *account;
@@ -280,9 +281,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecAccessDenied;
 	}
 	
-	if (FALSE == oxomsg_check_delegate(pmessage, username)) {
+	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
-	}
 	account = logon_object_get_account(plogon);
 	if ('\0' == username[0]) {
 		strcpy(username, account);
@@ -656,7 +656,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 {
 	void *pvalue;
 	int object_type;
-	char username[256];
+	char username[324];
 	const char *account;
 	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
@@ -697,9 +697,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		MESSAGE_FLAG_SUBMITTED)) {
 		return ecAccessDenied;
 	}
-	if (FALSE == oxomsg_check_delegate(pmessage, username)) {
+	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
-	}
 	account = logon_object_get_account(plogon);
 	if ('\0' == username[0]) {
 		strcpy(username, account);

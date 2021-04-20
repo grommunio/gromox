@@ -4568,7 +4568,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	uint16_t rcpt_num;
-	char username[256];
+	char username[324];
 	const char *account;
 	uint32_t permission;
 	uint32_t mail_length;
@@ -4646,7 +4646,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		zarafa_server_put_user_info(pinfo);
 		return ecAccessDenied;
 	}
-	if (FALSE == common_util_check_delegate(pmessage, username)) {
+	if (!common_util_check_delegate(pmessage, username, GX_ARRAY_SIZE(username))) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}

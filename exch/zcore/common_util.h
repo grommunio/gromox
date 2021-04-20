@@ -145,8 +145,7 @@ BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
 BOOL common_util_check_message_class(const char *str_class);
-BOOL common_util_check_delegate(
-	MESSAGE_OBJECT *pmessage, char *username);
+extern BOOL common_util_check_delegate(MESSAGE_OBJECT *, char *username, size_t);
 BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir);
 BOOL common_util_check_delegate_permission_ex(

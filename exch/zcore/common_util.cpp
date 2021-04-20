@@ -135,8 +135,7 @@ BOOL common_util_check_message_class(const char *str_class)
 	return TRUE;
 }
 
-BOOL common_util_check_delegate(
-	MESSAGE_OBJECT *pmessage, char *username)
+BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t ulen)
 {
 	void *pvalue;
 	uint32_t proptag_buff[4];
@@ -170,7 +169,7 @@ BOOL common_util_check_delegate(
 			pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				strncpy(username, static_cast<char *>(pvalue), 256);
+				HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
 			}
 		}
@@ -178,7 +177,7 @@ BOOL common_util_check_delegate(
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
 	if (NULL != pvalue) {
-		strncpy(username, static_cast<char *>(pvalue), 256);
+		HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
