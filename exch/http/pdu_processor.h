@@ -6,7 +6,6 @@
 #include <gromox/stream.hpp>
 #include <gromox/double_list.hpp>
 #include "pdu_ndr.h"
-#include <pthread.h>
 #define DCERPC_CALL_STAT_FLAG_HEADER_SIGNING		0x04
 #define DCERPC_CALL_STAT_FLAG_MULTIPLEXED			0x10
 #define DCERPC_BASE_MARSHALL_SIZE					(16*1024)

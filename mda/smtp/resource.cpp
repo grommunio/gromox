@@ -15,7 +15,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
-#include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
 
 using namespace gromox;

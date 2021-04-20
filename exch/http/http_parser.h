@@ -7,7 +7,6 @@
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <ctime>
-#include <pthread.h>
 #include <sys/time.h>
 #include <openssl/ssl.h>
 #define OUT_CHANNEL_MAX_WAIT						10

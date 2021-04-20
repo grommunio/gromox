@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <ctime>
 #include <cstring>
-#include <pthread.h>
 
 static int temp_list_collect_string_entry();
 

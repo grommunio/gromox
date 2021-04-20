@@ -9,7 +9,6 @@
 #include <gromox/config_file.hpp>
 #include <cstring>
 #include <cstdio>
-#include <pthread.h>
 
 DECLARE_API();
 

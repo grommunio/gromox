@@ -16,7 +16,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/list_file.hpp>
-#include <pthread.h>
 #include <cstdarg>
 #include <unistd.h>
 #define DEF_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)

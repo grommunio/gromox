@@ -18,7 +18,6 @@
 #include <gromox/util.hpp>
 #include <cstdio>
 #include <unistd.h>
-#include <pthread.h>
 #include <mysql.h>
 #include "sql2.hpp"
 #define MLIST_PRIVILEGE_ALL				0

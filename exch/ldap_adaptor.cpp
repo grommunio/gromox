@@ -11,7 +11,6 @@
 #include <string>
 #include <utility>
 #include <ldap.h>
-#include <pthread.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/resource_pool.hpp>

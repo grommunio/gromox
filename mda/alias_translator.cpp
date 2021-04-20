@@ -11,7 +11,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/util.hpp>
 #include <cstdarg>
-#include <pthread.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>

@@ -17,7 +17,6 @@
 #include <gromox/util.hpp>
 #include <cstdio>
 #include <fcntl.h>
-#include <pthread.h>
 #include <sys/time.h>
 
 namespace {

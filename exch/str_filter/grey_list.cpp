@@ -14,7 +14,6 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <cstdio>
-#include <pthread.h>
 
 DECLARE_API(extern);
 

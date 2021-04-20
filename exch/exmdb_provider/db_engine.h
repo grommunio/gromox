@@ -6,7 +6,6 @@
 #include <gromox/element_data.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
-#include <pthread.h>
 #include <sqlite3.h>
 #define CONTENT_ROW_HEADER						1
 #define CONTENT_ROW_MESSAGE						2

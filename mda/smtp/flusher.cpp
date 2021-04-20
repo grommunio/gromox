@@ -9,7 +9,6 @@
 #include <gromox/single_list.hpp>
 #include "resource.h"
 #include <gromox/util.hpp>
-#include <pthread.h>
 #include <sys/types.h>
 #include <dlfcn.h>
 #include <cstdio>

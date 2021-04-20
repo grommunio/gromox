@@ -7,9 +7,6 @@
 #include <gromox/util.hpp>
 #include <cstdio>
 #include <ctime>
-#include <pthread.h>
-
-
 #define HTML_01 \
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\r\n\
 <HTML><HEAD>\
