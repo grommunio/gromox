@@ -5122,7 +5122,7 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
 	uint32_t proptag3, uint32_t proptag4, uint32_t proptag5,
-	const char *charset, char *field)
+    const char *charset, char *field, size_t fdsize)
 {
 	int offset;
 	char address[256];
@@ -5136,7 +5136,7 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
 		field[offset] = '"';
 		offset ++;
 		offset += oxcmail_encode_mime_string(charset,
-				pvalue, field + offset, 1024 - offset);
+		          pvalue, field + offset, fdsize - offset);
 		field[offset] = '"';
 		offset ++;
 		field[offset] = '\0';
@@ -5145,10 +5145,10 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
 	if (TRUE == oxcmail_get_smtp_address(&pmsg->proplist, alloc,
 		proptag4, proptag2, proptag3, proptag5, address)) {
 		if (0 == offset) {
-			offset = gx_snprintf(field, 1024, "<%s>", address);
+			offset = gx_snprintf(field, fdsize, "<%s>", address);
 		} else {
 			offset += gx_snprintf(field + offset,
-				1024 - offset, " <%s>", address);
+			          fdsize - offset, " <%s>", address);
 		}
 	}
 	if (0 == offset) {
@@ -5412,7 +5412,8 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 				PROP_TAG_SENDEREMAILADDRESS,
 				PROP_TAG_SENDERSMTPADDRESS,
 				PROP_TAG_SENDERENTRYID,
-				pskeleton->charset, tmp_field);
+				pskeleton->charset, tmp_field,
+				GX_ARRAY_SIZE(tmp_field));
 			if (FALSE == mime_set_field(phead,
 				"Sender", tmp_field)) {
 				return FALSE;
@@ -5438,7 +5439,8 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 						PROP_TAG_SENDEREMAILADDRESS,
 						PROP_TAG_SENDERSMTPADDRESS,
 						PROP_TAG_SENDERENTRYID,
-						pskeleton->charset, tmp_field);
+						pskeleton->charset, tmp_field,
+						GX_ARRAY_SIZE(tmp_field));
 					if (FALSE == mime_set_field(phead,
 						"Sender", tmp_field)) {
 						return FALSE;
@@ -5453,7 +5455,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 		PROP_TAG_SENTREPRESENTINGEMAILADDRESS,
 		PROP_TAG_SENTREPRESENTINGSMTPADDRESS,
 		PROP_TAG_SENTREPRESENTINGENTRYID,
-		pskeleton->charset, tmp_field)) {
+	    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 		if (FALSE == mime_set_field(phead,
 			"From", tmp_field)) {
 			return FALSE;
@@ -5465,7 +5467,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 			PROP_TAG_SENDEREMAILADDRESS,
 			PROP_TAG_SENDERSMTPADDRESS,
 			PROP_TAG_SENDERENTRYID,
-			pskeleton->charset, tmp_field)) {
+		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(phead,
 				"Sender", tmp_field)) {
 				return FALSE;
@@ -5481,21 +5483,23 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 			PROP_TAG_READRECEIPTEMAILADDRESS,
 			PROP_TAG_READRECEIPTSMTPADDRESS,
 			PROP_TAG_READRECEIPTENTRYID,
-			pskeleton->charset, tmp_field) ||
+		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
+
 			TRUE == oxcmail_export_address(pmsg, alloc,
 			PROP_TAG_SENDERNAME,
 			PROP_TAG_SENDERADDRESSTYPE,
 			PROP_TAG_SENDEREMAILADDRESS,
 			PROP_TAG_SENDERSMTPADDRESS,
 			PROP_TAG_SENDERENTRYID,
-			pskeleton->charset, tmp_field) ||
+		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
+
 			TRUE == oxcmail_export_address(pmsg, alloc,
 			PROP_TAG_SENTREPRESENTINGNAME,
 			PROP_TAG_SENTREPRESENTINGADDRESSTYPE,
 			PROP_TAG_SENTREPRESENTINGEMAILADDRESS,
 			PROP_TAG_SENTREPRESENTINGSMTPADDRESS,
 			PROP_TAG_SENTREPRESENTINGENTRYID,
-			pskeleton->charset, tmp_field)) {
+		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(phead,
 				"Return-Receipt-To", tmp_field)) {
 				return FALSE;
@@ -5512,14 +5516,15 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 			PROP_TAG_READRECEIPTEMAILADDRESS,
 			PROP_TAG_READRECEIPTSMTPADDRESS,
 			PROP_TAG_READRECEIPTENTRYID,
-			pskeleton->charset, tmp_field) ||
+		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
+
 			TRUE == oxcmail_export_address(pmsg, alloc,
 			PROP_TAG_SENTREPRESENTINGNAME,
 			PROP_TAG_SENTREPRESENTINGADDRESSTYPE,
 			PROP_TAG_SENTREPRESENTINGEMAILADDRESS,
 			PROP_TAG_SENTREPRESENTINGSMTPADDRESS,
 			PROP_TAG_SENTREPRESENTINGENTRYID,
-			pskeleton->charset, tmp_field)) {
+		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(phead,
 				"Disposition-Notification-To",
 				tmp_field)) {
