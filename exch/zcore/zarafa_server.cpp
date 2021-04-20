@@ -1010,10 +1010,9 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	}
 	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
 		HX_strlcpy(essdn, entryid.pc, sizeof(essdn));
-	} else if (TRUE == common_util_parse_addressbook_entryid(
-		entryid, &address_type, essdn) &&
-		0 == strncmp(essdn, "/exmdb=", 7) &&
-		ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
+	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
+	    essdn, GX_ARRAY_SIZE(essdn)) && strncmp(essdn, "/exmdb=", 7) == 0 &&
+	    ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
 		/* do nothing */	
 	} else {
 		zarafa_server_put_user_info(pinfo);
@@ -1112,10 +1111,10 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		}
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
 			HX_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		} else if (TRUE == common_util_parse_addressbook_entryid(
-			entryid, &address_type, essdn) &&
-			0 == strncmp(essdn, "/exmdb=", 7) &&
-			ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
+		} else if (common_util_parse_addressbook_entryid(entryid,
+		     &address_type, essdn, GX_ARRAY_SIZE(essdn)) &&
+		     strncmp(essdn, "/exmdb=", 7) == 0 &&
+		     ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
 			/* do nothing */	
 		} else {
 			zarafa_server_put_user_info(pinfo);
@@ -1378,8 +1377,8 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecSuccess;
 	}
-	if (TRUE == common_util_parse_addressbook_entryid(
-		entryid, &address_type, essdn)) {
+	if (common_util_parse_addressbook_entryid(entryid, &address_type,
+	    essdn, GX_ARRAY_SIZE(essdn))) {
 		if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
 			HX_strlower(essdn);
 			if ('\0' == essdn[0]) {

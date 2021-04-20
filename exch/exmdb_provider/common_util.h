@@ -150,8 +150,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 BOOL common_util_entryid_to_username(
 	const BINARY *pbin, char *username);
-BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
-	char *address_type, char *email_address);
+extern BOOL common_util_parse_addressbook_entryid(const BINARY *, char *address_type, size_t atsize, char *email_address, size_t emsize);
 BINARY* common_util_to_private_folder_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id);

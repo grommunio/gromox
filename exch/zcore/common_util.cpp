@@ -974,8 +974,8 @@ BOOL common_util_addressbook_entryid_to_username(
 			tmp_entryid.px500dn, username);
 }
 
-BOOL common_util_parse_addressbook_entryid(
-	BINARY entryid_bin, uint32_t *ptype, char *pessdn)
+BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
+    char *pessdn, size_t dsize)
 {
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
@@ -987,7 +987,7 @@ BOOL common_util_parse_addressbook_entryid(
 		return FALSE;
 	}
 	*ptype = tmp_entryid.type;
-	strncpy(pessdn, tmp_entryid.px500dn, 1024);
+	HX_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
 	return TRUE;
 }
 

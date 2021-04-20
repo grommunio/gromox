@@ -1720,8 +1720,9 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		pvalue = tpropval_array_get_propval(&pmsgctnt->proplist,
 						PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
 		if (NULL == pvalue) {
-			if (TRUE == common_util_parse_addressbook_entryid(
-				pbin, address_type, tmp_buff)) {
+			if (common_util_parse_addressbook_entryid(pbin,
+			    address_type, GX_ARRAY_SIZE(address_type),
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
 				propval.pvalue = address_type;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
@@ -1756,8 +1757,9 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		pvalue = tpropval_array_get_propval(
 			&pmsgctnt->proplist, PROP_TAG_SENDERADDRESSTYPE);
 		if (NULL == pvalue) {
-			if (TRUE == common_util_parse_addressbook_entryid(
-				pbin, address_type, tmp_buff)) {
+			if (common_util_parse_addressbook_entryid(pbin,
+			    address_type, GX_ARRAY_SIZE(address_type),
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PROP_TAG_SENDERADDRESSTYPE;
 				propval.pvalue = address_type;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))

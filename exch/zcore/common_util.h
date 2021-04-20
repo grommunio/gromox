@@ -193,8 +193,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 void common_util_free_znotification(ZNOTIFICATION *pnotification);
 BOOL common_util_addressbook_entryid_to_username(
 	BINARY entryid_bin, char *username);
-BOOL common_util_parse_addressbook_entryid(
-	BINARY entryid_bin, uint32_t *ptype, char *pessdn);
+extern BOOL common_util_parse_addressbook_entryid(BINARY, uint32_t *type, char *essdn, size_t);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
 BOOL common_util_from_folder_entryid(BINARY bin,
 	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);

@@ -4101,7 +4101,7 @@ BOOL common_util_entryid_to_username(
 }
 
 BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
-	char *address_type, char *email_address)
+    char *address_type, size_t atsize, char *email_address, size_t emsize)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
@@ -4133,8 +4133,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
-		strcpy(address_type, "EX");
-		strncpy(email_address, ab_entryid.px500dn, 1024);
+		HX_strlcpy(address_type, "EX", atsize);
+		HX_strlcpy(email_address, ab_entryid.px500dn, emsize);
 		return TRUE;
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
@@ -4148,8 +4148,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		strcpy(address_type, "SMTP");
-		strncpy(email_address, oneoff_entry.pmail_address, 1024);
+		HX_strlcpy(address_type, "SMTP", atsize);
+		HX_strlcpy(email_address, oneoff_entry.pmail_address, emsize);
 		return TRUE;
 	}
 	return FALSE;
