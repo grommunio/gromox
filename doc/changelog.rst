@@ -1,3 +1,22 @@
+0.21 (2021-04-20)
+=================
+
+Enhancements:
+
+* exmdb_provider, midb: emit log message when and which sqlite
+  DB cannot be opened
+
+Fixes:
+
+* imap: do not advertise RFC2971 commands when so disabled
+* imap: fix misparsing of {octet}-prefixed literals
+* imap: quote folder names in LIST, LSUB, XLIST, STATUS results
+* exmdb_provider: add a missing iterator advancements in message_rectify_message
+* timer: avoid crash on shutdown
+* midb: fix concurrent use of sqlite data structure
+* midb_agent: speed up termination during midb connection trying
+
+
 0.20 (2021-04-14)
 =================
 

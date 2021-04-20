@@ -13,3 +13,5 @@ See https://grammm.com/ for details.
 
 The source code repository and technical issue tracker can be found at
 https://github.com/grammm-dev/gromox .
+
+Instructions for compilation are in `doc/install.rst <doc/install.rst>`_.
