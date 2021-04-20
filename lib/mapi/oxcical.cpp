@@ -3902,7 +3902,7 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username);
+			return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 				pvalue = tpropval_array_get_propval(

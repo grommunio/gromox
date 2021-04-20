@@ -1334,5 +1334,5 @@ typedef const char* (*EXTENSION_TO_MIME)(const char*);
 typedef BOOL (*GET_USER_IDS)(const char*, int*, int*, int*);
 typedef BOOL (*GET_USERNAME)(int, char*);
 typedef BOOL (*USERNAME_TO_ENTRYID)(const char*, const char*, BINARY*, int*);
-typedef BOOL (*ENTRYID_TO_USERNAME)(const BINARY*, void*(*)(size_t), char*);
+using ENTRYID_TO_USERNAME = BOOL (*)(const BINARY *, void *(*)(size_t), char *, size_t);
 typedef BOOL (*ESSDN_TO_USERNAME)(const char*, char*);

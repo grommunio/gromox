@@ -209,7 +209,7 @@ static BOOL oxcmail_essdn_to_username(const char *pessdn, char *username)
 }
 
 static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
-	EXT_BUFFER_ALLOC alloc, char *username)
+    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
@@ -254,7 +254,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		strncpy(username, oneoff_entry.pmail_address, 256);
+		HX_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
 	return FALSE;
@@ -4968,7 +4968,7 @@ static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			return oxcmail_entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username);
+			return oxcmail_entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 				pvalue = tpropval_array_get_propval(pproplist, proptag3);

@@ -183,7 +183,8 @@ BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGENTRYID);
 	if (NULL != pvalue) {
-		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username);
+		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+		       username, ulen);
 	}
 	username[0] = '\0';
 	return TRUE;
@@ -991,8 +992,8 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	return TRUE;
 }
 
-static BOOL common_util_entryid_to_username_internal(
-	const BINARY *pbin, EXT_BUFFER_ALLOC alloc, char *username)
+static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
+    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
@@ -1037,17 +1038,17 @@ static BOOL common_util_entryid_to_username_internal(
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		strncpy(username, oneoff_entry.pmail_address, 128);
+		HX_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
 	return FALSE;
 }
 
-BOOL common_util_entryid_to_username(
-	const BINARY *pbin, char *username)
+BOOL common_util_entryid_to_username(const BINARY *pbin,
+    char *username, size_t ulen)
 {
-	return common_util_entryid_to_username_internal(
-				pbin, common_util_alloc, username);
+	return common_util_entryid_to_username_internal(pbin,
+	       common_util_alloc, username, ulen);
 }
 
 BINARY* common_util_username_to_addressbook_entryid(
@@ -2000,12 +2001,12 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			pnode->pdata = common_util_alloc(128);
+			pnode->pdata = common_util_alloc(324);
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-			    static_cast<char *>(pnode->pdata)))
+			    static_cast<char *>(pnode->pdata), 324))
 				return FALSE;	
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
