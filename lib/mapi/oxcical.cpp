@@ -3887,7 +3887,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 	ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username,
-	EXT_BUFFER_ALLOC alloc, char *username)
+    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
 	void *pvalue;
 	
@@ -3923,7 +3923,7 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 			}
 		}
 	}
-	strncpy(username, static_cast<char *>(pvalue), 128);
+	HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
 	return TRUE;
 }
 
@@ -3936,8 +3936,8 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	BOOL b_rsvp;
 	void *pvalue;
 	std::shared_ptr<ICAL_LINE> piline;
-	char username[128];
-	char tmp_value[256];
+	char username[324];
+	char tmp_value[334];
 	std::shared_ptr<ICAL_PARAM> piparam;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	
@@ -4066,13 +4066,11 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (!piparam->append_paramval(static_cast<char *>(pvalue)))
 				return FALSE;
 		}
-		if (FALSE == oxcical_get_smtp_address(
-			pmsg->children.prcpts->pparray[i],
-			entryid_to_username, essdn_to_username,
-			alloc, username)) {
+		if (!oxcical_get_smtp_address(pmsg->children.prcpts->pparray[i],
+		    entryid_to_username, essdn_to_username, alloc, username,
+		    GX_ARRAY_SIZE(username)))
 			return FALSE;
-		}
-		sprintf(tmp_value, "MAILTO:%s", username);
+		snprintf(tmp_value, GX_ARRAY_SIZE(tmp_value), "MAILTO:%s", username);
 		pivalue = ical_new_value(NULL);
 		if (NULL == pivalue) {
 			return FALSE;
