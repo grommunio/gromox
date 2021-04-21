@@ -118,7 +118,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 		ptoken = username;
 	}
 	encode_hex_int(user_id, hex_string);
-	sprintf(pserver, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
+	snprintf(pserver, 256, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
 			"-%02x%02x%s@%s", username[0], username[1], username[2],
 			username[3], username[4], username[5], username[6],
 			username[7], username[8], username[9], username[10],
@@ -143,7 +143,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
 		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);
 	}
-	strncpy(serverfqdn, ptoken + 4, 1024);
+	HX_strlcpy(serverfqdn, ptoken + 4, 256);
 	return ecSuccess;
 }
 
