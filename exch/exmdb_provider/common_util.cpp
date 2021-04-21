@@ -712,14 +712,15 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 			continue;
 		}
 		if (MESSAGE_PROPERTIES_TABLE == table_type && FALSE == b_subject) {
-			if (PROP_TAG_NORMALIZEDSUBJECT == proptags[i]
-				|| PROP_TAG_SUBJECTPREFIX == proptags[i]) {
+			if ((proptags[i] == PROP_TAG_NORMALIZEDSUBJECT ||
+			    proptags[i] == PROP_TAG_SUBJECTPREFIX) &&
+			    i + 1 < GX_ARRAY_SIZE(proptags)) {
 				b_subject = TRUE;
 				i ++;
 				proptags[i] = PROP_TAG_SUBJECT;
-				
-			} else if (PROP_TAG_NORMALIZEDSUBJECT_STRING8 == proptags[i]
-				|| PROP_TAG_SUBJECTPREFIX_STRING8 == proptags[i]) {
+			} else if ((proptags[i] == PROP_TAG_NORMALIZEDSUBJECT_STRING8 ||
+			    proptags[i] == PROP_TAG_SUBJECTPREFIX_STRING8) &&
+			    i + 1 < GX_ARRAY_SIZE(proptags)) {
 				b_subject = TRUE;
 				i ++;
 				proptags[i] = PROP_TAG_SUBJECT_STRING8;
