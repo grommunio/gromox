@@ -1970,11 +1970,12 @@ uint32_t rop_syncimportmessagemove(
 		return ecError;
 	}
 	if (TRUE == b_newer) {
+		uint32_t result_unused;
 		tmp_propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 		tmp_propval.pvalue = pvalue;
 		exmdb_client_set_message_property(
 			logon_object_get_dir(plogon), NULL,
-			0, dst_mid, &tmp_propval, reinterpret_cast<uint32_t *>(&b_result));
+			0, dst_mid, &tmp_propval, &result_unused);
 	}
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0, dst_mid,
