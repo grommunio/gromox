@@ -501,7 +501,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 	int tmp_len;
 	int context_id;
 	BOOL b_chunked;
-	char tmp_buff[32];
+	char tmp_buff[64];
 	HPM_CONTEXT *phpm_ctx;
 	uint64_t content_length;
 	
@@ -537,7 +537,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			b_chunked = FALSE;
 			tmp_len = mem_file_get_total_length(
 				&phttp->request.f_transfer_encoding);
-			if (tmp_len > 0 && tmp_len < 64) {
+			if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
 				mem_file_seek(&phttp->request.f_transfer_encoding,
 						MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 				mem_file_read(&phttp->request.f_transfer_encoding,
