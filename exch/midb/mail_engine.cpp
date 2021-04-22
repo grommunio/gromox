@@ -1842,7 +1842,6 @@ static void mail_engine_ct_free_result(CONDITION_RESULT *presult)
 
 static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
 {
-	uint64_t folder_id;
 	char sql_string[256];
 	
 	sprintf(sql_string, "SELECT "

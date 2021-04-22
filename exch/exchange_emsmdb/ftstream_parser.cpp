@@ -901,7 +901,6 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 	int stream_id;
 	char path[256];
 	DCERPC_INFO rpc_info;
-	struct stat node_stat;
 	
 	stream_id = common_util_get_ftstream_id();
 	rpc_info = get_rpc_info();
