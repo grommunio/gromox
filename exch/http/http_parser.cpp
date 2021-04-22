@@ -788,6 +788,11 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 	tmp_len = mem_file_read(
 	          &pcontext->request.f_request_uri,
 	          tmp_buff, 1024);
+	if (tmp_len == MEM_END_OF_FILE) {
+		http_parser_log_info(pcontext, 6, "rpcproxy request method error");
+		http_4xx(pcontext);
+		return X_LOOP;
+	}
 	tmp_buff[tmp_len] = '\0';
 
 	char *ptoken;
