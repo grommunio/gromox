@@ -1972,10 +1972,8 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			if (0 == (*(uint32_t*)pvalue &&
-				RECIPIENT_TYPE_NEED_RESEND)) {
+			if (!(*static_cast<uint32_t *>(pvalue) & RECIPIENT_TYPE_NEED_RESEND))
 				continue;	
-			}
 		}
 		/*
 		if (FALSE == b_submit) {
