@@ -355,9 +355,8 @@ static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
 	mem_file_seek(pf_others, MEM_FILE_READ_PTR,
 		0, MEM_FILE_SEEK_BEGIN);
 	while (mem_file_read(pf_others, &tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (tag_len > sizeof(tmp_buff)) {
+		if (tag_len >= GX_ARRAY_SIZE(tmp_buff))
 			return FALSE;
-		}
 		mem_file_read(pf_others, tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
 		mem_file_read(pf_others, &val_len, sizeof(int));
