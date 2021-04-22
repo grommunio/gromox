@@ -1309,8 +1309,10 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			return X_RUNOFF;
 		}
 		auto pnode = double_list_pop_front(&static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->pdu_list);
-		free(((BLOB_NODE*)pnode->pdata)->blob.data);
-		pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
+		if (pnode != nullptr) {
+			free(((BLOB_NODE*)pnode->pdata)->blob.data);
+			pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
+		}
 		pnode = double_list_get_head(
 			&((RPC_OUT_CHANNEL*)pcontext->pchannel)->pdu_list);
 		if (pnode != nullptr) {
