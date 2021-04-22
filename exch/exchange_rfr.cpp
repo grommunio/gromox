@@ -97,7 +97,7 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 PROC_ENTRY(proc_exchange_rfr);
 
 static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
-	char *punused, char *pserver)
+    char *punused, char *pserver, size_t svlen)
 {
 	int user_id;
 	char *ptoken;
@@ -118,7 +118,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 		ptoken = username;
 	}
 	encode_hex_int(user_id, hex_string);
-	snprintf(pserver, 256, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
+	snprintf(pserver, svlen, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
 			"-%02x%02x%s@%s", username[0], username[1], username[2],
 			username[3], username[4], username[5], username[6],
 			username[7], username[8], username[9], username[10],
@@ -126,8 +126,8 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	return ecSuccess;
 }
 
-static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
-	uint32_t cb, const char *mbserverdn, char *serverfqdn)
+static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
+    const char *mbserverdn, char *serverfqdn, size_t svlen)
 {
 	char *ptoken;
 	char tmp_unused[16];
@@ -136,14 +136,14 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
 	HX_strlcpy(tmp_buff, mbserverdn, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strrchr(tmp_buff, '/');
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
-		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);
+		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
 	}
 	*ptoken = '\0';
 	ptoken = strrchr(tmp_buff, '/');
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
-		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);
+		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
 	}
-	HX_strlcpy(serverfqdn, ptoken + 4, 256);
+	HX_strlcpy(serverfqdn, ptoken + 4, svlen);
 	return ecSuccess;
 }
 
@@ -253,7 +253,8 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 			return DISPATCH_FAIL;
 		}
 		prfr_out->result = rfr_get_newdsa(prfr_in->flags, prfr_in->puserdn,
-							prfr_in->punused, prfr_in->pserver);
+		                   prfr_in->punused, prfr_in->pserver,
+		                   GX_ARRAY_SIZE(prfr_in->pserver));
 		strcpy(prfr_out->punused, prfr_in->punused);
 		strcpy(prfr_out->pserver, prfr_in->pserver);
 		*ppout = prfr_out;
@@ -265,8 +266,9 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 			return DISPATCH_FAIL;
 		}
 		prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
-								prfr_dn_in->cb, prfr_dn_in->mbserverdn,
-								prfr_dn_out->serverfqdn);
+		                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
+		                      prfr_dn_out->serverfqdn,
+		                      GX_ARRAY_SIZE(prfr_dn_out->serverfqdn));
 		*ppout = prfr_dn_out;
 		return DISPATCH_SUCCESS;
 	default:
