@@ -5110,11 +5110,10 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	uint32_t *pmessage_size)
 {
 	BOOL b_result;
-	int read_state;
 	uint64_t tmp_id;
 	uint64_t tmp_mid;
 	uint64_t last_id;
-	int is_associated;
+	int is_associated, read_state = 0;
 	char tmp_path[256];
 	char tmp_path1[256];
 	uint64_t change_num;

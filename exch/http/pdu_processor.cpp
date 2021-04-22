@@ -2027,11 +2027,9 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 			break;
 		}
 	}
-	if (NULL != pnode) {
-		double_list_remove(&pcall->pcontext->async_list, pnode);
-	} else {
+	if (pnode == nullptr || pasync_node == nullptr)
 		return;
-	}
+	double_list_remove(&pcall->pcontext->async_list, pnode);
 	if (pcall->pprocessor->async_num < 0 ||
 		TRUE == pasync_node->b_cancelled) {
 		as_hold.unlock();

@@ -201,8 +201,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	int i;
 	int count;
 	int read_state;
-	uint64_t dtime;
-	uint64_t mtime;
+	uint64_t dtime = 0, mtime = 0;
 	uint64_t read_cn;
 	sqlite3 *psqlite;
 	uint64_t fid_val;
