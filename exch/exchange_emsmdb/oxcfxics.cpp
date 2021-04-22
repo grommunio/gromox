@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <climits>
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"
@@ -450,7 +451,6 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 	BOOL b_sub;
 	int object_type;
 	LOGON_OBJECT *plogon;
-	FASTDOWNCTX_OBJECT *pctx;
 	FOLDER_CONTENT *pfldctnt;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
@@ -487,24 +487,22 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 	if (NULL == pfldctnt) {
 		return ecError;
 	}
-	pctx = fastdownctx_object_create(
-			plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		folder_content_free(pfldctnt);
 		return ecError;
 	}
-	if (FALSE == fastdownctx_object_make_topfolder(
-		pctx, pfldctnt)) {
-		fastdownctx_object_free(pctx);
+	if (!fastdownctx_object_make_topfolder(pctx.get(), pfldctnt)) {
+		pctx.reset();
 		folder_content_free(pfldctnt);
 		return ecError;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
 	if (hnd < 0) {
-		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -520,7 +518,6 @@ uint32_t rop_fasttransfersourcecopymessages(
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
-	FASTDOWNCTX_OBJECT *pctx;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
@@ -579,23 +576,22 @@ uint32_t rop_fasttransfersourcecopymessages(
 		return ecMAPIOOM;
 	}
 	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
-	pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		eid_array_free(pmids);
 		return ecError;
 	}
-	if (FALSE == fastdownctx_object_make_messagelist(
-		pctx, b_chginfo, pmids)) {
-		fastdownctx_object_free(pctx);
+	if (!fastdownctx_object_make_messagelist(pctx.get(), b_chginfo, pmids)) {
+		pctx.reset();
 		eid_array_free(pmids);
 		return ecError;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
 	if (hnd < 0) {
-		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -613,7 +609,6 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	LOGON_OBJECT *plogon;
 	MESSAGE_CONTENT msgctnt;
 	FOLDER_CONTENT *pfldctnt;
-	FASTDOWNCTX_OBJECT *pctx;
 	TPROPVAL_ARRAY *pproplist;
 	ATTACHMENT_CONTENT attctnt;
 	
@@ -646,7 +641,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
 	}
-	pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		return ecError;
 	}
@@ -678,7 +673,6 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		           folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
 					b_fai, b_normal, b_sub);
 		if (NULL == pfldctnt) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		pproplist = folder_content_get_proplist(pfldctnt);
@@ -686,22 +680,18 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			tpropval_array_remove_propval(
 				pproplist, pproptags->pproptag[i]);
 		}
-		if (FALSE == fastdownctx_object_make_foldercontent(
-			pctx, b_sub, pfldctnt)) {
+		if (!fastdownctx_object_make_foldercontent(pctx.get(), b_sub, pfldctnt)) {
 			folder_content_free(pfldctnt);
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
 		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		if (FALSE == exmdb_client_read_message_instance(
 			logon_object_get_dir(plogon),
 		    message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pobject)), &msgctnt)) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
@@ -722,21 +712,16 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (FALSE == fastdownctx_object_make_messagecontent(
-			pctx, &msgctnt)) {
-			fastdownctx_object_free(pctx);
+		if (!fastdownctx_object_make_messagecontent(pctx.get(), &msgctnt))
 			return ecError;
-		}
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
 		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		if (FALSE == exmdb_client_read_attachment_instance(
 			logon_object_get_dir(plogon),
 		    attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pobject)), &attctnt)) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
@@ -750,19 +735,16 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 				break;
 			}
 		}
-		if (FALSE == fastdownctx_object_make_attachmentcontent(
-			pctx, &attctnt)) {
-			fastdownctx_object_free(pctx);
+		if (!fastdownctx_object_make_attachmentcontent(pctx.get(), &attctnt))
 			return ecError;
-		}
 		break;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
 	if (hnd < 0) {
-		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -780,7 +762,6 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	LOGON_OBJECT *plogon;
 	MESSAGE_CONTENT msgctnt;
 	FOLDER_CONTENT *pfldctnt;
-	FASTDOWNCTX_OBJECT *pctx;
 	TPROPVAL_ARRAY *pproplist;
 	ATTACHMENT_CONTENT attctnt;
 	
@@ -813,7 +794,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
 	}
-	pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		return ecError;
 	}
@@ -845,7 +826,6 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		           folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
 					b_fai, b_normal, b_sub);
 		if (NULL == pfldctnt) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		pproplist = folder_content_get_proplist(pfldctnt);
@@ -861,22 +841,18 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			}
 			i ++;
 		}
-		if (FALSE == fastdownctx_object_make_foldercontent(
-			pctx, b_sub, pfldctnt)) {
+		if (!fastdownctx_object_make_foldercontent(pctx.get(), b_sub, pfldctnt)) {
 			folder_content_free(pfldctnt);
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
 		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		if (FALSE == exmdb_client_read_message_instance(
 			logon_object_get_dir(plogon),
 		    message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pobject)), &msgctnt)) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		i = 0;
@@ -901,21 +877,16 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (FALSE == fastdownctx_object_make_messagecontent(
-			pctx, &msgctnt)) {
-			fastdownctx_object_free(pctx);
+		if (!fastdownctx_object_make_messagecontent(pctx.get(), &msgctnt))
 			return ecError;
-		}
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
 		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		if (FALSE == exmdb_client_read_attachment_instance(
 			logon_object_get_dir(plogon),
 		    attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pobject)), &attctnt)) {
-			fastdownctx_object_free(pctx);
 			return ecError;
 		}
 		i = 0;
@@ -932,19 +903,16 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			pproptags, PROP_TAG_ATTACHDATAOBJECT)) {
 			attctnt.pembedded = NULL;
 		}
-		if (FALSE == fastdownctx_object_make_attachmentcontent(
-			pctx, &attctnt)) {
-			fastdownctx_object_free(pctx);
+		if (!fastdownctx_object_make_attachmentcontent(pctx.get(), &attctnt))
 			return ecError;
-		}
 		break;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
 	if (hnd < 0) {
-		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -2061,7 +2029,6 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	int object_type;
 	ICS_STATE *pstate;
 	LOGON_OBJECT *plogon;
-	FASTDOWNCTX_OBJECT *pctx;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -2082,20 +2049,18 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	if (NULL == pstate) {
 		return ecError;
 	}
-	pctx = fastdownctx_object_create(plogon, 0);
+	auto pctx = fastdownctx_object_create(plogon, 0);
 	if (NULL == pctx) {
 		return ecError;
 	}
-	if (FALSE == fastdownctx_object_make_state(pctx, pstate)) {
-		fastdownctx_object_free(pctx);
+	if (!fastdownctx_object_make_state(pctx.get(), pstate))
 		return ecError;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
 	if (hnd < 0) {
-		fastdownctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }

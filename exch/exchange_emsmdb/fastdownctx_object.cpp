@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include "fastdownctx_object.h"
 #include "emsmdb_interface.h"
 #include <gromox/tpropval_array.hpp>
@@ -496,17 +497,18 @@ BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
 	return TRUE;
 }
 
-FASTDOWNCTX_OBJECT* fastdownctx_object_create(
+std::unique_ptr<FASTDOWNCTX_OBJECT> fastdownctx_object_create(
 	LOGON_OBJECT *plogon, uint8_t string_option)
 {
-	auto pctx = me_alloc<FASTDOWNCTX_OBJECT>();
-	if (NULL == pctx) {
+	std::unique_ptr<FASTDOWNCTX_OBJECT> pctx;
+	try {
+		pctx = std::make_unique<FASTDOWNCTX_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pctx->pstream = ftstream_producer_create(
 						plogon, string_option);
 	if (NULL == pctx->pstream) {
-		free(pctx);
 		return NULL;
 	}
 	double_list_init(&pctx->flow_list);
@@ -515,8 +517,9 @@ FASTDOWNCTX_OBJECT* fastdownctx_object_create(
 	return pctx;
 }
 
-void fastdownctx_object_free(FASTDOWNCTX_OBJECT *pctx)
+FASTDOWNCTX_OBJECT::~FASTDOWNCTX_OBJECT()
 {
+	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	ftstream_producer_free(pctx->pstream);
@@ -529,5 +532,4 @@ void fastdownctx_object_free(FASTDOWNCTX_OBJECT *pctx)
 	if (NULL != pctx->pmsglst) {
 		eid_array_free(pctx->pmsglst);
 	}
-	free(pctx);
 }
