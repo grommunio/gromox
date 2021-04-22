@@ -1741,8 +1741,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			if (TRUE == common_util_addressbook_entryid_to_username(
-				pbin, tmp_buff)) {
+			if (common_util_addressbook_entryid_to_username(pbin,
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
@@ -1778,8 +1778,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			if (TRUE == common_util_addressbook_entryid_to_username(
-				pbin, tmp_buff)) {
+			if (common_util_addressbook_entryid_to_username(pbin,
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))

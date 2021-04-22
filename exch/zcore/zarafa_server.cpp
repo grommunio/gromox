@@ -7464,7 +7464,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	char* argv[3];
 	USER_INFO *pinfo;
 	char maildir[256];
-	char username[256];
+	char username[324];
 	char tool_path[256];
 	char cookie_buff[1024];
 	int pipes_in[2] = {-1, -1};
@@ -7474,9 +7474,9 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	if (NULL == pinfo) {
 		return ecError;
 	}
-	if (FALSE == common_util_addressbook_entryid_to_username(
-		entryid, username) || FALSE ==
-		system_services_get_maildir(username, maildir)) {
+	if (!common_util_addressbook_entryid_to_username(entryid,
+	    username, GX_ARRAY_SIZE(username)) ||
+	    !system_services_get_maildir(username, maildir)) {
 		zarafa_server_put_user_info(pinfo);
 		*ppresult_string = NULL;
 		return ecSuccess;

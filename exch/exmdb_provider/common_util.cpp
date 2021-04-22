@@ -4017,8 +4017,8 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	return TRUE;
 }
 
-BOOL common_util_addressbook_entryid_to_username(
-	const BINARY *pentryid_bin, char *username)
+BOOL common_util_addressbook_entryid_to_username(const BINARY *pentryid_bin,
+     char *username, size_t ulen)
 {
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;

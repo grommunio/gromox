@@ -143,8 +143,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	uint32_t **ppmessage_flags);
 void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read);
-BOOL common_util_addressbook_entryid_to_username(
-	const BINARY *pentryid_bin, char *username);
+extern BOOL common_util_addressbook_entryid_to_username(const BINARY *eid, char *username, size_t);
 extern BOOL common_util_addressbook_entryid_to_essdn(const BINARY *eid, char *dn, size_t);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);

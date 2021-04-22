@@ -959,8 +959,8 @@ void common_util_free_znotification(ZNOTIFICATION *pnotification)
 	free(pnotification);
 }
 
-BOOL common_util_addressbook_entryid_to_username(
-	BINARY entryid_bin, char *username)
+BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
+    char *username, size_t ulen)
 {
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
