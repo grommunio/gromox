@@ -3381,17 +3381,29 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	nt_time = rop_util_unix_to_nttime(atol(argv[5]));
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
-	tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+		pidb.put();
+		message_content_free(pmsgctnt);
+		return 4;
+	}
 	if (0 != b_read) {
 		propval.proptag = PROP_TAG_READ;
 		propval.pvalue = &b_read;
-		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+			pidb.put();
+			message_content_free(pmsgctnt);
+			return 4;
+		}
 	}
 	if (0 != b_unsent) {
 		propval.proptag = PROP_TAG_MESSAGEFLAGS;
 		propval.pvalue = &tmp_flags;
 		tmp_flags = MESSAGE_FLAG_UNSENT;
-		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+			pidb.put();
+			message_content_free(pmsgctnt);
+			return 4;
+		}
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
