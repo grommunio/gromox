@@ -286,7 +286,8 @@ void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax
 		"f98430ae-22ad-459a-afba-68c972eefc56@%s", g_org_name, pdomain);
 }
 
-BOOL common_util_entryid_to_username(const BINARY *pbin, char *username)
+BOOL common_util_entryid_to_username(const BINARY *pbin,
+    char *username, size_t ulen)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
@@ -2212,7 +2213,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	BOOL b_partial;
 	uint64_t new_id;
 	BINARY *ptarget;
-	char username[256];
+	char username[324];
 	EMSMDB_INFO *pinfo;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -2306,7 +2307,8 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU(message_id));
 				return FALSE;
 			}
-			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username)) {
+			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+			    username, GX_ARRAY_SIZE(username))) {
 				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:0x%llx", LLU(message_id));
 				return FALSE;	
 			}

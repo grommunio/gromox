@@ -159,7 +159,8 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGENTRYID);
 	if (NULL != pvalue) {
-		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username);
+		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+		       username, ulen);
 	}
 	username[0] = '\0';
 	return TRUE;
