@@ -28,7 +28,7 @@ int common_util_mb_to_utf8(uint32_t cpid,
 int common_util_convert_string(BOOL to_utf8,
 	const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
-BOOL common_util_essdn_to_username(const char *pessdn, char *username);
+extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);

@@ -495,7 +495,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	AUX_INFO aux_out;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
-	char username[256];
+	char username[324];
 	AUX_HEADER *pheader;
 	char temp_buff[1024];
 	uint16_t client_mode;
@@ -562,7 +562,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		result = ecAccessDenied;
 		goto CONNECT_FAILURE;
 	}
-	if (FALSE == common_util_essdn_to_username(puser_dn, username)) {
+	if (!common_util_essdn_to_username(puser_dn,
+	    username, GX_ARRAY_SIZE(username))) {
 		result = ecRpcFailed;
 		goto CONNECT_FAILURE;
 	}

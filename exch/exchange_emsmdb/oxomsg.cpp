@@ -139,7 +139,8 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				return common_util_essdn_to_username(static_cast<char *>(pvalue), username);
+				return common_util_essdn_to_username(static_cast<char *>(pvalue),
+				       username, ulen);
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,

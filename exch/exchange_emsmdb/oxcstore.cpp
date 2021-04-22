@@ -26,7 +26,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	time_t cur_time;
 	struct tm tmp_tm;
 	char maildir[256];
-	char username[256];
+	char username[324];
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
@@ -44,9 +44,8 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		common_util_domain_to_essdn(pdomain, pessdn, dnmax);
 		return ecWrongServer;
 	}
-	if (FALSE == common_util_essdn_to_username(pessdn, username)) {
+	if (!common_util_essdn_to_username(pessdn, username, GX_ARRAY_SIZE(username)))
 		return ecUnknownUser;
-	}
 	if (FALSE == common_util_get_id_from_username(username, &user_id)) {
 		return ecUnknownUser;
 	}

@@ -285,7 +285,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 {
 	BINARY *pbin;
 	EXT_PULL ext_pull;
-	char tmp_name[256];
+	char tmp_name[324];
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	if (FALSE == exmdb_client_get_message_property(dir, NULL,
@@ -303,8 +303,8 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		*pb_owner = false;
 		return TRUE;
 	}
-	if (FALSE == common_util_essdn_to_username(
-		ab_entryid.px500dn, tmp_name)) {
+	if (!common_util_essdn_to_username(ab_entryid.px500dn,
+	    tmp_name, GX_ARRAY_SIZE(tmp_name))) {
 		*pb_owner = false;
 		return TRUE;
 	}

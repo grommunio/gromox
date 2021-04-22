@@ -7,6 +7,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include <gromox/pcl.hpp>
@@ -189,15 +190,15 @@ void common_util_obfuscate_data(uint8_t *data, uint32_t size)
 	}
 }
 
-BOOL common_util_essdn_to_username(const char *pessdn, char *username)
+BOOL common_util_essdn_to_username(const char *pessdn,
+    char *username, size_t ulen)
 {
 	char *pat;
-	int tmp_len;
 	int user_id;
 	const char *plocal;
 	char tmp_essdn[1024];
 	
-	tmp_len = sprintf(tmp_essdn,
+	auto tmp_len = gx_snprintf(tmp_essdn, GX_ARRAY_SIZE(tmp_essdn),
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 			g_org_name);
@@ -319,7 +320,8 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
-		return common_util_essdn_to_username(ab_entryid.px500dn, username);
+		return common_util_essdn_to_username(ab_entryid.px500dn,
+		       username, ulen);
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
@@ -2332,7 +2334,8 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 				if (NULL == pvalue) {
 					goto CONVERT_ENTRYID;
 				}
-				if (!common_util_essdn_to_username(static_cast<char *>(pvalue), username))
+				if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
+				    username, GX_ARRAY_SIZE(username)))
 					goto CONVERT_ENTRYID;
 				auto tmp_len = strlen(username) + 1;
 				pnode->pdata = common_util_alloc(tmp_len);
