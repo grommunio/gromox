@@ -287,7 +287,7 @@ BOOL string_to_utf8(const char *charset,
 		out_string[0] = '\0';
 		return TRUE;
 	}
-	HX_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
+	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
 	if (0 != strcasecmp("utf-7", tmp_charset)) {
 		length ++;
 	}

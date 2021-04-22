@@ -170,7 +170,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 	TAG_NODE *ptag_node;
 	INFO_NODE *pinfo_node;
 	
-	HX_strlcpy(file_path, file_name + 2, GX_ARRAY_SIZE(file_path));
+	gx_strlcpy(file_path, file_name + 2, GX_ARRAY_SIZE(file_path));
 	ptoken = strchr(file_path, '.');
 	if (NULL != ptoken) {
 		*ptoken = '\0';

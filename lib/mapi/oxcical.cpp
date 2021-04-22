@@ -3923,7 +3923,7 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 			}
 		}
 	}
-	HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
+	gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 	return TRUE;
 }
 

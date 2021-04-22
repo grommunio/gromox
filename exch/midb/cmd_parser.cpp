@@ -163,7 +163,7 @@ int cmd_parser_stop()
 
 void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER handler)
 {
-	HX_strlcpy(g_cmd_entry[g_cmd_num].cmd, command, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
+	gx_strlcpy(g_cmd_entry[g_cmd_num].cmd, command, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
 	g_cmd_entry[g_cmd_num].cmd_handler = handler;
 	g_cmd_num ++;
 }

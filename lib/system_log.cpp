@@ -18,7 +18,7 @@ static int g_log_fd;
 
 void system_log_init(const char *path)
 {
-	HX_strlcpy(g_log_path, path, GX_ARRAY_SIZE(g_log_path));
+	gx_strlcpy(g_log_path, path, GX_ARRAY_SIZE(g_log_path));
 }
 
 int system_log_run()

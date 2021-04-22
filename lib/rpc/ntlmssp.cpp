@@ -632,9 +632,9 @@ NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name,
 	pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	
-	HX_strlcpy(pntlmssp->netbios_name, netbios_name, GX_ARRAY_SIZE(pntlmssp->netbios_name));
-	HX_strlcpy(pntlmssp->dns_name, dns_name, GX_ARRAY_SIZE(pntlmssp->dns_name));
-	HX_strlcpy(pntlmssp->dns_domain, dns_domain, GX_ARRAY_SIZE(pntlmssp->dns_domain));
+	gx_strlcpy(pntlmssp->netbios_name, netbios_name, GX_ARRAY_SIZE(pntlmssp->netbios_name));
+	gx_strlcpy(pntlmssp->dns_name, dns_name, GX_ARRAY_SIZE(pntlmssp->dns_name));
+	gx_strlcpy(pntlmssp->dns_domain, dns_domain, GX_ARRAY_SIZE(pntlmssp->dns_domain));
 	pntlmssp->get_password = get_password;
 	return pntlmssp;
 	
@@ -978,7 +978,7 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 
 	client_key.data = pntv2_response->data + 16;
 	client_key.length = pntv2_response->length - 16;
-	HX_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
+	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
 	user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
 	domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
@@ -1036,7 +1036,7 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	client_key.data = pntv2_response->data + 16;
 	client_key.length = pntv2_response->length - 16;
 
-	HX_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
+	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
 	user_len = ntlmssp_utf8_to_utf16le(
 		tmp_user, user_in, sizeof(user_in));
@@ -1079,7 +1079,7 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	plm_response = &pntlmssp->lm_resp;
 	pnt_response = &pntlmssp->nt_resp;
 	
-	HX_strlcpy(upper_domain, pntlmssp->domain, GX_ARRAY_SIZE(upper_domain));
+	gx_strlcpy(upper_domain, pntlmssp->domain, GX_ARRAY_SIZE(upper_domain));
 	HX_strupper(upper_domain);
 	memset(nt_p16, 0, 16);
 	ntlmssp_md4hash(plain_passwd, nt_p16);
@@ -1423,7 +1423,7 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 			snprintf(username, GX_ARRAY_SIZE(username), "%s@%s",
 			         pntlmssp->user, pntlmssp->domain);
 		} else {
-			HX_strlcpy(username, pntlmssp->user, GX_ARRAY_SIZE(username));
+			gx_strlcpy(username, pntlmssp->user, GX_ARRAY_SIZE(username));
 		}
 		if (!pntlmssp->get_password(username, plain_passwd))
 			return false;
@@ -1725,7 +1725,7 @@ bool ntlmssp_session_info(NTLMSSP_CTX *pntlmssp, NTLMSSP_SESSION_INFO *psession)
 		snprintf(psession->username, GX_ARRAY_SIZE(psession->username),
 		         "%s@%s", pntlmssp->user, pntlmssp->domain);
 	} else {
-		HX_strlcpy(psession->username, pntlmssp->user, GX_ARRAY_SIZE(psession->username));
+		gx_strlcpy(psession->username, pntlmssp->user, GX_ARRAY_SIZE(psession->username));
 	}
 	psession->session_key.data = psession->session_key_buff;
 	return ntlmssp_session_key(pntlmssp, &psession->session_key);

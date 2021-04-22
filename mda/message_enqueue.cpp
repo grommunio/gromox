@@ -72,7 +72,7 @@ static int			g_last_pos;
  */
 static void message_enqueue_init(const char *path)
 {
-	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_notify_stop = true;
     g_last_flush_ID = 0;
 	g_enqueued_num = 0;
@@ -436,7 +436,7 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';

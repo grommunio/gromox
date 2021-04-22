@@ -157,18 +157,18 @@ int main(int argc, const char **argv)
 
 	char config_dir[256];
 	auto str_value = config_file_get_value(pconfig, "config_file_path");
-	HX_strlcpy(config_dir, str_value != nullptr ? str_value :
+	gx_strlcpy(config_dir, str_value != nullptr ? str_value :
 	           PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
 	str_value = config_file_get_value(pconfig, "timer_state_path");
-	HX_strlcpy(g_list_path, str_value != nullptr ? str_value :
+	gx_strlcpy(g_list_path, str_value != nullptr ? str_value :
 	           PKGSTATEDIR "/timer.txt", sizeof(g_list_path));
 	printf("[system]: list path is %s\n", g_list_path);
 
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_IP");
 	if (NULL == str_value) {
-		HX_strlcpy(listen_ip, "::1", GX_ARRAY_SIZE(listen_ip));
+		gx_strlcpy(listen_ip, "::1", GX_ARRAY_SIZE(listen_ip));
 	} else {
-		HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
+		gx_strlcpy(listen_ip, str_value, sizeof(listen_ip));
 	}
 
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_PORT");

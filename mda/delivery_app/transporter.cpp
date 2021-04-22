@@ -184,7 +184,7 @@ void transporter_init(const char *path, const char *const *names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     unsigned int mime_radito, BOOL dm_valid, bool ignerr)
 {
-	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = names;
 	g_local_path[0] = '\0';
 	g_notify_stop = false;
@@ -594,7 +594,7 @@ static void *dxp_thrwork(void *arg)
 			pcontext->pcontrol->bound_type = pmessage->bound_type;
 			pcontext->pcontrol->is_spam = pmessage->is_spam;
 			pcontext->pcontrol->need_bounce = TRUE;
-			HX_strlcpy(pcontext->pcontrol->from, pmessage->envelop_from, GX_ARRAY_SIZE(pcontext->pcontrol->from));
+			gx_strlcpy(pcontext->pcontrol->from, pmessage->envelop_from, GX_ARRAY_SIZE(pcontext->pcontrol->from));
 			ptr = pmessage->envelop_rcpt;
 			while ((len = strlen(ptr)) != 0) {
 				len ++;

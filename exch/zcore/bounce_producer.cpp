@@ -91,7 +91,7 @@ static void bounce_producer_load_subdir(const char *basedir, const char *dir_nam
 
 void bounce_producer_init(const char* separator)
 {
-	HX_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
+	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
 	g_default_resource = NULL;
 }
 
@@ -300,7 +300,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 		}
 	}
 	closedir(sub_dirp);
-	HX_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
+	gx_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
 	plist.push_back(std::move(rnode));
 }
 
@@ -430,7 +430,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			if (NULL == pcharset) {
 				strcpy(charset, "ascii");
 			} else {
-				HX_strlcpy(charset, pcharset, GX_ARRAY_SIZE(charset));
+				gx_strlcpy(charset, pcharset, GX_ARRAY_SIZE(charset));
 			}
 		}
 	}

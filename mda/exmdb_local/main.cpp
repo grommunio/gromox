@@ -38,7 +38,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
     switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -52,16 +52,16 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		}
 
 		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
-		HX_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
+		gx_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
 
 		sprintf(cache_path, "%s/cache", get_queue_path());
 		
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
 		if (NULL == str_value) {
-			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
+			gx_strlcpy(org_name, "Gromox default", sizeof(org_name));
 			config_file_set_value(pfile, "X500_ORG_NAME", org_name);
 		} else {
-			HX_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
+			gx_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
 		}
 		printf("[exmdb_local]: x500 org name is \"%s\"\n", org_name);
 		
@@ -70,7 +70,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			strcpy(charset, "windows-1252");
 			config_file_set_value(pfile, "DEFAULT_CHARSET", charset);
 		} else {
-			HX_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
+			gx_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
 		}
 		printf("[exmdb_local]: default charset is \"%s\"\n", charset);
 		
@@ -79,7 +79,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			strcpy(timezone, "Asia/Shanghai");
 			config_file_set_value(pfile, "DEFAULT_TIMEZONE", timezone);
 		} else {
-			HX_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
+			gx_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
 		}
 		printf("[exmdb_local]: default timezone is \"%s\"\n", timezone);
 		

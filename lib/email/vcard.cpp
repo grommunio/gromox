@@ -678,7 +678,7 @@ VCARD_LINE* vcard_new_line(const char *name)
 		return NULL;
 	}
 	pvline->node.pdata = pvline;
-	HX_strlcpy(pvline->name, name, GX_ARRAY_SIZE(pvline->name));
+	gx_strlcpy(pvline->name, name, GX_ARRAY_SIZE(pvline->name));
 	double_list_init(&pvline->param_list);
 	double_list_init(&pvline->value_list);
 	return pvline;
@@ -696,7 +696,7 @@ VCARD_PARAM* vcard_new_param(const char*name)
 		return NULL;
 	}
 	pvparam->node.pdata = pvparam;
-	HX_strlcpy(pvparam->name, name, GX_ARRAY_SIZE(pvparam->name));
+	gx_strlcpy(pvparam->name, name, GX_ARRAY_SIZE(pvparam->name));
 	pvparam->pparamval_list = NULL;
 	return pvparam;
 }

@@ -15,7 +15,7 @@ static BOOL lang_to_charset_b(const char *lang, char *cset)
 	auto r = gromox::lang_to_charset(lang);
 	if (r == nullptr)
 		return false;
-	HX_strlcpy(cset, r, 32);
+	gx_strlcpy(cset, r, 32);
 	return TRUE;
 }
 

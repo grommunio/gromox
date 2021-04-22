@@ -511,8 +511,8 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	pinfo = zarafa_server_get_info();
 	if (TRUE == b_private) {
 		if (account_id == pinfo->user_id) {
-			HX_strlcpy(dir, pinfo->maildir, GX_ARRAY_SIZE(dir));
-			HX_strlcpy(account, pinfo->username, GX_ARRAY_SIZE(account));
+			gx_strlcpy(dir, pinfo->maildir, GX_ARRAY_SIZE(dir));
+			gx_strlcpy(account, pinfo->username, GX_ARRAY_SIZE(account));
 		} else {
 			if (FALSE == system_services_get_username_from_id(
 				account_id, account) ||
@@ -525,13 +525,13 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 		if (account_id != pinfo->domain_id) {
 			return INVALID_HANDLE;
 		}
-		HX_strlcpy(dir, pinfo->homedir, GX_ARRAY_SIZE(dir));
+		gx_strlcpy(dir, pinfo->homedir, GX_ARRAY_SIZE(dir));
 		pdomain = strchr(pinfo->username, '@');
 		if (NULL == pdomain) {
 			return INVALID_HANDLE;
 		}
 		pdomain ++;
-		HX_strlcpy(account, pdomain, GX_ARRAY_SIZE(account));
+		gx_strlcpy(account, pdomain, GX_ARRAY_SIZE(account));
 	}
 	pstore = store_object_create(b_private,
 				account_id, account, dir);

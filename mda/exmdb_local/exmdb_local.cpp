@@ -86,9 +86,9 @@ static int exmdb_local_sequence_ID()
 void exmdb_local_init(const char *org_name, const char *default_charset,
     const char *default_timezone)
 {
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
-	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	HX_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	gx_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
 	pthread_key_create(&g_alloc_key, NULL);
 }
 
@@ -144,7 +144,7 @@ int exmdb_local_run()
 	}
 	last_propid = 0x8001;
 	for (decltype(num) i = 0; i < num; ++i) {
-		HX_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
+		gx_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
 		HX_strlower(temp_line);
 		str_hash_add(g_str_hash, temp_line, &last_propid);
 		last_propid ++;

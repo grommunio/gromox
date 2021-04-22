@@ -518,7 +518,7 @@ BOOL container_object_load_user_table(
 				    username, GX_ARRAY_SIZE(username)))
 					continue;
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
-				HX_strlcpy(username, paddress, GX_ARRAY_SIZE(username));
+				gx_strlcpy(username, paddress, GX_ARRAY_SIZE(username));
 			} else {
 				continue;
 			}

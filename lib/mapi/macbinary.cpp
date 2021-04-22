@@ -186,7 +186,7 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	}
 	TRY(ext_buffer_push_uint8(pext, tmp_byte));
 	char newfile[64]{};
-	HX_strlcpy(newfile, r->file_name, sizeof(newfile));
+	gx_strlcpy(newfile, r->file_name, sizeof(newfile));
 	TRY(ext_buffer_push_bytes(pext, newfile, 63));
 	TRY(ext_buffer_push_bytes(pext, &r->type, 4));
 	TRY(ext_buffer_push_bytes(pext, &r->creator, 4));

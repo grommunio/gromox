@@ -246,7 +246,7 @@ static BOOL proxy_preproc(int context_id)
 	}
 	if (0 == tmp_len) {
 		pconnection = get_connection(context_id);
-		HX_strlcpy(domain, pconnection->server_ip, GX_ARRAY_SIZE(domain));
+		gx_strlcpy(domain, pconnection->server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&prequest->f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);

@@ -786,7 +786,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		return DISPATCH_CONTINUE;
 	}
 	
-	HX_strlcpy(temp_buff, temp_command + 4, GX_ARRAY_SIZE(temp_buff));
+	gx_strlcpy(temp_buff, temp_command + 4, GX_ARRAY_SIZE(temp_buff));
 	HX_strltrim(temp_buff);
 	ptoken = strchr(temp_buff, ' ');
 	if (NULL == ptoken) {

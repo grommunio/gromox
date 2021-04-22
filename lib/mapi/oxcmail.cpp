@@ -142,7 +142,7 @@ BOOL oxcmail_init_library(const char *org_name,
 	cpid_to_charset, MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
 	oxcmail_ltag_to_lcid = ltag_to_lcid;
@@ -170,7 +170,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	char hex_string[16];
 	char hex_string2[16];
 	
-	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -255,7 +255,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		HX_strlcpy(username, oneoff_entry.pmail_address, ulen);
+		gx_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
 	return FALSE;
@@ -502,7 +502,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	}
 	utf8_field[0] = '\0';
 	if ('\0' != paddr->display_name[0]) {
-		HX_strlcpy(display_name, paddr->display_name, GX_ARRAY_SIZE(display_name));
+		gx_strlcpy(display_name, paddr->display_name, GX_ARRAY_SIZE(display_name));
 	} else {
 		snprintf(display_name, GX_ARRAY_SIZE(display_name), "%s@%s",
 			paddr->local_part, paddr->domain);
@@ -1067,7 +1067,7 @@ static BOOL oxcmail_parse_keywords(const char *charset,
 	if (FALSE == mime_string_to_utf8(
 		charset, field, tmp_buff)) {
 		propval.proptag = PROP_TAG(PT_MV_STRING8, propid);
-		HX_strlcpy(tmp_buff, field, GX_ARRAY_SIZE(tmp_buff));
+		gx_strlcpy(tmp_buff, field, GX_ARRAY_SIZE(tmp_buff));
 	} else {
 		propval.proptag = PROP_TAG(PT_MV_UNICODE, propid);
 	}
@@ -2077,9 +2077,9 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	}
 	if (TRUE == oxcmail_get_content_param(
 		pmime, "charset", temp_charset, 32)) {
-		HX_strlcpy(best_charset, temp_charset, GX_ARRAY_SIZE(best_charset));
+		gx_strlcpy(best_charset, temp_charset, GX_ARRAY_SIZE(best_charset));
 	} else {
-		HX_strlcpy(best_charset, charset, GX_ARRAY_SIZE(best_charset));
+		gx_strlcpy(best_charset, charset, GX_ARRAY_SIZE(best_charset));
 	}
 	content_type = mime_get_content_type(pmime);
 	if (0 == strcasecmp(content_type, "text/html")) {
@@ -2986,7 +2986,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pcontent[content_len] = '\0';
 			if (FALSE == oxcmail_get_content_param(
 				pmime, "charset", mime_charset, 32)) {
-				HX_strlcpy(mime_charset, !utf8_check(pcontent) ?
+				gx_strlcpy(mime_charset, !utf8_check(pcontent) ?
 					pmime_enum->charset : "utf-8", GX_ARRAY_SIZE(mime_charset));
 			}
 			if (TRUE == string_to_utf8(
@@ -3429,7 +3429,7 @@ static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
 	pinfo = (DSN_FILEDS_INFO*)pparam;
 	if (0 == strcasecmp(tag, "Final-Recipient") &&
 		0 == strncasecmp(value, "rfc822;", 7)) {
-		HX_strlcpy(pinfo->final_recipient, value + 7, GX_ARRAY_SIZE(pinfo->final_recipient));
+		gx_strlcpy(pinfo->final_recipient, value + 7, GX_ARRAY_SIZE(pinfo->final_recipient));
 		HX_strrtrim(pinfo->final_recipient);
 		HX_strltrim(pinfo->final_recipient);
 	} else if (0 == strcasecmp(tag, "Action")) {
@@ -3449,7 +3449,7 @@ static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
 	} else if (0 == strcasecmp(tag, "Diagnostic-Code")) {
 		pinfo->diagnostic_code = value;
 	} else if (0 == strcasecmp(tag, "Remote-MTA")) {
-		HX_strlcpy(pinfo->remote_mta, value, GX_ARRAY_SIZE(pinfo->remote_mta));
+		gx_strlcpy(pinfo->remote_mta, value, GX_ARRAY_SIZE(pinfo->remote_mta));
 	} else if (0 == strcasecmp(tag, "X-Supplementary-Info")) {
 		pinfo->x_supplementary_info = value;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
@@ -3954,7 +3954,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		if (ptoken2 == nullptr)
 			return true;
 		++ptoken2;
-		HX_strlcpy(tmp_buff, ptoken2, GX_ARRAY_SIZE(tmp_buff));
+		gx_strlcpy(tmp_buff, ptoken2, GX_ARRAY_SIZE(tmp_buff));
 		HX_strltrim(tmp_buff);
 		ptoken = strchr(tmp_buff, '/');
 		if (NULL != ptoken) {
@@ -4272,7 +4272,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	if (FALSE == mail_get_charset(pmail, default_charset)) {
-		HX_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
+		gx_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
 	}
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
@@ -4987,7 +4987,7 @@ static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
 			}
 		}
 	}
-	HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
+	gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 	return TRUE;
 }
 
@@ -6403,7 +6403,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS);
 			if (NULL != pvalue) {
-				HX_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
+				gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}
 		}
 	}
@@ -6415,7 +6415,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 	pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
 	                &pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME));
 	if (NULL != pvalue) {
-		HX_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
+		gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 	} else {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist,
 					PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
@@ -6424,7 +6424,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				HX_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
+				gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}
 		}
 	}
@@ -7240,7 +7240,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		if (NULL != piline) {
 			pvalue = deconst(piline->get_first_subvalue());
 			if (NULL != pvalue) {
-				HX_strlcpy(tmp_method, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_method));
+				gx_strlcpy(tmp_method, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_method));
 			}
 		}
 		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))

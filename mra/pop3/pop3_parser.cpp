@@ -70,15 +70,15 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	g_ssl_mutex_buf         = NULL;
 	if (TRUE == support_stls) {
 		g_force_stls = force_stls;
-		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
 		if (NULL != cb_passwd) {
-			HX_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		HX_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 	}
-	HX_strlcpy(g_cdn_path, cdn_path, GX_ARRAY_SIZE(g_cdn_path));
+	gx_strlcpy(g_cdn_path, cdn_path, GX_ARRAY_SIZE(g_cdn_path));
 }
 
 #if defined(LIBRESSL_VERSION_NUMBER) || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)

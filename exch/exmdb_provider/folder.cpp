@@ -2648,7 +2648,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				if (NULL == pvalue) {
 					continue;
 				}
-				HX_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
+				gx_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
 			}
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);

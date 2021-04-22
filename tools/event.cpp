@@ -147,10 +147,10 @@ int main(int argc, const char **argv)
 
 	char config_dir[256];
 	auto str_value = config_file_get_value(pconfig, "config_file_path");
-	HX_strlcpy(config_dir, str_value != nullptr ? str_value :
+	gx_strlcpy(config_dir, str_value != nullptr ? str_value :
 	           PKGSYSCONFDIR "/event:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
-	HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
+	gx_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(listen_ip));
 
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_PORT");
@@ -450,7 +450,7 @@ static void *ev_enqwork(void *param)
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
-				HX_strlcpy(phost->res_id, penqueue->line + 7, GX_ARRAY_SIZE(phost->res_id));
+				gx_strlcpy(phost->res_id, penqueue->line + 7, GX_ARRAY_SIZE(phost->res_id));
 			} else {
 				phost = &*host_it;
 			}

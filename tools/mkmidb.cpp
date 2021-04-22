@@ -62,7 +62,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
 	} else {
-		HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
+		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
 	
 	str_value = config_file_get_value(pconfig, "MYSQL_PORT");
@@ -76,13 +76,13 @@ int main(int argc, const char **argv)
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_USERNAME");
-	HX_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
+	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");
 	} else {
-		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
+		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
 	                      config_file_get_value(pconfig, "data_file_path");
@@ -131,7 +131,7 @@ int main(int argc, const char **argv)
 	if (0 != atoi(myrow[1])) {
 		printf("warning: address status is not alive!\n");
 	}
-	HX_strlcpy(dir, myrow[2], GX_ARRAY_SIZE(dir));
+	gx_strlcpy(dir, myrow[2], GX_ARRAY_SIZE(dir));
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	

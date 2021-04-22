@@ -212,7 +212,7 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 void ab_tree_init(const char *org_name, size_t base_size,
 	int cache_interval, int file_blocks)
 {
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
@@ -1375,7 +1375,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_
 	auto u = static_cast<sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
-	case USER_MAIL_ADDRESS: HX_strlcpy(value, u->username.c_str(), vsize); return;
+	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return;
 	case USER_REAL_NAME: tag = PROP_TAG_DISPLAYNAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
 	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
@@ -1390,7 +1390,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_
 		return;
 	auto it = u->propvals.find(tag);
 	if (it != u->propvals.cend())
-		HX_strlcpy(value, it->second.c_str(), vsize);
+		gx_strlcpy(value, it->second.c_str(), vsize);
 }
 
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,

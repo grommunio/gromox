@@ -63,7 +63,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		/* get the plugin name from system api */
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';

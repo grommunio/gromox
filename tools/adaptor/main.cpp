@@ -63,10 +63,10 @@ int main(int argc, const char **argv)
 	}
 	auto str_value = config_file_get_value(pconfig, "STATE_PATH");
 	if (NULL == str_value) {
-		HX_strlcpy(state_dir, PKGSTATEDIR, sizeof(state_dir));
+		gx_strlcpy(state_dir, PKGSTATEDIR, sizeof(state_dir));
 		config_file_set_value(pconfig, "STATE_PATH", state_dir);
 	} else {
-		HX_strlcpy(state_dir, str_value, sizeof(state_dir));
+		gx_strlcpy(state_dir, str_value, sizeof(state_dir));
 	}
 	printf("[system]: state path is %s\n", state_dir);
 	snprintf(domainlist_path, sizeof(domainlist_path), "%s/domain_list.txt", state_dir);
@@ -75,10 +75,10 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		HX_strlcpy(log_path, PKGLOGDIR "/sa.log", sizeof(log_path));
+		gx_strlcpy(log_path, PKGLOGDIR "/sa.log", sizeof(log_path));
 		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
-		HX_strlcpy(log_path, str_value, GX_ARRAY_SIZE(log_path));
+		gx_strlcpy(log_path, str_value, GX_ARRAY_SIZE(log_path));
 	}
 	printf("[system]: log path is %s\n", log_path);
 
@@ -87,7 +87,7 @@ int main(int argc, const char **argv)
 		strcpy(mysql_host, "localhost");
 		config_file_set_value(pconfig, "MYSQL_HOST", "localhost");
 	} else {
-		HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
+		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_PORT");
@@ -104,14 +104,14 @@ int main(int argc, const char **argv)
 	printf("[system]: mysql host is [%s]:%d\n", mysql_host, mysql_port);
 
 	str_value = config_file_get_value(pconfig, "MYSQL_USERNAME");
-	HX_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
+	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");
 		config_file_set_value(pconfig, "MYSQL_DBNAME", "email");
 	} else {
-		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
+		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
 	printf("[system]: mysql database name is %s\n", db_name);
 	system_log_init(log_path);

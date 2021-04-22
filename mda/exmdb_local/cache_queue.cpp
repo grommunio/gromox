@@ -46,7 +46,7 @@ static void *mdl_thrwork(void *);
  */
 void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 {
-	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
 	g_notify_stop = true;
@@ -352,12 +352,12 @@ static void *mdl_thrwork(void *arg)
 			ptr += sizeof(BOOL);
 			pcontext->pcontrol->need_bounce = *(BOOL*)ptr;
 			ptr += sizeof(BOOL);
-			HX_strlcpy(pcontext->pcontrol->from, ptr, GX_ARRAY_SIZE(pcontext->pcontrol->from));
-			HX_strlcpy(temp_from, ptr, GX_ARRAY_SIZE(temp_from));
+			gx_strlcpy(pcontext->pcontrol->from, ptr, GX_ARRAY_SIZE(pcontext->pcontrol->from));
+			gx_strlcpy(temp_from, ptr, GX_ARRAY_SIZE(temp_from));
 			ptr += strlen(pcontext->pcontrol->from) + 1;
 			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
 			mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
-			HX_strlcpy(temp_rcpt, ptr, GX_ARRAY_SIZE(temp_rcpt));
+			gx_strlcpy(temp_rcpt, ptr, GX_ARRAY_SIZE(temp_rcpt));
 			
 			if (g_retrying_times <= times) {
 				need_bounce = TRUE;

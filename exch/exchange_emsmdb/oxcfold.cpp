@@ -222,7 +222,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			return ecInvalidParam;
 		}
 		strcpy(folder_name, pfolder_name);
-		HX_strlcpy(folder_comment, pfolder_comment, GX_ARRAY_SIZE(folder_comment));
+		gx_strlcpy(folder_comment, pfolder_comment, GX_ARRAY_SIZE(folder_comment));
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {

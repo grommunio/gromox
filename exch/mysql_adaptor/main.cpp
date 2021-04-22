@@ -23,7 +23,7 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
     switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -54,7 +54,7 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 			strcpy(mysql_host, "localhost");
 			config_file_set_value(pfile, "MYSQL_HOST", "localhost");
 		} else {
-			HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
+			gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 		}
 
 		str_value = config_file_get_value(pfile, "MYSQL_PORT");
@@ -72,14 +72,14 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		       *mysql_host == '\0' ? "*" : mysql_host, mysql_port);
 
 		str_value = config_file_get_value(pfile, "MYSQL_USERNAME");
-		HX_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
+		gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 		auto mysql_passwd = config_file_get_value(pfile, "MYSQL_PASSWORD");
 		str_value = config_file_get_value(pfile, "MYSQL_DBNAME");
 		if (NULL == str_value) {
 			strcpy(db_name, "email");
 			config_file_set_value(pfile, "MYSQL_DBNAME", "email");
 		} else {
-			HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
+			gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 		}
 		printf("[mysql_adaptor]: mysql database name is %s\n", db_name);
 

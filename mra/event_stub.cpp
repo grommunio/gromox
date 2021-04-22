@@ -63,7 +63,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		g_notify_stop = true;
 		g_event_stub_func = NULL;
 		double_list_init(&g_back_list);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -90,7 +90,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		printf("[event_proxy]: event connection number is %d\n", conn_num);
 
 		str_value = config_file_get_value(pfile, "EVENT_HOST");
-		HX_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
+		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(g_event_ip));
 		str_value = config_file_get_value(pfile, "EVENT_PORT");
 		if (NULL == str_value) {

@@ -236,7 +236,7 @@ static void html_set_fonttable(RTF_WRITER *pwriter, const char* font_name)
 {
 	FONT_NODE tmp_node;
 	
-	HX_strlcpy(tmp_node.font_name, font_name, GX_ARRAY_SIZE(tmp_node.font_name));
+	gx_strlcpy(tmp_node.font_name, font_name, GX_ARRAY_SIZE(tmp_node.font_name));
 	HX_strlower(tmp_node.font_name);
 	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_node.font_name));
 	if (NULL != pfnode) {
@@ -256,7 +256,7 @@ static int html_get_fonttable(RTF_WRITER *pwriter, const char* font_name)
 {
 	char tmp_buff[128];
 	
-	HX_strlcpy(tmp_buff, font_name, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, font_name, GX_ARRAY_SIZE(tmp_buff));
 	HX_strlower(tmp_buff);
 	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_buff));
 	if (NULL == pfnode) {
@@ -603,7 +603,7 @@ static int html_convert_color(const char *value)
 		color |= tmp_val;
 		return color;
 	}
-	HX_strlcpy(color_string, value, GX_ARRAY_SIZE(color_string));
+	gx_strlcpy(color_string, value, GX_ARRAY_SIZE(color_string));
 	HX_strlower(color_string);
 	auto pcolor = static_cast<int *>(str_hash_query(g_color_hash, color_string));
 	if (NULL != pcolor) {

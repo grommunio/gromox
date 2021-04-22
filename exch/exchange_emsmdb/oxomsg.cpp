@@ -146,7 +146,7 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
+				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
 			}
 		}
@@ -154,7 +154,7 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
 	if (NULL != pvalue) {
-		HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
+		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,

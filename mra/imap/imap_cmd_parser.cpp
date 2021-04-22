@@ -505,7 +505,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	}
 	if (lseek(fd, offset, SEEK_SET) < 0)
 		fprintf(stderr, "E-1431: lseek: %s\n", strerror(errno));
-	HX_strlcpy(temp_buff, tags, GX_ARRAY_SIZE(temp_buff));
+	gx_strlcpy(temp_buff, tags, GX_ARRAY_SIZE(temp_buff));
 	if ('(' == tags[0]) {
 		tmp_argc = parse_imap_args(temp_buff + 1,
 			strlen(tags) - 2, tmp_argv, sizeof(tmp_argv));
@@ -1279,7 +1279,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
-		HX_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
+		gx_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
 	} else {
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
@@ -1290,7 +1290,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 		auto f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(f_strings[i], temp_folder)) {
-				HX_strlcpy(temp_folder, g_folder_list[i], GX_ARRAY_SIZE(temp_folder));
+				gx_strlcpy(temp_folder, g_folder_list[i], GX_ARRAY_SIZE(temp_folder));
 				break;
 			}
 		}
@@ -1348,7 +1348,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	}
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
-		HX_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
+		gx_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
 	} else {
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
@@ -1359,7 +1359,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		auto f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(g_folder_list[i], temp_folder)) {
-				HX_strlcpy(temp_folder, f_strings[i], GX_ARRAY_SIZE(temp_folder));
+				gx_strlcpy(temp_folder, f_strings[i], GX_ARRAY_SIZE(temp_folder));
 				break;
 			}
 		}
@@ -1557,7 +1557,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	HX_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
+	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	pcontext->proto_stat = PROTO_STAT_USERNAME;
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "+ VXNlciBOYW1lAA==\r\n");
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -1635,7 +1635,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			HX_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
+			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
@@ -1739,7 +1739,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			HX_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
+			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
@@ -1801,7 +1801,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	HX_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
+	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	pcontext->sched_stat = SCHED_STAT_IDLING;
 	/* IMAP_CODE_2160002: + Idling */
 	imap_reply_str = resource_get_imap_code(
@@ -3339,7 +3339,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		str_received = NULL;
 	}
 	if (NULL != flags_string) {
-		HX_strlcpy(str_flags, flags_string, GX_ARRAY_SIZE(str_flags));
+		gx_strlcpy(str_flags, flags_string, GX_ARRAY_SIZE(str_flags));
 		if ('(' != flags_string[0] || ')' != flags_string[
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
@@ -3398,7 +3398,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	*(int*)buff = len;
 	write(fd, buff, len);
 	pcontext->message_fd = fd;
-	HX_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
+	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	stream_clear(&pcontext->stream);
 	return DISPATCH_CONTINUE;
 }
@@ -3496,7 +3496,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	str_flags = str_name + name_len + 1;
 	flags_len = strlen(str_flags);
 	str_internal = str_flags + flags_len + 1;
-	HX_strlcpy(temp_name, str_name, GX_ARRAY_SIZE(temp_name));
+	gx_strlcpy(temp_name, str_name, GX_ARRAY_SIZE(temp_name));
 	if (NULL != search_string(str_flags, "\\Seen", flags_len)) {
 		b_seen = TRUE;
 	}

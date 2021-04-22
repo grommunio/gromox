@@ -339,7 +339,7 @@ static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 	if ((iconv_t)-1 == preader->conv_id) {
 		return false;
 	}
-	HX_strlcpy(preader->current_encoding, fromcode, GX_ARRAY_SIZE(preader->current_encoding));
+	gx_strlcpy(preader->current_encoding, fromcode, GX_ARRAY_SIZE(preader->current_encoding));
 	return true;
 }
 
@@ -1692,7 +1692,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 		}
-		HX_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
+		gx_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
 		int_hash_add(preader->pfont_hash, num, &tmp_entry);
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {
@@ -2721,7 +2721,7 @@ static int rtf_cmd_ansi(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 static int rtf_cmd_ansicpg(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	HX_strlcpy(preader->default_encoding, rtf_cpid_to_encoding(num), GX_ARRAY_SIZE(preader->default_encoding));
+	gx_strlcpy(preader->default_encoding, rtf_cpid_to_encoding(num), GX_ARRAY_SIZE(preader->default_encoding));
 	preader->have_ansicpg = true;
 	return CMD_RESULT_CONTINUE;
 }

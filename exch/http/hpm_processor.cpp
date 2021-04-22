@@ -78,7 +78,7 @@ void hpm_processor_init(int context_num, const char *plugins_path,
     bool ignerr)
 {
 	g_context_num = context_num;
-	HX_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
+	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_cache_size = cache_size;
 	g_max_size = max_size;
@@ -227,7 +227,7 @@ static void hpm_processor_set_ep_info(
 	HTTP_CONTEXT *phttp;
 	
 	phttp = http_parser_get_contexts_list() + context_id;
-	HX_strlcpy(phttp->host, host, GX_ARRAY_SIZE(phttp->host));
+	gx_strlcpy(phttp->host, host, GX_ARRAY_SIZE(phttp->host));
 	phttp->port = port;
 }
 

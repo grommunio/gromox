@@ -816,7 +816,7 @@ uint32_t zarafa_server_logon(const char *username,
 			return ecLoginFailure;
 		}
 	}
-	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);
 	puser_id = static_cast<int *>(str_hash_query(g_user_table, tmp_name));
@@ -853,7 +853,7 @@ uint32_t zarafa_server_logon(const char *username,
 	tmp_info.user_id = user_id;
 	tmp_info.domain_id = domain_id;
 	tmp_info.org_id = org_id;
-	HX_strlcpy(tmp_info.username, username, GX_ARRAY_SIZE(tmp_info.username));
+	gx_strlcpy(tmp_info.username, username, GX_ARRAY_SIZE(tmp_info.username));
 	HX_strlower(tmp_info.username);
 	strcpy(tmp_info.lang, lang);
 	tmp_info.cpid = !system_services_lang_to_charset(lang, charset) ? 1252 :
@@ -1009,7 +1009,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 			handle, entryid, flags, pmapi_type, phobject);
 	}
 	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-		HX_strlcpy(essdn, entryid.pc, sizeof(essdn));
+		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
 	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
 	    essdn, GX_ARRAY_SIZE(essdn)) && strncmp(essdn, "/exmdb=", 7) == 0 &&
 	    ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
@@ -1110,7 +1110,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			break;
 		}
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-			HX_strlcpy(essdn, entryid.pc, sizeof(essdn));
+			gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
 		} else if (common_util_parse_addressbook_entryid(entryid,
 		     &address_type, essdn, GX_ARRAY_SIZE(essdn)) &&
 		     strncmp(essdn, "/exmdb=", 7) == 0 &&
@@ -3260,7 +3260,7 @@ uint32_t zarafa_server_getstoreentryid(
 		    username, GX_ARRAY_SIZE(username)))
 			return ecError;
 	} else {
-		HX_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
+		gx_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
 		if (!common_util_username_to_essdn(username,
 		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return ecError;
@@ -3476,7 +3476,7 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	HX_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
+	gx_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
 	zarafa_server_put_user_info(pinfo);
 	double_list_init(&tmp_item.notify_list);
 	tmp_item.hsession = hsession;
@@ -3517,7 +3517,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotSupported;
 	}
-	HX_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
+	gx_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
 	zarafa_server_put_user_info(pinfo);
 	exmdb_client::unsubscribe_notification(dir, sub_id);
 	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", sub_id, dir);

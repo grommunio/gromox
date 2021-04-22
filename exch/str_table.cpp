@@ -45,9 +45,9 @@ static int g_hash_cap;
 static void str_table_init(const char *module_name, BOOL case_sensitive,
 	const char *path, int growing_num)
 {
-	HX_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
+	gx_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
 	g_case_sensitive = case_sensitive;
-	HX_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
+	gx_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
 	g_growing_num = growing_num;
 	g_hash_cap = 0;
 }
@@ -397,7 +397,7 @@ static BOOL svc_str_table(int reason, void **ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';

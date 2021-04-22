@@ -109,7 +109,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	rpc_info = get_rpc_info();
 	get_id_from_username(rpc_info.username, &user_id);
 	memset(username, 0, sizeof(username));
-	HX_strlcpy(username, rpc_info.username, GX_ARRAY_SIZE(username));
+	gx_strlcpy(username, rpc_info.username, GX_ARRAY_SIZE(username));
 	ptoken = strchr(username, '@');
 	HX_strlower(username);
 	if (NULL != ptoken) {
@@ -133,7 +133,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
 	char tmp_unused[16];
 	char tmp_buff[1024];
 	
-	HX_strlcpy(tmp_buff, mbserverdn, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, mbserverdn, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strrchr(tmp_buff, '/');
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
 		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
@@ -143,7 +143,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
 		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
 	}
-	HX_strlcpy(serverfqdn, ptoken + 4, svlen);
+	gx_strlcpy(serverfqdn, ptoken + 4, svlen);
 	return ecSuccess;
 }
 

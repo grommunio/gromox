@@ -202,8 +202,8 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	}
 	pstore->b_private = b_private;
 	pstore->account_id = account_id;
-	HX_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
-	HX_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
+	gx_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
+	gx_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
 	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	pstore->pgpinfo = NULL;
 	pstore->ppropid_hash = NULL;
@@ -1744,7 +1744,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 					folder_lang[RES_ID_SERVER]);
 
 				char tmp[32];
-				HX_strlcpy(tmp, static_cast<char *>(ppropvals->ppropval[i].pvalue), sizeof(tmp));
+				gx_strlcpy(tmp, static_cast<char *>(ppropvals->ppropval[i].pvalue), sizeof(tmp));
 				auto p = strchr(tmp, '.');
 				if (p != nullptr)
 					*p = '\0';

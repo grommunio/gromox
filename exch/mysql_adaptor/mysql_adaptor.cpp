@@ -63,17 +63,17 @@ sqlconn &sqlconn::operator=(sqlconn &&o)
 void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 {
 	g_conn_num = parm.conn_num;
-	HX_strlcpy(g_host, parm.host, sizeof(g_host));
+	gx_strlcpy(g_host, parm.host, sizeof(g_host));
 	g_port = parm.port;
 	g_timeout = parm.timeout;
-	HX_strlcpy(g_user, parm.user, sizeof(g_user));
+	gx_strlcpy(g_user, parm.user, sizeof(g_user));
 	if (parm.pass == nullptr || *parm.pass == '\0') {
 		g_password = NULL;
 	} else {
-		HX_strlcpy(g_password_buff, parm.pass, sizeof(g_password_buff));
+		gx_strlcpy(g_password_buff, parm.pass, sizeof(g_password_buff));
 		g_password = g_password_buff;
 	}
-	HX_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
+	gx_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
 	g_schema_upgrade = parm.schema_upgrade;
 }
 
@@ -209,7 +209,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		return false;
 	}
 
-	HX_strlcpy(encrypt_passwd, myrow[0], encrypt_size);
+	gx_strlcpy(encrypt_passwd, myrow[0], encrypt_size);
 	strcpy(maildir, myrow[4]);
 	if (NULL != lang) {
 		strcpy(lang, myrow[5]);
@@ -265,7 +265,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 		char *pat;
 
 		auto myrow1 = pmyres1.fetch_row();
-		HX_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
+		gx_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
@@ -288,7 +288,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 			char virtual_address[324], *pat;
 
 			auto myrow1 = pmyres1.fetch_row();
-			HX_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
+			gx_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
 			mysql_adaptor_encode_squote(virtual_address, temp_name);
@@ -384,7 +384,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	pdomain ++;
 
 	cr_hold.lock();
-	HX_strlcpy(encrypt_passwd, md5_crypt_wrapper(new_password), GX_ARRAY_SIZE(encrypt_passwd));
+	gx_strlcpy(encrypt_passwd, md5_crypt_wrapper(new_password), GX_ARRAY_SIZE(encrypt_passwd));
 	cr_hold.unlock();
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 			" WHERE username='%s'", encrypt_passwd, temp_name);
@@ -410,7 +410,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	size_t rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
 	for (size_t k = 0; k < rows1; ++k) {
 		auto myrow1 = pmyres1.fetch_row();
-		HX_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
+		gx_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
@@ -428,7 +428,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		mysql_data_seek(pmyres1.get(), 0);
 		for (size_t k = 0; k < rows1; ++k) {
 			auto myrow1 = pmyres1.fetch_row();
-			HX_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
+			gx_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
 			mysql_adaptor_encode_squote(virtual_address, temp_name);

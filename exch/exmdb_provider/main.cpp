@@ -37,7 +37,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 						 "\t    --print the module information";
 
 	if (1 == argc) {
-		HX_strlcpy(result, "550 too few arguments", length);
+		gx_strlcpy(result, "550 too few arguments", length);
 		return;
 	}
 	if (2 == argc && 0 == strcmp("--help", argv[1])) {
@@ -58,9 +58,9 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	}
 	if (3 == argc && 0 == strcmp("unload", argv[1])) {
 		if (TRUE == exmdb_server_unload_store(argv[2])) {
-			HX_strlcpy(result, "250 unload store OK", length);
+			gx_strlcpy(result, "250 unload store OK", length);
 		} else {
-			HX_strlcpy(result, "550 failed to unload store", length);
+			gx_strlcpy(result, "550 failed to unload store", length);
 		}
 		return;
 	}
@@ -93,7 +93,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		LINK_API(ppdata);
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_exec = exmdb_client_do_rpc;
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -107,15 +107,15 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		}
 		
 		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
-		HX_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
+		gx_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
 
 		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
-		HX_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
+		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
 		
 		str_value = config_file_get_value(pconfig, "LISTEN_IP");
-		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
+		gx_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(listen_ip));
 		str_value = config_file_get_value(pconfig, "LISTEN_PORT");
 		listen_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 5000;

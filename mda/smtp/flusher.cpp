@@ -94,9 +94,9 @@ void flusher_init(const char* path, size_t queue_len)
 	g_flusher_plug->appmain      = NULL;
 	g_flusher_plug->handle       = NULL;
 	g_flusher_plug->flush_cancel = NULL;
-	HX_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
+	gx_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
-	HX_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
+	gx_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
 		GX_ARRAY_SIZE(g_flusher_plug->file_name));
 	single_list_init(&g_flusher_plug->list_reference);
 	g_max_queue_len = queue_len;

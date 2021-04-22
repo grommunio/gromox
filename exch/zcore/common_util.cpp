@@ -170,7 +170,7 @@ BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t
 			pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
+				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
 			}
 		}
@@ -178,7 +178,7 @@ BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
 	if (NULL != pvalue) {
-		HX_strlcpy(username, static_cast<char *>(pvalue), ulen);
+		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
@@ -486,7 +486,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	char hex_string[16];
 	char hex_string2[16];
 	
-	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -568,19 +568,19 @@ void common_util_init(const char *org_name, const char *hostname,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *freebusy_path, const char *submit_command)
 {
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
-	HX_strlcpy(g_hostname, hostname, GX_ARRAY_SIZE(g_hostname));
-	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	HX_strlcpy(g_default_zone, default_zone, GX_ARRAY_SIZE(g_default_zone));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_hostname, hostname, GX_ARRAY_SIZE(g_hostname));
+	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	gx_strlcpy(g_default_zone, default_zone, GX_ARRAY_SIZE(g_default_zone));
 	g_mime_num = mime_num;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = max_rule_len;
-	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
+	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	HX_strlcpy(g_freebusy_path, freebusy_path, GX_ARRAY_SIZE(g_freebusy_path));
-	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
+	gx_strlcpy(g_freebusy_path, freebusy_path, GX_ARRAY_SIZE(g_freebusy_path));
+	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }
@@ -989,7 +989,7 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 		return FALSE;
 	}
 	*ptype = tmp_entryid.type;
-	HX_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
+	gx_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
 	return TRUE;
 }
 
@@ -1040,7 +1040,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		HX_strlcpy(username, oneoff_entry.pmail_address, ulen);
+		gx_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
 	return FALSE;
@@ -1124,7 +1124,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	
 	if (TRUE == system_services_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
-		HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+		gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 		pdomain = strchr(tmp_name, '@');
 		if (NULL == pdomain) {
 			return FALSE;

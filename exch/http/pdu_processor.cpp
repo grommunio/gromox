@@ -176,11 +176,11 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	g_connection_ratio = connection_ratio;
 	g_connection_num = connection_num;
 	g_max_request_mem = max_request_mem;
-	HX_strlcpy(g_netbios_name, netbios_name, GX_ARRAY_SIZE(g_netbios_name));
-	HX_strlcpy(g_dns_name, dns_name, GX_ARRAY_SIZE(g_dns_name));
-	HX_strlcpy(g_dns_domain, dns_domain, GX_ARRAY_SIZE(g_dns_domain));
+	gx_strlcpy(g_netbios_name, netbios_name, GX_ARRAY_SIZE(g_netbios_name));
+	gx_strlcpy(g_dns_name, dns_name, GX_ARRAY_SIZE(g_dns_name));
+	gx_strlcpy(g_dns_domain, dns_domain, GX_ARRAY_SIZE(g_dns_domain));
 	g_header_signing = header_signing;
-	HX_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
+	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
 	double_list_init(&g_endpoint_list);
@@ -3382,7 +3382,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 		return NULL;
 	}
 	pendpoint->node.pdata = pendpoint;
-	HX_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
+	gx_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
 	double_list_init(&pendpoint->interface_list);

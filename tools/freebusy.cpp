@@ -2128,7 +2128,7 @@ int main(int argc, const char **argv)
 		tzstruct.standarddate.dayofweek = 6;
 	}
 	tzstruct.standarddate.day = atoi(pstddayorder);
-	HX_strlcpy(tmp_buff, pstdtime, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, pstdtime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"stdtime\" format error\n");
@@ -2165,7 +2165,7 @@ int main(int argc, const char **argv)
 		tzstruct.daylightdate.dayofweek = 6;
 	}
 	tzstruct.daylightdate.day = atoi(pdtldayorder);
-	HX_strlcpy(tmp_buff, pdtltime, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, pdtltime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"dtltime\" format error\n");

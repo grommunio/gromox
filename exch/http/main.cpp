@@ -157,7 +157,7 @@ int main(int argc, const char **argv)
 			"used as host ID\n");
 	}
 	printf("[system]: host ID is %s\n", str_val);
-	HX_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
+	gx_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
 	dns_name = str_val;
 	
 	str_val = resource_get_string("DEFAULT_DOMAIN");

@@ -123,7 +123,7 @@ static void bounce_producer_load_subdir(const std::string &basedir, const char *
  */
 void bounce_producer_init(const char *separator)
 {
-	HX_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
+	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
 	g_default_resource = NULL;
 }
 
@@ -359,7 +359,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		}
 	}
     closedir(sub_dirp);
-	HX_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
+	gx_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
 	plist.push_back(std::move(rnode));
 }
 

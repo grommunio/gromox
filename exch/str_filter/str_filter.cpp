@@ -48,7 +48,7 @@ void str_filter_init(const char *module_name,
 	BOOL case_sensitive, int audit_num, int audit_interval, int audit_times,
 	int temp_list_size, const char *list_path, int growing_num) 
 {
-	HX_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
+	gx_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
     audit_filter_init(case_sensitive, audit_num, audit_interval, audit_times);
     grey_list_init(case_sensitive, list_path, growing_num);
     temp_list_init(case_sensitive, temp_list_size);

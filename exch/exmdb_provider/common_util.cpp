@@ -186,7 +186,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	char hex_string[16];
 	char hex_string2[16];
 	
-	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -234,7 +234,7 @@ void common_util_pass_service(int service_id, void *func)
 void common_util_init(const char *org_name, uint32_t max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num)
 {
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
 	g_max_ext_rule_num = max_ext_rule_num;
@@ -4044,7 +4044,7 @@ BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
 	}
-	HX_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
+	gx_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
 	return TRUE;
 }
 
@@ -4094,7 +4094,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		HX_strlcpy(username, oneoff_entry.pmail_address, ulen);
+		gx_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
 	return FALSE;
@@ -4133,8 +4133,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
-		HX_strlcpy(address_type, "EX", atsize);
-		HX_strlcpy(email_address, ab_entryid.px500dn, emsize);
+		gx_strlcpy(address_type, "EX", atsize);
+		gx_strlcpy(email_address, ab_entryid.px500dn, emsize);
 		return TRUE;
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
@@ -4148,8 +4148,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
-		HX_strlcpy(address_type, "SMTP", atsize);
-		HX_strlcpy(email_address, oneoff_entry.pmail_address, emsize);
+		gx_strlcpy(address_type, "SMTP", atsize);
+		gx_strlcpy(email_address, oneoff_entry.pmail_address, emsize);
 		return TRUE;
 	}
 	return FALSE;
@@ -5164,7 +5164,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		if (SQLITE_NULL == sqlite3_column_type(pstmt, 3)) {
 			mid_string[0] = '\0';
 		} else {
-			HX_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
+			gx_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
 			snprintf(mid_string, 128, "%lld.%d.%s", LLD(time(nullptr)),
 					common_util_sequence_ID(), get_host_ID());
 			sprintf(tmp_path, "%s/eml/%s",
@@ -5488,7 +5488,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			sqlite3_reset(pstmt);
 			goto NOT_FOUND_PROPNAME;
 		}
-		HX_strlcpy(temp_name, S2A(sqlite3_column_text(pstmt, 0)), sizeof(temp_name));
+		gx_strlcpy(temp_name, S2A(sqlite3_column_text(pstmt, 0)), sizeof(temp_name));
 		sqlite3_reset(pstmt);
 		if (0 != strncasecmp(temp_name, "GUID=", 5)) {
 			goto NOT_FOUND_PROPNAME;

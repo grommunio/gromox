@@ -102,3 +102,10 @@ extern GX_EXPORT const char *mapi_strerror(unsigned int);
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
 #undef roundup /* you naughty glibc */
 template<typename T> constexpr T roundup(T x, T y) { return (x + y - 1) / y * y; }
+
+#ifdef COMPILE_DIAG
+/* snprintf takes about 2.65x the time */
+#define gx_strlcpy(dst, src, dsize) snprintf((dst), (dsize), "%s", (src))
+#else
+#define gx_strlcpy(dst, src, dsize) HX_strlcpy((dst), (src), (dsize))
+#endif

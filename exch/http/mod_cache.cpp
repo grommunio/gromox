@@ -679,7 +679,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	if (0 == tmp_len) {
-		HX_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
+		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&phttp->request.f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);

@@ -123,13 +123,13 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_sequence_id = 0;
 	if (TRUE == support_starttls) {
 		g_force_starttls = force_starttls;
-		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
 		if (NULL != cb_passwd) {
-			HX_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		HX_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 	}
 }
 
@@ -1312,7 +1312,7 @@ static void imap_parser_event_touch(char *username, char *folder)
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
-	HX_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
@@ -1362,7 +1362,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
-	HX_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
@@ -1881,7 +1881,7 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	char temp_string[324];
 	DOUBLE_LIST *plist, temp_list;
 	
-	HX_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	time(&pcontext->selected_time);
 	std::unique_lock hl_hold(g_hash_lock);
@@ -1911,7 +1911,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	
 	should_remove = TRUE;
 	pcontext->selected_time = 0;
-	HX_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);

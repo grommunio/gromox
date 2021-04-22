@@ -77,7 +77,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			if (NULL == pnode) {
 				pdir = static_cast<DIR_NODE *>(lib_buffer_get(ptree->ppool));
 				pdir->node.pdata = pdir;
-				HX_strlcpy(pdir->name, ptr1, GX_ARRAY_SIZE(pdir->name));
+				gx_strlcpy(pdir->name, ptr1, GX_ARRAY_SIZE(pdir->name));
 				pdir->b_loaded = FALSE;
 				pdir->ppool = ptree->ppool;
 				pnode = &pdir->node;

@@ -114,7 +114,7 @@ int main(int argc, const char **argv)
 		strcpy(service_path, PKGLIBDIR);
 		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);
 	} else {
-		HX_strlcpy(service_path, str_value, GX_ARRAY_SIZE(service_path));
+		gx_strlcpy(service_path, str_value, GX_ARRAY_SIZE(service_path));
 	}
 	printf("[system]: service plugin path is %s\n", service_path);
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
@@ -132,7 +132,7 @@ int main(int argc, const char **argv)
 		strcpy(config_path, PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR);
 		config_file_set_value(pconfig, "config_file_path", config_path);
 	} else {
-		HX_strlcpy(config_path, str_value, GX_ARRAY_SIZE(config_path));
+		gx_strlcpy(config_path, str_value, GX_ARRAY_SIZE(config_path));
 	}
 	printf("[system]: config path is %s\n", config_path);
 	
@@ -140,12 +140,12 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		strcpy(data_path, PKGDATADIR "/midb:" PKGDATADIR);
 	} else {
-		HX_strlcpy(data_path, str_value, GX_ARRAY_SIZE(data_path));
+		gx_strlcpy(data_path, str_value, GX_ARRAY_SIZE(data_path));
 	}
 	printf("[system]: data path is %s\n", data_path);
 	
 	str_value = config_file_get_value(pconfig, "STATE_PATH");
-	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
+	gx_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	printf("[system]: state path is %s\n", state_dir);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
@@ -175,7 +175,7 @@ int main(int argc, const char **argv)
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_IP");
-	HX_strlcpy(listen_ip, str_value != nullptr ? nullptr : "::1",
+	gx_strlcpy(listen_ip, str_value != nullptr ? nullptr : "::1",
 	           GX_ARRAY_SIZE(listen_ip));
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");
 	if (NULL == str_value) {
@@ -254,10 +254,10 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
 	if (NULL == str_value) {
-		HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
+		gx_strlcpy(org_name, "Gromox default", sizeof(org_name));
 		config_file_set_value(pconfig, "X500_ORG_NAME", org_name);
 	} else {
-		HX_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
+		gx_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
 	}
 	printf("[system]: x500 org name is \"%s\"\n", org_name);
 	
@@ -266,7 +266,7 @@ int main(int argc, const char **argv)
 		strcpy(charset, "windows-1252");
 		config_file_set_value(pconfig, "DEFAULT_CHARSET", charset);
 	} else {
-		HX_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
+		gx_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
 	}
 	printf("[system]: default charset is \"%s\"\n", charset);
 
@@ -275,7 +275,7 @@ int main(int argc, const char **argv)
 		strcpy(timezone, "Asia/Shanghai");
 		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", timezone);
 	} else {
-		HX_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
+		gx_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
 	}
 	printf("[system]: default timezone is \"%s\"\n", timezone);
 	
@@ -327,7 +327,7 @@ int main(int argc, const char **argv)
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_IP");
-	HX_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
+	gx_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(console_ip));
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {

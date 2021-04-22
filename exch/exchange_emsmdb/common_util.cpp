@@ -233,7 +233,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	char hex_string[16];
 	char hex_string2[16];
 	
-	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -2448,15 +2448,15 @@ void common_util_init(const char *org_name, int average_blocks,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *submit_command)
 {
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_average_blocks = average_blocks;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = max_rule_len;
-	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
+	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
+	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	g_faststream_id = 0;
 	pthread_key_create(&g_dir_key, NULL);
 }

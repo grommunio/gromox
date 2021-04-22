@@ -484,7 +484,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		}
 		
 		plang->node.pdata = plang;
-		HX_strlcpy(plang->lang, line, GX_ARRAY_SIZE(plang->lang));
+		gx_strlcpy(plang->lang, line, GX_ARRAY_SIZE(plang->lang));
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
 		plang->folders[0] = plang->draft;

@@ -74,7 +74,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		*presponse_flags = RESPONSE_FLAG_RESERVED |
 							RESPONSE_FLAG_OWNERRIGHT |
 							RESPONSE_FLAG_SENDASRIGHT;
-		HX_strlcpy(maildir, rpc_info.maildir, GX_ARRAY_SIZE(maildir));
+		gx_strlcpy(maildir, rpc_info.maildir, GX_ARRAY_SIZE(maildir));
 		logon_mode = LOGON_MODE_OWNER;
 	}
 	proptags.count = 2;

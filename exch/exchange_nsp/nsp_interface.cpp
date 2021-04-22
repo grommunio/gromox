@@ -101,7 +101,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			strcpy(static_cast<char *>(pprop->value.pv), dn);
 		} else {
 			pprop->value.pv = pbuff;
-			HX_strlcpy(pprop->value.pstr, dn, pbsize);
+			gx_strlcpy(pprop->value.pstr, dn, pbsize);
 		}
 		return ecSuccess;
 	case PROP_TAG_ADDRESSBOOKOBJECTGUID:

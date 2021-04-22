@@ -81,7 +81,7 @@ static void *consrv_work(void *);
  */
 void console_server_init(const char* bind_ip, int port)
 {
-	HX_strlcpy(g_listen_ip, bind_ip, GX_ARRAY_SIZE(g_listen_ip));
+	gx_strlcpy(g_listen_ip, bind_ip, GX_ARRAY_SIZE(g_listen_ip));
     g_listen_port = port;
 	double_list_init(&g_console_list);
 	double_list_init(&g_free_list);
@@ -330,7 +330,7 @@ BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
         return FALSE;
     }
 	if (NULL != cmd) {
-		HX_strlcpy(g_cmd_entry[g_cmd_num].cmd, cmd, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
+		gx_strlcpy(g_cmd_entry[g_cmd_num].cmd, cmd, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
 	} else {
 		*(g_cmd_entry[g_cmd_num].cmd) = '\0';
 	}

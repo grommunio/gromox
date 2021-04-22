@@ -1295,7 +1295,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	offset = 0;
 	
  FETCH_STRUCTURE_LOOP:
-	HX_strlcpy(ctype, pmime->ctype, GX_ARRAY_SIZE(ctype));
+	gx_strlcpy(ctype, pmime->ctype, GX_ARRAY_SIZE(ctype));
 	HX_strupper(ctype);
 	psubtype = strchr(ctype, '/');
 	if (NULL == psubtype) {
@@ -1600,7 +1600,7 @@ static int mjson_convert_address(char *address, const char *charset,
 				temp_address, &temp_len)) {
 				email_charset = encode_string.charset;
 			} else {
-				HX_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
+				gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 			}
 		} else if (0 == strcasecmp(encode_string.encoding,
 			"quoted-printable") && 0 != strcasecmp(
@@ -1609,10 +1609,10 @@ static int mjson_convert_address(char *address, const char *charset,
 				strlen(encode_string.title));
 			email_charset = encode_string.charset;
 		} else {
-			HX_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
+			gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 		}
 	} else {
-		HX_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
+		gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 	}
 	
 	parse_mime_addr(&email_addr, temp_address);

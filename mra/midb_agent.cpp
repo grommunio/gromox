@@ -184,7 +184,7 @@ static bool list_file_read_midb(const char *filename)
 		pserver->node.pdata = pserver;
 		strcpy(pserver->prefix, pitem[i].prefix);
 		pserver->prefix_len = strlen(pserver->prefix);
-		HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
+		gx_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
 		pserver->port = pitem[i].port;
 		double_list_init(&pserver->conn_list);
 		double_list_append_as_tail(&g_server_list, &pserver->node);
@@ -214,7 +214,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		g_notify_stop = true;
 		double_list_init(&g_server_list);
 		double_list_init(&g_lost_list);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -1749,7 +1749,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
-						HX_strlcpy(mitem.mid, temp_line, GX_ARRAY_SIZE(mitem.mid));
+						gx_strlcpy(mitem.mid, temp_line, GX_ARRAY_SIZE(mitem.mid));
 						mitem.id = count;
 						mitem.uid = atoi(pspace);
 						mitem.flag_bits = 0;
@@ -1923,7 +1923,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
-						HX_strlcpy(mitem.mid, pspace, GX_ARRAY_SIZE(mitem.mid));
+						gx_strlcpy(mitem.mid, pspace, GX_ARRAY_SIZE(mitem.mid));
 						mitem.id = atoi(temp_line) + 1;
 						mitem.uid = atoi(pspace1);
 						mitem.flag_bits = FLAG_DELETED;
@@ -2308,7 +2308,7 @@ static int fetch_simple(const char *path, const char *folder,
 								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
-								HX_strlcpy(pitem->mid, temp_line, GX_ARRAY_SIZE(pitem->mid));
+								gx_strlcpy(pitem->mid, temp_line, GX_ARRAY_SIZE(pitem->mid));
 								pitem->flag_bits = 0;
 								if (NULL != strchr(pspace1, 'A')) {
 									pitem->flag_bits |= FLAG_ANSWERED;
@@ -2722,7 +2722,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 									pitem->uid = uid;
 									pitem->id = atoi(temp_line) + 1;
-									HX_strlcpy(pitem->mid, pspace, GX_ARRAY_SIZE(pitem->mid));
+									gx_strlcpy(pitem->mid, pspace, GX_ARRAY_SIZE(pitem->mid));
 									pitem->flag_bits = 0;
 									if (NULL != strchr(pspace2, 'A')) {
 										pitem->flag_bits |= FLAG_ANSWERED;

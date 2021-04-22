@@ -113,13 +113,13 @@ void http_parser_init(size_t context_num, unsigned int timeout,
 	g_async_stop = false;
 	
 	if (TRUE == support_ssl) {
-		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
 		if (NULL != cb_passwd) {
-			HX_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		HX_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 	}
 }
 
@@ -736,7 +736,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		}
 
 		if ('\0' == pcontext->lang[0]) {
-			HX_strlcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"),
+			gx_strlcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"),
 			           GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->b_authed = TRUE;
@@ -817,7 +817,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 		return X_LOOP;
 	}
 	ptoken1++;
-	HX_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
+	gx_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
 	pcontext->port = atoi(ptoken1);
 
 	if (FALSE == pcontext->b_authed) {
@@ -1023,8 +1023,8 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
 			*ptoken = '\0';
 			ptoken++;
-			HX_strlcpy(pcontext->username, tmp_buff1, GX_ARRAY_SIZE(pcontext->username));
-			HX_strlcpy(pcontext->password, ptoken, GX_ARRAY_SIZE(pcontext->password));
+			gx_strlcpy(pcontext->username, tmp_buff1, GX_ARRAY_SIZE(pcontext->username));
+			gx_strlcpy(pcontext->password, ptoken, GX_ARRAY_SIZE(pcontext->password));
 			auto ret = htp_auth(pcontext);
 			if (ret != X_RUNOFF)
 				return ret;

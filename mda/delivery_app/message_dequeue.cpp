@@ -81,7 +81,7 @@ static void *mdq_thrwork(void *);
  */
 void message_dequeue_init(const char *path, size_t max_memory)
 {	
-	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_max_memory = ((max_memory-1)/(BLOCK_SIZE/2) + 1) * (BLOCK_SIZE/2);
 	single_list_init(&g_used_list);
 	single_list_init(&g_free_list);

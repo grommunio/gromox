@@ -5512,10 +5512,10 @@ static void mail_engine_add_notification_message(
 		if (pstmt == nullptr)
 			return;
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			HX_strlcpy(mid_string, S2A(sqlite3_column_text(pstmt, 0)), sizeof(mid_string));
+			gx_strlcpy(mid_string, S2A(sqlite3_column_text(pstmt, 0)), sizeof(mid_string));
 			pvalue = sqlite3_column_text(pstmt, 1);
 			if (NULL != pvalue) {
-				HX_strlcpy(flags_buff, static_cast<const char *>(pvalue), GX_ARRAY_SIZE(flags_buff));
+				gx_strlcpy(flags_buff, static_cast<const char *>(pvalue), GX_ARRAY_SIZE(flags_buff));
 			}
 			pvalue = mid_string;
 		}
@@ -6113,9 +6113,9 @@ void mail_engine_init(const char *default_charset,
 	uint64_t mmap_size, int cache_interval, int mime_num)
 {
 	g_sequence_id = 0;
-	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	HX_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
-	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	gx_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
+	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_async = b_async;
 	g_wal = b_wal;
 	g_mmap_size = mmap_size;

@@ -82,10 +82,10 @@ static const char *service_get_prog_id() { return g_program_identifier; }
 void service_init(const struct service_init_param &parm)
 {
 	g_context_num = parm.context_num;
-	HX_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
-	HX_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
-	HX_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
-	HX_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
+	gx_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
+	gx_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
+	gx_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
+	gx_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
 	g_plugin_names = parm.plugin_list;
 	g_ign_loaderr = parm.plugin_ignloaderr;
 	g_program_identifier = parm.prog_id;
@@ -389,7 +389,7 @@ BOOL service_register_service(const char *func_name, void *addr, const std::type
 	pservice->type_info = &ti;
 	pservice->plib = plug;
 	double_list_init(&pservice->list_reference);
-	HX_strlcpy(pservice->service_name, func_name, GX_ARRAY_SIZE(pservice->service_name));
+	gx_strlcpy(pservice->service_name, func_name, GX_ARRAY_SIZE(pservice->service_name));
 	double_list_append_as_tail(&g_list_service, &pservice->node_service);
 	/* append also the service into service list */
 	double_list_append_as_tail(&plug->list_service, &pservice->node_lib);
@@ -466,7 +466,7 @@ void *service_query(const char *service_name, const char *module, const std::typ
 		}
 		memset(pmodule, 0, sizeof(REFERENCE_NODE));
 		pmodule->node.pdata = pmodule;
-		HX_strlcpy(pmodule->module_name, module, GX_ARRAY_SIZE(pmodule->module_name));
+		gx_strlcpy(pmodule->module_name, module, GX_ARRAY_SIZE(pmodule->module_name));
 		double_list_append_as_tail(&pservice->list_reference, &pmodule->node);
 	}
 	/*

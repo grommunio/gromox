@@ -70,12 +70,12 @@ static void log_plugin_init(const char *log_file_name,
 	g_log_buf_size = cache_size;
 	psearch = strrchr(log_file_name, '.');
 	if (NULL == psearch) {
-		HX_strlcpy(g_file_name, log_file_name, GX_ARRAY_SIZE(g_file_name));
+		gx_strlcpy(g_file_name, log_file_name, GX_ARRAY_SIZE(g_file_name));
 		strcpy(g_file_suffix, "txt");
 	} else {
 		memcpy(g_file_name, log_file_name, psearch - log_file_name);
 		g_file_name[psearch - log_file_name] = '\0';
-		HX_strlcpy(g_file_suffix, psearch + 1, GX_ARRAY_SIZE(g_file_suffix));
+		gx_strlcpy(g_file_suffix, psearch + 1, GX_ARRAY_SIZE(g_file_suffix));
 	}
 	psearch = strrchr(log_file_name, '/');
 	if (NULL == psearch) {
@@ -384,7 +384,7 @@ static int log_plugin_open_redirect(const char *filename)
 	if (NULL == fp) {
 		return REDIRECT_FAIL_OPEN;
 	}
-	HX_strlcpy(g_redirect_name, filename, GX_ARRAY_SIZE(g_redirect_name));
+	gx_strlcpy(g_redirect_name, filename, GX_ARRAY_SIZE(g_redirect_name));
 	std::lock_guard rd_hold(g_redirect_lock);
 	g_redirect_fp = fp;
 	return REDIRECT_OPEN_OK;
@@ -488,7 +488,7 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 			printf("[log_plugin]: failed to register console talk\n");
 			return false;
 		}
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';
@@ -544,7 +544,7 @@ static BOOL svc_log_plugin(int reason, void **ppdata)
 			strcpy(log_file_name, "log.txt");
 			config_file_set_value(pfile, "LOG_FILE_NAME", "log.txt");
 		} else {
-			HX_strlcpy(log_file_name, str_value, GX_ARRAY_SIZE(log_file_name));
+			gx_strlcpy(log_file_name, str_value, GX_ARRAY_SIZE(log_file_name));
 		}
 		printf("[log_plugin]: log file name is %s\n", log_file_name);
 		log_plugin_init(log_file_name, log_level, files_num,

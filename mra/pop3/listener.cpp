@@ -252,8 +252,8 @@ static void *p3ls_thrwork(void *arg)
 		pcontext->connection.sockd             = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
-		HX_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		HX_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
+		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
+		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		/* 
 		valid the context and wake up one thread if there're some threads 
 		block on the condition variable 
@@ -385,8 +385,8 @@ static void *p3ls_thrworkssl(void *arg)
 		pcontext->is_stls                   = TRUE;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_ssl_port;
-		HX_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		HX_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
+		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
+		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		/* 
 		valid the context and wake up one thread if there're some threads 
 		block on the condition variable 

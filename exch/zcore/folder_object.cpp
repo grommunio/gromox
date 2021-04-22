@@ -1041,7 +1041,7 @@ static BOOL folder_object_flush_delegates(int fd,
 		address_buff[0] = '\0';
 		if (NULL != ptype && NULL != paddress) {
 			if (0 == strcasecmp(ptype, "SMTP")) {
-				HX_strlcpy(address_buff, paddress, GX_ARRAY_SIZE(address_buff));
+				gx_strlcpy(address_buff, paddress, GX_ARRAY_SIZE(address_buff));
 			} else if (0 == strcasecmp(ptype, "EX")) {
 				common_util_essdn_to_username(paddress,
 					address_buff, GX_ARRAY_SIZE(address_buff));

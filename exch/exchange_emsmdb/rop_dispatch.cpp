@@ -50,7 +50,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		auto rq = static_cast<LOGON_REQUEST *>(prequest->ppayload);
 		auto rdr = static_cast<LOGON_REDIRECT_RESPONSE *>(perr_response);
 		if (rq->pessdn != nullptr)
-			HX_strlcpy(rdr->pserver_name, rq->pessdn, GX_ARRAY_SIZE(rdr->pserver_name));
+			gx_strlcpy(rdr->pserver_name, rq->pessdn, GX_ARRAY_SIZE(rdr->pserver_name));
 		else
 			rdr->pserver_name[0] = '\0';
 		if (rq->logon_flags & LOGON_FLAG_PRIVATE) {

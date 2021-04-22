@@ -53,7 +53,7 @@ BOOL common_util_build_environment(const char *maildir)
 	}
 	alloc_context_init(&pctx->alloc_ctx);
 	pctx->ptmp_ctx = NULL;
-	HX_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
+	gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	pthread_setspecific(g_ctx_key, pctx);
 	return TRUE;
 }
@@ -110,7 +110,7 @@ void common_util_set_maildir(const char *maildir)
 {
 	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL != pctx) {
-		HX_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
+		gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	}
 }
 

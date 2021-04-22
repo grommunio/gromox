@@ -33,7 +33,7 @@ static BOOL gateway_control_send(const char *ip, int port, const char *command);
 void gateway_control_init(const char *path)
 {
 	if (NULL != path) {
-		HX_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
+		gx_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
 	} else {
 		g_list_path[0] = '\0';
 	}

@@ -106,16 +106,16 @@ void* data_source_collect_get_value(DATA_COLLECT *pcollect)
 void data_source_init(const char *host, int port, const char *user,
 	const char *password, const char *db_name)
 {
-	HX_strlcpy(g_host, host, GX_ARRAY_SIZE(g_host));
+	gx_strlcpy(g_host, host, GX_ARRAY_SIZE(g_host));
 	g_port = port;
-	HX_strlcpy(g_user, user, GX_ARRAY_SIZE(g_user));
+	gx_strlcpy(g_user, user, GX_ARRAY_SIZE(g_user));
 	if (NULL == password || '\0' == password[0]) {
 		g_password = NULL;
 	} else {
-		HX_strlcpy(g_password_buff, password, GX_ARRAY_SIZE(g_password_buff));
+		gx_strlcpy(g_password_buff, password, GX_ARRAY_SIZE(g_password_buff));
 		g_password = g_password_buff;
 	}
-	HX_strlcpy(g_db_name, db_name, GX_ARRAY_SIZE(g_db_name));
+	gx_strlcpy(g_db_name, db_name, GX_ARRAY_SIZE(g_db_name));
 }
 
 BOOL data_source_get_domain_list(DATA_COLLECT *pcollect)
@@ -175,9 +175,9 @@ BOOL data_source_get_domain_list(DATA_COLLECT *pcollect)
 		}
 		pnode->pdata = pitem;
 		myrow = mysql_fetch_row(pmyres);
-		HX_strlcpy(pitem->domainname, myrow[0], GX_ARRAY_SIZE(pitem->domainname));
+		gx_strlcpy(pitem->domainname, myrow[0], GX_ARRAY_SIZE(pitem->domainname));
 		HX_strlower(pitem->domainname);
-		HX_strlcpy(pitem->homedir, myrow[1], GX_ARRAY_SIZE(pitem->homedir));
+		gx_strlcpy(pitem->homedir, myrow[1], GX_ARRAY_SIZE(pitem->homedir));
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
 	
@@ -243,9 +243,9 @@ BOOL data_source_get_alias_list(DATA_COLLECT *pcollect)
 		pnode->pdata = pitem;
 		
 		myrow = mysql_fetch_row(pmyres);
-		HX_strlcpy(pitem->aliasname, myrow[0], GX_ARRAY_SIZE(pitem->aliasname));
+		gx_strlcpy(pitem->aliasname, myrow[0], GX_ARRAY_SIZE(pitem->aliasname));
 		HX_strlower(pitem->aliasname);
-		HX_strlcpy(pitem->mainname, myrow[1], GX_ARRAY_SIZE(pitem->mainname));
+		gx_strlcpy(pitem->mainname, myrow[1], GX_ARRAY_SIZE(pitem->mainname));
 		HX_strlower(pitem->mainname);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}

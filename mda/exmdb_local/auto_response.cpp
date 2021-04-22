@@ -162,7 +162,7 @@ void auto_response_reply(const char *user_home,
 					ptoken ++;
 					ptoken = strcasestr(ptoken, "charset=");
 					if (NULL != ptoken) {
-						HX_strlcpy(charset, ptoken + 8, GX_ARRAY_SIZE(charset));
+						gx_strlcpy(charset, ptoken + 8, GX_ARRAY_SIZE(charset));
 						ptoken = strchr(charset, ';');
 						if (NULL != ptoken) {
 							*ptoken = '\0';

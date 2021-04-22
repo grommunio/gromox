@@ -301,7 +301,7 @@ static BOOL svc_codepage_lang(int reason, void **ppdata)
 	switch (reason) {
 	case PLUGIN_INIT:
 		LINK_API(ppdata);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (psearch != nullptr)
 			*psearch = '\0';

@@ -64,11 +64,11 @@ static BOOL mod_rewrite_rreplace(char *buf,
 		return FALSE;
 	}
 	if ('\\' == rp[0] && '0' == rp[1]) {
-		HX_strlcpy(buf, rp + 2, size);
+		gx_strlcpy(buf, rp + 2, size);
 		return TRUE;
 	}
-	HX_strlcpy(original_buf, buf, GX_ARRAY_SIZE(original_buf));
-	HX_strlcpy(original_rp, rp, GX_ARRAY_SIZE(original_rp));
+	gx_strlcpy(original_buf, buf, GX_ARRAY_SIZE(original_buf));
+	gx_strlcpy(original_rp, rp, GX_ARRAY_SIZE(original_rp));
 	for (i=0; i<10; i++) {
 		rp_offsets[i] = -1;
 	}

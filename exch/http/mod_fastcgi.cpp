@@ -386,7 +386,7 @@ static int mod_fastcgi_connect_backend(const char *path)
 	/* fill socket address structure with server's address */
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
-	HX_strlcpy(un.sun_path, path, GX_ARRAY_SIZE(un.sun_path));
+	gx_strlcpy(un.sun_path, path, GX_ARRAY_SIZE(un.sun_path));
 	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr *)&un, len) < 0) {
 		close(sockd);
@@ -417,7 +417,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	if (0 == tmp_len) {
-		HX_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
+		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&phttp->request.f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -473,7 +473,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	ptoken = strrchr(request_uri, '/');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
-		HX_strlcpy(file_name, ptoken + 1, GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, ptoken + 1, GX_ARRAY_SIZE(file_name));
 	} else {
 		http_parser_log_info(phttp, 6, "request uri format "
 					"error, missing slash for mod_fastcgi");
@@ -585,7 +585,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		return FALSE;
 	}
 	if (0 == tmp_len) {
-		HX_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
+		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&phttp->request.f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);

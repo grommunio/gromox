@@ -82,7 +82,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -95,10 +95,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			return FALSE;
 		}
 		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
-		HX_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
+		gx_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
 
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
-		HX_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
+		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exchange_emsmdb]: x500 org name is \"%s\"\n", org_name);
 		str_value = config_file_get_value(pfile, "AVERAGE_HANDLES");
@@ -193,7 +193,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		printf("[exchange_emsmdb]: mailbox ping interval is %s\n",
 			temp_buff);
 		str_value = config_file_get_value(pfile, "SMTP_SERVER_IP");
-		HX_strlcpy(smtp_ip, str_value != nullptr ? str_value : "::1",
+		gx_strlcpy(smtp_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(smtp_ip));
 		str_value = config_file_get_value(pfile, "SMTP_SERVER_PORT");
 		if (NULL == str_value) {
@@ -208,7 +208,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
-		HX_strlcpy(submit_command, str_value != nullptr ? str_value :
+		gx_strlcpy(submit_command, str_value != nullptr ? str_value :
 			"/usr/bin/php " PKGDATADIR "/sa/submit.php", GX_ARRAY_SIZE(submit_command));
 
 		str_value = config_file_get_value(pfile, "ASYNC_THREADS_NUM");
