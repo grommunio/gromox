@@ -514,10 +514,9 @@ BOOL container_object_load_user_table(
 				continue;
 			}
 			if (0 == strcasecmp(paddress_type, "EX")) {
-				if (FALSE == common_util_essdn_to_username(
-					paddress, username)) {
+				if (!common_util_essdn_to_username(paddress,
+				    username, GX_ARRAY_SIZE(username)))
 					continue;
-				}
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
 				HX_strlcpy(username, paddress, GX_ARRAY_SIZE(username));
 			} else {

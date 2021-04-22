@@ -3911,7 +3911,7 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 				pvalue = tpropval_array_get_propval(
 						prcpt, PROP_TAG_EMAILADDRESS);
 				if (NULL != pvalue) {
-					if (essdn_to_username(static_cast<char *>(pvalue), username))
+					if (essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 						return TRUE;
 					pvalue = NULL;
 				}
@@ -5217,7 +5217,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 					pvalue = tpropval_array_get_propval(&pmsg->proplist,
 								PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 					if (NULL != pvalue) {
-						pvalue = !essdn_to_username(static_cast<char *>(pvalue), tmp_buff) ?
+						pvalue = !essdn_to_username(static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) ?
 						         nullptr : tmp_buff;
 					}
 				} else {

@@ -193,13 +193,14 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	return TRUE;
 }
 
-static BOOL oxcmail_essdn_to_username(const char *pessdn, char *username)
+static BOOL oxcmail_essdn_to_username(const char *pessdn,
+    char *username, size_t ulen)
 {
-	int tmp_len;
 	int user_id;
 	char tmp_buff[1024];
 	
-	tmp_len = sprintf(tmp_buff, "/o=%s/ou=Exchange Administrative"
+	auto tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+	               "/o=%s/ou=Exchange Administrative"
 		" Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", g_org_name);
 	if (0 != strncasecmp(pessdn, tmp_buff, tmp_len)) {
 		return FALSE;
@@ -241,7 +242,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
-		return oxcmail_essdn_to_username(ab_entryid.px500dn, username);
+		return oxcmail_essdn_to_username(ab_entryid.px500dn, username, ulen);
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
@@ -4975,7 +4976,7 @@ static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 				pvalue = tpropval_array_get_propval(pproplist, proptag3);
 				if (NULL != pvalue) {
-					if (oxcmail_essdn_to_username(static_cast<char *>(pvalue), username))
+					if (oxcmail_essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 						return TRUE;	
 				}
 			} else {

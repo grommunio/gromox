@@ -3256,10 +3256,9 @@ uint32_t zarafa_server_getstoreentryid(
 	STORE_ENTRYID store_entryid = {};
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
-		if (FALSE == common_util_essdn_to_username(
-			mailbox_dn, username)) {
+		if (!common_util_essdn_to_username(mailbox_dn,
+		    username, GX_ARRAY_SIZE(username)))
 			return ecError;
-		}
 	} else {
 		HX_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
 		if (!common_util_username_to_essdn(username,
@@ -4482,10 +4481,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				}
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_SMTPADDRESS;
-				if (FALSE == common_util_essdn_to_username(
-					ab_entryid.px500dn, tmp_buff)) {
+				if (!common_util_essdn_to_username(ab_entryid.px500dn,
+				    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 					continue;
-				}
 				tmp_propval.pvalue = common_util_dup(tmp_buff);
 				if (NULL == tmp_propval.pvalue) {
 					zarafa_server_put_user_info(pinfo);

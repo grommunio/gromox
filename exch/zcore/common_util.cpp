@@ -163,7 +163,8 @@ BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				return common_util_essdn_to_username(static_cast<char *>(pvalue), username);
+				return common_util_essdn_to_username(static_cast<char *>(pvalue),
+				       username, ulen);
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
@@ -401,7 +402,8 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	}
 }
 
-BOOL common_util_essdn_to_username(const char *pessdn, char *username)
+BOOL common_util_essdn_to_username(const char *pessdn,
+    char *username, size_t ulen)
 {
 	char *pat;
 	int tmp_len;
@@ -971,8 +973,7 @@ BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
 	}
-	return common_util_essdn_to_username(
-			tmp_entryid.px500dn, username);
+	return common_util_essdn_to_username(tmp_entryid.px500dn, username, ulen);
 }
 
 BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
@@ -1025,7 +1026,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
-		return common_util_essdn_to_username(ab_entryid.px500dn, username);
+		return common_util_essdn_to_username(ab_entryid.px500dn,
+		       username, ulen);
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
@@ -2019,12 +2021,12 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 				if (NULL == pvalue) {
 					goto CONVERT_ENTRYID;
 				}
-				pnode->pdata = common_util_alloc(128);
+				pnode->pdata = common_util_alloc(324);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
 				if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
-				    static_cast<char *>(pnode->pdata)))
+				    static_cast<char *>(pnode->pdata), 324))
 					goto CONVERT_ENTRYID;
 			} else {
 				goto CONVERT_ENTRYID;
