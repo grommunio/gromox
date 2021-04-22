@@ -11,7 +11,7 @@ BOOL (*system_services_get_maildir)(const char*, char*);
 BOOL (*system_services_get_homedir)(const char*, char*);
 BOOL (*system_services_get_timezone)(const char*, char *);
 BOOL (*system_services_set_timezone)(const char*, const char *);
-BOOL (*system_services_get_username_from_id)(int, char*);
+decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 BOOL (*system_services_get_id_from_username)(const char*, int*);
 BOOL (*system_services_get_domain_ids)(const char *, int*, int*);
 BOOL (*system_services_get_user_ids)(const char*, int*, int*, int*);

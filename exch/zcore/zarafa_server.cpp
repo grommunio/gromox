@@ -1752,7 +1752,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	char dir[256];
 	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
-	char username[256];
+	char username[324];
 	uint32_t permission;
 	uint8_t provider_uid[16];
 	STORE_ENTRYID store_entryid = {};
@@ -1780,8 +1780,8 @@ uint32_t zarafa_server_openstore(GUID hsession,
 			return ecNotFound;
 		}
 		if (pinfo->user_id != user_id) {
-			if (FALSE == system_services_get_username_from_id(
-				user_id, username) ||
+			if (!system_services_get_username_from_id(user_id,
+			    username, GX_ARRAY_SIZE(username)) ||
 				FALSE == system_services_get_maildir(
 				username, dir)) {
 				zarafa_server_put_user_info(pinfo);

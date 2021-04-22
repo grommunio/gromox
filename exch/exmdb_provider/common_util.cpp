@@ -90,8 +90,7 @@ E(log_info)
 E(get_handle)
 #undef E
 
-static BOOL (*common_util_get_username_from_id)(int id, char *username);
-
+static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static BOOL (*common_util_get_user_ids)(const char *username,
 	int *puser_id, int *pdomain_id, int *paddress_type);
 static BOOL common_util_evaluate_subobject_restriction(
@@ -163,9 +162,8 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	}
 	plocal = pessdn + tmp_len + 17;
 	user_id = decode_hex_int(pessdn + tmp_len + 8);
-	if (FALSE == common_util_get_username_from_id(user_id, username)) {
+	if (!common_util_get_username_from_id(user_id, username, ulen))
 		return FALSE;
-	}
 	pat = strchr(username, '@');
 	if (NULL == pat) {
 		return FALSE;

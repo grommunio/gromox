@@ -6,7 +6,7 @@
 
 BOOL (*system_services_get_user_lang)(const char*, char*);
 BOOL (*system_services_get_timezone)(const char*, char *);
-BOOL (*system_services_get_username_from_id)(int, char*);
+decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 BOOL (*system_services_get_id_from_username)(const char*, int*);
 BOOL (*system_services_get_user_ids)(const char*, int*, int*, int*);
 BOOL (*system_services_lang_to_charset)(const char*, char*);

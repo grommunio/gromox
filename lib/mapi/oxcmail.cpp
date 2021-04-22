@@ -206,7 +206,7 @@ static BOOL oxcmail_essdn_to_username(const char *pessdn,
 		return FALSE;
 	}
 	user_id = decode_hex_int(pessdn + tmp_len + 8);
-	return oxcmail_get_username(user_id, username);
+	return oxcmail_get_username(user_id, username, ulen);
 }
 
 static BOOL oxcmail_entryid_to_username(const BINARY *pbin,

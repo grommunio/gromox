@@ -423,9 +423,8 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	}
 	plocal = pessdn + tmp_len + 17;
 	user_id = decode_hex_int(pessdn + tmp_len + 8);
-	if (FALSE == system_services_get_username_from_id(user_id, username)) {
+	if (!system_services_get_username_from_id(user_id, username, ulen))
 		return FALSE;
-	}
 	pat = strchr(username, '@');
 	if (NULL == pat) {
 		return FALSE;

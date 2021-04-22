@@ -488,7 +488,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	char *pdomain;
 	uint32_t handle;
 	USER_INFO *pinfo;
-	char account[256];
+	char account[324];
 	STORE_OBJECT *pstore;
 	OBJECT_NODE *pobjnode;
 	SIMPLE_TREE_NODE *pnode;
@@ -514,8 +514,8 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 			gx_strlcpy(dir, pinfo->maildir, GX_ARRAY_SIZE(dir));
 			gx_strlcpy(account, pinfo->username, GX_ARRAY_SIZE(account));
 		} else {
-			if (FALSE == system_services_get_username_from_id(
-				account_id, account) ||
+			if (!system_services_get_username_from_id(account_id,
+			    account, GX_ARRAY_SIZE(account)) ||
 				FALSE == system_services_get_maildir(
 				account, dir)) {
 				return INVALID_HANDLE;	

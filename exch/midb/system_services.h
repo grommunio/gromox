@@ -6,7 +6,7 @@ extern int system_services_stop();
 
 extern BOOL (*system_services_get_user_lang)(const char*, char*);
 extern BOOL (*system_services_get_timezone)(const char*, char *);
-extern BOOL (*system_services_get_username_from_id)(int, char*);
+extern BOOL (*system_services_get_username_from_id)(int, char *, size_t);
 extern BOOL (*system_services_get_id_from_username)(const char*, int*);
 extern BOOL (*system_services_get_user_ids)(const char*, int*, int*, int*);
 extern BOOL (*system_services_lang_to_charset)(const char*, char*);

@@ -21,7 +21,7 @@ USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 BOOL user_object_check_valid(USER_OBJECT *puser)
 {
 	AB_BASE *pbase;
-	char username[256];
+	char username[324];
 	SIMPLE_TREE_NODE *pnode;
 	
 	pbase = ab_tree_get_base(puser->base_id);
@@ -31,11 +31,10 @@ BOOL user_object_check_valid(USER_OBJECT *puser)
 	pnode = ab_tree_minid_to_node(pbase, puser->minid);
 	ab_tree_put_base(pbase);
 	if (NULL == pnode) {
-		if (MINID_TYPE_ADDRESS != ab_tree_get_minid_type(puser->minid)
-			|| FALSE == system_services_get_username_from_id(
-			ab_tree_get_minid_value(puser->minid), username)) {
+		if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
+		    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+		    username, GX_ARRAY_SIZE(username)))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -49,7 +48,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	AB_BASE *pbase;
-	char username[256];
+	char username[324];
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
 	static const uint32_t fake_type = OBJECT_USER;
@@ -103,8 +102,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				common_util_index_proptags(pproptags,
 				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
 				== ab_tree_get_minid_type(puser->minid) &&
-				TRUE == system_services_get_username_from_id(
-				ab_tree_get_minid_value(puser->minid), username)) {
+			    system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+			    username, GX_ARRAY_SIZE(username))) {
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_SMTPADDRESS) >= 0) {
 					vc->proptag = PROP_TAG_SMTPADDRESS;

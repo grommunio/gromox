@@ -1332,7 +1332,7 @@ typedef const char* (*CPID_TO_CHARSET)(uint32_t);
 typedef const char* (*MIME_TO_EXTENSION)(const char*);
 typedef const char* (*EXTENSION_TO_MIME)(const char*);
 typedef BOOL (*GET_USER_IDS)(const char*, int*, int*, int*);
-typedef BOOL (*GET_USERNAME)(int, char*);
+using GET_USERNAME = BOOL (*)(int, char *, size_t);
 typedef BOOL (*USERNAME_TO_ENTRYID)(const char*, const char*, BINARY*, int*);
 using ENTRYID_TO_USERNAME = BOOL (*)(const BINARY *, void *(*)(size_t), char *, size_t);
 using ESSDN_TO_USERNAME = BOOL (*)(const char *, char *, size_t);

@@ -441,7 +441,8 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
+BOOL mysql_adaptor_get_username_from_id(int user_id,
+    char *username, size_t ulen)
 {
 	char sql_string[1024];
 	
@@ -457,7 +458,7 @@ BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	strncpy(username, myrow[0], 256);
+	gx_strlcpy(username, myrow[0], ulen);
 	return TRUE;
 }
 

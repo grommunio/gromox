@@ -49,7 +49,7 @@ extern BOOL mysql_adaptor_meta(const char *username, const char *password, char 
 extern BOOL mysql_adaptor_login2(const char *username, const char *password, char *encrypt_passwd, size_t enc_size, char *reason, int length);
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);
-BOOL mysql_adaptor_get_username_from_id(int user_id, char *username);
+extern BOOL mysql_adaptor_get_username_from_id(int user_id, char *username, size_t);
 BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id);
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id);
 BOOL mysql_adaptor_get_user_displayname(

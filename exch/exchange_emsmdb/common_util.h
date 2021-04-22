@@ -126,8 +126,7 @@ extern BOOL (*common_util_get_user_lang)(
 	const char *username, char *lang);
 extern BOOL (*common_util_get_timezone)(
 	const char *username, char *timezone);
-extern BOOL (*common_util_get_username_from_id)(
-	int id, char *username);
+extern BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 extern BOOL (*common_util_get_id_from_username)(
 	const char *username, int *puser_id);
 extern BOOL (*common_util_get_user_ids)(const char *username,
