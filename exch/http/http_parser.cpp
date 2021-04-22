@@ -1500,9 +1500,10 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 
 static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 {
-	if (NULL == pcontext->pchannel) {
+	if (pcontext->pchannel == nullptr ||
+	    (pcontext->channel_type != CHANNEL_TYPE_IN &&
+	    pcontext->channel_type != CHANNEL_TYPE_OUT))
 		return htparse_rdbody_nochan(pcontext);
-	}
 
 	auto pchannel_in = pcontext->channel_type == CHANNEL_TYPE_IN ? static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel) : nullptr;
 	auto pchannel_out = pcontext->channel_type == CHANNEL_TYPE_OUT ? static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
