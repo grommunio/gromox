@@ -3115,7 +3115,6 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 {
 	void *pdata;
 	NDR_PULL ndr;
-	BOOL b_async;
 	BOOL b_result;
 	uint32_t flags;
 	BOOL b_bigendian;
@@ -3332,12 +3331,14 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	case DCERPC_PKT_ALTER:
 		b_result = pdu_processor_process_alter(pcall);
 		break;
-	case DCERPC_PKT_REQUEST:
+	case DCERPC_PKT_REQUEST: {
+		BOOL b_async = false;
 		b_result = pdu_processor_process_request(pcall, &b_async);
 		if (TRUE == b_result && TRUE == b_async) {
 			return PDU_PROCESSOR_INPUT;
 		}
 		break;
+	}
 	case DCERPC_PKT_CO_CANCEL:
 		pdu_processor_process_cancel(pcall);
 		pdu_processor_free_call(pcall);

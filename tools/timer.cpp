@@ -51,8 +51,8 @@ struct CONNECTION_NODE {
 	void operator=(CONNECTION_NODE &&) = delete;
 	int sockd = -1;
 	int offset = 0;
-	char buffer[1024];
-	char line[1024];
+	char buffer[1024]{};
+	char line[1024]{};
 };
 
 struct TIMER {
