@@ -20,7 +20,7 @@ static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
@@ -68,7 +68,7 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     char buff[1024];
             
@@ -136,7 +136,7 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
-	int string_length;
+	size_t string_length = 0;
 	const char*smtp_reply_str;
 
 	if (NULL != pcontext->connection.ssl) {
@@ -167,7 +167,7 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
@@ -194,7 +194,7 @@ int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
 int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char *smtp_reply_str, *smtp_reply_str2;
     char buff[1024], buff2[1024];
     EMAIL_ADDR email_addr;    
@@ -274,7 +274,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char*smtp_reply_str, *smtp_reply_str2;
     char buff[1024], reason[1024], path[256];
     EMAIL_ADDR email_addr;
@@ -415,7 +415,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 int smtp_cmd_handler_data(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     STREAM stream;
 	unsigned int size, size_copied, size2, size2_used;
@@ -515,7 +515,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     char buff[1024];
     
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
@@ -536,7 +536,7 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
 int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
             
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
@@ -558,7 +558,7 @@ int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
 int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
@@ -579,7 +579,7 @@ int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
 int smtp_cmd_handler_help(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
@@ -609,7 +609,7 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
 	const char *smtp_reply_str = nullptr;
     
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
@@ -639,7 +639,7 @@ int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
 int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
 	
 	/* command not implement*/
@@ -656,7 +656,7 @@ int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
 int smtp_cmd_handler_else(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* smtp_reply_str;
     
     /* command not implement*/
@@ -673,14 +673,11 @@ int smtp_cmd_handler_else(const char* cmd_line, int line_length,
 static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext)
 {
-    int string_length, i;
-    char * smtp_reply_str;
-
-    for (i=4; i<line_length; i++) {
+	for (ssize_t i = 4; i < line_length; ++i) {
         if (cmd_line[i] != ' ') {
             /* 501 Syntax error in parameters or arguments */
-            smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175005, 1,
-                             &string_length);
+			size_t string_length = 0;
+			auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175005, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 			} else {

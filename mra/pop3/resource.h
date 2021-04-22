@@ -41,7 +41,7 @@ enum {
 
 extern int resource_run();
 extern int resource_stop();
-char* resource_get_pop3_code(int code_type, int n, int *len);
+extern const char *resource_get_pop3_code(unsigned int code_type, unsigned int n, size_t *len);
 extern BOOL resource_refresh_pop3_code_table();
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;

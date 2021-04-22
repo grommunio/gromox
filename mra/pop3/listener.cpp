@@ -130,8 +130,8 @@ void listener_stop_accept()
 static void *p3ls_thrwork(void *arg)
 {
 	socklen_t addrlen;
-	int sockd2, client_port;
-	int string_length, len, flag;
+	int sockd2, client_port, len, flag;
+	size_t string_length = 0;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	POP3_CONTEXT *pcontext;
@@ -271,8 +271,8 @@ static void *p3ls_thrwork(void *arg)
 static void *p3ls_thrworkssl(void *arg)
 {
 	socklen_t addrlen;
-	int sockd2, client_port;
-	int string_length, len, flag;
+	int sockd2, client_port, len, flag;
+	size_t string_length = 0;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	POP3_CONTEXT *pcontext;

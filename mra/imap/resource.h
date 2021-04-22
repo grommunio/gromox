@@ -101,10 +101,10 @@ enum {
 
 extern int resource_run();
 extern int resource_stop();
-extern const char *resource_get_imap_code(int code_type, int n, int *len);
+extern const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_t *len);
 extern BOOL resource_refresh_imap_code_table();
-char** resource_get_folder_strings(const char*lang);
+extern const char *const *resource_get_folder_strings(const char *lang);
 const char* resource_get_default_charset(const char *lang);
-extern const char *resource_get_error_string(int);
+extern const char *resource_get_error_string(unsigned int);
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;

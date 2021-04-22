@@ -362,7 +362,7 @@ static int resource_parse_imap_line(char* dest, char* src_str, int len)
 
 }
 
-const char *resource_get_imap_code(int code_type, int n, int *len)
+const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_t *len)
 {
     IMAP_RETURN_CODE *pitem = NULL;
     char *ret_ptr = NULL;
@@ -571,7 +571,7 @@ const char* resource_get_default_charset(const char *lang)
 	return NULL;
 }
 
-char** resource_get_folder_strings(const char*lang)
+const char *const *resource_get_folder_strings(const char *lang)
 {
 	SINGLE_LIST_NODE *pnode;
 	LANG_FOLDER *plang;
@@ -594,8 +594,8 @@ char** resource_get_folder_strings(const char*lang)
 	return NULL;
 }
 
-const char *resource_get_error_string(int code)
+const char *resource_get_error_string(unsigned int code)
 {
-	int temp_len;
+	size_t temp_len = 0;
 	return resource_get_imap_code(IMAP_CODE_2200000 + code, 1, &temp_len);
 }

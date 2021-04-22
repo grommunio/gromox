@@ -65,7 +65,7 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
-	int string_length;
+	size_t string_length = 0;
 	const char*pop3_reply_str;
 	
 	if (NULL != pcontext->connection.ssl) {
@@ -103,7 +103,7 @@ int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 int pop3_cmd_handler_user(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
 	char buff[1024];
     const char* pop3_reply_str;
     
@@ -180,7 +180,8 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	int count, string_length;
+	int count;
+	size_t string_length = 0;
 	char reason[256];
 	char temp_buff[1024];
 	char temp_password[256];
@@ -323,7 +324,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
 	char temp_buff[1024];
     const char* pop3_reply_str;
     
@@ -366,7 +367,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	int n, i;
 	int count;
 	unsigned int tmp_len;
-    int string_length;
+	size_t string_length = 0;
 	char temp_buff[1024];
 	char temp_command[1024];
     const char* pop3_reply_str;
@@ -468,7 +469,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	int i, n;
 	int count;
 	unsigned int tmp_len;
-    int string_length;
+	size_t string_length = 0;
 	char temp_buff[1024];
 	char temp_command[1024];
     const char* pop3_reply_str;
@@ -571,7 +572,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
 	int n;
-    int string_length;
+	size_t string_length = 0;
 	char temp_path[256];
 	char temp_command[256];
     const char* pop3_reply_str;
@@ -666,7 +667,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
 	int n;
-    int string_length;
+	size_t string_length = 0;
 	char temp_command[256];
     const char* pop3_reply_str;
 	MSG_UNIT *punit;
@@ -740,7 +741,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
 	int n;
-    int string_length;
+	size_t string_length = 0;
 	char *ptoken;
 	char temp_path[256];
 	char temp_buff[1024];
@@ -841,16 +842,14 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
 	char temp_path[256];
 	char temp_buff[1024];
-	char *pop3_reply_str;
 	MSG_UNIT *punit;
 	SINGLE_LIST_NODE *pnode;
     
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170004, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -865,18 +864,17 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				&pcontext->list)) {
 			case MIDB_RESULT_OK:
 				break;
-			case MIDB_NO_SERVER:
-				pop3_reply_str = resource_get_pop3_code(
-					POP3_CODE_2170016, 1, &string_length);
+			case MIDB_NO_SERVER: {
+				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170016, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 				} else {
 					write(pcontext->connection.sockd, pop3_reply_str, string_length);
 				}
 				return DISPATCH_SHOULD_CLOSE;
-			case MIDB_RDWR_ERROR:
-				pop3_reply_str = resource_get_pop3_code(
-					POP3_CODE_2170021, 1, &string_length);
+			}
+			case MIDB_RDWR_ERROR: {
+				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170021, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 				} else {
@@ -885,9 +883,9 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				pop3_parser_log_info(pcontext, 8, "fail to read/write with "
 					"midb server!");
 				return DISPATCH_SHOULD_CLOSE;
-			case MIDB_RESULT_ERROR:
-				pop3_reply_str = resource_get_pop3_code(
-					POP3_CODE_2170022, 1, &string_length);
+			}
+			case MIDB_RESULT_ERROR: {
+				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170022, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 				} else {
@@ -896,6 +894,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				pop3_parser_log_info(pcontext, 8, "fail to execute delete "
 					"command with midb server!");
 				return DISPATCH_SHOULD_CLOSE;
+			}
 			}
 			string_length = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
 				"FOLDER-TOUCH %s inbox", pcontext->username);
@@ -929,7 +928,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* pop3_reply_str;
 	MSG_UNIT *punit;
 	SINGLE_LIST_NODE *pnode;
@@ -965,7 +964,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* pop3_reply_str;
     
 	if (4 != line_length) {
@@ -993,7 +992,7 @@ int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
 int pop3_cmd_handler_else(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    int string_length;
+	size_t string_length = 0;
     const char* pop3_reply_str;
     
     /* command not implement*/

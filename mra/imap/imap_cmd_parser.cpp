@@ -1264,7 +1264,6 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 {
 	int i,len;
 	char *ptoken;
-	char **f_strings;
 	char temp_name[512];
 	char temp_folder[512];
 	char converted_name[512];
@@ -1288,7 +1287,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	if (0 == strcasecmp(temp_folder, "INBOX")) {
 		strcpy(temp_folder, "inbox");
 	} else {
-		f_strings = resource_get_folder_strings(lang);
+		auto f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(f_strings[i], temp_folder)) {
 				HX_strlcpy(temp_folder, g_folder_list[i], GX_ARRAY_SIZE(temp_folder));
@@ -1320,7 +1319,6 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 {
 	int i;
 	char *ptoken;
-	char **f_strings;
 	char temp_name[512];
 	char temp_folder[512];
 	char converted_name[512];
@@ -1329,19 +1327,19 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		strcpy(imap_folder, "INBOX");
 		return TRUE;
 	} else if (0 == strcmp("draft", sys_folder)) {
-		f_strings = resource_get_folder_strings(lang);
+		auto f_strings = resource_get_folder_strings(lang);
 		utf8_to_utf7(f_strings[0], strlen(f_strings[0]), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("sent", sys_folder)) {
-		f_strings = resource_get_folder_strings(lang);
+		auto f_strings = resource_get_folder_strings(lang);
 		utf8_to_utf7(f_strings[1], strlen(f_strings[1]), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("trash", sys_folder)) {
-		f_strings = resource_get_folder_strings(lang);
+		auto f_strings = resource_get_folder_strings(lang);
 		utf8_to_utf7(f_strings[2], strlen(f_strings[2]), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("junk", sys_folder)) {
-		f_strings = resource_get_folder_strings(lang);
+		auto f_strings = resource_get_folder_strings(lang);
 		utf8_to_utf7(f_strings[3], strlen(f_strings[3]), imap_folder, 1024);
 		return TRUE;
 	}
@@ -1358,7 +1356,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	if (0 == strcmp(temp_folder, "inbox")) {
 		strcpy(temp_folder, "INBOX");
 	} else {
-		f_strings = resource_get_folder_strings(lang);
+		auto f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(g_folder_list[i], temp_folder)) {
 				HX_strlcpy(temp_folder, f_strings[i], GX_ARRAY_SIZE(temp_folder));
@@ -1400,7 +1398,7 @@ static void imap_cmd_parser_convert_folderlist(
 int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -1424,7 +1422,7 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -1449,7 +1447,7 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_noop(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
     const char* imap_reply_str;
     
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -1466,7 +1464,7 @@ int imap_cmd_parser_noop(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_logout(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-    int string_length;
+	size_t string_length = 0;
 	const char *imap_reply_str, *imap_reply_str2;
 	
 	/* IMAP_CODE_2160001: BYE logging out */
@@ -1485,7 +1483,7 @@ int imap_cmd_parser_logout(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	const char *imap_reply_str;
 	
 	if (NULL != pcontext->connection.ssl) {
@@ -1528,7 +1526,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	const char *imap_reply_str;
 	
 	if (TRUE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
@@ -1570,7 +1568,7 @@ int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t temp_len;
-	int string_length;
+	size_t string_length = 0;
 	const char *imap_reply_str;
 	
 	if (0 == strlen(argv[0]) || 0 != decode64_ex(argv[0],
@@ -1594,8 +1592,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t temp_len;
 	char reason[256];
-	int string_length;
-	int string_length1;
+	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_password[256];
 	const char *imap_reply_str;
@@ -1680,8 +1677,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char reason[256];
-	int string_length;
-	int string_length1;
+	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_password[256];
     const char* imap_reply_str;
@@ -1785,7 +1781,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
     const char* imap_reply_str;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
@@ -1822,7 +1818,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	unsigned int uidnext;
 	unsigned long uidvalid;
 	int firstunseen;
-	int string_length;
+	size_t string_length = 0;
 	char temp_name[1024];
 	char buff[1024];
 	const char *estring, *imap_reply_str;
@@ -1922,7 +1918,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	unsigned int uidnext;
 	unsigned long uidvalid;
 	int firstunseen;
-	int string_length;
+	size_t string_length = 0;
 	char temp_name[1024];
 	char buff[1024];
 	const char *estring, *imap_reply_str;
@@ -2020,7 +2016,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int i, len;
 	BOOL b_found;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	MEM_FILE temp_file;
 	char temp_name[1024];
 	char temp_name1[1024];
@@ -2187,7 +2183,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char encoded_name[1024];
 	const char *estring, *imap_reply_str;
 
@@ -2269,7 +2265,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char encoded_name[1024];
 	char encoded_name1[1024];
 	const char *estring, *imap_reply_str;
@@ -2369,7 +2365,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char temp_name[1024];
 	const char *estring, *imap_reply_str;
 
@@ -2439,7 +2435,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char temp_name[1024];
 	const char *estring, *imap_reply_str;
 
@@ -2510,7 +2506,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int len;
 	int errnum;
 	DIR_NODE *pdir;
-	int string_length;
+	size_t string_length = 0;
 	MEM_FILE temp_file;
 	DIR_TREE temp_tree;
 	char buff[256*1024];
@@ -2692,7 +2688,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int i, len;
 	DIR_NODE *pdir;
-	int string_length;
+	size_t string_length = 0;
 	MEM_FILE temp_file;
 	DIR_TREE temp_tree;
 	char buff[256*1024];
@@ -2831,7 +2827,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int len;
 	int errnum;
 	DIR_NODE *pdir;
-	int string_length;
+	size_t string_length = 0;
 	MEM_FILE temp_file;
 	MEM_FILE temp_file1;
 	DIR_TREE temp_tree;
@@ -2971,7 +2967,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	unsigned long uidvalid;
 	int temp_argc;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char *temp_argv[16];
 	char temp_name[1024];
 	const char *estring, *imap_reply_str;
@@ -3099,8 +3095,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_flagged;
 	BOOL b_answered;
 	time_t tmp_time;
-	int string_length;
-	int string_length1;
+	size_t string_length = 0, string_length1 = 0;
 	char* temp_argv[5];
 	char *str_received = nullptr, *flags_string = nullptr;
 	char flag_buff[16];
@@ -3301,7 +3296,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int temp_argc;
 	int i, fd, len;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
@@ -3426,8 +3421,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_answered;
 	char *str_flags;
 	time_t tmp_time;
-	int string_length;
-	int string_length1;
+	size_t string_length = 0, string_length1 = 0;
 	char *str_internal;
 	char flag_buff[16];
 	char temp_path[256];
@@ -3631,7 +3625,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
     const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
@@ -3656,7 +3650,7 @@ int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
     const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
@@ -3684,7 +3678,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int del_num;
 	XARRAY xarray;
 	BOOL b_deleted;
-	int string_length;
+	size_t string_length = 0;
 	char buff[1024];
 	char temp_file[256];
 	SINGLE_LIST temp_list;
@@ -3831,7 +3825,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
     const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
@@ -3860,7 +3854,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int result;
 	int buff_len;
-	int string_length;
+	size_t string_length = 0;
 	char buff[256*1024];
 	const char *estring, *imap_reply_str;
 	
@@ -3946,7 +3940,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_detail;
 	XARRAY xarray;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char* tmp_argv[128];
 	DOUBLE_LIST list_seq;
 	DOUBLE_LIST list_data;
@@ -4059,7 +4053,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int flag_bits;
 	int temp_argc;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char *temp_argv[8];
 	DOUBLE_LIST list_seq;
 	const char *estring, *imap_reply_str;
@@ -4198,8 +4192,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	int i, j, num;
 	unsigned long uidvalidity;
-	int string_length;
-	int string_length1;
+	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
 	DOUBLE_LIST list_seq;
@@ -4357,7 +4350,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int result;
 	int buff_len;
-	int string_length;
+	size_t string_length = 0;
 	char buff[256*1024];
 	const char *estring, *imap_reply_str;
 	
@@ -4446,7 +4439,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	BOOL b_detail;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char* tmp_argv[128];
 	DOUBLE_LIST list_seq;
 	DOUBLE_LIST list_data;
@@ -4573,7 +4566,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int temp_argc;
 	char buff[1024];
 	char *temp_argv[8];
-	int string_length;
+	size_t string_length = 0;
 	DOUBLE_LIST list_seq;
 	const char *estring, *imap_reply_str;
 	SEQUENCE_NODE sequence_nodes[1024];
@@ -4711,8 +4704,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	int i, j, num;
 	unsigned long uidvalidity;
-	int string_length;
-	int string_length1;
+	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
 	DOUBLE_LIST list_seq;
@@ -4869,7 +4861,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	BOOL b_deleted;
 	char buff[1024];
-	int string_length;
+	size_t string_length = 0;
 	char temp_path[256];
     DOUBLE_LIST list_seq;
 	SINGLE_LIST temp_list;
@@ -5048,7 +5040,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	char temp_path[256];
 	char temp_file[256];
 	char prev_selected[128];
-	int string_length;
+	size_t string_length = 0;
 	SINGLE_LIST temp_list;
 	const char *estring, *imap_reply_str;
 	

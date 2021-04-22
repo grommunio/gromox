@@ -302,7 +302,7 @@ static int resource_parse_smtp_line(char* dest, char* src_str, int len)
 
 }
 
-char* resource_get_smtp_code(int code_type, int n, int *len)
+const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_t *len)
 {
     SMTP_ERROR_CODE *pitem = NULL;
     char *ret_ptr = NULL;
