@@ -276,10 +276,10 @@ struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext)
 static VCONN_REF http_parser_get_vconnection(const char *host,
     int port, const char *conn_cookie)
 {
-	char tmp_buff[256];
+	char tmp_buff[384];
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	
-	snprintf(tmp_buff, 256, "%s:%d:%s", conn_cookie, port, host);
+	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s:%d:%s", conn_cookie, port, host);
 	HX_strlower(tmp_buff);
 	std::unique_lock vhold(g_vconnection_lock);
 	auto it = g_vconnection_hash.find(tmp_buff);

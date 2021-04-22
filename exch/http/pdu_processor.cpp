@@ -69,7 +69,7 @@ struct ASYNC_NODE {
 	uint32_t async_id;
 	DCERPC_CALL *pcall;
 	NDR_STACK_ROOT* pstack_root;
-	char vconn_host[128];
+	char vconn_host[256];
 	int vconn_port;
 	char vconn_cookie[64];
 };
