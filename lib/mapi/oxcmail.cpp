@@ -7240,7 +7240,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		if (NULL != piline) {
 			pvalue = deconst(piline->get_first_subvalue());
 			if (NULL != pvalue) {
-				strncpy(tmp_method, static_cast<char *>(pvalue), 32);
+				HX_strlcpy(tmp_method, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_method));
 			}
 		}
 		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))

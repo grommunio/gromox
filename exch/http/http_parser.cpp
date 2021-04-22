@@ -1024,7 +1024,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 			*ptoken = '\0';
 			ptoken++;
 			HX_strlcpy(pcontext->username, tmp_buff1, GX_ARRAY_SIZE(pcontext->username));
-			strncpy(pcontext->password, ptoken, 128);
+			HX_strlcpy(pcontext->password, ptoken, GX_ARRAY_SIZE(pcontext->password));
 			auto ret = htp_auth(pcontext);
 			if (ret != X_RUNOFF)
 				return ret;

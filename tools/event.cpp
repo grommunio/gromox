@@ -450,7 +450,7 @@ static void *ev_enqwork(void *param)
 					write(penqueue->sockd, "FALSE\r\n", 7);
 					continue;
 				}
-				strncpy(phost->res_id, penqueue->line + 7, 128);
+				HX_strlcpy(phost->res_id, penqueue->line + 7, GX_ARRAY_SIZE(phost->res_id));
 			} else {
 				phost = &*host_it;
 			}

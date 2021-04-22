@@ -1600,7 +1600,7 @@ static int mjson_convert_address(char *address, const char *charset,
 				temp_address, &temp_len)) {
 				email_charset = encode_string.charset;
 			} else {
-				strncpy(temp_address, address, 1024);
+				HX_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 			}
 		} else if (0 == strcasecmp(encode_string.encoding,
 			"quoted-printable") && 0 != strcasecmp(
@@ -1609,10 +1609,10 @@ static int mjson_convert_address(char *address, const char *charset,
 				strlen(encode_string.title));
 			email_charset = encode_string.charset;
 		} else {
-			strncpy(temp_address, address, 1024);
+			HX_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 		}
 	} else {
-		strncpy(temp_address, address, 1024);
+		HX_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 	}
 	
 	parse_mime_addr(&email_addr, temp_address);

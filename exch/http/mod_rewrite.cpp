@@ -64,7 +64,7 @@ static BOOL mod_rewrite_rreplace(char *buf,
 		return FALSE;
 	}
 	if ('\\' == rp[0] && '0' == rp[1]) {
-		strncpy(buf, rp + 2, size);
+		HX_strlcpy(buf, rp + 2, size);
 		return TRUE;
 	}
 	HX_strlcpy(original_buf, buf, GX_ARRAY_SIZE(original_buf));

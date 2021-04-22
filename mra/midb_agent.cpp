@@ -2308,7 +2308,7 @@ static int fetch_simple(const char *path, const char *folder,
 								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
-								strncpy(pitem->mid, temp_line, sizeof(pitem->mid));
+								HX_strlcpy(pitem->mid, temp_line, GX_ARRAY_SIZE(pitem->mid));
 								pitem->flag_bits = 0;
 								if (NULL != strchr(pspace1, 'A')) {
 									pitem->flag_bits |= FLAG_ANSWERED;
@@ -2722,7 +2722,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 									pitem->uid = uid;
 									pitem->id = atoi(temp_line) + 1;
-									strncpy(pitem->mid, pspace, sizeof(pitem->mid));
+									HX_strlcpy(pitem->mid, pspace, GX_ARRAY_SIZE(pitem->mid));
 									pitem->flag_bits = 0;
 									if (NULL != strchr(pspace2, 'A')) {
 										pitem->flag_bits |= FLAG_ANSWERED;
