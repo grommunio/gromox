@@ -80,7 +80,7 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	}
 	last_pos = 0;
 	for (i=1,offset=0; i<=10&&offset<size; i++) {
-		if (pmatch[i].rm_so < 0 || pmatch[i].rm_eo < 0 || 10 == i) {
+		if (i == 10 || pmatch[i].rm_so < 0 || pmatch[i].rm_eo < 0) {
 			len = strlen(original_buf + last_pos);
 			if (offset + len >= size) {
 				break;
