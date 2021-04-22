@@ -4662,14 +4662,26 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		zarafa_server_put_user_info(pinfo);
 		return gxerr_to_hresult(err);
 	}
-	tmp_proptags.count = 1;
+	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
+	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
+	proptag_buff[2] = PROP_TAG_MESSAGESIZEEXTENDED;
 	if (FALSE == store_object_get_properties(
 		pstore, &tmp_proptags, &tmp_propvals)) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+
+	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
+	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	/* Sendquota is in KiB, storesize in bytes */
+	if (sendquota != nullptr && storesize != nullptr &&
+	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize) {
+		zarafa_server_put_user_info(pinfo);
+		return ecQuotaExceeded;
+	}
+
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE);
 	ssize_t max_length = -1;

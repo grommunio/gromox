@@ -297,13 +297,23 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	
-	tmp_proptags.count = 1;
+	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
+	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
+	proptag_buff[2] = PROP_TAG_MESSAGESIZEEXTENDED;
 	if (FALSE == logon_object_get_properties(
 		plogon, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
+
+	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
+	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	/* Sendquota is in KiB, storesize in bytes */
+	if (sendquota != nullptr && storesize != nullptr &&
+	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
+		return ecQuotaExceeded;
+
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE);
 	max_length = -1;
