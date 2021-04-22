@@ -248,7 +248,8 @@ static void *midcp_thrwork(void *param)
 				if(argc < 2) {
 					write(pconnection->sockd, "FALSE 1\r\n", 9);
 					offset -= i + 2;
-					memmove(buffer, buffer + i + 2, offset);
+					if (offset >= 0)
+						memmove(buffer, buffer + i + 2, offset);
 					break;	
 				}
 				
