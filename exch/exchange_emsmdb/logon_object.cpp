@@ -558,30 +558,14 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if mail address of public folder exists. */
 	}
-	pproptags->pproptag[pproptags->count] =
-			PROP_TAG_DELETEDASSOCMESSAGESIZE;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-	PROP_TAG_DELETEDASSOCMESSAGESIZEEXTENDED;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-			PROP_TAG_DELETEDASSOCMSGCOUNT;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_DELETEDMESSAGESIZE;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-		PROP_TAG_DELETEDMESSAGESIZEEXTENDED;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_DELETEDMSGCOUNT;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-		PROP_TAG_DELETEDNORMALMESSAGESIZE;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-		PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_ASSOC_MESSAGE_SIZE;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_ASSOC_MSG_COUNT;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_MESSAGE_SIZE;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_MESSAGE_SIZE_EXTENDED;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_MSG_COUNT;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE;
+	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED;
 	pproptags->pproptag[pproptags->count] =
 			PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->count ++;
@@ -620,14 +604,14 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_CODEPAGEID:
 	case PROP_TAG_CONTENTCOUNT:
 	case PROP_TAG_DELETEAFTERSUBMIT:
-	case PROP_TAG_DELETEDASSOCMESSAGESIZE:
-	case PROP_TAG_DELETEDASSOCMESSAGESIZEEXTENDED:
-	case PROP_TAG_DELETEDASSOCMSGCOUNT:
-	case PROP_TAG_DELETEDMESSAGESIZE:
-	case PROP_TAG_DELETEDMESSAGESIZEEXTENDED:
-	case PROP_TAG_DELETEDMSGCOUNT:
-	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
-	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
+	case PR_DELETED_ASSOC_MESSAGE_SIZE:
+	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
+	case PR_DELETED_ASSOC_MSG_COUNT:
+	case PR_DELETED_MESSAGE_SIZE:
+	case PR_DELETED_MESSAGE_SIZE_EXTENDED:
+	case PR_DELETED_MSG_COUNT:
+	case PR_DELETED_NORMAL_MESSAGE_SIZE:
+	case PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A:
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
@@ -739,14 +723,14 @@ static BOOL logon_object_get_calculated_property(
 		*ppvalue = &pinfo->cpid;
 		return TRUE;
 	}
-	case PROP_TAG_DELETEDASSOCMESSAGESIZE:
-	case PROP_TAG_DELETEDASSOCMESSAGESIZEEXTENDED:
-	case PROP_TAG_DELETEDASSOCMSGCOUNT:
-	case PROP_TAG_DELETEDMESSAGESIZE:
-	case PROP_TAG_DELETEDMESSAGESIZEEXTENDED:
-	case PROP_TAG_DELETEDMSGCOUNT:
-	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
-	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
+	case PR_DELETED_ASSOC_MESSAGE_SIZE:
+	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
+	case PR_DELETED_ASSOC_MSG_COUNT:
+	case PR_DELETED_MESSAGE_SIZE:
+	case PR_DELETED_MESSAGE_SIZE_EXTENDED:
+	case PR_DELETED_MSG_COUNT:
+	case PR_DELETED_NORMAL_MESSAGE_SIZE:
+	case PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED:
 		*ppvalue = deconst(&tmp_ll);
 		return TRUE;
 	case PR_EMAIL_ADDRESS:

@@ -939,7 +939,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			if (PROP_TAG_HASRULES == proptags.pproptag[j] ||
 				PROP_TAG_CHANGENUMBER == proptags.pproptag[j] ||
 				PROP_TAG_LOCALCOMMITTIME == proptags.pproptag[j] ||
-				PROP_TAG_DELETEDCOUNTTOTAL == proptags.pproptag[j] ||
+			    proptags.pproptag[j] == PR_DELETED_COUNT_TOTAL ||
 				PROP_TAG_NORMALMESSAGESIZE == proptags.pproptag[j] ||
 				PROP_TAG_LOCALCOMMITTIMEMAX == proptags.pproptag[j] ||
 				PROP_TAG_HIERARCHYCHANGENUMBER == proptags.pproptag[j]) {

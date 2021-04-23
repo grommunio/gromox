@@ -5539,7 +5539,7 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	sprintf(sql_string, "UPDATE folder_properties"
 		" SET propval=propval+%u WHERE proptag=%u"
 		" AND folder_id=%llu", del_count,
-		PROP_TAG_DELETEDCOUNTTOTAL, LLU(folder_id));
+	        PR_DELETED_COUNT_TOTAL, LLU(folder_id));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;

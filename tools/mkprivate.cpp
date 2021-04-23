@@ -119,13 +119,13 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDCOUNTTOTAL);
+	sqlite3_bind_int64(pstmt, 1, PR_DELETED_COUNT_TOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDFOLDERTOTAL);
+	sqlite3_bind_int64(pstmt, 1, PR_DELETED_FOLDER_COUNT);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
@@ -281,13 +281,13 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDCOUNTTOTAL);
+	sqlite3_bind_int64(pstmt, 1, PR_DELETED_COUNT_TOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDFOLDERTOTAL);
+	sqlite3_bind_int64(pstmt, 1, PR_DELETED_FOLDER_COUNT);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;

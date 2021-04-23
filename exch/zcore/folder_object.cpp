@@ -141,9 +141,9 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_CONTENTCOUNT:
 	case PROP_TAG_CONTENTUNREADCOUNT:
 	case PR_CREATION_TIME:
-	case PROP_TAG_DELETEDCOUNTTOTAL:
-	case PROP_TAG_DELETEDFOLDERTOTAL:
-	case PROP_TAG_DELETEDON:
+	case PR_DELETED_COUNT_TOTAL:
+	case PR_DELETED_FOLDER_COUNT:
+	case PR_DELETED_ON:
 	case PR_ENTRYID:
 	case PROP_TAG_FOLDERCHILDCOUNT:
 	case PROP_TAG_FOLDERFLAGS:
@@ -304,7 +304,7 @@ static BOOL folder_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_DELETEDFOLDERTOTAL:
+	case PR_DELETED_FOLDER_COUNT:
 		/* just like exchange 2013, alway return 0 */
 		*ppvalue = deconst(&fake_del);
 		return TRUE;

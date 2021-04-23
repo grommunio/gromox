@@ -651,7 +651,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		common_util_set_property(FOLDER_PROPERTIES_TABLE,
 			folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 		del_cnt = 0;
-		tmp_propval.proptag = PROP_TAG_DELETEDCOUNTTOTAL;
+		tmp_propval.proptag = PR_DELETED_COUNT_TOTAL;
 		tmp_propval.pvalue = &del_cnt;
 		common_util_set_property(FOLDER_PROPERTIES_TABLE,
 			folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -1332,7 +1332,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		pdb, parent_id, fid_val);
 	sprintf(sql_string, "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
-		"proptag=%u", LLU(parent_id), PROP_TAG_DELETEDFOLDERTOTAL);
+	        "proptag=%u", LLU(parent_id), PR_DELETED_FOLDER_COUNT);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1403,7 +1403,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		sprintf(sql_string, "UPDATE folder_properties SET "
 			"propval=propval+%u WHERE folder_id=%llu AND "
 			"proptag=%u", message_count, LLU(fid_val),
-			PROP_TAG_DELETEDCOUNTTOTAL);
+		        PR_DELETED_COUNT_TOTAL);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1414,7 +1414,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		sprintf(sql_string, "UPDATE folder_properties SET "
 			"propval=propval+%u WHERE folder_id=%llu AND "
 			"proptag=%u", folder_count, LLU(fid_val),
-			PROP_TAG_DELETEDFOLDERTOTAL);
+		        PR_DELETED_FOLDER_COUNT);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2175,7 +2175,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		}
 		sprintf(sql_string, "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
-			"proptag=%u", LLU(parent_val), PROP_TAG_DELETEDFOLDERTOTAL);
+		        "proptag=%u", LLU(parent_val), PR_DELETED_FOLDER_COUNT);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
