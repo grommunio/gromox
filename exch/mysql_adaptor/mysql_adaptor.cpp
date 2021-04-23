@@ -159,7 +159,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 {
 	int temp_type;
 	int temp_status;
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -234,7 +234,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 	strcpy(encrypt_passwd, md5_crypt_wrapper(password));
 	cr_hold.unlock();
 
-	char sql_string[1024], temp_name[512];
+	char sql_string[1024], temp_name[UADDR_SIZE*2];
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 	         "username='%s'", encrypt_passwd, temp_name);
@@ -337,7 +337,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	int temp_status;
 	const char *pdomain;
 	char *pat;
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	char encrypt_passwd[40];
 	char virtual_address[UADDR_SIZE];
@@ -464,7 +464,7 @@ BOOL mysql_adaptor_get_username_from_id(int user_id,
 
 BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -510,7 +510,7 @@ BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname)
 {
 	int address_type;
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -542,7 +542,7 @@ BOOL mysql_adaptor_get_user_displayname(
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -564,7 +564,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(
 
 BOOL mysql_adaptor_get_user_lang(const char *username, char *lang)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -588,7 +588,7 @@ BOOL mysql_adaptor_get_user_lang(const char *username, char *lang)
 
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -634,7 +634,7 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 
 BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -658,7 +658,7 @@ BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 
 BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char temp_zone[128];
 	char sql_string[1024];
 	
@@ -674,7 +674,7 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone)
 
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -716,7 +716,7 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 
 BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir)
 {
-	char temp_name[512];
+	char temp_name[UDOM_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(domainname, temp_name);
@@ -781,7 +781,7 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 BOOL mysql_adaptor_get_user_ids(const char *username,
 	int *puser_id, int *pdomain_id, int *paddress_type)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -816,7 +816,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username,
 BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	int *pdomain_id, int *porg_id)
 {
-	char temp_name[512];
+	char temp_name[UDOM_SIZE*2];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(domainname, temp_name);
@@ -1065,7 +1065,7 @@ BOOL mysql_adaptor_check_mlist_include(
 	int domain_id;
 	BOOL b_result;
 	int id, type;
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char *pencode_domain;
 	char temp_account[512];
 	char sql_string[1024];
@@ -1190,8 +1190,7 @@ BOOL mysql_adaptor_check_same_org2(
 {
 	int org_id1;
 	int org_id2;
-	char temp_name1[512];
-	char temp_name2[512];
+	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
 	char sql_string[1024];
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);
@@ -1220,7 +1219,7 @@ BOOL mysql_adaptor_check_same_org2(
 
 BOOL mysql_adaptor_check_user(const char *username, char *path)
 {
-	char temp_name[640];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1536];
 
 	if (path != nullptr)
@@ -1265,7 +1264,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 	int class_id;
 	BOOL b_chkintl;
 	char *pencode_domain;
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 
 	*presult = MLIST_RESULT_NONE;
@@ -1658,7 +1657,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 BOOL mysql_adaptor_get_user_info(const char *username,
     char *maildir, char *lang, char *timezone)
 {
-	char temp_name[512];
+	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
 
 	mysql_adaptor_encode_squote(username, temp_name);
