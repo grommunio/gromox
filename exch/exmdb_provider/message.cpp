@@ -1449,7 +1449,7 @@ BOOL exmdb_server_mark_modified(const char *dir, uint64_t message_id)
 		return TRUE;
 	}
 	*pmessage_flags &= ~MESSAGE_FLAG_UNMODIFIED;
-	propval.proptag = PROP_TAG_MESSAGEFLAGS;
+	propval.proptag = PR_MESSAGE_FLAGS;
 	propval.pvalue = pmessage_flags;
 	if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 		mid_val, 0, pdb->psqlite, &propval, &b_result)) {
@@ -1481,7 +1481,7 @@ BOOL exmdb_server_try_mark_submit(const char *dir,
 	}
 	*pmessage_flags |= MESSAGE_FLAG_SUBMITTED;
 	*pmessage_flags &= ~MESSAGE_FLAG_UNSENT;
-	propval.proptag = PROP_TAG_MESSAGEFLAGS;
+	propval.proptag = PR_MESSAGE_FLAGS;
 	propval.pvalue = pmessage_flags;
 	if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 		mid_val, 0, pdb->psqlite, &propval, pb_marked)) {
@@ -1517,7 +1517,7 @@ BOOL exmdb_server_clear_submit(const char *dir,
 		*pmessage_flags &= ~MESSAGE_FLAG_UNSENT;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	propval.proptag = PROP_TAG_MESSAGEFLAGS;
+	propval.proptag = PR_MESSAGE_FLAGS;
 	propval.pvalue = pmessage_flags;
 	if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 		mid_val, 0, pdb->psqlite, &propval, &b_result)) {
@@ -1884,9 +1884,8 @@ static BOOL message_rectify_message(const char *account,
 	vc->pvalue = deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
 	++vc;
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS)) {
-		vc->proptag = PROP_TAG_MESSAGEFLAGS;
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS) == nullptr) {
+		vc->proptag = PR_MESSAGE_FLAGS;
 		vc->pvalue = deconst(&fake_flags);
 		pmsgctnt1->proplist.count ++;
 		++vc;

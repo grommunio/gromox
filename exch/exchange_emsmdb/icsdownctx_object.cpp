@@ -1220,8 +1220,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 				&pembedded->proplist, PROP_TAG_CHANGEKEY);
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
-			pvalue = common_util_get_propvals(
-				&pembedded->proplist, PROP_TAG_MESSAGEFLAGS);
+			pvalue = common_util_get_propvals(&pembedded->proplist, PR_MESSAGE_FLAGS);
 			tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 			tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYREAD) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
@@ -1366,8 +1365,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			&pmsgctnt->proplist, PROP_TAG_CHANGEKEY);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
+		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 		tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 		tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYREAD) ?
 		                     deconst(&fake_true) : deconst(&fake_false);

@@ -2483,12 +2483,10 @@ void db_engine_notify_new_mail(db_item_ptr &pdb,
 		datagram.db_notify.pdata = pnew_mail;
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id,
-			0, pdb->psqlite, PROP_TAG_MESSAGEFLAGS,
-			&pvalue) || NULL == pvalue) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, pdb->psqlite, PR_MESSAGE_FLAGS,
+		    &pvalue) || pvalue == nullptr)
 			return;
-		}
 		pnew_mail->message_flags = *(uint32_t*)pvalue;
 		if (FALSE == common_util_get_property(
 			MESSAGE_PROPERTIES_TABLE, message_id,

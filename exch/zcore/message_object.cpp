@@ -236,8 +236,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue  = deconst("");
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_MESSAGEFLAGS;
+	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -571,9 +570,9 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		proptag_array_free(pindices);
 		return GXERR_CALL_FAILED;
 	}
-	/* always mark PROP_TAG_MESSAGEFLAGS as changed */
+	/* always mark PR_MESSAGE_FLAGS as changed */
 	if (!proptag_array_append(pmessage->pchanged_proptags,
-	    PROP_TAG_MESSAGEFLAGS)) {
+	    PR_MESSAGE_FLAGS)) {
 		proptag_array_free(pindices);
 		proptag_array_free(pungroup_proptags);
 		return GXERR_CALL_FAILED;
@@ -830,17 +829,14 @@ BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
 	if (0 == pmessage->message_id) {
 		return FALSE;
 	}
-	if (FALSE == exmdb_client_get_instance_property(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, PROP_TAG_MESSAGEFLAGS,
-		(void**)&pmessage_flags)) {
+	if (!exmdb_client_get_instance_property(store_object_get_dir(pmessage->pstore),
+	    pmessage->instance_id, PR_MESSAGE_FLAGS, reinterpret_cast<void **>(&pmessage_flags)))
 		return FALSE;	
-	}
 	if (NULL == pmessage_flags) {
 		return TRUE;
 	}
 	*pmessage_flags &= ~MESSAGE_FLAG_UNSENT;
-	tmp_propval.proptag = PROP_TAG_MESSAGEFLAGS;
+	tmp_propval.proptag = PR_MESSAGE_FLAGS;
 	tmp_propval.pvalue = pmessage_flags;
 	return exmdb_client_set_instance_property(
 		store_object_get_dir(pmessage->pstore),
@@ -1181,8 +1177,7 @@ static BOOL message_object_set_properties_internal(
 					problems.count ++;
 					continue;
 				}
-			} else if (PROP_TAG_MESSAGEFLAGS ==
-				ppropvals->ppropval[i].proptag) {
+			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
 				tmp_propvals1.count = 3;
 				tmp_propvals1.ppropval = propval_buff;
 				propval_buff[0].proptag = PROP_TAG_READ;
@@ -1528,14 +1523,13 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 			    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED))
 				return FALSE;
 		}
-		if (FALSE == exmdb_client_get_instance_property(
-			dir, pmessage->instance_id, PROP_TAG_MESSAGEFLAGS,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_instance_property(dir,
+		    pmessage->instance_id, PR_MESSAGE_FLAGS,
+		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		}
 		if (*(uint32_t*)pvalue & MESSAGE_FLAG_UNMODIFIED) {
 			*(uint32_t*)pvalue &= ~MESSAGE_FLAG_UNMODIFIED;
-			propval.proptag = PROP_TAG_MESSAGEFLAGS;
+			propval.proptag = PR_MESSAGE_FLAGS;
 			propval.pvalue = pvalue;
 			if (FALSE == exmdb_client_set_instance_property(
 				dir, pmessage->instance_id, &propval, &result)) {

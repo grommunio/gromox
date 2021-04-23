@@ -2194,8 +2194,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			continue;
 		}
 		message_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_MESSAGEFLAGS);
+		pvalue = common_util_get_propvals(rows.pparray[i], PR_MESSAGE_FLAGS);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -3381,7 +3380,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		}
 	}
 	if (0 != b_unsent) {
-		propval.proptag = PROP_TAG_MESSAGEFLAGS;
+		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = &tmp_flags;
 		tmp_flags = MESSAGE_FLAG_UNSENT;
 		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -3675,7 +3674,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
 	}
 	if (0 != b_unsent) {
-		propval.proptag = PROP_TAG_MESSAGEFLAGS;
+		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = &tmp_flags;
 		tmp_flags = MESSAGE_FLAG_UNSENT;
 		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
@@ -5049,7 +5048,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'U')) {
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PROP_TAG_MESSAGEFLAGS;
+		tmp_proptag = PR_MESSAGE_FLAGS;
 		if (!exmdb_client::get_message_properties(argv[1], NULL,
 			0, rop_util_make_eid_ex(1, message_id), &proptags, &propvals)
 			|| 0 == propvals.count) {
@@ -5139,7 +5138,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'U')) {
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PROP_TAG_MESSAGEFLAGS;
+		tmp_proptag = PR_MESSAGE_FLAGS;
 		if (!exmdb_client::get_message_properties(argv[1], NULL,
 			0, rop_util_make_eid_ex(1, message_id), &proptags, &propvals)
 			|| 0 == propvals.count) {
@@ -5450,7 +5449,7 @@ static void mail_engine_add_notification_message(
 	tmp_proptags[0] = PROP_TAG_MESSAGEDELIVERYTIME;
 	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
 	tmp_proptags[2] = PROP_TAG_MIDSTRING;
-	tmp_proptags[3] = PROP_TAG_MESSAGEFLAGS;
+	tmp_proptags[3] = PR_MESSAGE_FLAGS;
 	if (!exmdb_client::get_message_properties(
 		common_util_get_maildir(), NULL, 0,
 		rop_util_make_eid_ex(1, message_id),
@@ -5470,8 +5469,7 @@ static void mail_engine_add_notification_message(
 	} else {
 		received_time = *(uint64_t*)pvalue;
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_MESSAGEFLAGS);
+	pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		message_flags = 0;
 	} else {
@@ -5894,7 +5892,7 @@ static void mail_engine_modify_notification_message(
 	
 	proptags.count = 3;
 	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PROP_TAG_MESSAGEFLAGS;
+	tmp_proptags[0] = PR_MESSAGE_FLAGS;
 	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
 	tmp_proptags[2] = PROP_TAG_MIDSTRING;
 	if (!exmdb_client::get_message_properties(
@@ -5903,7 +5901,7 @@ static void mail_engine_modify_notification_message(
 		&proptags, &propvals)) {
 		return;	
 	}
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MESSAGEFLAGS);
+	pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		message_flags = 0;
 	} else {

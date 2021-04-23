@@ -3360,7 +3360,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_CHANGENUMBER;
 		tmp_proptags[pproptags->count++] = PROP_TAG_READ;
 		tmp_proptags[pproptags->count++] = PROP_TAG_HASATTACHMENTS;
-		tmp_proptags[pproptags->count++] = PROP_TAG_MESSAGEFLAGS;
+		tmp_proptags[pproptags->count++] = PR_MESSAGE_FLAGS;
 		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYTO;
 		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYCC;
 		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYBCC;

@@ -332,7 +332,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PROP_TAG_MESSAGECLASS;
-		proptag_buff[1] = PROP_TAG_MESSAGEFLAGS;
+		proptag_buff[1] = PR_MESSAGE_FLAGS;
 		if (!exmdb_client::get_message_properties(dir,
 			NULL, 0, message_id, &proptags, &propvals)) {
 			return;
@@ -342,8 +342,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		if (pvalue == nullptr)
 			return;
 		pnew_mail->message_class = static_cast<char *>(pvalue);
-		pvalue = common_util_get_propvals(
-			&propvals, PROP_TAG_MESSAGEFLAGS);
+		pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_FLAGS);
 		if (pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *(uint32_t*)pvalue;
@@ -3893,7 +3892,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	tmp_proptags.count = 6;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MESSAGESIZE;
-	proptag_buff[1] = PROP_TAG_MESSAGEFLAGS;
+	proptag_buff[1] = PR_MESSAGE_FLAGS;
 	proptag_buff[2] = PROP_TAG_DEFERREDSENDTIME;
 	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
 	proptag_buff[4] = PROP_TAG_DEFERREDSENDUNITS;
@@ -3910,8 +3909,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (max_length > 0 && mail_length > static_cast<size_t>(max_length)) {
 		return EC_EXCEEDED_SIZE;
 	}
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_MESSAGEFLAGS);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_FLAGS);
 	if (pvalue == nullptr)
 		return ecError;
 	message_flags = *(uint32_t*)pvalue;
@@ -5016,8 +5014,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	if (NULL != pvalue) {
 		b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? TRUE : false;
 	} else {
-		pvalue = common_util_get_propvals(
-			pproplist, PROP_TAG_MESSAGEFLAGS);
+		pvalue = common_util_get_propvals(pproplist, PR_MESSAGE_FLAGS);
 		b_fai = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_FAI) ?
 		        TRUE : false;
 	}

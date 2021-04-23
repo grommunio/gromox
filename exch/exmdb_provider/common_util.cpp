@@ -684,7 +684,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_CHANGENUMBER;
 		proptags[i++] = PROP_TAG_READ;
 		proptags[i++] = PROP_TAG_HASATTACHMENTS;
-		proptags[i++] = PROP_TAG_MESSAGEFLAGS;
+		proptags[i++] = PR_MESSAGE_FLAGS;
 		proptags[i++] = PROP_TAG_DISPLAYTO;
 		proptags[i++] = PROP_TAG_DISPLAYCC;
 		proptags[i++] = PROP_TAG_DISPLAYBCC;
@@ -706,9 +706,8 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	while (sqlite3_step(pstmt) == SQLITE_ROW && i < GX_ARRAY_SIZE(proptags)) {
 		proptags[i] = sqlite3_column_int64(pstmt, 0);
 		if (MESSAGE_PROPERTIES_TABLE == table_type &&
-			PROP_TAG_MESSAGEFLAGS == proptags[i]) {
+		    proptags[i] == PR_MESSAGE_FLAGS)
 			continue;
-		}
 		if (MESSAGE_PROPERTIES_TABLE == table_type && FALSE == b_subject) {
 			if ((proptags[i] == PROP_TAG_NORMALIZEDSUBJECT ||
 			    proptags[i] == PROP_TAG_SUBJECTPREFIX) &&
@@ -1452,7 +1451,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 		pstmt = own_stmt;
 	}
 	sqlite3_bind_int64(pstmt, 1, message_id);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_MESSAGEFLAGS);
+	sqlite3_bind_int64(pstmt, 2, PR_MESSAGE_FLAGS);
 	uint32_t message_flags = sqlite3_step(pstmt) == SQLITE_ROW ?
 	                         sqlite3_column_int64(pstmt, 0) : 0;
 	message_flags &= ~MESSAGE_FLAG_READ;
@@ -2124,7 +2123,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 			return GP_ERR;
 		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, id);
 		return GP_ADV;
-	case PROP_TAG_MESSAGEFLAGS:
+	case PR_MESSAGE_FLAGS:
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
@@ -2728,12 +2727,12 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		sprintf(sql_string, "UPDATE message_properties "
 			"SET propval=propval|%u WHERE message_id=%llu"
 			" AND proptag=%u", MESSAGE_FLAG_EVERREAD,
-			LLU(message_id), PROP_TAG_MESSAGEFLAGS);
+		        LLU(message_id), PR_MESSAGE_FLAGS);
 	} else {
 		sprintf(sql_string, "UPDATE message_properties "
 			"SET propval=propval&(~%u) WHERE message_id=%llu"
 			" AND proptag=%u", MESSAGE_FLAG_EVERREAD,
-			LLU(message_id), PROP_TAG_MESSAGEFLAGS);
+		        LLU(message_id), PR_MESSAGE_FLAGS);
 	}
 	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
 	if (TRUE == exmdb_server_check_private()) {
@@ -3226,7 +3225,7 @@ BOOL common_util_set_properties(int table_type,
 				common_util_set_message_read(psqlite, id,
 					*(uint8_t*)ppropvals->ppropval[i].pvalue);
 				continue;
-			case PROP_TAG_MESSAGEFLAGS:
+			case PR_MESSAGE_FLAGS:
 				/* XXX: Why no SQL update? */
 				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
 											~MESSAGE_FLAG_READ;

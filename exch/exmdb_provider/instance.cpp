@@ -1978,8 +1978,7 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 	TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = &pmsgctnt->proplist;
-	pvalue = tpropval_array_get_propval(
-		pproplist, PROP_TAG_MESSAGEFLAGS);
+	pvalue = tpropval_array_get_propval(pproplist, PR_MESSAGE_FLAGS);
 	uint32_t message_flags = pvalue == nullptr ? 0 : *static_cast<uint32_t *>(pvalue);
 	message_flags &= ~MESSAGE_FLAG_READ;
 	message_flags &= ~MESSAGE_FLAG_HASATTACH;
@@ -2318,7 +2317,7 @@ BOOL exmdb_server_get_instance_properties(
 	}
 	for (i=0; i<pproptags->count; i++) {
 		auto &vc = ppropvals->ppropval[ppropvals->count];
-		if (PROP_TAG_MESSAGEFLAGS == pproptags->pproptag[i]) {
+		if (pproptags->pproptag[i] == PR_MESSAGE_FLAGS) {
 			vc.proptag = pproptags->pproptag[i];
 			vc.pvalue = cu_alloc<uint32_t>();
 			if (vc.pvalue == nullptr)
@@ -2649,7 +2648,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROP_TAG_READ:
 				if (0 != *(uint8_t*)pproperties->ppropval[i].pvalue) {
 					pvalue = tpropval_array_get_propval(
-						&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
+					         &pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 					if (NULL != pvalue) {
 						*(uint32_t*)pvalue |= MESSAGE_FLAG_EVERREAD;
 					}
@@ -2659,7 +2658,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				/* PidTagMessageStatus can only be
 					set by RopSetMessageStatus */
 				continue;
-			case PROP_TAG_MESSAGEFLAGS:
+			case PR_MESSAGE_FLAGS:
 				if (FALSE == pinstance->b_new) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =

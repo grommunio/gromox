@@ -320,7 +320,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
-		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_MESSAGEFLAGS);
+		sqlite3_bind_int64(pstmt1, 2, PR_MESSAGE_FLAGS);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			message_flags = sqlite3_column_int64(pstmt1, 0);
 			message_flags &= ~MESSAGE_FLAG_READ;
@@ -332,7 +332,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			if (0 != sqlite3_column_int64(pstmt, 1)) {
 				message_flags |= MESSAGE_FLAG_READ;
 			}
-			pv->proptag = PROP_TAG_MESSAGEFLAGS;
+			pv->proptag = PR_MESSAGE_FLAGS;
 			pv->pvalue = cu_alloc<uint32_t>();
 			if (pv->pvalue == nullptr) {
 				pstmt.finalize();

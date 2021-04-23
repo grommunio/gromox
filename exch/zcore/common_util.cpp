@@ -1937,8 +1937,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		return FALSE;
 	}

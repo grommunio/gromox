@@ -316,7 +316,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	tmp_proptags.count = (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MESSAGESIZE;
-	proptag_buff[1] = PROP_TAG_MESSAGEFLAGS;
+	proptag_buff[1] = PR_MESSAGE_FLAGS;
 	proptag_buff[2] = PROP_TAG_DEFERREDSENDTIME;
 	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
 	proptag_buff[4] = PROP_TAG_DEFERREDSENDUNITS;
@@ -333,8 +333,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	mail_length = *(uint32_t*)pvalue;
 	if (max_length > 0 && mail_length > static_cast<uint32_t>(max_length))
 		return EC_EXCEEDED_SIZE;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_MESSAGEFLAGS);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		return ecError;
 	}
@@ -479,11 +478,10 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	if (FALSE == b_exist) {
 		return ecNotFound;
 	}
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0, message_id,
-		PROP_TAG_MESSAGEFLAGS, (void**)&pmessage_flags)) {
+	if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+	    nullptr, 0, message_id, PR_MESSAGE_FLAGS,
+	    reinterpret_cast<void **>(&pmessage_flags)))
 		return ecError;
-	}
 	if (NULL == pmessage_flags) {
 		return ecError;
 	}
@@ -683,12 +681,10 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	if (TRUE == message_object_check_importing(pmessage)) {
 		return ecAccessDenied;
 	}
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0,
-		message_object_get_id(pmessage),
-		PROP_TAG_MESSAGEFLAGS, &pvalue)) {
+	if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+	    nullptr, 0, message_object_get_id(pmessage), PR_MESSAGE_FLAGS,
+	    &pvalue))
 		return ecError;
-	}
 	if (NULL != pvalue && (*(uint32_t*)pvalue &
 		MESSAGE_FLAG_SUBMITTED)) {
 		return ecAccessDenied;

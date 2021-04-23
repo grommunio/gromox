@@ -1388,7 +1388,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (*bv->pb & FMS_SUBMITTED)
 					tmp_int32 |= MESSAGE_FLAG_SUBMITTED;
 				if (0 != tmp_int32) {
-					propval.proptag = PROP_TAG_MESSAGEFLAGS;
+					propval.proptag = PR_MESSAGE_FLAGS;
 					propval.pvalue = &tmp_int32;
 					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						str_hash_free(phash);
@@ -2363,7 +2363,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_MESSAGESTATUS */
 	if (TRUE == b_embedded) {
 		tmp_byte = 0;
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGEFLAGS);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_FLAGS);
 		if (NULL != pvalue) {
 			if ((*(uint32_t*)pvalue) & MESSAGE_FLAG_UNSENT) {
 				tmp_byte |= FMS_LOCAL;
@@ -2395,8 +2395,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			return FALSE;
 		}
 	}
-	tmp_proptags.pproptag[tmp_proptags.count] =
-							PROP_TAG_MESSAGEFLAGS;
+	tmp_proptags.pproptag[tmp_proptags.count] = PR_MESSAGE_FLAGS;
 	tmp_proptags.count ++;
 	/* ATTRIBUTE_ID_FROM */
 	if (TRUE == b_embedded) {

@@ -2243,8 +2243,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		log_err("W-1287: Failed to get message_flag of mid:0x%llx", LLU(message_id));
 		return FALSE;
