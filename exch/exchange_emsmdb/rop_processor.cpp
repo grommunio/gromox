@@ -119,7 +119,7 @@ static void rop_processor_free_object(void *pobject, int type)
 		delete static_cast<FASTDOWNCTX_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_FASTUPCTX:
-		fastupctx_object_free(static_cast<FASTUPCTX_OBJECT *>(pobject));
+		delete static_cast<FASTUPCTX_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_ICSDOWNCTX:
 		icsdownctx_object_free(static_cast<ICSDOWNCTX_OBJECT *>(pobject));

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
@@ -30,11 +31,13 @@ struct MARKER_NODE {
 
 }
 
-FASTUPCTX_OBJECT* fastupctx_object_create(
+std::unique_ptr<FASTUPCTX_OBJECT> fastupctx_object_create(
 	LOGON_OBJECT *plogon, void *pobject, int root_element)
 {
-	auto pctx = me_alloc<FASTUPCTX_OBJECT>();
-	if (NULL == pctx) {
+	std::unique_ptr<FASTUPCTX_OBJECT> pctx;
+	try {
+		pctx = std::make_unique<FASTUPCTX_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pctx->pobject = pobject;
@@ -42,7 +45,6 @@ FASTUPCTX_OBJECT* fastupctx_object_create(
 	pctx->root_element = root_element;
 	pctx->pstream = ftstream_parser_create(plogon);
 	if (NULL == pctx->pstream) {
-		free(pctx);
 		return NULL;
 	}
 	pctx->pproplist = NULL;
@@ -51,8 +53,6 @@ FASTUPCTX_OBJECT* fastupctx_object_create(
 	case ROOT_ELEMENT_FOLDERCONTENT:
 		pctx->pproplist = tpropval_array_init();
 		if (NULL == pctx->pproplist) {
-			ftstream_parser_free(pctx->pstream);
-			free(pctx);
 			return NULL;
 		}
 		break;
@@ -62,16 +62,15 @@ FASTUPCTX_OBJECT* fastupctx_object_create(
 	case ROOT_ELEMENT_MESSAGELIST:
 		break;
 	default:
-		ftstream_parser_free(pctx->pstream);
-		free(pctx);
 		return NULL;
 	}
 	double_list_init(&pctx->marker_stack);
 	return pctx;
 }
 
-void fastupctx_object_free(FASTUPCTX_OBJECT *pctx)
+FASTUPCTX_OBJECT::~FASTUPCTX_OBJECT()
 {
+	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	ftstream_parser_free(pctx->pstream);
@@ -84,7 +83,6 @@ void fastupctx_object_free(FASTUPCTX_OBJECT *pctx)
 	while ((pnode = double_list_pop_front(&pctx->marker_stack)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->marker_stack);
-	free(pctx);
 }
 
 static uint64_t fastupctx_object_get_last_folder(

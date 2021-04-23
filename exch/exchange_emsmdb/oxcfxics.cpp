@@ -257,7 +257,6 @@ uint32_t rop_fasttransferdestconfigure(
 	int object_type;
 	int root_element;
 	LOGON_OBJECT *plogon;
-	FASTUPCTX_OBJECT *pctx;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -343,16 +342,16 @@ uint32_t rop_fasttransferdestconfigure(
 			return ecQuotaExceeded;
 		}
 	}
-	pctx = fastupctx_object_create(plogon, pobject, root_element);
+	auto pctx = fastupctx_object_create(plogon, pobject, root_element);
 	if (NULL == pctx) {
 		return ecError;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTUPCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_FASTUPCTX, pctx.get());
 	if (hnd < 0) {
-		fastupctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
