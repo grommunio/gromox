@@ -480,7 +480,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			memcpy(ppropval, fldchgs.pfldchgs[i].ppropval,
 				sizeof(TAGGED_PROPVAL)*fldchgs.pfldchgs[i].count);
 			fldchgs.pfldchgs[i].ppropval = ppropval;
-			tmp_propval.proptag = PROP_TAG_IPMDRAFTSENTRYID;
+			tmp_propval.proptag = PR_IPM_DRAFTS_ENTRYID;
 			tmp_propval.pvalue = common_util_to_folder_entryid(
 				pctx->pstream->plogon, rop_util_make_eid_ex(1,
 				PRIVATE_FID_DRAFT));
@@ -488,7 +488,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_IPMCONTACTENTRYID;
+			tmp_propval.proptag = PR_IPM_CONTACT_ENTRYID;
 			tmp_propval.pvalue = common_util_to_folder_entryid(
 				pctx->pstream->plogon, rop_util_make_eid_ex(1,
 				PRIVATE_FID_CONTACTS));
@@ -496,7 +496,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_IPMAPPOINTMENTENTRYID;
+			tmp_propval.proptag = PR_IPM_APPOINTMENT_ENTRYID;
 			tmp_propval.pvalue = common_util_to_folder_entryid(
 				pctx->pstream->plogon, rop_util_make_eid_ex(1,
 				PRIVATE_FID_CALENDAR));
@@ -504,7 +504,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_IPMJOURNALENTRYID;
+			tmp_propval.proptag = PR_IPM_JOURNAL_ENTRYID;
 			tmp_propval.pvalue = common_util_to_folder_entryid(
 				pctx->pstream->plogon, rop_util_make_eid_ex(1,
 				PRIVATE_FID_JOURNAL));
@@ -512,7 +512,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_IPMNOTEENTRYID;
+			tmp_propval.proptag = PR_IPM_NOTE_ENTRYID;
 			tmp_propval.pvalue = common_util_to_folder_entryid(
 				pctx->pstream->plogon, rop_util_make_eid_ex(1,
 				PRIVATE_FID_NOTES));
@@ -520,7 +520,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_IPMTASKENTRYID;
+			tmp_propval.proptag = PR_IPM_TASK_ENTRYID;
 			tmp_propval.pvalue = common_util_to_folder_entryid(
 				pctx->pstream->plogon, rop_util_make_eid_ex(1,
 				PRIVATE_FID_TASKS));

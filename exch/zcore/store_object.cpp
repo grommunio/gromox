@@ -600,13 +600,13 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_VALIDFOLDERMASK:
 	case PROP_TAG_HIERARCHYSERVER:
 	case PROP_TAG_FINDERENTRYID:
-	case PROP_TAG_IPMFAVORITESENTRYID:
-	case PROP_TAG_IPMSUBTREEENTRYID:
-	case PROP_TAG_IPMOUTBOXENTRYID:
-	case PROP_TAG_IPMSENTMAILENTRYID:
-	case PROP_TAG_IPMWASTEBASKETENTRYID:
+	case PR_IPM_FAVORITES_ENTRYID:
+	case PR_IPM_SUBTREE_ENTRYID:
+	case PR_IPM_OUTBOX_ENTRYID:
+	case PR_IPM_SENTMAIL_ENTRYID:
+	case PR_IPM_WASTEBASKET_ENTRYID:
 	case PROP_TGA_SCHEDULEFOLDERENTRYID:
-	case PROP_TAG_IPMPUBLICFOLDERSENTRYID:
+	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 	case PROP_TAG_NONIPMSUBTREEENTRYID:
 	case PROP_TAG_EFORMSREGISTRYENTRYID:
 		return TRUE;
@@ -648,15 +648,9 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 						PROP_TAG_FINDERENTRYID;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_IPMOUTBOXENTRYID;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_IPMSENTMAILENTRYID;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_IPMWASTEBASKETENTRYID;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
 		pproptags->pproptag[pproptags->count] =
 				PROP_TGA_SCHEDULEFOLDERENTRYID;
 		pproptags->count ++;
@@ -692,9 +686,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 						PROP_TAG_HIERARCHYSERVER;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_IPMPUBLICFOLDERSENTRYID;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count] =
 				PROP_TAG_NONIPMSUBTREEENTRYID;
 		pproptags->count ++;
@@ -704,12 +696,8 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if the mail address of a public folder exists. */
 	}
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_IPMFAVORITESENTRYID;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_IPMSUBTREEENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_STOREPROVIDER;
 	pproptags->count ++;
@@ -1199,7 +1187,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_IPMFAVORITESENTRYID:
+	case PR_IPM_FAVORITES_ENTRYID:
 		*ppvalue = common_util_to_folder_entryid(pstore,
 		           rop_util_make_eid_ex(1, store_object_check_private(pstore) ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
@@ -1207,7 +1195,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_IPMSUBTREEENTRYID:
+	case PR_IPM_SUBTREE_ENTRYID:
 		if (TRUE == store_object_check_private(pstore)) {
 			*ppvalue = common_util_to_folder_entryid(pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE));
@@ -1220,7 +1208,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_IPMOUTBOXENTRYID:
+	case PR_IPM_OUTBOX_ENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1230,7 +1218,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_IPMSENTMAILENTRYID:
+	case PR_IPM_SENTMAIL_ENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1240,7 +1228,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_IPMWASTEBASKETENTRYID:
+	case PR_IPM_WASTEBASKET_ENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1270,7 +1258,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_IPMPUBLICFOLDERSENTRYID:
+	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 	case PROP_TAG_NONIPMSUBTREEENTRYID:
 		if (TRUE == store_object_check_private(pstore)) {
 			return FALSE;

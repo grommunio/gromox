@@ -95,42 +95,18 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 		if (pfolder->folder_id == rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) || pfolder->folder_id ==
 			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_IPMDRAFTSENTRYID) < 0) {
-				pproptags->pproptag[pproptags->count] =
-							PROP_TAG_IPMDRAFTSENTRYID;
-				pproptags->count ++;
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_IPMCONTACTENTRYID) < 0) {
-				pproptags->pproptag[pproptags->count] =
-							PROP_TAG_IPMCONTACTENTRYID;
-				pproptags->count ++;
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_IPMAPPOINTMENTENTRYID) < 0) {
-				pproptags->pproptag[pproptags->count] =
-						PROP_TAG_IPMAPPOINTMENTENTRYID;
-				pproptags->count ++;
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_IPMJOURNALENTRYID) < 0) {
-				pproptags->pproptag[pproptags->count] =
-							PROP_TAG_IPMJOURNALENTRYID;
-				pproptags->count ++;
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_IPMNOTEENTRYID) < 0) {
-				pproptags->pproptag[pproptags->count] =
-								PROP_TAG_IPMNOTEENTRYID;
-				pproptags->count ++;
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_IPMTASKENTRYID) < 0) {
-				pproptags->pproptag[pproptags->count] =
-								PROP_TAG_IPMTASKENTRYID;
-				pproptags->count ++;
-			}
+			if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
+			if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
+			if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
+			if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
+			if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
+			if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
 			if (common_util_index_proptags(&tmp_proptags,
 				PROP_TAG_FREEBUSYENTRYIDS) < 0) {
 				pproptags->pproptag[pproptags->count] =
@@ -200,12 +176,12 @@ BOOL folder_object_check_readonly_property(
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_LAST_MODIFICATION_TIME:
 		return TRUE;
-	case PROP_TAG_IPMDRAFTSENTRYID:
-	case PROP_TAG_IPMCONTACTENTRYID:
-	case PROP_TAG_IPMAPPOINTMENTENTRYID:
-	case PROP_TAG_IPMJOURNALENTRYID:
-	case PROP_TAG_IPMNOTEENTRYID:
-	case PROP_TAG_IPMTASKENTRYID:
+	case PR_IPM_DRAFTS_ENTRYID:
+	case PR_IPM_CONTACT_ENTRYID:
+	case PR_IPM_APPOINTMENT_ENTRYID:
+	case PR_IPM_JOURNAL_ENTRYID:
+	case PR_IPM_NOTE_ENTRYID:
+	case PR_IPM_TASK_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
@@ -337,7 +313,7 @@ static BOOL folder_object_get_calculated_property(
 		/* just like exchange 2013, alway return 0 */
 		*ppvalue = deconst(&fake_del);
 		return TRUE;
-	case PROP_TAG_IPMDRAFTSENTRYID:
+	case PR_IPM_DRAFTS_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
@@ -350,7 +326,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
-	case PROP_TAG_IPMCONTACTENTRYID:
+	case PR_IPM_CONTACT_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
@@ -363,7 +339,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
-	case PROP_TAG_IPMAPPOINTMENTENTRYID:
+	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
@@ -376,7 +352,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
-	case PROP_TAG_IPMJOURNALENTRYID:
+	case PR_IPM_JOURNAL_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
@@ -389,7 +365,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
-	case PROP_TAG_IPMNOTEENTRYID:
+	case PR_IPM_NOTE_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
@@ -402,7 +378,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
-	case PROP_TAG_IPMTASKENTRYID:
+	case PR_IPM_TASK_ENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
