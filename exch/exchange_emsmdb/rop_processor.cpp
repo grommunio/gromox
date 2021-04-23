@@ -125,7 +125,7 @@ static void rop_processor_free_object(void *pobject, int type)
 		delete static_cast<ICSDOWNCTX_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_ICSUPCTX:
-		icsupctx_object_free(static_cast<ICSUPCTX_OBJECT *>(pobject));
+		delete static_cast<ICSUPCTX_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_SUBSCRIPTION:
 		subscription_object_free(static_cast<SUBSCRIPTION_OBJECT *>(pobject));

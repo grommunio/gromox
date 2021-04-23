@@ -1,24 +1,24 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include "folder_object.h"
 #include <gromox/mapi_types.hpp>
 #include "ics_state.h"
 #include <gromox/mem_file.hpp>
 
-struct ICSUPCTX_OBJECT {
-	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *pfolder;
-	ICS_STATE *pstate; /* public member */
-	uint32_t state_property;
-	MEM_FILE f_state_stream;
-	BOOL b_started;
-	uint8_t sync_type;
+struct ICSUPCTX_OBJECT final {
+	~ICSUPCTX_OBJECT();
+
+	LOGON_OBJECT *plogon = nullptr;
+	FOLDER_OBJECT *pfolder = nullptr;
+	ICS_STATE *pstate = nullptr; /* public member */
+	uint32_t state_property = 0;
+	MEM_FILE f_state_stream{};
+	BOOL b_started = false;
+	uint8_t sync_type = 0;
 };
 
-ICSUPCTX_OBJECT* icsupctx_object_create(
-	LOGON_OBJECT *plogon, FOLDER_OBJECT *pfolder,
-	uint8_t sync_type);
-void icsupctx_object_free(ICSUPCTX_OBJECT *pctx);
+extern std::unique_ptr<ICSUPCTX_OBJECT> icsupctx_object_create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type);
 uint8_t icsupctx_object_get_sync_type(ICSUPCTX_OBJECT *pctx);
 FOLDER_OBJECT* icsupctx_object_get_parent_object(
 	ICSUPCTX_OBJECT *pctx);

@@ -4,16 +4,14 @@
 #include <gromox/mapi_types.hpp>
 #include "ics_state.h"
 
-struct ICSUPCTX_OBJECT {
-	STORE_OBJECT *pstore;
-	uint64_t folder_id;
-	ICS_STATE *pstate; /* public member */
-	uint8_t sync_type;
+struct ICSUPCTX_OBJECT final {
+	STORE_OBJECT *pstore = nullptr;
+	uint64_t folder_id = 0;
+	ICS_STATE *pstate = nullptr; /* public member */
+	uint8_t sync_type = 0;
 };
 
-ICSUPCTX_OBJECT* icsupctx_object_create(
-	FOLDER_OBJECT *pfolder, uint8_t sync_type);
-void icsupctx_object_free(ICSUPCTX_OBJECT *pctx);
+extern std::unique_ptr<ICSUPCTX_OBJECT> icsupctx_object_create(FOLDER_OBJECT *, uint8_t sync_type);
 BOOL icsupctx_object_upload_state(
 	ICSUPCTX_OBJECT *pctx, const BINARY *pstate);
 BINARY* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx);

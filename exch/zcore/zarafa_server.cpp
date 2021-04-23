@@ -6044,7 +6044,6 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	STORE_OBJECT *pstore;
-	ICSUPCTX_OBJECT *pctx;
 	FOLDER_OBJECT *pfolder;
 	
 	pinfo = zarafa_server_query_session(hsession);
@@ -6070,18 +6069,19 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNullObject;
 	}
-	pctx = icsupctx_object_create(pfolder, SYNC_TYPE_HIERARCHY);
+	auto pctx = icsupctx_object_create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (NULL == pctx) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
 	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hstore, MAPI_ICSUPCTX, pctx);
+	            pinfo->ptree, hstore, MAPI_ICSUPCTX, pctx.get());
 	if (INVALID_HANDLE == *phobject) {
-		icsupctx_object_free(pctx);
+		pctx.reset();
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pctx.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }
@@ -6093,7 +6093,6 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	STORE_OBJECT *pstore;
-	ICSUPCTX_OBJECT *pctx;
 	FOLDER_OBJECT *pfolder;
 	
 	pinfo = zarafa_server_query_session(hsession);
@@ -6118,18 +6117,19 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNullObject;
 	}
-	pctx = icsupctx_object_create(pfolder, SYNC_TYPE_CONTENTS);
+	auto pctx = icsupctx_object_create(pfolder, SYNC_TYPE_CONTENTS);
 	if (NULL == pctx) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
 	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hstore, MAPI_ICSUPCTX, pctx);
+	            pinfo->ptree, hstore, MAPI_ICSUPCTX, pctx.get());
 	if (INVALID_HANDLE == *phobject) {
-		icsupctx_object_free(pctx);
+		pctx.reset();
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pctx.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }

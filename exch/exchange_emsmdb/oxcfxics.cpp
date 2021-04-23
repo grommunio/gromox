@@ -1995,7 +1995,6 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 {
 	int object_type;
 	LOGON_OBJECT *plogon;
-	ICSUPCTX_OBJECT *pctx;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -2010,13 +2009,13 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 		return ecNotSupported;
 	}
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
-	pctx = icsupctx_object_create(plogon, pfolder, sync_type);
+	auto pctx = icsupctx_object_create(plogon, pfolder, sync_type);
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx.get());
 	if (hnd < 0) {
-		icsupctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
