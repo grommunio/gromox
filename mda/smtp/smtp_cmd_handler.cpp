@@ -674,17 +674,17 @@ static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext)
 {
 	for (ssize_t i = 4; i < line_length; ++i) {
-        if (cmd_line[i] != ' ') {
-            /* 501 Syntax error in parameters or arguments */
-			size_t string_length = 0;
-			auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175005, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-			}
-            return FALSE;
-        }
+		if (cmd_line[i] == ' ')
+			continue;
+		/* 501 Syntax error in parameters or arguments */
+		size_t string_length = 0;
+		auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175005, 1, &string_length);
+		if (NULL != pcontext->connection.ssl) {
+			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
+		} else {
+			write(pcontext->connection.sockd, smtp_reply_str, string_length);
+		}
+		return FALSE;
     }
     return TRUE;
 }
