@@ -47,8 +47,8 @@ static BOOL message_object_get_recipient_all_proptags(
 		case PROP_TAG_ADDRESSTYPE:
 		case PR_DISPLAY_NAME:
 		case PR_DISPLAY_NAME_A:
-		case PROP_TAG_EMAILADDRESS:
-		case PROP_TAG_EMAILADDRESS_STRING8:
+		case PR_EMAIL_ADDRESS:
+		case PR_EMAIL_ADDRESS_A:
 		case PR_ENTRYID:
 		case PROP_TAG_INSTANCEKEY:
 		case PROP_TAG_RECIPIENTTYPE:
@@ -891,8 +891,8 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset)
 			case PROP_TAG_ADDRESSTYPE:
 			case PR_DISPLAY_NAME:
 			case PR_DISPLAY_NAME_A:
-			case PROP_TAG_EMAILADDRESS:
-			case PROP_TAG_EMAILADDRESS_STRING8:
+			case PR_EMAIL_ADDRESS:
+			case PR_EMAIL_ADDRESS_A:
 			case PR_ENTRYID:
 			case PROP_TAG_INSTANCEKEY:
 			case PROP_TAG_RECIPIENTTYPE:

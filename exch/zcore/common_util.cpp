@@ -1994,14 +1994,12 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 				return FALSE;	
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = common_util_get_propvals(
-					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
+				pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = common_util_get_propvals(
-					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
+				pvalue = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
 				if (NULL == pvalue) {
 					goto CONVERT_ENTRYID;
 				}

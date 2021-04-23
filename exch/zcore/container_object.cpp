@@ -536,7 +536,7 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_EMAILADDRESS;
+			propval.proptag = PR_EMAIL_ADDRESS;
 			propval.pvalue = username;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -1257,7 +1257,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_OFFICELOCATION,
 		PROP_TAG_ADDRESSTYPE,
 		PROP_TAG_SMTPADDRESS,
-		PROP_TAG_EMAILADDRESS,
+		PR_EMAIL_ADDRESS,
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE,
 		PROP_TAG_ACCOUNT,
 		PROP_TAG_TRANSMITTABLEDISPLAYNAME,

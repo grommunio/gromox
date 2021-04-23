@@ -951,7 +951,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		propval.pvalue  = deconst("SMTP");
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_EMAILADDRESS;
+		propval.proptag = PR_EMAIL_ADDRESS;
 		propval.pvalue = deconst(paddress);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
@@ -3734,11 +3734,9 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 			return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pvalue = tpropval_array_get_propval(
-						prcpt, PROP_TAG_EMAILADDRESS);
+				pvalue = tpropval_array_get_propval(prcpt, PR_EMAIL_ADDRESS);
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = tpropval_array_get_propval(
-						prcpt, PROP_TAG_EMAILADDRESS);
+				pvalue = tpropval_array_get_propval(prcpt, PR_EMAIL_ADDRESS);
 				if (NULL != pvalue) {
 					if (essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 						return TRUE;

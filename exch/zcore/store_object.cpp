@@ -564,7 +564,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_DELETEDMSGCOUNT:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
-	case PROP_TAG_EMAILADDRESS:
+	case PR_EMAIL_ADDRESS:
 	case PR_ENTRYID:
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
@@ -640,8 +640,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-						PROP_TAG_EMAILADDRESS;
+		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
@@ -702,7 +701,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 				PROP_TAG_EFORMSREGISTRYENTRYID;
 		pproptags->count ++;
-		/* TODO: For PROP_TAG_EMAILADDRESS,
+		/* TODO: For PR_EMAIL_ADDRESS,
 		check if the mail address of a public folder exists. */
 	}
 	pproptags->pproptag[pproptags->count] =
@@ -1054,7 +1053,7 @@ static BOOL store_object_get_calculated_property(
 			}
 		}
 		return TRUE;
-	case PROP_TAG_EMAILADDRESS:
+	case PR_EMAIL_ADDRESS:
 		if (TRUE == pstore->b_private) {
 			if (!common_util_username_to_essdn(pstore->account,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))

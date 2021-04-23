@@ -3647,7 +3647,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	}
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (common_util_get_propvals(prcpt_list->pparray[i], PR_ENTRYID) == nullptr &&
-		    common_util_get_propvals(prcpt_list->pparray[i], PROP_TAG_EMAILADDRESS) == nullptr &&
+		    common_util_get_propvals(prcpt_list->pparray[i], PR_EMAIL_ADDRESS) == nullptr &&
 		    common_util_get_propvals(prcpt_list->pparray[i], PROP_TAG_SMTPADDRESS) == nullptr)
 			return ecInvalidParam;
 		prowid = static_cast<uint32_t *>(common_util_get_propvals(
@@ -3673,11 +3673,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			prcpt->ppropval = ppropval;
 			prcpt->count ++;
 			pbin = static_cast<BINARY *>(common_util_get_propvals(prcpt, PR_ENTRYID));
-			if (NULL == pbin || (NULL !=
-				common_util_get_propvals(
-				prcpt, PROP_TAG_EMAILADDRESS) &&
-				NULL != common_util_get_propvals(
-				prcpt, PROP_TAG_ADDRESSTYPE) &&
+			if (pbin == nullptr ||
+			    (common_util_get_propvals(prcpt, PR_EMAIL_ADDRESS) != nullptr &&
+			    common_util_get_propvals(prcpt, PROP_TAG_ADDRESSTYPE) != nullptr &&
 			    common_util_get_propvals(prcpt, PR_DISPLAY_NAME) != nullptr))
 				continue;
 			ext_buffer_pull_init(&ext_pull, pbin->pb,
@@ -3711,7 +3709,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
 				tmp_propval.pvalue  = deconst("EX");
 				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PROP_TAG_EMAILADDRESS;
+				tmp_propval.proptag = PR_EMAIL_ADDRESS;
 				tmp_propval.pvalue = common_util_dup(ab_entryid.px500dn);
 				if (tmp_propval.pvalue == nullptr)
 					return ecError;
@@ -3753,7 +3751,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
 				tmp_propval.pvalue  = deconst("SMTP");
 				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PROP_TAG_EMAILADDRESS;
+				tmp_propval.proptag = PR_EMAIL_ADDRESS;
 				tmp_propval.pvalue = common_util_dup(
 						oneoff_entry.pmail_address);
 				if (tmp_propval.pvalue == nullptr)

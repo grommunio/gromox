@@ -123,8 +123,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ADDRESSTYPE_STRING8:
 		pprop->value.pstr = deconst("EX");
 		return ecSuccess;
-	case PROP_TAG_EMAILADDRESS:
-	case PROP_TAG_EMAILADDRESS_STRING8:
+	case PR_EMAIL_ADDRESS:
+	case PR_EMAIL_ADDRESS_A:
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecInvalidObject;
 		if (NULL == pbuff) {
@@ -1896,7 +1896,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	auto &t = pproptags->pproptag;
 	t[z++] = U(PR_DISPLAY_NAME);
 	t[z++] = U(PROP_TAG_ADDRESSTYPE);
-	t[z++] = U(PROP_TAG_EMAILADDRESS);
+	t[z++] = U(PR_EMAIL_ADDRESS);
 	t[z++] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
 	t[z++] = PROP_TAG_OBJECTTYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPE;
@@ -2663,7 +2663,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[10] = U(PROP_TAG_OFFICELOCATION);
 	t[11] = U(PROP_TAG_ADDRESSTYPE);
 	t[12] = U(PROP_TAG_SMTPADDRESS);
-	t[13] = U(PROP_TAG_EMAILADDRESS);
+	t[13] = U(PR_EMAIL_ADDRESS);
 	t[14] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
 	t[15] = U(PROP_TAG_ACCOUNT);
 	t[16] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
@@ -2804,8 +2804,8 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	case PROP_TAG_ADDRESSTYPE_STRING8:
 		pprop->value.pstr = deconst("SMTP");
 		break;
-	case PROP_TAG_EMAILADDRESS:
-	case PROP_TAG_EMAILADDRESS_STRING8:
+	case PR_EMAIL_ADDRESS:
+	case PR_EMAIL_ADDRESS_A:
 		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {

@@ -546,8 +546,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		pproptags->pproptag[pproptags->count] =
 				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-						PROP_TAG_EMAILADDRESS;
+		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
@@ -556,7 +555,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		pproptags->pproptag[pproptags->count] =
 						PROP_TAG_HIERARCHYSERVER;
 		pproptags->count ++;
-		/* TODO: For PROP_TAG_EMAILADDRESS,
+		/* TODO: For PR_EMAIL_ADDRESS,
 		check if mail address of public folder exists. */
 	}
 	pproptags->pproptag[pproptags->count] =
@@ -630,8 +629,8 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_DELETEDMSGCOUNT:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
-	case PROP_TAG_EMAILADDRESS:
-	case PROP_TAG_EMAILADDRESS_STRING8:
+	case PR_EMAIL_ADDRESS:
+	case PR_EMAIL_ADDRESS_A:
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALEID:
@@ -752,8 +751,8 @@ static BOOL logon_object_get_calculated_property(
 	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
 		*ppvalue = deconst(&tmp_ll);
 		return TRUE;
-	case PROP_TAG_EMAILADDRESS:
-	case PROP_TAG_EMAILADDRESS_STRING8:
+	case PR_EMAIL_ADDRESS:
+	case PR_EMAIL_ADDRESS_A:
 		if (TRUE == logon_object_check_private(plogon)) {
 			if (!common_util_username_to_essdn(plogon->account,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))

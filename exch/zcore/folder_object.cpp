@@ -1019,7 +1019,7 @@ static BOOL folder_object_flush_delegates(int fd,
 			case PR_ENTRYID:
 				pentryid = static_cast<BINARY *>(paction->pblock[i].ppropval[j].pvalue);
 				break;
-			case PROP_TAG_EMAILADDRESS:
+			case PR_EMAIL_ADDRESS:
 				paddress = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
 				break;
 			}

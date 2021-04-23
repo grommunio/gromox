@@ -156,7 +156,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE,
 		PROP_TAG_DEFAULTSTORE,
 		PR_DISPLAY_NAME,
-		PROP_TAG_EMAILADDRESS,
+		PR_EMAIL_ADDRESS,
 		PROP_TAG_EXTENDEDRULESIZELIMIT,
 		PROP_TAG_MAILBOXOWNERENTRYID,
 		PROP_TAG_MAILBOXOWNERNAME,
@@ -379,8 +379,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (pvalue == nullptr ||
 			    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
 				continue;
-			pvalue = common_util_get_propvals(
-				pset->pparray[i], PROP_TAG_EMAILADDRESS);
+			pvalue = common_util_get_propvals(pset->pparray[i], PR_EMAIL_ADDRESS);
 			if (NULL == pvalue) {
 				continue;
 			}

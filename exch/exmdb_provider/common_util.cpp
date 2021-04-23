@@ -5675,8 +5675,7 @@ BOOL common_util_recipients_to_list(
 				return FALSE;
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = common_util_get_propvals(
-					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
+				pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
 				if (NULL == pnode->pdata) {
 					goto CONVERT_ENTRYID;
 				}

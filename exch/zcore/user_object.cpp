@@ -61,8 +61,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			PROP_TAG_SMTPADDRESS) >= 0 ||
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ADDRESSTYPE) >= 0 ||
-			common_util_index_proptags(pproptags,
-			PROP_TAG_EMAILADDRESS) >= 0 ||
+		    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
 		    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
@@ -87,8 +86,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			}
 			if ((common_util_index_proptags(pproptags,
 				PROP_TAG_SMTPADDRESS) >= 0 ||
-				common_util_index_proptags(pproptags,
-				PROP_TAG_EMAILADDRESS) >= 0 ||
+			    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
 			    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 				common_util_index_proptags(pproptags,
 				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
@@ -113,11 +111,9 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 					ppropvals->count ++;
 					++vc;
 				}
-				if (common_util_index_proptags(pproptags,
-					PROP_TAG_EMAILADDRESS) >= 0 && TRUE ==
-				    common_util_username_to_essdn(username,
-				    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-					vc->proptag = PROP_TAG_EMAILADDRESS;
+				if (common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 &&
+				    common_util_username_to_essdn(username, tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
+					vc->proptag = PR_EMAIL_ADDRESS;
 					vc->pvalue = common_util_dup(tmp_buff);
 					if (vc->pvalue == nullptr)
 						return FALSE;

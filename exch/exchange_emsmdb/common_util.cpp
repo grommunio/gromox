@@ -1359,7 +1359,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			}
 			prow->pdisplay_type = &display_type;
 			prow->px500dn = static_cast<char *>(common_util_get_propvals(
-			                ppropvals, PROP_TAG_EMAILADDRESS));
+			                ppropvals, PR_EMAIL_ADDRESS));
 			if (NULL == prow->px500dn) {
 				return FALSE;
 			}
@@ -1367,7 +1367,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			prow->flags |= RECIPIENT_ROW_TYPE_SMTP |
 							RECIPIENT_ROW_FLAG_EMAIL;
 			prow->pmail_address = static_cast<char *>(common_util_get_propvals(
-			                      ppropvals, PROP_TAG_EMAILADDRESS));
+			                      ppropvals, PR_EMAIL_ADDRESS));
 			if (NULL == prow->pmail_address) {
 				prow->pmail_address = static_cast<char *>(common_util_get_propvals(
 				                      ppropvals, PROP_TAG_SMTPADDRESS));
@@ -1380,7 +1380,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 					RECIPIENT_ROW_FLAG_OUTOFSTANDARD;
 			prow->paddress_type = static_cast<char *>(pvalue);
 			prow->pmail_address = static_cast<char *>(common_util_get_propvals(
-			                      ppropvals, PROP_TAG_EMAILADDRESS));
+			                      ppropvals, PR_EMAIL_ADDRESS));
 			if (NULL == prow->pmail_address) {
 				return FALSE;
 			}
@@ -1428,7 +1428,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		}
 	}
 	if (NULL != prow->pmail_address) {
-		propval.proptag = PROP_TAG_EMAILADDRESS;
+		propval.proptag = PR_EMAIL_ADDRESS;
 		if (TRUE == b_unicode) {
 			propval.pvalue = prow->pmail_address;
 		} else {
@@ -1454,7 +1454,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		}
 		propval.pvalue = deconst("EX");
 		common_util_set_propvals(ppropvals, &propval);
-		propval.proptag = PROP_TAG_EMAILADDRESS;
+		propval.proptag = PR_EMAIL_ADDRESS;
 		propval.pvalue = prow->px500dn;
 		common_util_set_propvals(ppropvals, &propval);
 		break;
@@ -2306,15 +2306,13 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			memcpy(pnode->pdata, username, tmp_len);
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = common_util_get_propvals(
-					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
+				pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
 				if (NULL == pnode->pdata) {
 					log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU(message_id));
 					return FALSE;
 				}
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = common_util_get_propvals(
-					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
+				pvalue = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
 				if (NULL == pvalue) {
 					goto CONVERT_ENTRYID;
 				}

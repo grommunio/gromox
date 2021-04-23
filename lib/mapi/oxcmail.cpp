@@ -605,7 +605,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			propval.pvalue  = deconst("SMTP");
 			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_EMAILADDRESS;
+			propval.proptag = PR_EMAIL_ADDRESS;
 			propval.pvalue = username;
 			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
@@ -615,7 +615,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			propval.pvalue  = deconst("EX");
 			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_EMAILADDRESS;
+			propval.proptag = PR_EMAIL_ADDRESS;
 			propval.pvalue = essdn;
 			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
@@ -3527,7 +3527,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		propval.pvalue  = deconst("SMTP");
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return false;
-		propval.proptag = PROP_TAG_EMAILADDRESS;
+		propval.proptag = PR_EMAIL_ADDRESS;
 		propval.pvalue = f_info.final_recipient;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return false;
@@ -3537,7 +3537,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		propval.pvalue  = deconst("EX");
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return false;
-		propval.proptag = PROP_TAG_EMAILADDRESS;
+		propval.proptag = PR_EMAIL_ADDRESS;
 		propval.pvalue = essdn;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return false;
@@ -4950,7 +4950,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 		}
 		if (TRUE == oxcmail_get_smtp_address(prcpt, alloc,
 			PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
-		    PROP_TAG_EMAILADDRESS, PR_ENTRYID, username,
+		    PR_EMAIL_ADDRESS, PR_ENTRYID, username,
 		    GX_ARRAY_SIZE(username))) {
 			if (NULL != pdisplay_name) {
 				offset += std::max(0, gx_snprintf(field + offset,
@@ -6190,7 +6190,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 		strcpy(tmp_buff, "rfc822;");
 		if (!oxcmail_get_smtp_address(prcpts->pparray[i], alloc,
 		    PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
-		    PROP_TAG_EMAILADDRESS, PR_ENTRYID, tmp_buff + 7,
+		    PR_EMAIL_ADDRESS, PR_ENTRYID, tmp_buff + 7,
 		    GX_ARRAY_SIZE(tmp_buff) - 7)) {
 			dsn_free(&dsn);
 			return FALSE;
