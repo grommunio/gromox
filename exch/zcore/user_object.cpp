@@ -56,8 +56,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		/* if user is hidden from addressbook tree, we simply
 			return the necessary information to the caller */
 		if (common_util_index_proptags(pproptags, PR_OBJECT_TYPE) >= 0 ||
-			common_util_index_proptags(pproptags,
-			PROP_TAG_SMTPADDRESS) >= 0 ||
+		    common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0 ||
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ADDRESSTYPE) >= 0 ||
 		    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
@@ -82,8 +81,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				ppropvals->count ++;
 				++vc;
 			}
-			if ((common_util_index_proptags(pproptags,
-				PROP_TAG_SMTPADDRESS) >= 0 ||
+			if ((common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0 ||
 			    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
 			    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 				common_util_index_proptags(pproptags,
@@ -91,9 +89,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				== ab_tree_get_minid_type(puser->minid) &&
 			    system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 			    username, GX_ARRAY_SIZE(username))) {
-				if (common_util_index_proptags(pproptags,
-					PROP_TAG_SMTPADDRESS) >= 0) {
-					vc->proptag = PROP_TAG_SMTPADDRESS;
+				if (common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0) {
+					vc->proptag = PR_SMTP_ADDRESS;
 					vc->pvalue = common_util_dup(username);
 					if (vc->pvalue == nullptr)
 						return FALSE;

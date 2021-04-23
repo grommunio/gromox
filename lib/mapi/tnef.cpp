@@ -1535,7 +1535,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				}
 				tpropval_array_remove_propval(pproplist, PR_ENTRYID);
 				psmtp = static_cast<char *>(tpropval_array_get_propval(
-				        pproplist, PROP_TAG_SMTPADDRESS));
+				        pproplist, PR_SMTP_ADDRESS));
 				pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
 				                pproplist, PR_DISPLAY_NAME));
 				if (NULL != psmtp) {
@@ -2248,7 +2248,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		if (NULL == ptnef_proplist->ppropval) {
 			return NULL;
 		}
-		psmtp = static_cast<char *>(tpropval_array_get_propval(pproplist, PROP_TAG_SMTPADDRESS));
+		psmtp = static_cast<char *>(tpropval_array_get_propval(pproplist, PR_SMTP_ADDRESS));
 		pdisplay_name = static_cast<char *>(tpropval_array_get_propval(pproplist, PR_DISPLAY_NAME));
 	}
 	for (i=0; i<pproplist->count; i++) {

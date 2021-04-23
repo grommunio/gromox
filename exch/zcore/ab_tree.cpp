@@ -1792,7 +1792,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_ACCOUNT:
-	case PROP_TAG_SMTPADDRESS:
+	case PR_SMTP_ADDRESS:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		} else if (node_type == NODE_TYPE_PERSON ||

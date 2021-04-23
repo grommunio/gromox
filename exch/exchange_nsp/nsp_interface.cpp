@@ -379,7 +379,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PROP_TAG_ACCOUNT:
 	case PROP_TAG_ACCOUNT_STRING8:
-	case PROP_TAG_SMTPADDRESS:
+	case PR_SMTP_ADDRESS:
 	case PROP_TAG_SMTPADDRESS_STRING8:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
@@ -1927,7 +1927,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PROP_TAG_COMPANYNAME);
 		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
 		t[z++] = U(PROP_TAG_OFFICELOCATION);
-		t[z++] = U(PROP_TAG_SMTPADDRESS);
+		t[z++] = U(PR_SMTP_ADDRESS);
 		t[z++] = U(PROP_TAG_ACCOUNT);
 		t[z++] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
 		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
@@ -1937,7 +1937,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 			t[z++] = PROP_TAG_THUMBNAILPHOTO;
 		break;
 	case NODE_TYPE_MLIST:
-		t[z++] = U(PROP_TAG_SMTPADDRESS);
+		t[z++] = U(PR_SMTP_ADDRESS);
 		t[z++] = U(PROP_TAG_COMPANYNAME);
 		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
 		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
@@ -2662,7 +2662,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[9] = U(PROP_TAG_DEPARTMENTNAME);
 	t[10] = U(PROP_TAG_OFFICELOCATION);
 	t[11] = U(PROP_TAG_ADDRESSTYPE);
-	t[12] = U(PROP_TAG_SMTPADDRESS);
+	t[12] = U(PR_SMTP_ADDRESS);
 	t[13] = U(PR_EMAIL_ADDRESS);
 	t[14] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
 	t[15] = U(PROP_TAG_ACCOUNT);

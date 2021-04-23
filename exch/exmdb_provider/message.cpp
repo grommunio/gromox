@@ -3128,8 +3128,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		if (NULL == (*prcpts->pparray)->ppropval) {
 			return FALSE;
 		}
-		(*prcpts->pparray)->ppropval[0].proptag =
-							PROP_TAG_SMTPADDRESS;
+		(*prcpts->pparray)->ppropval[0].proptag = PR_SMTP_ADDRESS;
 		if (FALSE == common_util_get_property(
 			MESSAGE_PROPERTIES_TABLE, message_id, 0, psqlite,
 			PROP_TAG_SENTREPRESENTINGSMTPADDRESS, &pvalue)) {
@@ -4676,16 +4675,12 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			}
 			switch (*(uint32_t*)pvalue) {
 			case RECIPIENT_TYPE_TO:
-				pvalue = common_util_get_propvals(
-					pmsg->children.prcpts->pparray[i],
-					PROP_TAG_SMTPADDRESS);
+				pvalue = common_util_get_propvals(pmsg->children.prcpts->pparray[i], PR_SMTP_ADDRESS);
 				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
 					b_to_me = TRUE;	
 				break;
 			case RECIPIENT_TYPE_CC:
-				pvalue = common_util_get_propvals(
-					pmsg->children.prcpts->pparray[i],
-					PROP_TAG_SMTPADDRESS);
+				pvalue = common_util_get_propvals(pmsg->children.prcpts->pparray[i], PR_SMTP_ADDRESS);
 				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
 					b_cc_me = TRUE;	
 				break;

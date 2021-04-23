@@ -1370,7 +1370,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			                      ppropvals, PR_EMAIL_ADDRESS));
 			if (NULL == prow->pmail_address) {
 				prow->pmail_address = static_cast<char *>(common_util_get_propvals(
-				                      ppropvals, PROP_TAG_SMTPADDRESS));
+				                      ppropvals, PR_SMTP_ADDRESS));
 				if (NULL == prow->pmail_address) {
 					return FALSE;
 				}
@@ -1480,8 +1480,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		propval.pvalue = common_util_get_propvals(
 			ppropvals, PROP_TAG_RECIPIENTDISPLAYNAME);
 		if (NULL == propval.pvalue) {
-			propval.pvalue = common_util_get_propvals(
-					ppropvals, PROP_TAG_SMTPADDRESS);
+			propval.pvalue = common_util_get_propvals(ppropvals, PR_SMTP_ADDRESS);
 		}
 		if (NULL == propval.pvalue) {
 			propval.pvalue = deconst("Undisclosed-Recipients");
@@ -2278,8 +2277,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			}
 		}
 		*/
-		pnode->pdata = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
+		pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
 		if (NULL != pnode->pdata && '\0' != ((char*)pnode->pdata)[0]) {
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;

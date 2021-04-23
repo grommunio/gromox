@@ -130,8 +130,7 @@ static BOOL container_object_match_contact_message(
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_SMTPADDRESS);
+			pvalue = common_util_get_propvals(ppropvals, PR_SMTP_ADDRESS);
 			if (NULL != pvalue) {
 				if (strcasestr(static_cast<char *>(pvalue),
 				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
@@ -519,7 +518,7 @@ BOOL container_object_load_user_table(
 			if (NULL == ppropvals) {
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_SMTPADDRESS;
+			propval.proptag = PR_SMTP_ADDRESS;
 			propval.pvalue = username;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -1256,7 +1255,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_DEPARTMENTNAME,
 		PROP_TAG_OFFICELOCATION,
 		PROP_TAG_ADDRESSTYPE,
-		PROP_TAG_SMTPADDRESS,
+		PR_SMTP_ADDRESS,
 		PR_EMAIL_ADDRESS,
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE,
 		PROP_TAG_ACCOUNT,

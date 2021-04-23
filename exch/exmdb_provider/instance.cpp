@@ -1942,8 +1942,7 @@ static BOOL instance_get_message_display_recipients(
 			}
 		}
 		if (NULL == pvalue) {
-			pvalue = tpropval_array_get_propval(
-				prcpts->pparray[i],PROP_TAG_SMTPADDRESS);
+			pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_SMTP_ADDRESS);
 		}
 		if (NULL == pvalue) {
 			continue;

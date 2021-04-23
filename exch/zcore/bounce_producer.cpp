@@ -345,8 +345,7 @@ static int bounce_producer_get_rcpts(
 	size_t offset = 0;
 	b_first = FALSE;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		pvalue = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
+		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}

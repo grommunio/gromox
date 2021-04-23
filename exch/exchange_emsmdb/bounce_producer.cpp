@@ -340,7 +340,7 @@ static size_t bounce_producer_get_rcpts(TARRAY_SET *prcpts, char *rcpts)
 	
 	b_first = FALSE;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pvalue = common_util_get_propvals(prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
+		auto pvalue = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}

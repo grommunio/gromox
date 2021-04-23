@@ -3646,7 +3646,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (common_util_get_propvals(prcpt_list->pparray[i], PR_ENTRYID) == nullptr &&
 		    common_util_get_propvals(prcpt_list->pparray[i], PR_EMAIL_ADDRESS) == nullptr &&
-		    common_util_get_propvals(prcpt_list->pparray[i], PROP_TAG_SMTPADDRESS) == nullptr)
+		    common_util_get_propvals(prcpt_list->pparray[i], PR_SMTP_ADDRESS) == nullptr)
 			return ecInvalidParam;
 		prowid = static_cast<uint32_t *>(common_util_get_propvals(
 		         prcpt_list->pparray[i], PROP_TAG_ROWID));
@@ -3712,7 +3712,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				if (tmp_propval.pvalue == nullptr)
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PROP_TAG_SMTPADDRESS;
+				tmp_propval.proptag = PR_SMTP_ADDRESS;
 				if (!common_util_essdn_to_username(ab_entryid.px500dn,
 				    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 					continue;
@@ -3755,7 +3755,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				if (tmp_propval.pvalue == nullptr)
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PROP_TAG_SMTPADDRESS;
+				tmp_propval.proptag = PR_SMTP_ADDRESS;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_DISPLAY_NAME;
 				tmp_propval.pvalue = common_util_dup(

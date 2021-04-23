@@ -2640,8 +2640,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
 					continue;
 			} else {
-				pvalue = common_util_get_propvals(
-					&prow[i].propvals, PROP_TAG_SMTPADDRESS);
+				pvalue = common_util_get_propvals(&prow[i].propvals, PR_SMTP_ADDRESS);
 				if (NULL == pvalue) {
 					continue;
 				}

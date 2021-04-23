@@ -1641,11 +1641,9 @@ static BOOL common_util_get_message_display_recipients(
 		    rcpt_id, cpid, psqlite, PR_DISPLAY_NAME, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
-			if (FALSE == common_util_get_property(
-				RECIPIENT_PROPERTIES_TABLE, rcpt_id, cpid,
-				psqlite, PROP_TAG_SMTPADDRESS, &pvalue)) {
+			if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+			    rcpt_id, cpid, psqlite, PR_SMTP_ADDRESS, &pvalue))
 				return FALSE;	
-			}
 		}
 		if (NULL == pvalue) {
 			continue;
@@ -5645,8 +5643,7 @@ BOOL common_util_recipients_to_list(
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		pnode->pdata = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
+		pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
 		if (NULL != pnode->pdata) {
 			double_list_append_as_tail(plist, pnode);
 			continue;
