@@ -1982,8 +1982,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
-			pvalue = common_util_get_propvals(
-				prcpts->pparray[i], PROP_TAG_ENTRYID);
+			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -2390,7 +2389,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 		PROP_TAG_DISPLAYBCC_STRING8, PROP_TAG_MID,
 		PROP_TAG_MESSAGESIZE, PROP_TAG_MESSAGESIZEEXTENDED,
 		PROP_TAG_HASNAMEDPROPERTIES, PROP_TAG_HASATTACHMENTS,
-		PROP_TAG_ENTRYID, PROP_TAG_FOLDERID, PROP_TAG_OBJECTTYPE,
+		PR_ENTRYID, PROP_TAG_FOLDERID, PROP_TAG_OBJECTTYPE,
 		PROP_TAG_PARENTENTRYID, PROP_TAG_STORERECORDKEY,
 	};
 	for (auto t : tags)
@@ -2449,7 +2448,7 @@ static BOOL common_util_create_folder(
 		PROP_TAG_CONTENTCOUNT, PROP_TAG_CONTENTUNREADCOUNT,
 		PROP_TAG_DELETEDCOUNTTOTAL, PROP_TAG_DELETEDFOLDERTOTAL,
 		PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_INTERNETARTICLENUMBER,
-		PROP_TAG_DISPLAYTYPE, PROP_TAG_DELETEDON, PROP_TAG_ENTRYID,
+		PROP_TAG_DISPLAYTYPE, PROP_TAG_DELETEDON, PR_ENTRYID,
 		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PROP_TAG_FOLDERID,
 		PROP_TAG_FOLDERTYPE, PROP_TAG_HASRULES, PROP_TAG_HIERARCHYCHANGENUMBER,
 		PROP_TAG_LOCALCOMMITTIME, PROP_TAG_LOCALCOMMITTIMEMAX,
@@ -2510,7 +2509,7 @@ static BOOL common_util_create_folder(
 			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;
-			propval_buff[0].proptag = PROP_TAG_ENTRYID;
+			propval_buff[0].proptag = PR_ENTRYID;
 			propval_buff[0].pvalue = pentryid;
 			propval_buff[1].proptag = PROP_TAG_MEMBERID;
 			propval_buff[1].pvalue = &tmp_id;

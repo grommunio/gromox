@@ -1463,10 +1463,9 @@ uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
 {
 	void *pvalue;
 	
-	if (FALSE == container_object_fetch_special_property(
-		SPECIAL_CONTAINER_GAL, PROP_TAG_ENTRYID, &pvalue)) {
+	if (!container_object_fetch_special_property(SPECIAL_CONTAINER_GAL,
+	    PR_ENTRYID, &pvalue))
 		return ecError;
-	}
 	if (pvalue == nullptr)
 		return ecNotFound;
 	pentryid->cb = ((BINARY*)pvalue)->cb;
@@ -2142,7 +2141,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		}
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PROP_TAG_ENTRYID;
+		tmp_proptag = PR_ENTRYID;
 		if (!exmdb_client::query_table(
 			store_object_get_dir(pstore), username,
 			0, table_id, &proptags, 0, row_count,
@@ -2368,7 +2367,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;
-			propval_buff[0].proptag = PROP_TAG_ENTRYID;
+			propval_buff[0].proptag = PR_ENTRYID;
 			propval_buff[0].pvalue = pentryid;
 			propval_buff[1].proptag = PROP_TAG_MEMBERID;
 			propval_buff[1].pvalue = &tmp_id;
@@ -3653,7 +3652,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 		return ecError;
 	}
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
-		if (common_util_get_propvals(prcpt_list->pparray[i], PROP_TAG_ENTRYID) == nullptr &&
+		if (common_util_get_propvals(prcpt_list->pparray[i], PR_ENTRYID) == nullptr &&
 		    common_util_get_propvals(prcpt_list->pparray[i], PROP_TAG_EMAILADDRESS) == nullptr &&
 		    common_util_get_propvals(prcpt_list->pparray[i], PROP_TAG_SMTPADDRESS) == nullptr)
 			return ecInvalidParam;
@@ -3679,7 +3678,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			*(uint32_t*)ppropval[prcpt->count].pvalue = last_rowid;
 			prcpt->ppropval = ppropval;
 			prcpt->count ++;
-			pbin = static_cast<BINARY *>(common_util_get_propvals(prcpt, PROP_TAG_ENTRYID));
+			pbin = static_cast<BINARY *>(common_util_get_propvals(prcpt, PR_ENTRYID));
 			if (NULL == pbin || (NULL !=
 				common_util_get_propvals(
 				prcpt, PROP_TAG_EMAILADDRESS) &&

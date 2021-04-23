@@ -1132,7 +1132,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 				break;
 			}
 		case PROP_TAG_MID:
-		case PROP_TAG_ENTRYID:
+		case PR_ENTRYID:
 		case PROP_TAG_FOLDERID:
 		case PROP_TAG_CODEPAGEID:
 		case PROP_TAG_PARENTFOLDERID:
@@ -2624,7 +2624,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case ID_TAG_HTML:
 			case ID_TAG_RTFCOMPRESSED:
 			case PROP_TAG_MID:
-			case PROP_TAG_ENTRYID:
+			case PR_ENTRYID:
 			case PROP_TAG_FOLDERID:
 			case PROP_TAG_CODEPAGEID:
 			case PROP_TAG_PARENTFOLDERID:

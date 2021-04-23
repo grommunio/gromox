@@ -2290,8 +2290,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
-			pvalue = common_util_get_propvals(
-				prcpts->pparray[i], PROP_TAG_ENTRYID);
+			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);
 			if (NULL == pvalue) {
 				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU(message_id));
 				return FALSE;

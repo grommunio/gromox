@@ -71,7 +71,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ENTRYID;
+	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_OBJECTTYPE;
 	pproptags->count ++;
@@ -174,7 +174,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_DELETEDCOUNTTOTAL:
 	case PROP_TAG_DELETEDFOLDERTOTAL:
 	case PROP_TAG_DELETEDON:
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_FOLDERCHILDCOUNT:
 	case PROP_TAG_FOLDERFLAGS:
 	case PROP_TAG_FOLDERID:
@@ -280,7 +280,7 @@ static BOOL folder_object_get_calculated_property(
 			}
 		}
 		return TRUE;
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_RECORDKEY:
 		*ppvalue = common_util_to_folder_entryid(
 			pfolder->pstore, pfolder->folder_id);
@@ -828,7 +828,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	static const uint32_t proptag_buff[] = {
-		PROP_TAG_ENTRYID,
+		PR_ENTRYID,
 		PROP_TAG_MEMBERRIGHTS
 	};
 	
@@ -856,7 +856,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	for (size_t i = 0; i < permission_set.count; ++i) {
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
 		pentry_id = static_cast<BINARY *>(common_util_get_propvals(
-		            permission_set.pparray[i], PROP_TAG_ENTRYID));
+		            permission_set.pparray[i], PR_ENTRYID));
 		/* ignore the default and anonymous user */
 		if (NULL == pentry_id || 0 == pentry_id->cb) {
 			continue;
@@ -886,7 +886,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
 	static const uint32_t proptag_buff[] = {
-		PROP_TAG_ENTRYID,
+		PR_ENTRYID,
 		PROP_TAG_MEMBERID
 	};
 	
@@ -913,8 +913,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 			size_t j;
 			for (j=0; j<permission_set.count; j++) {
 				pentryid = static_cast<BINARY *>(common_util_get_propvals(
-							permission_set.pparray[j],
-				           PROP_TAG_ENTRYID));
+				           permission_set.pparray[j], PR_ENTRYID));
 				if (NULL != pentryid && pentryid->cb ==
 					pperm_set->prows[i].entryid.cb && 0 ==
 					memcmp(pperm_set->prows[i].entryid.pb,
@@ -954,8 +953,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 			if (NULL == pperm_data[i].propvals.ppropval) {
 				return FALSE;
 			}
-			pperm_data[count].propvals.ppropval[0].proptag =
-											PROP_TAG_ENTRYID;
+			pperm_data[count].propvals.ppropval[0].proptag = PR_ENTRYID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 								&pperm_set->prows[i].entryid;
 			pperm_data[count].propvals.ppropval[1].proptag =
@@ -966,8 +964,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 			size_t j;
 			for (j=0; j<permission_set.count; j++) {
 				pentryid = static_cast<BINARY *>(common_util_get_propvals(
-							permission_set.pparray[j],
-				           PROP_TAG_ENTRYID));
+				           permission_set.pparray[j], PR_ENTRYID));
 				if (NULL != pentryid && pentryid->cb ==
 					pperm_set->prows[i].entryid.cb && 0 ==
 					memcmp(pperm_set->prows[i].entryid.pb,
@@ -1025,7 +1022,7 @@ static BOOL folder_object_flush_delegates(int fd,
 			case PROP_TAG_ADDRESSTYPE:
 				ptype = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
 				break;
-			case PROP_TAG_ENTRYID:
+			case PR_ENTRYID:
 				pentryid = static_cast<BINARY *>(paction->pblock[i].ppropval[j].pvalue);
 				break;
 			case PROP_TAG_EMAILADDRESS:

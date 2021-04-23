@@ -427,7 +427,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			if (NULL == pctx->pmsglst) {
 				if (FALSE == pctx->b_chginfo) {
 					static constexpr uint32_t tags[] = {
-						PROP_TAG_ENTRYID, PROP_TAG_SOURCEKEY,
+						PR_ENTRYID, PROP_TAG_SOURCEKEY,
 						PROP_TAG_CHANGEKEY,
 						PROP_TAG_ORIGINALENTRYID,
 						PROP_TAG_LASTMODIFICATIONTIME,
@@ -439,11 +439,10 @@ static BOOL fastdownctx_object_get_buffer_internal(
 					common_util_remove_propvals(&pmsgctnt->proplist,
 										PROP_TAG_ORIGINALENTRYID);
 					common_util_retag_propvals(&pmsgctnt->proplist,
-						PROP_TAG_ENTRYID, PROP_TAG_ORIGINALENTRYID);
+						PR_ENTRYID, PROP_TAG_ORIGINALENTRYID);
 				}
 			} else {
-				common_util_remove_propvals(
-						&pmsgctnt->proplist, PROP_TAG_ENTRYID);
+				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			}
 			if (FALSE == ftstream_producer_write_message(
 				pctx->pstream, pmsgctnt)) {

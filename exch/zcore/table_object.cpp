@@ -167,7 +167,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PROP_TAG_RESOURCETYPE,
 		PROP_TAG_RECORDKEY,
 		PROP_TAG_INSTANCEKEY,
-		PROP_TAG_ENTRYID,
+		PR_ENTRYID,
 		PROP_TAG_STOREENTRYID,
 		PROP_TAG_USERENTRYID
 	};
@@ -369,14 +369,11 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				pset->count ++;
 			}
 		}
-		if (common_util_index_proptags(pcolumns, PROP_TAG_ENTRYID) < 0) {
+		if (common_util_index_proptags(pcolumns, PR_ENTRYID) < 0)
 			return TRUE;	
-		}
 		for (size_t i = 0; i < pset->count; ++i) {
-			if (NULL != common_util_get_propvals(
-				pset->pparray[i], PROP_TAG_ENTRYID)) {
+			if (common_util_get_propvals(pset->pparray[i], PR_ENTRYID) != nullptr)
 				continue;
-			}
 			pvalue = common_util_get_propvals(
 				pset->pparray[i], PROP_TAG_ADDRESSTYPE);
 			if (pvalue == nullptr ||
@@ -400,8 +397,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			memcpy(pvalue, pset->pparray[i]->ppropval,
 				sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
 			pset->pparray[i]->ppropval = static_cast<TAGGED_PROPVAL *>(pvalue);
-			pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag =
-														PROP_TAG_ENTRYID;
+			pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag = PR_ENTRYID;
 			pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
 																pentryid;
 			pset->pparray[i]->count ++;

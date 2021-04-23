@@ -1533,7 +1533,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						return NULL;
 					}
 				}
-				tpropval_array_remove_propval(pproplist, PROP_TAG_ENTRYID);
+				tpropval_array_remove_propval(pproplist, PR_ENTRYID);
 				psmtp = static_cast<char *>(tpropval_array_get_propval(
 				        pproplist, PROP_TAG_SMTPADDRESS));
 				pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
@@ -1547,7 +1547,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						message_content_free(pmsg);
 						return NULL;
 					}
-					propval.proptag = PROP_TAG_ENTRYID;
+					propval.proptag = PR_ENTRYID;
 					propval.pvalue = &tmp_bin;
 					if (!tpropval_array_set_propval(pproplist, &propval)) {
 						str_hash_free(phash);
@@ -1853,7 +1853,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	tnef_message_to_unicode(cpid, pmsg);
 	tpropval_array_remove_propval(&pmsg->proplist, PROP_TAG_MID);
-	tpropval_array_remove_propval(&pmsg->proplist, PROP_TAG_ENTRYID);
+	tpropval_array_remove_propval(&pmsg->proplist, PR_ENTRYID);
 	tpropval_array_remove_propval(&pmsg->proplist, PROP_TAG_SEARCHKEY);
 	return pmsg;
 }
@@ -2256,10 +2256,8 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 			PROP_ID(pproplist->ppropval[i].proptag);
 		ptnef_proplist->ppropval[ptnef_proplist->count].proptype =
 			PROP_TYPE(pproplist->ppropval[i].proptag);
-		if (NULL != psmtp && PROP_TAG_ENTRYID ==
-			pproplist->ppropval[i].proptag) {
+		if (psmtp != nullptr && pproplist->ppropval[i].proptag == PR_ENTRYID)
 			continue;
-		}
 		if (ptnef_proplist->ppropval[ptnef_proplist->count].propid & 0x8000) {
 			if (FALSE == get_propname(
 				ptnef_proplist->ppropval[ptnef_proplist->count].propid,
@@ -2288,9 +2286,8 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		if (pbin->pv == nullptr)
 			return NULL;
 		memcpy(pbin->pb, tmp_bin.pv, tmp_bin.cb);
-		ptnef_proplist->ppropval[ptnef_proplist->count].propid =
-			PROP_ID(PROP_TAG_ENTRYID);
-		ptnef_proplist->ppropval[ptnef_proplist->count].proptype = PROP_TYPE(PROP_TAG_ENTRYID);
+		ptnef_proplist->ppropval[ptnef_proplist->count].propid = PROP_ID(PR_ENTRYID);
+		ptnef_proplist->ppropval[ptnef_proplist->count].proptype = PROP_TYPE(PR_ENTRYID);
 		ptnef_proplist->ppropval[ptnef_proplist->count].ppropname = NULL;
 		ptnef_proplist->ppropval[ptnef_proplist->count].pvalue = pbin;
 		ptnef_proplist->count ++;

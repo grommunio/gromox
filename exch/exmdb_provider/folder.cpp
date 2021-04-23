@@ -2637,8 +2637,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
 		case PERMISSION_DATA_FLAG_ADD_ROW:
-			pvalue = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_ENTRYID);
+			pvalue = common_util_get_propvals(&prow[i].propvals, PR_ENTRYID);
 			if (NULL != pvalue) {
 				if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
 					continue;

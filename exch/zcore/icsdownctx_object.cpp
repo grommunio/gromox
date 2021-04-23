@@ -381,7 +381,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	}
 	pproplist->ppropval[pproplist->count].pvalue = pvalue;
 	pproplist->count ++;
-	pproplist->ppropval[pproplist->count].proptag = PROP_TAG_ENTRYID;
+	pproplist->ppropval[pproplist->count].proptag = PR_ENTRYID;
 	pvalue = common_util_to_folder_entryid(pctx->pstore, folder_id);
 	if (NULL == pvalue) {
 		return FALSE;

@@ -583,7 +583,7 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_ENTRYID;
+			propval.proptag = PR_ENTRYID;
 			propval.pvalue = container_object_message_to_addressbook_entryid(
 								TRUE, pinfo->user_id, *(uint64_t*)pvalue, j);
 			if (NULL == propval.pvalue) {
@@ -667,7 +667,7 @@ BOOL container_object_fetch_special_property(
 		((BINARY*)*ppvalue)->cb = 16;
 		static_cast<BINARY *>(*ppvalue)->pb = deconst(common_util_get_muidecsab());
 		return TRUE;
-	case PROP_TAG_ENTRYID: {
+	case PR_ENTRYID: {
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -788,17 +788,15 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
-		case PROP_TAG_ENTRYID:
+		case PR_ENTRYID:
 		case PROP_TAG_PARENTENTRYID: {
 			auto pinfo = zarafa_server_get_info();
 			if (PROP_TAG_PARENTENTRYID == pproptags->pproptag[i]) {
 				if (folder_id == rop_util_make_eid_ex(
 					1, PRIVATE_FID_CONTACTS)) {
-					if (FALSE == container_object_fetch_special_property(
-						SPECIAL_CONTAINER_PROVIDER, PROP_TAG_ENTRYID,
-						&pvalue)) {
+					if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,
+					    PR_ENTRYID, &pvalue))
 						return FALSE;	
-					}
 				} else {
 					pvalue = common_util_get_propvals(
 						ppropvals, PROP_TAG_PARENTFOLDERID);
@@ -953,7 +951,7 @@ void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
 	static const uint32_t proptag_buff[] = {
-		PROP_TAG_ENTRYID,
+		PR_ENTRYID,
 		PROP_TAG_CONTAINERFLAGS,
 		PROP_TAG_DEPTH,
 		PROP_TAG_INSTANCEKEY,
@@ -1267,7 +1265,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_OBJECTTYPE,
 		PROP_TAG_DISPLAYTYPE,
 		PROP_TAG_DISPLAYTYPEEX,
-		PROP_TAG_ENTRYID,
+		PR_ENTRYID,
 		PROP_TAG_RECORDKEY,
 		PROP_TAG_ORIGINALENTRYID,
 		PROP_TAG_SEARCHKEY,

@@ -3385,7 +3385,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		if (NULL == pproptags->pproptag) {
 			return FALSE;
 		}
-		pproptags->pproptag[0] = PROP_TAG_ENTRYID;
+		pproptags->pproptag[0] = PR_ENTRYID;
 		pproptags->pproptag[1] = PROP_TAG_MEMBERID;
 		pproptags->pproptag[2] = PROP_TAG_MEMBERNAME;
 		pproptags->pproptag[3] = PROP_TAG_MEMBERRIGHTS;

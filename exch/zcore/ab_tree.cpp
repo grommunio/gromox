@@ -1673,7 +1673,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		return ab_tree_fetch_node_property(
 			pnode, codepage, proptag, ppvalue);
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_TEMPLATEID:
 	case PROP_TAG_ORIGINALENTRYID: {

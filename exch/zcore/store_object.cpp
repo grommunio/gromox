@@ -565,7 +565,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
 	case PROP_TAG_EMAILADDRESS:
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALEID:
@@ -752,8 +752,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_MAPPINGSIGNATURE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-							PROP_TAG_ENTRYID;
+	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_STOREENTRYID;
@@ -1172,7 +1171,7 @@ static BOOL store_object_get_calculated_property(
 	case PROP_TAG_MAPPINGSIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
 		return TRUE;
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_STOREENTRYID:
 		*ppvalue = common_util_to_store_entryid(pstore);
 		if (NULL == *ppvalue) {
@@ -1806,7 +1805,7 @@ static BOOL store_object_get_folder_permissions(
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
 	static const uint32_t proptag_buff[] = {
-		PROP_TAG_ENTRYID,
+		PR_ENTRYID,
 		PROP_TAG_MEMBERRIGHTS
 	};
 	
@@ -1837,8 +1836,7 @@ static BOOL store_object_get_folder_permissions(
 			pperm_set->prows = pperm_row;
 		}
 		pentryid = static_cast<BINARY *>(common_util_get_propvals(
-				permission_set.pparray[i],
-		           PROP_TAG_ENTRYID));
+		           permission_set.pparray[i], PR_ENTRYID));
 		/* ignore the default and anonymous user */
 		if (NULL == pentryid || 0 == pentryid->cb) {
 			continue;

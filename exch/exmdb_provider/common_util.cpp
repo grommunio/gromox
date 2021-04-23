@@ -1926,7 +1926,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 {
 	pv.proptag = tag;
 	switch (tag) {
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		pv.pvalue = common_util_to_folder_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PROP_TAG_FOLDERID:
@@ -2037,7 +2037,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 {
 	pv.proptag = tag;
 	switch (tag) {
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		pv.pvalue = common_util_to_message_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PROP_TAG_PARENTENTRYID: {
@@ -3135,7 +3135,7 @@ BOOL common_util_set_properties(int table_type,
 			break;
 		case FOLDER_PROPERTIES_TABLE:
 			switch (ppropvals->ppropval[i].proptag) {
-			case PROP_TAG_ENTRYID:
+			case PR_ENTRYID:
 			case PROP_TAG_FOLDERID:
 			case PROP_TAG_PARENTFOLDERID:
 			case PROP_TAG_FOLDERFLAGS:
@@ -3194,7 +3194,7 @@ BOOL common_util_set_properties(int table_type,
 			break;
 		case MESSAGE_PROPERTIES_TABLE:
 			switch (ppropvals->ppropval[i].proptag) {
-			case PROP_TAG_ENTRYID:
+			case PR_ENTRYID:
 			case PROP_TAG_FOLDERID:
 			case PROP_TAG_PARENTFOLDERID:
 			case PROP_TAG_INSTANCESVREID:
@@ -3897,7 +3897,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	static const BINARY fake_bin{};
 	
 	switch (proptag) {
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
 			*ppvalue = deconst(&fake_bin);
 			return TRUE;
@@ -3977,7 +3977,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		return TRUE;
 	}
 	switch (proptag) {
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0] || 0 == strcasecmp(pusername, "default")) {
 			*ppvalue = deconst(&fake_bin);
@@ -5663,8 +5663,7 @@ BOOL common_util_recipients_to_list(
 			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
-			pvalue = common_util_get_propvals(
-				prcpts->pparray[i], PROP_TAG_ENTRYID);
+			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);
 			if (NULL == pvalue) {
 				return FALSE;
 			}

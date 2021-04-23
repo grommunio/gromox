@@ -49,7 +49,7 @@ static BOOL message_object_get_recipient_all_proptags(
 		case PR_DISPLAY_NAME_A:
 		case PROP_TAG_EMAILADDRESS:
 		case PROP_TAG_EMAILADDRESS_STRING8:
-		case PROP_TAG_ENTRYID:
+		case PR_ENTRYID:
 		case PROP_TAG_INSTANCEKEY:
 		case PROP_TAG_RECIPIENTTYPE:
 		case PROP_TAG_ROWID:
@@ -901,7 +901,7 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset)
 			case PR_DISPLAY_NAME_A:
 			case PROP_TAG_EMAILADDRESS:
 			case PROP_TAG_EMAILADDRESS_STRING8:
-			case PROP_TAG_ENTRYID:
+			case PR_ENTRYID:
 			case PROP_TAG_INSTANCEKEY:
 			case PROP_TAG_RECIPIENTTYPE:
 			case PROP_TAG_ROWID:
@@ -1159,7 +1159,7 @@ BOOL message_object_check_readonly_property(
 	case PROP_TAG_DISPLAYBCC:
 	case PROP_TAG_DISPLAYCC:
 	case PROP_TAG_DISPLAYTO:
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_FOLDERID:
 	case PROP_TAG_HASATTACHMENTS:
 	case PROP_TAG_HASNAMEDPROPERTIES:
@@ -1211,7 +1211,7 @@ static BOOL message_object_get_calculated_property(
 		*static_cast<uint32_t *>(*ppvalue) = (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE) ?
 			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}

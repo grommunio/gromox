@@ -158,7 +158,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_DELETEDCOUNTTOTAL:
 	case PROP_TAG_DELETEDFOLDERTOTAL:
 	case PROP_TAG_DELETEDON:
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_FOLDERCHILDCOUNT:
 	case PROP_TAG_FOLDERFLAGS:
 	case PROP_TAG_FOLDERID:
@@ -292,7 +292,7 @@ static BOOL folder_object_get_calculated_property(
 				return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		*outvalue = common_util_to_folder_entryid(
 			pfolder->plogon, pfolder->folder_id);
 		return TRUE;

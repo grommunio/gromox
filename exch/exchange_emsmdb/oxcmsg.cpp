@@ -409,7 +409,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 		case PROP_TAG_ADDRESSTYPE:
 		case PR_DISPLAY_NAME:
 		case PROP_TAG_EMAILADDRESS:
-		case PROP_TAG_ENTRYID:
+		case PR_ENTRYID:
 		case PROP_TAG_INSTANCEKEY:
 		case PROP_TAG_RECIPIENTTYPE:
 		case PROP_TAG_SEARCHKEY:

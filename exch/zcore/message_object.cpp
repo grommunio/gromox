@@ -881,7 +881,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	}
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ENTRYID;
+	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESSLEVEL;
 	pproptags->count ++;
@@ -933,7 +933,7 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_DISPLAYBCC:
 	case PROP_TAG_DISPLAYCC:
 	case PROP_TAG_DISPLAYTO:
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_FOLDERID:
 	case PROP_TAG_HASATTACHMENTS:
 	case PROP_TAG_HASNAMEDPROPERTIES:
@@ -983,7 +983,7 @@ static BOOL message_object_get_calculated_property(
 		*static_cast<uint32_t *>(*ppvalue) = pmessage->b_writable ?
 			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}

@@ -175,7 +175,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecMAPIOOM;
 		}
 		return ecSuccess;
-	case PROP_TAG_ENTRYID:
+	case PR_ENTRYID:
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_ORIGINALENTRYID:
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
@@ -1901,7 +1901,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PROP_TAG_OBJECTTYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPEEX;
-	t[z++] = PROP_TAG_ENTRYID;
+	t[z++] = PR_ENTRYID;
 	t[z++] = PROP_TAG_RECORDKEY;
 	t[z++] = PROP_TAG_ORIGINALENTRYID;
 	t[z++] = PROP_TAG_SEARCHKEY;
@@ -2260,8 +2260,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 		return FALSE;
 	}
 	
-	/* PROP_TAG_ENTRYID */
-	prow->pprops[0].proptag = PROP_TAG_ENTRYID;
+	prow->pprops[0].proptag = PR_ENTRYID;
 	prow->pprops[0].reserved = 0;
 	if (FALSE == common_util_permanent_entryid_to_binary(
 		ppermeid, &prow->pprops[0].value.bin)) {
@@ -2672,7 +2671,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[18] = PROP_TAG_OBJECTTYPE;
 	t[19] = PROP_TAG_DISPLAYTYPE;
 	t[20] = PROP_TAG_DISPLAYTYPEEX;
-	t[21] = PROP_TAG_ENTRYID;
+	t[21] = PR_ENTRYID;
 	t[22] = PROP_TAG_RECORDKEY;
 	t[23] = PROP_TAG_ORIGINALENTRYID;
 	t[24] = PROP_TAG_SEARCHKEY;
