@@ -1882,10 +1882,10 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	pv.proptag = tag;
 	switch (tag) {
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 		pv.pvalue = common_util_get_mailbox_guid(db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PROP_TAG_STORESTATE:
+	case PR_STORE_STATE:
 		pv.pvalue = cu_alloc<uint32_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -3104,10 +3104,10 @@ BOOL common_util_set_properties(int table_type,
 		switch (table_type) {
 		case STORE_PROPERTIES_TABLE:
 			switch (ppropvals->ppropval[i].proptag) {
-			case PROP_TAG_STORESTATE:
+			case PR_STORE_STATE:
 			case PR_MESSAGE_SIZE:
 			case PROP_TAG_CONTENTCOUNT:
-			case PROP_TAG_STORERECORDKEY:
+			case PR_STORE_RECORD_KEY:
 			case PROP_TAG_ASSOCMESSAGESIZE:
 			case PROP_TAG_NORMALMESSAGESIZE:
 			case PR_MESSAGE_SIZE_EXTENDED:

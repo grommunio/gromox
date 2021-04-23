@@ -76,13 +76,13 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	}
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_STORERECORDKEY;
+	proptag_buff[0] = PR_STORE_RECORD_KEY;
 	proptag_buff[1] = PROP_TAG_OUTOFOFFICESTATE;
 	if (FALSE == exmdb_client_get_store_properties(
 		maildir, 0, &proptags, &propvals)) {
 		return ecError;
 	}
-	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_STORERECORDKEY);
+	auto pvalue = common_util_get_propvals(&propvals, PR_STORE_RECORD_KEY);
 	if (NULL == pvalue) {
 		return ecError;
 	}
@@ -228,10 +228,8 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	preplica_guid->node[5] = 0xc6;
 	memset(pper_user_guid, 0, sizeof(GUID));
 	
-	if (FALSE == exmdb_client_get_store_property(
-		homedir, 0, PROP_TAG_STORERECORDKEY, &pvalue)) {
+	if (!exmdb_client_get_store_property(homedir, 0, PR_STORE_RECORD_KEY, &pvalue))
 		return ecError;
-	}
 	if (NULL == pvalue) {
 		return ecError;
 	}

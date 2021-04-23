@@ -651,12 +651,12 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_SEARCHKEY:
 	case PROP_TAG_SORTLOCALEID:
 	case PROP_TAG_STORAGEQUOTALIMIT:
-	case PROP_TAG_STOREENTRYID:
-	case PROP_TAG_STOREOFFLINE:
+	case PR_STORE_ENTRYID:
+	case PR_STORE_OFFLINE:
 	case PROP_TAG_STOREPROVIDER:
-	case PROP_TAG_STORERECORDKEY:
-	case PROP_TAG_STORESTATE:
-	case PROP_TAG_STORESUPPORTMASK:
+	case PR_STORE_RECORD_KEY:
+	case PR_STORE_STATE:
+	case PR_STORE_SUPPORT_MASK:
 	case PROP_TAG_TESTLINESPEED:
 	case PROP_TAG_USERENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
@@ -855,7 +855,7 @@ static BOOL logon_object_get_calculated_property(
 		*ppvalue = &pinfo->lcid_sort;
 		return TRUE;
 	}
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(plogon->mailbox_guid);
 		return TRUE;
 	case PROP_TAG_USERENTRYID: {

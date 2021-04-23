@@ -1159,8 +1159,8 @@ BOOL message_object_check_readonly_property(
 	case PR_OBJECT_TYPE:
 	case PROP_TAG_PARENTENTRYID:
 	case PROP_TAG_PARENTSOURCEKEY:
-	case PROP_TAG_STOREENTRYID:
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_ENTRYID:
+	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
 	case PROP_TAG_MESSAGESTATUS:
@@ -1253,7 +1253,7 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(
 			pmessage->plogon, pmessage->message_id);
 		return TRUE;
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 	case PROP_TAG_MAPPINGSIGNATURE:
 		*ppvalue = common_util_guid_to_binary(
 					logon_object_get_mailbox_guid(

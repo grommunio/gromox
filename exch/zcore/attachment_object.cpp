@@ -175,10 +175,8 @@ BOOL attachment_object_get_all_proptags(
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_STORERECORDKEY;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_STOREENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	return TRUE;
 }
 
@@ -193,8 +191,8 @@ static BOOL attachment_object_check_readonly_property(
 	case PROP_TAG_INCONFLICT:
 	case PR_OBJECT_TYPE:
 	case PR_RECORD_KEY:
-	case PROP_TAG_STOREENTRYID:
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_ENTRYID:
+	case PR_STORE_RECORD_KEY:
 		return TRUE;
 	case PROP_TAG_ATTACHSIZE:
 	case PR_CREATION_TIME:
@@ -229,12 +227,12 @@ static BOOL attachment_object_get_calculated_property(
 		}
 		*(uint32_t*)(*ppvalue) = OBJECT_ATTACHMENT;
 		return TRUE;
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(
 					store_object_get_mailbox_guid(
 					pattachment->pparent->pstore));
 		return TRUE;
-	case PROP_TAG_STOREENTRYID:
+	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(
 					pattachment->pparent->pstore);
 		if (NULL == *ppvalue) {

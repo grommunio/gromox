@@ -185,14 +185,13 @@ std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private,
 	
 	proptags.count = 1;
 	proptags.pproptag = &proptag;
-	proptag = PROP_TAG_STORERECORDKEY;
+	proptag = PR_STORE_RECORD_KEY;
 	if (!exmdb_client::get_store_properties(
 		dir, 0, &proptags, &propvals)) {
 		printf("get_store_properties %s: failed\n", dir);
 		return NULL;	
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_STORERECORDKEY);
+	pvalue = common_util_get_propvals(&propvals, PR_STORE_RECORD_KEY);
 	if (NULL == pvalue) {
 		return NULL;
 	}
@@ -589,12 +588,12 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_SEARCHKEY:
 	case PROP_TAG_SORTLOCALEID:
 	case PROP_TAG_STORAGEQUOTALIMIT:
-	case PROP_TAG_STOREENTRYID:
-	case PROP_TAG_STOREOFFLINE:
+	case PR_STORE_ENTRYID:
+	case PR_STORE_OFFLINE:
 	case PROP_TAG_STOREPROVIDER:
-	case PROP_TAG_STORERECORDKEY:
-	case PROP_TAG_STORESTATE:
-	case PROP_TAG_STORESUPPORTMASK:
+	case PR_STORE_RECORD_KEY:
+	case PR_STORE_STATE:
+	case PR_STORE_SUPPORT_MASK:
 	case PROP_TAG_TESTLINESPEED:
 	case PROP_TAG_USERENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
@@ -731,20 +730,14 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 						PROP_TAG_INSTANCEKEY;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_STORERECORDKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_MAPPINGSIGNATURE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_STOREENTRYID;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_STORESUPPORTMASK;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_SUPPORT_MASK;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_ECSERVERVERSION;
 	pproptags->count ++;
@@ -1130,7 +1123,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		*(uint32_t*)(*ppvalue) = MAPI_STORE_PROVIDER;
 		return TRUE;
-	case PROP_TAG_STORESUPPORTMASK:
+	case PR_STORE_SUPPORT_MASK:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1152,12 +1145,12 @@ static BOOL store_object_get_calculated_property(
 		return TRUE;
 	case PR_RECORD_KEY:
 	case PROP_TAG_INSTANCEKEY:
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 	case PROP_TAG_MAPPINGSIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
 		return TRUE;
 	case PR_ENTRYID:
-	case PROP_TAG_STOREENTRYID:
+	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pstore);
 		if (NULL == *ppvalue) {
 			return FALSE;

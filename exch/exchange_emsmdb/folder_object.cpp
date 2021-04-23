@@ -152,7 +152,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 	case PROP_TAG_PARENTENTRYID:
 	case PROP_TAG_PARENTFOLDERID:
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 	case PR_CHANGE_KEY:
 	case PR_SOURCE_KEY:
 	case PROP_TAG_PARENTSOURCEKEY:
@@ -310,7 +310,7 @@ static BOOL folder_object_get_calculated_property(
 				return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 	case PROP_TAG_MAPPINGSIGNATURE:
 		*outvalue = common_util_guid_to_binary(
 					logon_object_get_mailbox_guid(

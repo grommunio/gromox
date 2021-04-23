@@ -290,8 +290,8 @@ BOOL attachment_object_check_readonly_property(
 	case PROP_TAG_INCONFLICT:
 	case PR_OBJECT_TYPE:
 	case PR_RECORD_KEY:
-	case PROP_TAG_STOREENTRYID:
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_ENTRYID:
+	case PR_STORE_RECORD_KEY:
 		return TRUE;
 	case PROP_TAG_ATTACHSIZE:
 	case PR_CREATION_TIME:
@@ -328,7 +328,7 @@ static BOOL attachment_object_get_calculated_property(
 		}
 		*(uint32_t*)(*ppvalue) = OBJECT_ATTACHMENT;
 		return TRUE;
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(
 					logon_object_get_mailbox_guid(
 					pattachment->pparent->plogon));

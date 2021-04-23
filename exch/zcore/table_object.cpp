@@ -168,7 +168,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PR_RECORD_KEY,
 		PROP_TAG_INSTANCEKEY,
 		PR_ENTRYID,
-		PROP_TAG_STOREENTRYID,
+		PR_STORE_ENTRYID,
 		PROP_TAG_USERENTRYID
 	};
 	
@@ -642,8 +642,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				return FALSE;	
 			}
 		}
-		if (common_util_index_proptags(pcolumns,
-			PROP_TAG_STOREENTRYID) >= 0) {
+		if (common_util_index_proptags(pcolumns, PR_STORE_ENTRYID) >= 0) {
 			pentryid = common_util_to_store_entryid(ptable->pstore);
 			if (NULL == pentryid) {
 				return FALSE;
@@ -660,8 +659,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				}
 				memcpy(ppropvals->ppropval, temp_set.pparray[i]->ppropval,
 					sizeof(TAGGED_PROPVAL)*temp_set.pparray[i]->count);
-				ppropvals->ppropval[temp_set.pparray[i]->count].proptag =
-													PROP_TAG_STOREENTRYID;
+				ppropvals->ppropval[temp_set.pparray[i]->count].proptag = PR_STORE_ENTRYID;
 				ppropvals->ppropval[temp_set.pparray[i]->count].pvalue =
 																pentryid;
 				temp_set.pparray[i] = ppropvals;

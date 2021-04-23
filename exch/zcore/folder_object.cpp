@@ -83,10 +83,8 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_STOREENTRYID;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_STORERECORDKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
@@ -168,8 +166,8 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 	case PROP_TAG_PARENTENTRYID:
 	case PROP_TAG_PARENTFOLDERID:
-	case PROP_TAG_STORERECORDKEY:
-	case PROP_TAG_STOREENTRYID:
+	case PR_STORE_RECORD_KEY:
+	case PR_STORE_ENTRYID:
 	case PR_CHANGE_KEY:
 	case PR_SOURCE_KEY:
 	case PROP_TAG_PARENTSOURCEKEY:
@@ -297,13 +295,13 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_calculate_folder_sourcekey(
 					pfolder->pstore, *(uint64_t*)pvalue);
 		return TRUE;
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 	case PROP_TAG_MAPPINGSIGNATURE:
 		*ppvalue = common_util_guid_to_binary(
 				store_object_get_mailbox_guid(
 				pfolder->pstore));
 		return TRUE;
-	case PROP_TAG_STOREENTRYID:
+	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pfolder->pstore);
 		if (NULL == *ppvalue) {
 			return FALSE;

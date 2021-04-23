@@ -883,12 +883,10 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_STORERECORDKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_MAPPINGSIGNATURE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_STOREENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	if (pmessage->pembedding == nullptr &&
 	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
@@ -934,8 +932,8 @@ static BOOL message_object_check_readonly_property(
 	case PR_OBJECT_TYPE:
 	case PROP_TAG_PARENTENTRYID:
 	case PROP_TAG_PARENTSOURCEKEY:
-	case PROP_TAG_STOREENTRYID:
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_ENTRYID:
+	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
 	case PROP_TAG_MESSAGESTATUS:
@@ -1028,13 +1026,13 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(
 			pmessage->pstore, pmessage->message_id);
 		return TRUE;
-	case PROP_TAG_STORERECORDKEY:
+	case PR_STORE_RECORD_KEY:
 	case PROP_TAG_MAPPINGSIGNATURE:
 		*ppvalue = common_util_guid_to_binary(
 				store_object_get_mailbox_guid(
 				pmessage->pstore));
 		return TRUE;
-	case PROP_TAG_STOREENTRYID:
+	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pmessage->pstore);
 		if (NULL == *ppvalue) {
 			return FALSE;
