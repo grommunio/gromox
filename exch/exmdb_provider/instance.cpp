@@ -1447,7 +1447,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 	for (i=0; i<pattctnt->proplist.count; i++) {
 		proptag = pattctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
-		case PROP_TAG_RECORDKEY:
+		case PR_RECORD_KEY:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = proptag;
 			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
@@ -2816,7 +2816,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case ID_TAG_ATTACHDATABINARY:
 			case ID_TAG_ATTACHDATAOBJECT:
 			case PROP_TAG_ATTACHNUMBER:
-			case PROP_TAG_RECORDKEY:
+			case PR_RECORD_KEY:
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;

@@ -592,7 +592,7 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_RECORDKEY;
+			propval.proptag = PR_RECORD_KEY;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -1264,7 +1264,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_DISPLAYTYPE,
 		PROP_TAG_DISPLAYTYPEEX,
 		PR_ENTRYID,
-		PROP_TAG_RECORDKEY,
+		PR_RECORD_KEY,
 		PROP_TAG_ORIGINALENTRYID,
 		PROP_TAG_SEARCHKEY,
 		PROP_TAG_INSTANCEKEY,

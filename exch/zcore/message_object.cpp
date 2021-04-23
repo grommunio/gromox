@@ -881,7 +881,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_RECORDKEY;
+	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_STORERECORDKEY;
 	pproptags->count ++;
@@ -936,7 +936,7 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_PARENTSOURCEKEY:
 	case PROP_TAG_STOREENTRYID:
 	case PROP_TAG_STORERECORDKEY:
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
 	case PROP_TAG_MESSAGESTATUS:
 	case PROP_TAG_TRANSPORTMESSAGEHEADERS:
@@ -1021,7 +1021,7 @@ static BOOL message_object_get_calculated_property(
 		}
 		*ppvalue = &pmessage->message_id;
 		return TRUE;
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}

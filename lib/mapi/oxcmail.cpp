@@ -649,7 +649,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_RECORDKEY;
+		propval.proptag = PR_RECORD_KEY;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
@@ -3571,7 +3571,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return false;
-	propval.proptag = PROP_TAG_RECORDKEY;
+	propval.proptag = PR_RECORD_KEY;
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return false;

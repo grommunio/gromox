@@ -984,7 +984,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_RECORDKEY;
+		propval.proptag = PR_RECORD_KEY;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;

@@ -192,7 +192,7 @@ static BOOL attachment_object_check_readonly_property(
 	case PROP_TAG_ACCESSLEVEL:
 	case PROP_TAG_INCONFLICT:
 	case PR_OBJECT_TYPE:
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 	case PROP_TAG_STOREENTRYID:
 	case PROP_TAG_STORERECORDKEY:
 		return TRUE;

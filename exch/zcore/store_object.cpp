@@ -584,7 +584,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_PROHIBITRECEIVEQUOTA:
 	case PROP_TAG_PROHIBITSENDQUOTA:
 	case PROP_TAG_INSTANCEKEY:
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 	case PROP_TAG_RIGHTS:
 	case PROP_TAG_SEARCHKEY:
 	case PROP_TAG_SORTLOCALEID:
@@ -738,8 +738,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_RESOURCETYPE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-						PROP_TAG_RECORDKEY;
+	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 						PROP_TAG_INSTANCEKEY;
@@ -1163,7 +1162,7 @@ static BOOL store_object_get_calculated_property(
 			*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_PUBLIC;
 		}
 		return TRUE;
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 	case PROP_TAG_INSTANCEKEY:
 	case PROP_TAG_STORERECORDKEY:
 	case PROP_TAG_MAPPINGSIGNATURE:

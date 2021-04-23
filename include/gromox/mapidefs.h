@@ -63,6 +63,7 @@ enum {
 	PR_REPL_COPIEDFROM_VERSIONHISTORY = PROP_TAG(PT_BINARY, 0x0E3C), /* pidTagReplCopiedfromVersionhistory */
 	PR_REPL_COPIEDFROM_ITEMID = PROP_TAG(PT_BINARY, 0x0E3D), /* pidTagReplCopiedfromItemid */
 	PR_READ = PROP_TAG(PT_BOOLEAN, 0x0E69), /* pidTagRead */
+	PR_RECORD_KEY = PROP_TAG(PT_BINARY, 0x0FF9), /* pidTagRecordKey */
 	PR_OBJECT_TYPE = PROP_TAG(PT_LONG, 0x0FFE), /* pidTagObjectType */
 	PR_ENTRYID = PROP_TAG(PT_BINARY, 0x0FFF), /* pidTagEntryId */
 	PR_BODY_A = PROP_TAG(PT_STRING8, 0x1000),

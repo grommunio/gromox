@@ -696,7 +696,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	case ATTACHMENT_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM "
 		        "attachment_properties WHERE attachment_id=%llu", LLU(id));
-		proptags[i++] = PROP_TAG_RECORDKEY;
+		proptags[i++] = PR_RECORD_KEY;
 		break;
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -2159,7 +2159,7 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 {
 	pv.proptag = tag;
 	switch (tag) {
-	case PROP_TAG_RECORDKEY: {
+	case PR_RECORD_KEY: {
 		auto ptmp_bin = cu_alloc<BINARY>();
 		if (ptmp_bin == nullptr)
 			return GP_ERR;
@@ -3342,7 +3342,7 @@ BOOL common_util_set_properties(int table_type,
 			break;
 		case ATTACHMENT_PROPERTIES_TABLE:
 			switch (ppropvals->ppropval[i].proptag) {
-			case PROP_TAG_RECORDKEY:
+			case PR_RECORD_KEY:
 			case PROP_TAG_ATTACHNUMBER:
 				continue;
 			case ID_TAG_ATTACHDATABINARY:

@@ -176,7 +176,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		return ecSuccess;
 	case PR_ENTRYID:
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 	case PROP_TAG_ORIGINALENTRYID:
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		if (FALSE == b_ephid) {
@@ -1902,7 +1902,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PROP_TAG_DISPLAYTYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPEEX;
 	t[z++] = PR_ENTRYID;
-	t[z++] = PROP_TAG_RECORDKEY;
+	t[z++] = PR_RECORD_KEY;
 	t[z++] = PROP_TAG_ORIGINALENTRYID;
 	t[z++] = PROP_TAG_SEARCHKEY;
 	t[z++] = PROP_TAG_INSTANCEKEY;
@@ -2672,7 +2672,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[19] = PROP_TAG_DISPLAYTYPE;
 	t[20] = PROP_TAG_DISPLAYTYPEEX;
 	t[21] = PR_ENTRYID;
-	t[22] = PROP_TAG_RECORDKEY;
+	t[22] = PR_RECORD_KEY;
 	t[23] = PROP_TAG_ORIGINALENTRYID;
 	t[24] = PROP_TAG_SEARCHKEY;
 	t[25] = PROP_TAG_INSTANCEKEY;

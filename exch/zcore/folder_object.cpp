@@ -280,7 +280,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_ENTRYID:
-	case PROP_TAG_RECORDKEY:
+	case PR_RECORD_KEY:
 		*ppvalue = common_util_to_folder_entryid(
 			pfolder->pstore, pfolder->folder_id);
 		return TRUE;
