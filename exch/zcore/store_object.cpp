@@ -565,7 +565,7 @@ static BOOL store_object_check_readonly_property(
 	case PR_MESSAGE_SIZE_EXTENDED:
 	case PROP_TAG_ASSOCMESSAGESIZE:
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
-	case PROP_TAG_NORMALMESSAGESIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 	case PR_OBJECT_TYPE:
 	case PROP_TAG_OUTOFOFFICESTATE:
@@ -583,7 +583,7 @@ static BOOL store_object_check_readonly_property(
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:
-	case PROP_TAG_TESTLINESPEED:
+	case PR_TEST_LINE_SPEED:
 	case PR_USER_ENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
 	case PROP_TAG_HIERARCHYSERVER:
@@ -680,15 +680,9 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->count ++;	
 	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_PROVIDERDISPLAY;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_RESOURCEFLAGS;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_RESOURCETYPE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_PROVIDER_DISPLAY;
+	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;
+	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_TYPE;
 	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
@@ -1063,10 +1057,10 @@ static BOOL store_object_get_calculated_property(
 		}
 		*(uint32_t*)(*ppvalue) = OBJECT_STORE;
 		return TRUE;
-	case PROP_TAG_PROVIDERDISPLAY:
+	case PR_PROVIDER_DISPLAY:
 		*ppvalue = deconst("Exchange Message Store");
 		return TRUE;
-	case PROP_TAG_RESOURCEFLAGS:
+	case PR_RESOURCE_FLAGS:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1078,7 +1072,7 @@ static BOOL store_object_get_calculated_property(
 			*(uint32_t*)(*ppvalue) = STATUS_NO_DEFAULT_STORE;
 		}
 		return TRUE;
-	case PROP_TAG_RESOURCETYPE:
+	case PR_RESOURCE_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

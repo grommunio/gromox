@@ -131,7 +131,7 @@ BOOL folder_object_check_readonly_property(
 	case PR_MESSAGE_SIZE_EXTENDED:
 	case PROP_TAG_ASSOCMESSAGESIZE:
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
-	case PROP_TAG_NORMALMESSAGESIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 	case PR_PARENT_ENTRYID:
 	case PROP_TAG_PARENTFOLDERID:
@@ -208,7 +208,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PROP_TAG_NORMALMESSAGESIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
 		*outvalue = cu_alloc<uint32_t>();
 		if (*outvalue == nullptr)
 			return FALSE;

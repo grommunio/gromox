@@ -572,9 +572,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_NORMALMESSAGESIZE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_NORMAL_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_CONTENTCOUNT;
@@ -582,9 +580,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 	pproptags->pproptag[pproptags->count] =
 			PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_TESTLINESPEED;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_TEST_LINE_SPEED;
 	return TRUE;
 }
 
@@ -621,7 +617,7 @@ static BOOL logon_object_check_readonly_property(
 	case PR_MESSAGE_SIZE_EXTENDED:
 	case PROP_TAG_ASSOCMESSAGESIZE:
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
-	case PROP_TAG_NORMALMESSAGESIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 	case PR_OBJECT_TYPE:
 	case PROP_TAG_OUTOFOFFICESTATE:
@@ -637,7 +633,7 @@ static BOOL logon_object_check_readonly_property(
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:
-	case PROP_TAG_TESTLINESPEED:
+	case PR_TEST_LINE_SPEED:
 	case PR_USER_ENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
 	case PROP_TAG_HIERARCHYSERVER:
@@ -681,7 +677,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PROP_TAG_NORMALMESSAGESIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -847,7 +843,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	}
-	case PROP_TAG_TESTLINESPEED:
+	case PR_TEST_LINE_SPEED:
 		*ppvalue = deconst(&test_bin);
 		return TRUE;
 	}
