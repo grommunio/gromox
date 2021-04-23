@@ -1932,7 +1932,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
 		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
 		t[z++] = U(PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE);
-		t[z++] = PROP_TAG_CREATIONTIME;
+		t[z++] = PR_CREATION_TIME;
 		if (node_type == NODE_TYPE_PERSON)
 			t[z++] = PROP_TAG_THUMBNAILPHOTO;
 		break;
@@ -1941,7 +1941,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PROP_TAG_COMPANYNAME);
 		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
 		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
-		t[z++] = PROP_TAG_CREATIONTIME;
+		t[z++] = PR_CREATION_TIME;
 		break;
 	case NODE_TYPE_FOLDER:
 		t[z++] = PROP_TAG_COMPANYNAME_STRING8;
@@ -2680,7 +2680,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[27] = PROP_TAG_SENDRICHINFO;
 	t[28] = PROP_TAG_TEMPLATEID;
 	t[29] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
-	t[30] = PROP_TAG_CREATIONTIME;
+	t[30] = PR_CREATION_TIME;
 #undef U
 	return ecSuccess;
 }

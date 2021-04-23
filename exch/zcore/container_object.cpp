@@ -369,7 +369,7 @@ BOOL container_object_load_user_table(
 			PROP_TAG_COMPANYNAME,
 			PROP_TAG_DEPARTMENTNAME,
 			PROP_TAG_OFFICELOCATION,
-			PROP_TAG_CREATIONTIME
+			PR_CREATION_TIME
 	};
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
@@ -458,8 +458,7 @@ BOOL container_object_load_user_table(
 		proptags.pproptag[proptags.count] =
 					PROP_TAG_OFFICELOCATION;
 		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-					PROP_TAG_CREATIONTIME;
+		proptags.pproptag[proptags.count] = PR_CREATION_TIME;
 		proptags.count ++;
 		proptags.pproptag[proptags.count] =
 							PROP_TAG_MID;
@@ -1273,7 +1272,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_SENDRICHINFO,
 		PROP_TAG_TEMPLATEID,
 		PROP_TAG_ADDRESSBOOKOBJECTGUID,
-		PROP_TAG_CREATIONTIME,
+		PR_CREATION_TIME,
 		PROP_TAG_THUMBNAILPHOTO
 	};
 	pproptags->count = 34;

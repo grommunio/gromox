@@ -151,7 +151,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	}
 	time(&cur_time);
 	nt_time = rop_util_unix_to_nttime(cur_time);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CREATIONTIME);
+	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
@@ -433,7 +433,7 @@ int main(int argc, const char **argv)
 	}
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CREATIONTIME);
+	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");

@@ -2854,7 +2854,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_CREATIONTIME;
+	propval.proptag = PR_CREATION_TIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -3536,7 +3536,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_CREATIONTIME;
+	propval.proptag = PR_CREATION_TIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);

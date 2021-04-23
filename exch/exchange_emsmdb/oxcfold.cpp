@@ -263,7 +263,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[2].pvalue = folder_name;
 		propval_buff[3].proptag = PROP_TAG_COMMENT;
 		propval_buff[3].pvalue = folder_comment;
-		propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
+		propval_buff[4].proptag = PR_CREATION_TIME;
 		propval_buff[4].pvalue = &last_time;
 		propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 		propval_buff[5].pvalue = &last_time;

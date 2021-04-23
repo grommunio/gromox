@@ -275,8 +275,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_CREATIONTIME;
+	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -943,7 +942,7 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 		return TRUE;
 	case PR_CHANGE_KEY:
-	case PROP_TAG_CREATIONTIME:
+	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_SOURCE_KEY:

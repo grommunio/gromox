@@ -93,7 +93,7 @@ BOOL attachment_object_init_attachment(
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_CREATIONTIME;
+	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
@@ -294,7 +294,7 @@ BOOL attachment_object_check_readonly_property(
 	case PROP_TAG_STORERECORDKEY:
 		return TRUE;
 	case PROP_TAG_ATTACHSIZE:
-	case PROP_TAG_CREATIONTIME:
+	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
 		if (TRUE == pattachment->b_new) {
 			return FALSE;

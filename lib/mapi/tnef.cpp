@@ -1702,7 +1702,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_ATTACHCREATEDATE:
-			propval.proptag = PROP_TAG_CREATIONTIME;
+			propval.proptag = PR_CREATION_TIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				str_hash_free(phash);
@@ -2376,7 +2376,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			tmp_byte |= FMS_READ;
 		}
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_CREATIONTIME);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_CREATION_TIME);
 		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_LAST_MODIFICATION_TIME);
 		if (NULL != pvalue && NULL != pvalue1 &&
 			*(uint64_t*)pvalue1 > *(uint64_t*)pvalue) {
@@ -2915,7 +2915,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			
 		}
 		/* ATTRIBUTE_ID_ATTACHCREATEDATE */
-		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_CREATIONTIME);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_CREATION_TIME);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHCREATEDATE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -2924,8 +2924,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				pext, &attribute, alloc, get_propname)) {
 				return FALSE;
 			}
-			tmp_proptags.pproptag[tmp_proptags.count] =
-									PROP_TAG_CREATIONTIME;
+			tmp_proptags.pproptag[tmp_proptags.count] = PR_CREATION_TIME;
 			tmp_proptags.count ++;
 		}
 		/* ATTRIBUTE_ID_ATTACHMODIFYDATE */

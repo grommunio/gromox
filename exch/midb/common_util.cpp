@@ -260,7 +260,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[2].pvalue = (void*)folder_name;
 	propval_buff[3].proptag = PROP_TAG_CONTAINERCLASS;
 	propval_buff[3].pvalue  = deconst("IPF.Note");
-	propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
+	propval_buff[4].proptag = PR_CREATION_TIME;
 	propval_buff[4].pvalue = &last_time;
 	propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[5].pvalue = &last_time;
