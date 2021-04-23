@@ -3936,7 +3936,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	BOOL b_rsvp;
 	void *pvalue;
 	std::shared_ptr<ICAL_LINE> piline;
-	char username[324];
+	char username[UADDR_SIZE];
 	char tmp_value[334];
 	std::shared_ptr<ICAL_PARAM> piparam;
 	std::shared_ptr<ICAL_VALUE> pivalue;

@@ -1308,7 +1308,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 
 static void imap_parser_event_touch(char *username, char *folder)
 {
-	char temp_string[324];
+	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
@@ -1358,7 +1358,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 static void imap_parser_event_flag(const char *username, const char *folder,
 	const char *mid_string)
 {
-	char temp_string[324];
+	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
@@ -1878,7 +1878,7 @@ static void imap_parser_event_proc(char *event)
 
 void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 {
-	char temp_string[324];
+	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST *plist, temp_list;
 	
 	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
@@ -1905,7 +1905,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 {
 	BOOL should_remove;
 	DOUBLE_LIST *plist;
-	char temp_string[324];
+	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	

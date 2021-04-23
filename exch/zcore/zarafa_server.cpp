@@ -801,7 +801,7 @@ uint32_t zarafa_server_logon(const char *username,
 	USER_INFO *pinfo;
 	char homedir[256];
 	char maildir[256];
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	USER_INFO tmp_info;
 	
 	auto pdomain = strchr(username, '@');
@@ -1752,7 +1752,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	char dir[256];
 	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
-	char username[324];
+	char username[UADDR_SIZE];
 	uint32_t permission;
 	uint8_t provider_uid[16];
 	STORE_ENTRYID store_entryid = {};
@@ -3251,7 +3251,7 @@ uint32_t zarafa_server_getstoreentryid(
 	const char *mailbox_dn, BINARY *pentryid)
 {
 	EXT_PUSH ext_push;
-	char username[324];
+	char username[UADDR_SIZE];
 	char tmp_buff[1024];
 	STORE_ENTRYID store_entryid = {};
 	
@@ -4565,7 +4565,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	uint16_t rcpt_num;
-	char username[324];
+	char username[UADDR_SIZE];
 	const char *account;
 	uint32_t permission;
 	uint32_t mail_length;
@@ -7462,7 +7462,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	char* argv[3];
 	USER_INFO *pinfo;
 	char maildir[256];
-	char username[324];
+	char username[UADDR_SIZE];
 	char tool_path[256];
 	char cookie_buff[1024];
 	int pipes_in[2] = {-1, -1};

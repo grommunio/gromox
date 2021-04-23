@@ -87,7 +87,7 @@ struct DSN_ENUM_INFO {
 };
 
 struct DSN_FILEDS_INFO {
-	char final_recipient[324];
+	char final_recipient[UADDR_SIZE];
 	int action_severity;
 	char remote_mta[128];
 	const char *status;
@@ -166,7 +166,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 	
@@ -4996,7 +4996,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 {
 	size_t offset = 0;
 	void *pvalue;
-	char username[324];
+	char username[UADDR_SIZE];
 	char *pdisplay_name;
 	TPROPVAL_ARRAY *prcpt;
 	
@@ -5127,7 +5127,7 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
     const char *charset, char *field, size_t fdsize)
 {
 	int offset;
-	char address[324];
+	char address[UADDR_SIZE];
 	
 	offset = 0;
 	auto pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag1));
@@ -6384,7 +6384,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 	void *pvalue;
 	size_t base64_len;
 	char tmp_buff[1024];
-	char tmp_address[324];
+	char tmp_address[UADDR_SIZE];
 	DSN_FIELDS *pdsn_fields;
 	const char *pdisplay_name;
 	

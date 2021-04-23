@@ -207,7 +207,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	time_t cur_time;
 	uint32_t tmp_num;
 	uint16_t rcpt_num;
-	char username[324];
+	char username[UADDR_SIZE];
 	int32_t max_length;
 	EMSMDB_INFO *pinfo;
 	const char *account;
@@ -658,7 +658,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 {
 	void *pvalue;
 	int object_type;
-	char username[324];
+	char username[UADDR_SIZE];
 	const char *account;
 	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;

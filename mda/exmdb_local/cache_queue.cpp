@@ -263,7 +263,7 @@ static void *mdl_thrwork(void *arg)
 	time_t scan_begin, scan_end, original_time;
     struct dirent *direntp;
 	struct stat node_stat;
-	char temp_from[324], temp_rcpt[324];
+	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
     char temp_path[256];
 	char *ptr;
 	MESSAGE_CONTEXT *pcontext, *pbounce_context;

@@ -1019,7 +1019,7 @@ static BOOL folder_object_flush_delegates(int fd,
 	char *ptype;
 	char *paddress;
 	BINARY *pentryid;
-	char address_buff[324];
+	char address_buff[UADDR_SIZE];
 
 	for (i=0; i<paction->count; i++) {
 		ptype = NULL;

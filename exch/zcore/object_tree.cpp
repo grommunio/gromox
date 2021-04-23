@@ -488,7 +488,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	char *pdomain;
 	uint32_t handle;
 	USER_INFO *pinfo;
-	char account[324];
+	char account[UADDR_SIZE];
 	STORE_OBJECT *pstore;
 	OBJECT_NODE *pobjnode;
 	SIMPLE_TREE_NODE *pnode;

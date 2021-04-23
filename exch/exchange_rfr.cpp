@@ -101,7 +101,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 {
 	int user_id;
 	char *ptoken;
-	char username[324];
+	char username[UADDR_SIZE];
 	char hex_string[32];
 	DCERPC_INFO rpc_info;
 	

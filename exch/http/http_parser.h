@@ -84,7 +84,7 @@ struct HTTP_CONTEXT {
 	BOOL				b_close;			/* Connection MIME Header for indicating closing */
 	BOOL				b_authed;
 	int					auth_times;
-	char username[324];
+	char username[UADDR_SIZE];
 	char				password[128];
 	char				maildir[256];
 	char				lang[32];

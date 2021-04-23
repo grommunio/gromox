@@ -2623,7 +2623,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	void *pvalue;
 	uint64_t fid_val;
 	uint64_t member_id;
-	char username[324];
+	char username[UADDR_SIZE];
 	uint32_t permission = 0;
 	xstmt pstmt;
 	char sql_string[128];

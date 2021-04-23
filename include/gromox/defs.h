@@ -96,6 +96,11 @@ enum ec_error_t {
 	ecInvalidParam = 0x80070057,
 };
 
+enum {
+	UDOM_SIZE = 256, /* domain(255) plus \0 */
+	UADDR_SIZE = 321, /* localpart(64) "@" domain \0 */
+};
+
 extern GX_EXPORT unsigned int gxerr_to_hresult(gxerr_t);
 extern GX_EXPORT const char *mapi_strerror(unsigned int);
 

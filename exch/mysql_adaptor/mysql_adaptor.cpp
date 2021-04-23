@@ -261,7 +261,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 
 	size_t k, rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
 	for (k = 0; k < rows1; k++) {
-		char virtual_address[324];
+		char virtual_address[UADDR_SIZE];
 		char *pat;
 
 		auto myrow1 = pmyres1.fetch_row();
@@ -285,7 +285,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 		mysql_data_seek(pmyres1.get(), 0);
 		size_t k;
 		for (k = 0; k < rows1; k++) {
-			char virtual_address[324], *pat;
+			char virtual_address[UADDR_SIZE], *pat;
 
 			auto myrow1 = pmyres1.fetch_row();
 			gx_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
@@ -340,7 +340,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	char temp_name[512];
 	char sql_string[1024];
 	char encrypt_passwd[40];
-	char virtual_address[324];
+	char virtual_address[UADDR_SIZE];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT password, address_type,"

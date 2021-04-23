@@ -2551,7 +2551,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t result;
 	uint32_t tmp_mid;
 	char maildir[256];
-	char username[324];
+	char username[UADDR_SIZE];
 	char temp_path[256];
 	DCERPC_INFO rpc_info;
 	DOUBLE_LIST tmp_list;

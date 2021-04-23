@@ -228,7 +228,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 	
@@ -2214,7 +2214,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	BOOL b_partial;
 	uint64_t new_id;
 	BINARY *ptarget;
-	char username[324];
+	char username[UADDR_SIZE];
 	EMSMDB_INFO *pinfo;
 	uint64_t parent_id;
 	uint64_t folder_id;

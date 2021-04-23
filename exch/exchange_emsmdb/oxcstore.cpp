@@ -26,7 +26,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	time_t cur_time;
 	struct tm tmp_tm;
 	char maildir[256];
-	char username[324];
+	char username[UADDR_SIZE];
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;

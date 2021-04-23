@@ -180,7 +180,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 	
@@ -5075,7 +5075,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 {
 	BINARY *pbin;
 	EXT_PULL ext_pull;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	if (FALSE == common_util_get_property(MESSAGE_PROPERTIES_TABLE,
@@ -5671,12 +5671,12 @@ BOOL common_util_recipients_to_list(
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			pnode->pdata = common_util_alloc(324);
+			pnode->pdata = common_util_alloc(UADDR_SIZE);
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-			    static_cast<char *>(pnode->pdata), 324))
+			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 				return FALSE;
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {

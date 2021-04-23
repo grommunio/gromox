@@ -958,7 +958,7 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	int domain_len;
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	char user_in[256];
-	char tmp_user[324];
+	char tmp_user[UADDR_SIZE];
 	char domain_in[256];
 	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB client_key;
@@ -1014,7 +1014,7 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	int domain_len;
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	char user_in[256];
-	char tmp_user[324];
+	char tmp_user[UADDR_SIZE];
 	char domain_in[256];
 	DATA_BLOB client_key;
 	HMACMD5_CTX hmac_ctx;
@@ -1403,7 +1403,7 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	const DATA_BLOB in, DATA_BLOB *pout)
 {
-	char username[324];
+	char username[UADDR_SIZE];
 	char plain_passwd[128];
 	NTLMSSP_SERVER_AUTH_STATE auth_state;
 	

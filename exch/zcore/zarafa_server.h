@@ -18,7 +18,7 @@ struct USER_INFO {
 	int user_id;
 	int domain_id;
 	int org_id;
-	char username[324];
+	char username[UADDR_SIZE];
 	char lang[32];
 	uint32_t cpid;
 	char maildir[256];

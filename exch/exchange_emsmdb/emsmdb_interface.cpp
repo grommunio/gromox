@@ -49,7 +49,7 @@ namespace {
 struct HANDLE_DATA {
 	DOUBLE_LIST_NODE node;
 	GUID guid;
-	char username[324];
+	char username[UADDR_SIZE];
 	uint16_t cxr;
 	uint32_t last_handle;
 	EMSMDB_INFO info;
@@ -495,7 +495,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	AUX_INFO aux_out;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
-	char username[324];
+	char username[UADDR_SIZE];
 	AUX_HEADER *pheader;
 	char temp_buff[1024];
 	uint16_t client_mode;

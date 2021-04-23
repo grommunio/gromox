@@ -21,7 +21,7 @@ USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 BOOL user_object_check_valid(USER_OBJECT *puser)
 {
 	AB_BASE *pbase;
-	char username[324];
+	char username[UADDR_SIZE];
 	SIMPLE_TREE_NODE *pnode;
 	
 	pbase = ab_tree_get_base(puser->base_id);
@@ -48,7 +48,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	AB_BASE *pbase;
-	char username[324];
+	char username[UADDR_SIZE];
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
 	static const uint32_t fake_type = OBJECT_USER;

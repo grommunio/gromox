@@ -33,7 +33,7 @@
 #define NTLMSSP_NEGOTIATE_56						0x80000000
 
 struct NTLMSSP_SESSION_INFO {
-	char username[324];
+	char username[UADDR_SIZE];
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[16];
 };

@@ -1057,7 +1057,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	BOOL b_remote;
 	AB_BASE *pbase = nullptr;
 	AB_NODE *pabnode;
-	char username[324];
+	char username[UADDR_SIZE];
 	char hex_string[32];
 	char hex_string1[32];
 	SIMPLE_TREE_NODE **ppnode;
@@ -1424,7 +1424,7 @@ void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
 void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 {
 	char *ptoken;
-	char username[324];
+	char username[UADDR_SIZE];
 	char hex_string[32];
 	
 	if (((AB_NODE*)pnode)->node_type < 0x80) {

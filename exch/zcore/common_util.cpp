@@ -481,7 +481,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 	
@@ -1116,7 +1116,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	int address_type;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 	ONEOFF_ENTRYID oneoff_entry;
@@ -2000,12 +2000,12 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			pnode->pdata = common_util_alloc(324);
+			pnode->pdata = common_util_alloc(UADDR_SIZE);
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-			    static_cast<char *>(pnode->pdata), 324))
+			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 				return FALSE;	
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
@@ -2020,12 +2020,12 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 				if (NULL == pvalue) {
 					goto CONVERT_ENTRYID;
 				}
-				pnode->pdata = common_util_alloc(324);
+				pnode->pdata = common_util_alloc(UADDR_SIZE);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
 				if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
-				    static_cast<char *>(pnode->pdata), 324))
+				    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 					goto CONVERT_ENTRYID;
 			} else {
 				goto CONVERT_ENTRYID;

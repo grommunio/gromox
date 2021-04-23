@@ -348,7 +348,7 @@ BOOL container_object_load_user_table(
 	USER_INFO *pinfo;
 	uint32_t table_id;
 	uint8_t mapi_type;
-	char username[324];
+	char username[UADDR_SIZE];
 	TARRAY_SET tmp_set;
 	char *pdisplayname;
 	char *paddress_type;

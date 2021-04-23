@@ -9,8 +9,8 @@ struct DOMAIN_ITEM {
 };
 
 struct ALIAS_ITEM {
-	char aliasname[324];
-	char mainname[324];
+	char aliasname[UADDR_SIZE];
+	char mainname[UADDR_SIZE];
 };
 
 struct DATA_COLLECT {

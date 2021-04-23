@@ -285,7 +285,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 {
 	BINARY *pbin;
 	EXT_PULL ext_pull;
-	char tmp_name[324];
+	char tmp_name[UADDR_SIZE];
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	if (FALSE == exmdb_client_get_message_property(dir, NULL,
