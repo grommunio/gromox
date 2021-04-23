@@ -1468,7 +1468,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_DATEMODIFY:
-			propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+			propval.proptag = PR_LAST_MODIFICATION_TIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
@@ -1711,7 +1711,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_ATTACHMODIFYDATE:
-			propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+			propval.proptag = PR_LAST_MODIFICATION_TIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				str_hash_free(phash);
@@ -2377,7 +2377,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_byte |= FMS_READ;
 		}
 		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_CREATIONTIME);
-		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_LAST_MODIFICATION_TIME);
 		if (NULL != pvalue && NULL != pvalue1 &&
 			*(uint64_t*)pvalue1 > *(uint64_t*)pvalue) {
 			tmp_byte |= FMS_MODIFIED;
@@ -2699,7 +2699,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_DATEMODIFY */
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_LAST_MODIFICATION_TIME);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATEMODIFY;
 		attribute.lvl = LVL_MESSAGE;
@@ -2708,8 +2708,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			pext, &attribute, alloc, get_propname)) {
 			return FALSE;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-						PROP_TAG_LASTMODIFICATIONTIME;
+		tmp_proptags.pproptag[tmp_proptags.count] = PR_LAST_MODIFICATION_TIME;
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_RECIPTABLE */
@@ -2932,7 +2931,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_proptags.count ++;
 		}
 		/* ATTRIBUTE_ID_ATTACHMODIFYDATE */
-		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_LAST_MODIFICATION_TIME);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHMODIFYDATE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -2941,8 +2940,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				pext, &attribute, alloc, get_propname)) {
 				return FALSE;
 			}
-			tmp_proptags.pproptag[tmp_proptags.count] =
-						PROP_TAG_LASTMODIFICATIONTIME;
+			tmp_proptags.pproptag[tmp_proptags.count] = PR_LAST_MODIFICATION_TIME;
 			tmp_proptags.count ++;
 		}
 		/* ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME */

@@ -585,7 +585,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != strptime(pstring, "%Y-%m-%dT%H:%M:%S", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
 						mktime(&tmp_tm) - timezone);
-				propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+				propval.proptag = PR_LAST_MODIFICATION_TIME;
 				propval.pvalue = &tmp_int64;
 				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
@@ -1631,7 +1631,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME));
+	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_LAST_MODIFICATION_TIME));
 	if (NULL != pvalue) {
 		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 		gmtime_r(&unix_time, &tmp_tm);

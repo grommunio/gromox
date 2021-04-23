@@ -97,9 +97,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 							PROP_TAG_CREATIONTIME;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
-	
-	propvals.ppropval[propvals.count].proptag =
-					PROP_TAG_LASTMODIFICATIONTIME;
+	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -136,7 +134,7 @@ gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 	}
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = &tmp_propval;
-	tmp_propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propval.proptag = PR_LAST_MODIFICATION_TIME;
 	nt_time = rop_util_current_nttime();
 	tmp_propval.pvalue = &nt_time;
 	if (FALSE == attachment_object_set_properties(
@@ -203,7 +201,7 @@ static BOOL attachment_object_check_readonly_property(
 		return TRUE;
 	case PROP_TAG_ATTACHSIZE:
 	case PROP_TAG_CREATIONTIME:
-	case PROP_TAG_LASTMODIFICATIONTIME:
+	case PR_LAST_MODIFICATION_TIME:
 		if (pattachment->b_new)
 			return FALSE;
 		return TRUE;

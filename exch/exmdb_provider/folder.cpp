@@ -188,7 +188,7 @@ BOOL exmdb_server_get_folder_class_table(
 		if (NULL == ppropvals->ppropval[1].pvalue) {
 			return FALSE;
 		}
-		ppropvals->ppropval[2].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		ppropvals->ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		ppropvals->ppropval[2].pvalue = cu_alloc<uint64_t>();
 		if (NULL == ppropvals->ppropval[2].pvalue) {
 			return FALSE;
@@ -347,9 +347,9 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
-		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_LASTMODIFICATIONTIME);
+		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			pv->proptag = PROP_TAG_LASTMODIFICATIONTIME;
+			pv->proptag = PR_LAST_MODIFICATION_TIME;
 			pv->pvalue = cu_alloc<uint64_t>();
 			if (pv->pvalue == nullptr) {
 				pstmt.finalize();
@@ -364,7 +364,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
-		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_LASTMODIFICATIONTIME);
+		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			pv->proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 			pv->pvalue = cu_alloc<uint64_t>();
@@ -1561,7 +1561,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_LASTMODIFICATIONTIME);
+	sqlite3_bind_int64(pstmt, 2, PR_LAST_MODIFICATION_TIME);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1653,7 +1653,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_LASTMODIFICATIONTIME);
+	sqlite3_bind_int64(pstmt, 2, PR_LAST_MODIFICATION_TIME);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}

@@ -1632,7 +1632,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	tmp_propvals.ppropval[2].pvalue = pbin_changekey;
 	tmp_propvals.ppropval[3].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	tmp_propvals.ppropval[3].pvalue = pbin_pcl;
-	tmp_propvals.ppropval[4].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propvals.ppropval[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[4].pvalue = &last_time;
 	return exmdb_client::set_folder_properties(
 		pstore->dir, 0, folder_id, &tmp_propvals,

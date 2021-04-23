@@ -777,13 +777,11 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(
 		&pmsgctnt->proplist, PROP_TAG_SOURCEKEY);
 	
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	pchgheader->ppropval[pchgheader->count].proptag =
-							PROP_TAG_LASTMODIFICATIONTIME;
+	pchgheader->ppropval[pchgheader->count].proptag = PR_LAST_MODIFICATION_TIME;
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
 	

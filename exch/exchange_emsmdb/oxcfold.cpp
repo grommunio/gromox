@@ -265,7 +265,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[3].pvalue = folder_comment;
 		propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
 		propval_buff[4].pvalue = &last_time;
-		propval_buff[5].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
@@ -792,7 +792,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	propval_buff[1].pvalue = pbin_changekey;
 	propval_buff[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval_buff[2].pvalue = pbin_pcl;
-	propval_buff[3].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &nt_time;
 	if (FALSE == exmdb_client_set_folder_properties(
 		logon_object_get_dir(plogon), 0, folder_id,

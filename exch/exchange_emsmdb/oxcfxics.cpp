@@ -1007,7 +1007,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	if (4 != ppropvals->count ||
 		PROP_TAG_SOURCEKEY != ppropvals->ppropval[0].proptag ||
-		PROP_TAG_LASTMODIFICATIONTIME != ppropvals->ppropval[1].proptag ||
+	    ppropvals->ppropval[1].proptag != PR_LAST_MODIFICATION_TIME ||
 		PROP_TAG_CHANGEKEY != ppropvals->ppropval[2].proptag ||
 		PROP_TAG_PREDECESSORCHANGELIST != ppropvals->ppropval[3].proptag) {
 		return ecInvalidParam;
@@ -1313,7 +1313,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (6 != phichyvals->count ||
 		PROP_TAG_PARENTSOURCEKEY != phichyvals->ppropval[0].proptag ||
 		PROP_TAG_SOURCEKEY != phichyvals->ppropval[1].proptag ||
-		PROP_TAG_LASTMODIFICATIONTIME != phichyvals->ppropval[2].proptag ||
+	    phichyvals->ppropval[2].proptag != PR_LAST_MODIFICATION_TIME ||
 		PROP_TAG_CHANGEKEY != phichyvals->ppropval[3].proptag ||
 		PROP_TAG_PREDECESSORCHANGELIST != phichyvals->ppropval[4].proptag ||
 	    phichyvals->ppropval[5].proptag != PR_DISPLAY_NAME)
@@ -1454,7 +1454,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
 		tmp_propvals.ppropval[1].proptag = PROP_TAG_PARENTFOLDERID;
 		tmp_propvals.ppropval[1].pvalue = &parent_id1;
-		tmp_propvals.ppropval[2].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		tmp_propvals.ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[2].pvalue;
 		tmp_propvals.ppropval[3].proptag = PROP_TAG_CHANGEKEY;
 		tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[3].pvalue;
@@ -1564,7 +1564,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (NULL == tmp_propvals.ppropval) {
 		return ecMAPIOOM;
 	}
-	tmp_propvals.ppropval[0].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = phichyvals->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGEKEY;
 	tmp_propvals.ppropval[1].pvalue = phichyvals->ppropval[3].pvalue;

@@ -185,7 +185,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LASTMODIFICATIONTIME);
+	sqlite3_bind_int64(pstmt, 1, PR_LAST_MODIFICATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
@@ -335,7 +335,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LASTMODIFICATIONTIME);
+	sqlite3_bind_int64(pstmt, 1, PR_LAST_MODIFICATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;

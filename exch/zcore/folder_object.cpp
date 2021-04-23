@@ -199,7 +199,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_SOURCEKEY:
 	case PROP_TAG_PARENTSOURCEKEY:
 	case PROP_TAG_PREDECESSORCHANGELIST:
-	case PROP_TAG_LASTMODIFICATIONTIME:
+	case PR_LAST_MODIFICATION_TIME:
 		return TRUE;
 	case PROP_TAG_IPMDRAFTSENTRYID:
 	case PROP_TAG_IPMCONTACTENTRYID:
@@ -730,8 +730,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 												pbin_pcl;
 	tmp_propvals.count ++;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-							PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 											&last_time;
 	tmp_propvals.count ++;
@@ -809,7 +808,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	propval_buff[1].pvalue = pbin_changekey;
 	propval_buff[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval_buff[2].pvalue = pbin_pcl;
-	propval_buff[3].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;
 	exmdb_client::set_folder_properties(
 		store_object_get_dir(pfolder->pstore), 0,

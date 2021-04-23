@@ -178,9 +178,7 @@ static int rop_ext_push_getreceivefoldertable_response(
 {
 	int i;
 	PROPTAG_ARRAY columns;
-	uint32_t proptags[3] = {PROP_TAG_FOLDERID,
-							PROP_TAG_MESSAGECLASS_STRING8,
-							PROP_TAG_LASTMODIFICATIONTIME};
+	uint32_t proptags[3] = {PROP_TAG_FOLDERID, PROP_TAG_MESSAGECLASS_STRING8, PR_LAST_MODIFICATION_TIME};
 	
 	columns.count = 3;
 	columns.pproptag = proptags;

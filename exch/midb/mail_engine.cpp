@@ -2200,8 +2200,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			continue;
 		}
 		message_flags = *(uint64_t*)pvalue;
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_LASTMODIFICATIONTIME);
+		pvalue = common_util_get_propvals(rows.pparray[i], PR_LAST_MODIFICATION_TIME);
 		if (NULL == pvalue) {
 			mod_time = 0;
 		} else {
@@ -3917,7 +3916,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		return 4;
 	}
 	nt_time = rop_util_current_nttime();
-	propval_buff[3].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &nt_time;
 	if (parent_id == folder_id1) {
 		propval_buff[4].proptag = PR_DISPLAY_NAME;
@@ -5449,7 +5448,7 @@ static void mail_engine_add_notification_message(
 	proptags.count = 4;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PROP_TAG_MESSAGEDELIVERYTIME;
-	tmp_proptags[1] = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
 	tmp_proptags[2] = PROP_TAG_MIDSTRING;
 	tmp_proptags[3] = PROP_TAG_MESSAGEFLAGS;
 	if (!exmdb_client::get_message_properties(
@@ -5458,8 +5457,7 @@ static void mail_engine_add_notification_message(
 		&proptags, &propvals)) {
 		return;		
 	}
-	pvalue = common_util_get_propvals(&propvals,
-				PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = common_util_get_propvals(&propvals, PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
 		mod_time = 0;
 	} else {
@@ -5897,7 +5895,7 @@ static void mail_engine_modify_notification_message(
 	proptags.count = 3;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PROP_TAG_MESSAGEFLAGS;
-	tmp_proptags[1] = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
 	tmp_proptags[2] = PROP_TAG_MIDSTRING;
 	if (!exmdb_client::get_message_properties(
 		common_util_get_maildir(), NULL, 0,
@@ -5929,8 +5927,7 @@ static void mail_engine_modify_notification_message(
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 		return;
 	}
-	pvalue = common_util_get_propvals(&propvals,
-				PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = common_util_get_propvals(&propvals, PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
 		mod_time = 0;
 	} else {

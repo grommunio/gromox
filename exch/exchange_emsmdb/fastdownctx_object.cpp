@@ -430,7 +430,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 						PR_ENTRYID, PROP_TAG_SOURCEKEY,
 						PROP_TAG_CHANGEKEY,
 						PROP_TAG_ORIGINALENTRYID,
-						PROP_TAG_LASTMODIFICATIONTIME,
+						PR_LAST_MODIFICATION_TIME,
 						PROP_TAG_PREDECESSORCHANGELIST,
 					};
 					for (auto t : tags)

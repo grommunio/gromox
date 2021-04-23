@@ -2396,7 +2396,7 @@ BOOL common_util_get_properties(int table_type,
 			case FOLDER_PROPERTIES_TABLE:
 				switch (pproptags->pproptag[i]) {
 				case PROP_TAG_LOCALCOMMITTIME:
-					proptag = PROP_TAG_LASTMODIFICATIONTIME;
+					proptag = PR_LAST_MODIFICATION_TIME;
 					break;
 				default:
 					proptag = pproptags->pproptag[i];
@@ -5366,7 +5366,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		propval_buff[2].proptag = PROP_TAG_INTERNETARTICLENUMBER;
 		propval_buff[2].pvalue = pvalue;
 		nt_time = rop_util_current_nttime();
-		propval_buff[3].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 		propval_buff[3].pvalue = &nt_time;
 		propvals.count = 4;
 		propvals.ppropval = propval_buff;

@@ -426,9 +426,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propvals.count ++;
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
-	    PROP_TAG_LASTMODIFICATIONTIME)) {
-		tmp_propvals.ppropval[tmp_propvals.count].proptag =
-								PROP_TAG_LASTMODIFICATIONTIME;
+	    PR_LAST_MODIFICATION_TIME)) {
+		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
 		tmp_propvals.count ++;
 	}
@@ -953,7 +952,7 @@ static BOOL message_object_check_readonly_property(
 		return TRUE;
 	case PROP_TAG_CHANGEKEY:
 	case PROP_TAG_CREATIONTIME:
-	case PROP_TAG_LASTMODIFICATIONTIME:
+	case PR_LAST_MODIFICATION_TIME:
 	case PROP_TAG_PREDECESSORCHANGELIST:
 	case PROP_TAG_SOURCEKEY:
 		if (pmessage->b_new)

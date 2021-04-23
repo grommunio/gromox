@@ -244,7 +244,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		nt_time = rop_util_current_nttime();
 		tmp_propvals[3].proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
 		tmp_propvals[3].pvalue = &nt_time;
-		tmp_propvals[4].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
 		common_util_set_properties(FOLDER_PROPERTIES_TABLE,
 			parent_fid, 0, pdb->psqlite, &propvals, &problems);
@@ -493,7 +493,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		nt_time = rop_util_current_nttime();
 		tmp_propvals[3].proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
 		tmp_propvals[3].pvalue = &nt_time;
-		tmp_propvals[4].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
 		common_util_set_properties(FOLDER_PROPERTIES_TABLE,
 			parent_fid, 0, pdb->psqlite, &propvals, &problems);
@@ -757,7 +757,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	nt_time = rop_util_current_nttime();
 	tmp_propvals[3].proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
 	tmp_propvals[3].pvalue = &nt_time;
-	tmp_propvals[4].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals[4].pvalue = &nt_time;
 	common_util_set_properties(FOLDER_PROPERTIES_TABLE,
 		src_val, 0, pdb->psqlite, &propvals, &problems);
@@ -2868,7 +2868,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	propval.proptag = PR_LAST_MODIFICATION_TIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -3551,7 +3551,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	propval.proptag = PR_LAST_MODIFICATION_TIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -4821,8 +4821,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}
-	pvalue = common_util_get_propvals(&tmp_msg.proplist,
-							PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = common_util_get_propvals(&tmp_msg.proplist, PR_LAST_MODIFICATION_TIME);
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}
@@ -4926,8 +4925,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-							PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_LAST_MODIFICATION_TIME);
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}

@@ -2335,7 +2335,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[3].pvalue = deconst(folder_comment);
 		propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
 		propval_buff[4].pvalue = &last_time;
-		propval_buff[5].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
@@ -5183,9 +5183,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 						ppropvals, PROP_TAG_SOURCEKEY);
 	if (propval_buff[1].pvalue == nullptr)
 		return ecInvalidParam;
-	propval_buff[2].proptag = PROP_TAG_LASTMODIFICATIONTIME;
-	propval_buff[2].pvalue = common_util_get_propvals(
-			ppropvals, PROP_TAG_LASTMODIFICATIONTIME);
+	propval_buff[2].proptag = PR_LAST_MODIFICATION_TIME;
+	propval_buff[2].pvalue = common_util_get_propvals(ppropvals, PR_LAST_MODIFICATION_TIME);
 	if (NULL == propval_buff[2].pvalue) {
 		propval_buff[2].pvalue = &nttime;
 		nttime = rop_util_current_nttime();
@@ -5320,7 +5319,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
 		tmp_propvals.ppropval[1].proptag = PROP_TAG_PARENTFOLDERID;
 		tmp_propvals.ppropval[1].pvalue = &parent_id1;
-		tmp_propvals.ppropval[2].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+		tmp_propvals.ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[2].pvalue = pproplist->ppropval[2].pvalue;
 		tmp_propvals.ppropval[3].proptag = PR_DISPLAY_NAME;
 		tmp_propvals.ppropval[3].pvalue = pproplist->ppropval[3].pvalue;
@@ -5407,7 +5406,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
 		return ecError;
-	tmp_propvals.ppropval[0].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = pproplist->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[1].pvalue = pproplist->ppropval[3].pvalue;

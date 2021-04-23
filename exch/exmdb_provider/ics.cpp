@@ -483,7 +483,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			sqlite3_bind_int64(pstmt6, 2, mid_val);
 			dtime = sqlite3_step(pstmt6) == SQLITE_ROW ? sqlite3_column_int64(pstmt6, 0) : 0;
 			sqlite3_reset(pstmt6);
-			sqlite3_bind_int64(pstmt6, 1, PROP_TAG_LASTMODIFICATIONTIME);
+			sqlite3_bind_int64(pstmt6, 1, PR_LAST_MODIFICATION_TIME);
 			sqlite3_bind_int64(pstmt6, 2, mid_val);
 			mtime = sqlite3_step(pstmt6) == SQLITE_ROW ? sqlite3_column_int64(pstmt6, 0) : 0;
 		}

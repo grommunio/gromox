@@ -2819,7 +2819,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			if (TRUE == parse_rfc822_timestamp(
 				date_buff, &tmp_time)) {
 				tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-				propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+				propval.proptag = PR_LAST_MODIFICATION_TIME;
 				propval.pvalue = &tmp_int64;
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					pmime_enum->b_result = FALSE;
@@ -2837,9 +2837,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pattachment->proplist, PROP_TAG_LASTMODIFICATIONTIME)) {
-		propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	if (tpropval_array_get_propval(&pattachment->proplist,
+	    PR_LAST_MODIFICATION_TIME) == nullptr) {
+		propval.proptag = PR_LAST_MODIFICATION_TIME;
 		propval.pvalue = &pmime_enum->nttime_stamp;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
@@ -4335,7 +4335,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	propval.proptag = PR_LAST_MODIFICATION_TIME;
 	propval.pvalue = &mime_enum.nttime_stamp;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -6639,7 +6639,7 @@ static BOOL oxcmail_export_attachment(
 	pctime = static_cast<uint64_t *>(tpropval_array_get_propval(
 	         &pattachment->proplist, PROP_TAG_CREATIONTIME));
 	pmtime = static_cast<uint64_t *>(tpropval_array_get_propval(
-	         &pattachment->proplist, PROP_TAG_LASTMODIFICATIONTIME));
+	         &pattachment->proplist, PR_LAST_MODIFICATION_TIME));
 	if (TRUE == b_inline) {
 		strcpy(tmp_field, "inline; ");
 		tmp_len = 8;

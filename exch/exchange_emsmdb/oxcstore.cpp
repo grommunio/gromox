@@ -343,9 +343,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	int object_type;
 	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
-	uint32_t proptags[3] = {PROP_TAG_FOLDERID,
-							PROP_TAG_MESSAGECLASS_STRING8,
-							PROP_TAG_LASTMODIFICATIONTIME};
+	uint32_t proptags[3] = {PROP_TAG_FOLDERID, PROP_TAG_MESSAGECLASS_STRING8, PR_LAST_MODIFICATION_TIME};
 	
 	columns.count = 3;
 	columns.pproptag = proptags;
