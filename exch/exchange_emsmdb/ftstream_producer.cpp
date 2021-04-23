@@ -701,10 +701,8 @@ static BOOL ftstream_producer_write_messagechildren(
 			pstream, META_TAG_FXDELPROP)) {
 			return FALSE;
 		}
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, PROP_TAG_MESSAGERECIPIENTS)) {
+		if (!ftstream_producer_write_uint32(pstream, PR_MESSAGE_RECIPIENTS))
 			return FALSE;
-		}
 	}
 	if (NULL != pchildren->prcpts) {
 		for (size_t i = 0; i < pchildren->prcpts->count; ++i) {
@@ -719,10 +717,8 @@ static BOOL ftstream_producer_write_messagechildren(
 			pstream, META_TAG_FXDELPROP)) {
 			return FALSE;
 		}
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, PROP_TAG_MESSAGEATTACHMENTS)) {
+		if (!ftstream_producer_write_uint32(pstream, PR_MESSAGE_ATTACHMENTS))
 			return FALSE;
-		}
 	}
 	if (NULL != pchildren->pattachments) {
 		for (size_t i = 0; i < pchildren->pattachments->count; ++i) {
@@ -941,7 +937,7 @@ BOOL ftstream_producer_write_messagechangepartial(
 		}
 		for (size_t j = 0; j < pmsg->pchanges[i].proplist.count; ++j) {
 			switch(pmsg->pchanges[i].proplist.ppropval[j].proptag) {
-			case PROP_TAG_MESSAGERECIPIENTS:
+			case PR_MESSAGE_RECIPIENTS:
 				if (NULL == pmsg->children.prcpts) {
 					break;
 				}
@@ -950,7 +946,7 @@ BOOL ftstream_producer_write_messagechangepartial(
 					pstream, tag)) {
 					return FALSE;
 				}
-				tag = PROP_TAG_MESSAGERECIPIENTS;
+				tag = PR_MESSAGE_RECIPIENTS;
 				if (FALSE == ftstream_producer_write_uint32(
 					pstream, tag)) {
 					return FALSE;
@@ -962,7 +958,7 @@ BOOL ftstream_producer_write_messagechangepartial(
 					}
 				}
 				break;
-			case PROP_TAG_MESSAGEATTACHMENTS:
+			case PR_MESSAGE_ATTACHMENTS:
 				if (NULL == pmsg->children.pattachments) {
 					break;
 				}
@@ -971,7 +967,7 @@ BOOL ftstream_producer_write_messagechangepartial(
 					pstream, tag)) {
 					return FALSE;
 				}
-				tag = PROP_TAG_MESSAGEATTACHMENTS;
+				tag = PR_MESSAGE_ATTACHMENTS;
 				if (FALSE == ftstream_producer_write_uint32(
 					pstream, tag)) {
 					return FALSE;

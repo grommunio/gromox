@@ -686,10 +686,10 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		}
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_MESSAGERECIPIENTS:	
+			case PR_MESSAGE_RECIPIENTS:	
 				msgctnt.children.prcpts = NULL;
 				break;
-			case PROP_TAG_MESSAGEATTACHMENTS:
+			case PR_MESSAGE_ATTACHMENTS:
 				msgctnt.children.pattachments = NULL;
 				break;
 			default:
@@ -854,14 +854,10 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			}
 			i ++;
 		}
-		if (-1 == common_util_index_proptags(
-			pproptags, PROP_TAG_MESSAGERECIPIENTS)) {				
+		if (common_util_index_proptags(pproptags, PR_MESSAGE_RECIPIENTS) == -1)
 			msgctnt.children.prcpts = NULL;
-		}
-		if (-1 == common_util_index_proptags(
-			pproptags, PROP_TAG_MESSAGEATTACHMENTS)) {
+		if (common_util_index_proptags(pproptags, PR_MESSAGE_ATTACHMENTS) == -1)
 			msgctnt.children.pattachments = NULL;
-		}
 		if (0 != level) {
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;

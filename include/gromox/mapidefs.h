@@ -67,6 +67,8 @@ enum {
 	PR_MESSAGE_SIZE_EXTENDED = PROP_TAG(PT_I8, 0x0E08), /* pidTagMessageSizeExtended */
 	PR_PARENT_ENTRYID = PROP_TAG(PT_BINARY, 0x0E09), /* PidTagParentEntryId */
 	PR_PARENT_SVREID = PROP_TAG(PT_SVREID, 0x0E09),
+	PR_MESSAGE_RECIPIENTS = PROP_TAG(PT_OBJECT, 0x0E12), /* PidTagMessageRecipients */
+	PR_MESSAGE_ATTACHMENTS = PROP_TAG(PT_OBJECT, 0x0E13), /* PidTagMessageAttachments */
 	PR_REPL_ITEMID = PROP_TAG(PT_LONG, 0x0E30), /* pidTagReplItemId */
 	PR_REPL_CHANGENUM = PROP_TAG(PT_I8, 0x0E33), /* pidTagReplChangenum */
 	PR_REPL_VERSIONHISTORY = PROP_TAG(PT_BINARY, 0x0E34), /* pidTagReplVersionhistory */

@@ -773,7 +773,7 @@ static BOOL fastupctx_object_del_props(
 	pnode = double_list_get_tail(&pctx->marker_stack);
 	uint32_t last_marker = pnode == nullptr ? 0 : static_cast<MARKER_NODE *>(pnode->pdata)->marker;
 	switch (marker) {
-	case PROP_TAG_MESSAGERECIPIENTS:
+	case PR_MESSAGE_RECIPIENTS:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			switch (last_marker) {
@@ -809,7 +809,7 @@ static BOOL fastupctx_object_del_props(
 			break;
 		}
 		break;
-	case PROP_TAG_MESSAGEATTACHMENTS:
+	case PR_MESSAGE_ATTACHMENTS:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			switch (last_marker) {
@@ -893,8 +893,8 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 	switch (ppropval->proptag) {
 	case META_TAG_FXDELPROP:
 		switch (*(uint32_t*)ppropval->pvalue) {
-		case PROP_TAG_MESSAGERECIPIENTS:
-		case PROP_TAG_MESSAGEATTACHMENTS:
+		case PR_MESSAGE_RECIPIENTS:
+		case PR_MESSAGE_ATTACHMENTS:
 		case PROP_TAG_CONTAINERCONTENTS:
 		case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
 		case PROP_TAG_CONTAINERHIERARCHY:

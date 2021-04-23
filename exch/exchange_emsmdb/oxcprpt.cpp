@@ -741,26 +741,24 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
-			if (PROP_TAG_MESSAGEATTACHMENTS == pproptags->pproptag[i]) {
+			if (pproptags->pproptag[i] == PR_MESSAGE_ATTACHMENTS) {
 				if (!message_object_copy_attachments(msgdst,
 				    msgsrc, b_force, &b_result))
 					return ecError;
 				if (FALSE == b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-										PROP_TAG_MESSAGEATTACHMENTS;
+					pproblems->pproblem[pproblems->count].proptag = PR_MESSAGE_ATTACHMENTS;
 					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 					pproblems->count ++;
 				}
 				continue;
-			} else if (PROP_TAG_MESSAGERECIPIENTS == pproptags->pproptag[i]) {
+			} else if (pproptags->pproptag[i] == PR_MESSAGE_RECIPIENTS) {
 				if (!message_object_copy_rcpts(msgdst, msgsrc,
 				    b_force, &b_result))
 					return ecError;
 				if (FALSE == b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-										PROP_TAG_MESSAGERECIPIENTS;
+					pproblems->pproblem[pproblems->count].proptag = PR_MESSAGE_RECIPIENTS;
 					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 					pproblems->count ++;
 				}

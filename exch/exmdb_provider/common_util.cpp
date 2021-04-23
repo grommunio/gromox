@@ -4578,7 +4578,7 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 	int table_type;
 	char sql_string[128];
 	
-	if (PROP_TAG_MESSAGERECIPIENTS == proptag) {
+	if (proptag == PR_MESSAGE_RECIPIENTS) {
 		table_type = RECIPIENT_PROPERTIES_TABLE;
 		sprintf(sql_string, "SELECT recipient_id FROM "
 				"recipients WHERE message_id=%llu", LLU(message_id));
@@ -4969,13 +4969,13 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	case RES_SUBRESTRICTION: {
 		auto rsub = pres->sub;
 		switch (rsub->subobject) {
-		case PROP_TAG_MESSAGERECIPIENTS:
+		case PR_MESSAGE_RECIPIENTS:
 			return common_util_evaluate_subobject_restriction(psqlite,
-					cpid, message_id, PROP_TAG_MESSAGERECIPIENTS,
+			       cpid, message_id, PR_MESSAGE_RECIPIENTS,
 			       &rsub->res);
-		case PROP_TAG_MESSAGEATTACHMENTS:
+		case PR_MESSAGE_ATTACHMENTS:
 			return common_util_evaluate_subobject_restriction(psqlite,
-					cpid, message_id, PROP_TAG_MESSAGEATTACHMENTS,
+			       cpid, message_id, PR_MESSAGE_ATTACHMENTS,
 			       &rsub->res);
 		default:
 			return FALSE;

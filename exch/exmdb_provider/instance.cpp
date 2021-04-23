@@ -1233,9 +1233,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			}
 			message_content_set_rcpts_internal(
 				static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), prcpts);
-			pproptags->pproptag[pproptags->count] =
-						PROP_TAG_MESSAGERECIPIENTS;
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
 		}
 	}
 	if (NULL != pmsgctnt->children.pattachments) {
@@ -1252,9 +1250,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			}
 			message_content_set_attachments_internal(
 				static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pattachments);
-			pproptags->pproptag[pproptags->count] =
-						PROP_TAG_MESSAGEATTACHMENTS;
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
 		}
 	}
 	return TRUE;

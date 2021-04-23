@@ -752,8 +752,7 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags,
-						PROP_TAG_MESSAGERECIPIENTS);
+	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
 	return TRUE;
 }
 
@@ -768,8 +767,7 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags,
-						PROP_TAG_MESSAGERECIPIENTS);
+	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
 	return TRUE;
 }
 
@@ -792,8 +790,7 @@ BOOL message_object_delele_attachment(MESSAGE_OBJECT *pmessage,
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	proptag_array_append(pmessage->pchanged_proptags,
-						PROP_TAG_MESSAGEATTACHMENTS);
+	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
 	return TRUE;
 }
 
@@ -1368,14 +1365,10 @@ BOOL message_object_copy_to(
 		}
 		i ++;
 	}
-	if (common_util_index_proptags(pexcluded_proptags,
-		PROP_TAG_MESSAGERECIPIENTS) >= 0) {				
+	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_RECIPIENTS) >= 0)
 		msgctnt.children.prcpts = NULL;
-	}
-	if (common_util_index_proptags(pexcluded_proptags,
-		PROP_TAG_MESSAGEATTACHMENTS) >= 0) {
+	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_ATTACHMENTS) >= 0)
 		msgctnt.children.pattachments = NULL;
-	}
 	if (!exmdb_client::write_message_instance(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id, &msgctnt,
