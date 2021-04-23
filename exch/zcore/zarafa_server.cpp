@@ -2335,7 +2335,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[6].pvalue = &change_num;
 		tmp_xid.guid = store_object_guid(pstore);
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
-		propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
+		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (propval_buff[7].pvalue == nullptr)
 			return ecError;

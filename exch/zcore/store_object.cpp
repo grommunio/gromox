@@ -1627,7 +1627,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 		return FALSE;
 	}
 	last_time = rop_util_current_nttime();
-	tmp_propvals.ppropval[2].proptag = PROP_TAG_CHANGEKEY;
+	tmp_propvals.ppropval[2].proptag = PR_CHANGE_KEY;
 	tmp_propvals.ppropval[2].pvalue = pbin_changekey;
 	tmp_propvals.ppropval[3].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals.ppropval[3].pvalue = pbin_pcl;

@@ -1218,7 +1218,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			return FALSE;
 		}
 		switch (proptag) {
-		case PROP_TAG_CHANGEKEY:
+		case PR_CHANGE_KEY:
 		case PROP_TAG_CHANGENUMBER:
 		case PR_PREDECESSOR_CHANGE_LIST:
 			continue;

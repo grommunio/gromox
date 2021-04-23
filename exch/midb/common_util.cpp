@@ -274,7 +274,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 		return false;
 	tmp_bin.pv = tmp_buff;
 	tmp_bin.cb = ext_push.offset;
-	propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
+	propval_buff[7].proptag = PR_CHANGE_KEY;
 	propval_buff[7].pvalue = &tmp_bin;
 	ppcl = pcl_init();
 	if (NULL == ppcl) {

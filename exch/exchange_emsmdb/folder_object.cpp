@@ -177,7 +177,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_PARENTENTRYID:
 	case PROP_TAG_PARENTFOLDERID:
 	case PROP_TAG_STORERECORDKEY:
-	case PROP_TAG_CHANGEKEY:
+	case PR_CHANGE_KEY:
 	case PR_SOURCE_KEY:
 	case PROP_TAG_PARENTSOURCEKEY:
 	case PR_PREDECESSOR_CHANGE_LIST:
@@ -739,8 +739,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	last_time = rop_util_current_nttime();
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-											PROP_TAG_CHANGEKEY;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_changekey;
 	tmp_propvals.count ++;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
@@ -840,7 +839,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	last_time = rop_util_current_nttime();
-	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
+	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin_changekey;
 	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = pbin_pcl;

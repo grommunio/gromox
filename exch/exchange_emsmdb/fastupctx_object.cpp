@@ -186,7 +186,7 @@ static BOOL fastupctx_object_create_folder(
 	if (NULL == pbin) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_CHANGEKEY;
+	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
@@ -296,7 +296,7 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
-	propval.proptag = PROP_TAG_CHANGEKEY;
+	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return GXERR_CALL_FAILED;

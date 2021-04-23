@@ -1008,7 +1008,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (4 != ppropvals->count ||
 	    ppropvals->ppropval[0].proptag != PR_SOURCE_KEY ||
 	    ppropvals->ppropval[1].proptag != PR_LAST_MODIFICATION_TIME ||
-		PROP_TAG_CHANGEKEY != ppropvals->ppropval[2].proptag ||
+	    ppropvals->ppropval[2].proptag != PR_CHANGE_KEY ||
 	    ppropvals->ppropval[3].proptag != PR_PREDECESSOR_CHANGE_LIST)
 		return ecInvalidParam;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -1311,7 +1311,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		PROP_TAG_PARENTSOURCEKEY != phichyvals->ppropval[0].proptag ||
 	    phichyvals->ppropval[1].proptag != PR_SOURCE_KEY ||
 	    phichyvals->ppropval[2].proptag != PR_LAST_MODIFICATION_TIME ||
-		PROP_TAG_CHANGEKEY != phichyvals->ppropval[3].proptag ||
+	    phichyvals->ppropval[3].proptag != PR_CHANGE_KEY ||
 	    phichyvals->ppropval[4].proptag != PR_PREDECESSOR_CHANGE_LIST ||
 	    phichyvals->ppropval[5].proptag != PR_DISPLAY_NAME)
 		return ecInvalidParam;
@@ -1453,7 +1453,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[1].pvalue = &parent_id1;
 		tmp_propvals.ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[2].pvalue;
-		tmp_propvals.ppropval[3].proptag = PROP_TAG_CHANGEKEY;
+		tmp_propvals.ppropval[3].proptag = PR_CHANGE_KEY;
 		tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[3].pvalue;
 		tmp_propvals.ppropval[4].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals.ppropval[4].pvalue = phichyvals->ppropval[4].pvalue;
@@ -1561,7 +1561,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	}
 	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = phichyvals->ppropval[2].pvalue;
-	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGEKEY;
+	tmp_propvals.ppropval[1].proptag = PR_CHANGE_KEY;
 	tmp_propvals.ppropval[1].pvalue = phichyvals->ppropval[3].pvalue;
 	tmp_propvals.ppropval[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[4].pvalue;

@@ -465,8 +465,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			return GXERR_CALL_FAILED;
 		tmp_xid.guid = store_object_guid(pmessage->pstore);
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
-		tmp_propvals.ppropval[tmp_propvals.count].proptag =
-										PROP_TAG_CHANGEKEY;
+		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 		pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
@@ -670,7 +669,7 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 static constexpr uint32_t trimtags[] = {
 	PROP_TAG_MID, PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYCC,
 	PROP_TAG_DISPLAYBCC, PROP_TAG_MESSAGESIZE, PROP_TAG_HASATTACHMENTS,
-	PROP_TAG_CHANGEKEY, PROP_TAG_CHANGENUMBER,
+	PR_CHANGE_KEY, PROP_TAG_CHANGENUMBER,
 	PR_PREDECESSOR_CHANGE_LIST,
 };
 
@@ -943,7 +942,7 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_MESSAGESTATUS:
 	case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 		return TRUE;
-	case PROP_TAG_CHANGEKEY:
+	case PR_CHANGE_KEY:
 	case PROP_TAG_CREATIONTIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:

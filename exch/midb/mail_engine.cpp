@@ -3442,7 +3442,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		message_content_free(pmsgctnt);
 		return 4;
 	}   
-	propval.proptag = PROP_TAG_CHANGEKEY;
+	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
@@ -3740,7 +3740,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		message_content_free(pmsgctnt);
 		return 4;
 	}   
-	propval.proptag = PROP_TAG_CHANGEKEY;
+	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
@@ -3907,7 +3907,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (NULL == pbin) {
 		return 4;
 	}
-	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
+	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin;
 	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = common_util_pcl_append(pbin1, pbin);

@@ -271,7 +271,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[6].pvalue = &change_num;
 		tmp_xid.guid = logon_object_guid(plogon);
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
-		propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
+		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (NULL == propval_buff[7].pvalue) {
 			return ecMAPIOOM;
@@ -787,7 +787,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
+	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin_changekey;
 	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = pbin_pcl;

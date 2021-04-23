@@ -620,8 +620,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	if (0 != pmessage->message_id && NULL == pmessage->pstate) {
 		tmp_xid.guid = logon_object_guid(pmessage->plogon);
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
-		tmp_propvals.ppropval[tmp_propvals.count].proptag =
-												PROP_TAG_CHANGEKEY;
+		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 		pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
@@ -1168,7 +1167,7 @@ BOOL message_object_check_readonly_property(
 	case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 	case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 		return TRUE;
-	case PROP_TAG_CHANGEKEY:
+	case PR_CHANGE_KEY:
 	case PROP_TAG_CREATIONTIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
@@ -1656,7 +1655,7 @@ BOOL message_object_copy_to(
 		PROP_TAG_MID, PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
 		PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8, PROP_TAG_DISPLAYBCC,
 		PROP_TAG_DISPLAYBCC_STRING8, PROP_TAG_MESSAGESIZE,
-		PROP_TAG_HASATTACHMENTS, PROP_TAG_CHANGEKEY, PROP_TAG_CHANGENUMBER,
+		PROP_TAG_HASATTACHMENTS, PR_CHANGE_KEY, PROP_TAG_CHANGENUMBER,
 		PR_PREDECESSOR_CHANGE_LIST,
 	};
 	for (auto t : tags)

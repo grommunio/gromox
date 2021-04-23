@@ -224,7 +224,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		               rop_util_make_user_guid(account_id) :
 		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
-		tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
+		tmp_propvals[1].proptag = PR_CHANGE_KEY;
 		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
@@ -472,7 +472,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		               rop_util_make_user_guid(account_id) :
 		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
-		tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
+		tmp_propvals[1].proptag = PR_CHANGE_KEY;
 		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
@@ -735,7 +735,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	               rop_util_make_user_guid(account_id) :
 	               rop_util_make_domain_guid(account_id);
 	rop_util_value_to_gc(change_num, tmp_xid.local_id);
-	tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
+	tmp_propvals[1].proptag = PR_CHANGE_KEY;
 	tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 	if (tmp_propvals[1].pvalue == nullptr ||
 	    !common_util_get_property(FOLDER_PROPERTIES_TABLE, src_val, 0,
@@ -2184,8 +2184,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag =
-													PROP_TAG_CHANGEKEY;
+			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag = PR_CHANGE_KEY;
 			msgctnt.proplist.ppropval[msgctnt.proplist.count].pvalue =
 																pvalue;
 			msgctnt.proplist.count ++;
@@ -4068,7 +4067,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
 					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-					PROP_TAG_CHANGEKEY, PR_READ,
+					PR_CHANGE_KEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
 					PR_PREDECESSOR_CHANGE_LIST,
 					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
@@ -4494,7 +4493,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
 					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-					PROP_TAG_CHANGEKEY, PR_READ,
+					PR_CHANGE_KEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
 					PR_PREDECESSOR_CHANGE_LIST,
 					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,

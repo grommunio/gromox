@@ -700,7 +700,7 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PROP_TAG_CHANGEKEY, &bxid) ||
+	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
 	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
 		fprintf(stderr, "tpropval: ENOMEM\n");
 		return -ENOMEM;
@@ -760,7 +760,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	auto props = &ctnt->proplist;
 	if (!tpropval_array_set_propval(props, PROP_TAG_MID, &msg_id) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PROP_TAG_CHANGEKEY, &bxid) ||
+	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
 	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
 		fprintf(stderr, "tpropval: ENOMEM\n");
 		return -ENOMEM;

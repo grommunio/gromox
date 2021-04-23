@@ -428,7 +428,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 				if (FALSE == pctx->b_chginfo) {
 					static constexpr uint32_t tags[] = {
 						PR_ENTRYID, PR_SOURCE_KEY,
-						PROP_TAG_CHANGEKEY,
+						PR_CHANGE_KEY,
 						PROP_TAG_ORIGINALENTRYID,
 						PR_LAST_MODIFICATION_TIME,
 						PR_PREDECESSOR_CHANGE_LIST,

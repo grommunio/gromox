@@ -5352,7 +5352,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		               rop_util_make_user_guid(account_id) :
 		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
-		propval_buff[0].proptag = PROP_TAG_CHANGEKEY;
+		propval_buff[0].proptag = PR_CHANGE_KEY;
 		propval_buff[0].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (NULL == propval_buff[0].pvalue) {
 			return FALSE;

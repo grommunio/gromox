@@ -1841,7 +1841,7 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
+	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == propval_buff[1].pvalue) {
 		return FALSE;
@@ -1882,9 +1882,8 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 		proptag_array_free(pindices);
 		return FALSE;
 	}
-	if (FALSE == property_groupinfo_get_partial_index(
-		pgpinfo, PROP_TAG_CHANGEKEY, &tmp_index)) {
-		if (!proptag_array_append(pungroup_proptags, PROP_TAG_CHANGEKEY)) {
+	if (!property_groupinfo_get_partial_index(pgpinfo, PR_CHANGE_KEY, &tmp_index)) {
+		if (!proptag_array_append(pungroup_proptags, PR_CHANGE_KEY)) {
 			proptag_array_free(pindices);
 			proptag_array_free(pungroup_proptags);
 			return FALSE;

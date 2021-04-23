@@ -2406,7 +2406,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
-	propval.proptag = PROP_TAG_CHANGEKEY;
+	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	pbin1 = static_cast<BINARY *>(common_util_get_propvals(&pmsgctnt->proplist,
@@ -2480,7 +2480,7 @@ static BOOL common_util_create_folder(
 	if (NULL == pbin) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_CHANGEKEY;
+	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(pproplist, &propval);
 	pbin1 = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_PREDECESSOR_CHANGE_LIST));

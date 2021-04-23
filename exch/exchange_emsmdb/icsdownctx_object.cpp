@@ -778,13 +778,11 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
 	
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CHANGEKEY);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	pchgheader->ppropval[pchgheader->count].proptag =
-										PROP_TAG_CHANGEKEY;
+	pchgheader->ppropval[pchgheader->count].proptag = PR_CHANGE_KEY;
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
 	
@@ -1205,8 +1203,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 				}
 			}
 			common_util_remove_propvals(&pembedded->proplist, PR_READ);
-			common_util_remove_propvals(
-				&pembedded->proplist, PROP_TAG_CHANGEKEY);
+			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
 			pvalue = common_util_get_propvals(&pembedded->proplist, PR_MESSAGE_FLAGS);
@@ -1346,8 +1343,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	pctx->next_progress_steps += progmsg.message_size;
 	if (TRUE == b_full) {
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_CHANGEKEY);
+		common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
 		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
