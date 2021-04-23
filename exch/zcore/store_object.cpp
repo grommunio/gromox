@@ -548,8 +548,8 @@ static BOOL store_object_check_readonly_property(
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
-	case PROP_TAG_ACCESSLEVEL:
+	case PR_ACCESS:
+	case PR_ACCESS_LEVEL:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_CODEPAGEID:
 	case PROP_TAG_CONTENTCOUNT:
@@ -590,7 +590,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_STORAGEQUOTALIMIT:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_OFFLINE:
-	case PROP_TAG_STOREPROVIDER:
+	case PR_MDB_PROVIDER:
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:
@@ -697,9 +697,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	}
 	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_STOREPROVIDER;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_DEFAULTSTORE;
 	pproptags->count ++;
@@ -911,7 +909,7 @@ static BOOL store_object_get_calculated_property(
 	};
 	
 	switch (proptag) {
-	case PROP_TAG_STOREPROVIDER:
+	case PR_MDB_PROVIDER:
 		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -962,7 +960,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		*static_cast<uint8_t *>(*ppvalue) = !!store_object_check_owner_mode(pstore);
 		return TRUE;
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

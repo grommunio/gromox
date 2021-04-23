@@ -69,8 +69,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 		sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
@@ -135,7 +134,7 @@ BOOL folder_object_check_readonly_property(
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 	case PROP_TAG_ADDRESSBOOKENTRYID:
 	case PROP_TAG_ARTICLENUMBERNEXT:
 	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
@@ -208,7 +207,7 @@ static BOOL folder_object_get_calculated_property(
 	static constexpr BINARY fake_bin = {sizeof(bin_buff), const_cast<uint8_t *>(bin_buff)};
 	
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 		*ppvalue = &pfolder->tag_access;
 		return TRUE;
 	case PROP_TAG_CONTENTUNREADCOUNT:

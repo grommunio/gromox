@@ -274,8 +274,7 @@ BOOL attachment_object_get_all_proptags(
 			pproptags->count ++;
 		}
 	}
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESSLEVEL;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
 	return TRUE;
 }
 
@@ -286,7 +285,7 @@ BOOL attachment_object_check_readonly_property(
 		return TRUE;
 	switch (proptag) {
 	case PROP_TAG_MID:
-	case PROP_TAG_ACCESSLEVEL:
+	case PR_ACCESS_LEVEL:
 	case PROP_TAG_INCONFLICT:
 	case PR_OBJECT_TYPE:
 	case PR_RECORD_KEY:
@@ -309,10 +308,10 @@ static BOOL attachment_object_get_calculated_property(
 {
 	
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 		*ppvalue = &pattachment->pparent->tag_access;
 		return TRUE;
-	case PROP_TAG_ACCESSLEVEL:
+	case PR_ACCESS_LEVEL:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

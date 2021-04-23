@@ -869,12 +869,10 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 			break;
 		}
 	}
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESSLEVEL;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
 	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTENTRYID;
@@ -911,8 +909,8 @@ static BOOL message_object_check_readonly_property(
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
-	case PROP_TAG_ACCESSLEVEL:
+	case PR_ACCESS:
+	case PR_ACCESS_LEVEL:
 	case PROP_TAG_ASSOCIATED:
 	case PROP_TAG_CHANGENUMBER:
 	case PROP_TAG_CONVERSATIONID:
@@ -960,10 +958,10 @@ static BOOL message_object_get_calculated_property(
 	MESSAGE_OBJECT *pmessage, uint32_t proptag, void **ppvalue)
 {
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 		*ppvalue = &pmessage->tag_access;
 		return TRUE;
-	case PROP_TAG_ACCESSLEVEL:
+	case PR_ACCESS_LEVEL:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

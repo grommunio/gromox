@@ -63,6 +63,8 @@ enum {
 	PR_REPL_COPIEDFROM_VERSIONHISTORY = PROP_TAG(PT_BINARY, 0x0E3C), /* pidTagReplCopiedfromVersionhistory */
 	PR_REPL_COPIEDFROM_ITEMID = PROP_TAG(PT_BINARY, 0x0E3D), /* pidTagReplCopiedfromItemid */
 	PR_READ = PROP_TAG(PT_BOOLEAN, 0x0E69), /* pidTagRead */
+	PR_ACCESS = PROP_TAG(PT_LONG, 0x0FF4), /* PidTagAccess */
+	PR_ACCESS_LEVEL = PROP_TAG(PT_LONG, 0x0FF7), /* PidTagAccessLevel */
 	PR_STORE_RECORD_KEY = PROP_TAG(PT_BINARY, 0x0FFA), /* PidTagStoreRecordKey */
 	PR_STORE_ENTRYID = PROP_TAG(PT_BINARY, 0x0FFB), /* PidTagStoreEntryId */
 	PR_RECORD_KEY = PROP_TAG(PT_BINARY, 0x0FF9), /* pidTagRecordKey */
@@ -81,6 +83,7 @@ enum {
 	PR_LAST_MODIFICATION_TIME = PROP_TAG(PT_SYSTIME, 0x3008), /* pidTagLastModificationTime */
 	PR_STORE_STATE = PROP_TAG(PT_LONG, 0x340E), /* PidTagStoreState */
 	PR_STORE_SUPPORT_MASK = PROP_TAG(PT_LONG, 0x340D), /* PidTagStoreSupportMask */
+	PR_MDB_PROVIDER = PROP_TAG(PT_BINARY, 0x3414), /* PidTagStoreProvider */
 	PR_IPM_SUBTREE_ENTRYID = PROP_TAG(PT_BINARY, 0x35E0), /* PidTagIpmSubtreeEntryId */
 	PR_IPM_OUTBOX_ENTRYID = PROP_TAG(PT_BINARY, 0x35E2), /* PidTagIpmOutboxEntryId */
 	PR_IPM_WASTEBASKET_ENTRYID = PROP_TAG(PT_BINARY, 0x35E3), /* PidTagIpmWastebasketEntryId */

@@ -614,7 +614,7 @@ static BOOL logon_object_check_readonly_property(
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
-	case PROP_TAG_ACCESSLEVEL:
+	case PR_ACCESS_LEVEL:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
 	case PROP_TAG_CODEPAGEID:
@@ -653,7 +653,7 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_STORAGEQUOTALIMIT:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_OFFLINE:
-	case PROP_TAG_STOREPROVIDER:
+	case PR_MDB_PROVIDER:
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:

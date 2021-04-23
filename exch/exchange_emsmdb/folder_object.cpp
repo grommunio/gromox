@@ -63,8 +63,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 		sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_RIGHTS;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTENTRYID;
@@ -121,7 +120,7 @@ BOOL folder_object_check_readonly_property(
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 	case PROP_TAG_ADDRESSBOOKENTRYID:
 	case PROP_TAG_ARTICLENUMBERNEXT:
 	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
@@ -237,7 +236,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PROP_TAG_ACCESS:
+	case PR_ACCESS:
 		*outvalue = &pfolder->tag_access;
 		return TRUE;
 	case PROP_TAG_FOLDERID:

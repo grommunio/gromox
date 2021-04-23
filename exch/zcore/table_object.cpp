@@ -149,7 +149,7 @@ static BOOL table_object_get_store_table_all_proptags(
 	PROPTAG_ARRAY tmp_proptags1;
 	PROPTAG_ARRAY tmp_proptags2;
 	static const uint32_t proptag_buff[] = {
-		PROP_TAG_STOREPROVIDER,
+		PR_MDB_PROVIDER,
 		PR_MESSAGE_SIZE,
 		PROP_TAG_ASSOCMESSAGESIZE,
 		PROP_TAG_NORMALMESSAGESIZE,
@@ -514,8 +514,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		HIERARCHY_TABLE == ptable->table_type)) {
 		idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
 		if (HIERARCHY_TABLE == ptable->table_type) {
-			idx1 = common_util_index_proptags(
-					pcolumns, PROP_TAG_ACCESS);
+			idx1 = common_util_index_proptags(pcolumns, PR_ACCESS);
 			idx2 = common_util_index_proptags(
 					pcolumns, PROP_TAG_RIGHTS);
 		} else {
@@ -600,8 +599,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								*ptag_access =
 									table_object_get_folder_tag_access(
 									ptable->pstore, tmp_eid, pinfo->username);
-								temp_set.pparray[i]->ppropval[j].proptag =
-															PROP_TAG_ACCESS;
+								temp_set.pparray[i]->ppropval[j].proptag = PR_ACCESS;
 								temp_set.pparray[i]->ppropval[j].pvalue =
 															ptag_access;
 								break;
