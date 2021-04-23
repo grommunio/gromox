@@ -331,7 +331,7 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 		if (libpff_attachment_get_data_size(atx, &asize, &unique_tie(err)) < 1)
 			return az_error("PF-1013: Attachment is corrupted", err);
 		/*
-		 * Data is in PROP_TAG_ATTACHDATABINARY, and so was
+		 * Data is in PR_ATTACH_DATA_BIN, and so was
 		 * already spooled into atc->proplist by the caller.
 		 */
 		tlog("[attachment type=%c size=%zu]\n", atype, asize);
@@ -630,7 +630,7 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		pv.pvalue = &u.lla;
 		break;
 	case PT_OBJECT:
-		if (pv.proptag == PROP_TAG_ATTACHDATAOBJECT)
+		if (pv.proptag == PR_ATTACH_DATA_OBJ)
 			return 0; /* Embedded message, which separately handled. */
 		fprintf(stderr, "Unsupported proptag %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);

@@ -75,6 +75,8 @@ enum {
 	PR_EMAIL_ADDRESS_A = PROP_TAG(PT_STRING8, 0x3003),
 	PR_EMAIL_ADDRESS = PROP_TAG(PT_UNICODE, 0x3003), /* pidTagEmailAddress */
 	PR_LAST_MODIFICATION_TIME = PROP_TAG(PT_SYSTIME, 0x3008), /* pidTagLastModificationTime */
+	PR_ATTACH_DATA_BIN = PROP_TAG(PT_BINARY, 0x3701), /* pidTagAttachDataBinary */
+	PR_ATTACH_DATA_OBJ = PROP_TAG(PT_OBJECT, 0x3701), /* pidTagAttachDataObject */
 	PR_SOURCE_KEY = PROP_TAG(PT_BINARY, 0x65E0), /* pidTagSourceKey */
 	PR_CHANGE_KEY = PROP_TAG(PT_BINARY, 0x65E2), /* pidTagChangeKey */
 	PR_PREDECESSOR_CHANGE_LIST = PROP_TAG(PT_BINARY, 0x65E3), /* pidTagPredecessorChangeList */

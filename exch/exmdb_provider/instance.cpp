@@ -29,8 +29,6 @@
 #define PROP_TAG_BODY_UNSPECIFIED						0x10000000
 #define PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED	0x007D0000
 #define PROP_TAG_HTML_UNSPECIFIED						0x10130000
-#define PROP_TAG_ATTACHDATA_UNSPECIFIED					0x37010000
-
 #define MAX_RECIPIENT_NUMBER							4096
 #define MAX_ATTACHMENT_NUMBER							1024
 
@@ -287,8 +285,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		for (i=0; i<proptags.count; i++) {
 			switch (proptags.pproptag[i]) {
-			case PROP_TAG_ATTACHDATABINARY:
-			case PROP_TAG_ATTACHDATAOBJECT: {
+			case PR_ATTACH_DATA_BIN:
+			case PR_ATTACH_DATA_OBJ: {
 				sprintf(sql_string, "SELECT propval FROM "
 					"attachment_properties WHERE attachment_id=%llu AND"
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
@@ -300,7 +298,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				}
 				cid = sqlite3_column_int64(pstmt2, 0);
 				pstmt2.finalize();
-				propval.proptag = proptags.pproptag[i] == PROP_TAG_ATTACHDATABINARY ?
+				propval.proptag = proptags.pproptag[i] == PR_ATTACH_DATA_BIN ?
 				                  ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
 				propval.pvalue = &cid;
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
@@ -766,13 +764,9 @@ static BOOL instance_read_attachment(
 				return FALSE;
 			if (ID_TAG_ATTACHDATABINARY ==
 				pattachment1->proplist.ppropval[i].proptag) {
-				pattachment->proplist.ppropval[
-					pattachment->proplist.count].proptag =
-					PROP_TAG_ATTACHDATABINARY;
+				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_BIN;
 			} else {
-				pattachment->proplist.ppropval[
-					pattachment->proplist.count].proptag =
-					PROP_TAG_ATTACHDATAOBJECT;
+				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_OBJ;
 			}
 			pattachment->proplist.ppropval[
 				pattachment->proplist.count].pvalue = pbin;
@@ -1462,13 +1456,13 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		}
 		if (FALSE == b_force) {
 			switch (proptag) {
-			case PROP_TAG_ATTACHDATABINARY:
+			case PR_ATTACH_DATA_BIN:
 				if (NULL != tpropval_array_get_propval(
 					pproplist, ID_TAG_ATTACHDATABINARY)) {
 					continue;	
 				}
 				break;
-			case PROP_TAG_ATTACHDATAOBJECT:
+			case PR_ATTACH_DATA_OBJ:
 				if (NULL != tpropval_array_get_propval(
 					pproplist, ID_TAG_ATTACHDATAOBJECT)) {
 					continue;	
@@ -1489,11 +1483,11 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 			}
 		}
 		switch (proptag) {
-		case PROP_TAG_ATTACHDATABINARY:
+		case PR_ATTACH_DATA_BIN:
 			tpropval_array_remove_propval(
 				pproplist, ID_TAG_ATTACHDATABINARY);
 			break;
-		case PROP_TAG_ATTACHDATAOBJECT:
+		case PR_ATTACH_DATA_OBJ:
 			tpropval_array_remove_propval(
 				pproplist, ID_TAG_ATTACHDATAOBJECT);
 			break;
@@ -1891,10 +1885,10 @@ BOOL exmdb_server_get_instance_all_proptags(
 		for (i=0; i<pattachment->proplist.count; i++) {
 			switch (pattachment->proplist.ppropval[i].proptag) {
 			case ID_TAG_ATTACHDATABINARY:
-				pproptags->pproptag[i] = PROP_TAG_ATTACHDATABINARY;
+				pproptags->pproptag[i] = PR_ATTACH_DATA_BIN;
 				break;
 			case ID_TAG_ATTACHDATAOBJECT:
-				pproptags->pproptag[i] = PROP_TAG_ATTACHDATAOBJECT;
+				pproptags->pproptag[i] = PR_ATTACH_DATA_OBJ;
 				break;
 			default:
 				pproptags->pproptag[i] =
@@ -2186,10 +2180,10 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
-		case PROP_TAG_ATTACHDATA_UNSPECIFIED:
+		case CHANGE_PROP_TYPE(PR_ATTACH_DATA_BIN, PT_UNSPECIFIED):
 			proptype = PT_BINARY;
 			pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-			       &pattachment->proplist, PROP_TAG_ATTACHDATABINARY));
+			       &pattachment->proplist, PR_ATTACH_DATA_BIN));
 			if (NULL == pbin) {
 				pvalue = tpropval_array_get_propval(
 							&pattachment->proplist,
@@ -2211,7 +2205,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			if (NULL == pbin) {
 				proptype = PT_OBJECT;
 				pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-				       &pattachment->proplist, PROP_TAG_ATTACHDATAOBJECT));
+				       &pattachment->proplist, PR_ATTACH_DATA_OBJ));
 				if (NULL == pbin) {
 					pvalue = tpropval_array_get_propval(
 								&pattachment->proplist,
@@ -2243,15 +2237,14 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				continue;
 			}
 			break;
-		case PROP_TAG_ATTACHDATABINARY:
-		case PROP_TAG_ATTACHDATAOBJECT:
-			if (PROP_TAG_ATTACHDATABINARY == pproptags->pproptag[i]) {
+		case PR_ATTACH_DATA_BIN:
+		case PR_ATTACH_DATA_OBJ:
+			if (pproptags->pproptag[i] == PR_ATTACH_DATA_BIN)
 				pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, ID_TAG_ATTACHDATABINARY);
-			} else {
+			else
 				pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, ID_TAG_ATTACHDATAOBJECT);
-			}
 			if (NULL != pvalue) {
 				pvalue = instance_read_cid_content(
 						*(uint64_t*)pvalue, &length);
@@ -2831,11 +2824,11 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
-			case PROP_TAG_ATTACHDATABINARY:
+			case PR_ATTACH_DATA_BIN:
 				tpropval_array_remove_propval(
 					&pattachment->proplist, ID_TAG_ATTACHDATABINARY);
 				break;
-			case PROP_TAG_ATTACHDATAOBJECT:
+			case PR_ATTACH_DATA_OBJ:
 				tpropval_array_remove_propval(
 					&pattachment->proplist, ID_TAG_ATTACHDATAOBJECT);
 				break;
@@ -2973,11 +2966,11 @@ BOOL exmdb_server_remove_instance_properties(
 		pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_ATTACHDATABINARY:
+			case PR_ATTACH_DATA_BIN:
 				tpropval_array_remove_propval(
 					&pattachment->proplist, ID_TAG_ATTACHDATABINARY);
 				break;
-			case PROP_TAG_ATTACHDATAOBJECT:
+			case PR_ATTACH_DATA_OBJ:
 				tpropval_array_remove_propval(
 					&pattachment->proplist, ID_TAG_ATTACHDATAOBJECT);
 				break;

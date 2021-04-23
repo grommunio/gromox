@@ -347,7 +347,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			propval.proptag = PROP_TAG_ATTACHDATABINARY;
+			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = &tmp_bin;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -1023,7 +1023,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 				continue;
 			}
 			photo_type = pvalue;
-			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHDATABINARY));
+			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN));
 			if (NULL == pvalue) {
 				continue;
 			}

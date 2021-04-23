@@ -1675,7 +1675,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		}
 		case ATTRIBUTE_ID_ATTACHDATA:
-			propval.proptag = PROP_TAG_ATTACHDATABINARY;
+			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				str_hash_free(phash);
@@ -2858,7 +2858,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 		/* ATTRIBUTE_ID_ATTACHDATA */
 		if (NULL != pmethod && ATTACH_METHOD_BY_VALUE == *pmethod) {
-			pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHDATABINARY);
+			pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
 			if (NULL != pvalue) {
 				attribute.attr_id = ATTRIBUTE_ID_ATTACHDATA;
 				attribute.lvl = LVL_ATTACHMENT;
@@ -2867,8 +2867,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 					pext, &attribute, alloc, get_propname)) {
 					return FALSE;
 				}
-				tmp_proptags.pproptag[tmp_proptags.count] =
-								PROP_TAG_ATTACHDATABINARY;
+				tmp_proptags.pproptag[tmp_proptags.count] = PR_ATTACH_DATA_BIN;
 				tmp_proptags.count ++;
 			}
 		}
@@ -2988,8 +2987,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tnef_proplist.count ++;
 		}
 		if (NULL != pattachment->pembedded) {
-			tnef_proplist.ppropval[tnef_proplist.count].propid =
-				PROP_ID(PROP_TAG_ATTACHDATAOBJECT);
+			tnef_proplist.ppropval[tnef_proplist.count].propid = PROP_ID(PR_ATTACH_DATA_OBJ);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_OBJECT;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 			tnef_proplist.ppropval[tnef_proplist.count].pvalue = &tmp_bin;

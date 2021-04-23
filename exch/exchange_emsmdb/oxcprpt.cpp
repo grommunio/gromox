@@ -1111,9 +1111,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		case PT_UNICODE:
 			break;
 		case PT_OBJECT:
-			if (PROP_TAG_ATTACHDATAOBJECT == proptag) {
+			if (proptag == PR_ATTACH_DATA_OBJ)
 				break;
-			}
 			return ecNotFound;
 		default:
 			return ecNotSupported;

@@ -282,10 +282,8 @@ BOOL attachment_object_get_all_proptags(
 BOOL attachment_object_check_readonly_property(
 	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
 {
-	if (PROP_TYPE(proptag) == PT_OBJECT &&
-		PROP_TAG_ATTACHDATAOBJECT != proptag) {
+	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
 		return TRUE;
-	}
 	switch (proptag) {
 	case PROP_TAG_MID:
 	case PROP_TAG_ACCESSLEVEL:
@@ -617,10 +615,8 @@ BOOL attachment_object_copy_properties(
 		}
 		i ++;
 	}
-	if (common_util_index_proptags(pexcluded_proptags,
-		PROP_TAG_ATTACHDATAOBJECT) >= 0) {
+	if (common_util_index_proptags(pexcluded_proptags, PR_ATTACH_DATA_OBJ) >= 0)
 		attctnt.pembedded = NULL;
-	}
 	if (FALSE == exmdb_client_write_attachment_instance(
 		logon_object_get_dir(pattachment->pparent->plogon),
 		pattachment->instance_id, &attctnt, b_force, pproblems)) {

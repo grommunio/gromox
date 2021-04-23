@@ -26,7 +26,6 @@
 #if PHP_MAJOR_VERSION >= 8
 #	include "mapi_arginfo.h"
 #endif
-#define PR_ATTACH_DATA_OBJ                          0x3701000D
 #define PR_CONTENTS_SYNCHRONIZER					0x662D000D
 #define PR_HIERARCHY_SYNCHRONIZER					0x662C000D
 #define PR_COLLECTOR								0x662E000D
@@ -3473,8 +3472,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
 		}
 	} else if (0 == memcmp(&iid_guid, &IID_IMessage, sizeof(GUID))) {
-		if (type != le_mapi_attachment ||
-			PR_ATTACH_DATA_OBJ != proptag) {
+		if (type != le_mapi_attachment || proptag != PR_ATTACH_DATA_OBJ) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
 		}

@@ -716,7 +716,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		}
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_ATTACHDATAOBJECT:
+			case PR_ATTACH_DATA_OBJ:
 				attctnt.pembedded = NULL;
 				break;
 			default:
@@ -888,10 +888,8 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			}
 			i ++;
 		}
-		if (-1 == common_util_index_proptags(
-			pproptags, PROP_TAG_ATTACHDATAOBJECT)) {
+		if (common_util_index_proptags(pproptags, PR_ATTACH_DATA_OBJ) == -1)
 			attctnt.pembedded = NULL;
-		}
 		if (!fastdownctx_object_make_attachmentcontent(pctx.get(), &attctnt))
 			return ecError;
 		break;

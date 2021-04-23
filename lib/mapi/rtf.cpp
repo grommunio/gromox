@@ -3255,7 +3255,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PROP_TAG_ATTACHDATABINARY;
+			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = &tmp_bin;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);

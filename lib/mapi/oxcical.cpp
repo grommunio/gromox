@@ -2224,7 +2224,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				"[InternetShortcut]\r\nURL=%s", pvalue);
 			tmp_bin.pc = tmp_buff;
-			propval.proptag = PROP_TAG_ATTACHDATABINARY;
+			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = &tmp_bin;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
@@ -2333,7 +2333,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
 		}
-		propval.proptag = PROP_TAG_ATTACHDATABINARY;
+		propval.proptag = PR_ATTACH_DATA_BIN;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;

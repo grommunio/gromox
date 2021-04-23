@@ -2279,7 +2279,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 		binhex_clear(&binhex);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_ATTACHDATABINARY;
+	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
@@ -2434,7 +2434,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_ATTACHDATABINARY;
+	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
@@ -2526,7 +2526,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_ATTACHDATABINARY;
+	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
 	tmp_bin.pc = pcontent;
@@ -2632,7 +2632,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_ATTACHDATABINARY;
+	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = pbin;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
@@ -2994,7 +2994,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				free(pcontent);
 				return;
 			}
-			propval.proptag = PROP_TAG_ATTACHDATABINARY;
+			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = content_len;
 			tmp_bin.pc = pcontent;
@@ -3097,7 +3097,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					"URL=ftp://%s/%s/%s%s", site_buff, dir_buff,
 					file_name, mode_buff);
 		tmp_bin.pc = mode_buff;
-		propval.proptag = PROP_TAG_ATTACHDATABINARY;
+		propval.proptag = PR_ATTACH_DATA_BIN;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
@@ -3171,7 +3171,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	propval.proptag = PROP_TAG_ATTACHDATABINARY;
+	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
 	tmp_bin.pc = pcontent;
@@ -4115,7 +4115,7 @@ static BOOL oxcmail_parse_smime_message(
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_ATTACHDATABINARY;
+	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = offset;
 	tmp_bin.pc = pcontent;
@@ -6401,7 +6401,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	PROPERTY_NAME propname_buff[2];
 	
 	auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-	            &pattachment->proplist, PROP_TAG_ATTACHDATABINARY));
+	            &pattachment->proplist, PR_ATTACH_DATA_BIN));
 	if (NULL == pbin) {
 		return FALSE;
 	}
@@ -6784,9 +6784,7 @@ static BOOL oxcmail_export_attachment(
 		free(pbuff);
 		return TRUE;
 	}
-	pvalue = tpropval_array_get_propval(
-				&pattachment->proplist,
-				PROP_TAG_ATTACHDATABINARY);
+	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
 	auto bv = static_cast<BINARY *>(pvalue);
 	if (bv != nullptr && bv->cb != 0)
 		if (!mime_write_content(pmime, bv->pc, bv->cb, MIME_ENCODING_BASE64))
@@ -6997,7 +6995,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		}
 		pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 			&pmsg->children.pattachments->pplist[0]->proplist,
-		       PROP_TAG_ATTACHDATABINARY));
+		       PR_ATTACH_DATA_BIN));
 		if (NULL == pbin) {
 			goto EXPORT_FAILURE;
 		}
@@ -7015,7 +7013,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		}
 		pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 			&pmsg->children.pattachments->pplist[0]->proplist,
-		       PROP_TAG_ATTACHDATABINARY));
+		       PR_ATTACH_DATA_BIN));
 		if (NULL == pbin || 0 == pbin->cb) {
 			goto EXPORT_FAILURE;
 		}

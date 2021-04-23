@@ -1832,10 +1832,8 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	if (NULL == dir) {
 		return NULL;
 	}
-	if (PROP_TAG_ATTACHDATABINARY != proptag &&
-		PROP_TAG_ATTACHDATAOBJECT != proptag) {
+	if (proptag != PR_ATTACH_DATA_BIN && proptag != PR_ATTACH_DATA_OBJ)
 		return NULL;
-	}
 	sprintf(sql_string, "SELECT propval FROM "
 		"attachment_properties WHERE attachment_id=%llu"
 		" AND proptag=%u", LLU(attachment_id), UI(proptag));
@@ -2177,8 +2175,8 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = ptmp_bin;
 		return GP_ADV;
 	}
-	case PROP_TAG_ATTACHDATABINARY:
-	case PROP_TAG_ATTACHDATAOBJECT:
+	case PR_ATTACH_DATA_BIN:
+	case PR_ATTACH_DATA_OBJ:
 		pv.pvalue = common_util_get_attachment_cid_value(db, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	}
@@ -2224,10 +2222,9 @@ BOOL common_util_get_properties(int table_type,
 	}
 	for (size_t i = 0; i < pproptags->count; ++i) {
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT &&
-			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
-			PROP_TAG_ATTACHDATAOBJECT != pproptags->pproptag[i])) {
+		    (table_type != ATTACHMENT_PROPERTIES_TABLE ||
+		    pproptags->pproptag[i] != PR_ATTACH_DATA_OBJ))
 			continue;
-		}
 		/* begin of special properties */
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		auto ret = gp_spectableprop(table_type, pproptags->pproptag[i],
@@ -3004,10 +3001,9 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	char path[256];
 	const char *dir;
 	
-	if (PROP_TAG_ATTACHDATABINARY != ppropval->proptag &&
-		PROP_TAG_ATTACHDATAOBJECT != ppropval->proptag) {
+	if (ppropval->proptag != PR_ATTACH_DATA_BIN &&
+	    ppropval->proptag != PR_ATTACH_DATA_OBJ)
 		return FALSE;
-	}
 	dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
@@ -3100,8 +3096,8 @@ BOOL common_util_set_properties(int table_type,
 		return FALSE;
 	for (size_t i = 0; i < ppropvals->count; ++i) {
 		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PT_OBJECT &&
-			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
-			PROP_TAG_ATTACHDATAOBJECT != ppropvals->ppropval[i].proptag)) {
+		    (table_type != ATTACHMENT_PROPERTIES_TABLE ||
+		    ppropvals->ppropval[i].proptag != PR_ATTACH_DATA_OBJ)) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
@@ -3361,24 +3357,22 @@ BOOL common_util_set_properties(int table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_attachment_cid(
-					psqlite, id, PROP_TAG_ATTACHDATABINARY,
-					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_attachment_cid(psqlite,
+				    id, PR_ATTACH_DATA_BIN,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
 			case ID_TAG_ATTACHDATAOBJECT:
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_attachment_cid(
-					psqlite, id, PROP_TAG_ATTACHDATAOBJECT,
-					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_attachment_cid(psqlite,
+				    id, PR_ATTACH_DATA_OBJ,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
-			case PROP_TAG_ATTACHDATABINARY:
-			case PROP_TAG_ATTACHDATAOBJECT:
+			case PR_ATTACH_DATA_BIN:
+			case PR_ATTACH_DATA_OBJ:
 				if (FALSE == common_util_set_attachment_cid_value(
 					psqlite, id, ppropvals->ppropval + i)) {
 					pproblems->pproblem[pproblems->count].index = i;

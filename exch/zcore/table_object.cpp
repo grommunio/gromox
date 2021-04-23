@@ -1153,7 +1153,7 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 		if (!message_object_get_attachment_table_all_proptags(
 		    static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), &proptags))
 			return FALSE;	
-		tmp_proptag = PROP_TAG_ATTACHDATABINARY;
+		tmp_proptag = PR_ATTACH_DATA_BIN;
 		tmp_proptags.count = 1;
 		tmp_proptags.pproptag = &tmp_proptag;
 		common_util_reduce_proptags(&proptags, &tmp_proptags);
