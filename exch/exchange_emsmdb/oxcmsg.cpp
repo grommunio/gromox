@@ -687,11 +687,9 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
-		if (FALSE == exmdb_client_get_message_property(
-			logon_object_get_dir(plogon), username, 0,
-			message_id, PROP_TAG_READ, &pvalue)) {
+		if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
-		}
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			tmp_byte = 1;
 			b_changed = TRUE;
@@ -709,11 +707,9 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
-		if (FALSE == exmdb_client_get_message_property(
-			logon_object_get_dir(plogon), username, 0,
-			message_id, PROP_TAG_READ, &pvalue)) {
+		if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
-		}
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			tmp_byte = 0;
 			b_changed = TRUE;

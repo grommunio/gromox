@@ -1755,12 +1755,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		} else {
 			multi_index = -1;
 			if (NULL == pread_byte) {
-				if (FALSE == common_util_get_property(
-					MESSAGE_PROPERTIES_TABLE, message_id,
-					ptable->cpid, pdb->psqlite, PROP_TAG_READ,
-					(void**)&pread_byte) || NULL == pread_byte) {
+				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				    message_id, ptable->cpid, pdb->psqlite, PR_READ,
+				    reinterpret_cast<void **>(&pread_byte)) ||
+				    pread_byte == nullptr)
 					return;
-				}
 				b_read = *pread_byte == 0 ? false : TRUE;
 			}
 			for (size_t i = 0; i < ptable->psorts->count; ++i) {
@@ -4343,10 +4342,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				if (TRUE == b_error) {
 					break;
 				}
-				if (FALSE == common_util_get_property(
-					MESSAGE_PROPERTIES_TABLE, message_id, 0,
-					pdb->psqlite, PROP_TAG_READ, &pvalue) ||
-					NULL == pvalue) {
+				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				    message_id, 0, pdb->psqlite, PR_READ, &pvalue) ||
+				    pvalue == nullptr) {
 					b_error = TRUE;
 					break;
 				}

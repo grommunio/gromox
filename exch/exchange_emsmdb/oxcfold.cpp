@@ -1058,7 +1058,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		proptag_buff[1] = PROP_TAG_READ;
+		proptag_buff[1] = PR_READ;
 		if (FALSE == exmdb_client_get_message_properties(
 			logon_object_get_dir(plogon), NULL, 0,
 			pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals)) {
@@ -1068,8 +1068,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			pvalue = common_util_get_propvals(
-				&tmp_propvals, PROP_TAG_READ);
+			pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
 			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 				if (FALSE == exmdb_client_get_message_brief(
 					logon_object_get_dir(plogon), pinfo->cpid,

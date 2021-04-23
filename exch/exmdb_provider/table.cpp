@@ -1051,11 +1051,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				}
 			}
 			if (psorts->ccategories > 0) {
-				if (FALSE == common_util_get_property(
-					MESSAGE_PROPERTIES_TABLE, mid_val, 0,
-					pdb->psqlite, PROP_TAG_READ, &pvalue)) {
+				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				    mid_val, 0, pdb->psqlite, PR_READ, &pvalue))
 					return false;
-				}
 				sqlite3_bind_int64(pstmt1, tag_count + 2,
 					pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1);
 			}
@@ -3358,7 +3356,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_MESSAGESIZE;
 		tmp_proptags[pproptags->count++] = PROP_TAG_ASSOCIATED;
 		tmp_proptags[pproptags->count++] = PROP_TAG_CHANGENUMBER;
-		tmp_proptags[pproptags->count++] = PROP_TAG_READ;
+		tmp_proptags[pproptags->count++] = PR_READ;
 		tmp_proptags[pproptags->count++] = PROP_TAG_HASATTACHMENTS;
 		tmp_proptags[pproptags->count++] = PR_MESSAGE_FLAGS;
 		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYTO;

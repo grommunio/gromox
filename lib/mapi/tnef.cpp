@@ -2372,7 +2372,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				tmp_byte |= FMS_SUBMITTED;
 			}
 		}
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_READ);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_READ);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			tmp_byte |= FMS_READ;
 		}

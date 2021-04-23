@@ -249,7 +249,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	account = store_object_get_account(pmessage->pstore);
 	tmp_propvals.count = 15;
 	tmp_propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PROP_TAG_READ;
+	propval_buff[0].proptag = PR_READ;
 	propval_buff[0].pvalue = &tmp_byte;
 	tmp_byte = 1;
 	propval_buff[1].proptag = PROP_TAG_CLIENTSUBMITTIME;

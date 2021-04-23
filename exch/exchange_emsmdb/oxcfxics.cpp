@@ -1239,7 +1239,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PROP_TAG_ASSOCIATED;
-		proptag_buff[1] = PROP_TAG_READ;
+		proptag_buff[1] = PR_READ;
 		if (FALSE == exmdb_client_get_message_properties(
 			logon_object_get_dir(plogon), NULL, 0,
 			message_id, &tmp_proptags, &tmp_propvals)) {
@@ -1250,8 +1250,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
-		pvalue = common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_READ);
+		pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			if (0 == pread_stat[i].mark_as_read) {
 				continue;

@@ -682,7 +682,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_MESSAGESIZE;
 		proptags[i++] = PROP_TAG_ASSOCIATED;
 		proptags[i++] = PROP_TAG_CHANGENUMBER;
-		proptags[i++] = PROP_TAG_READ;
+		proptags[i++] = PR_READ;
 		proptags[i++] = PROP_TAG_HASATTACHMENTS;
 		proptags[i++] = PR_MESSAGE_FLAGS;
 		proptags[i++] = PROP_TAG_DISPLAYTO;
@@ -2099,7 +2099,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 			return GP_ERR;
 		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_message_changenum(db, id);
 		return GP_ADV;
-	case PROP_TAG_READ:
+	case PR_READ:
 		pv.pvalue = cu_alloc<uint8_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -3221,7 +3221,7 @@ BOOL common_util_set_properties(int table_type,
 					rop_util_get_gc_value(*(uint64_t*)
 					ppropvals->ppropval[i].pvalue));
 				continue;
-			case PROP_TAG_READ:
+			case PR_READ:
 				common_util_set_message_read(psqlite, id,
 					*(uint8_t*)ppropvals->ppropval[i].pvalue);
 				continue;

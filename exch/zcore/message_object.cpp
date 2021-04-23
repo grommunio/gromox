@@ -246,8 +246,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag =
-								PROP_TAG_READ;
+	propvals.ppropval[propvals.count].proptag = PR_READ;
 	pvalue = cu_alloc<uint8_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -952,7 +951,7 @@ static BOOL message_object_check_readonly_property(
 		if (pmessage->b_new)
 			return FALSE;
 		return TRUE;
-	case PROP_TAG_READ:
+	case PR_READ:
 		if (NULL == pmessage->pembedding) {
 			return FALSE;
 		}
@@ -1180,7 +1179,7 @@ static BOOL message_object_set_properties_internal(
 			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
 				tmp_propvals1.count = 3;
 				tmp_propvals1.ppropval = propval_buff;
-				propval_buff[0].proptag = PROP_TAG_READ;
+				propval_buff[0].proptag = PR_READ;
 				propval_buff[0].pvalue = &tmp_bytes[0];
 				propval_buff[1].proptag = PROP_TAG_READRECEIPTREQUESTED;
 				propval_buff[1].pvalue = &tmp_bytes[1];
@@ -1449,11 +1448,9 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
-		if (FALSE == exmdb_client_get_instance_property(
-			dir, pmessage->instance_id, PROP_TAG_READ,
-			&pvalue)) {
+		if (!exmdb_client_get_instance_property(dir,
+		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
-		}
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			tmp_byte = 1;
 			*pb_changed = TRUE;
@@ -1470,11 +1467,9 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
-		if (FALSE == exmdb_client_get_instance_property(
-			dir, pmessage->instance_id, PROP_TAG_READ,
-			&pvalue)) {
+		if (!exmdb_client_get_instance_property(dir,
+		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
-		}
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			tmp_byte = 0;
 			*pb_changed = TRUE;
@@ -1550,7 +1545,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 			&read_cn)) {
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG_READ;
+		propval.proptag = PR_READ;
 		propval.pvalue = &tmp_byte;
 		if (FALSE == exmdb_client_set_instance_property(
 			dir, pmessage->instance_id, &propval, &result)) {

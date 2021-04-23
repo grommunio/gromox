@@ -1993,9 +1993,8 @@ static BOOL message_rectify_message(const char *account,
 			++vc;
 		}
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_READ)) {
-		vc->proptag = PROP_TAG_READ;
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_READ) == nullptr) {
+		vc->proptag = PR_READ;
 		vc->pvalue = deconst(&fake_false);
 		pmsgctnt1->proplist.count ++;
 		++vc;
@@ -4069,7 +4068,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
 					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-					PROP_TAG_CHANGEKEY, PROP_TAG_READ,
+					PROP_TAG_CHANGEKEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
 					PR_PREDECESSOR_CHANGE_LIST,
 					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
@@ -4162,7 +4161,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}
-				propval.proptag = PROP_TAG_READ;
+				propval.proptag = PR_READ;
 				propval.pvalue = deconst(&fake_true);
 				if (FALSE == common_util_set_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
@@ -4495,7 +4494,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
 					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-					PROP_TAG_CHANGEKEY, PROP_TAG_READ,
+					PROP_TAG_CHANGEKEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
 					PR_PREDECESSOR_CHANGE_LIST,
 					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,
@@ -4587,7 +4586,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				if (FALSE == exmdb_server_check_private()) {
 					continue;
 				}
-				propval.proptag = PROP_TAG_READ;
+				propval.proptag = PR_READ;
 				propval.pvalue = deconst(&fake_true);
 				if (FALSE == common_util_set_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,

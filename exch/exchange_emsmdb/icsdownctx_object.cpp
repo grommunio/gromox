@@ -1204,8 +1204,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 					return FALSE;
 				}
 			}
-			common_util_remove_propvals(
-				&pembedded->proplist, PROP_TAG_READ);
+			common_util_remove_propvals(&pembedded->proplist, PR_READ);
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_CHANGEKEY);
 			common_util_remove_propvals(
@@ -1346,8 +1345,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	}
 	pctx->next_progress_steps += progmsg.message_size;
 	if (TRUE == b_full) {
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_READ);
+		common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_CHANGEKEY);
 		common_util_remove_propvals(

@@ -3371,7 +3371,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return 4;
 	}
 	if (0 != b_read) {
-		propval.proptag = PROP_TAG_READ;
+		propval.proptag = PR_READ;
 		propval.pvalue = &b_read;
 		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 			pidb.reset();
@@ -3669,7 +3669,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	propval.pvalue = &nt_time;
 	tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
 	if (0 != b_read) {
-		propval.proptag = PROP_TAG_READ;
+		propval.proptag = PR_READ;
 		propval.pvalue = &b_read;
 		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
 	}

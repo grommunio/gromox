@@ -1986,8 +1986,7 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 	message_flags &= ~MESSAGE_FLAG_FAI;
 	message_flags &= ~MESSAGE_FLAG_NOTIFYREAD;
 	message_flags &= ~MESSAGE_FLAG_NOTIFYUNREAD;
-	pvalue = tpropval_array_get_propval(
-				pproplist, PROP_TAG_READ);
+	pvalue = tpropval_array_get_propval(pproplist, PR_READ);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		message_flags |= MESSAGE_FLAG_READ;
 	}
@@ -2645,7 +2644,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
-			case PROP_TAG_READ:
+			case PR_READ:
 				if (0 != *(uint8_t*)pproperties->ppropval[i].pvalue) {
 					pvalue = tpropval_array_get_propval(
 					         &pmsgctnt->proplist, PR_MESSAGE_FLAGS);
@@ -2669,7 +2668,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				}
 				message_flags = *(uint32_t*)pproperties->ppropval[i].pvalue;
 				if (message_flags & MESSAGE_FLAG_READ) {
-					propval.proptag = PROP_TAG_READ;
+					propval.proptag = PR_READ;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {

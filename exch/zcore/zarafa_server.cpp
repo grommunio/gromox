@@ -1904,7 +1904,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		proptag_buff[1] = PROP_TAG_READ;
+		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(
 			store_object_get_dir(pstore), NULL, 0,
 			ids.pids[i], &tmp_proptags, &tmp_propvals)) {
@@ -1914,8 +1914,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			pvalue = common_util_get_propvals(
-				&tmp_propvals, PROP_TAG_READ);
+			pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
 			if ((pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0) &&
 			    !exmdb_client::get_message_brief(store_object_get_dir(pstore),
 			    pinfo->cpid, ids.pids[i], &pbrief))
@@ -2128,8 +2127,8 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		restriction.rt = RES_PROPERTY;
 		restriction.pres = &res_prop;
 		res_prop.relop = flags == FLAG_CLEAR_READ ? RELOP_NE : RELOP_EQ;
-		res_prop.proptag = PROP_TAG_READ;
-		res_prop.propval.proptag = PROP_TAG_READ;
+		res_prop.proptag = PR_READ;
+		res_prop.propval.proptag = PR_READ;
 		res_prop.propval.pvalue = deconst(&fake_false);
 		if (!exmdb_client::load_content_table(
 			store_object_get_dir(pstore), 0,
@@ -2183,21 +2182,17 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		b_notify = FALSE;
 		b_changed = FALSE;
 		if (FLAG_CLEAR_READ == flags) {
-			if (FALSE == exmdb_client_get_message_property(
-				store_object_get_dir(pstore), username, 0,
-				message_id, PROP_TAG_READ, &pvalue)) {
+			if (!exmdb_client_get_message_property(store_object_get_dir(pstore),
+			    username, 0, message_id, PR_READ, &pvalue))
 				return ecError;
-			}
 			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 				tmp_byte = 0;
 				b_changed = TRUE;
 			}
 		} else {
-			if (FALSE == exmdb_client_get_message_property(
-				store_object_get_dir(pstore), username, 0,
-				message_id, PROP_TAG_READ, &pvalue)) {
+			if (!exmdb_client_get_message_property(store_object_get_dir(pstore),
+			    username, 0, message_id, PR_READ, &pvalue))
 				return ecError;
-			}
 			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 				tmp_byte = 1;
 				b_changed = TRUE;
@@ -5663,7 +5658,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PROP_TAG_ASSOCIATED;
-		proptag_buff[1] = PROP_TAG_READ;
+		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(
 			store_object_get_dir(pstore), NULL, 0,
 			message_id, &tmp_proptags, &tmp_propvals)) {
@@ -5673,8 +5668,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			&tmp_propvals, PROP_TAG_ASSOCIATED);
 		if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 			continue;
-		pvalue = common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_READ);
+		pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			if (!mark_as_read)
 				continue;
