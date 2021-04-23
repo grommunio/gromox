@@ -2969,12 +2969,12 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	proptags.count = 2;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PROP_TAG_PROHIBITRECEIVEQUOTA;
-	tmp_proptags[1] = PROP_TAG_MESSAGESIZEEXTENDED;
+	tmp_proptags[1] = PR_MESSAGE_SIZE_EXTENDED;
 	if (!exmdb_client::get_store_properties(
 		argv[1], 0, &proptags, &propvals)) {
 		return 4;	
 	}
-	ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE_EXTENDED));
 	pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_PROHIBITRECEIVEQUOTA));
 	if (NULL != ptotal && NULL != pmax) {
 		quota = *pmax;

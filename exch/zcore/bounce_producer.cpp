@@ -415,8 +415,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	if ('\0' != time_zone[0]) {
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
 	}
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_MESSAGESIZE);
+	pvalue = common_util_get_propvals(&pbrief->proplist, PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return FALSE;
 	}

@@ -150,7 +150,7 @@ static BOOL table_object_get_store_table_all_proptags(
 	PROPTAG_ARRAY tmp_proptags2;
 	static const uint32_t proptag_buff[] = {
 		PROP_TAG_STOREPROVIDER,
-		PROP_TAG_MESSAGESIZE,
+		PR_MESSAGE_SIZE,
 		PROP_TAG_ASSOCMESSAGESIZE,
 		PROP_TAG_NORMALMESSAGESIZE,
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE,

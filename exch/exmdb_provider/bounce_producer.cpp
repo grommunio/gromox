@@ -390,12 +390,9 @@ BOOL bounce_producer_make_content(const char *from,
 	if ('\0' != time_zone[0]) {
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
 	}
-	if (FALSE == common_util_get_property(
-		MESSAGE_PROPERTIES_TABLE, message_id, 0,
-		psqlite, PROP_TAG_MESSAGESIZE, &pvalue) ||
-		NULL == pvalue) {
+	if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id, 0,
+	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;
-	}
 	message_size = *(uint32_t*)pvalue;
 	if ('\0' == charset[0]) {
 		if (FALSE == common_util_get_property(

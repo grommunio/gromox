@@ -54,6 +54,8 @@ enum {
 
 enum {
 	PR_MESSAGE_FLAGS = PROP_TAG(PT_LONG, 0x0E07), /* pidTagMessageFlags */
+	PR_MESSAGE_SIZE = PROP_TAG(PT_LONG, 0x0E08), /* pidTagMessageSize */
+	PR_MESSAGE_SIZE_EXTENDED = PROP_TAG(PT_I8, 0x0E08), /* pidTagMessageSizeExtended */
 	PR_REPL_ITEMID = PROP_TAG(PT_LONG, 0x0E30), /* pidTagReplItemId */
 	PR_REPL_CHANGENUM = PROP_TAG(PT_I8, 0x0E33), /* pidTagReplChangenum */
 	PR_REPL_VERSIONHISTORY = PROP_TAG(PT_BINARY, 0x0E34), /* pidTagReplVersionhistory */

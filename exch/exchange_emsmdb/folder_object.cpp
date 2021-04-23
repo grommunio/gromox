@@ -168,8 +168,8 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALCOMMITTIME:
 	case PROP_TAG_LOCALCOMMITTIMEMAX:
-	case PROP_TAG_MESSAGESIZE:
-	case PROP_TAG_MESSAGESIZEEXTENDED:
+	case PR_MESSAGE_SIZE:
+	case PR_MESSAGE_SIZE_EXTENDED:
 	case PROP_TAG_ASSOCMESSAGESIZE:
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
 	case PROP_TAG_NORMALMESSAGESIZE:
@@ -227,16 +227,14 @@ static BOOL folder_object_get_calculated_property(
 			       static_cast<uint32_t *>(*outvalue));
 		}
 		return FALSE;
-	case PROP_TAG_MESSAGESIZE:
+	case PR_MESSAGE_SIZE:
 		*outvalue = cu_alloc<uint32_t>();
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pfolder->plogon), 0,
-			pfolder->folder_id, PROP_TAG_MESSAGESIZEEXTENDED,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pfolder->plogon),
+		    0, pfolder->folder_id, PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;	
-		}
 		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:

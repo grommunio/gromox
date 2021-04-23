@@ -588,8 +588,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_ASSOCMESSAGESIZE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_MESSAGESIZE;
+	pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_NORMALMESSAGESIZE;
@@ -638,8 +637,8 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_MAILBOXOWNERENTRYID:
 	case PROP_TAG_MAILBOXOWNERNAME:
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
-	case PROP_TAG_MESSAGESIZE:
-	case PROP_TAG_MESSAGESIZEEXTENDED:
+	case PR_MESSAGE_SIZE:
+	case PR_MESSAGE_SIZE_EXTENDED:
 	case PROP_TAG_ASSOCMESSAGESIZE:
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
 	case PROP_TAG_NORMALMESSAGESIZE:
@@ -679,16 +678,15 @@ static BOOL logon_object_get_calculated_property(
 	static constexpr BINARY test_bin = {sizeof(test_buff), (uint8_t *)test_buff};
 	
 	switch (proptag) {
-	case PROP_TAG_MESSAGESIZE:
+	case PR_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (FALSE == exmdb_client_get_store_property(
-			plogon->dir, 0, PROP_TAG_MESSAGESIZEEXTENDED,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_store_property(plogon->dir, 0,
+		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;	
-		}
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:

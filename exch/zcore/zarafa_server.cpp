@@ -1754,7 +1754,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	}
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MESSAGESIZEEXTENDED;
+	proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
 	proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
 	proptag_buff[2] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
@@ -1764,8 +1764,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
 	int64_t max_quota = pvalue == nullptr ? -1 : static_cast<int64_t>(*static_cast<uint32_t *>(pvalue)) * 1024;
-	pvalue = common_util_get_propvals(&tmp_propvals,
-					PROP_TAG_MESSAGESIZEEXTENDED);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota)) {
 		return ecQuotaExceeded;
@@ -3863,14 +3862,14 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
 	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
-	proptag_buff[2] = PROP_TAG_MESSAGESIZEEXTENDED;
+	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
 	if (FALSE == store_object_get_properties(
 		pstore, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
 
 	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
-	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize) {
@@ -3884,7 +3883,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		max_length = *(int32_t*)pvalue;
 	tmp_proptags.count = 6;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MESSAGESIZE;
+	proptag_buff[0] = PR_MESSAGE_SIZE;
 	proptag_buff[1] = PR_MESSAGE_FLAGS;
 	proptag_buff[2] = PROP_TAG_DEFERREDSENDTIME;
 	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
@@ -3894,8 +3893,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		pmessage, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_MESSAGESIZE);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE);
 	if (pvalue == nullptr)
 		return ecError;
 	mail_length = *(uint32_t*)pvalue;

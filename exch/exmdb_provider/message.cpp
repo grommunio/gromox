@@ -880,7 +880,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[1] = PROP_TAG_SENTREPRESENTINGNAME;
 	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	proptag_buff[3] = PROP_TAG_CLIENTSUBMITTIME;
-	proptag_buff[4] = PROP_TAG_MESSAGESIZE;
+	proptag_buff[4] = PR_MESSAGE_SIZE;
 	proptag_buff[5] = PROP_TAG_INTERNETCODEPAGE;
 	proptag_buff[6] = PROP_TAG_INTERNETMESSAGEID;
 	proptag_buff[7] = PROP_TAG_PARENTKEY;
@@ -4065,7 +4065,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
 					PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8,
 					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
-					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
+					PROP_TAG_MID, PR_MESSAGE_SIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PR_CHANGE_KEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
@@ -4491,7 +4491,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
 					PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8,
 					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
-					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
+					PROP_TAG_MID, PR_MESSAGE_SIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PR_CHANGE_KEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
@@ -4597,11 +4597,10 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		}
 	}
 	if (TRUE == b_del) {
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0, psqlite,
-			PROP_TAG_MESSAGESIZE, &pvalue) || NULL == pvalue) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, psqlite, PR_MESSAGE_SIZE, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;
-		}
 		message_size = *(uint32_t*)pvalue;
 		sprintf(sql_string, "DELETE FROM messages"
 		        " WHERE message_id=%llu", LLU(message_id));

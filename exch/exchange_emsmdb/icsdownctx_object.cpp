@@ -360,7 +360,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	for (size_t i = 0; i < fldchgs.count; ++i) {
 		static constexpr uint32_t tags[] = {
 			PROP_TAG_FOLDERPATHNAME, PROP_TAG_NORMALMESSAGESIZE,
-			PROP_TAG_NORMALMESSAGESIZEEXTENDED, PROP_TAG_MESSAGESIZEEXTENDED,
+			PROP_TAG_NORMALMESSAGESIZEEXTENDED, PR_MESSAGE_SIZE_EXTENDED,
 			PROP_TAG_ASSOCMESSAGESIZE, PROP_TAG_ASSOCMESSAGESIZEEXTENDED,
 			PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_DELETEDFOLDERTOTAL,
 			PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_FOLDERFLAGS,
@@ -822,20 +822,17 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MID);
 	
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGESIZE);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	pprogmsg->message_size = *(uint32_t*)pvalue;
 	if (SYNC_EXTRA_FLAG_MESSAGESIZE & extra_flags) {
-		pchgheader->ppropval[pchgheader->count].proptag =
-										PROP_TAG_MESSAGESIZE;
+		pchgheader->ppropval[pchgheader->count].proptag = PR_MESSAGE_SIZE;
 		pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 		pchgheader->count ++;
 	}
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGESIZE);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	
 	if (SYNC_EXTRA_FLAG_CN & extra_flags) {
 		pvalue = common_util_get_propvals(

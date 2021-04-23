@@ -294,14 +294,14 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
 	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
-	proptag_buff[2] = PROP_TAG_MESSAGESIZEEXTENDED;
+	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
 	if (FALSE == logon_object_get_properties(
 		plogon, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
 
 	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
-	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
@@ -315,7 +315,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	tmp_proptags.count = (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MESSAGESIZE;
+	proptag_buff[0] = PR_MESSAGE_SIZE;
 	proptag_buff[1] = PR_MESSAGE_FLAGS;
 	proptag_buff[2] = PROP_TAG_DEFERREDSENDTIME;
 	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
@@ -325,8 +325,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		pmessage, 0, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_MESSAGESIZE);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return ecError;
 	}

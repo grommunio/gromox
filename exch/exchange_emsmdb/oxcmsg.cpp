@@ -249,7 +249,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MESSAGESIZEEXTENDED;
+	proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
 	proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
 	proptag_buff[2] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
@@ -263,8 +263,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		max_quota = *static_cast<uint32_t *>(pvalue);
 		max_quota = max_quota >= ULLONG_MAX / 1024 ? ULLONG_MAX : max_quota * 1024ULL;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
-					PROP_TAG_MESSAGESIZEEXTENDED);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 	if (total_size > max_quota)
 		return ecQuotaExceeded;

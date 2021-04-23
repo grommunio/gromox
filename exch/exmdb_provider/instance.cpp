@@ -99,7 +99,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PROP_TAG_DISPLAYBCC_STRING8:
 		case PROP_TAG_SUBJECT:
 		case PROP_TAG_SUBJECT_STRING8:
-		case PROP_TAG_MESSAGESIZE:
+		case PR_MESSAGE_SIZE:
 		case PROP_TAG_HASATTACHMENTS:
 			continue;
 		case PROP_TAG_BODY:
@@ -1138,7 +1138,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PROP_TAG_PARENTFOLDERID:
 		case PROP_TAG_INSTANCESVREID:
 		case PROP_TAG_HASNAMEDPROPERTIES:
-		case PROP_TAG_MESSAGESIZE:
+		case PR_MESSAGE_SIZE:
 		case PROP_TAG_HASATTACHMENTS:
 		case PROP_TAG_DISPLAYTO:
 		case PROP_TAG_DISPLAYCC:
@@ -1867,7 +1867,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 		pproptags->count = pmsgctnt->proplist.count;
 		pproptags->pproptag[pproptags->count] = PROP_TAG_CODEPAGEID;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_MESSAGESIZE;
+		pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] = PROP_TAG_HASATTACHMENTS;
 		pproptags->count ++;
@@ -2530,11 +2530,11 @@ BOOL exmdb_server_get_instance_properties(
 			vc.pvalue = &pinstance->cpid;
 			ppropvals->count ++;
 			continue;
-		case PROP_TAG_MESSAGESIZE:
-		case PROP_TAG_MESSAGESIZEEXTENDED:
+		case PR_MESSAGE_SIZE:
+		case PR_MESSAGE_SIZE_EXTENDED:
 			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_message_size(pmsgctnt);
-			if (PROP_TAG_MESSAGESIZE == pproptags->pproptag[i]) {
+			if (pproptags->pproptag[i] == PR_MESSAGE_SIZE) {
 				pvalue = cu_alloc<uint32_t>();
 				if (NULL == pvalue) {
 					return FALSE;
@@ -2628,7 +2628,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROP_TAG_PARENTFOLDERID:
 			case PROP_TAG_INSTANCESVREID:
 			case PROP_TAG_HASNAMEDPROPERTIES:
-			case PROP_TAG_MESSAGESIZE:
+			case PR_MESSAGE_SIZE:
 			case PROP_TAG_HASATTACHMENTS:
 			case PROP_TAG_DISPLAYTO:
 			case PROP_TAG_DISPLAYCC:

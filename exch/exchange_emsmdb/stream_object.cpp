@@ -44,13 +44,12 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
-		proptag_buff[1] = PROP_TAG_MESSAGESIZE;
+		proptag_buff[1] = PR_MESSAGE_SIZE;
 		if (!message_object_get_properties(static_cast<MESSAGE_OBJECT *>(pparent),
 		    0, &proptags, &propvals)) {
 			return NULL;
 		}
-		psize = static_cast<uint32_t *>(common_util_get_propvals(
-		        &propvals, PROP_TAG_MESSAGESIZE));
+		psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			return NULL;
