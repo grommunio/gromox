@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include "icsdownctx_object.h"
 #include "emsmdb_interface.h"
 #include <gromox/tpropval_array.hpp>
@@ -57,19 +58,20 @@ static BOOL icsdownctx_object_record_flow_node(
 	return TRUE;
 }
 
-ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *plogon,
 	FOLDER_OBJECT *pfolder, uint8_t sync_type, uint8_t send_options,
 	uint16_t sync_flags, const RESTRICTION *prestriction,
 	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags)
 {
 	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_DOWN : ICS_STATE_HIERARCHY_DOWN;
-	auto pctx = me_alloc<ICSDOWNCTX_OBJECT>();
-	if (NULL == pctx) {
+	std::unique_ptr<ICSDOWNCTX_OBJECT> pctx;
+	try {
+		pctx = std::make_unique<ICSDOWNCTX_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pctx->pstate = ics_state_create(plogon, state_type);
 	if (NULL == pctx->pstate) {
-		free(pctx);
 		return NULL;
 	}
 	pctx->pfolder = pfolder;
@@ -79,14 +81,11 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 	pctx->extra_flags = extra_flags;
 	pctx->pproptags = proptag_array_dup(pproptags);
 	if (NULL == pctx->pproptags) {
-		free(pctx);
 		return NULL;
 	}
 	if (NULL != prestriction) {
 		pctx->prestriction = restriction_dup(prestriction);
 		if (NULL == pctx->prestriction) {
-			proptag_array_free(pctx->pproptags);
-			free(pctx);
 			return NULL;
 		}
 	} else {
@@ -95,11 +94,6 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 	pctx->pstream = ftstream_producer_create(
 				plogon, send_options & 0x0F);
 	if (NULL == pctx->pstream) {
-		proptag_array_free(pctx->pproptags);
-		if (NULL != pctx->prestriction) {
-			restriction_free(pctx->prestriction);
-		}
-		free(pctx);
 		return NULL;
 	}
 	double_list_init(&pctx->flow_list);
@@ -1786,8 +1780,9 @@ BOOL icsdownctx_object_get_buffer(ICSDOWNCTX_OBJECT *pctx,
 	return TRUE;
 }
 
-void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
+ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 {
+	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	ftstream_producer_free(pctx->pstream);
@@ -1825,7 +1820,6 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 	if (NULL != pctx->prestriction) {
 		restriction_free(pctx->prestriction);
 	}
-	free(pctx);
 }
 
 BOOL icsdownctx_object_begin_state_stream(ICSDOWNCTX_OBJECT *pctx,

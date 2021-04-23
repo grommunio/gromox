@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include "icsdownctx_object.h"
 #include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
@@ -14,16 +15,17 @@
 #include <cstring>
 #include "common_util.h"
 
-ICSDOWNCTX_OBJECT* icsdownctx_object_create(
+std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type)
 {
-	auto pctx = me_alloc<ICSDOWNCTX_OBJECT>();
-	if (NULL == pctx) {
+	std::unique_ptr<ICSDOWNCTX_OBJECT> pctx;
+	try {
+		pctx = std::make_unique<ICSDOWNCTX_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pctx->pstate = ics_state_create(sync_type);
 	if (NULL == pctx->pstate) {
-		free(pctx);
 		return NULL;
 	}
 	pctx->pstore = folder_object_get_store(pfolder);
@@ -262,8 +264,9 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 	return ics_state_serialize(pctx->pstate);
 }
 
-void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
+ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 {
+	auto pctx = this;
 	if (NULL != pctx->pgiven_eids) {
 		eid_array_free(pctx->pgiven_eids);
 	}
@@ -288,7 +291,6 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 	if (NULL != pctx->pstate) {
 		ics_state_free(pctx->pstate);
 	}
-	free(pctx);
 }
 
 BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,

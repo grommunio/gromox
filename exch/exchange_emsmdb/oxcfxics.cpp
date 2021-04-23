@@ -931,7 +931,6 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
-	ICSDOWNCTX_OBJECT *pctx;
 	
 	if (SYNC_TYPE_CONTENTS != sync_type &&
 		SYNC_TYPE_HIERARCHY != sync_type) {
@@ -981,15 +980,15 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 			return ecError;
 		}
 	}
-	pctx = icsdownctx_object_create(plogon, pfolder,
+	auto pctx = icsdownctx_object_create(plogon, pfolder,
 			sync_type, send_options, sync_flags,
 			pres, extra_flags, pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_ICSDOWNCTX, pctx);
+	           logon_id, hin, OBJECT_TYPE_ICSDOWNCTX, pctx.get());
 	if (hnd < 0) {
-		icsdownctx_object_free(pctx);
 		return ecError;
 	}
+	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
