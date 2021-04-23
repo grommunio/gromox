@@ -87,25 +87,12 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 				pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
 			if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
 				pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_FREEBUSYENTRYIDS) < 0) {
-				pproptags->pproptag[pproptags->count] =
-							PROP_TAG_FREEBUSYENTRYIDS;
-				pproptags->count ++;
-				
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_ADDITIONALRENENTRYIDS) < 0) {
-				pproptags->pproptag[pproptags->count] =
-					PROP_TAG_ADDITIONALRENENTRYIDS;
-				pproptags->count ++;
-			}
-			if (common_util_index_proptags(&tmp_proptags,
-				PROP_TAG_ADDITIONALRENENTRYIDSEX) < 0) {
-				pproptags->pproptag[pproptags->count] =
-						PROP_TAG_ADDITIONALRENENTRYIDSEX;
-				pproptags->count ++;
-			}
+			if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
+			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
+			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
+				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 		}
 	}
 	return TRUE;
@@ -398,7 +385,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*outvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDITIONALRENENTRYIDS: {
+	case PR_ADDITIONAL_REN_ENTRYIDS: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
@@ -406,12 +393,10 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pfolder->plogon), 0,
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
-			PROP_TAG_ADDITIONALRENENTRYIDS, &pvalue)) {
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pfolder->plogon),
+		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
 			return FALSE;
-		}
 		if (NULL != pvalue) {
 			*outvalue = pvalue;
 			return TRUE;
@@ -458,7 +443,7 @@ static BOOL folder_object_get_calculated_property(
 		ba->pbin[4] = *pbin;
 		return TRUE;
 	}
-	case PROP_TAG_ADDITIONALRENENTRYIDSEX: {
+	case PR_ADDITIONAL_REN_ENTRYIDS_EX: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
@@ -466,12 +451,10 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pfolder->plogon), 0,
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
-			PROP_TAG_ADDITIONALRENENTRYIDSEX, &pvalue)) {
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pfolder->plogon),
+		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
 			return FALSE;
-		}
 		if (NULL != pvalue) {
 			*outvalue = pvalue;
 			return TRUE;
@@ -520,7 +503,7 @@ static BOOL folder_object_get_calculated_property(
 		memcpy(bv->pv, ext_push.data, ext_push.offset);
 		return TRUE;
 	}
-	case PROP_TAG_FREEBUSYENTRYIDS: {
+	case PR_FREEBUSY_ENTRYIDS: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
@@ -528,12 +511,10 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pfolder->plogon), 0,
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
-			PROP_TAG_FREEBUSYENTRYIDS, &pvalue)) {
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pfolder->plogon),
+		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    PR_FREEBUSY_ENTRYIDS, &pvalue))
 			return FALSE;
-		}
 		if (NULL != pvalue) {
 			*outvalue = pvalue;
 			return TRUE;

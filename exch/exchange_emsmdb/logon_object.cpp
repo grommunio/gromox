@@ -538,10 +538,10 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 	pproptags->count = tmp_proptags.count;
 	if (TRUE == logon_object_check_private(plogon)) {
 		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_MAILBOXOWNERNAME;
+					PR_MAILBOX_OWNER_NAME;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_MAILBOXOWNERENTRYID;
+					PR_MAILBOX_OWNER_ENTRYID;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
@@ -614,8 +614,8 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALEID:
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
-	case PROP_TAG_MAILBOXOWNERENTRYID:
-	case PROP_TAG_MAILBOXOWNERNAME:
+	case PR_MAILBOX_OWNER_ENTRYID:
+	case PR_MAILBOX_OWNER_NAME:
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:
@@ -770,7 +770,7 @@ static BOOL logon_object_get_calculated_property(
 		*ppvalue = &pinfo->lcid_string;
 		return TRUE;
 	}
-	case PROP_TAG_MAILBOXOWNERENTRYID:
+	case PR_MAILBOX_OWNER_ENTRYID:
 		if (FALSE == logon_object_check_private(plogon)) {
 			return FALSE;
 		}
@@ -780,7 +780,7 @@ static BOOL logon_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_MAILBOXOWNERNAME:
+	case PR_MAILBOX_OWNER_NAME:
 		if (FALSE == logon_object_check_private(plogon)) {
 			return FALSE;
 		}

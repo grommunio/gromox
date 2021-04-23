@@ -559,8 +559,8 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_LOCALEID:
 	case PR_MAPPING_SIGNATURE:
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
-	case PROP_TAG_MAILBOXOWNERENTRYID:
-	case PROP_TAG_MAILBOXOWNERNAME:
+	case PR_MAILBOX_OWNER_ENTRYID:
+	case PR_MAILBOX_OWNER_NAME:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:
 	case PROP_TAG_ASSOCMESSAGESIZE:
@@ -620,10 +620,10 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->count = tmp_proptags.count;
 	if (TRUE == store_object_check_private(pstore)) {
 		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_MAILBOXOWNERNAME;
+					PR_MAILBOX_OWNER_NAME;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_MAILBOXOWNERENTRYID;
+				PR_MAILBOX_OWNER_ENTRYID;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
@@ -1018,7 +1018,7 @@ static BOOL store_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = common_util_get_param(
 						COMMON_UTIL_MAX_EXTRULE_LENGTH);
 		return TRUE;
-	case PROP_TAG_MAILBOXOWNERENTRYID:
+	case PR_MAILBOX_OWNER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = common_util_username_to_addressbook_entryid(
@@ -1027,7 +1027,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_MAILBOXOWNERNAME:
+	case PR_MAILBOX_OWNER_NAME:
 		if (!pstore->b_private)
 			return FALSE;
 		if (FALSE == system_services_get_user_displayname(

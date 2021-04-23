@@ -528,10 +528,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			if (NULL == common_util_get_propvals(
-				fldchgs.pfldchgs + i,
-				PROP_TAG_ADDITIONALRENENTRYIDS)) {
-				tmp_propval.proptag = PROP_TAG_ADDITIONALRENENTRYIDS;
+			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS) == nullptr) {
+				tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
 				pvalue = cu_alloc<BINARY_ARRAY>();
 				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
 				if (NULL == pvalue) {
@@ -576,10 +574,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}
-			if (NULL == common_util_get_propvals(
-				fldchgs.pfldchgs + i,
-				PROP_TAG_ADDITIONALRENENTRYIDSEX)) {
-				tmp_propval.proptag = PROP_TAG_ADDITIONALRENENTRYIDSEX;
+			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS_EX) == nullptr) {
+				tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 				pvalue = cu_alloc<BINARY>();
 				auto bv = static_cast<BINARY *>(pvalue);
 				if (NULL == pvalue) {
@@ -627,9 +623,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}
-			if (NULL == common_util_get_propvals(
-				fldchgs.pfldchgs + i, PROP_TAG_FREEBUSYENTRYIDS)) {
-				tmp_propval.proptag = PROP_TAG_FREEBUSYENTRYIDS;
+			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_FREEBUSY_ENTRYIDS) == nullptr) {
+				tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
 				pvalue = cu_alloc<BINARY_ARRAY>();
 				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
 				if (NULL == pvalue) {

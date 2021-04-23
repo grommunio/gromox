@@ -792,12 +792,9 @@ BOOL exmdb_server_set_folder_properties(
 	if (TRUE == exmdb_server_check_private()
 		&& PRIVATE_FID_ROOT == fid_val) {
 		for (i=0; i<pproperties->count; i++) {
-			if (PROP_TAG_ADDITIONALRENENTRYIDS ==
-				pproperties->ppropval[i].proptag ||
-				PROP_TAG_ADDITIONALRENENTRYIDSEX ==
-				pproperties->ppropval[i].proptag ||
-				PROP_TAG_REMINDERSONLINEENTRYID ==
-				pproperties->ppropval[i].proptag) {
+			if (pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS ||
+			    pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS_EX ||
+			    pproperties->ppropval[i].proptag == PROP_TAG_REMINDERSONLINEENTRYID) {
 				if (FALSE == common_util_set_property(
 					FOLDER_PROPERTIES_TABLE, PRIVATE_FID_INBOX,
 					0, pdb->psqlite, &pproperties->ppropval[i],
