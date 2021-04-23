@@ -501,8 +501,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_CHANGENUMBER);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	if (NULL == common_util_get_propvals(pproperties,
-		PROP_TAG_PREDECESSORCHANGELIST)) {
+	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr) {
 		*pfolder_id = 0;
 		return TRUE;
 	}

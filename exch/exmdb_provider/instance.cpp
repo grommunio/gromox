@@ -1220,7 +1220,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		switch (proptag) {
 		case PROP_TAG_CHANGEKEY:
 		case PROP_TAG_CHANGENUMBER:
-		case PROP_TAG_PREDECESSORCHANGELIST:
+		case PR_PREDECESSOR_CHANGE_LIST:
 			continue;
 		}
 		pproptags->pproptag[pproptags->count] = proptag;

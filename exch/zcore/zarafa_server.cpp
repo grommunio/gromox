@@ -2345,7 +2345,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (propval_buff[7].pvalue == nullptr)
 			return ecError;
-		propval_buff[8].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		propval_buff[8].pvalue = common_util_pcl_append(nullptr, static_cast<BINARY *>(propval_buff[7].pvalue));
 		if (propval_buff[8].pvalue == nullptr)
 			return ecError;

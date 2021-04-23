@@ -226,15 +226,14 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
 		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
-		if (NULL == tmp_propvals[1].pvalue ||
-			FALSE == common_util_get_property(
-			FOLDER_PROPERTIES_TABLE, parent_fid, 0,
-			pdb->psqlite, PROP_TAG_PREDECESSORCHANGELIST,
-			&pvalue)) {
+		if (tmp_propvals[1].pvalue == nullptr ||
+		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		     parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
+		     &pvalue)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
-		tmp_propvals[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
 		                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 		if (NULL == tmp_propvals[2].pvalue) {
@@ -475,15 +474,14 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
 		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
-		if (NULL == tmp_propvals[1].pvalue ||
-			FALSE == common_util_get_property(
-			FOLDER_PROPERTIES_TABLE, parent_fid, 0,
-			pdb->psqlite, PROP_TAG_PREDECESSORCHANGELIST,
-			&pvalue)) {
+		if (tmp_propvals[1].pvalue == nullptr ||
+		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		    parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
+		    &pvalue)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
-		tmp_propvals[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
 		                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 		if (NULL == tmp_propvals[2].pvalue) {
@@ -739,15 +737,13 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	rop_util_value_to_gc(change_num, tmp_xid.local_id);
 	tmp_propvals[1].proptag = PROP_TAG_CHANGEKEY;
 	tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
-	if (NULL == tmp_propvals[1].pvalue ||
-		FALSE == common_util_get_property(
-		FOLDER_PROPERTIES_TABLE, src_val, 0,
-		pdb->psqlite, PROP_TAG_PREDECESSORCHANGELIST,
-		&pvalue)) {
+	if (tmp_propvals[1].pvalue == nullptr ||
+	    !common_util_get_property(FOLDER_PROPERTIES_TABLE, src_val, 0,
+	    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
-	tmp_propvals[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
 	                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 	if (NULL == tmp_propvals[2].pvalue) {
@@ -2199,8 +2195,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag =
-										PROP_TAG_PREDECESSORCHANGELIST;
+			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 			msgctnt.proplist.ppropval[msgctnt.proplist.count].pvalue =
 																pvalue;
 			msgctnt.proplist.count ++;
@@ -4077,7 +4072,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PROP_TAG_CHANGEKEY, PROP_TAG_READ,
 					PROP_TAG_HASATTACHMENTS,
-					PROP_TAG_PREDECESSORCHANGELIST,
+					PR_PREDECESSOR_CHANGE_LIST,
 					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
 				};
 				for (auto t : tags)
@@ -4503,7 +4498,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PROP_TAG_CHANGEKEY, PROP_TAG_READ,
 					PROP_TAG_HASATTACHMENTS,
-					PROP_TAG_PREDECESSORCHANGELIST,
+					PR_PREDECESSOR_CHANGE_LIST,
 					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,
 				};
 				for (auto t : tags)

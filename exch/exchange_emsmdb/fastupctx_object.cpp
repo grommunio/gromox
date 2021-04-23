@@ -191,8 +191,8 @@ static BOOL fastupctx_object_create_folder(
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
 	auto pbin1 = static_cast<BINARY *>(tpropval_array_get_propval(pproplist,
-	             PROP_TAG_PREDECESSORCHANGELIST));
-	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	             PR_PREDECESSOR_CHANGE_LIST));
+	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
 		return FALSE;
@@ -301,8 +301,8 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return GXERR_CALL_FAILED;
 	auto pbin1 = static_cast<BINARY *>(tpropval_array_get_propval(pproplist,
-	             PROP_TAG_PREDECESSORCHANGELIST));
-	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	             PR_PREDECESSOR_CHANGE_LIST));
+	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
 		return GXERR_CALL_FAILED;

@@ -276,7 +276,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		if (NULL == propval_buff[7].pvalue) {
 			return ecMAPIOOM;
 		}
-		propval_buff[8].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		propval_buff[8].pvalue = common_util_pcl_append(
 		                         NULL, static_cast<BINARY *>(propval_buff[7].pvalue));
 		if (NULL == propval_buff[8].pvalue) {
@@ -753,12 +753,11 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		logon_object_get_dir(plogon), &change_num)) {
 		return ecError;
 	}
-	if (FALSE == exmdb_client_get_folder_property(
-		logon_object_get_dir(plogon), 0,
-		folder_id, PROP_TAG_PREDECESSORCHANGELIST,
-		(void**)&pbin_pcl) || NULL == pbin_pcl) {
+	if (!exmdb_client_get_folder_property(logon_object_get_dir(plogon), 0,
+	    folder_id, PR_PREDECESSOR_CHANGE_LIST,
+	    reinterpret_cast<void **>(&pbin_pcl)) ||
+	    pbin_pcl == nullptr)
 		return ecError;
-	}
 	tmp_xid.guid = logon_object_guid(plogon);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
@@ -790,7 +789,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	propval_buff[0].pvalue = &change_num;
 	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
 	propval_buff[1].pvalue = pbin_changekey;
-	propval_buff[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &nt_time;

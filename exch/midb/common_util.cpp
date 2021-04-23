@@ -290,7 +290,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 		return FALSE;
 	}
 	pcl_free(ppcl);
-	propval_buff[8].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[8].pvalue = pbin;
 	if (!exmdb_client::create_folder_by_properties(
 		dir, 0, &tmp_propvals, pfolder_id)) {

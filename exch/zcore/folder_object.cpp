@@ -198,7 +198,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_CHANGEKEY:
 	case PROP_TAG_SOURCEKEY:
 	case PROP_TAG_PARENTSOURCEKEY:
-	case PROP_TAG_PREDECESSORCHANGELIST:
+	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_LAST_MODIFICATION_TIME:
 		return TRUE;
 	case PROP_TAG_IPMDRAFTSENTRYID:
@@ -703,12 +703,11 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 											&change_num;
 	tmp_propvals.count ++;
-	if (FALSE == exmdb_client_get_folder_property(
-		store_object_get_dir(pfolder->pstore), 0,
-		pfolder->folder_id, PROP_TAG_PREDECESSORCHANGELIST,
-		(void**)&pbin_pcl) || NULL == pbin_pcl) {
+	if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
+	    reinterpret_cast<void **>(&pbin_pcl)) ||
+	    pbin_pcl == nullptr)
 		return FALSE;
-	}
 	tmp_xid.guid = store_object_guid(pfolder->pstore);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
@@ -725,8 +724,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue = 
 										pbin_changekey;
 	tmp_propvals.count ++;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-						PROP_TAG_PREDECESSORCHANGELIST;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 												pbin_pcl;
 	tmp_propvals.count ++;
@@ -785,12 +783,11 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 		store_object_get_dir(pfolder->pstore), &change_num)) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_folder_property(
-		store_object_get_dir(pfolder->pstore), 0,
-		pfolder->folder_id, PROP_TAG_PREDECESSORCHANGELIST,
-		(void**)&pbin_pcl) || NULL == pbin_pcl) {
+	if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
+	    reinterpret_cast<void **>(&pbin_pcl)) ||
+	    pbin_pcl == nullptr)
 		return FALSE;
-	}
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
 	tmp_xid.guid = store_object_guid(pfolder->pstore);
@@ -806,7 +803,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	last_time = rop_util_current_nttime();
 	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
 	propval_buff[1].pvalue = pbin_changekey;
-	propval_buff[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;

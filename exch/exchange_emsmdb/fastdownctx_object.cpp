@@ -431,7 +431,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 						PROP_TAG_CHANGEKEY,
 						PROP_TAG_ORIGINALENTRYID,
 						PR_LAST_MODIFICATION_TIME,
-						PROP_TAG_PREDECESSORCHANGELIST,
+						PR_PREDECESSOR_CHANGE_LIST,
 					};
 					for (auto t : tags)
 						common_util_remove_propvals(&pmsgctnt->proplist, t);

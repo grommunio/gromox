@@ -204,8 +204,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	pcl_free(ppcl);
-	
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PREDECESSORCHANGELIST);
+	sqlite3_bind_int64(pstmt, 1, PR_PREDECESSOR_CHANGE_LIST);
 	sqlite3_bind_blob(pstmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		rop_util_free_binary(pbin);

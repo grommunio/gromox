@@ -3708,14 +3708,14 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 		case FOLDER_PROPERTIES_TABLE:
 			switch (pproptags->pproptag[i]) {
 			case PR_DISPLAY_NAME:
-			case PROP_TAG_PREDECESSORCHANGELIST:
+			case PR_PREDECESSOR_CHANGE_LIST:
 				continue;
 			}
 			break;
 		case MESSAGE_PROPERTIES_TABLE:
 			switch (pproptags->pproptag[i]) {
 			case PROP_TAG_MESSAGESTATUS:
-			case PROP_TAG_PREDECESSORCHANGELIST:
+			case PR_PREDECESSOR_CHANGE_LIST:
 				continue;
 			}
 			break;
@@ -5358,7 +5358,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		if (NULL == propval_buff[0].pvalue) {
 			return FALSE;
 		}
-		propval_buff[1].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		propval_buff[1].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		propval_buff[1].pvalue = common_util_pcl_append(nullptr, static_cast<BINARY *>(propval_buff[0].pvalue));
 		if (NULL == propval_buff[1].pvalue) {
 			return FALSE;

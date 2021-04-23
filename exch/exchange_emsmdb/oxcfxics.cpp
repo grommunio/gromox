@@ -1009,9 +1009,8 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		PROP_TAG_SOURCEKEY != ppropvals->ppropval[0].proptag ||
 	    ppropvals->ppropval[1].proptag != PR_LAST_MODIFICATION_TIME ||
 		PROP_TAG_CHANGEKEY != ppropvals->ppropval[2].proptag ||
-		PROP_TAG_PREDECESSORCHANGELIST != ppropvals->ppropval[3].proptag) {
+	    ppropvals->ppropval[3].proptag != PR_PREDECESSOR_CHANGE_LIST)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
@@ -1118,12 +1117,11 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (TRUE == b_exist) {
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
 		if (!message_object_get_properties(pmessage.get(),
 		    0, &proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(&tmp_propvals, 
-						PROP_TAG_PREDECESSORCHANGELIST);
+		pvalue = common_util_get_propvals(&tmp_propvals,  PR_PREDECESSOR_CHANGE_LIST);
 		if (NULL == pvalue) {
 			return ecError;
 		}
@@ -1315,7 +1313,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		PROP_TAG_SOURCEKEY != phichyvals->ppropval[1].proptag ||
 	    phichyvals->ppropval[2].proptag != PR_LAST_MODIFICATION_TIME ||
 		PROP_TAG_CHANGEKEY != phichyvals->ppropval[3].proptag ||
-		PROP_TAG_PREDECESSORCHANGELIST != phichyvals->ppropval[4].proptag ||
+	    phichyvals->ppropval[4].proptag != PR_PREDECESSOR_CHANGE_LIST ||
 	    phichyvals->ppropval[5].proptag != PR_DISPLAY_NAME)
 		return ecInvalidParam;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -1458,7 +1456,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[2].pvalue;
 		tmp_propvals.ppropval[3].proptag = PROP_TAG_CHANGEKEY;
 		tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[3].pvalue;
-		tmp_propvals.ppropval[4].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propvals.ppropval[4].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals.ppropval[4].pvalue = phichyvals->ppropval[4].pvalue;
 		tmp_propvals.ppropval[5].proptag = PR_DISPLAY_NAME;
 		tmp_propvals.ppropval[5].pvalue = phichyvals->ppropval[5].pvalue;
@@ -1488,12 +1486,10 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		idset_append(pctx->pstate->pseen, change_num);
 		return ecSuccess;
 	}
-	if (FALSE == exmdb_client_get_folder_property(
-		logon_object_get_dir(plogon), 0, folder_id,
-		PROP_TAG_PREDECESSORCHANGELIST, &pvalue) ||
-		NULL == pvalue) {
+	if (!exmdb_client_get_folder_property(logon_object_get_dir(plogon), 0,
+	    folder_id, PR_PREDECESSOR_CHANGE_LIST, &pvalue) ||
+	    pvalue == nullptr)
 		return ecError;
-	}
 	if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue),
 	    static_cast<BINARY *>(phichyvals->ppropval[4].pvalue), &result))
 		return ecError;
@@ -1568,7 +1564,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[0].pvalue = phichyvals->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGEKEY;
 	tmp_propvals.ppropval[1].pvalue = phichyvals->ppropval[3].pvalue;
-	tmp_propvals.ppropval[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	tmp_propvals.ppropval[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[4].pvalue;
 	tmp_propvals.ppropval[3].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[5].pvalue;
@@ -1900,11 +1896,9 @@ uint32_t rop_syncimportmessagemove(
 		return ecNotFound;
 	}
 	BOOL b_fai = *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0, src_mid,
-		PROP_TAG_PREDECESSORCHANGELIST, &pvalue)) {
+	if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+	    nullptr, 0, src_mid, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 		return ecError;
-	}
 	if (NULL == pvalue) {
 		return ecError;
 	}
@@ -1921,7 +1915,7 @@ uint32_t rop_syncimportmessagemove(
 	}
 	if (TRUE == b_newer) {
 		uint32_t result_unused;
-		tmp_propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propval.pvalue = pvalue;
 		exmdb_client_set_message_property(
 			logon_object_get_dir(plogon), NULL,

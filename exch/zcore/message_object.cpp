@@ -459,11 +459,10 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propvals.count ++;
 	
 	if (0 != pmessage->message_id) {
-		if (FALSE == exmdb_client_get_instance_property(dir,
-			pmessage->instance_id, PROP_TAG_PREDECESSORCHANGELIST,
-			(void**)&pbin_pcl)) {
+		if (!exmdb_client_get_instance_property(dir,
+		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
+		    reinterpret_cast<void **>(&pbin_pcl)))
 			return GXERR_CALL_FAILED;
-		}
 		if (!pmessage->b_new && pbin_pcl == nullptr)
 			return GXERR_CALL_FAILED;
 		tmp_xid.guid = store_object_guid(pmessage->pstore);
@@ -482,8 +481,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		if (NULL == pbin_pcl) {
 			return GXERR_CALL_FAILED;
 		}
-		tmp_propvals.ppropval[tmp_propvals.count].proptag =
-							PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_pcl;	
 		tmp_propvals.count ++;
 	}
@@ -675,7 +673,7 @@ static constexpr uint32_t trimtags[] = {
 	PROP_TAG_MID, PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYCC,
 	PROP_TAG_DISPLAYBCC, PROP_TAG_MESSAGESIZE, PROP_TAG_HASATTACHMENTS,
 	PROP_TAG_CHANGEKEY, PROP_TAG_CHANGENUMBER,
-	PROP_TAG_PREDECESSORCHANGELIST,
+	PR_PREDECESSOR_CHANGE_LIST,
 };
 
 BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
@@ -953,7 +951,7 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_CHANGEKEY:
 	case PROP_TAG_CREATIONTIME:
 	case PR_LAST_MODIFICATION_TIME:
-	case PROP_TAG_PREDECESSORCHANGELIST:
+	case PR_PREDECESSOR_CHANGE_LIST:
 	case PROP_TAG_SOURCEKEY:
 		if (pmessage->b_new)
 			return FALSE;

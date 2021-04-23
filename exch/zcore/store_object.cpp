@@ -1612,11 +1612,10 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	}
 	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
-	if (FALSE == exmdb_client_get_folder_property(pstore->dir,
-		0, folder_id, PROP_TAG_PREDECESSORCHANGELIST,
-		(void**)&pbin_pcl) || NULL == pbin_pcl) {
+	if (!exmdb_client_get_folder_property(pstore->dir, 0, folder_id,
+	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)) ||
+	    pbin_pcl == nullptr)
 		return FALSE;
-	}
 	tmp_xid.guid = rop_util_make_user_guid(pstore->account_id);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
@@ -1630,7 +1629,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	last_time = rop_util_current_nttime();
 	tmp_propvals.ppropval[2].proptag = PROP_TAG_CHANGEKEY;
 	tmp_propvals.ppropval[2].pvalue = pbin_changekey;
-	tmp_propvals.ppropval[3].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	tmp_propvals.ppropval[3].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals.ppropval[3].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[4].pvalue = &last_time;

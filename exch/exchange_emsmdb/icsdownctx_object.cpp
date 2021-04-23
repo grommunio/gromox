@@ -795,17 +795,14 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
 	
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_PREDECESSORCHANGELIST);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	pchgheader->ppropval[pchgheader->count].proptag =
-							PROP_TAG_PREDECESSORCHANGELIST;
+	pchgheader->ppropval[pchgheader->count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_PREDECESSORCHANGELIST);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);

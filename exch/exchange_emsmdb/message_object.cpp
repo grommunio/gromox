@@ -481,18 +481,16 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	BOOL b_fai = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (FALSE == pmessage->b_new) {
-			if (FALSE == exmdb_client_get_instance_property(
-				logon_object_get_dir(pmessage->plogon),
-				pmessage->instance_id, PROP_TAG_PREDECESSORCHANGELIST,
-				(void**)&pbin_pcl) || NULL == pbin_pcl) {
+			if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+			    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
+			    reinterpret_cast<void **>(&pbin_pcl)) ||
+			    pbin_pcl == nullptr)
 				return GXERR_CALL_FAILED;
-			}
-			if (FALSE == exmdb_client_get_message_property(
-				logon_object_get_dir(pmessage->plogon), NULL, 0,
-				pmessage->message_id, PROP_TAG_PREDECESSORCHANGELIST,
-				(void**)&pbin_pcl1) || NULL == pbin_pcl1) {
+			if (!exmdb_client_get_message_property(logon_object_get_dir(pmessage->plogon),
+			    nullptr, 0, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
+			    reinterpret_cast<void **>(&pbin_pcl1)) ||
+			    pbin_pcl1 == nullptr)
 				return GXERR_CALL_FAILED;
-			}
 			if (FALSE == common_util_pcl_compare(
 				pbin_pcl, pbin_pcl1, &result)) {
 				return GXERR_CALL_FAILED;
@@ -550,7 +548,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 				if (NULL == pbin_pcl) {
 					return GXERR_CALL_FAILED;
 				}
-				tmp_propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+				tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 				tmp_propval.pvalue = pbin_pcl;
 				if (FALSE == message_object_set_properties_internal(
 					pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
@@ -559,12 +557,10 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			}
 		}
 	} else if (0 != pmessage->message_id) {
-		if (FALSE == exmdb_client_get_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, PROP_TAG_PREDECESSORCHANGELIST,
-			(void**)&pbin_pcl)) {
+		if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
+		    reinterpret_cast<void **>(&pbin_pcl)))
 			return GXERR_CALL_FAILED;
-		}
 		if (FALSE == pmessage->b_new && NULL == pbin_pcl) {
 			return GXERR_CALL_FAILED;
 		}
@@ -637,8 +633,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		if (NULL == pbin_pcl) {
 			return GXERR_CALL_FAILED;
 		}
-		tmp_propvals.ppropval[tmp_propvals.count].proptag =
-										PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_pcl;	
 		tmp_propvals.count ++;
 	}
@@ -1180,7 +1175,7 @@ BOOL message_object_check_readonly_property(
 	case PROP_TAG_CHANGEKEY:
 	case PROP_TAG_CREATIONTIME:
 	case PR_LAST_MODIFICATION_TIME:
-	case PROP_TAG_PREDECESSORCHANGELIST:
+	case PR_PREDECESSOR_CHANGE_LIST:
 	case PROP_TAG_SOURCEKEY:
 		if (TRUE == pmessage->b_new || NULL != pmessage->pstate) {
 			return FALSE;
@@ -1672,7 +1667,7 @@ BOOL message_object_copy_to(
 		PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8, PROP_TAG_DISPLAYBCC,
 		PROP_TAG_DISPLAYBCC_STRING8, PROP_TAG_MESSAGESIZE,
 		PROP_TAG_HASATTACHMENTS, PROP_TAG_CHANGEKEY, PROP_TAG_CHANGENUMBER,
-		PROP_TAG_PREDECESSORCHANGELIST,
+		PR_PREDECESSOR_CHANGE_LIST,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&msgctnt.proplist, t);

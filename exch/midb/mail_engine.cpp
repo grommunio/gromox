@@ -3449,7 +3449,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		message_content_free(pmsgctnt);
 		return 4;
 	}
-	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(NULL, pbin);
 	if (NULL == propval.pvalue ||
 	    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -3747,7 +3747,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		message_content_free(pmsgctnt);
 		return 4;
 	}
-	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(NULL, pbin);
 	if (NULL == propval.pvalue ||
 	    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -3886,12 +3886,12 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
 	if (!exmdb_client::allocate_cn(argv[1], &change_num)
 		|| !exmdb_client::get_folder_properties(argv[1],
 		0, rop_util_make_eid_ex(1, folder_id), &proptags, &propvals)
 		||
-	     (pbin1 = static_cast<BINARY *>(common_util_get_propvals(&propvals, PROP_TAG_PREDECESSORCHANGELIST))) == nullptr) {
+	     (pbin1 = static_cast<BINARY *>(common_util_get_propvals(&propvals, PR_PREDECESSOR_CHANGE_LIST))) == nullptr) {
 		return 4;	
 	}
 	if (parent_id == folder_id1) {
@@ -3910,7 +3910,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	propval_buff[1].proptag = PROP_TAG_CHANGEKEY;
 	propval_buff[1].pvalue = pbin;
-	propval_buff[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval_buff[2].pvalue) {
 		return 4;
