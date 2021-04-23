@@ -206,7 +206,7 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, unsigned int cpid,
 		return ret;
 
 	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PROP_TAG_BODY;
+	pv.proptag = PR_BODY;
 	pv.pvalue  = bin->pc;
 	++pval->count;
 	return 1;
@@ -238,7 +238,7 @@ static int instance_get_body_8bit(MESSAGE_CONTENT *mc, unsigned int cpid,
 		return ret;
 
 	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PROP_TAG_BODY_STRING8;
+	pv.proptag = PR_BODY_A;
 	pv.pvalue  = bin->pc;
 	++pval->count;
 	return 1;

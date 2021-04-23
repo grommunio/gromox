@@ -572,7 +572,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PROP_TAG_BODY;
+			propval.proptag = PR_BODY;
 			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -1066,7 +1066,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_BODY));
+	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_BODY));
 	if (NULL != pvalue) {
 		pvline = vcard_new_simple_line("NOTE", pvalue);
 		if (NULL == pvline) {

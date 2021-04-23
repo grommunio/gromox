@@ -1681,14 +1681,13 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (NULL == dir) {
 		return NULL;
 	}
-	if (PROP_TAG_BODY != proptag && PROP_TAG_BODY_STRING8 != proptag) {
+	if (proptag != PR_BODY && proptag != PR_BODY_A)
 		return NULL;
-	}
 	sprintf(sql_string, "SELECT proptag, propval "
 		"FROM message_properties WHERE (message_id=%llu AND"
 		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		LLU(message_id), PROP_TAG_BODY,
-		LLU(message_id), PROP_TAG_BODY_STRING8);
+		LLU(message_id), PR_BODY,
+		LLU(message_id), PR_BODY_A);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
@@ -1706,9 +1705,8 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
 	pbuff[node_stat.st_size] = 0;
-	if (PROP_TAG_BODY == proptag1) {
+	if (proptag1 == PR_BODY)
 		pbuff += sizeof(int);
-	}
 	if (proptag == proptag1) {
 		return pbuff;
 	}
@@ -2137,8 +2135,8 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_display_recipients(db, cpid, id, tag, &pv.pvalue))
 			return GP_ERR;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PROP_TAG_BODY:
-	case PROP_TAG_BODY_STRING8:
+	case PR_BODY:
+	case PR_BODY_A:
 		pv.pvalue = common_util_get_message_body(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PROP_TAG_HTML:
@@ -2816,19 +2814,19 @@ static BOOL common_util_set_message_body(
 	const char *dir;
 	uint32_t proptag;
 	
-	if (PROP_TAG_BODY_STRING8 == ppropval->proptag) {
+	if (ppropval->proptag == PR_BODY_A) {
 		if (0 == cpid) {
-			proptag = PROP_TAG_BODY_STRING8;
+			proptag = PR_BODY_A;
 			pvalue = ppropval->pvalue;
 		} else {
-			proptag = PROP_TAG_BODY;
+			proptag = PR_BODY;
 			pvalue = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 		}
-	} else if (PROP_TAG_BODY == ppropval->proptag) {
-		proptag = PROP_TAG_BODY;
+	} else if (ppropval->proptag == PR_BODY_W) {
+		proptag = PR_BODY_W;
 		pvalue = ppropval->pvalue;
 	} else {
 		return FALSE;
@@ -2845,7 +2843,7 @@ static BOOL common_util_set_message_body(
 	if (-1 == fd) {
 		return FALSE;
 	}
-	if (PROP_TAG_BODY == proptag) {
+	if (proptag == PR_BODY) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 			sizeof(int) != write(fd, &len, sizeof(int))) {
 			close(fd);
@@ -3249,24 +3247,20 @@ BOOL common_util_set_properties(int table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_message_cid(
-					psqlite, id, PROP_TAG_BODY, *(uint64_t*)
-					ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_message_cid(psqlite,
+				    id, PR_BODY, *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
 			case ID_TAG_BODY_STRING8:
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_message_cid(
-					psqlite, id, PROP_TAG_BODY_STRING8,
-					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_message_cid(psqlite,
+				    id, PR_BODY_A, *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
-			case PROP_TAG_BODY:
-			case PROP_TAG_BODY_STRING8:
+			case PR_BODY:
+			case PR_BODY_A:
 				if (FALSE == common_util_set_message_body(
 					psqlite, cpid, id, ppropvals->ppropval + i)) {
 					pproblems->pproblem[pproblems->count].index = i;

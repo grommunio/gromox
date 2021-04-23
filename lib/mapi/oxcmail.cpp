@@ -2099,12 +2099,12 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		pcontent[length] = '\0';
 		if (TRUE == string_to_utf8(best_charset,
 			pcontent, pcontent + length + 1)) {
-			propval.proptag = PROP_TAG_BODY;
+			propval.proptag = PR_BODY;
 			propval.pvalue = pcontent + length + 1;
 			if (!utf8_check(static_cast<char *>(propval.pvalue)))
 				utf8_filter(static_cast<char *>(propval.pvalue));
 		} else {
-			propval.proptag = PROP_TAG_BODY_STRING8;
+			propval.proptag = PR_BODY_A;
 			propval.pvalue = pcontent;
 		}
 		if (!tpropval_array_set_propval(pproplist, &propval)) {
@@ -4716,10 +4716,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_BODY) &&
-		NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_BODY_STRING8)) {
+	if (tpropval_array_get_propval(&pmsg->proplist, PR_BODY_W) == nullptr &&
+	    tpropval_array_get_propval(&pmsg->proplist, PR_BODY_A) == nullptr) {
 		phtml_bin = static_cast<BINARY *>(tpropval_array_get_propval(
 		            &pmsg->proplist, PROP_TAG_HTML));
 		if (NULL != phtml_bin) {
@@ -4736,7 +4734,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				return NULL;
 			}
 			auto plainout = plainbuf.c_str();
-			propval.proptag = PROP_TAG_BODY;
+			propval.proptag = PR_BODY;
 			propval.pvalue = alloc(3 * strlen(plainout) + 1);
 			if (NULL == pvalue) {
 				message_content_free(pmsg);
@@ -4754,8 +4752,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	}
 	if (NULL == tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_HTML)) {
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_BODY);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
 		if (NULL != pvalue) {
 			phtml_bin = static_cast<BINARY *>(alloc(sizeof(BINARY)));
 			if (NULL == phtml_bin) {
@@ -5191,7 +5188,7 @@ static BOOL oxcmail_load_mime_skeleton(
 	}
 	pskeleton->body_type = body_type;
 	pskeleton->pplain = static_cast<char *>(tpropval_array_get_propval(
-	                    &pmsg->proplist, PROP_TAG_BODY));
+	                    &pmsg->proplist, PR_BODY));
 	if (MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
 		MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
 		MAIL_TYPE_TNEF == pskeleton->mail_type) {

@@ -100,12 +100,12 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_MESSAGE_SIZE:
 		case PROP_TAG_HASATTACHMENTS:
 			continue;
-		case PROP_TAG_BODY:
-		case PROP_TAG_BODY_STRING8:
+		case PR_BODY:
+		case PR_BODY_A:
 			sprintf(sql_string, "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
-				PROP_TAG_BODY, LLU(message_id), PROP_TAG_BODY_STRING8);
+				PR_BODY, LLU(message_id), PR_BODY_A);
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				message_content_free(pmsgctnt);
@@ -114,7 +114,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			proptag = sqlite3_column_int64(pstmt, 0);
 			cid = sqlite3_column_int64(pstmt, 1);
 			pstmt.finalize();
-			propval.proptag = proptag == PROP_TAG_BODY ?
+			propval.proptag = proptag == PR_BODY ?
 			                  ID_TAG_BODY : ID_TAG_BODY_STRING8;
 			propval.pvalue = &cid;
 			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -825,7 +825,7 @@ static BOOL instance_read_message(
 			if (NULL == pbuff) {
 				return FALSE;
 			}
-			pmsgctnt->proplist.ppropval[i].proptag = PROP_TAG_BODY;
+			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY;
 			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(int);
 			break;
 		case ID_TAG_BODY_STRING8:
@@ -834,7 +834,7 @@ static BOOL instance_read_message(
 			if (NULL == pbuff) {
 				return FALSE;
 			}
-			pmsgctnt->proplist.ppropval[i].proptag = PROP_TAG_BODY_STRING8;
+			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY_A;
 			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
 			break;
 		case ID_TAG_HTML:
@@ -1150,8 +1150,8 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		}
 		if (FALSE == b_force) {
 			switch (proptag) {
-			case PROP_TAG_BODY:
-			case PROP_TAG_BODY_STRING8:	
+			case PR_BODY:
+			case PR_BODY_A:	
 				if (NULL != tpropval_array_get_propval(
 					pproplist, ID_TAG_BODY) ||
 					NULL != tpropval_array_get_propval(
@@ -1186,8 +1186,8 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			}
 		}
 		switch (proptag) {
-		case PROP_TAG_BODY:
-		case PROP_TAG_BODY_STRING8:	
+		case PR_BODY:
+		case PR_BODY_A:	
 			tpropval_array_remove_propval(
 				pproplist, ID_TAG_BODY);
 			tpropval_array_remove_propval(
@@ -1664,7 +1664,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			memcpy(pvalue, plainout, strlen(plainout) + 1);
 			pvalue = static_cast<char *>(common_util_convert_copy(TRUE, *pcpid, static_cast<char *>(pvalue)));
 			if (NULL != pvalue) {
-				propval.proptag = PROP_TAG_BODY;
+				propval.proptag = PR_BODY;
 				propval.pvalue = pvalue;
 				if(!tpropval_array_set_propval(&((MESSAGE_CONTENT*)
 					pinstance->pcontent)->proplist, &propval))
@@ -1834,10 +1834,10 @@ BOOL exmdb_server_get_instance_all_proptags(
 		for (i=0; i<pmsgctnt->proplist.count; i++) {
 			switch (pmsgctnt->proplist.ppropval[i].proptag) {
 			case ID_TAG_BODY:
-				pproptags->pproptag[i] = PROP_TAG_BODY;
+				pproptags->pproptag[i] = PR_BODY;
 				break;
 			case ID_TAG_BODY_STRING8:
-				pproptags->pproptag[i] = PROP_TAG_BODY_STRING8;
+				pproptags->pproptag[i] = PR_BODY_A;
 				break;
 			case ID_TAG_HTML:
 				pproptags->pproptag[i] = PROP_TAG_HTML;
@@ -2724,8 +2724,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					return FALSE;
 				}
 				continue;
-			case PROP_TAG_BODY:
-			case PROP_TAG_BODY_STRING8:
+			case PR_BODY:
+			case PR_BODY_A:
 				tpropval_array_remove_propval(
 					&pmsgctnt->proplist, ID_TAG_BODY);
 				tpropval_array_remove_propval(
@@ -2783,12 +2783,12 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 				return FALSE;
 			}
-			if (PROP_TAG_BODY == propval.proptag ||
+			if (propval.proptag == PR_BODY ||
 				PROP_TAG_HTML == propval.proptag ||
 				PROP_TAG_BODYHTML == propval.proptag ||
 				PROP_TAG_RTFCOMPRESSED == propval.proptag) {
 				switch (propval.proptag) {
-				case PROP_TAG_BODY:
+				case PR_BODY:
 					pinstance->change_mask |= CHANGE_MASK_BODY;
 					body_type = NATIVE_BODY_PLAIN;
 					break;
@@ -2901,8 +2901,8 @@ BOOL exmdb_server_remove_instance_properties(
 		pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_BODY:
-			case PROP_TAG_BODY_STRING8:
+			case PR_BODY:
+			case PR_BODY_A:
 			case PROP_TAG_BODY_UNSPECIFIED:
 				tpropval_array_remove_propval(
 					&pmsgctnt->proplist, ID_TAG_BODY);

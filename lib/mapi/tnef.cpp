@@ -1434,7 +1434,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_BODY:
-			propval.proptag = PROP_TAG_BODY_STRING8;
+			propval.proptag = PR_BODY_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
@@ -2473,7 +2473,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_BODY */
 	if (TRUE == b_embedded) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_BODY_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY_A);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_BODY;
 			attribute.lvl = LVL_MESSAGE;
@@ -2482,8 +2482,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				pext, &attribute, alloc, get_propname)) {
 				return FALSE;
 			}
-			tmp_proptags.pproptag[tmp_proptags.count] =
-								PROP_TAG_BODY_STRING8;
+			tmp_proptags.pproptag[tmp_proptags.count] = PR_BODY_A;
 			tmp_proptags.count ++;
 		}
 	}

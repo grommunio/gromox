@@ -3170,14 +3170,13 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MID);
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_BODY);
+		common_util_remove_propvals(&pmsgctnt->proplist, PR_BODY);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_HTML);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_RTFCOMPRESSED);
 		if (0 == strcasecmp(content_type, "text/plain")) {
-			propval.proptag = PROP_TAG_BODY;
+			propval.proptag = PR_BODY;
 			propval.pvalue = tmp_buff;
 			common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		} else if (0 == strcasecmp(content_type, "text/html")) {

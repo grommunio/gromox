@@ -1138,7 +1138,7 @@ static BOOL oxcical_parse_body(std::shared_ptr<ICAL_LINE> piline,
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	propval.proptag = PROP_TAG_BODY;
+	propval.proptag = PR_BODY;
 	propval.pvalue = deconst(pvalue);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
@@ -5050,8 +5050,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_BODY);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
 	if (NULL != pvalue) {
 		if (0 == strcmp(method, "REPLY") ||
 			0 == strcmp(method, "COUNTER")) {
