@@ -1309,11 +1309,9 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));
 		}
 	}
-	prow->pdisplay_name = static_cast<char *>(common_util_get_propvals(
-	                      ppropvals, PROP_TAG_DISPLAYNAME));
+	prow->pdisplay_name = static_cast<char *>(common_util_get_propvals(ppropvals, PR_DISPLAY_NAME));
 	if (NULL == prow->pdisplay_name) {
-		pvalue = common_util_get_propvals(
-			ppropvals,PROP_TAG_DISPLAYNAME_STRING8);
+		pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME_A);
 		if (NULL != pvalue) {
 			prow->pdisplay_name =
 				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));
@@ -1422,7 +1420,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		common_util_set_propvals(ppropvals, &propval);
 	}
 	if (NULL != prow->pdisplay_name) {
-		propval.proptag = PROP_TAG_DISPLAYNAME;
+		propval.proptag = PR_DISPLAY_NAME;
 		propval.pvalue = b_unicode ? prow->pdisplay_name :
 		                 common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
 		if (NULL != propval.pvalue) {
@@ -1474,11 +1472,11 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		&prow->properties, &tmp_columns, ppropvals)) {
 		return FALSE;	
 	}
-	auto pvalue = common_util_get_propvals(ppropvals, PROP_TAG_DISPLAYNAME);
+	auto pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
 	if (NULL == pvalue || '\0' == *(char*)pvalue ||
 	    strcmp(static_cast<char *>(pvalue), "''") == 0 ||
 	    strcmp(static_cast<char *>(pvalue), "\"\"") == 0) {
-		propval.proptag = PROP_TAG_DISPLAYNAME;
+		propval.proptag = PR_DISPLAY_NAME;
 		propval.pvalue = common_util_get_propvals(
 			ppropvals, PROP_TAG_RECIPIENTDISPLAYNAME);
 		if (NULL == propval.pvalue) {

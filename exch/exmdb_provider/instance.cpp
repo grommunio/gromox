@@ -1940,11 +1940,9 @@ static BOOL instance_get_message_display_recipients(
 		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
 			continue;
 		}
-		pvalue = tpropval_array_get_propval(
-			prcpts->pparray[i], PROP_TAG_DISPLAYNAME);
+		pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_DISPLAY_NAME);
 		if (NULL == pvalue) {
-			pvalue = tpropval_array_get_propval(
-				prcpts->pparray[i], PROP_TAG_DISPLAYNAME_STRING8);
+			pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_DISPLAY_NAME_A);
 			if (NULL != pvalue) {
 				pvalue = static_cast<char *>(common_util_convert_copy(TRUE, cpid, static_cast<char *>(pvalue)));
 			}

@@ -129,7 +129,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DISPLAYNAME);
+	sqlite3_bind_int64(pstmt, 1, PR_DISPLAY_NAME);
 	sqlite3_bind_text(pstmt, 2, pdisplayname, -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;

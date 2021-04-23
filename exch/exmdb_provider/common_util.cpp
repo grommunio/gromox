@@ -846,7 +846,7 @@ static char* common_util_calculate_folder_path(
 	while (TRUE) {
 		sprintf(sql_string, "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
-				"folder_id=%llu", PROP_TAG_DISPLAYNAME, LLU(tmp_fid));
+		        "folder_id=%llu", PR_DISPLAY_NAME, LLU(tmp_fid));
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return NULL;
@@ -1212,7 +1212,7 @@ BOOL common_util_get_folder_by_name(
 		return FALSE;
 	sprintf(sql_string, "SELECT propval "
 		"FROM folder_properties WHERE folder_id=?"
-		" AND proptag=%u", PROP_TAG_DISPLAYNAME);
+	        " AND proptag=%u", PR_DISPLAY_NAME);
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		return FALSE;
@@ -1511,11 +1511,9 @@ static void* common_util_get_message_parent_display(
 		psqlite, message_id, &folder_id)) {
 		return NULL;	
 	}
-	if (FALSE == common_util_get_property(
-		FOLDER_PROPERTIES_TABLE, folder_id, 0,
-		psqlite, PROP_TAG_DISPLAYNAME, &pvalue)) {
+	if (!common_util_get_property(FOLDER_PROPERTIES_TABLE, folder_id, 0,
+	    psqlite, PR_DISPLAY_NAME, &pvalue))
 		return NULL;	
-	}
 	return pvalue;
 }
 
@@ -1641,11 +1639,9 @@ static BOOL common_util_get_message_display_recipients(
 		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
 			continue;
 		}
-		if (FALSE == common_util_get_property(
-			RECIPIENT_PROPERTIES_TABLE, rcpt_id, cpid,
-			psqlite, PROP_TAG_DISPLAYNAME, &pvalue)) {
+		if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+		    rcpt_id, cpid, psqlite, PR_DISPLAY_NAME, &pvalue))
 			return FALSE;	
-		}
 		if (NULL == pvalue) {
 			if (FALSE == common_util_get_property(
 				RECIPIENT_PROPERTIES_TABLE, rcpt_id, cpid,
@@ -3166,10 +3162,9 @@ BOOL common_util_set_properties(int table_type,
 					rop_util_get_gc_value(*(uint64_t*)
 					ppropvals->ppropval[i].pvalue));
 				continue;
-			case PROP_TAG_DISPLAYNAME:
-			case PROP_TAG_DISPLAYNAME_STRING8:
-				if (PROP_TAG_DISPLAYNAME_STRING8 ==
-					ppropvals->ppropval[i].proptag) {
+			case PR_DISPLAY_NAME:
+			case PR_DISPLAY_NAME_A:
+				if (ppropvals->ppropval[i].proptag == PR_DISPLAY_NAME_A) {
 					pstring = common_util_convert_copy(TRUE,
 					          cpid, static_cast<char *>(ppropvals->ppropval[i].pvalue));
 					if (NULL == pstring) {
@@ -3712,7 +3707,7 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 			break;
 		case FOLDER_PROPERTIES_TABLE:
 			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_DISPLAYNAME:
+			case PR_DISPLAY_NAME:
 			case PROP_TAG_PREDECESSORCHANGELIST:
 				continue;
 			}

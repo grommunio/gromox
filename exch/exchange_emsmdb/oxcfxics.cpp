@@ -1316,9 +1316,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		PROP_TAG_LASTMODIFICATIONTIME != phichyvals->ppropval[2].proptag ||
 		PROP_TAG_CHANGEKEY != phichyvals->ppropval[3].proptag ||
 		PROP_TAG_PREDECESSORCHANGELIST != phichyvals->ppropval[4].proptag ||
-		PROP_TAG_DISPLAYNAME != phichyvals->ppropval[5].proptag) {
+	    phichyvals->ppropval[5].proptag != PR_DISPLAY_NAME)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
@@ -1461,7 +1460,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[3].pvalue;
 		tmp_propvals.ppropval[4].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 		tmp_propvals.ppropval[4].pvalue = phichyvals->ppropval[4].pvalue;
-		tmp_propvals.ppropval[5].proptag = PROP_TAG_DISPLAYNAME;
+		tmp_propvals.ppropval[5].proptag = PR_DISPLAY_NAME;
 		tmp_propvals.ppropval[5].pvalue = phichyvals->ppropval[5].pvalue;
 		tmp_propvals.ppropval[6].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals.ppropval[6].pvalue = &change_num;
@@ -1571,7 +1570,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[1].pvalue = phichyvals->ppropval[3].pvalue;
 	tmp_propvals.ppropval[2].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[4].pvalue;
-	tmp_propvals.ppropval[3].proptag = PROP_TAG_DISPLAYNAME;
+	tmp_propvals.ppropval[3].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[5].pvalue;
 	tmp_propvals.ppropval[4].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals.ppropval[4].pvalue = &change_num;

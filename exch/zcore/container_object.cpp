@@ -137,8 +137,7 @@ static BOOL container_object_match_contact_message(
 				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_DISPLAYNAME);
+			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
 			if (NULL != pvalue) {
 				if (strcasestr(static_cast<char *>(pvalue),
 				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
@@ -422,8 +421,7 @@ BOOL container_object_load_user_table(
 		if (FALSE == container_object_get_pidlids(&proptags)) {
 			return FALSE;
 		}
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_DISPLAYNAME;
+		proptags.pproptag[proptags.count] = PR_DISPLAY_NAME;
 		proptags.count ++;
 		proptags.pproptag[proptags.count] =
 						PROP_TAG_NICKNAME;
@@ -499,7 +497,7 @@ BOOL container_object_load_user_table(
 			               tmp_set.pparray[i], proptags.pproptag[3*j]));
 			if (NULL == pdisplayname) {
 				pdisplayname = static_cast<char *>(common_util_get_propvals(
-				               tmp_set.pparray[i], PROP_TAG_DISPLAYNAME));
+				               tmp_set.pparray[i], PR_DISPLAY_NAME));
 			}
 			paddress_type = static_cast<char *>(common_util_get_propvals(
 				tmp_set.pparray[i], proptags.pproptag[3*j+1]));
@@ -545,7 +543,7 @@ BOOL container_object_load_user_table(
 				return FALSE;
 			}
 			if (NULL != pdisplayname) {
-				propval.proptag = PROP_TAG_DISPLAYNAME;
+				propval.proptag = PR_DISPLAY_NAME;
 				propval.pvalue = pdisplayname;
 				if (!tpropval_array_set_propval(ppropvals, &propval)) {
 					tpropval_array_free(ppropvals);
@@ -711,7 +709,7 @@ BOOL container_object_fetch_special_property(
 		*(uint32_t*)pvalue = 0;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DISPLAYNAME:
+	case PR_DISPLAY_NAME:
 		*ppvalue = special_type == SPECIAL_CONTAINER_GAL ?
 		           deconst("Global Address List") :
 		           deconst("Gromox Contact Folders");
@@ -858,9 +856,8 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->count ++;
 			break;
 		}
-		case PROP_TAG_DISPLAYNAME:
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_DISPLAYNAME);
+		case PR_DISPLAY_NAME:
+			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -886,7 +883,7 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 	static const uint32_t proptag_buff[] = {
 					PROP_TAG_FOLDERID,
 					PROP_TAG_SUBFOLDERS,
-					PROP_TAG_DISPLAYNAME,
+					PR_DISPLAY_NAME,
 					PROP_TAG_CONTAINERCLASS,
 					PROP_TAG_FOLDERPATHNAME,
 					PROP_TAG_PARENTFOLDERID,
@@ -961,7 +958,7 @@ void container_object_get_container_table_all_proptags(
 		PROP_TAG_DEPTH,
 		PROP_TAG_INSTANCEKEY,
 		PROP_TAG_ADDRESSBOOKCONTAINERID,
-		PROP_TAG_DISPLAYNAME,
+		PR_DISPLAY_NAME,
 		PROP_TAG_ADDRESSBOOKISMASTER,
 		PROP_TAG_ADDRESSBOOKPARENTENTRYID,
 		PROP_TAG_ABPROVIDERID
@@ -1247,7 +1244,7 @@ void container_object_get_user_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
 	static const uint32_t proptag_buff[] = {
-		PROP_TAG_DISPLAYNAME,
+		PR_DISPLAY_NAME,
 		PROP_TAG_NICKNAME,
 		PROP_TAG_SURNAME,
 		PROP_TAG_GIVENNAME,

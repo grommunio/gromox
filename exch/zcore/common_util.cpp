@@ -2460,10 +2460,8 @@ static BOOL common_util_create_folder(
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(pproplist, t);
-	if (NULL == common_util_get_propvals(
-		pproplist, PROP_TAG_DISPLAYNAME)) {
+	if (common_util_get_propvals(pproplist, PR_DISPLAY_NAME) == nullptr)
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_FOLDERTYPE;
 	propval.pvalue = &tmp_type;
 	tmp_type = FOLDER_TYPE_GENERIC;
@@ -2603,7 +2601,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	}
 	if (NULL != new_name) {
-		propval.proptag = PROP_TAG_DISPLAYNAME;
+		propval.proptag = PR_DISPLAY_NAME;
 		propval.pvalue = deconst(new_name);
 		common_util_set_propvals(&tmp_propvals, &propval);
 	}

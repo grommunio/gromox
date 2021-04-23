@@ -962,7 +962,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		if (NULL == pdisplay_name) {
 			pdisplay_name = paddress;
 		}
-		propval.proptag = PROP_TAG_DISPLAYNAME;
+		propval.proptag = PR_DISPLAY_NAME;
 		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
@@ -2128,7 +2128,7 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	tmp_int32 = 0xFFFFFFFF;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_DISPLAYNAME;
+	propval.proptag = PR_DISPLAY_NAME;
 	propval.pvalue = tpropval_array_get_propval(
 		&pattachment->pembedded->proplist, PROP_TAG_SUBJECT);
 	if (NULL != propval.pvalue) {
@@ -2247,7 +2247,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_DISPLAYNAME;
+			propval.proptag = PR_DISPLAY_NAME;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
 			propval.proptag = PROP_TAG_ATTACHMETHOD;
@@ -2366,7 +2366,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		propval.pvalue = deconst(pvalue);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_DISPLAYNAME;
+		propval.proptag = PR_DISPLAY_NAME;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_ATTACHMETHOD;
@@ -3883,9 +3883,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (!piparam->append_paramval("TRUE"))
 				return FALSE;
 		}
-		pvalue = tpropval_array_get_propval(
-			pmsg->children.prcpts->pparray[i],
-			PROP_TAG_DISPLAYNAME);
+		pvalue = tpropval_array_get_propval(pmsg->children.prcpts->pparray[i], PR_DISPLAY_NAME);
 		if (NULL != pvalue) {
 			piparam = ical_new_param("CN");
 			if (NULL == piparam) {

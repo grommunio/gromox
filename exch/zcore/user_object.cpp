@@ -63,8 +63,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			PROP_TAG_ADDRESSTYPE) >= 0 ||
 			common_util_index_proptags(pproptags,
 			PROP_TAG_EMAILADDRESS) >= 0 ||
-			common_util_index_proptags(pproptags,
-			PROP_TAG_DISPLAYNAME) >= 0 ||
+		    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
@@ -90,8 +89,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				PROP_TAG_SMTPADDRESS) >= 0 ||
 				common_util_index_proptags(pproptags,
 				PROP_TAG_EMAILADDRESS) >= 0 ||
-				common_util_index_proptags(pproptags,
-				PROP_TAG_DISPLAYNAME) >= 0 ||
+			    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 				common_util_index_proptags(pproptags,
 				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
 				== ab_tree_get_minid_type(puser->minid) &&
@@ -126,14 +124,12 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 					ppropvals->count ++;
 					++vc;
 				}
-				if (common_util_index_proptags(pproptags,
-					PROP_TAG_DISPLAYNAME) >= 0 && TRUE ==
-					system_services_get_user_displayname(
-					username, tmp_buff)) {
+				if (common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 &&
+				    system_services_get_user_displayname(username, tmp_buff)) {
 					if ('\0' == tmp_buff[0]) {
 						strcpy(tmp_buff, username);
 					}
-					vc->proptag = PROP_TAG_DISPLAYNAME;
+					vc->proptag = PR_DISPLAY_NAME;
 					vc->pvalue = common_util_dup(tmp_buff);
 					if (vc->pvalue == nullptr)
 						return FALSE;

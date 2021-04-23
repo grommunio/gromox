@@ -471,7 +471,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
-	pname = static_cast<char *>(common_util_get_propvals(pproperties, PROP_TAG_DISPLAYNAME));
+	pname = static_cast<char *>(common_util_get_propvals(pproperties, PR_DISPLAY_NAME));
 	if (NULL == pname) {
 		*pfolder_id = 0;
 		return TRUE;
@@ -579,7 +579,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	sprintf(sql_string, "SELECT propval "
 		"FROM folder_properties WHERE folder_id=?"
-		" AND proptag=%u", PROP_TAG_DISPLAYNAME);
+	        " AND proptag=%u", PR_DISPLAY_NAME);
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		return FALSE;
@@ -2153,7 +2153,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		}
 		sprintf(sql_string, "UPDATE folder_properties "
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
-			LLU(src_val), PROP_TAG_DISPLAYNAME);
+		        LLU(src_val), PR_DISPLAY_NAME);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2221,7 +2221,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		}
 		sprintf(sql_string, "UPDATE folder_properties "
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
-			LLU(fid_val), PROP_TAG_DISPLAYNAME);
+		        LLU(fid_val), PR_DISPLAY_NAME);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);

@@ -1263,7 +1263,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
+		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
 			strcpy(str_dname, it->second.c_str());
 		} else {
@@ -1277,7 +1277,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	}
 	case NODE_TYPE_MLIST: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
+		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
 			if (FALSE == get_lang(codepage, "mlist0", lang_string, 256)) {
@@ -1335,7 +1335,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_
 	unsigned int tag = 0;
 	switch (type) {
 	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return;
-	case USER_REAL_NAME: tag = PROP_TAG_DISPLAYNAME; break;
+	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
 	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
 	case USER_MOBILE_TEL: tag = PROP_TAG_MOBILETELEPHONENUMBER; break;

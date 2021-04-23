@@ -391,7 +391,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	proptags.count = 6;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_PARENTFOLDERID;
-	proptag_buff[1] = PROP_TAG_DISPLAYNAME;
+	proptag_buff[1] = PR_DISPLAY_NAME;
 	proptag_buff[2] = PROP_TAG_CONTAINERCLASS;
 	proptag_buff[3] = PROP_TAG_ATTRIBUTEHIDDEN;
 	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
@@ -431,10 +431,8 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
-	pproplist->ppropval[pproplist->count].proptag =
-								PROP_TAG_DISPLAYNAME;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_DISPLAYNAME);
+	pproplist->ppropval[pproplist->count].proptag = PR_DISPLAY_NAME;
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;

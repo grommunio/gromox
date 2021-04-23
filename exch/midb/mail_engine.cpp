@@ -2467,7 +2467,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	proptag_buff[1] = PROP_TAG_PARENTFOLDERID;
 	proptag_buff[2] = PROP_TAG_ATTRIBUTEHIDDEN;
 	proptag_buff[3] = PROP_TAG_CONTAINERCLASS;
-	proptag_buff[4] = PROP_TAG_DISPLAYNAME;
+	proptag_buff[4] = PR_DISPLAY_NAME;
 	proptag_buff[5] = PROP_TAG_LOCALCOMMITTIMEMAX;
 	if (!exmdb_client::query_table(dir, NULL,
 		0, table_id, &proptags, 0, row_count, &rows)) {
@@ -2539,8 +2539,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			pvalue = "junk";
 			break;
 		default:
-			pvalue = common_util_get_propvals(
-				rows.pparray[i], PROP_TAG_DISPLAYNAME);
+			pvalue = common_util_get_propvals(rows.pparray[i], PR_DISPLAY_NAME);
 			if (pvalue == nullptr || strlen(static_cast<const char *>(pvalue)) >= 256)
 				continue;
 			break;
@@ -3921,7 +3920,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	propval_buff[3].proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	propval_buff[3].pvalue = &nt_time;
 	if (parent_id == folder_id1) {
-		propval_buff[4].proptag = PROP_TAG_DISPLAYNAME;
+		propval_buff[4].proptag = PR_DISPLAY_NAME;
 		propval_buff[4].pvalue = ptoken;
 	}
 	if (!exmdb_client::set_folder_properties(
@@ -5610,7 +5609,7 @@ static BOOL mail_engine_add_notification_folder(
 	}
 	proptags.count = 4;
 	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PROP_TAG_DISPLAYNAME;
+	tmp_proptags[0] = PR_DISPLAY_NAME;
 	tmp_proptags[1] = PROP_TAG_LOCALCOMMITTIMEMAX;
 	tmp_proptags[2] = PROP_TAG_CONTAINERCLASS;
 	tmp_proptags[3] = PROP_TAG_ATTRIBUTEHIDDEN;
@@ -5648,8 +5647,7 @@ static BOOL mail_engine_add_notification_folder(
 	} else {
 		commit_max = *(uint64_t*)pvalue;
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_DISPLAYNAME);
+	pvalue = common_util_get_propvals(&propvals, PR_DISPLAY_NAME);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -5780,15 +5778,14 @@ static void mail_engine_move_notification_folder(
 	}
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_DISPLAYNAME;
+	tmp_proptag = PR_DISPLAY_NAME;
 	if (!exmdb_client::get_folder_properties(
 		common_util_get_maildir(), 0,
 		rop_util_make_eid_ex(1, folder_id),
 		&proptags, &propvals)) {
 		return;		
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_DISPLAYNAME);
+	pvalue = common_util_get_propvals(&propvals, PR_DISPLAY_NAME);
 	if (NULL == pvalue) {
 		return;
 	}
@@ -5845,15 +5842,14 @@ static void mail_engine_modify_notification_folder(
 	pstmt.finalize();
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_DISPLAYNAME;
+	tmp_proptag = PR_DISPLAY_NAME;
 	if (!exmdb_client::get_folder_properties(
 		common_util_get_maildir(), 0,
 		rop_util_make_eid_ex(1, folder_id),
 		&proptags, &propvals)) {
 		return;		
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_DISPLAYNAME);
+	pvalue = common_util_get_propvals(&propvals, PR_DISPLAY_NAME);
 	if (NULL == pvalue) {
 		return;
 	}

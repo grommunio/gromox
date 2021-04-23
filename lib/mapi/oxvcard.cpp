@@ -239,7 +239,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				goto IMPORT_FAILURE;
 			}
-			propval.proptag = PROP_TAG_DISPLAYNAME;
+			propval.proptag = PR_DISPLAY_NAME;
 			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -933,7 +933,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		goto EXPORT_FAILURE;
 	}
 	vcard_append_line(pvcard, pvline);
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_DISPLAYNAME));
+	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_DISPLAY_NAME));
 	if (NULL == pvalue) {
 		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_NORMALIZEDSUBJECT));
 	}

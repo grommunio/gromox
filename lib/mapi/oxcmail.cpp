@@ -567,7 +567,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			memmove(utf8_field, utf8_field + 1, tmp_len);
 			tmp_len --;
 		}
-		propval.proptag = PROP_TAG_DISPLAYNAME;
+		propval.proptag = PR_DISPLAY_NAME;
 		if (0 == tmp_len) {
 			snprintf(display_name, 256, "%s@%s",
 				paddr->local_part, paddr->domain);
@@ -582,7 +582,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 	} else {
-		propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
+		propval.proptag = PR_DISPLAY_NAME_A;
 		propval.pvalue = display_name;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
@@ -2182,7 +2182,7 @@ static BOOL oxcmail_set_mac_attachname(TPROPVAL_ARRAY *pproplist,
 	
 	oxcmail_split_filename(tmp_buff, extension);
 	if (FALSE == b_description) {
-		propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
+		propval.proptag = PR_DISPLAY_NAME_A;
 		propval.pvalue = tmp_buff;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
@@ -2792,11 +2792,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			b_unidp = FALSE;
 			strcpy(display_name, tmp_buff);
 		}
-		if (TRUE == b_unidp) {
-			propval.proptag = PROP_TAG_DISPLAYNAME;
-		} else {
-			propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
-		}
+		propval.proptag = b_unidp ? PR_DISPLAY_NAME : PR_DISPLAY_NAME_A;
 		propval.pvalue = display_name;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
@@ -3043,7 +3039,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					"Subject", tmp_buff, 256)) {
 					if (TRUE == mime_string_to_utf8(
 						pmime_enum->charset, tmp_buff, file_name)) {
-						propval.proptag = PROP_TAG_DISPLAYNAME;
+						propval.proptag = PR_DISPLAY_NAME;
 						propval.pvalue = file_name;
 						if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 							mail_free(&mail);
@@ -3514,7 +3510,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		if (strlen(f_info.x_display_name) < 256 &&
 			TRUE == mime_string_to_utf8("utf-8",
 			f_info.x_display_name, display_name)) {
-			propval.proptag = PROP_TAG_DISPLAYNAME;
+			propval.proptag = PR_DISPLAY_NAME;
 			propval.pvalue = display_name;
 			if (!tpropval_array_set_propval(pproplist, &propval))
 				return false;
@@ -3960,10 +3956,10 @@ static bool oxcmail_enum_mdn(const char *tag,
 		return tpropval_array_set_propval(&mcparam->proplist, &propval);
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
 		if (TRUE == mime_string_to_utf8("utf-8", value, tmp_buff)) {
-			propval.proptag = PROP_TAG_DISPLAYNAME;
+			propval.proptag = PR_DISPLAY_NAME;
 			propval.pvalue = tmp_buff;
 		} else {
-			propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
+			propval.proptag = PR_DISPLAY_NAME_A;
 			propval.pvalue = (char*)value;
 		}
 		return tpropval_array_set_propval(&mcparam->proplist, &propval);
@@ -4148,7 +4144,7 @@ static BOOL oxcmail_parse_smime_message(
 	propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_DISPLAYNAME;
+	propval.proptag = PR_DISPLAY_NAME;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	return TRUE;
@@ -4934,7 +4930,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 				return FALSE;
 		}
 		pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
-		                prcpt, PROP_TAG_DISPLAYNAME));
+		                prcpt, PR_DISPLAY_NAME));
 		if (NULL != pdisplay_name) {
 			field[offset] = '"';
 			offset ++;
@@ -6257,8 +6253,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 				return FALSE;
 			}
 		}
-		pvalue = tpropval_array_get_propval(
-			prcpts->pparray[i], PROP_TAG_DISPLAYNAME);
+		pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_DISPLAY_NAME);
 		if (NULL != pvalue) {
 			if (oxcmail_encode_mime_string(charset,
 			    static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0) {
@@ -6513,9 +6508,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 			return FALSE;
 		}
 	}
-	pvalue = tpropval_array_get_propval(
-				&pattachment->proplist,
-				PROP_TAG_DISPLAYNAME);
+	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          static_cast<const char *>(pvalue), tmp_field, 1024);
@@ -6631,9 +6624,7 @@ static BOOL oxcmail_export_attachment(
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-				&pattachment->proplist,
-				PROP_TAG_DISPLAYNAME);
+	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          static_cast<char *>(pvalue), tmp_field, 1024);

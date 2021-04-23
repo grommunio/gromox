@@ -7,7 +7,7 @@
 #include <vector>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
-#include <gromox/proptags.hpp>
+#include <gromox/mapidefs.h>
 #include <mysql.h>
 #include <errmsg.h>
 #include "mysql_adaptor.h"
@@ -152,9 +152,9 @@ static int userlist_parse(sqlconn &conn, const char *query,
 			u.list_priv = strtoul(z_null(row[6]), nullptr, 0);
 			/* no overwrite of propval is intended */
 			if (u.list_type == MLIST_TYPE_CLASS && row[7] != nullptr)
-				u.propvals.emplace(PROP_TAG_DISPLAYNAME, row[7]);
+				u.propvals.emplace(PR_DISPLAY_NAME, row[7]);
 			else if (u.list_type == MLIST_TYPE_GROUP && row[8] != nullptr)
-				u.propvals.emplace(PROP_TAG_DISPLAYNAME, row[8]);
+				u.propvals.emplace(PR_DISPLAY_NAME, row[8]);
 		}
 		pfile.push_back(std::move(u));
 	}

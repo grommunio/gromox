@@ -3163,8 +3163,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			(*prcpts->pparray)->count = 2;
 		} else {
 			(*prcpts->pparray)->count = 3;
-			(*prcpts->pparray)->ppropval[2].proptag =
-								PROP_TAG_DISPLAYNAME;
+			(*prcpts->pparray)->ppropval[2].proptag = PR_DISPLAY_NAME;
 			(*prcpts->pparray)->ppropval[2].pvalue = pvalue;
 		}
 		pmsgctnt->children.prcpts = prcpts;

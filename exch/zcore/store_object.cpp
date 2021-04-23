@@ -717,8 +717,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_DEFAULTSTORE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-						PROP_TAG_DISPLAYNAME;
+	pproptags->pproptag[pproptags->count] = PR_DISPLAY_NAME;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 			PROP_TAG_EXTENDEDRULESIZELIMIT;
@@ -946,7 +945,7 @@ static BOOL store_object_get_calculated_property(
 			store_object_check_owner_mode(pstore) ?
 			private_uid : share_uid);
 		return TRUE;
-	case PROP_TAG_DISPLAYNAME:
+	case PR_DISPLAY_NAME:
 		*ppvalue = common_util_alloc(256);
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1607,7 +1606,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	folder_id = rop_util_make_eid_ex(1, fid_val);
 	tmp_propvals.ppropval = propval_buff;
 	tmp_propvals.count = 5;
-	tmp_propvals.ppropval[0].proptag = PROP_TAG_DISPLAYNAME;
+	tmp_propvals.ppropval[0].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[0].pvalue = deconst(pdisplayname);
 	if (!exmdb_client::allocate_cn(pstore->dir, &change_num)) {
 		return FALSE;

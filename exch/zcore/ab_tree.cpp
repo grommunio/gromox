@@ -1201,7 +1201,7 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
+		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
 			strcpy(str_dname, it->second.c_str());
 		} else {
@@ -1215,7 +1215,7 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	}
 	case NODE_TYPE_MLIST: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		auto it = obj->propvals.find(PROP_TAG_DISPLAYNAME);
+		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
 			if (!system_services_get_lang(codepage, "mlist0", lang_string, GX_ARRAY_SIZE(lang_string)))
@@ -1273,7 +1273,7 @@ static void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type,
 	unsigned int tag = 0;
 	switch (type) {
 	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return;
-	case USER_REAL_NAME: tag = PROP_TAG_DISPLAYNAME; break;
+	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
 	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
 	case USER_MOBILE_TEL: tag = PROP_TAG_MOBILETELEPHONENUMBER; break;
@@ -1751,7 +1751,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		[[fallthrough]];
-	case PROP_TAG_DISPLAYNAME:
+	case PR_DISPLAY_NAME:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 		ab_tree_get_display_name(pnode, codepage, dn);
 		if ('\0' == dn[0]) {
@@ -2097,7 +2097,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 			    strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
 				return TRUE;
 			if (ab_tree_fetch_node_property(pnode, codepage,
-			    PROP_TAG_DISPLAYNAME, &pvalue) && pvalue != nullptr &&
+			    PR_DISPLAY_NAME, &pvalue) && pvalue != nullptr &&
 			    strcasestr(static_cast<char *>(pvalue),
 			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 				return TRUE;

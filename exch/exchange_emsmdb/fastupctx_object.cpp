@@ -160,10 +160,8 @@ static BOOL fastupctx_object_create_folder(
 	};
 	for (auto t : tags)
 		tpropval_array_remove_propval(pproplist, t);
-	if (NULL == tpropval_array_get_propval(
-		pproplist, PROP_TAG_DISPLAYNAME)) {
+	if (tpropval_array_get_propval(pproplist, PR_DISPLAY_NAME) == nullptr)
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_FOLDERTYPE;
 	propval.pvalue = &tmp_type;
 	tmp_type = FOLDER_TYPE_GENERIC;

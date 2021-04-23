@@ -235,7 +235,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		[[fallthrough]];
-	case PROP_TAG_DISPLAYNAME:
+	case PR_DISPLAY_NAME:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 		ab_tree_get_display_name(pnode, codepage, dn);
 		if ('\0' == dn[0]) {
@@ -259,7 +259,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		[[fallthrough]];
-	case PROP_TAG_DISPLAYNAME_STRING8:
+	case PR_DISPLAY_NAME_A:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
 		ab_tree_get_display_name(pnode, codepage, dn);
 		if ('\0' == dn[0]) {
@@ -873,7 +873,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
 		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
 		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
-		nt->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
+		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
 		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
@@ -1057,8 +1057,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		return ecNotSupported;
 	}
 	if (SORT_TYPE_DISPLAYNAME == pstat->sort_type) {
-		if (PROP_TAG_DISPLAYNAME != ptarget->proptag &&
-			PROP_TAG_DISPLAYNAME_STRING8 != ptarget->proptag) {
+		if (ptarget->proptag != PR_DISPLAY_NAME &&
+		    ptarget->proptag != PR_DISPLAY_NAME_A) {
 			*pprows = NULL;
 			return ecError;
 		}
@@ -1089,7 +1089,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
 		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
 		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
-		nt->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
+		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
 		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
@@ -1314,7 +1314,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 				}
 			}
 			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    PROP_TAG_DISPLAYNAME, &prop_val, temp_buff,
+			    PR_DISPLAY_NAME, &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
@@ -1344,7 +1344,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 				}
 			}
 			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    PROP_TAG_DISPLAYNAME_STRING8, &prop_val, temp_buff,
+			    PR_DISPLAY_NAME_A, &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
@@ -1894,7 +1894,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		return ecMAPIOOM;
 
 	auto &t = pproptags->pproptag;
-	t[z++] = U(PROP_TAG_DISPLAYNAME);
+	t[z++] = U(PR_DISPLAY_NAME);
 	t[z++] = U(PROP_TAG_ADDRESSTYPE);
 	t[z++] = U(PROP_TAG_EMAILADDRESS);
 	t[z++] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
@@ -2285,9 +2285,8 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	prow->pprops[3].reserved = 0;
 	prow->pprops[3].value.l = container_id;
 	
-	/* PROP_TAG_DISPLAYNAME PROP_TAG_DISPLAYNAME_STRING8 */
 	prow->pprops[4].reserved = 0;
-	prow->pprops[4].proptag = b_unicode ? PROP_TAG_DISPLAYNAME : PROP_TAG_DISPLAYNAME_STRING8;
+	prow->pprops[4].proptag = b_unicode ? PR_DISPLAY_NAME : PR_DISPLAY_NAME_A;
 	if (NULL == str_dname) {
 		prow->pprops[4].value.pstr = NULL;
 	} else {
@@ -2652,7 +2651,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	}
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
 	auto &t = pcolumns->pproptag;
-	t[0] = U(PROP_TAG_DISPLAYNAME);
+	t[0] = U(PR_DISPLAY_NAME);
 	t[1] = U(PROP_TAG_NICKNAME);
 	t[2] = U(PROP_TAG_TITLE);
 	t[3] = U(PROP_TAG_BUSINESSTELEPHONENUMBER);
@@ -2835,8 +2834,8 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		break;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
-	case PROP_TAG_DISPLAYNAME:
-	case PROP_TAG_DISPLAYNAME_STRING8:
+	case PR_DISPLAY_NAME:
+	case PR_DISPLAY_NAME_A:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
 		pprop->value.pv = ndr_stack_alloc(
@@ -2922,7 +2921,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
 		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
 		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
-		nt->pproptag[3] = PROP_TAG_DISPLAYNAME_STRING8;
+		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
 		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;

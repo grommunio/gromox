@@ -45,8 +45,8 @@ static BOOL message_object_get_recipient_all_proptags(
 		switch (tmp_proptags.pproptag[i]) {
 		case PROP_TAG_RESPONSIBILITY:
 		case PROP_TAG_ADDRESSTYPE:
-		case PROP_TAG_DISPLAYNAME:
-		case PROP_TAG_DISPLAYNAME_STRING8:
+		case PR_DISPLAY_NAME:
+		case PR_DISPLAY_NAME_A:
 		case PROP_TAG_EMAILADDRESS:
 		case PROP_TAG_EMAILADDRESS_STRING8:
 		case PROP_TAG_ENTRYID:
@@ -897,8 +897,8 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset)
 			switch (pset->pparray[i]->ppropval[j].proptag) {
 			case PROP_TAG_RESPONSIBILITY:
 			case PROP_TAG_ADDRESSTYPE:
-			case PROP_TAG_DISPLAYNAME:
-			case PROP_TAG_DISPLAYNAME_STRING8:
+			case PR_DISPLAY_NAME:
+			case PR_DISPLAY_NAME_A:
 			case PROP_TAG_EMAILADDRESS:
 			case PROP_TAG_EMAILADDRESS_STRING8:
 			case PROP_TAG_ENTRYID:

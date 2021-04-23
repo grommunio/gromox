@@ -1342,7 +1342,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	single_list_init(&result_list);
 	for (size_t i = 0; i < pcond_set->count; ++i) {
 		pstring = static_cast<char *>(common_util_get_propvals(
-		          pcond_set->pparray[i], PROP_TAG_DISPLAYNAME));
+		          pcond_set->pparray[i], PR_DISPLAY_NAME));
 		if (NULL == pstring) {
 			presult_set->count = 0;
 			presult_set->pparray = NULL;
@@ -2330,7 +2330,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[0].pvalue = &parent_id;
 		propval_buff[1].proptag = PROP_TAG_FOLDERTYPE;
 		propval_buff[1].pvalue = &tmp_type;
-		propval_buff[2].proptag = PROP_TAG_DISPLAYNAME;
+		propval_buff[2].proptag = PR_DISPLAY_NAME;
 		propval_buff[2].pvalue = deconst(folder_name);
 		propval_buff[3].proptag = PROP_TAG_COMMENT;
 		propval_buff[3].pvalue = deconst(folder_comment);
@@ -3685,10 +3685,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				prcpt, PROP_TAG_EMAILADDRESS) &&
 				NULL != common_util_get_propvals(
 				prcpt, PROP_TAG_ADDRESSTYPE) &&
-				NULL != common_util_get_propvals(
-				prcpt, PROP_TAG_DISPLAYNAME))) {
+			    common_util_get_propvals(prcpt, PR_DISPLAY_NAME) != nullptr))
 				continue;
-			}
 			ext_buffer_pull_init(&ext_pull, pbin->pb,
 					pbin->cb, common_util_alloc, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
@@ -3737,7 +3735,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					tmp_buff, tmp_buff)) {
 					continue;	
 				}
-				tmp_propval.proptag = PROP_TAG_DISPLAYNAME;
+				tmp_propval.proptag = PR_DISPLAY_NAME;
 				tmp_propval.pvalue = common_util_dup(tmp_buff);
 				if (tmp_propval.pvalue == nullptr)
 					return ecError;
@@ -3770,7 +3768,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_SMTPADDRESS;
 				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PROP_TAG_DISPLAYNAME;
+				tmp_propval.proptag = PR_DISPLAY_NAME;
 				tmp_propval.pvalue = common_util_dup(
 						oneoff_entry.pdisplay_name);
 				if (tmp_propval.pvalue == nullptr)
@@ -5193,9 +5191,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		propval_buff[2].pvalue = &nttime;
 		nttime = rop_util_current_nttime();
 	}
-	propval_buff[3].proptag = PROP_TAG_DISPLAYNAME;
-	propval_buff[3].pvalue = common_util_get_propvals(
-					ppropvals, PROP_TAG_DISPLAYNAME);
+	propval_buff[3].proptag = PR_DISPLAY_NAME;
+	propval_buff[3].pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
 	if (propval_buff[3].pvalue == nullptr)
 		return ecInvalidParam;
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -5326,7 +5323,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		tmp_propvals.ppropval[1].pvalue = &parent_id1;
 		tmp_propvals.ppropval[2].proptag = PROP_TAG_LASTMODIFICATIONTIME;
 		tmp_propvals.ppropval[2].pvalue = pproplist->ppropval[2].pvalue;
-		tmp_propvals.ppropval[3].proptag = PROP_TAG_DISPLAYNAME;
+		tmp_propvals.ppropval[3].proptag = PR_DISPLAY_NAME;
 		tmp_propvals.ppropval[3].pvalue = pproplist->ppropval[3].pvalue;
 		tmp_propvals.ppropval[4].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals.ppropval[4].pvalue = &change_num;
@@ -5413,7 +5410,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		return ecError;
 	tmp_propvals.ppropval[0].proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	tmp_propvals.ppropval[0].pvalue = pproplist->ppropval[2].pvalue;
-	tmp_propvals.ppropval[1].proptag = PROP_TAG_DISPLAYNAME;
+	tmp_propvals.ppropval[1].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[1].pvalue = pproplist->ppropval[3].pvalue;
 	tmp_propvals.ppropval[2].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals.ppropval[2].pvalue = &change_num;

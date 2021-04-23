@@ -710,7 +710,7 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 		return -EIO;
 	}
 	if (*new_fld_id == 0) {
-		auto dn = tpropval_array_get_propval(props, PROP_TAG_DISPLAYNAME);
+		auto dn = tpropval_array_get_propval(props, PR_DISPLAY_NAME);
 		fprintf(stderr, "createfolder: folder \"%s\" already existed\n",
 		       dn != nullptr ? static_cast<char *>(dn) : "<ERROR>");
 		return -EEXIST;
@@ -822,7 +822,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		 */
 		if (depth == 1 &&
 		    !tpropval_array_set_propval(props.get(),
-		    PROP_TAG_DISPLAYNAME, g_root_name.c_str())) {
+		    PR_DISPLAY_NAME, g_root_name.c_str())) {
 			fprintf(stderr, "tpropval: ENOMEM\n");
 			return -ENOMEM;
 		}
