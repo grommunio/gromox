@@ -71,9 +71,8 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
 	pproptags->count ++;
-	if (common_util_index_proptags(&tmp_proptags,
-		PROP_TAG_SOURCEKEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_SOURCEKEY;
+	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
+		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
 	if (TRUE == logon_object_check_private(pfolder->plogon)) {
@@ -179,7 +178,7 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_PARENTFOLDERID:
 	case PROP_TAG_STORERECORDKEY:
 	case PROP_TAG_CHANGEKEY:
-	case PROP_TAG_SOURCEKEY:
+	case PR_SOURCE_KEY:
 	case PROP_TAG_PARENTSOURCEKEY:
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_LAST_MODIFICATION_TIME:
@@ -326,9 +325,8 @@ static BOOL folder_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pfolder->plogon), 0,
-			*(uint64_t*)pvalue, PROP_TAG_SOURCEKEY,
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pfolder->plogon),
+		    0, *static_cast<uint64_t *>(pvalue), PR_SOURCE_KEY,
 		    outvalue))
 			return FALSE;
 		if (*outvalue == nullptr) {
@@ -653,12 +651,10 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_SOURCEKEY) >= 0 && NULL ==
-		common_util_get_propvals(ppropvals,
-		PROP_TAG_SOURCEKEY)) {
+	if (common_util_index_proptags(pproptags, PR_SOURCE_KEY) >= 0 &&
+	    common_util_get_propvals(ppropvals, PR_SOURCE_KEY) == nullptr) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PROP_TAG_SOURCEKEY;
+		pv.proptag = PR_SOURCE_KEY;
 		pv.pvalue = common_util_calculate_folder_sourcekey(pfolder->plogon, pfolder->folder_id);
 		if (pv.pvalue == nullptr)
 			return FALSE;

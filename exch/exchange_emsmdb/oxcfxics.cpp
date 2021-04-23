@@ -1006,7 +1006,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		return ecInvalidParam;
 	}
 	if (4 != ppropvals->count ||
-		PROP_TAG_SOURCEKEY != ppropvals->ppropval[0].proptag ||
+	    ppropvals->ppropval[0].proptag != PR_SOURCE_KEY ||
 	    ppropvals->ppropval[1].proptag != PR_LAST_MODIFICATION_TIME ||
 		PROP_TAG_CHANGEKEY != ppropvals->ppropval[2].proptag ||
 	    ppropvals->ppropval[3].proptag != PR_PREDECESSOR_CHANGE_LIST)
@@ -1310,7 +1310,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	
 	if (6 != phichyvals->count ||
 		PROP_TAG_PARENTSOURCEKEY != phichyvals->ppropval[0].proptag ||
-		PROP_TAG_SOURCEKEY != phichyvals->ppropval[1].proptag ||
+	    phichyvals->ppropval[1].proptag != PR_SOURCE_KEY ||
 	    phichyvals->ppropval[2].proptag != PR_LAST_MODIFICATION_TIME ||
 		PROP_TAG_CHANGEKEY != phichyvals->ppropval[3].proptag ||
 	    phichyvals->ppropval[4].proptag != PR_PREDECESSOR_CHANGE_LIST ||

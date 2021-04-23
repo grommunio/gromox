@@ -411,10 +411,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		}
 		parent_fid = *(uint64_t*)pvalue;
 		if (SYNC_FLAG_NOFOREIGNIDENTIFIERS & pctx->sync_flags) {
-			common_util_remove_propvals(
-					fldchgs.pfldchgs + i,
-					PROP_TAG_SOURCEKEY);
-			tmp_propval.proptag = PROP_TAG_SOURCEKEY;
+			common_util_remove_propvals(&fldchgs.pfldchgs[i], PR_SOURCE_KEY);
+			tmp_propval.proptag = PR_SOURCE_KEY;
 			tmp_propval.pvalue =
 				common_util_calculate_folder_sourcekey(
 				pctx->pstream->plogon, folder_id);
@@ -438,9 +436,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		} else {
-			if (NULL == common_util_get_propvals(
-				fldchgs.pfldchgs + i, PROP_TAG_SOURCEKEY)) {
-				tmp_propval.proptag = PROP_TAG_SOURCEKEY;
+			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_SOURCE_KEY) == nullptr) {
+				tmp_propval.proptag = PR_SOURCE_KEY;
 				tmp_propval.pvalue =
 					common_util_calculate_folder_sourcekey(
 					pctx->pstream->plogon, folder_id);
@@ -455,11 +452,9 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
 			} else {
-				if (FALSE == exmdb_client_get_folder_property(
-					logon_object_get_dir(pctx->pstream->plogon),
-					0, parent_fid, PROP_TAG_SOURCEKEY, &pvalue)) {
+				if (!exmdb_client_get_folder_property(logon_object_get_dir(pctx->pstream->plogon),
+				    0, parent_fid, PR_SOURCE_KEY, &pvalue))
 					return FALSE;	
-				}
 				if (NULL == pvalue) {
 					tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
 					tmp_propval.pvalue =
@@ -766,16 +761,14 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		return FALSE;
 	}
 	pchgheader->count = 0;
-	auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PROP_TAG_SOURCEKEY);
+	auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	pchgheader->ppropval[pchgheader->count].proptag =
-										PROP_TAG_SOURCEKEY;
+	pchgheader->ppropval[pchgheader->count].proptag = PR_SOURCE_KEY;
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_SOURCEKEY);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
@@ -1147,11 +1140,9 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	}
 	if (*pstatus & MESSAGE_STATUS_IN_CONFLICT) {
 		if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
-			if (FALSE == exmdb_client_get_folder_property(
-				logon_object_get_dir(pctx->pstream->plogon),
-				0, folder_id, PROP_TAG_SOURCEKEY, &pvalue)) {
+			if (!exmdb_client_get_folder_property(logon_object_get_dir(pctx->pstream->plogon),
+			    0, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
-			}
 			if (NULL == pvalue) {
 				pvalue = common_util_calculate_folder_sourcekey(
 								pctx->pstream->plogon, folder_id);
@@ -1187,9 +1178,8 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
 			tmp_propval.pvalue = pvalue;
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			if (NULL == common_util_get_propvals(
-				&pembedded->proplist, PROP_TAG_SOURCEKEY)) {
-				tmp_propval.proptag = PROP_TAG_SOURCEKEY;
+			if (common_util_get_propvals(&pembedded->proplist, PR_SOURCE_KEY) == nullptr) {
+				tmp_propval.proptag = PR_SOURCE_KEY;
 				tmp_propval.pvalue = common_util_calculate_message_sourcekey(
 										pctx->pstream->plogon, message_id);
 				if (NULL == tmp_propval.pvalue) {
@@ -1245,11 +1235,9 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	pmsgctnt->proplist.ppropval = ppropval;
 	if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pctx->pstream->plogon),
-			0, folder_id, PROP_TAG_SOURCEKEY, &pvalue)) {
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pctx->pstream->plogon),
+		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
-		}
 		if (NULL == pvalue) {
 			tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
 			tmp_propval.pvalue = common_util_calculate_folder_sourcekey(
@@ -1262,9 +1250,8 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			tmp_propval.pvalue = pvalue;
 		}
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		if (NULL == common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_SOURCEKEY)) {
-			tmp_propval.proptag = PROP_TAG_SOURCEKEY;
+		if (common_util_get_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY) == nullptr) {
+			tmp_propval.proptag = PR_SOURCE_KEY;
 			tmp_propval.pvalue =
 				common_util_calculate_message_sourcekey(
 					pctx->pstream->plogon, message_id);
@@ -1281,7 +1268,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			return FALSE;
 		}
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		tmp_propval.proptag = PROP_TAG_SOURCEKEY;
+		tmp_propval.proptag = PR_SOURCE_KEY;
 		tmp_propval.pvalue = common_util_calculate_message_sourcekey(
 								pctx->pstream->plogon, message_id);
 		if (NULL == tmp_propval.pvalue) {

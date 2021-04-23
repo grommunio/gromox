@@ -319,7 +319,7 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 	if (NULL == pproplist->ppropval) {
 		return FALSE;
 	}
-	pproplist->ppropval[0].proptag = PROP_TAG_SOURCEKEY;
+	pproplist->ppropval[0].proptag = PR_SOURCE_KEY;
 	pproplist->ppropval[0].pvalue =
 		common_util_calculate_message_sourcekey(
 		pctx->pstore, message_id);
@@ -372,8 +372,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	if (NULL == pproplist->ppropval) {
 		return FALSE;
 	}
-	pproplist->ppropval[pproplist->count].proptag =
-								PROP_TAG_SOURCEKEY;
+	pproplist->ppropval[pproplist->count].proptag = PR_SOURCE_KEY;
 	pvalue = common_util_calculate_folder_sourcekey(
 							pctx->pstore, folder_id);
 	if (NULL == pvalue) {

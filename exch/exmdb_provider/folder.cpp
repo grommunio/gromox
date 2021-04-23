@@ -739,9 +739,8 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 	}
 	pdb.reset();
 	for (i=0; i<tmp_proptags.count; i++) {
-		if (PROP_TAG_SOURCEKEY == tmp_proptags.pproptag[i]) {
+		if (tmp_proptags.pproptag[i] == PR_SOURCE_KEY)
 			break;
-		}
 	}
 	if (i < tmp_proptags.count) {
 		*pproptags = tmp_proptags;
@@ -754,7 +753,7 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 		}
 		memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 					sizeof(uint32_t)*tmp_proptags.count);
-		pproptags->pproptag[tmp_proptags.count] = PROP_TAG_SOURCEKEY;
+		pproptags->pproptag[tmp_proptags.count] = PR_SOURCE_KEY;
 	}
 	return TRUE;
 }

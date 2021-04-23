@@ -513,8 +513,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	                pinfo->username : nullptr;
 	if ((CONTENT_TABLE == ptable->table_type ||
 		HIERARCHY_TABLE == ptable->table_type)) {
-		idx = common_util_index_proptags(
-			pcolumns, PROP_TAG_SOURCEKEY);
+		idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
 		if (HIERARCHY_TABLE == ptable->table_type) {
 			idx1 = common_util_index_proptags(
 					pcolumns, PROP_TAG_ACCESS);
@@ -562,8 +561,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								temp_set.pparray[i]->ppropval[j].pvalue) {
 								return FALSE;
 							}
-							temp_set.pparray[i]->ppropval[j].proptag =
-													PROP_TAG_SOURCEKEY;
+							temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
 							break;
 						}	
 					}
@@ -583,8 +581,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 									temp_set.pparray[i]->ppropval[j].pvalue) {
 									return FALSE;
 								}
-								temp_set.pparray[i]->ppropval[j].proptag =
-														PROP_TAG_SOURCEKEY;
+								temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
 								break;
 							}	
 						}

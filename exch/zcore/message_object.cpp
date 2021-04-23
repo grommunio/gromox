@@ -892,9 +892,9 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_STOREENTRYID;
 	pproptags->count ++;
-	if (NULL == pmessage->pembedding && common_util_index_proptags(
-		pproptags, PROP_TAG_SOURCEKEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_SOURCEKEY;
+	if (pmessage->pembedding == nullptr &&
+	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
+		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
 	if (common_util_index_proptags(pproptags,
@@ -948,7 +948,7 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_CREATIONTIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
-	case PROP_TAG_SOURCEKEY:
+	case PR_SOURCE_KEY:
 		if (pmessage->b_new)
 			return FALSE;
 		return TRUE;
@@ -983,7 +983,7 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = common_util_to_message_entryid(pmessage->pstore,
 						pmessage->folder_id, pmessage->message_id);
 		return TRUE;
-	case PROP_TAG_SOURCEKEY:
+	case PR_SOURCE_KEY:
 		if (NULL == pmessage->pembedding) {
 			*ppvalue = common_util_calculate_message_sourcekey(
 						pmessage->pstore, pmessage->message_id);

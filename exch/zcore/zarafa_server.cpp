@@ -5022,7 +5022,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	 * If there is no sourcekey, it is a new message. That is how
 	 * grammm-sync creates new items coming from mobile devices.
 	 */
-	pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PROP_TAG_SOURCEKEY));
+	pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_SOURCE_KEY));
 	if (pbin == nullptr)
 		flags |= SYNC_NEW_MESSAGE;
 	BOOL b_new = (flags & SYNC_NEW_MESSAGE) ? TRUE : false;
@@ -5041,7 +5041,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	}
 	folder_id = icsupctx_object_get_parent_folder_id(pctx);
 	if (FALSE == b_new) {
-		pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PROP_TAG_SOURCEKEY));
+		pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_SOURCE_KEY));
 		if (pbin == nullptr || pbin->cb != 22) {
 			return ecInvalidParam;
 		}
@@ -5175,9 +5175,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 				ppropvals, PROP_TAG_PARENTSOURCEKEY);
 	if (propval_buff[0].pvalue == nullptr)
 		return ecInvalidParam;
-	propval_buff[1].proptag = PROP_TAG_SOURCEKEY;
-	propval_buff[1].pvalue = common_util_get_propvals(
-						ppropvals, PROP_TAG_SOURCEKEY);
+	propval_buff[1].proptag = PR_SOURCE_KEY;
+	propval_buff[1].pvalue = common_util_get_propvals(ppropvals, PR_SOURCE_KEY);
 	if (propval_buff[1].pvalue == nullptr)
 		return ecInvalidParam;
 	propval_buff[2].proptag = PR_LAST_MODIFICATION_TIME;

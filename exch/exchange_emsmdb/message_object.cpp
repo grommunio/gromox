@@ -1114,9 +1114,9 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
 	pproptags->count ++;
-	if (NULL == pmessage->pembedding && common_util_index_proptags(
-		pproptags, PROP_TAG_SOURCEKEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_SOURCEKEY;
+	if (pmessage->pembedding == nullptr &&
+	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
+		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
 	if (common_util_index_proptags(pproptags,
@@ -1172,7 +1172,7 @@ BOOL message_object_check_readonly_property(
 	case PROP_TAG_CREATIONTIME:
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
-	case PROP_TAG_SOURCEKEY:
+	case PR_SOURCE_KEY:
 		if (TRUE == pmessage->b_new || NULL != pmessage->pstate) {
 			return FALSE;
 		}
@@ -1230,12 +1230,9 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = &pmessage->folder_id;
 		return TRUE;
 	case PROP_TAG_PARENTSOURCEKEY:
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(pmessage->plogon), 0,
-			pmessage->folder_id, PROP_TAG_SOURCEKEY,
-			ppvalue)) {
+		if (!exmdb_client_get_folder_property(logon_object_get_dir(pmessage->plogon),
+		    0, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
 			return FALSE;	
-		}
 		if (NULL == *ppvalue) {
 			*ppvalue = common_util_calculate_folder_sourcekey(
 						pmessage->plogon, pmessage->folder_id);
@@ -1342,13 +1339,11 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (NULL == pmessage->pembedding &&
-		common_util_index_proptags(pproptags,
-		PROP_TAG_SOURCEKEY) >= 0 && NULL ==
-		common_util_get_propvals(ppropvals,
-		PROP_TAG_SOURCEKEY)) {
+	if (pmessage->pembedding == nullptr &&
+	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) >= 0 &&
+	    common_util_get_propvals(ppropvals, PR_SOURCE_KEY) == nullptr) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PROP_TAG_SOURCEKEY;
+		pv.proptag = PR_SOURCE_KEY;
 		pv.pvalue = common_util_calculate_message_sourcekey(pmessage->plogon, pmessage->message_id);
 		if (pv.pvalue == nullptr)
 			return FALSE;
