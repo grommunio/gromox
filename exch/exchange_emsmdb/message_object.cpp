@@ -1109,8 +1109,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_FOLDERID;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	if (pmessage->pembedding == nullptr &&
 	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
@@ -1155,8 +1154,8 @@ BOOL message_object_check_readonly_property(
 	case PROP_TAG_MIMESKELETON:
 	case PROP_TAG_NATIVEBODY:
 	case PR_OBJECT_TYPE:
-	case PROP_TAG_PARENTENTRYID:
-	case PROP_TAG_PARENTSOURCEKEY:
+	case PR_PARENT_ENTRYID:
+	case PR_PARENT_SOURCE_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
@@ -1212,7 +1211,7 @@ static BOOL message_object_get_calculated_property(
 		}
 		*(uint32_t*)(*ppvalue) = OBJECT_MESSAGE;
 		return TRUE;
-	case PROP_TAG_PARENTENTRYID:
+	case PR_PARENT_ENTRYID:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}
@@ -1226,7 +1225,7 @@ static BOOL message_object_get_calculated_property(
 		}
 		*ppvalue = &pmessage->folder_id;
 		return TRUE;
-	case PROP_TAG_PARENTSOURCEKEY:
+	case PR_PARENT_SOURCE_KEY:
 		if (!exmdb_client_get_folder_property(logon_object_get_dir(pmessage->plogon),
 		    0, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
 			return FALSE;	

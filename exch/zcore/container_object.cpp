@@ -569,7 +569,7 @@ BOOL container_object_load_user_table(
 					}
 				}
 			}
-			propval.proptag = PROP_TAG_PARENTENTRYID;
+			propval.proptag = PR_PARENT_ENTRYID;
 			propval.pvalue = pparent_entryid;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -787,9 +787,9 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->count ++;
 			break;
 		case PR_ENTRYID:
-		case PROP_TAG_PARENTENTRYID: {
+		case PR_PARENT_ENTRYID: {
 			auto pinfo = zarafa_server_get_info();
-			if (PROP_TAG_PARENTENTRYID == pproptags->pproptag[i]) {
+			if (pproptags->pproptag[i] == PR_PARENT_ENTRYID) {
 				if (folder_id == rop_util_make_eid_ex(
 					1, PRIVATE_FID_CONTACTS)) {
 					if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,

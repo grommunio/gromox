@@ -883,7 +883,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[4] = PR_MESSAGE_SIZE;
 	proptag_buff[5] = PROP_TAG_INTERNETCODEPAGE;
 	proptag_buff[6] = PROP_TAG_INTERNETMESSAGEID;
-	proptag_buff[7] = PROP_TAG_PARENTKEY;
+	proptag_buff[7] = PR_PARENT_KEY;
 	proptag_buff[8] = PROP_TAG_CONVERSATIONINDEX;
 	if (FALSE == common_util_get_properties(
 		MESSAGE_PROPERTIES_TABLE, mid_val, cpid,

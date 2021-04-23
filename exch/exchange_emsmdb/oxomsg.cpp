@@ -602,7 +602,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_DELETEAFTERSUBMIT;
 	proptag_buff[1] = PROP_TAG_TARGETENTRYID;
-	proptag_buff[2] = PROP_TAG_PARENTENTRYID;
+	proptag_buff[2] = PR_PARENT_ENTRYID;
 	if (FALSE == exmdb_client_get_message_properties(
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, &tmp_proptags, &tmp_propvals)) {
@@ -617,8 +617,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	
 	ptarget = static_cast<BINARY *>(common_util_get_propvals(&tmp_propvals,
 	          PROP_TAG_TARGETENTRYID));
-	pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_PARENTENTRYID);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_PARENT_ENTRYID);
 	if (NULL == pvalue) {
 		return ecError;
 	}

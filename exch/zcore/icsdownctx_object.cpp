@@ -326,7 +326,7 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 	if (NULL == pproplist->ppropval[0].pvalue) {
 		return FALSE;
 	}
-	pproplist->ppropval[1].proptag = PROP_TAG_PARENTSOURCEKEY;
+	pproplist->ppropval[1].proptag = PR_PARENT_SOURCE_KEY;
 	pproplist->ppropval[1].pvalue =
 		common_util_calculate_folder_sourcekey(
 		pctx->pstore, pctx->folder_id);
@@ -411,8 +411,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 		&tmp_propvals, PROP_TAG_PARENTFOLDERID);
 	if (NULL != pvalue) {
 		parent_fid = *(uint64_t*)pvalue;
-		pproplist->ppropval[pproplist->count].proptag =
-								PROP_TAG_PARENTSOURCEKEY;
+		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_SOURCE_KEY;
 		pvalue = common_util_calculate_folder_sourcekey(
 								pctx->pstore, parent_fid);
 		if (NULL == pvalue) {
@@ -420,8 +419,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 		}
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
-		pproplist->ppropval[pproplist->count].proptag =
-								PROP_TAG_PARENTENTRYID;
+		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_ENTRYID;
 		pvalue = common_util_to_folder_entryid(
 						pctx->pstore, parent_fid);
 		if (NULL == pvalue) {

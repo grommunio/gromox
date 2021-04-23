@@ -3940,7 +3940,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 	} else if (0 == strcasecmp(tag, "X-MSExch-Correlation-Key")) {
 		len = strlen(value);
 		if (len <= 1024 && 0 == decode64(value, len, tmp_buff, &len)) {
-			propval.proptag = PROP_TAG_PARENTKEY;
+			propval.proptag = PR_PARENT_KEY;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = len;
@@ -6341,8 +6341,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 		dsn_free(&dsn);
 		return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_PARENTKEY);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_PARENT_KEY);
 	if (NULL != pvalue) {
 		auto bv = static_cast<BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_buff, 1024, &base64_len) == 0) {

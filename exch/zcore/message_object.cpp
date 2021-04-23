@@ -875,10 +875,8 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
 	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTENTRYID;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
@@ -928,8 +926,8 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_MIMESKELETON:
 	case PROP_TAG_NATIVEBODY:
 	case PR_OBJECT_TYPE:
-	case PROP_TAG_PARENTENTRYID:
-	case PROP_TAG_PARENTSOURCEKEY:
+	case PR_PARENT_ENTRYID:
+	case PR_PARENT_SOURCE_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
@@ -990,7 +988,7 @@ static BOOL message_object_get_calculated_property(
 		}
 		*(uint32_t*)(*ppvalue) = OBJECT_MESSAGE;
 		return TRUE;
-	case PROP_TAG_PARENTENTRYID:
+	case PR_PARENT_ENTRYID:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}
@@ -1004,7 +1002,7 @@ static BOOL message_object_get_calculated_property(
 		}
 		*ppvalue = &pmessage->folder_id;
 		return TRUE;
-	case PROP_TAG_PARENTSOURCEKEY:
+	case PR_PARENT_SOURCE_KEY:
 		*ppvalue = common_util_calculate_folder_sourcekey(
 					pmessage->pstore, pmessage->folder_id);
 		if (NULL == *ppvalue) {

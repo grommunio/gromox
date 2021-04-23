@@ -1940,7 +1940,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, tmp_id);
 		return GP_ADV;
 	}
-	case PROP_TAG_PARENTENTRYID: {
+	case PR_PARENT_ENTRYID: {
 		auto tmp_id = common_util_get_folder_parent_fid(db, id);
 		if (tmp_id == 0)
 			return GP_SKIP;
@@ -2032,7 +2032,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 	case PR_ENTRYID:
 		pv.pvalue = common_util_to_message_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PROP_TAG_PARENTENTRYID: {
+	case PR_PARENT_ENTRYID: {
 		uint64_t tmp_id;
 		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
 			return GP_ERR;
@@ -2064,10 +2064,10 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		se->instance = 0;
 		return GP_ADV;
 	}
-	case PROP_TAG_PARENTDISPLAY:
+	case PR_PARENT_DISPLAY:
 		pv.pvalue = common_util_get_message_parent_display(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PROP_TAG_PARENTDISPLAY_STRING8: {
+	case PR_PARENT_DISPLAY_A: {
 		auto pstring = static_cast<char *>(common_util_get_message_parent_display(db, id));
 		if (pstring == nullptr)
 			return GP_ERR;
@@ -3137,7 +3137,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_FOLDERTYPE:
 			case PROP_TAG_HASRULES:
 			case PROP_TAG_FOLDERPATHNAME:
-			case PROP_TAG_PARENTSOURCEKEY:
+			case PR_PARENT_SOURCE_KEY:
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
 			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
@@ -3188,7 +3188,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_FOLDERID:
 			case PROP_TAG_PARENTFOLDERID:
 			case PROP_TAG_INSTANCESVREID:
-			case PROP_TAG_PARENTSOURCEKEY:
+			case PR_PARENT_SOURCE_KEY:
 			case PROP_TAG_HASNAMEDPROPERTIES:
 			case PROP_TAG_MID:
 			case PR_MESSAGE_SIZE:
@@ -4888,8 +4888,8 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
 		switch (rprop->proptag) {
-		case PROP_TAG_PARENTSVREID:
-		case PROP_TAG_PARENTENTRYID:
+		case PR_PARENT_SVREID:
+		case PR_PARENT_ENTRYID:
 			/* parent entryid under this situation is a SVREID binary */
 			pvalue = common_util_get_message_parent_svrid(
 									psqlite, message_id);

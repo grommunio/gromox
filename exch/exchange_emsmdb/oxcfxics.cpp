@@ -1305,7 +1305,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (6 != phichyvals->count ||
-		PROP_TAG_PARENTSOURCEKEY != phichyvals->ppropval[0].proptag ||
+	    phichyvals->ppropval[0].proptag != PR_PARENT_SOURCE_KEY ||
 	    phichyvals->ppropval[1].proptag != PR_SOURCE_KEY ||
 	    phichyvals->ppropval[2].proptag != PR_LAST_MODIFICATION_TIME ||
 	    phichyvals->ppropval[3].proptag != PR_CHANGE_KEY ||

@@ -421,12 +421,12 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 			if (folder_object_get_id(pctx->pfolder) == parent_fid) {
-				tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 				tmp_propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
 			} else {
-				tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 				tmp_propval.pvalue =
 					common_util_calculate_folder_sourcekey(
 					pctx->pstream->plogon, parent_fid);
@@ -447,7 +447,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 			}
 			if (folder_object_get_id(pctx->pfolder) == parent_fid) {
-				tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 				tmp_propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
@@ -456,7 +456,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				    0, parent_fid, PR_SOURCE_KEY, &pvalue))
 					return FALSE;	
 				if (NULL == pvalue) {
-					tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+					tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 					tmp_propval.pvalue =
 						common_util_calculate_folder_sourcekey(
 						pctx->pstream->plogon, parent_fid);
@@ -464,7 +464,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 						return FALSE;
 					}
 				} else {
-					tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+					tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 					tmp_propval.pvalue = pvalue;
 				}
 			}
@@ -1170,7 +1170,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			tmp_propval.proptag = PROP_TAG_MID;
 			tmp_propval.pvalue = &message_id;
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 			tmp_propval.pvalue = pvalue;
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			if (common_util_get_propvals(&pembedded->proplist, PR_SOURCE_KEY) == nullptr) {
@@ -1232,14 +1232,14 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
-			tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 			tmp_propval.pvalue = common_util_calculate_folder_sourcekey(
 									pctx->pstream->plogon, folder_id);
 			if (NULL == tmp_propval.pvalue) {
 				return FALSE;
 			}
 		} else {
-			tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 			tmp_propval.pvalue = pvalue;
 		}
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
@@ -1254,7 +1254,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);	
 		}
 	} else {
-		tmp_propval.proptag = PROP_TAG_PARENTSOURCEKEY;
+		tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 		tmp_propval.pvalue = common_util_calculate_folder_sourcekey(
 								pctx->pstream->plogon, folder_id);
 		if (NULL == tmp_propval.pvalue) {

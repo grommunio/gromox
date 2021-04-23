@@ -78,10 +78,8 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_RIGHTS;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTENTRYID;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
@@ -163,13 +161,13 @@ BOOL folder_object_check_readonly_property(
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
 	case PROP_TAG_NORMALMESSAGESIZE:
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
-	case PROP_TAG_PARENTENTRYID:
+	case PR_PARENT_ENTRYID:
 	case PROP_TAG_PARENTFOLDERID:
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_CHANGE_KEY:
 	case PR_SOURCE_KEY:
-	case PROP_TAG_PARENTSOURCEKEY:
+	case PR_PARENT_SOURCE_KEY:
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_LAST_MODIFICATION_TIME:
 		return TRUE;
@@ -257,7 +255,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(
 			pfolder->pstore, pfolder->folder_id);
 		return TRUE;
-	case PROP_TAG_PARENTENTRYID:
+	case PR_PARENT_ENTRYID:
 		if (FALSE == exmdb_client_get_folder_property(
 			store_object_get_dir(pfolder->pstore), 0,
 			pfolder->folder_id, PROP_TAG_PARENTFOLDERID,
@@ -271,7 +269,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_calculate_folder_sourcekey(
 					pfolder->pstore, pfolder->folder_id);
 		return TRUE;
-	case PROP_TAG_PARENTSOURCEKEY:
+	case PR_PARENT_SOURCE_KEY:
 		if (TRUE == store_object_check_private(pfolder->pstore)) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {

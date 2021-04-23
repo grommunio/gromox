@@ -605,8 +605,7 @@ BOOL bounce_producer_make(const char *username,
 	if (NULL != pvalue) {
 		dsn_append_field(pdsn_fields, "Original-Message-ID", static_cast<char *>(pvalue));
 	}
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_PARENTKEY);
+	pvalue = common_util_get_propvals(&pbrief->proplist, PR_PARENT_KEY);
 	if (NULL != pvalue) {
 		encode64(((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb,
 			tmp_buff, sizeof(tmp_buff), &out_len);

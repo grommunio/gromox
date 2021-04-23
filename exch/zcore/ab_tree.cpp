@@ -1666,7 +1666,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		static_cast<BINARY *>(pvalue)->pb = deconst(g_guid_nspi);
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_PARENTENTRYID:
+	case PR_PARENT_ENTRYID:
 		pnode = simple_tree_node_get_parent(pnode);
 		if (NULL == pnode) {
 			return TRUE;

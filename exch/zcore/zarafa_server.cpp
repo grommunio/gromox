@@ -5160,9 +5160,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	pproplist = &hierarchy_propvals;
 	hierarchy_propvals.count = 4;
 	hierarchy_propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PROP_TAG_PARENTSOURCEKEY;
-	propval_buff[0].pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_PARENTSOURCEKEY);
+	propval_buff[0].proptag = PR_PARENT_SOURCE_KEY;
+	propval_buff[0].pvalue = common_util_get_propvals(ppropvals, PR_PARENT_SOURCE_KEY);
 	if (propval_buff[0].pvalue == nullptr)
 		return ecInvalidParam;
 	propval_buff[1].proptag = PR_SOURCE_KEY;
