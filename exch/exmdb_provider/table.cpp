@@ -3359,9 +3359,9 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PR_READ;
 		tmp_proptags[pproptags->count++] = PROP_TAG_HASATTACHMENTS;
 		tmp_proptags[pproptags->count++] = PR_MESSAGE_FLAGS;
-		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYTO;
-		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYCC;
-		tmp_proptags[pproptags->count++] = PROP_TAG_DISPLAYBCC;
+		tmp_proptags[pproptags->count++] = PR_DISPLAY_TO;
+		tmp_proptags[pproptags->count++] = PR_DISPLAY_CC;
+		tmp_proptags[pproptags->count++] = PR_DISPLAY_BCC;
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTID;
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTANCENUM;
 		tmp_proptags[pproptags->count++] = PROP_TAG_ROWTYPE;

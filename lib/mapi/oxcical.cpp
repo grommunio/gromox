@@ -1021,7 +1021,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		}
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_DISPLAYTYPE;
+		propval.proptag = PR_DISPLAY_TYPE;
 		propval.pvalue = &tmp_int32;
 		switch (address_type) {
 		case ADDRESS_TYPE_MLIST:

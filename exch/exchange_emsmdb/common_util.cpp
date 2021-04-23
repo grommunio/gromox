@@ -1347,8 +1347,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			prow->flags |= RECIPIENT_ROW_TYPE_X500DN;
 			static constexpr uint8_t dummy_zero = 0;
 			prow->pprefix_used = deconst(&dummy_zero);
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_DISPLAYTYPE);
+			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_TYPE);
 			if (NULL == pvalue) {
 				display_type = DISPLAY_TYPE_MAILUSER;
 			} else {

@@ -35,7 +35,7 @@ static uint32_t g_kind_workaddresspostofficebox = 0x0000804A;
 
 static const uint32_t g_n_proptags[] = 
 	{PROP_TAG_SURNAME, PROP_TAG_GIVENNAME, PROP_TAG_MIDDLENAME,
-	PROP_TAG_DISPLAYNAMEPREFIX, PROP_TAG_GENERATION};
+	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
 static const uint32_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
 static const uint32_t g_homeaddr_proptags[] =

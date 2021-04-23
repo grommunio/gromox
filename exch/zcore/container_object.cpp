@@ -622,14 +622,14 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_DISPLAYTYPE;
+			propval.proptag = PR_DISPLAY_TYPE;
 			propval.pvalue = &tmp_int;
 			tmp_int = DISPLAY_TYPE_MAILUSER;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_DISPLAYTYPEEX;
+			propval.proptag = PR_DISPLAY_TYPE_EX;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -1261,8 +1261,8 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_TRANSMITTABLEDISPLAYNAME,
 		PROP_TAG_ADDRESSBOOKPROXYADDRESSES,
 		PR_OBJECT_TYPE,
-		PROP_TAG_DISPLAYTYPE,
-		PROP_TAG_DISPLAYTYPEEX,
+		PR_DISPLAY_TYPE,
+		PR_DISPLAY_TYPE_EX,
 		PR_ENTRYID,
 		PR_RECORD_KEY,
 		PROP_TAG_ORIGINALENTRYID,

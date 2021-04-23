@@ -89,12 +89,12 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	for (i=0; i<proptags.count; i++) {
 		switch (proptags.pproptag[i]) {
-		case PROP_TAG_DISPLAYTO:
-		case PROP_TAG_DISPLAYTO_STRING8:
-		case PROP_TAG_DISPLAYCC:
-		case PROP_TAG_DISPLAYCC_STRING8:
-		case PROP_TAG_DISPLAYBCC:
-		case PROP_TAG_DISPLAYBCC_STRING8:
+		case PR_DISPLAY_TO:
+		case PR_DISPLAY_TO_A:
+		case PR_DISPLAY_CC:
+		case PR_DISPLAY_CC_A:
+		case PR_DISPLAY_BCC:
+		case PR_DISPLAY_BCC_A:
 		case PROP_TAG_SUBJECT:
 		case PROP_TAG_SUBJECT_STRING8:
 		case PR_MESSAGE_SIZE:
@@ -1134,12 +1134,12 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PROP_TAG_HASNAMEDPROPERTIES:
 		case PR_MESSAGE_SIZE:
 		case PROP_TAG_HASATTACHMENTS:
-		case PROP_TAG_DISPLAYTO:
-		case PROP_TAG_DISPLAYCC:
-		case PROP_TAG_DISPLAYBCC:
-		case PROP_TAG_DISPLAYTO_STRING8:
-		case PROP_TAG_DISPLAYCC_STRING8:
-		case PROP_TAG_DISPLAYBCC_STRING8:
+		case PR_DISPLAY_TO:
+		case PR_DISPLAY_CC:
+		case PR_DISPLAY_BCC:
+		case PR_DISPLAY_TO_A:
+		case PR_DISPLAY_CC_A:
+		case PR_DISPLAY_BCC_A:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = proptag;
 			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
@@ -1865,12 +1865,9 @@ BOOL exmdb_server_get_instance_all_proptags(
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] = PROP_TAG_HASATTACHMENTS;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_DISPLAYTO;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_DISPLAYCC;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_DISPLAYBCC;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
+		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_CC;
+		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_BCC;
 	} else {
 		pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
 		pproptags->count = pattachment->proplist.count + 1;
@@ -1914,16 +1911,16 @@ static BOOL instance_get_message_display_recipients(
 
 	fake_empty = 0;
 	switch (proptag) {
-	case PROP_TAG_DISPLAYTO:
-	case PROP_TAG_DISPLAYTO_STRING8:
+	case PR_DISPLAY_TO:
+	case PR_DISPLAY_TO_A:
 		recipient_type = RECIPIENT_TYPE_TO;
 		break;
-	case PROP_TAG_DISPLAYCC:
-	case PROP_TAG_DISPLAYCC_STRING8:
+	case PR_DISPLAY_CC:
+	case PR_DISPLAY_CC_A:
 		recipient_type = RECIPIENT_TYPE_CC;
 		break;
-	case PROP_TAG_DISPLAYBCC:
-	case PROP_TAG_DISPLAYBCC_STRING8:
+	case PR_DISPLAY_BCC:
+	case PR_DISPLAY_BCC_A:
 		recipient_type = RECIPIENT_TYPE_BCC;
 		break;
 	}
@@ -2553,12 +2550,12 @@ BOOL exmdb_server_get_instance_properties(
 			*static_cast<uint8_t *>(pvalue) = pmsgctnt->children.pattachments == nullptr ||
 				pmsgctnt->children.pattachments->count == 0 ? 0 : 1;
 			continue;
-		case PROP_TAG_DISPLAYTO:
-		case PROP_TAG_DISPLAYTO_STRING8:
-		case PROP_TAG_DISPLAYCC:
-		case PROP_TAG_DISPLAYCC_STRING8:
-		case PROP_TAG_DISPLAYBCC:
-		case PROP_TAG_DISPLAYBCC_STRING8:
+		case PR_DISPLAY_TO:
+		case PR_DISPLAY_TO_A:
+		case PR_DISPLAY_CC:
+		case PR_DISPLAY_CC_A:
+		case PR_DISPLAY_BCC:
+		case PR_DISPLAY_BCC_A:
 			if (NULL != pmsgctnt->children.prcpts) {
 				if (FALSE == instance_get_message_display_recipients(
 					pmsgctnt->children.prcpts, pinstance->cpid,
@@ -2622,12 +2619,12 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROP_TAG_HASNAMEDPROPERTIES:
 			case PR_MESSAGE_SIZE:
 			case PROP_TAG_HASATTACHMENTS:
-			case PROP_TAG_DISPLAYTO:
-			case PROP_TAG_DISPLAYCC:
-			case PROP_TAG_DISPLAYBCC:
-			case PROP_TAG_DISPLAYTO_STRING8:
-			case PROP_TAG_DISPLAYCC_STRING8:
-			case PROP_TAG_DISPLAYBCC_STRING8:
+			case PR_DISPLAY_TO:
+			case PR_DISPLAY_CC:
+			case PR_DISPLAY_BCC:
+			case PR_DISPLAY_TO_A:
+			case PR_DISPLAY_CC_A:
+			case PR_DISPLAY_BCC_A:
 			case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 			case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 				pproblems->pproblem[pproblems->count].index = i;

@@ -685,9 +685,9 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PR_READ;
 		proptags[i++] = PROP_TAG_HASATTACHMENTS;
 		proptags[i++] = PR_MESSAGE_FLAGS;
-		proptags[i++] = PROP_TAG_DISPLAYTO;
-		proptags[i++] = PROP_TAG_DISPLAYCC;
-		proptags[i++] = PROP_TAG_DISPLAYBCC;
+		proptags[i++] = PR_DISPLAY_TO;
+		proptags[i++] = PR_DISPLAY_CC;
+		proptags[i++] = PR_DISPLAY_BCC;
 		break;
 	case RECIPIENT_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM "
@@ -1608,16 +1608,16 @@ static BOOL common_util_get_message_display_recipients(
 	static const uint8_t fake_empty = 0;
 	
 	switch (proptag) {
-	case PROP_TAG_DISPLAYTO:
-	case PROP_TAG_DISPLAYTO_STRING8:
+	case PR_DISPLAY_TO:
+	case PR_DISPLAY_TO_A:
 		recipient_type = RECIPIENT_TYPE_TO;
 		break;
-	case PROP_TAG_DISPLAYCC:
-	case PROP_TAG_DISPLAYCC_STRING8:
+	case PR_DISPLAY_CC:
+	case PR_DISPLAY_CC_A:
 		recipient_type = RECIPIENT_TYPE_CC;
 		break;
-	case PROP_TAG_DISPLAYBCC:
-	case PROP_TAG_DISPLAYBCC_STRING8:
+	case PR_DISPLAY_BCC:
+	case PR_DISPLAY_BCC_A:
 		recipient_type = RECIPIENT_TYPE_BCC;
 		break;
 	}
@@ -2126,12 +2126,12 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_subject(db, cpid, id, tag, &pv.pvalue))
 			return GP_ERR;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PROP_TAG_DISPLAYTO:
-	case PROP_TAG_DISPLAYCC:
-	case PROP_TAG_DISPLAYBCC:
-	case PROP_TAG_DISPLAYTO_STRING8:
-	case PROP_TAG_DISPLAYCC_STRING8:
-	case PROP_TAG_DISPLAYBCC_STRING8:
+	case PR_DISPLAY_TO:
+	case PR_DISPLAY_CC:
+	case PR_DISPLAY_BCC:
+	case PR_DISPLAY_TO_A:
+	case PR_DISPLAY_CC_A:
+	case PR_DISPLAY_BCC_A:
 		if (!common_util_get_message_display_recipients(db, cpid, id, tag, &pv.pvalue))
 			return GP_ERR;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
@@ -3194,12 +3194,12 @@ BOOL common_util_set_properties(int table_type,
 			case PR_MESSAGE_SIZE:
 			case PROP_TAG_ASSOCIATED:
 			case PROP_TAG_HASATTACHMENTS:
-			case PROP_TAG_DISPLAYTO:
-			case PROP_TAG_DISPLAYCC:
-			case PROP_TAG_DISPLAYBCC:
-			case PROP_TAG_DISPLAYTO_STRING8:
-			case PROP_TAG_DISPLAYCC_STRING8:
-			case PROP_TAG_DISPLAYBCC_STRING8:
+			case PR_DISPLAY_TO:
+			case PR_DISPLAY_CC:
+			case PR_DISPLAY_BCC:
+			case PR_DISPLAY_TO_A:
+			case PR_DISPLAY_CC_A:
+			case PR_DISPLAY_BCC_A:
 			case PROP_TAG_MIDSTRING: /* self-defined proptag */
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =

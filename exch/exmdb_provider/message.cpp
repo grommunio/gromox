@@ -1718,12 +1718,12 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	proptags.pproptag = proptag_buff;
 	for (i=0; i<tmp_proptags.count; i++) {
 		switch (tmp_proptags.pproptag[i]) {
-		case PROP_TAG_DISPLAYTO:
-		case PROP_TAG_DISPLAYTO_STRING8:
-		case PROP_TAG_DISPLAYCC:
-		case PROP_TAG_DISPLAYCC_STRING8:
-		case PROP_TAG_DISPLAYBCC:
-		case PROP_TAG_DISPLAYBCC_STRING8:
+		case PR_DISPLAY_TO:
+		case PR_DISPLAY_TO_A:
+		case PR_DISPLAY_CC:
+		case PR_DISPLAY_CC_A:
+		case PR_DISPLAY_BCC:
+		case PR_DISPLAY_BCC_A:
 		case PROP_TAG_HASATTACHMENTS:
 			continue;
 		}
@@ -4060,9 +4060,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					break;	
 				}
 				static constexpr uint32_t tags[] = {
-					PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
-					PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8,
-					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
+					PR_DISPLAY_TO, PR_DISPLAY_TO_A,
+					PR_DISPLAY_CC, PR_DISPLAY_CC_A,
+					PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
 					PROP_TAG_MID, PR_MESSAGE_SIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PR_CHANGE_KEY, PR_READ,
@@ -4486,9 +4486,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					break;	
 				}
 				static constexpr uint32_t tags[] = {
-					PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
-					PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8,
-					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
+					PR_DISPLAY_TO, PR_DISPLAY_TO_A,
+					PR_DISPLAY_CC, PR_DISPLAY_CC_A,
+					PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
 					PROP_TAG_MID, PR_MESSAGE_SIZE,
 					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PR_CHANGE_KEY, PR_READ,

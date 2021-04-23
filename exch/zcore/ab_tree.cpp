@@ -1624,7 +1624,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DISPLAYTYPE:
+	case PR_DISPLAY_TYPE:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1639,7 +1639,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DISPLAYTYPEEX:
+	case PR_DISPLAY_TYPE_EX:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
