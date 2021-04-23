@@ -1759,7 +1759,7 @@ static BOOL oxcmail_enum_mail_head(
 	} else if (0 == strcasecmp(tag, "Content-Language")) {
 		tmp_int32 = oxcmail_ltag_to_lcid(field);
 		if (0 != tmp_int32) {
-			propval.proptag = PROP_TAG_MESSAGELOCALEID;
+			propval.proptag = PR_MESSAGE_LOCALE_ID;
 			propval.pvalue = &tmp_int32;
 			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
@@ -5761,8 +5761,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_MESSAGELOCALEID);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_LOCALE_ID);
 	if (NULL != pvalue) {
 		pvalue = deconst(oxcmail_lcid_to_ltag(*static_cast<uint32_t *>(pvalue)));
 		if (NULL != pvalue) {

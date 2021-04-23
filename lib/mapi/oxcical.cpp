@@ -4644,8 +4644,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propnames.count = 1;
 	propnames.ppropname = &propname;
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_MESSAGELOCALEID);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_LOCALE_ID);
 	if (NULL == pvalue) {
 		planguage = NULL;
 	} else {

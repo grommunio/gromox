@@ -3859,7 +3859,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
+	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
 	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
 	if (FALSE == store_object_get_properties(
@@ -3875,8 +3875,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecQuotaExceeded;
 	}
 
-	pvalue = common_util_get_propvals(&tmp_propvals,
-				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MAX_SUBMIT_MESSAGE_SIZE);
 	ssize_t max_length = -1;
 	if (pvalue != nullptr)
 		max_length = *(int32_t*)pvalue;

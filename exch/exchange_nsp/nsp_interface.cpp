@@ -151,7 +151,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		                 node_type == NODE_TYPE_EQUIPMENT ? DT_EQUIPMENT :
 		                 DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
 		return ecSuccess;
-	case PROP_TAG_MAPPINGSIGNATURE:
+	case PR_MAPPING_SIGNATURE:
 		pprop->value.bin.cb = 16;
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
@@ -1906,7 +1906,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PROP_TAG_ORIGINALENTRYID;
 	t[z++] = PROP_TAG_SEARCHKEY;
 	t[z++] = PROP_TAG_INSTANCEKEY;
-	t[z++] = PROP_TAG_MAPPINGSIGNATURE;
+	t[z++] = PR_MAPPING_SIGNATURE;
 	t[z++] = PROP_TAG_SENDRICHINFO;
 	t[z++] = PROP_TAG_TEMPLATEID;
 	t[z++] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
@@ -2676,7 +2676,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[23] = PROP_TAG_ORIGINALENTRYID;
 	t[24] = PROP_TAG_SEARCHKEY;
 	t[25] = PROP_TAG_INSTANCEKEY;
-	t[26] = PROP_TAG_MAPPINGSIGNATURE;
+	t[26] = PR_MAPPING_SIGNATURE;
 	t[27] = PROP_TAG_SENDRICHINFO;
 	t[28] = PROP_TAG_TEMPLATEID;
 	t[29] = PROP_TAG_ADDRESSBOOKOBJECTGUID;

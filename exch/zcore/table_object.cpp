@@ -160,7 +160,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PROP_TAG_EXTENDEDRULESIZELIMIT,
 		PROP_TAG_MAILBOXOWNERENTRYID,
 		PROP_TAG_MAILBOXOWNERNAME,
-		PROP_TAG_MAXIMUMSUBMITMESSAGESIZE,
+		PR_MAX_SUBMIT_MESSAGE_SIZE,
 		PR_OBJECT_TYPE,
 		PROP_TAG_PROVIDERDISPLAY,
 		PROP_TAG_RESOURCEFLAGS,
@@ -169,7 +169,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PROP_TAG_INSTANCEKEY,
 		PR_ENTRYID,
 		PR_STORE_ENTRYID,
-		PROP_TAG_USERENTRYID
+		PR_USER_ENTRYID
 	};
 	
 	auto pinfo = zarafa_server_get_info();
@@ -515,8 +515,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
 		if (HIERARCHY_TABLE == ptable->table_type) {
 			idx1 = common_util_index_proptags(pcolumns, PR_ACCESS);
-			idx2 = common_util_index_proptags(
-					pcolumns, PROP_TAG_RIGHTS);
+			idx2 = common_util_index_proptags(pcolumns, PR_RIGHTS);
 		} else {
 			idx1 = -1;
 			idx2 = -1;
@@ -621,8 +620,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								*ppermission =
 									table_object_get_folder_permission_rights(
 									ptable->pstore, tmp_eid, pinfo->username);
-								temp_set.pparray[i]->ppropval[j].proptag =
-															PROP_TAG_RIGHTS;
+								temp_set.pparray[i]->ppropval[j].proptag = PR_RIGHTS;
 								temp_set.pparray[i]->ppropval[j].pvalue =
 																ppermission;
 								break;

@@ -1657,7 +1657,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_MAPPINGSIGNATURE:
+	case PR_MAPPING_SIGNATURE:
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;

@@ -74,10 +74,8 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_MAPPINGSIGNATURE;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_RIGHTS;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
+	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
@@ -228,7 +226,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
 		return TRUE;
-	case PROP_TAG_RIGHTS:
+	case PR_RIGHTS:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -293,7 +291,7 @@ static BOOL folder_object_get_calculated_property(
 					pfolder->pstore, *(uint64_t*)pvalue);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PROP_TAG_MAPPINGSIGNATURE:
+	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(
 				store_object_get_mailbox_guid(
 				pfolder->pstore));

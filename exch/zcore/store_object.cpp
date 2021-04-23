@@ -557,8 +557,8 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALEID:
-	case PROP_TAG_MAPPINGSIGNATURE:
-	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
+	case PR_MAPPING_SIGNATURE:
+	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 	case PROP_TAG_MAILBOXOWNERENTRYID:
 	case PROP_TAG_MAILBOXOWNERNAME:
 	case PR_MESSAGE_SIZE:
@@ -573,7 +573,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_PROHIBITSENDQUOTA:
 	case PROP_TAG_INSTANCEKEY:
 	case PR_RECORD_KEY:
-	case PROP_TAG_RIGHTS:
+	case PR_RIGHTS:
 	case PROP_TAG_SEARCHKEY:
 	case PROP_TAG_SORTLOCALEID:
 	case PROP_TAG_STORAGEQUOTALIMIT:
@@ -584,7 +584,7 @@ static BOOL store_object_check_readonly_property(
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:
 	case PROP_TAG_TESTLINESPEED:
-	case PROP_TAG_USERENTRYID:
+	case PR_USER_ENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
 	case PROP_TAG_HIERARCHYSERVER:
 	case PROP_TAG_FINDERENTRYID:
@@ -625,9 +625,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 				PROP_TAG_MAILBOXOWNERENTRYID;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
@@ -676,9 +674,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 			PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-						PROP_TAG_USERENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_CONTENTCOUNT;
 	pproptags->count ++;	
@@ -699,9 +695,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 						PROP_TAG_INSTANCEKEY;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_MAPPINGSIGNATURE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
 	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
@@ -970,7 +964,7 @@ static BOOL store_object_get_calculated_property(
 			}
 		}
 		return TRUE;
-	case PROP_TAG_RIGHTS:
+	case PR_RIGHTS:
 		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1054,7 +1048,7 @@ static BOOL store_object_get_calculated_property(
 			strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		}
 		return TRUE;
-	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
+	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1114,7 +1108,7 @@ static BOOL store_object_get_calculated_property(
 	case PR_RECORD_KEY:
 	case PROP_TAG_INSTANCEKEY:
 	case PR_STORE_RECORD_KEY:
-	case PROP_TAG_MAPPINGSIGNATURE:
+	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
 		return TRUE;
 	case PR_ENTRYID:
@@ -1129,7 +1123,7 @@ static BOOL store_object_get_calculated_property(
 		*ppvalue = pinfo->username;
 		return TRUE;
 	}
-	case PROP_TAG_USERENTRYID: {
+	case PR_USER_ENTRYID: {
 		auto pinfo = zarafa_server_get_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(
 												pinfo->username);

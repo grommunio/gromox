@@ -255,7 +255,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_MESSAGECODEPAGE;
+	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CODEPAGE;
 	void *pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -357,7 +357,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_MESSAGELOCALEID;
+	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -1115,17 +1115,10 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGELOCALEID) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_MESSAGELOCALEID;
-		pproptags->count ++;
-	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGECODEPAGE) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_MESSAGECODEPAGE;
-		pproptags->count ++;
-	}
-		
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
 	return TRUE;
 }
 
@@ -1251,7 +1244,7 @@ static BOOL message_object_get_calculated_property(
 			pmessage->plogon, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PROP_TAG_MAPPINGSIGNATURE:
+	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(
 					logon_object_get_mailbox_guid(
 					pmessage->plogon));
@@ -1345,12 +1338,10 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 			return FALSE;
 		ppropvals->count ++;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGELOCALEID) >= 0 &&
-		NULL == common_util_get_propvals(
-		ppropvals, PROP_TAG_MESSAGELOCALEID)) {
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
+	    common_util_get_propvals(ppropvals, PR_MESSAGE_LOCALE_ID) == nullptr) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PROP_TAG_MESSAGELOCALEID;
+		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (TRUE == exmdb_client_get_instance_property(
 			logon_object_get_dir(pmessage->plogon),
@@ -1363,12 +1354,10 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		}
 		ppropvals->count ++;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGECODEPAGE) >= 0 &&
-		NULL == common_util_get_propvals(
-		ppropvals, PROP_TAG_MESSAGECODEPAGE)) {
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
+	    common_util_get_propvals(ppropvals, PR_MESSAGE_CODEPAGE) == nullptr) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PROP_TAG_MESSAGECODEPAGE;
+		pv.proptag = PR_MESSAGE_CODEPAGE;
 		pv.pvalue = &pmessage->cpid;
 		ppropvals->count ++;
 	}

@@ -186,8 +186,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	
-	propvals.ppropval[propvals.count].proptag =
-						PROP_TAG_MESSAGECODEPAGE;
+	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CODEPAGE;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -298,8 +297,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag =
-						PROP_TAG_MESSAGELOCALEID;
+	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -880,24 +878,17 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_MAPPINGSIGNATURE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	if (pmessage->pembedding == nullptr &&
 	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGELOCALEID) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_MESSAGELOCALEID;
-		pproptags->count ++;
-	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGECODEPAGE) < 0) {
-		pproptags->pproptag[pproptags->count] = PROP_TAG_MESSAGECODEPAGE;
-		pproptags->count ++;
-	}
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
 	return TRUE;
 }
 
@@ -1023,7 +1014,7 @@ static BOOL message_object_get_calculated_property(
 			pmessage->pstore, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PROP_TAG_MAPPINGSIGNATURE:
+	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(
 				store_object_get_mailbox_guid(
 				pmessage->pstore));
@@ -1088,21 +1079,15 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGELOCALEID) >= 0 &&
-		NULL == common_util_get_propvals(
-		ppropvals, PROP_TAG_MESSAGELOCALEID)) {
-		ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_MESSAGELOCALEID;
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
+	    common_util_get_propvals(ppropvals, PR_MESSAGE_LOCALE_ID) == nullptr) {
+		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_LOCALE_ID;
 		ppropvals->ppropval[ppropvals->count].pvalue = deconst(&lcid_default);
 		ppropvals->count ++;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_MESSAGECODEPAGE) >= 0 &&
-		NULL == common_util_get_propvals(
-		ppropvals, PROP_TAG_MESSAGECODEPAGE)) {
-		ppropvals->ppropval[ppropvals->count].proptag =
-								PROP_TAG_MESSAGECODEPAGE;
+	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
+	    common_util_get_propvals(ppropvals, PR_MESSAGE_CODEPAGE) == nullptr) {
+		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_CODEPAGE;
 		ppropvals->ppropval[ppropvals->count].pvalue =
 										&pmessage->cpid;
 		ppropvals->count ++;

@@ -543,9 +543,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		pproptags->pproptag[pproptags->count] =
 					PROP_TAG_MAILBOXOWNERENTRYID;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
@@ -577,9 +575,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_NORMALMESSAGESIZE;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-						PROP_TAG_USERENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_CONTENTCOUNT;
 	pproptags->count ++;
@@ -617,7 +613,7 @@ static BOOL logon_object_check_readonly_property(
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALEID:
-	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
+	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 	case PROP_TAG_MAILBOXOWNERENTRYID:
 	case PROP_TAG_MAILBOXOWNERNAME:
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
@@ -642,7 +638,7 @@ static BOOL logon_object_check_readonly_property(
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:
 	case PROP_TAG_TESTLINESPEED:
-	case PROP_TAG_USERENTRYID:
+	case PR_USER_ENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
 	case PROP_TAG_HIERARCHYSERVER:
 		return TRUE;
@@ -826,7 +822,7 @@ static BOOL logon_object_get_calculated_property(
 			strcpy(static_cast<char *>(*ppvalue), plogon->account);
 		}
 		return TRUE;
-	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
+	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -842,7 +838,7 @@ static BOOL logon_object_get_calculated_property(
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(plogon->mailbox_guid);
 		return TRUE;
-	case PROP_TAG_USERENTRYID: {
+	case PR_USER_ENTRYID: {
 		auto rpc_info = get_rpc_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(
 											rpc_info.username);

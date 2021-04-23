@@ -47,7 +47,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[2].proptag = PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL;
 	propval_buff[2].pvalue = &tmp_level;
 	tmp_level = -1;
-	propval_buff[3].proptag = PROP_TAG_MESSAGELOCALEID;
+	propval_buff[3].proptag = PR_MESSAGE_LOCALE_ID;
 	propval_buff[3].pvalue = &pinfo->lcid_string;
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
@@ -292,7 +292,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MAXIMUMSUBMITMESSAGESIZE;
+	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
 	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
 	if (FALSE == logon_object_get_properties(
@@ -307,8 +307,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
 		return ecQuotaExceeded;
 
-	pvalue = common_util_get_propvals(&tmp_propvals,
-				PROP_TAG_MAXIMUMSUBMITMESSAGESIZE);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_MAX_SUBMIT_MESSAGE_SIZE);
 	max_length = -1;
 	if (NULL != pvalue) {
 		max_length = *(int32_t*)pvalue;
