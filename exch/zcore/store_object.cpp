@@ -579,7 +579,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
 	case PROP_TAG_NORMALMESSAGESIZE:
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 	case PROP_TAG_OUTOFOFFICESTATE:
 	case PROP_TAG_PROHIBITRECEIVEQUOTA:
 	case PROP_TAG_PROHIBITSENDQUOTA:
@@ -727,8 +727,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_CONTENTCOUNT;
 	pproptags->count ++;	
-	pproptags->pproptag[pproptags->count] =
-						PROP_TAG_OBJECTTYPE;
+	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_PROVIDERDISPLAY;
@@ -1115,7 +1114,7 @@ static BOOL store_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = common_util_get_param(
 							COMMON_UTIL_MAX_MAIL_LENGTH);
 		return TRUE;
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

@@ -3103,11 +3103,10 @@ uint32_t zarafa_server_queryrows(
 		HIERARCHY_TABLE != table_type &&
 		CONTENT_TABLE != table_type &&
 		ATTACHMENT_TABLE != table_type)
-		|| (NULL != pproptags &&
-		common_util_index_proptags(pproptags,
-		PROP_TAG_OBJECTTYPE) < 0)) {
+		||
+	    (pproptags != nullptr &&
+	    common_util_index_proptags(pproptags, PR_OBJECT_TYPE) < 0))
 		return ecSuccess;
-	}
 	switch (table_type) {
 	case STORE_TABLE:
 		pobject_type = deconst(&object_type_store);
@@ -3128,7 +3127,7 @@ uint32_t zarafa_server_queryrows(
 			return ecError;
 		memcpy(ppropvals, prowset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
-		ppropvals[prowset->pparray[i]->count].proptag = PROP_TAG_OBJECTTYPE;
+		ppropvals[prowset->pparray[i]->count].proptag = PR_OBJECT_TYPE;
 		ppropvals[prowset->pparray[i]->count].pvalue = pobject_type;
 		prowset->pparray[i]->ppropval = ppropvals;
 		prowset->pparray[i]->count ++;

@@ -73,7 +73,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_OBJECTTYPE;
+	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_MAPPINGSIGNATURE;
 	pproptags->count ++;
@@ -607,7 +607,7 @@ static BOOL folder_object_get_calculated_property(
 		ba->pbin[3] = *pbin;
 		return TRUE;
 	}
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

@@ -1156,7 +1156,7 @@ BOOL message_object_check_readonly_property(
 	case PROP_TAG_MID:
 	case PROP_TAG_MIMESKELETON:
 	case PROP_TAG_NATIVEBODY:
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 	case PROP_TAG_PARENTENTRYID:
 	case PROP_TAG_PARENTSOURCEKEY:
 	case PROP_TAG_STOREENTRYID:
@@ -1207,7 +1207,7 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = common_util_to_message_entryid(pmessage->plogon,
 						pmessage->folder_id, pmessage->message_id);
 		return TRUE;
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

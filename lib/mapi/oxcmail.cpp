@@ -653,7 +653,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_OBJECTTYPE;
+		propval.proptag = PR_OBJECT_TYPE;
 		propval.pvalue = &tmp_int32;
 		if (ADDRESS_TYPE_MLIST == address_type) {
 			tmp_int32 = OBJECT_DLIST;
@@ -3575,7 +3575,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return false;
-	propval.proptag = PROP_TAG_OBJECTTYPE;
+	propval.proptag = PR_OBJECT_TYPE;
 	propval.pvalue = &tmp_int32;
 	if (ADDRESS_TYPE_MLIST == address_type) {
 		tmp_int32 = OBJECT_DLIST;

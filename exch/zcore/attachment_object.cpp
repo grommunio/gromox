@@ -174,7 +174,7 @@ BOOL attachment_object_get_all_proptags(
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESSLEVEL;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_OBJECTTYPE;
+	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_STORERECORDKEY;
 	pproptags->count ++;
@@ -194,7 +194,7 @@ static BOOL attachment_object_check_readonly_property(
 	case PROP_TAG_MID:
 	case PROP_TAG_ACCESSLEVEL:
 	case PROP_TAG_INCONFLICT:
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_STOREENTRYID:
 	case PROP_TAG_STORERECORDKEY:
@@ -225,7 +225,7 @@ static BOOL attachment_object_get_calculated_property(
 		*static_cast<uint32_t *>(*ppvalue) = pattachment->b_writable ?
 			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

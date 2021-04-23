@@ -617,7 +617,7 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_OBJECTTYPE;
+			propval.proptag = PR_OBJECT_TYPE;
 			propval.pvalue = &tmp_int;
 			tmp_int = OBJECT_USER;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
@@ -1262,7 +1262,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_ACCOUNT,
 		PROP_TAG_TRANSMITTABLEDISPLAYNAME,
 		PROP_TAG_ADDRESSBOOKPROXYADDRESSES,
-		PROP_TAG_OBJECTTYPE,
+		PR_OBJECT_TYPE,
 		PROP_TAG_DISPLAYTYPE,
 		PROP_TAG_DISPLAYTYPEEX,
 		PR_ENTRYID,

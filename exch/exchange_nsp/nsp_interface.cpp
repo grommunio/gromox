@@ -138,7 +138,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 		pprop->value.l = node_type == NODE_TYPE_MLIST ? OT_DISTLIST :
 		                 node_type == NODE_TYPE_FOLDER ? OT_FOLDER :
 		                 OT_MAILUSER;
@@ -871,7 +871,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			return ecMAPIOOM;
 		}
 		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
-		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
+		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
@@ -1087,7 +1087,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			return ecMAPIOOM;
 		}
 		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
-		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
+		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
@@ -1898,7 +1898,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = U(PROP_TAG_ADDRESSTYPE);
 	t[z++] = U(PR_EMAIL_ADDRESS);
 	t[z++] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
-	t[z++] = PROP_TAG_OBJECTTYPE;
+	t[z++] = PR_OBJECT_TYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPE;
 	t[z++] = PROP_TAG_DISPLAYTYPEEX;
 	t[z++] = PR_ENTRYID;
@@ -2668,7 +2668,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[15] = U(PROP_TAG_ACCOUNT);
 	t[16] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
 	t[17] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
-	t[18] = PROP_TAG_OBJECTTYPE;
+	t[18] = PR_OBJECT_TYPE;
 	t[19] = PROP_TAG_DISPLAYTYPE;
 	t[20] = PROP_TAG_DISPLAYTYPEEX;
 	t[21] = PR_ENTRYID;
@@ -2813,7 +2813,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		}
 		strcpy(pprop->value.pstr, paddress);
 		break;
-	case PROP_TAG_OBJECTTYPE:
+	case PR_OBJECT_TYPE:
 		pprop->value.l = OT_MAILUSER;
 		break;
 	case PROP_TAG_DISPLAYTYPE:
@@ -2918,7 +2918,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			return ecMAPIOOM;
 		}
 		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
-		nt->pproptag[1] = PROP_TAG_OBJECTTYPE;
+		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PROP_TAG_DISPLAYTYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;

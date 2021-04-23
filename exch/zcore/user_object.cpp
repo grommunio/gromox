@@ -55,8 +55,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		pbase.reset();
 		/* if user is hidden from addressbook tree, we simply
 			return the necessary information to the caller */
-		if (common_util_index_proptags(pproptags,
-			PROP_TAG_OBJECTTYPE) >= 0 ||
+		if (common_util_index_proptags(pproptags, PR_OBJECT_TYPE) >= 0 ||
 			common_util_index_proptags(pproptags,
 			PROP_TAG_SMTPADDRESS) >= 0 ||
 			common_util_index_proptags(pproptags,
@@ -70,9 +69,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			if (NULL == ppropvals->ppropval) {
 				return FALSE;
 			}
-			if (common_util_index_proptags(pproptags,
-				PROP_TAG_OBJECTTYPE) >= 0) {
-				vc->proptag = PROP_TAG_OBJECTTYPE;
+			if (common_util_index_proptags(pproptags, PR_OBJECT_TYPE) >= 0) {
+				vc->proptag = PR_OBJECT_TYPE;
 				vc->pvalue = deconst(&fake_type);
 				ppropvals->count ++;
 				++vc;
