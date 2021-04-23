@@ -34,17 +34,6 @@
 #define PROP_TAG_USERNAME								0x661A001F
 
 #define PROP_TAG_ECSERVERVERSION						0x6716001F
-
-#define PROP_TAG_OOFSTATE								0x67600003
-#define PROP_TAG_OOFINTERNALREPLY						0x6761001F
-#define PROP_TAG_OOFINTERNALSUBJECT						0x6762001F
-#define PROP_TAG_OOFBEGIN								0x67630040
-#define PROP_TAG_OOFUNTIL								0x67640040
-#define PROP_TAG_OOFALLOWEXTERNAL						0x6765000B
-#define PROP_TAG_OOFEXTERNALAUDIENCE					0x6766000B
-#define PROP_TAG_OOFEXTERNALREPLY						0x6767001F
-#define PROP_TAG_OOFEXTERNALSUBJECT						0x6768001F
-
 #define PROP_TAG_ECUSERLANGUAGE							0x6770001F
 #define PROP_TAG_ECUSERTIMEZONE							0x6771001F
 
@@ -653,34 +642,15 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 				PROP_TGA_SCHEDULEFOLDERENTRYID;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-							PROP_TAG_OOFSTATE;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_OOFINTERNALREPLY;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_OOFINTERNALSUBJECT;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-							PROP_TAG_OOFBEGIN;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-							PROP_TAG_OOFUNTIL;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_OOFALLOWEXTERNAL;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_OOFEXTERNALAUDIENCE;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-						PROP_TAG_OOFEXTERNALREPLY;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PROP_TAG_OOFEXTERNALSUBJECT;
-		pproptags->count ++;
-		
+		pproptags->pproptag[pproptags->count++] = PR_OOF_STATE;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_FROM;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_UNTIL;
+		pproptags->pproptag[pproptags->count++] = PR_EC_ALLOW_EXTERNAL;
+		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_AUDIENCE;
+		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
+		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
 	} else {
 		pproptags->pproptag[pproptags->count] =
 						PROP_TAG_HIERARCHYSERVER;
@@ -759,7 +729,7 @@ static void* store_object_get_oof_property(
 	static constexpr uint8_t fake_false = false;
 	
 	switch (proptag) {
-	case PROP_TAG_OOFSTATE: {
+	case PR_OOF_STATE: {
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return NULL;
@@ -781,10 +751,10 @@ static void* store_object_get_oof_property(
 		}
 		return pvalue;
 	}
-	case PROP_TAG_OOFINTERNALREPLY:
-	case PROP_TAG_OOFEXTERNALREPLY:
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_EXTERNAL_REPLY:
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PROP_TAG_OOFINTERNALREPLY ?
+		         proptag == PR_EC_OUTOFOFFICE_MSG ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
 		fd = open(temp_path, O_RDONLY);
@@ -808,10 +778,10 @@ static void* store_object_get_oof_property(
 		close(fd);
 		pbuff[buff_len] = '\0';
 		return strstr(pbuff, "\r\n\r\n");
-	case PROP_TAG_OOFINTERNALSUBJECT:
-	case PROP_TAG_OOFEXTERNALSUBJECT: {
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+	case PR_EC_EXTERNAL_SUBJECT: {
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PROP_TAG_OOFINTERNALSUBJECT ?
+		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
 		if (0 != stat(temp_path, &node_stat)) {
@@ -850,8 +820,8 @@ static void* store_object_get_oof_property(
 		}
 		return NULL;
 	}
-	case PROP_TAG_OOFBEGIN:
-	case PROP_TAG_OOFUNTIL: {
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
@@ -862,22 +832,22 @@ static void* store_object_get_oof_property(
 			return NULL;
 		}
 		str_value = config_file_get_value(pconfig,
-		            proptag == PROP_TAG_OOFBEGIN ? "START_TIME" : "END_TIME");
+		            proptag == PR_EC_OUTOFOFFICE_FROM ? "START_TIME" : "END_TIME");
 		if (NULL == str_value) {
 			return NULL;
 		}
 		*(uint64_t*)pvalue = rop_util_unix_to_nttime(atoll(str_value));
 		return pvalue;
 	}
-	case PROP_TAG_OOFALLOWEXTERNAL:
-	case PROP_TAG_OOFEXTERNALAUDIENCE: {
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
 		str_value = config_file_get_value(pconfig,
-		            proptag == PROP_TAG_OOFALLOWEXTERNAL ?
+		            proptag == PR_EC_ALLOW_EXTERNAL ?
 		            "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE");
 		pvalue = str_value == nullptr || atoi(str_value) == 0 ?
 		         deconst(&fake_false) : deconst(&fake_true);
@@ -1273,15 +1243,15 @@ static BOOL store_object_get_calculated_property(
 	case PROP_TAG_ECSERVERVERSION:
 		*ppvalue = deconst(PROJECT_VERSION);
 		return TRUE;
-	case PROP_TAG_OOFSTATE:
-	case PROP_TAG_OOFINTERNALREPLY:
-	case PROP_TAG_OOFINTERNALSUBJECT:
-	case PROP_TAG_OOFBEGIN:
-	case PROP_TAG_OOFUNTIL:
-	case PROP_TAG_OOFALLOWEXTERNAL:
-	case PROP_TAG_OOFEXTERNALAUDIENCE:
-	case PROP_TAG_OOFEXTERNALREPLY:
-	case PROP_TAG_OOFEXTERNALSUBJECT:
+	case PR_OOF_STATE:
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL:
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE:
+	case PR_EC_EXTERNAL_REPLY:
+	case PR_EC_EXTERNAL_SUBJECT:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1417,7 +1387,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		close(fd);
 	}
 	switch (proptag) {
-	case PROP_TAG_OOFSTATE: {
+	case PR_OOF_STATE: {
 		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
@@ -1438,24 +1408,24 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		}
 		return TRUE;
 	}
-	case PROP_TAG_OOFBEGIN:
-	case PROP_TAG_OOFUNTIL: {
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL: {
 		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
 		sprintf(temp_buff, "%lu", rop_util_nttime_to_unix(*(uint64_t*)pvalue));
-		config_file_set_value(pconfig, proptag == PROP_TAG_OOFBEGIN ?
+		config_file_set_value(pconfig, proptag == PR_EC_OUTOFOFFICE_FROM ?
 		                      "START_TIME" : "END_TIME", temp_buff);
 		if (FALSE == config_file_save(pconfig)) {
 			return FALSE;
 		}
 		return TRUE;
 	}
-	case PROP_TAG_OOFINTERNALREPLY:
-	case PROP_TAG_OOFEXTERNALREPLY: {
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_EXTERNAL_REPLY: {
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PROP_TAG_OOFINTERNALREPLY ?
+		         proptag == PR_EC_OUTOFOFFICE_MSG ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
 		wrapfd fd = open(temp_path, O_RDONLY);
@@ -1489,10 +1459,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return FALSE;
 		return TRUE;
 	}
-	case PROP_TAG_OOFINTERNALSUBJECT:
-	case PROP_TAG_OOFEXTERNALSUBJECT:
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+	case PR_EC_EXTERNAL_SUBJECT:
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PROP_TAG_OOFINTERNALSUBJECT ?
+		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
 		if (0 != stat(temp_path, &node_stat)) {
@@ -1545,13 +1515,13 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		}
 		close(fd);
 		return TRUE;
-	case PROP_TAG_OOFALLOWEXTERNAL:
-	case PROP_TAG_OOFEXTERNALAUDIENCE: {
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE: {
 		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
-		config_file_set_value(pconfig, proptag == PROP_TAG_OOFALLOWEXTERNAL ?
+		config_file_set_value(pconfig, proptag == PR_EC_ALLOW_EXTERNAL ?
 		                      "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE",
 		                      *static_cast<const uint8_t *>(pvalue) == 0 ? "0" : "1");
 		if (FALSE == config_file_save(pconfig)) {
@@ -1633,15 +1603,15 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			continue;
 		}
 		switch (ppropvals->ppropval[i].proptag) {
-		case PROP_TAG_OOFSTATE:
-		case PROP_TAG_OOFBEGIN:
-		case PROP_TAG_OOFUNTIL:
-		case PROP_TAG_OOFINTERNALREPLY:
-		case PROP_TAG_OOFINTERNALSUBJECT:
-		case PROP_TAG_OOFALLOWEXTERNAL:
-		case PROP_TAG_OOFEXTERNALAUDIENCE:
-		case PROP_TAG_OOFEXTERNALSUBJECT:
-		case PROP_TAG_OOFEXTERNALREPLY:
+		case PR_OOF_STATE:
+		case PR_EC_OUTOFOFFICE_FROM:
+		case PR_EC_OUTOFOFFICE_UNTIL:
+		case PR_EC_OUTOFOFFICE_MSG:
+		case PR_EC_OUTOFOFFICE_SUBJECT:
+		case PR_EC_ALLOW_EXTERNAL:
+		case PR_EC_EXTERNAL_AUDIENCE:
+		case PR_EC_EXTERNAL_SUBJECT:
+		case PR_EC_EXTERNAL_REPLY:
 			if (FALSE == store_object_set_oof_property(
 				store_object_get_dir(pstore),
 				ppropvals->ppropval[i].proptag,
