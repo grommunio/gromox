@@ -680,7 +680,6 @@ static BOOL logon_object_get_calculated_property(
 	int i;
 	int temp_len;
 	void *pvalue;
-	EMSMDB_INFO *pinfo;
 	char temp_buff[1024];
 	static constexpr uint64_t tmp_ll = 0;
 	static constexpr uint8_t test_buff[256]{};
@@ -744,10 +743,11 @@ static BOOL logon_object_get_calculated_property(
 			}
 		}
 		return TRUE;
-	case PROP_TAG_CODEPAGEID:
-		pinfo = emsmdb_interface_get_emsmdb_info();
+	case PROP_TAG_CODEPAGEID: {
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->cpid;
 		return TRUE;
+	}
 	case PROP_TAG_DELETEDASSOCMESSAGESIZE:
 	case PROP_TAG_DELETEDASSOCMESSAGESIZEEXTENDED:
 	case PROP_TAG_DELETEDASSOCMSGCOUNT:
@@ -794,10 +794,11 @@ static BOOL logon_object_get_calculated_property(
 		}
 		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
-	case PROP_TAG_LOCALEID:
-		pinfo = emsmdb_interface_get_emsmdb_info();
+	case PROP_TAG_LOCALEID: {
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_string;
 		return TRUE;
+	}
 	case PROP_TAG_MAILBOXOWNERENTRYID:
 		if (FALSE == logon_object_check_private(plogon)) {
 			return FALSE;
@@ -858,10 +859,11 @@ static BOOL logon_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = common_util_get_param(
 							COMMON_UTIL_MAX_MAIL_LENGTH);
 		return TRUE;
-	case PROP_TAG_SORTLOCALEID:
-		pinfo = emsmdb_interface_get_emsmdb_info();
+	case PROP_TAG_SORTLOCALEID: {
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_sort;
 		return TRUE;
+	}
 	case PROP_TAG_STORERECORDKEY:
 		*ppvalue = common_util_guid_to_binary(plogon->mailbox_guid);
 		return TRUE;
@@ -892,12 +894,11 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 {
 	int i;
 	void *pvalue;
-	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
@@ -950,12 +951,11 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
 	int i;
-	EMSMDB_INFO *pinfo;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	uint16_t *poriginal_indices;
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}

@@ -161,7 +161,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	int object_type;
 	BINARY *pentryid;
 	uint32_t tmp_type;
-	EMSMDB_INFO *pinfo;
 	uint64_t last_time;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -285,7 +284,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		if (NULL == propval_buff[8].pvalue) {
 			return ecMAPIOOM;
 		}
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (FALSE == exmdb_client_create_folder_by_properties(
 			logon_object_get_dir(plogon), pinfo->cpid,
 			&tmp_propvals, &folder_id)) {
@@ -352,7 +351,6 @@ uint32_t rop_deletefolder(uint8_t flags,
 	BOOL b_exist;
 	BOOL b_partial;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
 	
@@ -379,7 +377,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 			return ecAccessDenied;
 		}
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto rpc_info = get_rpc_info();
 	username = NULL;
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -448,7 +446,6 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 {
 	BOOL b_result;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	uint32_t search_status;
 	
@@ -531,7 +528,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			return ecError;
 		}
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_set_search_criteria(
 		logon_object_get_dir(plogon), pinfo->cpid,
 		folder_object_get_id(pfolder), search_flags,
@@ -598,7 +595,6 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	EID_ARRAY ids;
 	BOOL b_partial;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	
 	if (0 == pmessage_ids->count) {
@@ -647,7 +643,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	} else {
 		b_guest = FALSE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_messages(
 		logon_object_get_dir(plogon),
 		logon_object_get_account_id(plogon),
@@ -675,7 +671,6 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	BINARY *pbin_pcl;
 	uint64_t nt_time;
 	char new_name[128];
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	uint64_t change_num;
 	BINARY *pbin_changekey;
@@ -776,7 +771,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (NULL == pbin_pcl) {
 		return ecError;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_folder(
 		logon_object_get_dir(plogon),
 		logon_object_get_account_id(plogon),
@@ -819,7 +814,6 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	BOOL b_guest;
 	BOOL b_partial;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	char new_name[128];
 	uint32_t permission;
 	
@@ -896,7 +890,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	if (TRUE == b_cycle) {
 		return MAPI_E_FOLDER_CYCLE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_folder(
 		logon_object_get_dir(plogon),
 		logon_object_get_account_id(plogon),
@@ -920,7 +914,6 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	BOOL b_partial;
 	int object_type;
 	uint64_t fid_val;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
 	
@@ -962,7 +955,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 		}
 		username = rpc_info.username;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_empty_folder(
 		logon_object_get_dir(plogon), pinfo->cpid,
 		username, folder_object_get_id(pfolder),
@@ -1002,7 +995,6 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	BOOL b_partial;
 	BOOL b_partial1;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
 	MESSAGE_CONTENT *pbrief;
@@ -1011,7 +1003,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	*ppartial_completion = 1;
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;

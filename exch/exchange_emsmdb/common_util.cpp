@@ -171,9 +171,7 @@ static char* common_util_dup_mb_to_utf8(
 int common_util_convert_string(BOOL to_utf8,
 	const char *src, char *dst, size_t len)
 {
-	EMSMDB_INFO *pinfo;
-	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return -1;
 	}
@@ -2215,7 +2213,6 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	uint64_t new_id;
 	BINARY *ptarget;
 	char username[UADDR_SIZE];
-	EMSMDB_INFO *pinfo;
 	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
@@ -2226,7 +2223,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	MESSAGE_CONTENT *pmsgctnt;
 #define LLU(x) static_cast<unsigned long long>(x)
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,

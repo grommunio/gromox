@@ -354,7 +354,6 @@ static BOOL fastdownctx_object_get_buffer_internal(
 	BOOL b_last;
 	uint16_t len;
 	uint16_t len1;
-	EMSMDB_INFO *pinfo;
 	FAST_FLOW_NODE *pflow;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -401,8 +400,8 @@ static BOOL fastdownctx_object_get_buffer_internal(
 				return FALSE;
 			}
 			break;
-		case FUNC_ID_MESSAGE:
-			pinfo = emsmdb_interface_get_emsmdb_info();
+		case FUNC_ID_MESSAGE: {
+			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			if (TRUE == logon_object_check_private(
 				pctx->pstream->plogon)) {
 				if (FALSE == exmdb_client_read_message(
@@ -456,6 +455,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			}
 			pctx->progress_steps ++;
 			break;
+		}
 		default:
 			free(pnode->pdata);
 			return FALSE;

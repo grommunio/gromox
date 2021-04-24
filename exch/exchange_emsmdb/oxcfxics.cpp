@@ -91,7 +91,6 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	uint16_t replid;
 	uint32_t table_id;
 	uint32_t row_count;
-	EMSMDB_INFO *pinfo;
 	TARRAY_SET tmp_set;
 	char tmp_essdn[256];
 	uint32_t permission;
@@ -133,7 +132,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		folder_content_free(pfldctnt);
 		return NULL;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_get_folder_properties(
 		logon_object_get_dir(plogon), pinfo->cpid,
 		folder_id, &tmp_proptags, &tmp_propvals)) {
@@ -997,7 +996,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	GUID tmp_guid;
 	uint32_t result;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission, tag_access = 0;
@@ -1119,7 +1117,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	} else {
 		b_new = TRUE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	pmessage = message_object_create(plogon, b_new,
 		pinfo->cpid, message_id, &folder_id, tag_access,
 		OPEN_MODE_FLAG_READWRITE, pctx->pstate);
@@ -1320,7 +1318,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	uint16_t replid;
 	uint64_t tmp_fid;
 	uint32_t tmp_type;
-	EMSMDB_INFO *pinfo;
 	uint64_t folder_id;
 	uint64_t parent_id;
 	uint64_t parent_id1;
@@ -1501,7 +1498,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 													&tmp_type;
 			tmp_propvals.count ++;
 		}
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (FALSE == exmdb_client_create_folder_by_properties(
 			logon_object_get_dir(plogon), pinfo->cpid,
 			&tmp_propvals, &tmp_fid) || folder_id != tmp_fid) {
@@ -1560,7 +1557,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		} else {
 			b_guest = FALSE;
 		}
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (FALSE == exmdb_client_movecopy_folder(
 			logon_object_get_dir(plogon),
 			logon_object_get_account_id(plogon),
@@ -1602,7 +1599,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 							ppropvals->ppropval[i];
 		tmp_propvals.count ++;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_set_folder_properties(
 		logon_object_get_dir(plogon), pinfo->cpid,
 		folder_id, &tmp_propvals, &tmp_problems)) {
@@ -1630,7 +1627,6 @@ uint32_t rop_syncimportdeletes(
 	uint16_t replid;
 	uint8_t sync_type;
 	uint64_t folder_id;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
 	EID_ARRAY message_ids;
@@ -1679,7 +1675,7 @@ uint32_t rop_syncimportdeletes(
 			}
 		}
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto pbins = static_cast<BINARY_ARRAY *>(ppropvals->ppropval[0].pvalue);
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
@@ -1834,7 +1830,6 @@ uint32_t rop_syncimportmessagemove(
 	uint64_t src_fid;
 	uint64_t src_mid;
 	uint64_t dst_mid;
-	EMSMDB_INFO *pinfo;
 	uint64_t folder_id;
 	uint32_t permission;
 	FOLDER_OBJECT *pfolder;
@@ -1941,7 +1936,7 @@ uint32_t rop_syncimportmessagemove(
 	if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue), pchange_list, &result))
 		return ecError;
 	BOOL b_newer = result == PCL_INCLUDED ? TRUE : false;
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_message(
 		logon_object_get_dir(plogon),
 		logon_object_get_account_id(plogon),

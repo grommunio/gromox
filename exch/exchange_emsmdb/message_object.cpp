@@ -251,7 +251,6 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	void *pvalue;
 	GUID tmp_guid;
 	EXT_PUSH ext_push;
-	EMSMDB_INFO *pinfo;
 	char id_string[256];
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
@@ -260,7 +259,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	if (FALSE == pmessage->b_new) {
 		return FALSE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
@@ -1317,7 +1316,6 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 {
 	int i;
 	void *pvalue;
-	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
@@ -1391,7 +1389,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		ppropvals, PROP_TAG_MESSAGELOCALEID)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PROP_TAG_MESSAGELOCALEID;
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (TRUE == exmdb_client_get_instance_property(
 			logon_object_get_dir(pmessage->plogon),
 			pmessage->instance_id, PROP_TAG_INTERNETCODEPAGE,

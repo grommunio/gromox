@@ -23,7 +23,6 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	int32_t tmp_level;
 	BINARY search_bin;
 	BINARY search_bin1;
-	EMSMDB_INFO *pinfo;
 	const char *account;
 	char essdn_buff[1024];
 	char tmp_display[256];
@@ -36,7 +35,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	TAGGED_PROPVAL propval_buff[20];
 	
 	account = logon_object_get_account(pmessage->plogon);
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	tmp_propvals.count = 16;
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PROP_TAG_READ;
@@ -209,7 +208,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
 	int32_t max_length;
-	EMSMDB_INFO *pinfo;
 	const char *account;
 	uint32_t tag_access;
 	uint32_t mail_length;
@@ -221,8 +219,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return ecError;
 	}
@@ -458,12 +455,11 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
-	EMSMDB_INFO *pinfo;
 	uint32_t *ptimer_id;
 	uint64_t fid_spooler;
 	uint32_t *pmessage_flags;
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return ecError;
 	}
@@ -569,7 +565,6 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	BOOL b_delete;
 	BINARY *ptarget;
 	uint64_t new_id;
-	EMSMDB_INFO *pinfo;
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t fid_spooler;
@@ -577,7 +572,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return ecError;
 	}

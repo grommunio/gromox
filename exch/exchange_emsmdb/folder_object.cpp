@@ -615,12 +615,11 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 {
 	int i;
 	void *pvalue;
-	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
@@ -687,7 +686,6 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	XID tmp_xid;
 	uint16_t count;
 	BINARY *pbin_pcl;
-	EMSMDB_INFO *pinfo;
 	uint64_t last_time;
 	uint64_t change_num;
 	BINARY *pbin_changekey;
@@ -695,8 +693,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	TPROPVAL_ARRAY tmp_propvals;
 	uint16_t *poriginal_indices;
 	
-	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}

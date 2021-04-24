@@ -137,7 +137,6 @@ static BOOL fastupctx_object_create_folder(
 	uint64_t tmp_id;
 	BINARY *pentryid;
 	uint32_t tmp_type;
-	EMSMDB_INFO *pinfo;
 	uint64_t change_num;
 	uint32_t permission;
 	TAGGED_PROPVAL propval;
@@ -218,7 +217,7 @@ static BOOL fastupctx_object_create_folder(
 	}
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_create_folder_by_properties(
 		logon_object_get_dir(pctx->pstream->plogon),
 		pinfo->cpid, pproplist, pfolder_id) ||
@@ -258,7 +257,6 @@ static BOOL fastupctx_object_empty_folder(
 	BOOL b_normal, BOOL b_fai, BOOL b_sub)
 {
 	BOOL b_partial;
-	EMSMDB_INFO *pinfo;
 	const char *username;
 	DCERPC_INFO rpc_info;
 	
@@ -269,7 +267,7 @@ static BOOL fastupctx_object_empty_folder(
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_empty_folder(logon_object_get_dir(
 		pctx->pstream->plogon), pinfo->cpid, username, folder_id,
 		TRUE, b_normal, b_fai, b_sub, &b_partial)) {
@@ -286,7 +284,6 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 {
 	XID tmp_xid;
 	BINARY *pbin;
-	EMSMDB_INFO *pinfo;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
@@ -354,7 +351,7 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	}
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return GXERR_CALL_FAILED;
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client_write_message(logon_object_get_dir(pctx->pstream->plogon),
 	    logon_object_get_account(pctx->pstream->plogon), pinfo->cpid,

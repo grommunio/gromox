@@ -113,7 +113,6 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 {
 	uint32_t count_fai;
 	uint64_t total_fai;
-	EMSMDB_INFO *pinfo;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	uint64_t total_normal;
@@ -147,7 +146,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	} else {
 		username = NULL;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_get_content_sync(
 		logon_object_get_dir(pctx->pstream->plogon),
 		folder_object_get_id(pctx->pfolder), username,
@@ -1127,7 +1126,6 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	uint64_t last_cn;
 	uint32_t *pstatus;
 	uint64_t folder_id;
-	EMSMDB_INFO *pinfo;
 	INDEX_ARRAY indices;
 	uint32_t *pgroup_id;
 	PROPTAG_ARRAY proptags;
@@ -1141,7 +1139,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	static constexpr uint8_t fake_true = 1;
 	static constexpr uint8_t fake_false = 0;
 	
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (TRUE == logon_object_check_private(pctx->pstream->plogon)) {
 		if (FALSE == exmdb_client_read_message(
 			logon_object_get_dir(pctx->pstream->plogon),

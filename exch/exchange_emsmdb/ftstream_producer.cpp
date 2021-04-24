@@ -399,7 +399,6 @@ static BOOL ftstream_producer_write_propvalue(
 	uint32_t count;
 	uint16_t propid;
 	uint16_t proptype;
-	EMSMDB_INFO *pinfo;
 	uint16_t write_type;
 	
 	propid = PROP_ID(ppropval->proptag);
@@ -432,7 +431,7 @@ static BOOL ftstream_producer_write_propvalue(
 				}
 			} else if (pstream->string_option & STRING_OPTION_CPID) {
 				if (proptype == PT_STRING8) {
-					pinfo = emsmdb_interface_get_emsmdb_info();
+					auto pinfo = emsmdb_interface_get_emsmdb_info();
 					if (NULL == pinfo) {
 						return FALSE;
 					}

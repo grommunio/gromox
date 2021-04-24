@@ -106,7 +106,6 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	int object_type;
 	uint32_t tmp_size;
 	uint16_t proptype;
-	EMSMDB_INFO *pinfo;
 	uint32_t total_size;
 	TPROPVAL_ARRAY propvals;
 	PROPTAG_ARRAY *ptmp_proptags;
@@ -124,26 +123,28 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		return ecMAPIOOM;
 	}
 	switch (object_type) {
-	case OBJECT_TYPE_LOGON:
+	case OBJECT_TYPE_LOGON: {
 		if (!logon_object_get_properties(static_cast<LOGON_OBJECT *>(pobject),
 		    ptmp_proptags, &propvals))
 			return ecError;
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
 		cpid = pinfo->cpid;
 		break;
-	case OBJECT_TYPE_FOLDER:
+	}
+	case OBJECT_TYPE_FOLDER: {
 		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pobject),
 		    ptmp_proptags, &propvals))
 			return ecError;
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
 		cpid = pinfo->cpid;
 		break;
+	}
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
 		if (!message_object_get_properties(msg, 0, ptmp_proptags, &propvals))
@@ -213,7 +214,6 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	void *pobject;
 	BOOL b_unicode = false;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY *ptmp_proptags;
 	
@@ -244,7 +244,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 			}
 		}
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
@@ -272,7 +272,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 			}
 		}
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
@@ -888,7 +888,6 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	BOOL b_partial;
 	int object_type;
 	void *pobject_dst;
-	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	uint32_t permission;
 	const char *username;
@@ -997,7 +996,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		if (!folder_object_get_properties(fldsrc, &tmp_proptags, &propvals))
 			return ecError;
 		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
-			pinfo = emsmdb_interface_get_emsmdb_info();
+			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client_copy_folder_internal(logon_object_get_dir(plogon),
 			    logon_object_get_account_id(plogon), pinfo->cpid,

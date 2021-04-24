@@ -62,7 +62,6 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 {
 	uint32_t row_num;
 	uint32_t table_id;
-	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
 	
@@ -88,7 +87,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	}
 	case ropGetContentsTable: {
 		auto rpc_info = get_rpc_info();
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return FALSE;
 		}
@@ -143,14 +142,13 @@ void table_object_unload(TABLE_OBJECT *ptable)
 BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
 {
-	EMSMDB_INFO *pinfo;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
 	if (NULL == ptable->pcolumns) {
 		return FALSE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
@@ -480,14 +478,13 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
-	EMSMDB_INFO *pinfo;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
 	if (NULL == ptable->pcolumns) {
 		return FALSE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == logon_object_check_private(ptable->plogon)) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
@@ -505,14 +502,13 @@ BOOL table_object_read_row(TABLE_OBJECT *ptable,
 	uint64_t inst_id, uint32_t inst_num,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	EMSMDB_INFO *pinfo;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
 	if (NULL == ptable->pcolumns) {
 		return FALSE;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == logon_object_check_private(ptable->plogon)) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;

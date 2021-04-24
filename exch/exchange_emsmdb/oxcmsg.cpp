@@ -33,7 +33,6 @@ uint32_t rop_openmessage(uint16_t cpid,
 	void *pvalue;
 	int object_type;
 	TARRAY_SET rcpts;
-	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	uint32_t permission;
 	PROPTAG_ARRAY proptags;
@@ -43,7 +42,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	MESSAGE_OBJECT *pmessage;
 	
 	if (0x0FFF == cpid) {
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
@@ -221,7 +220,6 @@ uint32_t rop_createmessage(uint16_t cpid,
 {
 	void *pvalue;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	uint32_t permission;
 	MESSAGE_OBJECT *pmessage;
@@ -230,7 +228,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (0x0FFF == cpid) {
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
@@ -422,7 +420,6 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 {
 	int i;
 	int object_type;
-	EMSMDB_INFO *pinfo;
 	TARRAY_SET tmp_set;
 	TPROPVAL_ARRAY *ppropvals;
 	
@@ -451,7 +448,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return ecError;
 	}
@@ -700,7 +697,6 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	BOOL b_changed;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
-	EMSMDB_INFO *pinfo;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
@@ -708,7 +704,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	TAGGED_PROPVAL propval_buff[2];
 	
 	auto rpc_info = get_rpc_info();
-	pinfo = emsmdb_interface_get_emsmdb_info();
+	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto username = logon_object_check_private(plogon) ? nullptr : rpc_info.username;
 	b_notify = FALSE;
 	b_changed = FALSE;
@@ -1062,7 +1058,6 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	void *pvalue;
 	int object_type;
 	TARRAY_SET rcpts;
-	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -1072,7 +1067,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	
 	*preserved = 0;
 	if (0x0FFF == cpid) {
-		pinfo = emsmdb_interface_get_emsmdb_info();
+		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return ecError;
 		}
