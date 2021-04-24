@@ -334,7 +334,6 @@ static void *midbag_scanwork(void *param)
 	DOUBLE_LIST_NODE *ptail;
 	DOUBLE_LIST_NODE *pnode1;
 	BACK_SVR *pserver;
-	BACK_CONN *pback;
 	time_t now_time;
 	int tv_msec;
 	char temp_buff[1024];
@@ -349,7 +348,7 @@ static void *midbag_scanwork(void *param)
 			pserver = (BACK_SVR*)pnode->pdata;
 			ptail = double_list_get_tail(&pserver->conn_list);
 			while ((pnode1 = double_list_pop_front(&pserver->conn_list)) != nullptr) {
-				pback = (BACK_CONN*)pnode1->pdata;
+				auto pback = static_cast<BACK_CONN *>(pnode1->pdata);
 				if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
 					double_list_append_as_tail(&temp_list, &pback->node);
 				} else {
@@ -365,7 +364,7 @@ static void *midbag_scanwork(void *param)
 		sv_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			pback = (BACK_CONN*)pnode->pdata;
+			auto pback = static_cast<BACK_CONN *>(pnode->pdata);
 			write(pback->sockd, "PING\r\n", 6);
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
@@ -392,7 +391,7 @@ static void *midbag_scanwork(void *param)
 		sv_hold.unlock();
 
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			pback = (BACK_CONN*)pnode->pdata;
+			auto pback = static_cast<BACK_CONN *>(pnode->pdata);
 			pback->sockd = connect_midb(pback->psvr->ip_addr,
 							pback->psvr->port);
 			if (-1 != pback->sockd) {
@@ -462,14 +461,12 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 	MSG_UNIT msg;
 	char *pspace;
 	int tv_msec;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -605,7 +602,6 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 	int cmd_len;
 	int temp_len;
 	MSG_UNIT *pmsg;
-	BACK_CONN *pback;
 	char buff[128*1025];
 	SINGLE_LIST_NODE *pnode;
 
@@ -613,8 +609,7 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 	if (0 == single_list_get_nodes_num(plist)) {
 		return MIDB_RESULT_OK;
 	}
-	
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -696,13 +691,11 @@ static int imap_search(const char *path, const char *folder,
 	int i;
 	int length;
 	int length1;
-	BACK_CONN *pback;
 	size_t encode_len;
 	char buff[256*1025];
 	char buff1[16*1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -777,13 +770,11 @@ static int imap_search_uid(const char *path, const char *folder,
 	int i;
 	int length;
 	int length1;
-	BACK_CONN *pback;
 	size_t encode_len;
 	char buff[256*1025];
 	char buff1[16*1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -855,11 +846,9 @@ static int get_mail_id(const char *path, const char *folder,
     const char *mid_string, unsigned int *pid)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -900,11 +889,9 @@ static int get_mail_uid(const char *path, const char *folder,
     const char *mid_string, unsigned int *puid)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -945,15 +932,13 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	unsigned int *puidnext, int *pfirst_unseen, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 	int exists, recent;
 	int unseen, first_unseen;
 	unsigned long uidvalid;
 	unsigned int uidnext;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1018,11 +1003,9 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 static int make_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1060,11 +1043,9 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 static int remove_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 	
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1102,11 +1083,9 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 static int ping_mailbox(const char *path, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 	
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1145,11 +1124,9 @@ static int rename_folder(const char *path, const char *src_name,
     const char *dst_name, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1188,11 +1165,9 @@ static int rename_folder(const char *path, const char *src_name,
 static int subscribe_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1230,11 +1205,9 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1280,14 +1253,12 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1405,14 +1376,12 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
 	
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1526,9 +1495,8 @@ static int insert_mail(const char *path, const char *folder,
 {
 	int length;
 	char buff[1024];
-	BACK_CONN *pback;
 
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1571,15 +1539,13 @@ static int remove_mail(const char *path, const char *folder,
 	int cmd_len;
 	int temp_len;
 	MITEM *pitem;
-	BACK_CONN *pback;
 	char buff[128*1025];
 	SINGLE_LIST_NODE *pnode;
 
 	if (0 == single_list_get_nodes_num(plist)) {
 		return MIDB_RESULT_OK;
 	}
-	
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1671,15 +1637,13 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	char *pspace1;
 	MITEM mitem;
 	int tv_msec;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	BOOL b_format_error;
 	struct pollfd pfd_read;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1845,15 +1809,13 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	char *pspace1;
 	MITEM mitem;
 	int tv_msec;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	BOOL b_format_error;
 	struct pollfd pfd_read;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -1999,7 +1961,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int line_pos;
 	MITEM mitem;
 	int tv_msec;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
@@ -2010,7 +1971,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 		*perrno = -2;
 		return MIDB_RESULT_ERROR;
 	}
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -2206,7 +2167,6 @@ static int fetch_simple(const char *path, const char *folder,
 	MITEM mitem;
 	char *pspace;
 	char *pspace1;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[1024];
 	char temp_line[1024];
@@ -2214,8 +2174,7 @@ static int fetch_simple(const char *path, const char *folder,
 	struct pollfd pfd_read;
 	DOUBLE_LIST_NODE *pnode;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -2402,7 +2361,6 @@ static int fetch_detail(const char *path, const char *folder,
 	int line_pos;
 	int tv_msec;
 	MITEM mitem;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
@@ -2414,8 +2372,7 @@ static int fetch_detail(const char *path, const char *folder,
 		*perrno = -2;
 		return MIDB_RESULT_ERROR;
 	}
-	
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -2627,7 +2584,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[1024];
 	char temp_line[1024];
@@ -2635,8 +2591,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	DOUBLE_LIST_NODE *pnode;
 	struct pollfd pfd_read;
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -2821,7 +2776,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	char *pspace;
 	int tv_msec;
 	MITEM mitem;
-	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
@@ -2833,8 +2787,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 		*perrno = -2;
 		return MIDB_RESULT_ERROR;
 	}
-	
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -3027,12 +2980,10 @@ static int set_mail_flags(const char *path, const char *folder,
     const char *mid_string, int flag_bits, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 	char flags_string[16];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -3107,12 +3058,10 @@ static int unset_mail_flags(const char *path, const char *folder,
     const char *mid_string, int flag_bits, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 	char flags_string[16];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -3187,11 +3136,9 @@ static int get_mail_flags(const char *path, const char *folder,
     const char *mid_string, int *pflag_bits, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -3254,11 +3201,9 @@ static int copy_mail(const char *path, const char *src_folder,
     const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno)
 {
 	int length;
-	BACK_CONN *pback;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
@@ -3338,12 +3283,10 @@ static BOOL check_full(const char *path)
 	int offset;
 	int read_len;
 	fd_set myset;
-	BACK_CONN *pback;
 	struct timeval tv;
 	char buff[1024];
 
-
-	pback = get_connection(path);
+	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return TRUE;
 	}
