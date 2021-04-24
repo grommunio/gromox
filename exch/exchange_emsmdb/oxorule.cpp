@@ -22,13 +22,12 @@ uint32_t rop_modifyrules(uint8_t flags,
 	BOOL b_exceed;
 	int object_type;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
 	/* MS-OXORULE 3.2.5.2 */
 	if (flags & ~MODIFY_RULES_FLAG_REPLACE) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -90,9 +89,8 @@ uint32_t rop_getrulestable(uint8_t flags,
 {
 	int object_type;
 	TABLE_OBJECT *ptable;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -131,7 +129,6 @@ uint32_t rop_updatedeferredactionmessages(
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	uint32_t tmp_proptag;
 	uint64_t fid_deferred;
 	PROBLEM_ARRAY problems;
@@ -142,7 +139,7 @@ uint32_t rop_updatedeferredactionmessages(
 	RESTRICTION_PROPERTY res_property;
 	
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}

@@ -256,7 +256,6 @@ uint32_t rop_fasttransferdestconfigure(
 	void *pobject;
 	int object_type;
 	int root_element;
-	LOGON_OBJECT *plogon;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -264,7 +263,7 @@ uint32_t rop_fasttransferdestconfigure(
 	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -449,7 +448,6 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 {
 	BOOL b_sub;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	FOLDER_CONTENT *pfldctnt;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
@@ -463,7 +461,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		(send_options & SEND_OPTIONS_RECOVERMODE)) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -515,7 +513,6 @@ uint32_t rop_fasttransfersourcecopymessages(
 	int object_type;
 	EID_ARRAY *pmids;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
@@ -530,7 +527,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 	}
 	/* we ignore the FAST_COPY_MESSAGE_FLAG_MOVE
 	   in flags just like exchange 2010 or later */
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -604,7 +601,6 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	BOOL b_normal;
 	void *pobject;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	MESSAGE_CONTENT msgctnt;
 	FOLDER_CONTENT *pfldctnt;
 	TPROPVAL_ARRAY *pproplist;
@@ -625,7 +621,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	if (flags & FAST_COPY_TO_FLAG_MOVE) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -757,7 +753,6 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	BOOL b_normal;
 	void *pobject;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	MESSAGE_CONTENT msgctnt;
 	FOLDER_CONTENT *pfldctnt;
 	TPROPVAL_ARRAY *pproplist;
@@ -778,7 +773,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	if (flags & FAST_COPY_PROPERTIES_FLAG_MOVE) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -928,7 +923,6 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 {
 	int object_type;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
 	if (SYNC_TYPE_CONTENTS != sync_type &&
 		SYNC_TYPE_HIERARCHY != sync_type) {
@@ -948,7 +942,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	if (SYNC_TYPE_HIERARCHY == sync_type && NULL != pres) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1007,7 +1001,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission, tag_access = 0;
-	LOGON_OBJECT *plogon;
 	uint32_t tmp_proptag;
 	FOLDER_OBJECT *pfolder;
 	PROPTAG_ARRAY proptags;
@@ -1026,7 +1019,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		PROP_TAG_PREDECESSORCHANGELIST != ppropvals->ppropval[3].proptag) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1210,13 +1203,12 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	uint64_t message_id;
 	uint32_t permission;
 	const char *username;
-	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1335,7 +1327,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	uint64_t change_num;
 	uint32_t permission;
 	uint32_t parent_type;
-	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1349,7 +1340,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		PROP_TAG_DISPLAYNAME != phichyvals->ppropval[5].proptag) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1642,14 +1633,13 @@ uint32_t rop_syncimportdeletes(
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
-	LOGON_OBJECT *plogon;
 	EID_ARRAY message_ids;
 	FOLDER_OBJECT *pfolder;
 	
 	if (ppropvals->count != 1 ||
 	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY)
 		return ecInvalidParam;
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1847,7 +1837,6 @@ uint32_t rop_syncimportmessagemove(
 	EMSMDB_INFO *pinfo;
 	uint64_t folder_id;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	TAGGED_PROPVAL tmp_propval;
 	
@@ -1859,7 +1848,7 @@ uint32_t rop_syncimportmessagemove(
 	if (pchange_number->cb < 17 || pchange_number->cb > 24) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1987,9 +1976,8 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -2019,9 +2007,8 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	void *pobject;
 	int object_type;
 	ICS_STATE *pstate;
-	LOGON_OBJECT *plogon;
-	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}

@@ -1984,7 +1984,6 @@ int rop_ext_push_pending_response(EXT_PUSH *pext,
 
 static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 {
-	LOGON_OBJECT *plogon;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	r->bookmark.pb = (uint8_t*)pext->data + pext->offset;
@@ -2069,19 +2068,20 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		}
 		return rop_ext_pull_readperuserinformation_request(pext,
 		       static_cast<READPERUSERINFORMATION_REQUEST *>(r->ppayload));
-	case ropWritePerUserInformation:
+	case ropWritePerUserInformation: {
 		r->ppayload = pext->anew<WRITEPERUSERINFORMATION_REQUEST>();
 		if (NULL == r->ppayload) {
 			return EXT_ERR_ALLOC;
 		}
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
 		if (NULL == plogon) {
 			return EXT_ERR_INVALID_OBJECT;
 		}
 		return rop_ext_pull_writeperuserinformation_request(pext,
 		       static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r->ppayload),
 		       logon_object_check_private(plogon));
+	}
 	case ropOpenFolder:
 		r->ppayload = pext->anew<OPENFOLDER_REQUEST>();
 		if (NULL == r->ppayload) {
@@ -2353,19 +2353,20 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		}
 		return rop_ext_pull_setreadflags_request(pext,
 		       static_cast<SETREADFLAGS_REQUEST *>(r->ppayload));
-	case ropSetMessageReadFlag:
+	case ropSetMessageReadFlag: {
 		r->ppayload = pext->anew<SETMESSAGEREADFLAG_REQUEST>();
 		if (NULL == r->ppayload) {
 			return EXT_ERR_ALLOC;
 		}
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
 		if (NULL == plogon) {
 			return EXT_ERR_INVALID_OBJECT;
 		}
 		return rop_ext_pull_setmessagereadflag_request(pext,
 		       static_cast<SETMESSAGEREADFLAG_REQUEST *>(r->ppayload),
 		       logon_object_check_private(plogon));
+	}
 	case ropOpenAttachment:
 		r->ppayload = pext->anew<OPENATTACHMENT_REQUEST>();
 		if (NULL == r->ppayload) {
@@ -2808,7 +2809,6 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 int rop_ext_push_rop_response(EXT_PUSH *pext,
 	uint8_t logon_id, ROP_RESPONSE *r)
 {
-	LOGON_OBJECT *plogon;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	if (r->rop_id == ropGetMessageStatus)
@@ -2862,9 +2862,9 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 
  PUSH_PAYLOAD:
 	switch (r->rop_id) {
-	case ropLogon:
+	case ropLogon: {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, logon_id);
 		if (NULL == plogon) {
 			return EXT_ERR_INVALID_OBJECT;
 		}
@@ -2875,6 +2875,7 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 			return rop_ext_push_logon_pf_response(pext,
 			       static_cast<LOGON_PF_RESPONSE *>(r->ppayload));
 		}
+	}
 	case ropGetReceiveFolder:
 		return rop_ext_push_getreceivefolder_response(pext,
 		       static_cast<GETRECEIVEFOLDER_RESPONSE *>(r->ppayload));

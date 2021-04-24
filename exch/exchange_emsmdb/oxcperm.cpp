@@ -21,9 +21,8 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	int object_type;
 	uint64_t folder_id;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -81,9 +80,8 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	int object_type;
 	uint32_t permission;
 	TABLE_OBJECT *ptable;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}

@@ -19,10 +19,9 @@ uint32_t rop_registernotification(
 	int object_type;
 	uint64_t folder_id;
 	uint64_t message_id;
-	LOGON_OBJECT *plogon;
 	SUBSCRIPTION_OBJECT *psub;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecNullObject;
 	}

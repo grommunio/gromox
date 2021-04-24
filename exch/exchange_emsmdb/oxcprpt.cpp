@@ -26,9 +26,8 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 {
 	BOOL b_create;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -73,9 +72,7 @@ uint32_t rop_getnamesfrompropertyids(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
-	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -364,9 +361,8 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	int object_type;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -439,9 +435,8 @@ uint32_t rop_deleteproperties(
 	int object_type;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -516,12 +511,11 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	void *pobject;
 	int object_type;
 	uint16_t propid;
-	LOGON_OBJECT *plogon;
 	PROPID_ARRAY propids;
 	PROPTAG_ARRAY proptags;
 	PROPNAME_ARRAY propnames;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -625,7 +619,6 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	void *pobject_dst;
 	uint32_t permission;
 	uint32_t tag_access;
-	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
 	TPROPVAL_ARRAY propvals;
@@ -636,7 +629,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	if (copy_flags & ~(COPY_FLAG_MOVE|COPY_FLAG_NOOVERWRITE)) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -899,7 +892,6 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	uint32_t tag_access;
 	uint32_t permission;
 	const char *username;
-	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
 	TPROPVAL_ARRAY propvals;
@@ -910,7 +902,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	if (copy_flags & ~(COPY_FLAG_MOVE|COPY_FLAG_NOOVERWRITE)) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1075,14 +1067,13 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	uint32_t max_length;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	STREAM_OBJECT *pstream;
 	
 	/* MS-OXCPERM 3.1.4.1 */
 	if (PROP_TAG_SECURITYDESCRIPTORASXML == proptag) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}

@@ -28,10 +28,9 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	uint64_t fid_val;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -169,7 +168,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	uint64_t change_num;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	char folder_name[256];
 	FOLDER_OBJECT *pfolder;
 	char folder_comment[1024];
@@ -198,7 +196,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	if (FOLDER_TYPE_SEARCH == folder_object_get_type(pparent)) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -356,7 +354,6 @@ uint32_t rop_deletefolder(uint8_t flags,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	const char *username;
 	
 	*ppartial_completion = 1;
@@ -368,7 +365,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -453,7 +450,6 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	uint32_t search_status;
 	
 	if (0 == (search_flags & SEARCH_FLAG_RESTART) &&
@@ -466,7 +462,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 		/* make the default search_flags */
 		search_flags |= SEARCH_FLAG_SHALLOW;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -555,9 +551,8 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -605,7 +600,6 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
 	if (0 == pmessage_ids->count) {
 		*ppartial_completion = 0;
@@ -631,7 +625,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	if (FOLDER_TYPE_SEARCH == folder_object_get_type(pdst_folder)) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -684,7 +678,6 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	uint64_t change_num;
-	LOGON_OBJECT *plogon;
 	BINARY *pbin_changekey;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
@@ -707,7 +700,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -829,7 +822,6 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	EMSMDB_INFO *pinfo;
 	char new_name[128];
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	
 	*ppartial_completion = 1;
 	auto psrc_parent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
@@ -848,7 +840,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -930,7 +922,6 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	uint64_t fid_val;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	const char *username;
 	
 	*ppartial_completion = 1;
@@ -942,7 +933,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1013,7 +1004,6 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	const char *username;
 	MESSAGE_CONTENT *pbrief;
 	uint32_t proptag_buff[2];
@@ -1029,7 +1019,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1151,7 +1141,6 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 {
 	int object_type;
 	TABLE_OBJECT *ptable;
-	LOGON_OBJECT *plogon;
 	const char *username;
 	
 	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
@@ -1159,7 +1148,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		TABLE_FLAG_USEUNICODE | TABLE_FLAG_SUPPRESSNOTIFICATIONS))) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1208,9 +1197,8 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	uint32_t permission;
 	BOOL b_conversation;
 	TABLE_OBJECT *ptable;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}

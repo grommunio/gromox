@@ -36,7 +36,6 @@ uint32_t rop_openmessage(uint16_t cpid,
 	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	PROPTAG_ARRAY *pcolumns;
@@ -52,7 +51,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	if (!common_util_verify_cpid(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -225,7 +224,6 @@ uint32_t rop_createmessage(uint16_t cpid,
 	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	MESSAGE_OBJECT *pmessage;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -240,7 +238,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	if (!common_util_verify_cpid(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -622,11 +620,10 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	uint32_t result;
 	int object_type;
 	uint32_t new_status;
-	LOGON_OBJECT *plogon;
 	TAGGED_PROPVAL propval;
 	uint32_t original_status;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -671,9 +668,8 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 {
 	void *pvalue;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -834,9 +830,8 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 {
 	BOOL b_partial;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -864,9 +859,8 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 {
 	BOOL b_changed;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -895,10 +889,9 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 {
 	int object_type;
 	uint32_t tag_access;
-	LOGON_OBJECT *plogon;
 	ATTACHMENT_OBJECT *pattachment;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -944,10 +937,9 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 {
 	int object_type;
 	uint32_t tag_access;
-	LOGON_OBJECT *plogon;
 	ATTACHMENT_OBJECT *pattachment;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1072,7 +1064,6 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	TARRAY_SET rcpts;
 	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
-	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	PROPTAG_ARRAY *pcolumns;
@@ -1089,7 +1080,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	}
 	if (!common_util_verify_cpid(cpid))
 		return MAPI_E_UNKNOWN_CPID;
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
@@ -1244,9 +1235,8 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 {
 	int object_type;
 	TABLE_OBJECT *ptable;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
