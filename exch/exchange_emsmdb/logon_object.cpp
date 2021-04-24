@@ -881,6 +881,12 @@ static BOOL logon_object_get_calculated_property(
 	return FALSE;
 }
 
+/**
+ * @pproptags:	[in] proptags that are being asked for
+ * @ppropvals:	[out] requested property values
+ *
+ * The output order is not necessarily the same as the input order.
+ */
 BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
