@@ -487,7 +487,6 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	char dir[256];
 	char *pdomain;
 	uint32_t handle;
-	USER_INFO *pinfo;
 	char account[UADDR_SIZE];
 	STORE_OBJECT *pstore;
 	OBJECT_NODE *pobjnode;
@@ -508,7 +507,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 			}
 		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (TRUE == b_private) {
 		if (account_id == pinfo->user_id) {
 			gx_strlcpy(dir, pinfo->maildir, GX_ARRAY_SIZE(dir));

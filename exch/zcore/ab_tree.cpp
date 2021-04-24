@@ -1994,13 +1994,12 @@ BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
 {
 	int i;
 	void *pvalue;
-	USER_INFO *pinfo;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		if (FALSE == ab_tree_fetch_node_property(pnode,

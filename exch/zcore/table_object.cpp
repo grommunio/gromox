@@ -46,7 +46,6 @@ static void table_object_set_table_id(
 
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 {
-	USER_INFO *pinfo;
 	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t permission;
@@ -67,8 +66,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		return TRUE;
 	}
 	switch (ptable->table_type) {
-	case HIERARCHY_TABLE:
-		pinfo = zarafa_server_get_info();
+	case HIERARCHY_TABLE: {
+		auto pinfo = zarafa_server_get_info();
 		username = store_object_check_owner_mode(ptable->pstore) ? nullptr : pinfo->username;
 		table_flags = TABLE_FLAG_NONOTIFICATIONS;
 		if (ptable->table_flags & FLAG_SOFT_DELETE) {
@@ -85,8 +84,9 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			return FALSE;
 		}
 		break;
-	case CONTENT_TABLE:
-		pinfo = zarafa_server_get_info();
+	}
+	case CONTENT_TABLE: {
+		auto pinfo = zarafa_server_get_info();
 		username = NULL;
 		if (TRUE != store_object_check_owner_mode(ptable->pstore)) {
 			if (FALSE == store_object_check_private(ptable->pstore)) {
@@ -119,6 +119,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			return FALSE;
 		}
 		break;
+	}
 	case RULE_TABLE:
 		if (!exmdb_client::load_rule_table(
 			store_object_get_dir(ptable->pstore),
@@ -147,7 +148,6 @@ void table_object_unload(TABLE_OBJECT *ptable)
 static BOOL table_object_get_store_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	USER_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags1;
 	PROPTAG_ARRAY tmp_proptags2;
 	static const uint32_t proptag_buff[] = {
@@ -174,7 +174,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PROP_TAG_USERENTRYID
 	};
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::get_store_all_proptags(
 		pinfo->maildir, &tmp_proptags1) ||
 		!exmdb_client::get_store_all_proptags(
@@ -295,7 +295,6 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	uint32_t handle;
 	uint32_t row_num;
 	uint32_t end_pos;
-	USER_INFO *pinfo;
 	BINARY *pentryid;
 	uint64_t tmp_eid;
 	uint8_t mapi_type;
@@ -319,7 +318,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			pcolumns = &tmp_columns;
 		}
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
@@ -1208,7 +1207,6 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition)
 {
-	USER_INFO *pinfo;
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[2];
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1216,7 +1214,7 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	if (0 == ptable->table_id) {
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	auto username = !store_object_check_private(ptable->pstore) ?
 	                pinfo->username : nullptr;
 	proptags.count = 2;

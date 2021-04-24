@@ -263,12 +263,10 @@ GUID store_object_guid(STORE_OBJECT *s)
 
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
 {
-	USER_INFO *pinfo;
-	
 	if (FALSE == pstore->b_private) {
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (pinfo->user_id == pstore->account_id) {
 		return TRUE;
 	}
@@ -922,7 +920,6 @@ static BOOL store_object_get_calculated_property(
 	int i;
 	int temp_len;
 	void *pvalue;
-	USER_INFO *pinfo;
 	uint32_t permission;
 	char temp_buff[1024];
 	static const uint8_t private_uid[] = {
@@ -1002,7 +999,7 @@ static BOOL store_object_get_calculated_property(
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
 		} else {
-			pinfo = zarafa_server_get_info();
+			auto pinfo = zarafa_server_get_info();
 			if (TRUE == pstore->b_private) {
 				if (!exmdb_client::check_mailbox_permission(
 					pstore->dir, pinfo->username, &permission)) {
@@ -1044,7 +1041,7 @@ static BOOL store_object_get_calculated_property(
 					PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
 					PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
 		} else {
-			pinfo = zarafa_server_get_info();
+			auto pinfo = zarafa_server_get_info();
 			if (TRUE == pstore->b_private) {
 				if (!exmdb_client::check_mailbox_permission(
 					pstore->dir, pinfo->username, &permission)) {
@@ -1164,7 +1161,7 @@ static BOOL store_object_get_calculated_property(
 				*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OWNER;
 			} else {
 				*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OTHER;
-				pinfo = zarafa_server_get_info();
+				auto pinfo = zarafa_server_get_info();
 				if (TRUE == common_util_check_delegate_permission(
 					pinfo->username, pstore->dir)) {
 					*(uint32_t*)(*ppvalue) |= STORE_SUBMIT_OK;
@@ -1187,18 +1184,20 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_USERNAME:
-		pinfo = zarafa_server_get_info();
+	case PROP_TAG_USERNAME: {
+		auto pinfo = zarafa_server_get_info();
 		*ppvalue = pinfo->username;
 		return TRUE;
-	case PROP_TAG_USERENTRYID:
-		pinfo = zarafa_server_get_info();
+	}
+	case PROP_TAG_USERENTRYID: {
+		auto pinfo = zarafa_server_get_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(
 												pinfo->username);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		return TRUE;
+	}
 	case PROP_TAG_FINDERENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
@@ -1358,7 +1357,6 @@ BOOL store_object_get_properties(STORE_OBJECT *pstore,
 {
 	int i;
 	void *pvalue;
-	USER_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -1391,7 +1389,7 @@ BOOL store_object_get_properties(STORE_OBJECT *pstore,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (TRUE == pstore->b_private &&
 		pinfo->user_id == pstore->account_id) {
 		for (i=0; i<tmp_proptags.count; i++) {
@@ -1652,12 +1650,11 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	const TPROPVAL_ARRAY *ppropvals)
 {
 	int i, fd;
-	USER_INFO *pinfo;
 	const char *plang;
 	char temp_path[256];
 	char *folder_lang[RES_TOTAL_NUM];
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (FALSE == pstore->b_private ||
 		pinfo->user_id != pstore->account_id) {
 		return TRUE;
@@ -1787,9 +1784,7 @@ BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	const PROPTAG_ARRAY *pproptags)
 {
 	int i;
-	USER_INFO *pinfo;
-	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (FALSE == pstore->b_private ||
 		pinfo->user_id != pstore->account_id) {
 		return TRUE;

@@ -52,7 +52,6 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	const BINARY *pstate_bin, const RESTRICTION *prestriction,
 	uint16_t sync_flags, BOOL *pb_changed, uint32_t *pmsg_count)
 {
-	USER_INFO *pinfo;
 	uint32_t count_fai;
 	uint64_t total_fai;
 	uint64_t total_normal;
@@ -72,7 +71,7 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	if (FALSE == ics_state_deserialize(pctx->pstate, pstate_bin)) {
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
 	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
@@ -163,7 +162,6 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	uint32_t *pfld_count)
 {
 	void *pvalue;
-	USER_INFO *pinfo;
 	FOLDER_CHANGES fldchgs;
 	EID_ARRAY given_folders;
 	EID_ARRAY deleted_folders;
@@ -175,7 +173,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	if (FALSE == ics_state_deserialize(pctx->pstate, pstate)) {
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	auto username = store_object_check_owner_mode(pctx->pstore) ? nullptr : pinfo->username;
 	if (!exmdb_client::get_hierarchy_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,

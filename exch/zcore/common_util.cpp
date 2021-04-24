@@ -1200,7 +1200,6 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 {
 	BOOL b_found;
 	uint16_t replid;
-	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
 	
@@ -1223,7 +1222,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 		*pfolder_id = rop_util_make_eid(1,
 				tmp_entryid.global_counter);
 		return TRUE;
-	case EITLT_PUBLIC_FOLDER:
+	case EITLT_PUBLIC_FOLDER: {
 		*pb_private = FALSE;
 		*pdb_id = rop_util_make_domain_id(
 				tmp_entryid.database_guid);
@@ -1232,7 +1231,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 					tmp_entryid.global_counter);
 			return TRUE;
 		}
-		pinfo = zarafa_server_get_info();
+		auto pinfo = zarafa_server_get_info();
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
@@ -1244,6 +1243,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
 		return TRUE;
+	}
 	default:
 		return FALSE;
 	}
@@ -1254,7 +1254,6 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 {
 	BOOL b_found;
 	uint16_t replid;
-	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
 	
@@ -1283,7 +1282,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 		*pmessage_id = rop_util_make_eid(1,
 			tmp_entryid.message_global_counter);
 		return TRUE;
-	case EITLT_PUBLIC_MESSAGE:
+	case EITLT_PUBLIC_MESSAGE: {
 		*pb_private = FALSE;
 		*pdb_id = rop_util_make_domain_id(
 			tmp_entryid.folder_database_guid);
@@ -1294,7 +1293,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 				tmp_entryid.message_global_counter);
 			return TRUE;
 		}
-		pinfo = zarafa_server_get_info();
+		auto pinfo = zarafa_server_get_info();
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
@@ -1308,6 +1307,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 		*pmessage_id = rop_util_make_eid(replid,
 			tmp_entryid.message_global_counter);
 		return TRUE;
+	}
 	default:
 		return FALSE;
 	}
@@ -1665,10 +1665,9 @@ static int common_util_get_response(int sockd,
 static void log_err(const char *format, ...)
 {
 	va_list ap;
-	USER_INFO *pinfo;
 	char log_buf[2048];
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (NULL == pinfo) {
 		return;
 	}
@@ -1913,7 +1912,6 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	BOOL b_partial;
 	int accound_id;
 	uint64_t new_id;
-	USER_INFO *pinfo;
 	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
@@ -1922,8 +1920,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (FALSE == exmdb_client_get_message_property(
 		store_object_get_dir(pstore), NULL, 0,
@@ -2143,7 +2140,6 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	int user_id;
 	BOOL b_private;
 	SVREID *psvreid;
-	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
 	
 	auto pmovecopy1 = cu_alloc<MOVECOPY_ACTION>();
@@ -2166,7 +2162,7 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 		pstore_entryid->pmailbox_dn, &user_id)) {
 		return NULL;	
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (user_id != pinfo->user_id) {
 		pmovecopy1->same_store = 0;
 		pmovecopy1->pstore_eid = pstore_entryid;
@@ -2245,7 +2241,6 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 
 BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 {
-	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
 	STORE_ENTRYID store_entryid = {};
@@ -2272,7 +2267,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 			store_entryid.wrapped_provider_uid);
 		store_entryid.wrapped_type = 0x00000006;
 		store_entryid.pserver_name = g_hostname;
-		pinfo = zarafa_server_get_info();
+		auto pinfo = zarafa_server_get_info();
 		if (!common_util_username_to_essdn(pinfo->username, tmp_buff,
 		    GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
@@ -2385,12 +2380,11 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	XID tmp_xid;
 	BINARY *pbin;
 	BINARY *pbin1;
-	USER_INFO *pinfo;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	auto username = store_object_check_private(pstore) ? nullptr : pinfo->username;
 	if (!exmdb_client::read_message(
 		store_object_get_dir(pstore), username,
@@ -2475,7 +2469,6 @@ static BOOL common_util_create_folder(
 	BINARY *pbin1;
 	uint64_t tmp_id;
 	BINARY *pentryid;
-	USER_INFO *pinfo;
 	uint32_t tmp_type;
 	uint64_t change_num;
 	uint32_t permission;
@@ -2550,7 +2543,7 @@ static BOOL common_util_create_folder(
 		return FALSE;
 	}
 	common_util_set_propvals(pproplist, &propval);
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::create_folder_by_properties(
 		store_object_get_dir(pstore), pinfo->cpid, pproplist,
 		pfolder_id) || 0 == *pfolder_id) {
@@ -2636,7 +2629,6 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
     STORE_OBJECT *pstore1, uint64_t folder_id1, const char *new_name)
 {
 	uint64_t new_fid;
-	USER_INFO *pinfo;
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
@@ -2668,7 +2660,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		folder_id1, &tmp_propvals, &new_fid)) {
 		return GXERR_CALL_FAILED;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (FALSE == store_object_check_owner_mode(pstore)) {
 		username = pinfo->username;
 		if (!exmdb_client::check_folder_permission(
@@ -2751,7 +2743,6 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	MAIL imail;
 	void *pvalue;
 	int body_type;
-	USER_INFO *pinfo;
 	STREAM tmp_stream;
 	char tmp_path[256];
 	LIB_BUFFER *pallocator;
@@ -2767,7 +2758,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 		         static_cast<const char *>(pvalue));
 		return common_util_load_file(tmp_path, peml_bin);
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::read_message(
 		store_object_get_dir(pstore), NULL, cpid,
@@ -2850,12 +2841,11 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 	STORE_OBJECT *pstore, const BINARY *peml_bin)
 {
 	MAIL imail;
-	USER_INFO *pinfo;
 	char charset[32];
 	char timezone[64];
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	mail_init(&imail, g_mime_pool);
 	if (!mail_retrieve(&imail, peml_bin->pc, peml_bin->cb)) {
 		mail_free(&imail);
@@ -2880,11 +2870,10 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *pical_bin)
 {
 	ICAL ical;
-	USER_INFO *pinfo;
 	char tmp_buff[1024*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::read_message(
 		store_object_get_dir(pstore), NULL, cpid,
@@ -2912,11 +2901,10 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	STORE_OBJECT *pstore, const BINARY *pical_bin)
 {
 	ICAL ical;
-	USER_INFO *pinfo;
 	char timezone[64];
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (FALSE == system_services_get_timezone(
 		pinfo->username, timezone) || '\0' == timezone[0]) {
 		strcpy(timezone, g_default_zone);
@@ -2943,10 +2931,9 @@ BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 	STORE_OBJECT *pstore = message_object_get_store(pmessage);
 	uint64_t message_id = message_object_get_id(pmessage);
 	VCARD vcard;
-	USER_INFO *pinfo;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::read_message(
 		store_object_get_dir(pstore), NULL, cpid,

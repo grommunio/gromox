@@ -229,7 +229,6 @@ static BOOL folder_object_get_calculated_property(
 {
 	BINARY *pbin;
 	void *pvalue;
-	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
 	PERSISTDATA *ppersistdata;
@@ -248,7 +247,7 @@ static BOOL folder_object_get_calculated_property(
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			pinfo = zarafa_server_get_info();
+			auto pinfo = zarafa_server_get_info();
 			return exmdb_client::get_public_folder_unread_count(
 						store_object_get_dir(pfolder->pstore),
 						pinfo->username, pfolder->folder_id,
@@ -275,7 +274,7 @@ static BOOL folder_object_get_calculated_property(
 				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
 				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
 		} else {
-			pinfo = zarafa_server_get_info();
+			auto pinfo = zarafa_server_get_info();
 			if (!exmdb_client::check_folder_permission(
 				store_object_get_dir(pfolder->pstore),
 			    pfolder->folder_id, pinfo->username,
@@ -627,7 +626,6 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 {
 	int i;
 	void *pvalue;
-	USER_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -660,7 +658,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::get_folder_properties(
 		store_object_get_dir(pfolder->pstore), pinfo->cpid,
 		pfolder->folder_id, &tmp_proptags, &tmp_propvals)) {
@@ -681,7 +679,6 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	XID tmp_xid;
 	uint16_t count;
 	BINARY *pbin_pcl;
-	USER_INFO *pinfo;
 	uint64_t last_time;
 	uint64_t change_num;
 	BINARY *pbin_changekey;
@@ -740,7 +737,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 											&last_time;
 	tmp_propvals.count ++;
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::set_folder_properties(
 		store_object_get_dir(pfolder->pstore), pinfo->cpid,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems)) {

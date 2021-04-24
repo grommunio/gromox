@@ -40,7 +40,6 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 	void *pparent, uint32_t tag_access, BOOL b_writable,
 	ICS_STATE *pstate)
 {
-	USER_INFO *pinfo;
 	uint64_t *pchange_num;
 	
 	auto pmessage = me_alloc<MESSAGE_OBJECT>();
@@ -85,7 +84,7 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 				return NULL;
 			}
 		} else {
-			pinfo = zarafa_server_get_info();
+			auto pinfo = zarafa_server_get_info();
 			if (!exmdb_client::load_message_instance(
 				store_object_get_dir(pstore), pinfo->username,
 				cpid, b_new, pmessage->folder_id, message_id,
@@ -188,7 +187,6 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 {
 	void *pvalue;
 	GUID tmp_guid;
-	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char id_string[256];
 	PROBLEM_ARRAY problems;
@@ -340,7 +338,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (!system_services_get_user_displayname(pinfo->username,
 	    static_cast<char *>(pvalue)) ||
 	    *static_cast<char *>(pvalue) == '\0')
@@ -397,7 +395,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	void *pvalue;
 	const char *dir;
 	uint32_t result;
-	USER_INFO *pinfo;
 	BINARY *pbin_pcl;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
@@ -415,7 +412,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		return GXERR_SUCCESS;
 	}
 	dir = store_object_get_dir(pmessage->pstore);
-	pinfo = zarafa_server_get_info();
+	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::allocate_cn(
 		dir, &pmessage->change_num)) {
 		return GXERR_CALL_FAILED;
@@ -1493,7 +1490,6 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint32_t result;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
-	USER_INFO *pinfo;
 	const char *username;
 	PROBLEM_ARRAY problems;
 	TAGGED_PROPVAL propval;
@@ -1510,7 +1506,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	if (TRUE == store_object_check_private(pmessage->pstore)) {
 		username = NULL;
 	} else {
-		pinfo = zarafa_server_get_info();
+		auto pinfo = zarafa_server_get_info();
 		username = pinfo->username;
 	}
 	b_notify = FALSE;
