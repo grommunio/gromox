@@ -308,14 +308,12 @@ static int bounce_producer_get_mail_parts(
 	int i;
 	int offset;
 	int tmp_len;
-	void *pvalue;
 	BOOL b_first;
 	
 	offset = 0;
 	b_first = FALSE;
 	for (i=0; i<pattachments->count; i++) {
-		pvalue = common_util_get_propvals(
-			&pattachments->pplist[i]->proplist,
+		auto pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist,
 			PROP_TAG_ATTACHLONGFILENAME);
 		if (NULL == pvalue) {
 			continue;
@@ -337,13 +335,11 @@ static int bounce_producer_get_mail_parts(
 static size_t bounce_producer_get_rcpts(TARRAY_SET *prcpts, char *rcpts)
 {
 	size_t offset = 0;
-	void *pvalue;
 	BOOL b_first;
 	
 	b_first = FALSE;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		pvalue = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
+		auto pvalue = common_util_get_propvals(prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -366,7 +362,6 @@ static BOOL bounce_producer_make_content(const char *username,
 	char *content_type, char *pcontent)
 {
 	char *ptr;
-	void *pvalue;
 	int prev_pos;
 	time_t tmp_time;
 	char charset[32];
@@ -382,8 +377,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	ptr = pcontent;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
 	if (NULL == pvalue) {
 		time(&tmp_time);
 	} else {
@@ -502,7 +496,6 @@ BOOL bounce_producer_make(const char *username,
 	DSN dsn;
 	MIME *pmime;
 	MIME *phead;
-	void *pvalue;
 	size_t out_len;
 	time_t cur_time;
 	char mime_to[1024];
@@ -535,8 +528,7 @@ BOOL bounce_producer_make(const char *username,
 	pmime = phead;
 	mime_set_content_type(pmime, "multipart/report");
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
+	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
 	if (NULL != pvalue) {
 		if (0 == encode64(((BINARY*)pvalue)->pb,
 			((BINARY*)pvalue)->cb, tmp_buff,

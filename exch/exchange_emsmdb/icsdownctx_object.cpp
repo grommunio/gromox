@@ -311,7 +311,6 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 {
 	BINARY *pbin;
-	void *pvalue;
 	IDSET *pidset;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -415,8 +414,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			tmp_bin.pb = NULL;
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		pvalue = common_util_get_propvals(
-			fldchgs.pfldchgs + i, PROP_TAG_FOLDERID);
+		auto pvalue = common_util_get_propvals(&fldchgs.pfldchgs[i], PROP_TAG_FOLDERID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -783,15 +781,12 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	MESSAGE_CONTENT *pmsgctnt, uint8_t extra_flags,
 	TPROPVAL_ARRAY *pchgheader, PROGRESS_MESSAGE *pprogmsg)
 {
-	void *pvalue;
-	
 	pchgheader->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (NULL == pchgheader->ppropval) {
 		return FALSE;
 	}
 	pchgheader->count = 0;
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_SOURCEKEY);
+	auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PROP_TAG_SOURCEKEY);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -936,7 +931,6 @@ static BOOL icsdownctx_object_get_changepartial(
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
 {
 	int i, j;
-	void *pvalue;
 	uint16_t count;
 	uint32_t index;
 	BOOL b_written;
@@ -1005,9 +999,8 @@ static BOOL icsdownctx_object_get_changepartial(
 				pmsg->children.pattachments =
 					pmsgctnt->children.pattachments;
 				break;
-			default:
-				pvalue = common_util_get_propvals(
-							&pmsgctnt->proplist, proptag);
+			default: {
+				auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, proptag);
 				if (NULL != pvalue) {
 					pmsg->pchanges[i].proplist.ppropval[
 								count].proptag = proptag;
@@ -1016,6 +1009,7 @@ static BOOL icsdownctx_object_get_changepartial(
 					count ++;
 				}
 				break;
+			}
 			}
 		}
 		pmsg->pchanges[i].proplist.count = count;
@@ -1044,9 +1038,8 @@ static BOOL icsdownctx_object_get_changepartial(
 			pmsg->children.pattachments =
 				pmsgctnt->children.pattachments;
 			break;
-		default:
-			pvalue = common_util_get_propvals(
-						&pmsgctnt->proplist, proptag);
+		default: {
+			auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
 				pmsg->pchanges[i].proplist.ppropval[
 							count].proptag = proptag;
@@ -1055,6 +1048,7 @@ static BOOL icsdownctx_object_get_changepartial(
 				count ++;
 			}
 			break;
+		}
 		}
 	}
 	pmsg->pchanges[i].proplist.count = count;

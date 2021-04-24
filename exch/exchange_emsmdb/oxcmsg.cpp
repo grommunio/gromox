@@ -218,7 +218,6 @@ uint32_t rop_createmessage(uint16_t cpid,
 	uint64_t **ppmessage_id, void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	void *pvalue;
 	int object_type;
 	uint32_t tag_access;
 	uint32_t permission;
@@ -277,7 +276,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		plogon, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
+	auto pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
 	uint64_t max_quota = ULLONG_MAX;
 	if (pvalue != nullptr) {
 		max_quota = *static_cast<uint32_t *>(pvalue);
@@ -334,7 +333,6 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	uint64_t *pmessage_id, void *plogmap, uint8_t logon_id,
 	uint32_t hresponse, uint32_t hin)
 {
-	void *pvalue;
 	BOOL b_touched;
 	int object_type;
 	uint8_t open_flags;
@@ -379,7 +377,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 		pmessage, 0, &proptags, &propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
+	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 	if (NULL == pvalue) {
 		return ecError;
 	}
@@ -536,7 +534,6 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	OPENRECIPIENT_ROW **pprecipient_row, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	void *pvalue;
 	int object_type;
 	TARRAY_SET rcpts;
 	PROPTAG_ARRAY proptags;
@@ -562,7 +559,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&propvals,
+	auto pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = common_util_get_propvals(&propvals,
@@ -1055,7 +1052,6 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	uint8_t *prow_count, OPENRECIPIENT_ROW **pprecipient_row,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	void *pvalue;
 	int object_type;
 	TARRAY_SET rcpts;
 	uint32_t tag_access;
@@ -1126,7 +1122,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 			message_object_free(pmessage);
 			return ecError;
 		}
-		pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
+		auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 		if (NULL == pvalue) {
 			message_object_free(pmessage);
 			return ecError;
@@ -1162,7 +1158,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
+	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 	if (NULL == pvalue) {
 		message_object_free(pmessage);
 		return ecError;

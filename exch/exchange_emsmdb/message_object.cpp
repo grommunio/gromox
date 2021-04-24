@@ -248,7 +248,6 @@ void message_object_free(MESSAGE_OBJECT *pmessage)
 BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	BOOL b_fai, uint32_t cpid)
 {
-	void *pvalue;
 	GUID tmp_guid;
 	EXT_PUSH ext_push;
 	char id_string[256];
@@ -271,7 +270,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	}
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_MESSAGECODEPAGE;
-	pvalue = cu_alloc<uint32_t>();
+	void *pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}

@@ -112,7 +112,6 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 
 static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t ulen)
 {
-	void *pvalue;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -131,7 +130,7 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 		username[0] = '\0';
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
+	auto pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
 	if (NULL != pvalue) {
 		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
@@ -200,7 +199,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int timer_id;
-	void *pvalue;
 	BOOL b_marked;
 	int object_type;
 	time_t cur_time;
@@ -271,7 +269,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		pmessage, 0, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(
+	auto pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -559,7 +557,6 @@ uint32_t rop_setspooler(void *plogmap, uint8_t logon_id, uint32_t hin)
 uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	uint8_t lock_stat, void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	void *pvalue;
 	BOOL b_exist;
 	BOOL b_result;
 	BOOL b_delete;
@@ -614,7 +611,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		message_id, &tmp_proptags, &tmp_propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
+	auto pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_DELETEAFTERSUBMIT);
 	b_delete = FALSE;
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {

@@ -20,7 +20,6 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 {
 	int handle;
 	int user_id;
-	void *pvalue;
 	int logon_mode;
 	struct tm *ptm;
 	time_t cur_time;
@@ -84,7 +83,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		maildir, 0, &proptags, &propvals)) {
 		return ecError;
 	}
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_STORERECORDKEY);
+	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_STORERECORDKEY);
 	if (NULL == pvalue) {
 		return ecError;
 	}

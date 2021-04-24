@@ -18,7 +18,6 @@
 STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
-	void *pvalue;
 	int buff_len;
 	int utf16_len;
 	uint32_t *psize;
@@ -87,7 +86,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		free(pstream);
 		return NULL;
 	}
-	pvalue = common_util_get_propvals(&propvals, proptag);
+	auto pvalue = common_util_get_propvals(&propvals, proptag);
 	if (NULL == pvalue) {
 		if (0 == (open_flags & OPENSTREAM_FLAG_CREATE)) {
 			/* cannot find proptag, return immediately to

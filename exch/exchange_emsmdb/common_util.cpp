@@ -1181,34 +1181,35 @@ BOOL common_util_propvals_to_row(
 BOOL common_util_convert_unspecified(uint32_t cpid,
 	BOOL b_unicode, TYPED_PROPVAL *ptyped)
 {
-	void *pvalue;
 	size_t tmp_len;
 	
 	if (TRUE == b_unicode) {
 		if (ptyped->type != PT_STRING8)
 			return TRUE;
 		tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
-		pvalue = common_util_alloc(tmp_len);
+		auto pvalue = common_util_alloc(tmp_len);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		if (common_util_mb_to_utf8(cpid, static_cast<char *>(ptyped->pvalue),
 		    static_cast<char *>(pvalue), tmp_len) < 0)
 			return FALSE;	
+		ptyped->pvalue = pvalue;
+		return TRUE;
 	} else {
 		if (ptyped->type != PT_UNICODE)
 			return TRUE;
 		tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
-		pvalue = common_util_alloc(tmp_len);
+		auto pvalue = common_util_alloc(tmp_len);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		if (common_util_mb_from_utf8(cpid, static_cast<char *>(ptyped->pvalue),
 		    static_cast<char *>(pvalue), tmp_len) < 0)
 			return FALSE;	
+		ptyped->pvalue = pvalue;
+		return TRUE;
 	}
-	ptyped->pvalue = pvalue;
-	return TRUE;
 }
 
 BOOL common_util_propvals_to_row_ex(uint32_t cpid,
@@ -1288,12 +1289,11 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	RECIPIENT_ROW *prow)
 {
-	void *pvalue;
 	uint8_t display_type;
 	
 	memset(prow, 0, sizeof(RECIPIENT_ROW));
 	prow->flags |= RECIPIENT_ROW_FLAG_UNICODE;
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RESPONSIBILITY);
+	auto pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RESPONSIBILITY);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		prow->flags |= RECIPIENT_ROW_FLAG_RESPONSIBLE;
 	}
@@ -1398,7 +1398,6 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	RECIPIENT_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	void *pvalue;
 	uint8_t fake_true = 1;
 	uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval;
@@ -1477,7 +1476,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		&prow->properties, &tmp_columns, ppropvals)) {
 		return FALSE;	
 	}
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_DISPLAYNAME);
+	auto pvalue = common_util_get_propvals(ppropvals, PROP_TAG_DISPLAYNAME);
 	if (NULL == pvalue || '\0' == *(char*)pvalue ||
 	    strcmp(static_cast<char *>(pvalue), "''") == 0 ||
 	    strcmp(static_cast<char *>(pvalue), "\"\"") == 0) {
@@ -1500,9 +1499,7 @@ BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	OPENRECIPIENT_ROW *prow)
 {
-	void *pvalue;
-	
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RECIPIENTTYPE);
+	auto pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RECIPIENTTYPE);
 	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *static_cast<uint32_t *>(pvalue);
 	prow->reserved = 0;
 	prow->cpid = cpid;
@@ -1514,9 +1511,7 @@ BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	READRECIPIENT_ROW *prow)
 {
-	void *pvalue;
-	
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_ROWID);
+	auto pvalue = common_util_get_propvals(ppropvals, PROP_TAG_ROWID);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
