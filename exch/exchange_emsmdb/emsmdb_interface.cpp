@@ -499,7 +499,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	AUX_HEADER *pheader;
 	char temp_buff[1024];
 	uint16_t client_mode;
-	DCERPC_INFO rpc_info;
 	AUX_HEADER header_cap;
 	AUX_HEADER header_info;
 	DOUBLE_LIST_NODE *pnode;
@@ -546,9 +545,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	double_list_free(&aux_out.aux_list);
 	
 	pdn_prefix[0] = '\0';
-	
-	rpc_info = get_rpc_info();
-	
+	auto rpc_info = get_rpc_info();
 	if (flags & FLAG_PRIVILEGE_ADMIN) {
 		result = ecLoginPerm;
 		goto CONNECT_FAILURE;
@@ -664,7 +661,6 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	EXT_PULL ext_pull;
 	char username[256];
 	HANDLE_DATA *phandle;
-	DCERPC_INFO rpc_info;
 	struct timeval first_time;
 	
 	/* ms-oxcrpc 3.1.4.2 */
@@ -694,7 +690,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (0 != strcasecmp(phandle->username, rpc_info.username)) {
 		emsmdb_interface_put_handle_data(phandle);
 		*pflags = 0;

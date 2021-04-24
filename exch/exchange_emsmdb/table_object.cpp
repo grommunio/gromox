@@ -64,7 +64,6 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	uint32_t table_id;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	const char *username;
 	
 	if (ptable->rop_id == ropGetAttachmentTable)
@@ -73,8 +72,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		return TRUE;
 	}
 	switch (ptable->rop_id) {
-	case ropGetHierarchyTable:
-		rpc_info = get_rpc_info();
+	case ropGetHierarchyTable: {
+		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER == logon_object_get_mode(ptable->plogon)) {
 			username = NULL;
 		} else {
@@ -86,8 +85,9 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		    &table_id, &row_num))
 			return FALSE;
 		break;
-	case ropGetContentsTable:
-		rpc_info = get_rpc_info();
+	}
+	case ropGetContentsTable: {
+		auto rpc_info = get_rpc_info();
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
 			return FALSE;
@@ -114,6 +114,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		    ptable->psorts, &table_id, &row_num))
 			return FALSE;
 		break;
+	}
 	case ropGetPermissionsTable:
 		if (!exmdb_client_load_permission_table(logon_object_get_dir(ptable->plogon),
 		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),

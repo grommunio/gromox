@@ -900,10 +900,9 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 {
 	int stream_id;
 	char path[256];
-	DCERPC_INFO rpc_info;
 	
 	stream_id = common_util_get_ftstream_id();
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 		fprintf(stderr, "E-1428: mkdir %s: %s\n", path, strerror(errno));

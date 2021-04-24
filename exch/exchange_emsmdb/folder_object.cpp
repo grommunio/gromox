@@ -210,7 +210,6 @@ static BOOL folder_object_get_calculated_property(
 	BINARY *pbin;
 	void *pvalue;
 	EXT_PUSH ext_push;
-	DCERPC_INFO rpc_info;
 	char temp_buff[1024];
 	PERSISTDATA *ppersistdata;
 	static constexpr uint8_t bin_buff[22]{};
@@ -225,7 +224,7 @@ static BOOL folder_object_get_calculated_property(
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			rpc_info = get_rpc_info();
+			auto rpc_info = get_rpc_info();
 			return exmdb_client_get_public_folder_unread_count(
 						logon_object_get_dir(pfolder->plogon),
 						rpc_info.username, pfolder->folder_id,
@@ -293,7 +292,7 @@ static BOOL folder_object_get_calculated_property(
 									PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
 									PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
 		} else {
-			rpc_info = get_rpc_info();
+			auto rpc_info = get_rpc_info();
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(pfolder->plogon),
 			    pfolder->folder_id, rpc_info.username,

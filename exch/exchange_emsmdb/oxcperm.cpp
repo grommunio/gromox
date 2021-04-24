@@ -21,7 +21,6 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	int object_type;
 	uint64_t folder_id;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -46,7 +45,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 			b_freebusy = TRUE;
 		}
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
@@ -81,7 +80,6 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 {
 	int object_type;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
 	
@@ -97,7 +95,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),

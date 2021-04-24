@@ -682,7 +682,6 @@ static BOOL logon_object_get_calculated_property(
 	void *pvalue;
 	EMSMDB_INFO *pinfo;
 	char temp_buff[1024];
-	DCERPC_INFO rpc_info;
 	static constexpr uint64_t tmp_ll = 0;
 	static constexpr uint8_t test_buff[256]{};
 	static constexpr BINARY test_bin = {sizeof(test_buff), (uint8_t *)test_buff};
@@ -866,14 +865,15 @@ static BOOL logon_object_get_calculated_property(
 	case PROP_TAG_STORERECORDKEY:
 		*ppvalue = common_util_guid_to_binary(plogon->mailbox_guid);
 		return TRUE;
-	case PROP_TAG_USERENTRYID:
-		rpc_info = get_rpc_info();
+	case PROP_TAG_USERENTRYID: {
+		auto rpc_info = get_rpc_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(
 											rpc_info.username);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		return TRUE;
+	}
 	case PROP_TAG_TESTLINESPEED:
 		*ppvalue = deconst(&test_bin);
 		return TRUE;

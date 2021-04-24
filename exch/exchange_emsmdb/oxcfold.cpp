@@ -28,7 +28,6 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	uint64_t fid_val;
 	uint32_t tag_access;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	
@@ -82,7 +81,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		return ecError;
 	}
 	type = *(uint32_t*)pvalue;
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
 		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
@@ -170,7 +169,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	uint64_t change_num;
 	uint32_t tag_access;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	char folder_name[256];
 	FOLDER_OBJECT *pfolder;
@@ -224,7 +222,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		strcpy(folder_name, pfolder_name);
 		gx_strlcpy(folder_comment, pfolder_comment, GX_ARRAY_SIZE(folder_comment));
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
@@ -358,7 +356,6 @@ uint32_t rop_deletefolder(uint8_t flags,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	const char *username;
 	
@@ -386,7 +383,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		}
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	username = NULL;
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
@@ -456,7 +453,6 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	uint32_t search_status;
 	
@@ -487,7 +483,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
 		return ecNotSearchFolder;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
@@ -609,7 +605,6 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	if (0 == pmessage_ids->count) {
@@ -643,7 +638,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	ids.count = pmessage_ids->count;
 	ids.pids = pmessage_ids->pll;
 	BOOL b_copy = want_copy == 0 ? false : TRUE;
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
@@ -689,7 +684,6 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	uint64_t change_num;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	BINARY *pbin_changekey;
 	PROBLEM_ARRAY problems;
@@ -728,7 +722,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		}
 		strcpy(new_name, pnew_name);
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (TRUE == logon_object_check_private(plogon)) {
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
@@ -835,7 +829,6 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	EMSMDB_INFO *pinfo;
 	char new_name[128];
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	*ppartial_completion = 1;
@@ -870,7 +863,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		}
 		strcpy(new_name, pnew_name);
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (TRUE == logon_object_check_private(plogon)) {
 		if (PRIVATE_FID_ROOT == rop_util_get_gc_value(folder_id)) {
 			return ecAccessDenied;
@@ -937,7 +930,6 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	uint64_t fid_val;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	const char *username;
 	
@@ -955,7 +947,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 		return ecError;
 	}
 	BOOL b_fai = want_delete_associated == 0 ? false : TRUE;
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (FALSE == logon_object_check_private(plogon)) {
 		/* just like exchange 2013 or later */
 		return ecNotSupported;
@@ -1021,7 +1013,6 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	const char *username;
 	MESSAGE_CONTENT *pbrief;
@@ -1042,7 +1033,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
@@ -1162,7 +1153,6 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
 	const char *username;
-	DCERPC_INFO rpc_info;
 	
 	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
 		TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
@@ -1181,7 +1171,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		return ecNotSupported;
 	}
 	BOOL b_depth = (table_flags & TABLE_FLAG_DEPTH) ? TRUE : false;
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
 		username = NULL;
 	} else {
@@ -1219,7 +1209,6 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	BOOL b_conversation;
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
-	DCERPC_INFO rpc_info;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1258,7 +1247,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	}
 	BOOL b_deleted = (table_flags & TABLE_FLAG_SOFTDELETES) ? TRUE : false;
 	if (FALSE == b_conversation) {
-		rpc_info = get_rpc_info();
+		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(plogon),

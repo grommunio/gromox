@@ -37,7 +37,6 @@ uint32_t rop_openmessage(uint16_t cpid,
 	uint32_t tag_access;
 	uint32_t permission;
 	LOGON_OBJECT *plogon;
-	DCERPC_INFO rpc_info;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	PROPTAG_ARRAY *pcolumns;
@@ -90,7 +89,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	
 	tag_access = 0;
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
@@ -226,7 +225,6 @@ uint32_t rop_createmessage(uint16_t cpid,
 	EMSMDB_INFO *pinfo;
 	uint32_t tag_access;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	MESSAGE_OBJECT *pmessage;
 	uint32_t proptag_buff[4];
@@ -254,7 +252,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
@@ -707,14 +705,13 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	uint64_t read_cn;
 	uint8_t tmp_byte;
 	EMSMDB_INFO *pinfo;
-	DCERPC_INFO rpc_info;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
 	static constexpr uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval_buff[2];
 	
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	auto username = logon_object_check_private(plogon) ? nullptr : rpc_info.username;
 	b_notify = FALSE;

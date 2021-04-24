@@ -159,7 +159,6 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
 {
 	char tmp_tag[256];
-	DCERPC_INFO rpc_info;
 	
 	auto pwait = static_cast<ASYNC_WAIT *>(lib_buffer_get(g_wait_allocator));
 	if (NULL == pwait) {
@@ -167,7 +166,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (FALSE == emsmdb_interface_check_acxh(
 		&pin->acxh, pwait->username, &pwait->cxr, TRUE) ||
 		0 != strcasecmp(rpc_info.username, pwait->username)) {

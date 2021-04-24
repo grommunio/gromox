@@ -103,10 +103,9 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	char *ptoken;
 	char username[UADDR_SIZE];
 	char hex_string[32];
-	DCERPC_INFO rpc_info;
 	
 	*punused = '\0';
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	get_id_from_username(rpc_info.username, &user_id);
 	memset(username, 0, sizeof(username));
 	gx_strlcpy(username, rpc_info.username, GX_ARRAY_SIZE(username));

@@ -96,7 +96,6 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	char tmp_essdn[256];
 	uint32_t permission;
 	const char *username;
-	DCERPC_INFO rpc_info;
 	uint64_t *pfolder_id;
 	uint32_t tmp_proptag;
 	EID_ARRAY *pmessage_ids;
@@ -110,7 +109,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	
 	
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-		rpc_info = get_rpc_info();
+		auto rpc_info = get_rpc_info();
 		username = rpc_info.username;
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
@@ -198,6 +197,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 							pfldctnt, pmessage_ids);
 	}
 	if (TRUE == b_sub) {
+		DCERPC_INFO rpc_info;
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 			rpc_info = get_rpc_info();
 			username = rpc_info.username;
@@ -515,7 +515,6 @@ uint32_t rop_fasttransfersourcecopymessages(
 	int object_type;
 	EID_ARRAY *pmids;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
@@ -544,7 +543,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		return ecNotSupported;
 	}
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-		rpc_info = get_rpc_info();
+		auto rpc_info = get_rpc_info();
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
@@ -929,7 +928,6 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 {
 	int object_type;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	if (SYNC_TYPE_CONTENTS != sync_type &&
@@ -961,7 +959,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	}
 	if (SYNC_TYPE_CONTENTS == SYNC_TYPE_CONTENTS) {
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-			rpc_info = get_rpc_info();
+			auto rpc_info = get_rpc_info();
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(plogon),
 				folder_object_get_id(pfolder),
@@ -1009,7 +1007,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission, tag_access = 0;
-	DCERPC_INFO rpc_info = {};
 	LOGON_OBJECT *plogon;
 	uint32_t tmp_proptag;
 	FOLDER_OBJECT *pfolder;
@@ -1065,7 +1062,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	*pmessage_id = message_id;
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-		rpc_info = get_rpc_info();
+		auto rpc_info = get_rpc_info();
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
@@ -1213,7 +1210,6 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	uint64_t message_id;
 	uint32_t permission;
 	const char *username;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	uint32_t proptag_buff[2];
@@ -1237,7 +1233,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	}
 	icsupctx_object_mark_started(pctx);
 	username = NULL;
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		pfolder = icsupctx_object_get_parent_object(pctx);
 		folder_id = folder_object_get_id(pfolder);
@@ -1339,7 +1335,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	uint64_t change_num;
 	uint32_t permission;
 	uint32_t parent_type;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	PROBLEM_ARRAY tmp_problems;
@@ -1371,7 +1366,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (0 == ((BINARY*)phichyvals->ppropval[0].pvalue)->cb) {
 		parent_type = folder_object_get_type(pfolder);
 		parent_id1 = folder_object_get_id(pfolder);
@@ -1647,7 +1642,6 @@ uint32_t rop_syncimportdeletes(
 	EMSMDB_INFO *pinfo;
 	uint32_t permission;
 	const char *username;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	EID_ARRAY message_ids;
 	FOLDER_OBJECT *pfolder;
@@ -1677,7 +1671,7 @@ uint32_t rop_syncimportdeletes(
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
 	folder_id = folder_object_get_id(pfolder);
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	username = rpc_info.username;
 	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
 		username = NULL;
@@ -1853,7 +1847,6 @@ uint32_t rop_syncimportmessagemove(
 	EMSMDB_INFO *pinfo;
 	uint64_t folder_id;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	TAGGED_PROPVAL tmp_propval;
@@ -1909,7 +1902,7 @@ uint32_t rop_syncimportmessagemove(
 	if (FALSE == b_exist) {
 		return ecNotFound;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), src_fid,

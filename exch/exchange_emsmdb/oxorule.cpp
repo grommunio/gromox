@@ -22,7 +22,6 @@ uint32_t rop_modifyrules(uint8_t flags,
 	BOOL b_exceed;
 	int object_type;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	/* MS-OXORULE 3.2.5.2 */
@@ -41,7 +40,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon),
@@ -132,7 +131,6 @@ uint32_t rop_updatedeferredactionmessages(
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	uint32_t tmp_proptag;
 	uint64_t fid_deferred;
@@ -152,7 +150,7 @@ uint32_t rop_updatedeferredactionmessages(
 		return ecNotSupported;
 	}
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), fid_deferred,

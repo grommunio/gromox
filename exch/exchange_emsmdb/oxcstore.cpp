@@ -28,13 +28,12 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	char maildir[256];
 	char username[UADDR_SIZE];
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
 	
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
 		auto pdomain = strchr(rpc_info.username, '@');
 		if (NULL == pdomain) {
@@ -167,7 +166,6 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	GUID mailbox_guid;
 	const char *pdomain;
 	const char *pdomain1;
-	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	
 	
@@ -175,7 +173,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
 		return ecLoginFailure;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	pdomain = strchr(rpc_info.username, '@');
 	if (NULL == pdomain) {
 		return ecUnknownUser;

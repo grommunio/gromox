@@ -87,7 +87,6 @@ MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
 	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate)
 {
-	DCERPC_INFO rpc_info;
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY tmp_columns;
 	
@@ -135,7 +134,7 @@ MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 				return NULL;
 			}
 		} else {
-			rpc_info = get_rpc_info();
+			auto rpc_info = get_rpc_info();
 			if (FALSE == exmdb_client_load_message_instance(
 				logon_object_get_dir(plogon), rpc_info.username,
 				cpid, b_new, pmessage->folder_id, message_id,
@@ -254,7 +253,6 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	EXT_PUSH ext_push;
 	EMSMDB_INFO *pinfo;
 	char id_string[256];
-	DCERPC_INFO rpc_info;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
@@ -266,8 +264,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	rpc_info = get_rpc_info();
-	
+	auto rpc_info = get_rpc_info();
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);
 	if (NULL == propvals.ppropval) {
@@ -469,7 +466,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	uint32_t tmp_status;
-	DCERPC_INFO rpc_info;
 	INDEX_ARRAY *pindices;
 	BINARY *pbin_changekey;
 	INDEX_ARRAY tmp_indices;
@@ -485,8 +481,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		FALSE == pmessage->b_touched) {
 		return GXERR_SUCCESS;
 	}
-	rpc_info = get_rpc_info();
-
+	auto rpc_info = get_rpc_info();
 	if (FALSE == exmdb_client_allocate_cn(
 		logon_object_get_dir(pmessage->plogon),
 		&pmessage->change_num)) {
@@ -1797,7 +1792,6 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint32_t result;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
-	DCERPC_INFO rpc_info;
 	const char *username;
 	PROBLEM_ARRAY problems;
 	TAGGED_PROPVAL propval;
@@ -1806,7 +1800,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	static constexpr uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval_buff[2];
 	
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (TRUE == logon_object_check_private(pmessage->plogon)) {
 		username = NULL;
 	} else {

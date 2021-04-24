@@ -355,7 +355,6 @@ static BOOL fastdownctx_object_get_buffer_internal(
 	uint16_t len;
 	uint16_t len1;
 	EMSMDB_INFO *pinfo;
-	DCERPC_INFO rpc_info;
 	FAST_FLOW_NODE *pflow;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -414,7 +413,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 					return FALSE;
 				}
 			} else {
-				rpc_info = get_rpc_info();
+				auto rpc_info = get_rpc_info();
 				if (FALSE == exmdb_client_read_message(
 					logon_object_get_dir(pctx->pstream->plogon),
 					rpc_info.username, pinfo->cpid,

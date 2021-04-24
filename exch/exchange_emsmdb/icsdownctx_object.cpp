@@ -1130,7 +1130,6 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	EMSMDB_INFO *pinfo;
 	INDEX_ARRAY indices;
 	uint32_t *pgroup_id;
-	DCERPC_INFO rpc_info;
 	PROPTAG_ARRAY proptags;
 	TAGGED_PROPVAL *ppropval;
 	PROGRESS_MESSAGE progmsg;
@@ -1150,7 +1149,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			return FALSE;
 		}
 	} else {
-		rpc_info = get_rpc_info();
+		auto rpc_info = get_rpc_info();
 		if (FALSE == exmdb_client_read_message(
 			logon_object_get_dir(pctx->pstream->plogon),
 			rpc_info.username, pinfo->cpid, message_id,

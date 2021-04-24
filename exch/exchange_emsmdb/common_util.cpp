@@ -2605,9 +2605,8 @@ static void log_err(const char *format, ...)
 {
 	va_list ap;
 	char log_buf[2048];
-	DCERPC_INFO rpc_info;
 	
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (NULL == rpc_info.username) {
 		return;
 	}

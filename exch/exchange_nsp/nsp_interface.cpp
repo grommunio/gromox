@@ -72,7 +72,6 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	GUID temp_guid;
 	uint8_t node_type;
 	const uint8_t *pguid;
-	DCERPC_INFO rpc_info;
 	uint32_t display_type;
 	EPHEMERAL_ENTRYID ephid;
 	PERMANENT_ENTRYID permeid;
@@ -444,8 +443,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	}
 	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS:
-	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS_STRING8:
-		rpc_info = get_rpc_info();
+	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS_STRING8: {
+		auto rpc_info = get_rpc_info();
 		temp_len = strlen(rpc_info.ep_host);
 		pprop->value.string_array.cvalues = 2;
 		if (NULL == pbuff) {
@@ -473,6 +472,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		sprintf(pprop->value.string_array.ppstr[1],
 			"ncacn_http:%s", rpc_info.ep_host);
 		return ecSuccess;
+	}
 	case PROP_TAG_THUMBNAILPHOTO:
 		if (node_type != NODE_TYPE_PERSON)
 			return ecNotFound;
@@ -563,9 +563,8 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	int org_id;
 	int domain_id;
 	AB_BASE *pbase;
-	DCERPC_INFO rpc_info;
 	
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	if (0 != (flags & FLAG_ANONYMOUSLOGIN)) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return MAPI_E_FAILONEPROVIDER;
@@ -2553,7 +2552,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	char maildir[256];
 	char username[UADDR_SIZE];
 	char temp_path[256];
-	DCERPC_INFO rpc_info;
 	DOUBLE_LIST tmp_list;
 	DOUBLE_LIST_NODE *pnode;
 	SIMPLE_TREE_NODE *ptnode;
@@ -2566,7 +2564,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES != proptag) {
 		return ecNotSupported;
 	}
-	rpc_info = get_rpc_info();
+	auto rpc_info = get_rpc_info();
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		return ecError;

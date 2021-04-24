@@ -140,7 +140,6 @@ static BOOL fastupctx_object_create_folder(
 	EMSMDB_INFO *pinfo;
 	uint64_t change_num;
 	uint32_t permission;
-	DCERPC_INFO rpc_info;
 	TAGGED_PROPVAL propval;
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
@@ -228,7 +227,7 @@ static BOOL fastupctx_object_create_folder(
 	}
 	if (LOGON_MODE_OWNER != logon_object_get_mode(
 		pctx->pstream->plogon)) {
-		rpc_info = get_rpc_info();
+		auto rpc_info = get_rpc_info();
 		pentryid = common_util_username_to_addressbook_entryid(
 											rpc_info.username);
 		if (NULL != pentryid) {
