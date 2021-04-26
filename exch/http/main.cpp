@@ -53,7 +53,6 @@ static struct HXoption g_options_table[] = {
 };
 
 static const char *const g_dfl_hpm_plugins[] = {
-	"libgxh_proxy.so",
 	NULL,
 };
 

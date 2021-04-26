@@ -56,7 +56,6 @@ exchange_plugins = \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
-	libgxh_proxy.la \
 	libgxs_abktplug.la \
 	libgxs_at_client.la \
 	libgxs_authmgr.la \
@@ -73,7 +72,6 @@ noinst_DATA += \
 	libgxp_exchange_emsmdb.ldd \
 	libgxp_exchange_nsp.ldd \
 	libgxp_exchange_rfr.ldd \
-	libgxh_proxy.ldd \
 	libgxs_abktplug.ldd \
 	libgxs_at_client.ldd \
 	libgxs_authmgr.ldd \
@@ -186,10 +184,6 @@ libgxp_exchange_rfr_la_SOURCES = exch/exchange_rfr.cpp
 libgxp_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxp_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = ${default_sym}
-libgxh_proxy_la_SOURCES = exch/mod_proxy.cpp
-libgxh_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxh_proxy_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libgxh_proxy_la_DEPENDENCIES = ${default_sym}
 libgxs_abktplug_la_SOURCES = exch/abktplug.cpp
 libgxs_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_abktplug_la_LIBADD = libgromox_cplus.la
@@ -297,7 +291,7 @@ man_MANS = \
 	doc/log_plugin.4gx doc/logthru.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_proxy.4gx doc/mod_rewrite.4gx \
+	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \

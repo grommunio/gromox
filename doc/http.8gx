@@ -23,7 +23,7 @@ potentially rewritten.
 If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA, the data
 stream is handed off to the exchange_emsmdb(4gx) plugin.
 .IP \(bu 4
-Otherwise, HPM plugins such as mod_proxy(4gx) are invoked. Processing ends when
+Otherwise, HPM plugins are invoked. Processing ends when
 one plugin signals that the request was handled. The order depends on the HPM
 plugin list (cf. http.cfg(5gx):\fBhpm_plugin_list\fP).
 .IP \(bu 4
@@ -257,4 +257,4 @@ Group, 1997
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmod_cache\fP(4gx), \fBmod_fastcgi\fP(4gx),
-\fBmod_proxy\fP(4gx), \fBmod_rewrite\fP(4gx)
+\fBmod_rewrite\fP(4gx)
