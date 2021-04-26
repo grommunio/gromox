@@ -480,7 +480,6 @@ int main(int argc, const char **argv)
 	auto cleanup_16 = make_scope_exit(contexts_pool_stop);
 
 	console_server_init(console_server_ip, console_server_port);
-	console_server_register_command("return-code", cmd_handler_pop3_error_code_control);
 	console_server_register_command("pop3", cmd_handler_pop3_control);
 	console_server_register_command("system", cmd_handler_system_control);
 	console_server_register_command("help", cmd_handler_help);

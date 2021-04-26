@@ -26,11 +26,6 @@ static char g_server_help[] =
 	"\tsystem         --control the POP3 DAEMON server\r\n"
 	"\ttype \"<control-unit> --help\" for more information";
 
-static char g_pop3_return_help[] =
-	"250 POP3 DAEMON return code help information:\r\n"
-	"\treturn-code reload\r\n"
-	"\t    --reload pop3 error code table";
-
 static char g_pop3_parser_help[] =
 	"250 POP3 DAEMON pop3 control help information:\r\n"
 	"\tpop3 info\r\n"
@@ -63,33 +58,6 @@ BOOL cmd_handler_help(int argc, char** argv)
 		return TRUE;
 	}
 	console_server_reply_to_client(g_server_help);
-	return TRUE;
-}
-
-/*
- *  pop3 error code control handler, the pop3 error code consists of
- *  pop3 standard code, native defined code, and the description of 
- *  this error. This function is used to reload this message if user
- *  has changed the pop3 error code file. we show how to use it,
- *
- *      return-code   reload// reload the error code msg
- */
-BOOL cmd_handler_pop3_error_code_control(int argc, char** argv)
-{
-	
-	if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_pop3_return_help);
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "reload")) {
-		console_server_reply_to_client("250 reload return code OK");
-		return TRUE;
-	}
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
 
