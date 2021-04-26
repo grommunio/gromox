@@ -25,11 +25,6 @@ static char g_server_help[] =
 	"\tsystem         --control the IMAP DAEMON server\r\n"
 	"\ttype \"<control-unit> --help\" for more information";
 
-static char g_imap_return_help[] =
-	"250 IMAP DAEMON return code help information:\r\n"
-	"\treturn-code reload\r\n"
-	"\t    --reload imap error code table";
-
 static char g_imap_parser_help[] =
 	"250 IMAP DAEMON imap control help information:\r\n"
 	"\timap info\r\n"
@@ -66,33 +61,6 @@ BOOL cmd_handler_help(int argc, char** argv)
 		return TRUE;
 	}
 	console_server_reply_to_client(g_server_help);
-	return TRUE;
-}
-
-/*
- *  imap error code control handler, the imap error code consists of
- *  imap standard code, native defined code, and the description of 
- *  this error. This function is used to reload this message if user
- *  has changed the imap error code file. we show how to use it,
- *
- *      return-code   reload// reload the error code msg
- */
-BOOL cmd_handler_imap_return_code_control(int argc, char** argv)
-{
-	
-	if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_imap_return_help);
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "reload")) {
-		console_server_reply_to_client("250 reload return code OK");
-		return TRUE;
-	}
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
 
