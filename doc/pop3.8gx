@@ -122,12 +122,6 @@ Filesystem path to the key file needed to unlock the TLS certificate.
 .br
 Default: (unset)
 .TP
-\fBpop3_return_code_path\fP
-Path to the file for IMAP protocol error string translations. If only a
-basename is specified, the file will be searched in \fIdata_file_path\fP.
-.br
-Default: \fIpop3_code.txt\fP
-.TP
 \fBpop3_support_stls\fP
 This flag controls the offering of the STARTTLS extension/STLS command (RFC
 2595) to clients.

@@ -86,10 +86,6 @@ BOOL cmd_handler_pop3_error_code_control(int argc, char** argv)
 		return TRUE;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "reload")) {
-		if (FALSE == resource_refresh_pop3_code_table()) {
-			console_server_reply_to_client("550 fail to reload return code"); 
-			return TRUE;
-		}
 		console_server_reply_to_client("250 reload return code OK");
 		return TRUE;
 	}
