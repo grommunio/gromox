@@ -12,4 +12,4 @@ if gcc -o conftest conftest.c $(pkg-config --cflags --libs libHX) >/dev/null 2>/
 	fi
 fi
 set -x
-exec ./configure --sysconfdir=/etc --localstatedir=/var $libdir CFLAGS="-Og -g" CXXFLAGS="-Og -g" "$@"
+exec ./configure --sysconfdir=/etc --localstatedir=/var $libdir CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
