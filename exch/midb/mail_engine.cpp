@@ -1943,7 +1943,9 @@ static void mail_engine_extract_digest_fields(const char *digest,
 	
 	subject[0] = '\0';
 	if (TRUE == get_digest(digest, "subject", temp_buff, 1024)) {
-		decode64(temp_buff, strlen(temp_buff), subject, &out_len);
+		if (decode64(temp_buff, strlen(temp_buff), subject, &out_len) != 0)
+			/* Decode failed */
+			subject[0] = '\0';
 	}
 	from[0] = '\0';
 	if (TRUE == get_digest(digest, "from", temp_buff, 1024)) {
