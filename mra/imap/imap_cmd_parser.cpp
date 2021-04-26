@@ -163,9 +163,8 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 	if (1024 == j) {
 		double_list_free(plist);
 		return FALSE;
-	} else {
-		return TRUE;
 	}
+	return TRUE;
 }
 
 static void imap_cmd_parser_find_arg_node(DOUBLE_LIST *plist,
@@ -623,137 +622,127 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 			buff_len += gx_snprintf(buff + buff_len,
 				max_len - buff_len, "BODY%s NIL", pbody);
 		}
-	} else {
-		if (0 == strcasecmp("MIME", temp_tag + 1) ||
-			0 == strcasecmp("HEADER", temp_tag + 1)) {
-			if ((0 == strcasecmp("MIME", temp_tag + 1)
-				&& 0 == strcmp(temp_id, "")) ||
-				(0 == strcasecmp("HEADER", temp_tag + 1)
-				&& 0 != strcmp(temp_id, ""))) {
-				buff_len += gx_snprintf(buff + buff_len,
-					max_len - buff_len, "BODY%s NIL", pbody);
-			} else {
-				pmime = mjson_get_mime(pjson, temp_id);
-				if (NULL != pmime) {
-					if (-1 == length) {
-						length = mjson_get_mime_length(
-								pmime, MJSON_MIME_HEAD);
-					}
-					if (offset >= mjson_get_mime_length(
-						pmime, MJSON_MIME_HEAD)) {
-						buff_len += gx_snprintf(buff + buff_len,
-							max_len - buff_len, "BODY%s NIL", pbody);
-					} else {
-						if (offset + length > mjson_get_mime_length(
-							pmime, MJSON_MIME_HEAD)) {
-							length = mjson_get_mime_length(pmime,
-										MJSON_MIME_HEAD) - offset;
-						}
-						if (NULL == storage_path) {
-							buff_len += gx_snprintf(
-								buff + buff_len, max_len - buff_len,
-								"BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n",
-								pbody, length, mjson_get_mail_filename(pjson),
-								mjson_get_mime_offset(pmime, MJSON_MIME_HEAD)
-								+ offset, length);
-						} else {
-							buff_len += gx_snprintf(
-								buff + buff_len, max_len - buff_len,
-								"BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
-								pbody, length, storage_path,
-								mjson_get_mail_filename(pjson),
-								mjson_get_mime_offset(pmime, MJSON_MIME_HEAD)
-								+ offset, length);
-						}
-					}
-				} else {
-					buff_len += gx_snprintf(buff + buff_len,
-						max_len - buff_len, "BODY%s NIL", pbody);
-				}
+	} else if (strcasecmp("MIME", temp_tag + 1) == 0 ||
+	    strcasecmp("HEADER", temp_tag + 1) == 0) {
+		if ((0 == strcasecmp("MIME", temp_tag + 1)
+		    && 0 == strcmp(temp_id, "")) ||
+		    (0 == strcasecmp("HEADER", temp_tag + 1)
+		    && 0 != strcmp(temp_id, ""))) {
+			buff_len += gx_snprintf(buff + buff_len,
+				max_len - buff_len, "BODY%s NIL", pbody);
+		} else if ((pmime = mjson_get_mime(pjson, temp_id)) != nullptr) {
+			if (-1 == length) {
+				length = mjson_get_mime_length(
+					 pmime, MJSON_MIME_HEAD);
 			}
-		} else if (0 == strcasecmp("TEXT", temp_tag + 1)) {
-			if (0 != strcmp(temp_id, "")) {
+			if (offset >= mjson_get_mime_length(
+				pmime, MJSON_MIME_HEAD)) {
 				buff_len += gx_snprintf(buff + buff_len,
-					max_len - buff_len, "BODY%s NIL", pbody);
+					    max_len - buff_len, "BODY%s NIL", pbody);
 			} else {
-				pmime = mjson_get_mime(pjson, temp_id);
-				if (NULL != pmime) {
-					if (-1 == length) {
-						length = mjson_get_mime_length(
-							pmime, MJSON_MIME_CONTENT);
-					}
-					if (offset >= mjson_get_mime_length(
-						pmime, MJSON_MIME_CONTENT)) {
-						buff_len += gx_snprintf(buff + buff_len,
-							max_len - buff_len, "BODY%s NIL", pbody);
-					} else {
-						if (offset + length > mjson_get_mime_length(
-							pmime, MJSON_MIME_CONTENT)) {
-							length = mjson_get_mime_length(pmime,
-									MJSON_MIME_CONTENT) - offset;
-						}
-						if (NULL == storage_path) {
-							buff_len += gx_snprintf(
-								buff + buff_len, max_len - buff_len,
-								"BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n",
-								pbody, length, mjson_get_mail_filename(pjson),
-								mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT)
-								+ offset, length);
-						} else {
-							buff_len += gx_snprintf(
-								buff + buff_len, max_len - buff_len,
-								"BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
-								pbody, length, storage_path,
-								mjson_get_mail_filename(pjson),
-								mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT)
-								+ offset, length);
-						}
-					}
+				if (offset + length > mjson_get_mime_length(
+					pmime, MJSON_MIME_HEAD)) {
+					length = mjson_get_mime_length(pmime,
+						 MJSON_MIME_HEAD) - offset;
+				}
+				if (NULL == storage_path) {
+					buff_len += gx_snprintf(
+						    buff + buff_len, max_len - buff_len,
+						    "BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n",
+						    pbody, length, mjson_get_mail_filename(pjson),
+						    mjson_get_mime_offset(pmime, MJSON_MIME_HEAD)
+						    + offset, length);
 				} else {
-					buff_len += gx_snprintf(buff + buff_len,
-						max_len - buff_len, "BODY%s NIL", pbody);
+					buff_len += gx_snprintf(
+						    buff + buff_len, max_len - buff_len,
+						    "BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
+						    pbody, length, storage_path,
+						    mjson_get_mail_filename(pjson),
+						    mjson_get_mime_offset(pmime, MJSON_MIME_HEAD)
+						    + offset, length);
 				}
 			}
 		} else {
-			if (0 != strcmp(temp_id, "")) {
+			buff_len += gx_snprintf(buff + buff_len,
+				    max_len - buff_len, "BODY%s NIL", pbody);
+		}
+	} else if (0 == strcasecmp("TEXT", temp_tag + 1)) {
+		if (0 != strcmp(temp_id, "")) {
+			buff_len += gx_snprintf(buff + buff_len,
+			            max_len - buff_len, "BODY%s NIL", pbody);
+		} else if ((pmime = mjson_get_mime(pjson, temp_id)) != nullptr) {
+			if (-1 == length) {
+				length = mjson_get_mime_length(
+					 pmime, MJSON_MIME_CONTENT);
+			}
+			if (offset >= mjson_get_mime_length(
+				pmime, MJSON_MIME_CONTENT)) {
 				buff_len += gx_snprintf(buff + buff_len,
-					max_len - buff_len, "BODY%s NIL", pbody);
+					    max_len - buff_len, "BODY%s NIL", pbody);
 			} else {
-				if (0 == strncasecmp(temp_tag + 1, "HEADER.FIELDS ", 14)) {
-					temp_tag += 15;
-					b_not = FALSE;
-				} else {
-					temp_tag += 19;
-					b_not = TRUE;
+				if (offset + length > mjson_get_mime_length(
+				    pmime, MJSON_MIME_CONTENT)) {
+					length = mjson_get_mime_length(pmime,
+						 MJSON_MIME_CONTENT) - offset;
 				}
-				pmime = mjson_get_mime(pjson, temp_id);
-				if (NULL != pmime) {
-					if (NULL == storage_path) {
-						snprintf(temp_path, 256, "%s/eml/%s",
-							pcontext->maildir, mjson_get_mail_filename(pjson));
-					} else {
-						snprintf(temp_path,
-							256, "%s/tmp/imap.rfc822/%s/%s",
-							pcontext->maildir, storage_path, 
-							mjson_get_mail_filename(pjson));
-					}
-					
-					len = imap_cmd_parser_match_field(cmd_tag, temp_path,
-							mjson_get_mime_offset(pmime, MJSON_MIME_HEAD),
-							mjson_get_mime_length(pmime, MJSON_MIME_HEAD),
-							b_not, temp_tag, offset, length, buff + buff_len,
-							max_len - buff_len);
-					if (-1 == len) {
-						buff_len += gx_snprintf(buff + buff_len,
-							max_len - buff_len, "BODY%s NIL", pbody);
-					} else {
-						buff_len += len;
-					}
+				if (NULL == storage_path) {
+					buff_len += gx_snprintf(
+						    buff + buff_len, max_len - buff_len,
+						    "BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n",
+						    pbody, length, mjson_get_mail_filename(pjson),
+						    mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT)
+						    + offset, length);
 				} else {
-					buff_len += gx_snprintf(buff + buff_len,
-						max_len - buff_len, "BODY%s NIL", pbody);
+					buff_len += gx_snprintf(
+						    buff + buff_len, max_len - buff_len,
+						    "BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
+						    pbody, length, storage_path,
+						    mjson_get_mail_filename(pjson),
+						    mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT)
+						    + offset, length);
 				}
 			}
+		} else {
+			buff_len += gx_snprintf(buff + buff_len,
+			            max_len - buff_len, "BODY%s NIL", pbody);
+		}
+	} else if (strcmp(temp_id, "") != 0) {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+	} else {
+		if (0 == strncasecmp(temp_tag + 1, "HEADER.FIELDS ", 14)) {
+			temp_tag += 15;
+			b_not = FALSE;
+		} else {
+			temp_tag += 19;
+			b_not = TRUE;
+		}
+		pmime = mjson_get_mime(pjson, temp_id);
+		if (NULL != pmime) {
+			if (NULL == storage_path) {
+				snprintf(temp_path, 256, "%s/eml/%s",
+					 pcontext->maildir, mjson_get_mail_filename(pjson));
+			} else {
+				snprintf(temp_path,
+					 256, "%s/tmp/imap.rfc822/%s/%s",
+					 pcontext->maildir, storage_path,
+					 mjson_get_mail_filename(pjson));
+			}
+
+			len = imap_cmd_parser_match_field(cmd_tag, temp_path,
+			      mjson_get_mime_offset(pmime, MJSON_MIME_HEAD),
+			      mjson_get_mime_length(pmime, MJSON_MIME_HEAD),
+			      b_not, temp_tag, offset, length, buff + buff_len,
+			      max_len - buff_len);
+			if (-1 == len) {
+				buff_len += gx_snprintf(buff + buff_len,
+					    max_len - buff_len, "BODY%s NIL", pbody);
+			} else {
+				buff_len += len;
+			}
+		} else {
+			buff_len += gx_snprintf(buff + buff_len,
+				    max_len - buff_len, "BODY%s NIL", pbody);
 		}
 	}
 	return buff_len;
@@ -1714,29 +1703,28 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	} else {		
-		imap_parser_log_info(pcontext, 8, "login fail");
-		pcontext->auth_times ++;
-		if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
-			if (system_services_add_user_into_temp_list != nullptr)
-				system_services_add_user_into_temp_list(pcontext->username,
-					imap_parser_get_param(BLOCK_AUTH_FAIL));
-			/* IMAP_CODE_2190003: NO too many failures, user will be blocked for a while */
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190003, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-				"%s %s", argv[0], imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_SHOULD_CLOSE;
-		}
-		
-		/* IMAP_CODE_2190004: NO login auth fail, */
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190004, 1, &string_length);
-		auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2190004, 2, &string_length1);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s", argv[0],
-							imap_reply_str, reason, imap_reply_str1);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_CONTINUE;
 	}
+	imap_parser_log_info(pcontext, 8, "login fail");
+	pcontext->auth_times++;
+	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
+		if (system_services_add_user_into_temp_list != nullptr)
+			system_services_add_user_into_temp_list(pcontext->username,
+				imap_parser_get_param(BLOCK_AUTH_FAIL));
+		/* IMAP_CODE_2190003: NO too many failures, user will be blocked for a while */
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190003, 1, &string_length);
+		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		                "%s %s", argv[0], imap_reply_str);
+		imap_parser_safe_write(pcontext, buff, string_length);
+		return DISPATCH_SHOULD_CLOSE;
+	}
+
+	/* IMAP_CODE_2190004: NO login auth fail, */
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190004, 1, &string_length);
+	auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2190004, 2, &string_length1);
+	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s", argv[0],
+	                imap_reply_str, reason, imap_reply_str1);
+	imap_parser_safe_write(pcontext, buff, string_length);
+	return DISPATCH_CONTINUE;
 }
 
 int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -2560,56 +2548,56 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->write_offset = 0;
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 		return DISPATCH_BREAK;
-	} else {
-		if (strlen(argv[3]) + strlen(argv[4]) >= 1024) {
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-				"%s %s", argv[0], imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_CONTINUE;
-		}
-		if ('\0' == argv[4][0]) {
-			if (PROTO_STAT_SELECT == pcontext->proto_stat) {
-				imap_parser_echo_modify(pcontext, NULL);
-			}
-			/* IMAP_CODE_2170011: OK LIST completed */
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-				"* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
-				argv[0], imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_CONTINUE;
-		}
-		snprintf(search_pattern, 1024, "%s%s", argv[3], argv[4]);
-		mem_file_init(&temp_file, imap_parser_get_allocator());
-		mem_file_writeline(&temp_file, "inbox");
-		mem_file_writeline(&temp_file, "draft");
-		mem_file_writeline(&temp_file, "sent");
-		mem_file_writeline(&temp_file, "trash");
-		mem_file_writeline(&temp_file, "junk");
-		imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
-		len = 0;
-		while (MEM_END_OF_FILE != mem_file_readline(
-			&temp_file, temp_name, 1024)) {
-			if (TRUE == imap_cmd_parser_wildcard_match(
-				temp_name, search_pattern)) {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* LIST () \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			}
-		}
-		mem_file_free(&temp_file);
-		stream_clear(&pcontext->stream);
+	}
+
+	if (strlen(argv[3]) + strlen(argv[4]) >= 1024) {
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
+		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		                "%s %s", argv[0], imap_reply_str);
+		imap_parser_safe_write(pcontext, buff, string_length);
+		return DISPATCH_CONTINUE;
+	}
+	if ('\0' == argv[4][0]) {
 		if (PROTO_STAT_SELECT == pcontext->proto_stat) {
-			imap_parser_echo_modify(pcontext, &pcontext->stream);
+			imap_parser_echo_modify(pcontext, NULL);
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
 		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
-		len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s %s", argv[0], imap_reply_str);
-		stream_write(&pcontext->stream, buff, len);
-		pcontext->write_offset = 0;
-		pcontext->sched_stat = SCHED_STAT_WRLST;
-		return DISPATCH_BREAK;
-	}	
+		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		                "* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
+		                argv[0], imap_reply_str);
+		imap_parser_safe_write(pcontext, buff, string_length);
+		return DISPATCH_CONTINUE;
+	}
+	snprintf(search_pattern, 1024, "%s%s", argv[3], argv[4]);
+	mem_file_init(&temp_file, imap_parser_get_allocator());
+	mem_file_writeline(&temp_file, "inbox");
+	mem_file_writeline(&temp_file, "draft");
+	mem_file_writeline(&temp_file, "sent");
+	mem_file_writeline(&temp_file, "trash");
+	mem_file_writeline(&temp_file, "junk");
+	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
+	len = 0;
+	while (MEM_END_OF_FILE != mem_file_readline(
+		&temp_file, temp_name, 1024)) {
+		if (TRUE == imap_cmd_parser_wildcard_match(
+			temp_name, search_pattern)) {
+			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+			       "* LIST () \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+		}
+	}
+	mem_file_free(&temp_file);
+	stream_clear(&pcontext->stream);
+	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
+		imap_parser_echo_modify(pcontext, &pcontext->stream);
+	}
+	/* IMAP_CODE_2170011: OK LIST completed */
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
+	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s %s", argv[0], imap_reply_str);
+	stream_write(&pcontext->stream, buff, len);
+	pcontext->write_offset = 0;
+	pcontext->sched_stat = SCHED_STAT_WRLST;
+	return DISPATCH_BREAK;
 }
 
 int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -4147,29 +4135,30 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			b_copied = FALSE;
 			break;
 		}
-		if (0 != uidvalidity) {
-			for (j=0; j<10; j++) {
-				if (MIDB_RESULT_OK == system_services_get_uid(
-					pcontext->maildir, temp_name, pitem->mid, &uid)) {
-					if (TRUE == b_first) {
-						uid_string[string_length] = ',';
-						string_length ++;
-						uid_string1[string_length1] = ',';
-						string_length1 ++;
-					} else {
-						b_first =  TRUE;
-					}
-					string_length += gx_snprintf(uid_string + string_length,
-					                 GX_ARRAY_SIZE(uid_string) - string_length, "%d", pitem->uid);
-					string_length1 += gx_snprintf(uid_string1 + string_length1,
-					                  GX_ARRAY_SIZE(uid_string1) - string_length1, "%d", uid);
-					break;
-				}
-				usleep(50000);
+		if (uidvalidity == 0)
+			continue;
+		for (j = 0; j < 10; j++) {
+			if (system_services_get_uid(pcontext->maildir,
+			    temp_name, pitem->mid, &uid) != MIDB_RESULT_OK) {
+				usleep(500000);
+				continue;
 			}
-			if (10 == j) {
-				uidvalidity = 0;
+			if (TRUE == b_first) {
+				uid_string[string_length] = ',';
+				string_length++;
+				uid_string1[string_length1] = ',';
+				string_length1++;
+			} else {
+				b_first =  TRUE;
 			}
+			string_length += gx_snprintf(uid_string + string_length,
+					 GX_ARRAY_SIZE(uid_string) - string_length, "%d", pitem->uid);
+			string_length1 += gx_snprintf(uid_string1 + string_length1,
+					  GX_ARRAY_SIZE(uid_string1) - string_length1, "%d", uid);
+			break;
+		}
+		if (10 == j) {
+			uidvalidity = 0;
 		}
 	}
 	if (FALSE == b_copied) {
@@ -4644,25 +4633,26 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			b_copied = FALSE;
 			break;
 		}
-		if (0 != uidvalidity) {
-			for (j=0; j<10; j++) {
-				if (MIDB_RESULT_OK == system_services_get_uid(
-					pcontext->maildir, temp_name, pitem->mid, &uid)) {
-					if (TRUE == b_first) {
-						uid_string[string_length] = ',';
-						string_length ++;
-					} else {
-						b_first =  TRUE;
-					}
-					string_length += gx_snprintf(uid_string + string_length,
-					                 GX_ARRAY_SIZE(uid_string) - string_length, "%d", uid);
-					break;
-				}
-				usleep(50000);
+		if (uidvalidity == 0)
+			continue;
+		for (j = 0; j < 10; j++) {
+			if (system_services_get_uid(pcontext->maildir,
+			    temp_name, pitem->mid, &uid) != MIDB_RESULT_OK) {
+				usleep(500000);
+				continue;
 			}
-			if (10 == j) {
-				uidvalidity = 0;
+			if (TRUE == b_first) {
+				uid_string[string_length] = ',';
+				string_length ++;
+			} else {
+				b_first =  TRUE;
 			}
+			string_length += gx_snprintf(uid_string + string_length,
+			                 GX_ARRAY_SIZE(uid_string) - string_length, "%d", uid);
+			break;
+		}
+		if (10 == j) {
+			uidvalidity = 0;
 		}
 	}
 	if (FALSE == b_copied) {
