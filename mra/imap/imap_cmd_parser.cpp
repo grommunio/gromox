@@ -1399,13 +1399,12 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-	const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
-	imap_reply_str = resource_get_imap_code(IMAP_CODE_2170001, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170001, 1, &string_length);
 	char ext_str[16]{};
 	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS))
 		HX_strlcat(ext_str, " STARTTLS", GX_ARRAY_SIZE(ext_str));
@@ -1423,15 +1422,13 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-	const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	if (imap_parser_get_param(IMAP_SUPPORT_RFC2971)) {
 		/* IMAP_CODE_2170029: OK ID completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170029, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170029, 1, &string_length);
 		snprintf(buff, sizeof(buff), "* ID (\"name\" \"gromox-imap\" "
 		         "version \"%s\")\r\n%s %s", PACKAGE_VERSION,
 		         argv[0], imap_reply_str);
@@ -1448,14 +1445,12 @@ int imap_cmd_parser_noop(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-    const char* imap_reply_str;
     
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170002: OK NOOP completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170002, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170002, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
     return DISPATCH_CONTINUE;
@@ -1465,14 +1460,11 @@ int imap_cmd_parser_logout(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-	const char *imap_reply_str, *imap_reply_str2;
 	
 	/* IMAP_CODE_2160001: BYE logging out */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2160001, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2160001, 1, &string_length);
 	/* IMAP_CODE_2170003: OK LOGOUT completed */
-	imap_reply_str2 = resource_get_imap_code(
-		IMAP_CODE_2170003, 1, &string_length);
+	auto imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170003, 1, &string_length);
 	
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s%s %s",
 			imap_reply_str, argv[0], imap_reply_str2);
@@ -1484,12 +1476,10 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-	const char *imap_reply_str;
 	
 	if (NULL != pcontext->connection.ssl) {
 		/* IMAP_CODE_2180000: BAD command not supported or parameter error */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		SSL_write(pcontext->connection.ssl, buff, string_length);
@@ -1497,8 +1487,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (FALSE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS)) {
 		/* IMAP_CODE_2180000 */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		write(pcontext->connection.sockd, buff, string_length);
@@ -1507,16 +1496,14 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->proto_stat > PROTO_STAT_NOAUTH) {
 		/*IMAP_CODE_2180001: BAD TLS negotiation
 		only begin in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180001, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180001, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		write(pcontext->connection.sockd, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	/* IMAP_CODE_2170004: OK begin TLS negotiation now */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170004, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170004, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	write(pcontext->connection.sockd, buff, string_length);
 	pcontext->sched_stat = SCHED_STAT_STLS;	
@@ -1527,22 +1514,19 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-	const char *imap_reply_str;
 	
 	if (TRUE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
 		TRUE == imap_parser_get_param(IMAP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
 		/* IMAP_CODE_2180002: BAD must issue a STARTTLS command first */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180002, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180002, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		write(pcontext->connection.sockd, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (3 != argc || 0 != strcasecmp(argv[2], "LOGIN")) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1550,8 +1534,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180003: BAD cannot relogin in authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180003, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180003, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1569,14 +1552,12 @@ int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t temp_len;
 	size_t string_length = 0;
-	const char *imap_reply_str;
 	
 	if (0 == strlen(argv[0]) || 0 != decode64_ex(argv[0],
 		strlen(argv[0]), pcontext->username, 256, &temp_len)) {
 		pcontext->proto_stat = PROTO_STAT_NOAUTH;
 		/* IMAP_CODE_2180019: BAD decode username error */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180019, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180019, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1595,15 +1576,12 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_password[256];
-	const char *imap_reply_str;
-	const char* imap_reply_str1;
 	
 	pcontext->proto_stat = PROTO_STAT_NOAUTH;
 	if (0 == strlen(argv[0]) || 0 != decode64_ex(argv[0],
 		strlen(argv[0]), temp_password, 256, &temp_len)) {
 		/* IMAP_CODE_2180020: BAD decode password error */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180020, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180020, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1613,8 +1591,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
 		/* IMAP_CODE_2190001: NO access denied by user filter */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190001, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190001, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1627,8 +1604,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if ('\0' == pcontext->maildir[0]) {
 			/* IMAP_CODE_2190002: NO cannot get
 				mailbox location from database */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190002, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190002, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 					pcontext->tag_string, imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -1640,8 +1616,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
 		/* IMAP_CODE_2170005: OK logged in */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1655,18 +1630,15 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 					imap_parser_get_param(BLOCK_AUTH_FAIL));
 			/* IMAP_CODE_2190003: NO too many failures,
 				user will be blocked for a while */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190003, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190003, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
 			return DISPATCH_SHOULD_CLOSE;
 		}
 		/* IMAP_CODE_2190004: NO login auth fail, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190004, 1, &string_length);
-		imap_reply_str1 = resource_get_imap_code(
-			IMAP_CODE_2190004, 2, &string_length1);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190004, 1, &string_length);
+		auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2190004, 2, &string_length1);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s",
 			pcontext->tag_string, imap_reply_str, reason, imap_reply_str1);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1680,31 +1652,26 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_password[256];
-    const char* imap_reply_str;
-	const char* imap_reply_str1;
     
 	if (TRUE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
 		TRUE == imap_parser_get_param(IMAP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
 		/* IMAP_CODE_2180002: BAD must issue a STARTTLS command first */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180002, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180002, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		write(pcontext->connection.sockd, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (4 != argc || strlen(argv[2]) > 255 || strlen(argv[3]) > 255) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180003: BAD cannot relogin in authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180003, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180003, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1715,8 +1682,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
 		/* IMAP_CODE_2190001: NO access denied by user filter */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190001, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190001, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1731,8 +1697,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if ('\0' == pcontext->maildir[0]) {
 			/* IMAP_CODE_2190002: NO cannot get
 			mailbox location from database */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190002, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190002, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -1744,8 +1709,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
 		/* IMAP_CODE_2170005: OK logged in */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1758,8 +1722,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				system_services_add_user_into_temp_list(pcontext->username,
 					imap_parser_get_param(BLOCK_AUTH_FAIL));
 			/* IMAP_CODE_2190003: NO too many failures, user will be blocked for a while */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190003, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190003, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -1767,10 +1730,8 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		
 		/* IMAP_CODE_2190004: NO login auth fail, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190004, 1, &string_length);
-		imap_reply_str1 = resource_get_imap_code(
-			IMAP_CODE_2190004, 2, &string_length1);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190004, 1, &string_length);
+		auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2190004, 2, &string_length1);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s", argv[0],
 							imap_reply_str, reason, imap_reply_str1);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1782,20 +1743,17 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-    const char* imap_reply_str;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (2 != argc) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1804,8 +1762,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	pcontext->sched_stat = SCHED_STAT_IDLING;
 	/* IMAP_CODE_2160002: + Idling */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2160002, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2160002, 1, &string_length);
 	imap_parser_safe_write(pcontext, imap_reply_str, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1821,12 +1778,11 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char temp_name[1024];
 	char buff[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
     
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1835,8 +1791,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
 		FALSE == imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
 		argv[2], temp_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -1851,33 +1806,34 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        &exists, &recent, nullptr, &uidvalid, &uidnext, &firstunseen, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
+		auto imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
@@ -1921,13 +1877,12 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char temp_name[1024];
 	char buff[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
     
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot
 		process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -1936,8 +1891,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
 		FALSE == imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
 		argv[2], temp_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -1951,33 +1905,33 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        &exists, &recent, nullptr, &uidvalid, &uidnext, &firstunseen, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
@@ -2022,11 +1976,11 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name1[1024];
 	char temp_folder[1024];
 	char converted_name[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -2034,8 +1988,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2044,8 +1997,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (NULL != strchr(argv[2], '*') || NULL != strchr(argv[2], '%')
 		|| NULL != strchr(argv[2], '?')) {
 		/* IMAP_CODE_2190010: NO folder name format error */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190010, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190010, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2057,8 +2009,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 == strcmp(temp_name, "trash") ||
 		0 == strcmp(temp_name, "junk")) {
 		/* IMAP_CODE_2190011: NO CREATE can not create reserved folder name */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190011, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2069,35 +2020,35 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		mem_file_free(&temp_file);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		mem_file_free(&temp_file);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		mem_file_free(&temp_file);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	mem_file_writeline(&temp_file, "inbox");
 	mem_file_writeline(&temp_file, "draft");
@@ -2131,36 +2082,36 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				        pcontext->maildir, converted_name, &errnum)) {
 				case MIDB_RESULT_OK:
 					break;
-				case MIDB_NO_SERVER:
+				case MIDB_NO_SERVER: {
 					mem_file_free(&temp_file);
 					/* IMAP_CODE_2190005: NO server internal
 						error, missing MIDB connection */
-					imap_reply_str = resource_get_imap_code(
-						IMAP_CODE_2190005, 1, &string_length);
+					auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 					string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 						"%s %s", argv[0], imap_reply_str);
 					imap_parser_safe_write(pcontext, buff, string_length);
 					return DISPATCH_CONTINUE;
-				case MIDB_RDWR_ERROR:
+				}
+				case MIDB_RDWR_ERROR: {
 					mem_file_free(&temp_file);
 					/* IMAP_CODE_2190006: NO server internal
 						error, fail to communicate with MIDB */
-					imap_reply_str = resource_get_imap_code(
-						IMAP_CODE_2190006, 1, &string_length);
+					auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 					string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 						"%s %s", argv[0], imap_reply_str);
 					imap_parser_safe_write(pcontext, buff, string_length);
 					return DISPATCH_CONTINUE;
-				default:
+				}
+				default: {
 					mem_file_free(&temp_file);
 					estring = resource_get_error_string(errnum);
 					/* IMAP_CODE_2190007: NO server internal error, */
-					imap_reply_str = resource_get_imap_code(
-						IMAP_CODE_2190007, 1, &string_length);
+					auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 					string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 								argv[0], imap_reply_str, estring);
 					imap_parser_safe_write(pcontext, buff, string_length);
 					return DISPATCH_CONTINUE;
+				}
 				}
 			}
 		}
@@ -2171,8 +2122,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170006: OK CREATED completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170006, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170006, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 		"%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -2185,12 +2135,11 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char encoded_name[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2199,8 +2148,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], encoded_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -2211,8 +2159,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 == strcmp(encoded_name, "trash") ||
 		0 == strcmp(encoded_name, "junk")) {
 		/* IMAP_CODE_2190013: NO DELETE can not delete reserved folder name */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190013, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190013, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2222,40 +2169,39 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, encoded_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170007: OK DELETE completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170007, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170007, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
@@ -2268,11 +2214,11 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char encoded_name[1024];
 	char encoded_name1[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -2283,8 +2229,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->lang, argv[2], encoded_name) ||
 		FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[3], encoded_name1)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -2292,8 +2237,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (NULL != strchr(argv[3], '?') || NULL != strchr(argv[3], '*') ||
 		NULL != strchr(argv[3], '%')) {
 		/* IMAP_CODE_2190010: NO folder name format error */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190010, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190010, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2311,8 +2255,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 == strcmp(encoded_name1, "junk")) {
 		
 		/* IMAP_CODE_2190014: NO RENAME can not rename reserved folder name */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190014, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190014, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2322,40 +2265,39 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        encoded_name, encoded_name1, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170008: OK RENAME completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170008, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170008, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
@@ -2367,12 +2309,11 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char temp_name[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2382,8 +2323,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| (FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name))) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -2392,40 +2332,39 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, temp_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170009: OK SUBSCRIBE completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170009, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170009, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
@@ -2437,12 +2376,11 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char temp_name[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2451,8 +2389,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| (FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name))) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2462,40 +2399,39 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, temp_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170010: OK UNSUBSCRIBE completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170010, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170010, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
@@ -2512,20 +2448,18 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 4 || (0 == strcasecmp(argv[2], "(SPECIAL-USE)") && argc < 5)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2533,8 +2467,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (0 != strcasecmp(argv[2], "(SPECIAL-USE)")) {
 		if (strlen(argv[2]) + strlen(argv[3]) >= 1024) {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -2545,8 +2478,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				imap_parser_echo_modify(pcontext, NULL);
 			}
 			/* IMAP_CODE_2170011: OK LIST completed */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2170011, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
 				argv[0], imap_reply_str);
@@ -2559,36 +2491,36 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		        pcontext->maildir, &temp_file, &errnum)) {
 		case MIDB_RESULT_OK:
 			break;
-		case MIDB_NO_SERVER:
+		case MIDB_NO_SERVER: {
 			mem_file_free(&temp_file);
 			/* IMAP_CODE_2190005: NO server internal
 				error, missing MIDB connection */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190005, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
 			return DISPATCH_CONTINUE;
-		case MIDB_RDWR_ERROR:
+		}
+		case MIDB_RDWR_ERROR: {
 			mem_file_free(&temp_file);
 			/* IMAP_CODE_2190006: NO server internal
 				error, fail to communicate with MIDB */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190006, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
 			return DISPATCH_CONTINUE;
-		default:
+		}
+		default: {
 			mem_file_free(&temp_file);
 			estring = resource_get_error_string(errnum);
 			/* IMAP_CODE_2190007: NO server internal error, */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2190007, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s%s", argv[0], imap_reply_str, estring);
 			imap_parser_safe_write(pcontext, buff, string_length);
 			return DISPATCH_CONTINUE;
+		}
 		}
 		mem_file_writeline(&temp_file, "inbox");
 		mem_file_writeline(&temp_file, "draft");
@@ -2621,8 +2553,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			imap_parser_echo_modify(pcontext, &pcontext->stream);
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
 		len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
 				"%s %s", argv[0], imap_reply_str);
 		stream_write(&pcontext->stream, buff, len);
@@ -2631,8 +2562,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_BREAK;
 	} else {
 		if (strlen(argv[3]) + strlen(argv[4]) >= 1024) {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -2643,8 +2573,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				imap_parser_echo_modify(pcontext, NULL);
 			}
 			/* IMAP_CODE_2170011: OK LIST completed */
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2170011, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
 				argv[0], imap_reply_str);
@@ -2674,7 +2603,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			imap_parser_echo_modify(pcontext, &pcontext->stream);
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
 		len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s %s", argv[0], imap_reply_str);
 		stream_write(&pcontext->stream, buff, len);
 		pcontext->write_offset = 0;
@@ -2694,28 +2623,25 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 4) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2727,36 +2653,36 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		mem_file_free(&temp_file);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		mem_file_free(&temp_file);
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		mem_file_free(&temp_file);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	dir_tree_init(&temp_tree, imap_parser_get_dpool());
@@ -2811,8 +2737,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	}
 	/* IMAP_CODE_2170012: OK XLIST completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170012, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170012, 1, &string_length);
 	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
 			"%s %s", argv[0], imap_reply_str);
 	
@@ -2834,28 +2759,25 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 4) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2866,8 +2788,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			imap_parser_echo_modify(pcontext, NULL);
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170011, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"* LSUB (\\Noselect) \"/\" \"\"\r\n%s %s",
 			argv[0], imap_reply_str);
@@ -2880,36 +2801,36 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		mem_file_free(&temp_file);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		mem_file_free(&temp_file);
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		mem_file_free(&temp_file);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	mem_file_init(&temp_file1, imap_parser_get_allocator());
@@ -2945,8 +2866,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	}
 	/* IMAP_CODE_2170013: OK LSUB completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170013, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170013, 1, &string_length);
 	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
 			"%s %s", argv[0], imap_reply_str);
 	stream_write(&pcontext->stream, buff, len);
@@ -2970,13 +2890,12 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char *temp_argv[16];
 	char temp_name[1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
     
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot
 		process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2986,8 +2905,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name) || '(' != argv[3][0]
 		|| ')' != argv[3][strlen(argv[3]) - 1]) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2996,8 +2914,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	temp_argc = parse_imap_args(argv[3] + 1,
 		strlen(argv[3]) - 2, temp_argv, sizeof(temp_argv));
 	if (-1 == temp_argc) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3008,37 +2925,36 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        &unseen, &uidvalid, &uidnext, nullptr, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+	}
 	/* IMAP_CODE_2170014: OK STATUS completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170014, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170014, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* STATUS {%zu}\r\n%s (", strlen(argv[2]), argv[2]);
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
@@ -3103,13 +3019,11 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_path[256];
 	char temp_name[1024];
 	char buff[1024];
-	const char *estring, *imap_reply_str;
-	const char* imap_reply_str1;
+	const char *estring;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3119,8 +3033,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| strlen(argv[2]) >= 1024 || FALSE ==
 		imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3150,8 +3063,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
 			- 2, temp_argv, sizeof(temp_argv)))) {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -3167,8 +3079,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			} else if (0 == strcasecmp(temp_argv[i], "\\Draft")) {
 				b_draft = TRUE;
 			} else {
-				imap_reply_str = resource_get_imap_code(
-					IMAP_CODE_2180000, 1, &string_length);
+				auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 				imap_parser_safe_write(pcontext, buff, string_length);
 				return DISPATCH_CONTINUE;
@@ -3180,8 +3091,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		argv[argc - 1], strlen(argv[argc - 1]))) {
 		mail_free(&imail);
 		/* IMAP_CODE_2190008: NO cannot parse message, format error */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190008, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190008, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -3216,8 +3126,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				fprintf(stderr, "W-1370: remove %s: %s\n", temp_path, strerror(errno));
 		}
 		/* IMAP_CODE_2190009: NO fail to save message */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3231,33 +3140,33 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 8,
 			"message %s is appended OK", temp_path);
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	imap_parser_touch_modify(NULL, pcontext->username,
 							pcontext->selected_folder);
@@ -3265,10 +3174,8 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170015: OK <APPENDUID> APPEND completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170015, 1, &string_length);
-	imap_reply_str1 = resource_get_imap_code(
-		IMAP_CODE_2170015, 2, &string_length1);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170015, 1, &string_length);
+	auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2170015, 2, &string_length1);
 	for (i=0; i<10; i++) {
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid, nullptr,
@@ -3301,12 +3208,10 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char* temp_argv[5];
 	char str_flags[128];
 	char temp_name[1024];
-	const char* imap_reply_str;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180004, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180004, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3316,8 +3221,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| strlen(argv[2]) >= 1024 || FALSE ==
 		imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3344,8 +3248,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
 			- 2, temp_argv, sizeof(temp_argv)))) {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -3358,8 +3261,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				0 == strcasecmp(temp_argv[i], "\\Draft")) {
 				/* do nothing */
 			} else {
-				imap_reply_str = resource_get_imap_code(
-					IMAP_CODE_2180000, 1, &string_length);
+				auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 					"%s %s", argv[0], imap_reply_str);
 				imap_parser_safe_write(pcontext, buff, string_length);
@@ -3374,8 +3276,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	fd = open(pcontext->file_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == fd) {
 		/* IMAP_CODE_2190009: NO fail to save message */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3428,8 +3329,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	struct stat node_stat;
 	char buff[1024];
-	const char *estring, *imap_reply_str;
-	const char *imap_reply_str1;
+	const char *estring;
 	
 	b_answered = FALSE;
 	b_flagged = FALSE;
@@ -3443,8 +3343,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
 		/* IMAP_CODE_2190009: NO fail to save message */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3464,8 +3363,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
 		/* IMAP_CODE_2190009: NO fail to save message */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 			pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3484,8 +3382,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->mid[0] = '\0';
 		pcontext->file_path[0] = '\0';
 		/* IMAP_CODE_2190009: NO fail to save message */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3542,7 +3439,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				fprintf(stderr, "W-1346: remove %s: %s\n", temp_path, strerror(errno));
 		}
 		/* IMAP_CODE_2190009: NO fail to save message */
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190009, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -3560,36 +3457,36 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 8,
 			"message %s is appended OK", temp_path);
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		pcontext->mid[0] = '\0';
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 				pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		pcontext->mid[0] = '\0';
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
 			pcontext->tag_string, imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		pcontext->mid[0] = '\0';
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 			pcontext->tag_string, imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	imap_parser_touch_modify(NULL, pcontext->username,
 							pcontext->selected_folder);
@@ -3597,10 +3494,8 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	/* IMAP_CODE_2170015: OK <APPENDUID> APPEND completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170015, 1, &string_length);
-	imap_reply_str1 = resource_get_imap_code(
-		IMAP_CODE_2170015, 2, &string_length1);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170015, 1, &string_length);
+	auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2170015, 2, &string_length1);
 	for (i=0; i<10; i++) {
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid,
@@ -3626,12 +3521,10 @@ int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-    const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3639,8 +3532,7 @@ int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170016: OK CHECK completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170016, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170016, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 		"%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -3651,12 +3543,10 @@ int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-    const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3664,8 +3554,7 @@ int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_cmd_parser_clsfld(pcontext);
 	/* IMAP_CODE_2170017: OK CLOSE completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170017, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170017, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
     return DISPATCH_CONTINUE;
@@ -3682,12 +3571,11 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	char temp_file[256];
 	SINGLE_LIST temp_list;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3695,8 +3583,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (TRUE == pcontext->b_readonly) {
 		/* IMAP_CODE_2180006: BAD can not expunge with read-only status*/
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3709,36 +3596,36 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	auto num = xarray_get_capacity(&xarray);
 	single_list_init(&temp_list);
@@ -3754,7 +3641,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	         pcontext->selected_folder, &temp_list, &errnum);
 	single_list_free(&temp_list);
 	switch(result) {
-	case MIDB_RESULT_OK:
+	case MIDB_RESULT_OK: {
 		stream_clear(&pcontext->stream);
 		del_num = 0;
 		for (size_t i = 0; i < xarray_get_capacity(&xarray); ++i) {
@@ -3780,45 +3667,45 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170026: OK EXPUNGE completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170026, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170026, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		stream_write(&pcontext->stream, buff, string_length);
 		pcontext->write_offset = 0;
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 		return DISPATCH_BREAK;
-	case MIDB_NO_SERVER:
+	}
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 }
 
@@ -3826,12 +3713,10 @@ int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t string_length = 0;
-    const char* imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3841,8 +3726,7 @@ int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->proto_stat = PROTO_STAT_AUTH;
 	pcontext->selected_folder[0] = '\0';
 	/* IMAP_CODE_2170018: OK UNSELECT completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170018, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170018, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 		"%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -3856,20 +3740,18 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int buff_len;
 	size_t string_length = 0;
 	char buff[256*1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 3 || argc > 1024) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3884,33 +3766,33 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	buff_len += 9;
 	buff[buff_len] = '\r';
@@ -3920,8 +3802,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	stream_clear(&pcontext->stream);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170019, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170019, 1, &string_length);
 	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
 	            "%s %s", argv[0], imap_reply_str);
 	stream_write(&pcontext->stream, buff, buff_len);
@@ -3944,14 +3825,13 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char* tmp_argv[128];
 	DOUBLE_LIST list_seq;
 	DOUBLE_LIST list_data;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	DOUBLE_LIST_NODE nodes[1024];
 	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -3976,36 +3856,36 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	stream_clear(&pcontext->stream);
 	num = xarray_get_capacity(&xarray);
@@ -4020,9 +3900,10 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170020: OK FETCH completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170020, 1, &string_length);
+	{
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170020, 1, &string_length);
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	}
 	string_length = strlen(buff);
 	stream_write(&pcontext->stream, buff, string_length);
 	pcontext->write_length = 0;
@@ -4035,8 +3916,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	return DISPATCH_BREAK;
  FETCH_PARAM_ERR:
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2180000, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 		"%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -4056,13 +3936,12 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char *temp_argv[8];
 	DOUBLE_LIST list_seq;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	SEQUENCE_NODE sequence_nodes[1024];
 
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4074,8 +3953,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 != strcasecmp(argv[3], "+FLAGS") && 0 != strcasecmp(argv[3],
 		"+FLAGS.SILENT") && 0 != strcasecmp(argv[3], "-FLAGS") &&
 		0 != strcasecmp(argv[3], "-FLAGS.SILENT"))) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4085,8 +3963,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (-1 == (temp_argc = parse_imap_args(
 			argv[4] + 1, strlen(argv[4]) - 2, temp_argv,
 			sizeof(temp_argv)/sizeof(char*)))) {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -4098,8 +3975,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (TRUE == pcontext->b_readonly) {
 		/* IMAP_CODE_2180006: BAD can not store with read-only status */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4118,8 +3994,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		} else if (0 == strcasecmp(temp_argv[i], "\\Draft")) {
 			flag_bits |= FLAG_DRAFT;
 		} else {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180007, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180007, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -4132,36 +4007,36 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	num = xarray_get_capacity(&xarray);
 	for (i=0; i<num; i++) {
@@ -4173,8 +4048,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170021: OK STORE completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170021, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170021, 1, &string_length);
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 	string_length = strlen(buff);
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -4199,14 +4073,12 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	SINGLE_LIST temp_list;
 	char uid_string[64*1024];
 	char uid_string1[64*1024];
-	const char *estring, *imap_reply_str;
-	const char* imap_reply_str1;
+	const char *estring;
 	SEQUENCE_NODE sequence_nodes[1024];
     
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4216,7 +4088,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    sequence_nodes, argv[2]) || strlen(argv[3]) == 0 || strlen(argv[3])
 		>= 1024 || FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[3], temp_name)) {
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
@@ -4227,36 +4099,36 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
@@ -4319,10 +4191,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (TRUE == b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 		/* IMAP_CODE_2170022: OK <COPYUID> COPY completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170022, 1, &string_length);
-		imap_reply_str1 = resource_get_imap_code(
-			IMAP_CODE_2170022, 2, &string_length1);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170022, 1, &string_length);
+		auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2170022, 2, &string_length1);
 		if (0 != uidvalidity) {
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s [COPYUID %u %s %s] %s", argv[0],
@@ -4334,8 +4204,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	} else {
 		/* IMAP_CODE_2190016: NO COPY failed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190016, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190016, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 	}
@@ -4352,12 +4221,11 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int buff_len;
 	size_t string_length = 0;
 	char buff[256*1024];
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4365,8 +4233,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	
 	if (argc < 3 || argc > 1024) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4382,33 +4249,33 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	buff_len += 9;
 	buff[buff_len] = '\r';
@@ -4418,8 +4285,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	stream_clear(&pcontext->stream);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170023, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170023, 1, &string_length);
 	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
 	            "%s %s", argv[0], imap_reply_str);
 	stream_write(&pcontext->stream, buff, buff_len);
@@ -4444,14 +4310,13 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	DOUBLE_LIST list_seq;
 	DOUBLE_LIST list_data;
 	DOUBLE_LIST_NODE *pnode;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	DOUBLE_LIST_NODE nodes[1024];
 	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4486,36 +4351,36 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		snprintf(buff, sizeof(buff), "%s %s%s", argv[0], imap_reply_str, estring);
 		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	stream_clear(&pcontext->stream);
 	num = xarray_get_capacity(&xarray);
@@ -4530,9 +4395,10 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170028, 1, &string_length);
+	{
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170028, 1, &string_length);
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	}
 	string_length = strlen(buff);
 	stream_write(&pcontext->stream, buff, string_length);
 	pcontext->write_length = 0;
@@ -4546,7 +4412,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_BREAK;
 	
  UID_FETCH_PARAM_ERR:
-	imap_reply_str = resource_get_imap_code(
+	auto imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2180000, 1, &string_length);
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 	string_length = strlen(buff);
@@ -4568,13 +4434,12 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char *temp_argv[8];
 	size_t string_length = 0;
 	DOUBLE_LIST list_seq;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	SEQUENCE_NODE sequence_nodes[1024];
 
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4586,8 +4451,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 != strcasecmp(argv[4], "+FLAGS") && 0 != strcasecmp(argv[4],
 		"+FLAGS.SILENT") && 0 != strcasecmp(argv[4], "-FLAGS") &&
 		0 != strcasecmp(argv[4], "-FLAGS.SILENT"))) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4597,8 +4461,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (-1 == (temp_argc = parse_imap_args(
 			argv[5] + 1, strlen(argv[5]) - 2, temp_argv,
 			sizeof(temp_argv)/sizeof(char*)))) {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -4610,8 +4473,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (TRUE == pcontext->b_readonly) {
 		/* IMAP_CODE_2180006: BAD can not store with read-only status */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4630,8 +4492,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		} else if (0 == strcasecmp(temp_argv[i], "\\Draft")) {
 			flag_bits |= FLAG_DRAFT;
 		} else {
-			imap_reply_str = resource_get_imap_code(
-				IMAP_CODE_2180007, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180007, 1, &string_length);
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s", argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -4644,36 +4505,36 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	num = xarray_get_capacity(&xarray);
 	for (i=0; i<num; i++) {
@@ -4685,8 +4546,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170024: OK UID STORE completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170024, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170024, 1, &string_length);
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 	string_length = strlen(buff);
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -4710,14 +4570,12 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	DOUBLE_LIST list_seq;
 	SINGLE_LIST temp_list;
 	char uid_string[64*1024];
-	const char *estring, *imap_reply_str;
-	const char* imap_reply_str1;
+	const char *estring;
 	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4727,8 +4585,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    sequence_nodes, argv[3]) || 0 == strlen(argv[4]) || strlen(argv[4])
 		>= 1024 || FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[4], temp_name)) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4740,36 +4597,36 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 			error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity,
@@ -4827,10 +4684,8 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (TRUE == b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 		/* IMAP_CODE_2170025: OK <COPYUID> UID COPY completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170025, 1, &string_length);
-		imap_reply_str1 = resource_get_imap_code(
-			IMAP_CODE_2170025, 2, &string_length1);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170025, 1, &string_length);
+		auto imap_reply_str1 = resource_get_imap_code(IMAP_CODE_2170025, 2, &string_length1);
 		if (0 != uidvalidity) {
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"%s %s [COPYUID %u %s %s] %s", argv[0],
@@ -4842,8 +4697,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	} else {
 		/* IMAP_CODE_2190017: NO UID COPY failed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190017, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190017, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
 	}
 	stream_write(&pcontext->stream, buff, string_length);
@@ -4865,13 +4719,12 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_path[256];
     DOUBLE_LIST list_seq;
 	SINGLE_LIST temp_list;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4879,8 +4732,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (TRUE == pcontext->b_readonly) {
 		/* IMAP_CODE_2180006: BAD can not expunge with read-only status*/
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4888,8 +4740,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
 	    sequence_nodes, argv[3])) {
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4902,44 +4753,43 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 	auto num = xarray_get_capacity(&xarray);
 	if (0 == num) {
 		xarray_free(&xarray);
 		imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170030: OK UID EXPUNGE completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170030, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170030, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4962,7 +4812,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	         pcontext->selected_folder, &temp_list, &errnum);
 	single_list_free(&temp_list);
 	switch(result) {
-	case MIDB_RESULT_OK:
+	case MIDB_RESULT_OK: {
 		stream_clear(&pcontext->stream);
 		del_num = 0;
 		for (size_t i = 0; i < xarray_get_capacity(&xarray); ++i) {
@@ -4990,7 +4840,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
-		imap_reply_str = resource_get_imap_code(
+		auto imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2170026, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
@@ -4998,34 +4848,35 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->write_offset = 0;
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 		return DISPATCH_BREAK;
-	case MIDB_NO_SERVER:
+	}
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
 					argv[0], imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
+	}
 	}
 }
 
@@ -5042,7 +4893,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	char prev_selected[128];
 	size_t string_length = 0;
 	SINGLE_LIST temp_list;
-	const char *estring, *imap_reply_str;
+	const char *estring;
 	
 	if ('\0' == pcontext->selected_folder[0]) {
 		return;
@@ -5061,34 +4912,34 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"* %s%s", imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
+	}
 	}
 	b_deleted = FALSE;
 	num = xarray_get_capacity(&xarray);
@@ -5118,34 +4969,34 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 			b_deleted = TRUE;
 		}
 		break;
-	case MIDB_NO_SERVER:
+	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190005, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190005, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
-	case MIDB_RDWR_ERROR:
+	}
+	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190006, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190006, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
-	default:
+	}
+	default: {
 		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2190007, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2190007, 1, &string_length);
 		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			"* %s%s", imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
+	}
 	}
 	xarray_free(&xarray);
 	if (TRUE == b_deleted) {
