@@ -276,7 +276,8 @@ static BOOL firsttime_password(const char *username, const char *password,
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 		         "username='%s'", encrypt_passwd, temp_name);
-		conn.res.query(sql_string);
+		if (conn.res.query(sql_string) != 0)
+		        /* ignore - logmsg already emitted */;
 	}
 
 	size_t j;
@@ -421,7 +422,8 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 				" WHERE username='%s'", encrypt_passwd, temp_name);
-		conn.res.query(sql_string);
+		if (conn.res.query(sql_string) != 0)
+			/* ignore - logmsg already emitted */;
 	}
 	for (size_t j = 0; j < rows; ++j) {
 		auto myrow = pmyres.fetch_row();
