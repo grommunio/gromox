@@ -740,9 +740,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 	NEWMAIL_ZNOTIFICATION *pnew_notify1;
 	ZNOTIFICATION *pnotification1 = !b_temp ? me_alloc<ZNOTIFICATION>() : cu_alloc<ZNOTIFICATION>();
 	
-	if (NULL == pnotification) {
+	if (pnotification1 == nullptr)
 		return NULL;
-	}
 	pnotification1->event_type = pnotification->event_type;
 	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
 		pnew_notify1 = (NEWMAIL_ZNOTIFICATION*)
