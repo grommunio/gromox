@@ -1341,7 +1341,7 @@ BOOL container_object_query_user_table(
 		row_count = row_needed;
 	} else {
 		b_forward = FALSE;
-		if (start_pos + 1 + row_needed < 0) {
+		if (static_cast<int64_t>(start_pos) + 1 + row_needed < 0) {
 			first_pos = 0;
 			row_count = start_pos + 1;
 		} else {
