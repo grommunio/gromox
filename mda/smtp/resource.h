@@ -3,13 +3,8 @@
 #include <gromox/config_file.hpp>
 #include <gromox/common_types.hpp>
 
-struct SMTP_ERROR_CODE {
-    int     code;
-    char    comment[512];
-};
-
 enum {
-    SMTP_CODE_2172001 = 0,
+	SMTP_CODE_2172001 = 2172001,
     SMTP_CODE_2172002,
     SMTP_CODE_2172003,
     SMTP_CODE_2172004,
@@ -19,13 +14,11 @@ enum {
     SMTP_CODE_2172008,
     SMTP_CODE_2172009,
     SMTP_CODE_2172010,
-
-    SMTP_CODE_2173001,
+	SMTP_CODE_2173001 = 2173001,
     SMTP_CODE_2173002,
     SMTP_CODE_2173003,
     SMTP_CODE_2173004,
-
-    SMTP_CODE_2174001,
+	SMTP_CODE_2174001 = 2174001,
     SMTP_CODE_2174002,
     SMTP_CODE_2174003,
     SMTP_CODE_2174004,
@@ -45,8 +38,7 @@ enum {
     SMTP_CODE_2174018, 
     SMTP_CODE_2174019, 
     SMTP_CODE_2174020,
-
-    SMTP_CODE_2175001,
+	SMTP_CODE_2175001 = 2175001,
     SMTP_CODE_2175002,
     SMTP_CODE_2175003,
     SMTP_CODE_2175004,
@@ -82,7 +74,6 @@ enum {
     SMTP_CODE_2175034, 
     SMTP_CODE_2175035,
     SMTP_CODE_2175036,
-    SMTP_CODE_COUNT
 };
 
 extern int resource_run();

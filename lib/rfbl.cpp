@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* unistd.h:environ */
 #include <list>
 #include <memory>
 #include <cerrno>
 #include <cstdarg>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -282,6 +283,41 @@ std::string slurp_file(const char *file)
 		return data;
 	}
 	return slurp_file(fp.get());
+}
+
+/*
+ * Trim "<foo>" from string, and make two C strings from it,
+ * each with a trailing \0, and each being preprended with
+ * Pascal-style length byte which incidentally also counts the \0.
+ * \r\n is appended.
+ * "hi <who>, give" -> 4 h i space \0 9 , space g i v e \r \n \0
+ */
+std::string resource_parse_stcode_line(const char *src)
+{
+	std::string out;
+	uint8_t srclen = strlen(src);
+	out.reserve(srclen + 6);
+	auto ptr = strchr(src, '<');
+	if (ptr == nullptr || ptr == src) {
+		uint8_t sub = srclen + 3;
+		out.append(reinterpret_cast<char *>(&sub), 1);
+		out.append(src, srclen);
+		out.append("\r\n", 3);
+		return out;
+	}
+	uint8_t seg = ptr - src + 1;
+	out.append(reinterpret_cast<char *>(&seg), 1);
+	out.append(src, seg - 1);
+	out += '\0';
+	ptr = strchr(src, '>');
+	if (ptr == nullptr)
+		return "\006OMG\r\n";
+	++ptr;
+	seg = strlen(ptr) + 3;
+	out.append(reinterpret_cast<char *>(&seg), 1);
+	out.append(ptr);
+	out.append("\r\n", 2);
+	return out;
 }
 
 }

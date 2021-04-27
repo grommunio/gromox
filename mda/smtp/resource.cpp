@@ -5,6 +5,8 @@
  *
  */
 #include <cerrno>
+#include <string>
+#include <unordered_map>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -18,7 +20,7 @@
 
 using namespace gromox;
 
-static SMTP_ERROR_CODE g_default_smtp_error_code_table[] = {
+static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = {
 	{2172001, "214 Help availble on " DFL_LOGOLINK},
     { 2172002, "220 <domain> Service ready" },
     { 2172003, "221 <domain> Good-bye" },
@@ -91,114 +93,38 @@ static SMTP_ERROR_CODE g_default_smtp_error_code_table[] = {
     { 2175036, "554 Message is infected by virus" },
 };
 
-/* private global variables */
-static SMTP_ERROR_CODE *g_def_code_table;
-
-static int resource_parse_smtp_line(char* dest, char* src_str, int len);
+static std::unordered_map<unsigned int, std::string> g_def_code_table;
 
 int resource_run()
 {
-    int i;
-
-	g_def_code_table = static_cast<SMTP_ERROR_CODE *>(malloc(sizeof(SMTP_ERROR_CODE) * SMTP_CODE_COUNT));
-    if (NULL == g_def_code_table) {
-		printf("[resource]: Failed to allocate default code table\n");
-        return -1;
-    }
-    for (i = 0; i < SMTP_CODE_COUNT; i++) {
-        g_def_code_table[i].code =
-                    g_default_smtp_error_code_table[i].code;
-
-        resource_parse_smtp_line(g_def_code_table[i].comment, 
-            g_default_smtp_error_code_table[i].comment, 
-            strlen(g_default_smtp_error_code_table[i].comment));
-    }
-
-    
+	for (size_t i = 0; i < GX_ARRAY_SIZE(g_default_code_table); ++i)
+		g_def_code_table.emplace(g_default_code_table[i].first,
+			resource_parse_stcode_line(g_default_code_table[i].second));
     return 0;
 }
 
 int resource_stop()
 {
-    if (NULL != g_def_code_table) {
-        free(g_def_code_table);
-        g_def_code_table = NULL;
-    }
+	g_def_code_table.clear();
     return 0;
-}
-
-/*
- *  take a description line and construct it into what we need.
- *  for example, if the source string is "hello", we just copy
- *  it to the destination with a its length at the beginning of 
- *  the destination.    8 h e l l o \r \n \0    , the length 
- *  includes the CRLF and null terminator. if the source string
- *  is like "hi <who>, give", the destination format will be:       
- *      4 h i space \0 9 , space g i v e \r \n \0
- *
- *  @param
- *      dest    [in]        where we will copy the source string to
- *      src_str [in]        the source description string
- *      len                 the length of the source string
- *
- *  @return
- *      0       success
- *      <0      fail
- */
-static int resource_parse_smtp_line(char* dest, char* src_str, int len)
-{
-    char *ptr = NULL, *end_ptr = NULL, sub_len = 0;
-
-    if (NULL == (ptr = strchr(src_str, '<')) || ptr == src_str) {
-        dest[0] = (char)(len + 3);
-        strncpy(dest + 1, src_str, len);
-		dest[len+1] = '\r';
-		dest[len+2] = '\n';
-		dest[len+3] = '\0';
-    } else {
-        sub_len = (char)(ptr - src_str);
-        dest[0] = sub_len + 1;          /* include null terminator */
-        strncpy(dest + 1, src_str, sub_len);
-        dest[sub_len + 1] = '\0';
-
-        if (NULL == (ptr = strchr(ptr, '>'))) {
-            return -1;
-        }
-
-        end_ptr = src_str + len;
-        dest[sub_len + 2] = (char)(end_ptr - ptr + 2);
-        end_ptr = ptr + 1;
-        ptr     = dest + sub_len + 3;
-        sub_len = dest[sub_len + 2];
-
-        strncpy(ptr, end_ptr, sub_len);
-		ptr[sub_len-3] = '\r';
-		ptr[sub_len-2] = '\n';
-		ptr[sub_len-1] = '\0';        
-    }
-    return 0;
-
 }
 
 const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_t *len)
 {
-    SMTP_ERROR_CODE *pitem = NULL;
-    char *ret_ptr = NULL;
-    int   ret_len = 0;
 #define FIRST_PART      1
 #define SECOND_PART     2
-
-        pitem = &g_def_code_table[code_type];
-    ret_len = pitem->comment[0];
-    ret_ptr = &(pitem->comment[1]);
+	auto it = g_def_code_table.find(code_type);
+	if (it == g_def_code_table.end())
+		return "OMG";
+	int ret_len = it->second[0];
+	auto ret_ptr = &it->second[1];
     if (FIRST_PART == n)    {
         *len = ret_len - 1;
         return ret_ptr;
     }
     if (SECOND_PART == n)   {
         ret_ptr = ret_ptr + ret_len + 1;
-        ret_len = pitem->comment[ret_len + 1];
-
+		ret_len = it->second[ret_len+1];
         if (ret_len > 0) {
             *len = ret_len - 1;
             return ret_ptr;

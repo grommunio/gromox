@@ -54,5 +54,6 @@ extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
 extern GX_EXPORT std::string slurp_file(FILE *);
 extern GX_EXPORT std::string slurp_file(const char *filename);
+extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
 
 }

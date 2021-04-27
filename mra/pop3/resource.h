@@ -3,13 +3,8 @@
 #include <gromox/config_file.hpp>
 #include <gromox/common_types.hpp>
 
-struct POP3_ERROR_CODE {
-    int     code;
-    char    comment[512];
-};
-
 enum {
-    POP3_CODE_2170000 = 0,
+	POP3_CODE_2170000 = 2170000,
     POP3_CODE_2170001,
     POP3_CODE_2170002,
     POP3_CODE_2170003,
@@ -36,7 +31,6 @@ enum {
 	POP3_CODE_2170024,
 	POP3_CODE_2170025,
 	POP3_CODE_2170026,
-    POP3_CODE_COUNT
 };
 
 extern int resource_run();
