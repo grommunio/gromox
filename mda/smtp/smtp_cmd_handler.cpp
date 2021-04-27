@@ -20,9 +20,6 @@ static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-    
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
         /* command error, cannot be recognized by system */
         if (cmd_line[4] != ' ') {
@@ -39,37 +36,22 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 		return 502;
     }
     /* 250 OK */
-	smtp_reply_str = resource_get_smtp_code(205, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-	}
     smtp_parser_reset_context_envelop(pcontext);    
     pcontext->last_cmd = T_HELO_CMD;
-    return DISPATCH_CONTINUE;    
+	return 205;
 }    
 
 int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
 	size_t string_length = 0;
-    const char* smtp_reply_str;
     char buff[1024];
             
     /* SAME AS HELO ------------------------ begin */
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
         /* command error, cannot be recognized by system */
         if (cmd_line[4] != ' ') {
-			smtp_reply_str = resource_get_smtp_code(506, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str,
-					string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str,
-					string_length);
-			}
-            return DISPATCH_CONTINUE;
+			return 506;
         } else {
             /* copy parameter to hello_domain */
             memcpy(pcontext->mail.envelop.hello_domain, cmd_line + 5,
@@ -113,53 +95,29 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-	const char*smtp_reply_str;
-
 	if (NULL != pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(506, 1, &string_length);
-		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 506;
 	}
 
 	if (FALSE == smtp_parser_get_param(SMTP_SUPPORT_STARTTLS)) {
-		smtp_reply_str = resource_get_smtp_code(506, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 506;
 	}
-	smtp_reply_str = resource_get_smtp_code(210, 1, &string_length);
-	write(pcontext->connection.sockd, smtp_reply_str, string_length);
-
 	pcontext->last_cmd = T_STARTTLS_CMD;
 	memset(pcontext->mail.envelop.hello_domain, 0, 256);
 	smtp_parser_reset_context_envelop(pcontext);
-
-	return DISPATCH_CONTINUE;
+	return 210;
 }
 
 int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-    
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(520, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 520;
 	}
         /* 502 Command not implemented */
-		smtp_reply_str = resource_get_smtp_code(506, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str,
-				string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str,
-				string_length);
-		}
-        return DISPATCH_CONTINUE;
+	return 506;
 }
 
 int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
@@ -185,9 +143,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(520, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 520;
 	}
 
     parse_email_addr(&email_addr, buff);
@@ -217,17 +173,11 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
             snprintf(pcontext->mail.envelop.from, 256, "%s@%s",
                 email_addr.local_part, email_addr.domain);
             /* 250 OK */
-			smtp_reply_str = resource_get_smtp_code(205, 1, &string_length);
+			return 205;
         } else {
             /* bad sequence */
-			smtp_reply_str = resource_get_smtp_code(507, 1, &string_length);    
+			return 507;
         }
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-	}
-    return DISPATCH_CONTINUE;
 }
 
 int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
@@ -246,9 +196,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(520, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 520;
 	}
 
     memcpy(buff, cmd_line + 8, line_length - 8);
@@ -340,17 +288,11 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
             email_addr.domain);
         mem_file_writeline(&pcontext->mail.envelop.f_rcpt_to, buff);
         /* 250 OK */
-		smtp_reply_str = resource_get_smtp_code(205, 1, &string_length);
+		return 205;
     } else {
         /* bad sequence */
-		smtp_reply_str = resource_get_smtp_code(507, 1, &string_length);
+		return 507;
     }
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-	}
-    return DISPATCH_CONTINUE;
 }
 
 int smtp_cmd_handler_data(const char* cmd_line, int line_length,
@@ -372,9 +314,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(520, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 520;
 	}
 
     /* 354 Start mail input; end with <CRLF>.<CRLF> */
@@ -415,16 +355,8 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
                 pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
                 if (NULL == pbuff2) {
                     stream_free(&stream);
-					smtp_reply_str = resource_get_smtp_code(416, 1, &string_length);
-					if (NULL != pcontext->connection.ssl) {
-						SSL_write(pcontext->connection.ssl, smtp_reply_str,
-							string_length);
-					} else {
-						write(pcontext->connection.sockd, smtp_reply_str,
-							string_length);
-					}
 		            smtp_parser_log_info(pcontext, 4, "out of memory");
-                    return DISPATCH_SHOULD_CLOSE;
+                    return 416 | DISPATCH_SHOULD_CLOSE;
                 }
                 size2_used = size - size_copied;
 				memcpy(pbuff2, static_cast<char *>(pbuff) + size_copied, size2_used);
@@ -469,9 +401,6 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
 int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-            
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
         return DISPATCH_CONTINUE;
     }
@@ -484,9 +413,6 @@ int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
 int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-    
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
         return DISPATCH_CONTINUE;
     }
@@ -498,9 +424,6 @@ int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
 int smtp_cmd_handler_help(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-    
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
         return DISPATCH_CONTINUE;
     }
@@ -508,9 +431,7 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(520, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 520;
 	}
 
     /* 214 Help availble on http:// ... */
@@ -520,9 +441,6 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-	const char *smtp_reply_str = nullptr;
-    
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
         return DISPATCH_CONTINUE;
     }
@@ -530,9 +448,7 @@ int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		smtp_reply_str = resource_get_smtp_code(520, 1, &string_length);
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		return DISPATCH_CONTINUE;
+		return 520;
 	}
 
         /* 252 Cannot VRFY user, but will accept message and attempt */       
@@ -542,9 +458,6 @@ int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
 int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-	
 	/* command not implement*/
 	return 506;
 }
@@ -552,9 +465,6 @@ int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
 int smtp_cmd_handler_else(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-    const char* smtp_reply_str;
-    
     /* command not implement*/
 	return 506;
 }
