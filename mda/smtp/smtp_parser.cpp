@@ -892,13 +892,7 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	/* check the line length */
 	if (line_length > 1000) {
 		/* 500 syntax error - line too long */
-		smtp_reply_str = resource_get_smtp_code(502, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 502;
 	}
 	if (pcontext->session_num == g_max_mail_sessions &&
 		(4 != line_length || 0 != strncasecmp(cmd_line, "QUIT", 4))) {
