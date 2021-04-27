@@ -240,7 +240,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
-				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170023, 1, &string_length);
+				auto pop3_reply_str = resource_get_pop3_code(1723, 1, &string_length);
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
 				pop3_parser_log_info(pcontext, 8, "out of SSL object");
 				SLEEP_BEFORE_CLOSE;
@@ -262,7 +262,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 					pcontext->connection.last_timestamp) < g_timeout) {
 					return PROCESS_POLLING_RDONLY;
 				}
-				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170001, 1, &string_length);
+				auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
 				pop3_parser_log_info(pcontext, 0, "time out");
 				SLEEP_BEFORE_CLOSE;
@@ -278,8 +278,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			pcontext->is_stls = FALSE;
 			if (pcontext->connection.server_port == g_ssl_port) {
 				/* +OK <domain> Service ready */
-				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170011, 1, &string_length);
-				auto pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170011, 2, &string_length);
+				auto pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
+				auto pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);
 				host_ID = resource_get_string("HOST_ID");
 				len = sprintf(reply_buf, "%s%s%s", pop3_reply_str, host_ID,
 						      pop3_reply_str2);
@@ -420,7 +420,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		/* check if context is timed out */
 		if (CALCULATE_INTERVAL(current_time,
 			pcontext->connection.last_timestamp) >= g_timeout) {
-			auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170001, 1, &string_length);
+			auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -483,7 +483,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	}
 	if (1024 == pcontext->read_offset) {
 		pcontext->read_offset = 0;
-		auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170002, 1, &string_length);
+		auto pop3_reply_str = resource_get_pop3_code(1702, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {

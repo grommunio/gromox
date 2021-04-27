@@ -69,28 +69,23 @@ int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 	const char*pop3_reply_str;
 	
 	if (NULL != pcontext->connection.ssl) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		return DISPATCH_CONTINUE;
 	}
 
 	if (FALSE == pop3_parser_get_param(POP3_SUPPORT_STLS)) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		write(pcontext->connection.sockd, pop3_reply_str, string_length);
 		return DISPATCH_CONTINUE;
 	}
 
 	if (TRUE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170025, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1725, 1, &string_length);
 		write(pcontext->connection.sockd, pop3_reply_str, string_length);
 		return DISPATCH_CONTINUE;
 	}
-
-	pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170024, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1724, 1, &string_length);
 	write(pcontext->connection.sockd, pop3_reply_str, string_length);
 
 	pcontext->is_stls = TRUE;
@@ -110,15 +105,13 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	if (TRUE == pop3_parser_get_param(POP3_SUPPORT_STLS) &&
 		TRUE == pop3_parser_get_param(POP3_FORCE_STLS) &&
 		NULL == pcontext->connection.ssl) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170026, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1726, 1, &string_length);
 		write(pcontext->connection.sockd, pop3_reply_str, string_length);
 		return DISPATCH_CONTINUE;
 	}
 
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -129,8 +122,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	
     /* command error, cannot be recognized by system */
     if (cmd_line[4] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -139,8 +131,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 		return DISPATCH_CONTINUE;
 	} else {
 		if (TRUE == pcontext->is_login) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170020, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1720, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -153,10 +144,10 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 		HX_strltrim(pcontext->username);
 		if (system_services_judge_user != nullptr &&
 		    !system_services_judge_user(pcontext->username)) {
-			string_length = sprintf(buff, "%s%s%s", resource_get_pop3_code(
-								POP3_CODE_2170017, 1, &string_length),
-								pcontext->username, resource_get_pop3_code(
-								POP3_CODE_2170017, 2, &string_length));
+			string_length = sprintf(buff, "%s%s%s",
+			                resource_get_pop3_code(1717, 1, &string_length),
+			                pcontext->username,
+			                resource_get_pop3_code(1717, 2, &string_length));
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, buff, string_length);
 			} else {
@@ -167,8 +158,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 			return DISPATCH_SHOULD_CLOSE;
 		}
     }
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170000, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -188,8 +178,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -200,8 +189,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	
     /* command error, cannot be recognized by system */
     if (cmd_line[4] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -211,8 +199,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	}
 	
 	if (TRUE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170020, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1720, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -222,8 +209,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	}
 	
 	if ('\0' == pcontext->username[0]) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170005, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1705, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -241,8 +227,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		pcontext->total_size = 0;
 		
 		if ('\0' == pcontext->maildir[0]) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170015, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1715, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -271,8 +256,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 
 		count = array_get_capacity(&pcontext->array);
 		if (count != pcontext->total_mail) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170022, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1722, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -283,8 +267,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 
 		pcontext->is_login = TRUE;
 		pop3_parser_log_info(pcontext, 8, "login success");
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170000, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -298,8 +281,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			if (system_services_add_user_into_temp_list != nullptr)
 				system_services_add_user_into_temp_list(pcontext->username,
 					pop3_parser_get_param(BLOCK_AUTH_FAIL));
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170006, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1706, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -307,10 +289,10 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			}
 			return DISPATCH_SHOULD_CLOSE;
 		}
-		string_length = sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(
-							POP3_CODE_2170014, 1, &string_length), reason,
-							resource_get_pop3_code(POP3_CODE_2170014, 2,
-							&string_length));
+		string_length = sprintf(temp_buff, "%s%s%s",
+		                resource_get_pop3_code(1714, 1, &string_length),
+		                reason,
+		                resource_get_pop3_code(1714, 2, &string_length));
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, temp_buff, string_length);
 		} else {
@@ -329,8 +311,7 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -340,8 +321,7 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 	}
 
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170008, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -380,8 +360,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	if (4 == strlen(temp_command)) {
 		
 		if (FALSE == pcontext->is_login) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170008, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -407,8 +386,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170018, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1718, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -420,8 +398,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	}
 	
 	if (temp_command[4] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -431,8 +408,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170008, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -453,8 +429,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_CONTINUE;
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170007, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -482,8 +457,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	if (4 == strlen(temp_command)) {
 		
 		if (FALSE == pcontext->is_login) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170008, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -511,8 +485,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170018, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1718, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -524,8 +497,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	}
 	
 	if (temp_command[4] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -535,8 +507,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170008, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -557,9 +528,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_CONTINUE;
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170007, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -583,8 +552,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 5) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -594,8 +562,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	}
 	
 	if (temp_command[4] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -605,8 +572,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170008, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -624,8 +590,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
 		if (-1 == pcontext->message_fd) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170009, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1709, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -638,8 +603,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 		stream_clear(&pcontext->stream);
 		stream_write(&pcontext->stream, "+OK\r\n", 5);
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170019, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1719, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -652,9 +616,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 				" is going to be retrieved", temp_path);
 		return DISPATCH_DATA;
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170007, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -677,8 +639,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 5) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -688,8 +649,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	}
 	
 	if (temp_command[4] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -699,8 +659,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170008, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -717,8 +676,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 			punit->node.pdata = punit;
 			single_list_append_as_tail(&pcontext->list, &punit->node);
 		}
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170000, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -726,9 +684,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_CONTINUE;
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170007, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -754,8 +710,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 4) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -765,8 +720,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	}
 	
 	if (temp_command[3] != ' ') {
-        pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170003, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -776,8 +730,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170008, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -804,8 +757,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
 		if (-1 == pcontext->message_fd) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170009, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1709, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -816,8 +768,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		stream_clear(&pcontext->stream);
 		stream_write(&pcontext->stream, "+OK\r\n", 5);
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
-			pop3_reply_str = resource_get_pop3_code(
-				POP3_CODE_2170019, 1, &string_length);
+			pop3_reply_str = resource_get_pop3_code(1719, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 			} else {
@@ -828,9 +779,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_DATA;
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170007, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -849,7 +798,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	SINGLE_LIST_NODE *pnode;
     
 	if (4 != line_length) {
-		auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170004, 1, &string_length);
+		auto pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -865,7 +814,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 			case MIDB_RESULT_OK:
 				break;
 			case MIDB_NO_SERVER: {
-				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170016, 1, &string_length);
+				auto pop3_reply_str = resource_get_pop3_code(1716, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 				} else {
@@ -874,7 +823,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				return DISPATCH_SHOULD_CLOSE;
 			}
 			case MIDB_RDWR_ERROR: {
-				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170021, 1, &string_length);
+				auto pop3_reply_str = resource_get_pop3_code(1721, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 				} else {
@@ -885,7 +834,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				return DISPATCH_SHOULD_CLOSE;
 			}
 			case MIDB_RESULT_ERROR: {
-				auto pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170022, 1, &string_length);
+				auto pop3_reply_str = resource_get_pop3_code(1722, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 				} else {
@@ -913,9 +862,9 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	}
 
 	array_clear(&pcontext->array);
-	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(POP3_CODE_2170010, 1, 
+	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(1710, 1,
 		&string_length), resource_get_string("HOST_ID"),
-			resource_get_pop3_code(POP3_CODE_2170010, 2, &string_length));
+			resource_get_pop3_code(1710, 2, &string_length));
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, temp_buff, strlen(temp_buff));
 	} else {
@@ -934,8 +883,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 	SINGLE_LIST_NODE *pnode;
             
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -950,9 +898,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 			punit->b_deleted = FALSE;
 		}
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170000, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -968,8 +914,7 @@ int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(
-			POP3_CODE_2170004, 1, &string_length);
+		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 		} else {
@@ -977,9 +922,7 @@ int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
 		}
         return DISPATCH_CONTINUE;
 	}
-	
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170000, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {
@@ -996,8 +939,7 @@ int pop3_cmd_handler_else(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
     /* command not implement*/
-    pop3_reply_str = resource_get_pop3_code(
-		POP3_CODE_2170003, 1, &string_length);
+	pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
 	} else {

@@ -187,10 +187,8 @@ static void *p3ls_thrwork(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* 421 <domain> Service not available */
-			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170013, 1,
-							 &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170013, 2,
-							 &string_length);
+			pop3_reply_str = resource_get_pop3_code(1713, 1, &string_length);
+			pop3_reply_str2 = resource_get_pop3_code(1713, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 				  pop3_reply_str2);
@@ -203,10 +201,8 @@ static void *p3ls_thrwork(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			/* access denied */
-			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
-							 &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170012, 2,
-							 &string_length);
+			pop3_reply_str = resource_get_pop3_code(1712, 1, &string_length);
+			pop3_reply_str2 = resource_get_pop3_code(1712, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
@@ -222,10 +218,8 @@ static void *p3ls_thrwork(void *arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP <remote_ip> for audit ... */
-			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
-							 &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170012, 2,
-							 &string_length);
+			pop3_reply_str = resource_get_pop3_code(1712, 1, &string_length);
+			pop3_reply_str2 = resource_get_pop3_code(1712, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
@@ -239,10 +233,8 @@ static void *p3ls_thrwork(void *arg)
 		}
 
 		/* +OK <domain> Service ready */
-		pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170011, 1,
-						 &string_length);
-		pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170011, 2,
-						 &string_length);
+		pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
+		pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);
 		host_ID = resource_get_string("HOST_ID");
 		len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 			  pop3_reply_str2);
@@ -328,10 +320,8 @@ static void *p3ls_thrworkssl(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* 421 <domain> Service not available */
-			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170013, 1,
-							 &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170013, 2,
-							 &string_length);
+			pop3_reply_str = resource_get_pop3_code(1713, 1, &string_length);
+			pop3_reply_str2 = resource_get_pop3_code(1713, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 				  pop3_reply_str2);
@@ -344,10 +334,8 @@ static void *p3ls_thrworkssl(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			/* access denied */
-			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
-							 &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170012, 2,
-							 &string_length);
+			pop3_reply_str = resource_get_pop3_code(1712, 1, &string_length);
+			pop3_reply_str2 = resource_get_pop3_code(1712, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
@@ -363,10 +351,8 @@ static void *p3ls_thrworkssl(void *arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
-			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
-							 &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170012, 2,
-							 &string_length);
+			pop3_reply_str = resource_get_pop3_code(1712, 1, &string_length);
+			pop3_reply_str2 = resource_get_pop3_code(1712, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);

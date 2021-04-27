@@ -3,36 +3,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/common_types.hpp>
 
-enum {
-	POP3_CODE_2170000 = 2170000,
-    POP3_CODE_2170001,
-    POP3_CODE_2170002,
-    POP3_CODE_2170003,
-    POP3_CODE_2170004,
-    POP3_CODE_2170005,
-    POP3_CODE_2170006,
-    POP3_CODE_2170007,
-    POP3_CODE_2170008,
-    POP3_CODE_2170009,
-    POP3_CODE_2170010,
-    POP3_CODE_2170011,
-    POP3_CODE_2170012,
-    POP3_CODE_2170013,
-    POP3_CODE_2170014,
-    POP3_CODE_2170015,
-    POP3_CODE_2170016,
-    POP3_CODE_2170017,
-    POP3_CODE_2170018,
-    POP3_CODE_2170019,
-    POP3_CODE_2170020,
-    POP3_CODE_2170021,
-    POP3_CODE_2170022,
-	POP3_CODE_2170023,
-	POP3_CODE_2170024,
-	POP3_CODE_2170025,
-	POP3_CODE_2170026,
-};
-
 extern int resource_run();
 extern int resource_stop();
 extern const char *resource_get_pop3_code(unsigned int code_type, unsigned int n, size_t *len);
