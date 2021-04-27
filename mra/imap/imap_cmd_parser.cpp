@@ -1536,7 +1536,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
     return DISPATCH_CONTINUE;
 }
 
-int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_cmd_parser_username2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
 	size_t temp_len;
@@ -1558,7 +1558,13 @@ int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *pcontext)
     return DISPATCH_CONTINUE;
 }
 
-int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *ctx)
+{
+	return imap_cmd_parser_dval(argc, argv, ctx,
+	       imap_cmd_parser_username2(argc, argv, ctx));
+}
+
+static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t temp_len;
 	char reason[256];
@@ -1633,6 +1639,12 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+}
+
+int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
+{
+	return imap_cmd_parser_dval(argc, argv, ctx,
+	       imap_cmd_parser_password2(argc, argv, ctx));
 }
 
 int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -3292,10 +3304,11 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 
 int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *ctx)
 {
-	return imap_cmd_parser_append_begin2(argc, argv, ctx) & DISPATCH_ACTMASK;
+	return imap_cmd_parser_dval(argc, argv, ctx,
+	       imap_cmd_parser_append_begin2(argc, argv, ctx));
 }
 
-int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int i;
 	int fd;
@@ -3506,6 +3519,12 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
+}
+
+int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *ctx)
+{
+	return imap_cmd_parser_dval(argc, argv, ctx,
+	       imap_cmd_parser_append_end2(argc, argv, ctx));
 }
 
 int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -4994,4 +5013,24 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		imap_parser_touch_modify(pcontext,
 			pcontext->username, prev_selected);
 	}
+}
+
+/**
+ * Helper function. Takes a multi-purpose dispatch return code
+ * (imap_cmd_parser.h), "unpacks" it, possibly sends a response line to the
+ * client before yielding the unpacked dispatch action.
+ */
+int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, int ret)
+{
+	auto code = ret & DISPATCH_VALMASK;
+	if (code == 0)
+		return ret & DISPATCH_ACTMASK;
+	size_t len = 0;
+	auto str = resource_get_imap_code(code, 1, &len);
+	char buff[1024];
+	len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
+	      (ret & DISPATCH_TAG) ? ctx->tag_string :
+	      argc > 0 ? argv[0] : "*", str);
+	imap_parser_safe_write(ctx, buff, len);
+	return ret & DISPATCH_ACTMASK;
 }

@@ -964,7 +964,17 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 
 static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 {
-	return smtp_parser_dispatch_cmd2(cmd, len, ctx) & DISPATCH_ACTMASK;
+	auto ret = smtp_parser_dispatch_cmd2(cmd, len, ctx);
+	auto code = ret & DISPATCH_VALMASK;
+	if (code == 0)
+		return ret & DISPATCH_ACTMASK;
+	size_t zlen = 0;
+	auto str = resource_get_smtp_code(code, 1, &zlen);
+	if (ctx->connection.ssl != nullptr)
+		SSL_write(ctx->connection.ssl, str, zlen);
+	else
+		write(ctx->connection.sockd, str, zlen);
+	return ret & DISPATCH_ACTMASK;
 }
 
 /*

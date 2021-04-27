@@ -7,6 +7,8 @@ enum{
 	DISPATCH_SHOULD_CLOSE = 1U << 24,
 	DISPATCH_BREAK = 1U << 25,
 
+	DISPATCH_VALMASK = 0x0000FFFFU,
+	DISPATCH_TAG     = 0x00800000U,
 	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
@@ -48,3 +50,4 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext);
+extern int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *, int res);

@@ -1688,7 +1688,8 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 
 static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
 {
-	return imap_parser_dispatch_cmd2(argc, argv, ctx) & DISPATCH_ACTMASK;
+	return imap_cmd_parser_dval(argc, argv, ctx,
+	       imap_parser_dispatch_cmd2(argc, argv, ctx));
 }
 
 /*

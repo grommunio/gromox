@@ -763,7 +763,17 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 
 static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx)
 {
-	return pop3_parser_dispatch_cmd2(line, len, ctx) & DISPATCH_ACTMASK;
+	auto ret = pop3_parser_dispatch_cmd2(line, len, ctx);
+	auto code = ret & DISPATCH_VALMASK;
+	if (code == 0)
+		return ret & DISPATCH_ACTMASK;
+	size_t zlen = 0;
+	auto str = resource_get_pop3_code(code, 1, &zlen);
+	if (ctx->connection.ssl != nullptr)
+		SSL_write(ctx->connection.ssl, str, zlen);
+	else
+		write(ctx->connection.sockd, str, zlen);
+	return ret & DISPATCH_ACTMASK;
 }
 
 /*
