@@ -5,7 +5,6 @@
  *
  */
 #include <cerrno>
-#include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -93,12 +92,7 @@ static SMTP_ERROR_CODE g_default_smtp_error_code_table[] = {
 };
 
 /* private global variables */
-static SMTP_ERROR_CODE *g_error_code_table, *g_def_code_table;
-static std::shared_mutex g_error_table_lock;
-
-static int resource_find_smtp_code_index(int native_code);
-
-static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable);
+static SMTP_ERROR_CODE *g_def_code_table;
 
 static int resource_parse_smtp_line(char* dest, char* src_str, int len);
 
@@ -110,9 +104,6 @@ int resource_run()
     if (NULL == g_def_code_table) {
 		printf("[resource]: Failed to allocate default code table\n");
         return -1;
-    }
-    if (FALSE == resource_refresh_smtp_code_table()) {
-		printf("[resource]: Failed to load SMTP code\n");
     }
     for (i = 0; i < SMTP_CODE_COUNT; i++) {
         g_def_code_table[i].code =
@@ -133,119 +124,6 @@ int resource_stop()
         free(g_def_code_table);
         g_def_code_table = NULL;
     }
-    return 0;
-}
-
-/*
- *  construct a smtp error code table, which is as the below table
- *
- *      number              comments
- *      2175018             550 Access denied to you
- *      2175019             550 Access to Mailbox 
- *                              <email_addr>  is denied
- *  @param
- *      pptable [in/out]        pointer to the newly created table
- *
- *  @return
- *      0           success
- *      <>0         fail
- */
-static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
-{
-    char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
-	char *pbackup, *ptr, code[32];
-
-	int index, native_code, len;
-	auto file_ptr = fopen_sd("smtp_code.txt", resource_get_string("data_file_path"));
-	if (file_ptr == nullptr) {
-		printf("[resource]: fopen_sd smtp_code.txt: %s\n", strerror(errno));
-        return -1;
-    }
-
-	auto code_table = static_cast<SMTP_ERROR_CODE *>(malloc(sizeof(SMTP_ERROR_CODE) * SMTP_CODE_COUNT));
-    if (NULL == code_table) {
-		printf("[resource]: Failed to allocate memory for SMTP return code"
-                " table\n");
-        return -1;
-    }
-
-	for (int total = 0; total < SMTP_CODE_COUNT; ++total) {
-        code_table[total].code              = -1;
-        memset(code_table[total].comment, 0, 512);
-    }
-
-	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) {
-
-        if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
-            /* skip empty line or comments */
-            continue;
-        }
-
-        ptr = (pbackup = line);
-
-        len = 0;
-        while (*ptr && *ptr != '\r' && *ptr != '\n') {
-            if (*ptr == ' ' || *ptr == '\t') {
-                break;
-            }
-            len++;
-            ptr++;
-        }
-	if (len <= 0 || static_cast<size_t>(len) > sizeof(code) - 1) {
-			printf("[resource]: invalid native code format, file smtp_code.txt line: %d, %s\n", total + 1, line);
-            continue;
-        }
-
-        memcpy(code, pbackup, len);
-        code[len]   = '\0';
-
-        if ((native_code = atoi(code)) <= 0) {
-			printf("[resource]: invalid native code, file smtp_code.txt line: %d, %s\n", total + 1, line);
-            continue;
-        }
-
-        while (*ptr && (*ptr == ' ' || *ptr == '\t')) {
-            ptr++;
-        }
-
-        pbackup = ptr;
-        len     = 0;
-        while (*ptr && *ptr != '\r' && *ptr != '\n') {
-            len++;
-            ptr++;
-        }
-
-        while (len > 0 && (*ptr == ' ' || *ptr == '\t')) {
-            len--;
-            ptr--;
-        }
-
-        if (len <= 0 || len > MAX_FILE_LINE_LEN - 1) {
-            printf("[resource]: invalid native comment, file smtp_code.txt line: %d, %s\n", total + 1, line);
-            continue;
-        }
-        memcpy(buf, pbackup, len);
-        buf[len]    = '\0';
-
-        if ((index = resource_find_smtp_code_index(native_code)) < 0) {
-            printf("[resource]: no such native code, file smtp_code.txt line: %d, %s\n", total + 1, line);
-            continue;
-        }
-
-        if (-1 != code_table[index].code) {
-            printf("[resource]: the error code has already been defined, file smtp_code.txt line: %d, %s\n", total + 1, line);
-            continue;
-
-        }
-
-        if (resource_parse_smtp_line(code_table[index].comment, buf, len) < 0) {
-            printf("[resource]: invalid smtp code format, file smtp_code.txt line: %d, %s", total + 1, line);
-            continue;
-        }
-        code_table[index].code  = native_code;
-    }
-
-    *pptable = code_table;
     return 0;
 }
 
@@ -310,13 +188,7 @@ const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_
 #define FIRST_PART      1
 #define SECOND_PART     2
 
-	std::shared_lock rd_hold(g_error_table_lock);
-    if (NULL == g_error_code_table || g_error_code_table[code_type].code
-        == -1) {
         pitem = &g_def_code_table[code_type];
-    } else {
-        pitem = &g_error_code_table[code_type];
-    }
     ret_len = pitem->comment[0];
     ret_ptr = &(pitem->comment[1]);
     if (FIRST_PART == n)    {
@@ -335,33 +207,3 @@ const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_
 	debug_info("[resource]: rcode does not exist (resource_get_smtp_code)");
     return NULL;
 }
-
-BOOL resource_refresh_smtp_code_table()
-{
-    SMTP_ERROR_CODE *pnew_table = NULL;
-
-    if (0 != resource_construct_smtp_table(
-        &pnew_table)) {
-        return FALSE;
-    }
-
-	std::unique_lock wr_hold(g_error_table_lock);
-    if (NULL != g_error_code_table) {
-        free(g_error_code_table);
-    }
-    g_error_code_table = pnew_table;
-    return TRUE;
-}
-
-static int resource_find_smtp_code_index(int native_code)
-{
-    int i;
-
-    for (i = 0; i < SMTP_CODE_COUNT; i++) {
-        if (g_default_smtp_error_code_table[i].code == native_code) {
-            return i;
-        }
-    }
-    return -1;
-}
-

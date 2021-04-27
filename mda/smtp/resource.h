@@ -88,6 +88,5 @@ enum {
 extern int resource_run();
 extern int resource_stop();
 extern const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_t *len);
-extern BOOL resource_refresh_smtp_code_table();
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;
