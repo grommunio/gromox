@@ -26,11 +26,6 @@ static char g_server_help[] =
 	"\tsystem         --control the SMTP DAEMON server\r\n"
 	"\ttype \"<control-unit> --help\" for more information";
 
-static char g_smtp_return_help[] =
-	"250 SMTP DAEMON return code help information:\r\n"
-	"\treturn-code reload\r\n"
-	"\t    --reload smtp error code table";
-
 static char g_smtp_parser_help[] =
 	"250 SMTP DAEMON smtp control help information:\r\n"
 	"\tsmtp info\r\n"
@@ -77,33 +72,6 @@ BOOL cmd_handler_help(int argc, char** argv)
 	} else {
 		console_server_reply_to_client(g_server_help);
 	}
-	return TRUE;
-}
-
-/*
- *  smtp error code control handler, the smtp error code consists of
- *  smtp standard code, native defined code, and the description of 
- *  this error. This function is used to reload this message if user
- *  has changed the smtp error code file. we show how to use it,
- *
- *      return-code   reload// reload the error code msg
- */
-BOOL cmd_handler_smtp_error_code_control(int argc, char** argv)
-{
-	
-	if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_smtp_return_help);
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "reload")) {
-		console_server_reply_to_client("250 reload return code OK");
-		return TRUE;
-	}
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
 

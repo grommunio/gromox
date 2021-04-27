@@ -596,7 +596,6 @@ int main(int argc, const char **argv)
 	auto cleanup_20 = make_scope_exit(flusher_stop);
 
 	console_server_init(console_server_ip, console_server_port);
-	console_server_register_command("return-code", cmd_handler_smtp_error_code_control);
 	console_server_register_command("smtp", cmd_handler_smtp_control);
 	console_server_register_command("system", cmd_handler_system_control);
 	console_server_register_command("help", cmd_handler_help);
