@@ -403,7 +403,7 @@ static int ps_stat_autologout(IMAP_CONTEXT *pcontext)
 	imap_parser_log_info(pcontext, 8, "auto logout");
 	/* IMAP_CODE_2160004: BYE Disconnected by autologout */
 	size_t string_length = 0;
-	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2160004, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(1604, 1, &string_length);
 	return ps_end_processing(pcontext, imap_reply_str, string_length);
 }
 
@@ -420,7 +420,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		if (NULL == pcontext->connection.ssl) {
 			/* IMAP_CODE_2180014: BAD internal error: failed to init SSL object */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180014, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1814, 1, &string_length);
 			write(pcontext->connection.sockd, imap_reply_str, string_length);
 			imap_parser_log_info(pcontext, 8, "out of SSL object");
 			SLEEP_BEFORE_CLOSE;
@@ -438,8 +438,8 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		if (pcontext->connection.server_port == g_ssl_port) {
 			/* IMAP_CODE_2170000: OK <domain> Service ready */
 			size_t s1len = 0, s2len = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1, &s1len);
-			auto imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2, &s2len);
+			auto imap_reply_str = resource_get_imap_code(1700, 1, &s1len);
+			auto imap_reply_str2 = resource_get_imap_code(1700, 2, &s2len);
 			auto host_ID = resource_get_string("HOST_ID");
 			SSL_write(pcontext->connection.ssl, "* ", 2);
 			SSL_write(pcontext->connection.ssl, imap_reply_str, s1len);
@@ -459,7 +459,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		}
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		write(pcontext->connection.sockd, "* ", 2);
 		write(pcontext->connection.sockd, imap_reply_str, string_length);
 		imap_parser_log_info(pcontext, 0, "time out");
@@ -528,7 +528,7 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 		}
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 
@@ -556,7 +556,7 @@ static int ps_literal_checking(IMAP_CONTEXT *pcontext)
 	    pcontext->command_len + temp_len >= 64 * 1024) {
 		/* IMAP_CODE_2180017: BAD literal size too large */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	memcpy(pcontext->command_buffer + pcontext->command_len, pcontext->read_buffer,
@@ -586,7 +586,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		if (ptr - pcontext->read_buffer - i > 16) {
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 
@@ -602,7 +602,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			imap_parser_log_info(pcontext, 8, "fatal error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 		if (pcontext->literal_len < temp_len) {
@@ -613,7 +613,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			}
 			/* IMAP_CODE_2160003: + ready for additional command text */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2160003, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 			} else {
@@ -635,7 +635,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 					imap_parser_log_info(pcontext, 8, "fatal error in read buffer length");
 					/* IMAP_CODE_2180017: BAD literal size too large */
 					size_t string_length = 0;
-					auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
+					auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 					return ps_end_processing(pcontext, imap_reply_str, string_length);
 				}
 				stream_write(&pcontext->stream, ptr + 3,  pcontext->current_len);
@@ -644,7 +644,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 				pcontext->command_len = 0;
 				/* IMAP_CODE_2160003 + Ready for additional command text */
 				size_t string_length = 0;
-				auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2160003, 1, &string_length);
+				auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 				} else {
@@ -670,7 +670,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 
 		/* IMAP_CODE_2180017: BAD literal size too large */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, "* ", 2);
 			SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
@@ -703,7 +703,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			imap_parser_log_info(pcontext, 8, "fatal error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 		memcpy(pcontext->command_buffer + pcontext->command_len,
@@ -749,7 +749,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 					pcontext->file_path[0] = '\0';
 				}
 				size_t string_length = 0;
-				auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
+				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, pcontext->tag_string, strlen(pcontext->tag_string));
 					SSL_write(pcontext->connection.ssl, " ", 1);
@@ -774,12 +774,12 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			const char *imap_reply_str = nullptr;
 			if (1 != argc || 0 != strcasecmp(argv[0], "DONE")) {
 				/* IMAP_CODE_2180018: BAD expected DONE */
-				imap_reply_str = resource_get_imap_code(IMAP_CODE_2180018, 1,
+				imap_reply_str = resource_get_imap_code(1818, 1,
 				                 &string_length);
 			} else {
 				pcontext->sched_stat = SCHED_STAT_RDCMD;
 				/* IMAP_CODE_2170027: OK IDLE completed */
-				imap_reply_str = resource_get_imap_code(IMAP_CODE_2170027, 1,
+				imap_reply_str = resource_get_imap_code(1727, 1,
 				                 &string_length);
 			}
 			if (NULL != pcontext->connection.ssl) {
@@ -797,7 +797,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 
 		if (argc < 2 || strlen(argv[0]) >= 32) {
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 			if (argc <= 0 || strlen(argv[0]) >= 32) {
 				if (pcontext->connection.ssl != nullptr) {
 					SSL_write(pcontext->connection.ssl, "* ", 2);
@@ -839,7 +839,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 		pcontext->literal_len = 0;
 		pcontext->command_len = 0;
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
 		} else {
@@ -863,7 +863,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 8, "out of memory");
 		/* IMAP_CODE_2180009: BAD internal error: fail to get stream buffer */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180009, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1809, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	ssize_t read_len;
@@ -889,7 +889,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		}
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	pcontext->connection.last_timestamp = current_time;
@@ -912,7 +912,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 			imap_parser_log_info(pcontext, 0, "fail to flush mail from memory into file");
 			/* IMAP_CODE_2180010: BAD internal error: fail to dump stream object */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180010, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1810, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 		stream_clear(&pcontext->stream);
@@ -960,7 +960,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 0, "time out");
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	pcontext->connection.last_timestamp = current_time;
@@ -986,7 +986,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		case IMAP_RETRIEVE_ERROR:
 			/* IMAP_CODE_2180008: internal error, fail to retrieve from stream object */
 			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180008, 1, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1808, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 		return PROCESS_CONTINUE;
@@ -1000,7 +1000,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 8, "fail to read message file");
 		/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180012, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1812, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	pcontext->current_len += len;
@@ -1018,7 +1018,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2180008: internal error, fail to retrieve from stream object */
 	size_t string_length = 0;
-	auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180008, 1, &string_length);
+	auto imap_reply_str = resource_get_imap_code(1808, 1, &string_length);
 	return ps_end_processing(pcontext, imap_reply_str, string_length);
 }
 
@@ -1059,7 +1059,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 0, "time out");
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
-		auto imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
+		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	pcontext->connection.last_timestamp = current_time;
@@ -1676,7 +1676,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
         return imap_cmd_parser_uid_expunge(argc, argv, pcontext);
     /*========================================================================*/
     } else {
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
+		imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 		string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s", argv[0], imap_reply_str);
         if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, reply_buff, string_length);

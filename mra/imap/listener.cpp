@@ -187,10 +187,8 @@ static void *imls_thrwork(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* IMAP_CODE_2180015: BAD <host> Service not available */
-			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180015, 1,
-							 &string_length);
-			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180015, 2,
-							 &string_length);
+			imap_reply_str = resource_get_imap_code(1815, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1815, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
 				  imap_reply_str2);
@@ -203,10 +201,8 @@ static void *imls_thrwork(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
-			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180016, 1,
-							 &string_length);
-			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180016, 2,
-							 &string_length);
+			imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
@@ -222,10 +218,8 @@ static void *imls_thrwork(void *arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
-			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180016, 1,
-							 &string_length);
-			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180016, 2,
-							 &string_length);
+			imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
@@ -239,10 +233,8 @@ static void *imls_thrwork(void *arg)
 		}
 
 		/* IMAP_CODE_2170000: OK <domain> Service ready */
-		imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1,
-						 &string_length);
-		imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2,
-						 &string_length);
+		imap_reply_str = resource_get_imap_code(1700, 1, &string_length);
+		imap_reply_str2 = resource_get_imap_code(1700, 2, &string_length);
 		host_ID = resource_get_string("HOST_ID");
 		len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
 			  imap_reply_str2);
@@ -329,10 +321,8 @@ static void *imls_thrworkssl(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* IMAP_CODE_2180015: BAD <host> Service not available */
-			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180015, 1,
-							 &string_length);
-			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180015, 2,
-							 &string_length);
+			imap_reply_str = resource_get_imap_code(1815, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1815, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
 				  imap_reply_str2);
@@ -345,10 +335,8 @@ static void *imls_thrworkssl(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
-			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180016, 1,
-							 &string_length);
-			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180016, 2,
-							 &string_length);
+			imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
@@ -364,10 +352,8 @@ static void *imls_thrworkssl(void *arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
-			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180016, 1,
-							 &string_length);
-			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180016, 2,
-							 &string_length);
+			imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
