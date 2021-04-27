@@ -187,10 +187,8 @@ static void *smls_thrwork(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* 421 <domain> Service not available */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174001, 1,
-							 &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174001, 2,
-							 &string_length);
+			smtp_reply_str = resource_get_smtp_code(401, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(401, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, host_ID,
 				  smtp_reply_str2);
@@ -203,10 +201,8 @@ static void *smls_thrwork(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			/* access denied */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
-							 &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
-							 &string_length);
+			smtp_reply_str = resource_get_smtp_code(407, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(407, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
@@ -222,10 +218,8 @@ static void *smls_thrwork(void *arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
-							 &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
-							 &string_length);
+			smtp_reply_str = resource_get_smtp_code(407, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(407, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
@@ -238,10 +232,8 @@ static void *smls_thrwork(void *arg)
 			continue;
 		}
 		/* 220 <domain> Service ready */
-		smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172002, 1,
-						 &string_length);
-		smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2172002, 2,
-						 &string_length);
+		smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
+		smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
 		host_ID = resource_get_string("HOST_ID");
 		len = sprintf(buff, "%s%s%s", smtp_reply_str, host_ID,
 			  smtp_reply_str2);
@@ -327,10 +319,8 @@ static void *smls_thrworkssl(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* 421 <domain> Service not available */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174001, 1,
-							 &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174001, 2,
-							 &string_length);
+			smtp_reply_str = resource_get_smtp_code(401, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(401, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, host_ID,
 				  smtp_reply_str2);
@@ -343,10 +333,8 @@ static void *smls_thrworkssl(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
 			/* access denied */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
-							 &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
-							 &string_length);
+			smtp_reply_str = resource_get_smtp_code(407, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(407, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
@@ -362,10 +350,8 @@ static void *smls_thrworkssl(void *arg)
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
-							 &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
-							 &string_length);
+			smtp_reply_str = resource_get_smtp_code(407, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(407, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
 				  smtp_reply_str2);
 			write(sockd2, buff, len);

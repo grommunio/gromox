@@ -297,7 +297,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		if (FLUSH_WHOLE_MAIL == pcontext->flusher.flush_action) {
 			pcontext->session_num ++;
 			/* 250 Ok <flush ID> */
-			auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005, 1, &string_length);
+			auto smtp_reply_str = resource_get_smtp_code(205, 1, &string_length);
 			string_length -= 2;
 
 			memcpy(reply_buf, smtp_reply_str, string_length);
@@ -357,7 +357,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 	} else if (FLUSH_TEMP_FAIL == pcontext->flusher.flush_result) {
 		/* 451 Temporary internal failure - queue message failed */
-		auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174014, 1, &string_length);
+		auto smtp_reply_str = resource_get_smtp_code(414, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {
@@ -368,7 +368,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		return PROCESS_CONTINUE;
 	} else if (FLUSH_PERMANENT_FAIL == pcontext->flusher.flush_result) {
 		/* 554 Message is infected by virus */
-		auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175036, 1, &string_length);
+		auto smtp_reply_str = resource_get_smtp_code(536, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {
@@ -393,7 +393,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
 				/* 452 Temporary internal failure - failed to initialize TLS */
-				auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174018, 1, &string_length);
+				auto smtp_reply_str = resource_get_smtp_code(418, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 				smtp_parser_log_info(pcontext, 8, "out of SSL object");
 				SLEEP_BEFORE_CLOSE;
@@ -417,7 +417,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 					return PROCESS_POLLING_RDONLY;
 				}
 				/* 451 Timeout */
-				auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174012, 1, &string_length);
+				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 				smtp_parser_log_info(pcontext, 0, "time out");
 				SLEEP_BEFORE_CLOSE;
@@ -433,8 +433,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_NONE_CMD;
 			if (pcontext->connection.server_port == g_ssl_port) {
 				/* 220 <domain> Service ready */
-				auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172002, 1, &string_length);
-				auto smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2172002, 2, &string_length);
+				auto smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
+				auto smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
 				host_ID = resource_get_string("HOST_ID");
 				len = sprintf(reply_buf, "%s%s%s", smtp_reply_str, host_ID,
 						      smtp_reply_str2);
@@ -448,7 +448,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
 	        reinterpret_cast<unsigned int *>(&size)));
 	if (NULL == pbuff) {
-		auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174016, 1, &string_length);
+		auto smtp_reply_str = resource_get_smtp_code(416, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {
@@ -503,7 +503,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		if (CALCULATE_INTERVAL(current_time,pcontext->connection.last_timestamp)
 			>= g_timeout) {
 			/* 451 Timeout */
-			auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174012, 1, &string_length);
+			auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 			} else {
@@ -535,7 +535,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		stream_try_mark_line(&pcontext->stream);
 		switch (stream_has_newline(&pcontext->stream)) {
 		case STREAM_LINE_FAIL: {
-			auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175025, 1, &string_length);
+			auto smtp_reply_str = resource_get_smtp_code(525, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
 				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 			} else {
@@ -670,7 +670,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 							  pcontext->pre_rstlen;
 	if (pcontext->total_length >= g_max_mail_length && is_whole == FALSE) {
 		/* 552 message exceeds fixed maximum message size */
-		auto smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175021, 1, &string_length);
+		auto smtp_reply_str = resource_get_smtp_code(521, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {
@@ -892,8 +892,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length,
 	/* check the line length */
 	if (line_length > 1000) {
 		/* 500 syntax error - line too long */
-		smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175002, 1,
-						 &string_length);
+		smtp_reply_str = resource_get_smtp_code(502, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {
@@ -904,8 +903,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length,
 	if (pcontext->session_num == g_max_mail_sessions &&
 		(4 != line_length || 0 != strncasecmp(cmd_line, "QUIT", 4))) {
 		/* reach the maximum of mail transactions */
-		smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175029,1,
-						 &string_length);
+		smtp_reply_str = resource_get_smtp_code(529, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {
