@@ -111,33 +111,15 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	}
 
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1704;
 	}
 	
     /* command error, cannot be recognized by system */
     if (cmd_line[4] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	} else {
 		if (TRUE == pcontext->is_login) {
-			pop3_reply_str = resource_get_pop3_code(1720, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1720;
 		}
         memcpy(pcontext->username, cmd_line + 5, line_length - 5);
         pcontext->username[line_length - 5] = '\0';
@@ -158,13 +140,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 			return DISPATCH_SHOULD_CLOSE;
 		}
     }
-	pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-    return DISPATCH_CONTINUE;    
+	return 1700;
 }    
 
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
@@ -178,44 +154,20 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
 	
     /* command error, cannot be recognized by system */
     if (cmd_line[4] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	}
 	
 	if (TRUE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1720, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1720;
 	}
 	
 	if ('\0' == pcontext->username[0]) {
-		pop3_reply_str = resource_get_pop3_code(1705, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1705;
 	}
 	
     memcpy(temp_password, cmd_line + 5, line_length - 5);
@@ -227,13 +179,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		pcontext->total_size = 0;
 		
 		if ('\0' == pcontext->maildir[0]) {
-			pop3_reply_str = resource_get_pop3_code(1715, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1715;
 		}
 		
 		switch (system_services_list_mail(pcontext->maildir, "inbox",
@@ -256,24 +202,12 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 
 		count = array_get_capacity(&pcontext->array);
 		if (count != pcontext->total_mail) {
-			pop3_reply_str = resource_get_pop3_code(1722, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1722;
 		}
 
 		pcontext->is_login = TRUE;
 		pop3_parser_log_info(pcontext, 8, "login success");
-		pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1700;
 	} else {
 		pop3_parser_log_info(pcontext, 8, "login fail");
 		pcontext->auth_times ++;
@@ -311,23 +245,11 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
 
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1708;
 	}
 	
 	snprintf(temp_buff, sizeof(temp_buff), "+OK %d %llu\r\n",
@@ -360,13 +282,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	if (4 == strlen(temp_command)) {
 		
 		if (FALSE == pcontext->is_login) {
-			pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1708;
 		}
 		
 		stream_clear(&pcontext->stream);
@@ -386,35 +302,17 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
-			pop3_reply_str = resource_get_pop3_code(1718, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1718;
 		}
 		return DISPATCH_LIST;
 	}
 	
 	if (temp_command[4] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1708;
 	}
 	
 	n = atoi(temp_command + 5);
@@ -429,13 +327,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_CONTINUE;
 	}
-	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-	return DISPATCH_CONTINUE;
+	return 1707;
 }
 
 int pop3_cmd_handler_list(const char* cmd_line, int line_length,
@@ -457,13 +349,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	if (4 == strlen(temp_command)) {
 		
 		if (FALSE == pcontext->is_login) {
-			pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1708;
 		}
 		
 		
@@ -485,35 +371,17 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
-			pop3_reply_str = resource_get_pop3_code(1718, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1718;
 		}
 		return DISPATCH_LIST;
 	}
 	
 	if (temp_command[4] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1708;
 	}
 	
 	n = atoi(temp_command + 5);
@@ -528,13 +396,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_CONTINUE;
 	}
-	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-	return DISPATCH_CONTINUE;
+	return 1707;
 }
 
 int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
@@ -552,33 +414,15 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 5) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
 	
 	if (temp_command[4] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1708;
 	}
 	
 	n = atoi(temp_command + 5);
@@ -616,13 +460,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 				" is going to be retrieved", temp_path);
 		return DISPATCH_DATA;
 	}
-	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-	return DISPATCH_CONTINUE;
+	return 1707;
 }
 
 int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
@@ -639,33 +477,15 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 5) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
 	
 	if (temp_command[4] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1708;
 	}
 	
 	n = atoi(temp_command + 5);
@@ -676,21 +496,9 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 			punit->node.pdata = punit;
 			single_list_append_as_tail(&pcontext->list, &punit->node);
 		}
-		pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1700;
 	}
-	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-	return DISPATCH_CONTINUE;
+	return 1707;
 }
 
 int pop3_cmd_handler_top(const char* cmd_line, int line_length,
@@ -710,33 +518,15 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 4) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
 	
 	if (temp_command[3] != ' ') {
-		pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1703;
 	}
 	
 	if (FALSE == pcontext->is_login) {
-		pop3_reply_str = resource_get_pop3_code(1708, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1708;
 	}
 	
 	gx_strlcpy(temp_buff, temp_command + 4, GX_ARRAY_SIZE(temp_buff));
@@ -757,13 +547,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
 		if (-1 == pcontext->message_fd) {
-			pop3_reply_str = resource_get_pop3_code(1709, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
-			return DISPATCH_CONTINUE;
+			return 1709;
 		}
 		stream_clear(&pcontext->stream);
 		stream_write(&pcontext->stream, "+OK\r\n", 5);
@@ -779,13 +563,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		}
 		return DISPATCH_DATA;
 	}
-	pop3_reply_str = resource_get_pop3_code(1707, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-	return DISPATCH_CONTINUE;
+	return 1707;
 }
 
 int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
@@ -798,13 +576,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	SINGLE_LIST_NODE *pnode;
     
 	if (4 != line_length) {
-		auto pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		auto return 1704;
 	}
 	
 	if (TRUE == pcontext->is_login) {
@@ -883,13 +655,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 	SINGLE_LIST_NODE *pnode;
             
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
 
 	if (TRUE == pcontext->is_login) {
@@ -898,13 +664,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 			punit->b_deleted = FALSE;
 		}
 	}
-	pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-    return DISPATCH_CONTINUE;
+	return 1700;
 }    
 
 int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
@@ -914,21 +674,9 @@ int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
 	if (4 != line_length) {
-		pop3_reply_str = resource_get_pop3_code(1704, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;
+		return 1704;
 	}
-	pop3_reply_str = resource_get_pop3_code(1700, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-    return DISPATCH_CONTINUE;
+	return 1700;
 }
 
 
@@ -939,11 +687,5 @@ int pop3_cmd_handler_else(const char* cmd_line, int line_length,
     const char* pop3_reply_str;
     
     /* command not implement*/
-	pop3_reply_str = resource_get_pop3_code(1703, 1, &string_length);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, pop3_reply_str, string_length);
-	}
-    return DISPATCH_CONTINUE;
+	return 1703;
 }
