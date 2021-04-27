@@ -3184,7 +3184,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_CONTINUE;
 }
 
-int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int temp_argc;
 	int i, fd, len;
@@ -3288,6 +3288,11 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	stream_clear(&pcontext->stream);
 	return DISPATCH_CONTINUE;
+}
+
+int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *ctx)
+{
+	return imap_cmd_parser_append_begin2(argc, argv, ctx) & DISPATCH_ACTMASK;
 }
 
 int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)

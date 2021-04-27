@@ -713,7 +713,7 @@ char* pop3_parser_cdn_path()
  *         DISPATCH_DATA            data command is met
  *         DISPATCH_LIST			need to respond list
  */
-static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length, 
+static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
     /*========================================================================*/
@@ -759,6 +759,11 @@ static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length,
     } else {
         return pop3_cmd_handler_else(cmd_line, line_length, pcontext);    
     }
+}
+
+static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx)
+{
+	return pop3_parser_dispatch_cmd2(line, len, ctx) & DISPATCH_ACTMASK;
 }
 
 /*

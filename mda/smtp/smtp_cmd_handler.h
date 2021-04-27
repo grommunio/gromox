@@ -3,9 +3,11 @@
 
 /* enumeration for the return value of smtp_parser_dispatch_cmd */
 enum{
-    DISPATCH_CONTINUE,
-    DISPATCH_SHOULD_CLOSE,
-    DISPATCH_BREAK
+	DISPATCH_CONTINUE = 0,
+	DISPATCH_SHOULD_CLOSE = 1U << 24,
+	DISPATCH_BREAK = 1U << 25,
+
+	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,

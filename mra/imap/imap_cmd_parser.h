@@ -3,9 +3,11 @@
 
 /* enumeration for the return value of imap_parser_dispatch_cmd */
 enum{
-    DISPATCH_CONTINUE,
-    DISPATCH_SHOULD_CLOSE,
-    DISPATCH_BREAK
+	DISPATCH_CONTINUE,
+	DISPATCH_SHOULD_CLOSE = 1U << 24,
+	DISPATCH_BREAK = 1U << 25,
+
+	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
 void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext);

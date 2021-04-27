@@ -3,10 +3,12 @@
 
 /* enumeration for the return value of pop3_parser_dispatch_cmd */
 enum{
-    DISPATCH_CONTINUE,
-    DISPATCH_SHOULD_CLOSE,
-    DISPATCH_DATA,
-	DISPATCH_LIST
+	DISPATCH_CONTINUE,
+	DISPATCH_SHOULD_CLOSE = 1U << 24,
+	DISPATCH_DATA = 1U << 25,
+	DISPATCH_LIST = 1U << 26,
+
+	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
 int pop3_cmd_handler_capa(const char *cmd_line, int line_length,

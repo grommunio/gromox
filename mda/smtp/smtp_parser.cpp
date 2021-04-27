@@ -883,7 +883,7 @@ BOOL smtp_parser_domainlist_valid()
  *         DISPATCH_SHOULD_CLOSE    quit command is read
  *         DISPATCH_BREAK            data command is met
  */
-static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length, 
+static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
 	size_t string_length = 0;
@@ -960,6 +960,11 @@ static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length,
 	} else {
 		return smtp_cmd_handler_else(cmd_line, line_length, pcontext);    
 	}
+}
+
+static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
+{
+	return smtp_parser_dispatch_cmd2(cmd, len, ctx) & DISPATCH_ACTMASK;
 }
 
 /*

@@ -1562,8 +1562,7 @@ int imap_parser_set_param(int param, int value)
     return 0;
 }
 
-
-static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t string_length;
 	const char *imap_reply_str;
@@ -1685,6 +1684,11 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
 		}
 		return DISPATCH_CONTINUE;
     }
+}
+
+static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
+{
+	return imap_parser_dispatch_cmd2(argc, argv, ctx) & DISPATCH_ACTMASK;
 }
 
 /*
