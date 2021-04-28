@@ -1456,40 +1456,17 @@ int imap_cmd_parser_logout(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char buff[1024];
-	size_t string_length = 0;
-	
 	if (NULL != pcontext->connection.ssl) {
-		/* IMAP_CODE_2180000: BAD command not supported or parameter error */
-		auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		SSL_write(pcontext->connection.ssl, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1800;
 	}
 	if (FALSE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS)) {
-		/* IMAP_CODE_2180000 */
-		auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		write(pcontext->connection.sockd, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1800;
 	}
 	if (pcontext->proto_stat > PROTO_STAT_NOAUTH) {
-		/*IMAP_CODE_2180001: BAD TLS negotiation
-		only begin in not authenticated state */
-		auto imap_reply_str = resource_get_imap_code(1801, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		write(pcontext->connection.sockd, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1801;
 	}
-	/* IMAP_CODE_2170004: OK begin TLS negotiation now */
-	auto imap_reply_str = resource_get_imap_code(1704, 1, &string_length);
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
-	write(pcontext->connection.sockd, buff, string_length);
 	pcontext->sched_stat = SCHED_STAT_STLS;	
-	return DISPATCH_CONTINUE;
+	return 1704;
 }
 
 int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -1500,12 +1477,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (TRUE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
 		TRUE == imap_parser_get_param(IMAP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		/* IMAP_CODE_2180002: BAD must issue a STARTTLS command first */
-		auto imap_reply_str = resource_get_imap_code(1802, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		write(pcontext->connection.sockd, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1802;
 	}
 	if (3 != argc || 0 != strcasecmp(argv[2], "LOGIN")) {
 		return 1800;
@@ -1559,14 +1531,9 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
-		/* IMAP_CODE_2190001: NO access denied by user filter */
-		auto imap_reply_str = resource_get_imap_code(1901, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
-				pcontext->tag_string, imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
 		imap_parser_log_info(pcontext, 8, "user %s is "
 			"denied by user filter", pcontext->username);
-		return DISPATCH_SHOULD_CLOSE;
+		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
 	if (TRUE == system_services_auth_login(pcontext->username,
 		temp_password, pcontext->maildir, pcontext->lang, reason, 256)) {
@@ -1586,13 +1553,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 			if (system_services_add_user_into_temp_list != nullptr)
 				system_services_add_user_into_temp_list(pcontext->username,
 					imap_parser_get_param(BLOCK_AUTH_FAIL));
-			/* IMAP_CODE_2190003: NO too many failures,
-				user will be blocked for a while */
-			auto imap_reply_str = resource_get_imap_code(1903, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s",
-				pcontext->tag_string, imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_SHOULD_CLOSE;
+			return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 		}
 		/* IMAP_CODE_2190004: NO login auth fail, */
 		auto imap_reply_str = resource_get_imap_code(1904, 1, &string_length);
@@ -1620,12 +1581,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (TRUE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
 		TRUE == imap_parser_get_param(IMAP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
-		/* IMAP_CODE_2180002: BAD must issue a STARTTLS command first */
-		auto imap_reply_str = resource_get_imap_code(1802, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		write(pcontext->connection.sockd, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1802;
 	}
 	if (4 != argc || strlen(argv[2]) > 255 || strlen(argv[3]) > 255) {
 		return 1800;
@@ -1637,14 +1593,9 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
-		/* IMAP_CODE_2190001: NO access denied by user filter */
-		auto imap_reply_str = resource_get_imap_code(1901, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
 		imap_parser_log_info(pcontext, 8, "user %s is "
 			"denied by user filter", pcontext->username);
-		return DISPATCH_SHOULD_CLOSE;
+		return 1901 | DISPATCH_SHOULD_CLOSE;
     }
 	strcpy(temp_password, argv[3]);
 	HX_strltrim(temp_password);
@@ -1666,12 +1617,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (system_services_add_user_into_temp_list != nullptr)
 			system_services_add_user_into_temp_list(pcontext->username,
 				imap_parser_get_param(BLOCK_AUTH_FAIL));
-		/* IMAP_CODE_2190003: NO too many failures, user will be blocked for a while */
-		auto imap_reply_str = resource_get_imap_code(1903, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-		                "%s %s", argv[0], imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_SHOULD_CLOSE;
+		return 1903 | DISPATCH_SHOULD_CLOSE;
 	}
 
 	/* IMAP_CODE_2190004: NO login auth fail, */
@@ -1685,9 +1631,6 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char buff[1024];
-	size_t string_length = 0;
-	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		return 1804;
 	}
@@ -1696,10 +1639,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	pcontext->sched_stat = SCHED_STAT_IDLING;
-	/* IMAP_CODE_2160002: + Idling */
-	auto imap_reply_str = resource_get_imap_code(1602, 1, &string_length);
-	imap_parser_safe_write(pcontext, imap_reply_str, string_length);
-	return DISPATCH_CONTINUE;
+	return 1602;
 }
 
 int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -1848,8 +1788,6 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int i, len;
 	BOOL b_found;
-	char buff[1024];
-	size_t string_length = 0;
 	MEM_FILE temp_file;
 	char temp_name[1024];
 	char temp_name1[1024];
@@ -1952,8 +1890,6 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	char buff[1024];
-	size_t string_length = 0;
 	char encoded_name[1024];
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
@@ -1994,8 +1930,6 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	char buff[1024];
-	size_t string_length = 0;
 	char encoded_name[1024];
 	char encoded_name1[1024];
 
@@ -2050,8 +1984,6 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	char buff[1024];
-	size_t string_length = 0;
 	char temp_name[1024];
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
@@ -2086,8 +2018,6 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	char buff[1024];
-	size_t string_length = 0;
 	char temp_name[1024];
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
@@ -2529,11 +2459,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			string_length += gx_snprintf(buff + string_length,
 			                 GX_ARRAY_SIZE(buff) - string_length, "UNSEEN %d", unseen);
 		} else {
-			imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-				"%s %s", argv[0], imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_CONTINUE;
+			return 1800;
 		}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -2706,29 +2632,19 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	int temp_argc;
 	int i, fd, len;
 	char buff[1024];
-	size_t string_length = 0;
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
 	char temp_name[1024];
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
-		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
-		auto imap_reply_str = resource_get_imap_code(1804, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_BREAK;
+		return 1804 | DISPATCH_BREAK;
 	}
 	if (argc < 3 || argc > 5 || 0 == strlen(argv[2])
 		|| strlen(argv[2]) >= 1024 || FALSE ==
 		imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_BREAK;
+		return 1800 | DISPATCH_BREAK;
 	}
 	if (5 == argc) {
 		flags_string = argv[3];
@@ -2751,11 +2667,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
 			- 2, temp_argv, sizeof(temp_argv)))) {
-			auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-				"%s %s", argv[0], imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_BREAK;
+			return 1800 | DISPATCH_BREAK;
 		}
 		for (i=0; i<temp_argc; i++) {
 			if (0 == strcasecmp(temp_argv[i], "\\Answered") ||
@@ -2764,11 +2676,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 				0 == strcasecmp(temp_argv[i], "\\Draft")) {
 				/* do nothing */
 			} else {
-				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-					"%s %s", argv[0], imap_reply_str);
-				imap_parser_safe_write(pcontext, buff, string_length);
-				return DISPATCH_BREAK;
+				return 1800 | DISPATCH_BREAK;
 			}
 		}
 	}
@@ -2778,12 +2686,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 				pcontext->maildir, pcontext->mid);
 	fd = open(pcontext->file_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == fd) {
-		/* IMAP_CODE_2190009: NO fail to save message */
-		auto imap_reply_str = resource_get_imap_code(1909, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
-			"%s %s", argv[0], imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_BREAK;
+		return 1909 | DISPATCH_BREAK;
 	}
 	len = sizeof(int);
 	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s", temp_name);
@@ -3267,8 +3170,6 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	int flag_bits;
 	int temp_argc;
-	char buff[1024];
-	size_t string_length = 0;
 	char *temp_argv[8];
 	DOUBLE_LIST list_seq;
 	SEQUENCE_NODE sequence_nodes[1024];
@@ -3341,12 +3242,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, NULL);
-	/* IMAP_CODE_2170021: OK STORE completed */
-	auto imap_reply_str = resource_get_imap_code(1721, 1, &string_length);
-	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-	string_length = strlen(buff);
-	imap_parser_safe_write(pcontext, buff, string_length);
-	return DISPATCH_CONTINUE;
+	return 1721;
 }
 
 int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -3554,12 +3450,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
-		/* IMAP_CODE_2180005: BAD can only process in select state */
-		auto imap_reply_str = resource_get_imap_code(1805, 1, &string_length);
-		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-		string_length = strlen(buff);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1805;
 	}
 	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
 	    sequence_nodes, argv[3]))
@@ -3592,23 +3483,11 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		break;
 	case MIDB_NO_SERVER: {
 		xarray_free(&xarray);
-		/* IMAP_CODE_2190005: NO server internal
-			error, missing MIDB connection */
-		auto imap_reply_str = resource_get_imap_code(1905, 1, &string_length);
-		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-		string_length = strlen(buff);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
 		xarray_free(&xarray);
-		/* IMAP_CODE_2190006: NO server internal
-		error, fail to communicate with MIDB */
-		auto imap_reply_str = resource_get_imap_code(1906, 1, &string_length);
-		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-		string_length = strlen(buff);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_CONTINUE;
+		return 1906;
 	}
 	default: {
 		xarray_free(&xarray);
@@ -3645,11 +3524,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_BREAK;
 	
  UID_FETCH_PARAM_ERR:
-	auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-	string_length = strlen(buff);
-	imap_parser_safe_write(pcontext, buff, string_length);
-	return DISPATCH_CONTINUE;
+	return 1800;
 }
 
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -3662,9 +3537,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	int flag_bits;
 	int temp_argc;
-	char buff[1024];
 	char *temp_argv[8];
-	size_t string_length = 0;
 	DOUBLE_LIST list_seq;
 	SEQUENCE_NODE sequence_nodes[1024];
 
@@ -3736,12 +3609,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, NULL);
-	/* IMAP_CODE_2170024: OK UID STORE completed */
-	auto imap_reply_str = resource_get_imap_code(1724, 1, &string_length);
-	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-	string_length = strlen(buff);
-	imap_parser_safe_write(pcontext, buff, string_length);
-	return DISPATCH_CONTINUE;
+	return 1724;
 }
 
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
