@@ -40,12 +40,15 @@ Default: \fI1 minute\fP
 .TP
 \fBschema_upgrades\fP
 This controls what to do when a database schema update is available.
+Because there is no locking mechanism available that works across machines,
+the mysql_adaptor plugin does not use any locking locally either. As a result,
+the default is to not perform any upgrades.
 .RS
 .TP
 \fBautoupdate\fP
-Do perform automatic schema upgrades when mysql_adaptor is started. This option
-can potentially be harmful if multiple programs try to upgrade the database at
-the same time.
+Do perform automatic schema upgrades when mysql_adaptor is started. Warning:
+This option can potentially be harmful if multiple programs try to upgrade the
+database at the same time.
 .TP
 \fBhost:\fP\fIxyz\fP
 Perform automatic schema upgrades, but only when executing from http(8gx)
@@ -61,7 +64,7 @@ No automatic schema upgrades are performed. The initialization is aborted and
 the program terminates. Schema upgrades can be done manually with
 gromox\-dbop(8gx).
 .PP
-Default: \fIabort\fP
+Default: \fIskip\fP
 .RE
 .SH Files
 .IP \(bu 4
