@@ -1432,9 +1432,6 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_noop(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char buff[1024];
-	size_t string_length = 0;
-    
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
@@ -3177,9 +3174,6 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *ctx)
 
 int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char buff[1024];
-	size_t string_length = 0;
-	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		return 1805;
 	}
@@ -3189,9 +3183,6 @@ int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char buff[1024];
-	size_t string_length = 0;
-	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		return 1805;
 	}
@@ -3316,9 +3307,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char buff[1024];
-	size_t string_length = 0;
-	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		return 1805;
 	}
