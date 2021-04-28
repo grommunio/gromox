@@ -85,14 +85,19 @@ static bool db_upgrade_check_2(MYSQL *conn)
 		return true;
 	printf("[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
 	       current, recent);
+	static constexpr const char *msg =
+		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
+		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
 	if (g_schema_upgrade == S_SKIP) {
-		printf("skip\n");
+		printf("skip.\n");
+		puts(msg);
 		return true;
 	} else if (g_schema_upgrade != S_AUTOUP) {
-		printf("abort\n");
+		printf("abort.\n");
+		puts(msg);
 		return false;
 	}
-	printf("autoupgrade\n");
+	printf("autoupgrade (now).\n");
 	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
 }
 
