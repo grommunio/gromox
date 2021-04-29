@@ -2347,6 +2347,18 @@ static int exmdb_ext_push_read_message_request(
 	return ext_buffer_push_uint64(pext, ppayload->read_message.message_id);
 }
 
+static int gcsr_failure(int status, EXMDB_REQUEST_PAYLOAD *p)
+{
+	idset_free(p->get_content_sync.pgiven);
+	if (p->get_content_sync.pseen != nullptr)
+		idset_free(p->get_content_sync.pseen);
+	if (p->get_content_sync.pseen_fai != nullptr)
+		idset_free(p->get_content_sync.pseen_fai);
+	if (p->get_content_sync.pread != nullptr)
+		idset_free(p->get_content_sync.pread);
+	return status;
+}
+
 static int exmdb_ext_pull_get_content_sync_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
@@ -2373,107 +2385,94 @@ static int exmdb_ext_pull_get_content_sync_request(
 	}
 	status = ext_buffer_pull_uint8(pext, &tmp_byte);
 	if (EXT_ERR_SUCCESS != status) {
-		goto PULL_CONTENT_SYNC_FAILURE;
+		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
 		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		ppayload->get_content_sync.pseen =
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (NULL == ppayload->get_content_sync.pseen) {
 			status = EXT_ERR_ALLOC;
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		if (FALSE == idset_deserialize(
 			ppayload->get_content_sync.pseen, &tmp_bin)) {
 			status = EXT_ERR_FORMAT;
-			goto PULL_CONTENT_SYNC_FAILURE;	
+			return gcsr_failure(status, ppayload);
 		}
 	}
 	status = ext_buffer_pull_uint8(pext, &tmp_byte);
 	if (EXT_ERR_SUCCESS != status) {
-		goto PULL_CONTENT_SYNC_FAILURE;
+		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
 		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		ppayload->get_content_sync.pseen_fai =
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (NULL == ppayload->get_content_sync.pseen_fai) {
 			status = EXT_ERR_ALLOC;
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		if (FALSE == idset_deserialize(
 			ppayload->get_content_sync.pseen_fai, &tmp_bin)) {
 			status = EXT_ERR_FORMAT;
-			goto PULL_CONTENT_SYNC_FAILURE;	
+			return gcsr_failure(status, ppayload);
 		}
 	}
 	status = ext_buffer_pull_uint8(pext, &tmp_byte);
 	if (EXT_ERR_SUCCESS != status) {
-		goto PULL_CONTENT_SYNC_FAILURE;
+		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
 		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		ppayload->get_content_sync.pread =
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (NULL == ppayload->get_content_sync.pread) {
 			status = EXT_ERR_ALLOC;
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		if (FALSE == idset_deserialize(
 			ppayload->get_content_sync.pread, &tmp_bin)) {
 			status = EXT_ERR_FORMAT;
-			goto PULL_CONTENT_SYNC_FAILURE;	
+			return gcsr_failure(status, ppayload);
 		}
 	}
 	status = ext_buffer_pull_uint32(pext,
 		&ppayload->get_content_sync.cpid);
 	if (EXT_ERR_SUCCESS != status) {
-		goto PULL_CONTENT_SYNC_FAILURE;
+		return gcsr_failure(status, ppayload);
 	}
 	status = ext_buffer_pull_uint8(pext, &tmp_byte);
 	if (EXT_ERR_SUCCESS != status) {
-		goto PULL_CONTENT_SYNC_FAILURE;
+		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
 		ppayload->get_content_sync.prestriction = cu_alloc<RESTRICTION>();
 		if (NULL == ppayload->get_content_sync.prestriction) {
 			status = EXT_ERR_ALLOC;
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 		status = ext_buffer_pull_restriction(pext,
 			ppayload->get_content_sync.prestriction);
 		if (EXT_ERR_SUCCESS != status) {
-			goto PULL_CONTENT_SYNC_FAILURE;
+			return gcsr_failure(status, ppayload);
 		}
 	}
 	status = ext_buffer_pull_bool(pext,
 		&ppayload->get_content_sync.b_ordered);
 	if (EXT_ERR_SUCCESS != status) {
-		goto PULL_CONTENT_SYNC_FAILURE;
+		return gcsr_failure(status, ppayload);
 	}
 	return EXT_ERR_SUCCESS;
-	
- PULL_CONTENT_SYNC_FAILURE:
-	idset_free(ppayload->get_content_sync.pgiven);
-	if (NULL != ppayload->get_content_sync.pseen) {
-		idset_free(ppayload->get_content_sync.pseen);
-	}
-	if (NULL != ppayload->get_content_sync.pseen_fai) {
-		idset_free(ppayload->get_content_sync.pseen_fai);
-	}
-	if (NULL != ppayload->get_content_sync.pread) {
-		idset_free(ppayload->get_content_sync.pread);
-	}
-	return status;
 }
 
 static int exmdb_ext_push_get_content_sync_request(
@@ -3153,12 +3152,10 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	if (prequest->call_id == exmdb_callid::CONNECT) {
 		status = exmdb_ext_push_connect_request(
 				&ext_push, &prequest->payload);
-		goto END_PUSH_REQUEST;
 	} else if (prequest->call_id == exmdb_callid::LISTEN_NOTIFICATION) {
 		status = exmdb_ext_push_listen_notification_request(
 							&ext_push, &prequest->payload);
-		goto END_PUSH_REQUEST;
-	}
+	} else {
 	status = ext_buffer_push_string(&ext_push, prequest->dir);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
@@ -3648,7 +3645,7 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
- END_PUSH_REQUEST:
+	}
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
