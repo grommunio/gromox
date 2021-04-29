@@ -11,7 +11,6 @@
 #include <cstdlib>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
-#define GROWING_BLOCK_SIZE				0x80000
 
 void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	uint32_t data_size, EXT_BUFFER_ALLOC alloc, uint32_t flags)
@@ -2136,11 +2135,7 @@ BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size,
 	pext->mgt = mgt != nullptr ? *mgt : default_mgt;
 	if (NULL == pdata) {
 		pext->b_alloc = TRUE;
-		if (0 == alloc_size) {
-			pext->alloc_size = alloc_size;
-		} else {
-			pext->alloc_size = GROWING_BLOCK_SIZE;
-		}
+		pext->alloc_size = 8192;
 		pext->data = static_cast<uint8_t *>(pext->mgt.alloc(pext->alloc_size));
 		if (NULL == pext->data) {
 			pext->alloc_size = 0;
