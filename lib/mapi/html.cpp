@@ -212,25 +212,25 @@ BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"yellowgreen",			0x9acd32},
 		{"rebeccapurple",		0x663399}};
 	
+	if (g_color_hash != nullptr)
+		return TRUE;
+	g_color_hash = str_hash_init(
+	               sizeof(color_map)/sizeof(COLOR_ITEM) + 1,
+	               sizeof(int), NULL);
 	if (NULL == g_color_hash) {
-		g_color_hash = str_hash_init(
-			sizeof(color_map)/sizeof(COLOR_ITEM) + 1,
-			sizeof(int), NULL);
-		if (NULL == g_color_hash) {
-			return FALSE;
-		}
-		for (size_t i = 0; i < GX_ARRAY_SIZE(color_map); ++i)
-			str_hash_add(g_color_hash,
-				color_map[i].name,
-				&color_map[i].value);
-		g_conv_id = iconv_open("UTF-16LE", "UTF-8");
-		if ((iconv_t)-1 == g_conv_id) {
-			str_hash_free(g_color_hash);
-			g_color_hash = NULL;
-			return FALSE;
-		}
-		html_cpid_to_charset = cpid_to_charset;
+		return FALSE;
 	}
+	for (size_t i = 0; i < GX_ARRAY_SIZE(color_map); ++i)
+		str_hash_add(g_color_hash,
+		             color_map[i].name,
+		             &color_map[i].value);
+	g_conv_id = iconv_open("UTF-16LE", "UTF-8");
+	if ((iconv_t)-1 == g_conv_id) {
+		str_hash_free(g_color_hash);
+		g_color_hash = NULL;
+		return FALSE;
+	}
+	html_cpid_to_charset = cpid_to_charset;
 	return TRUE;
 }
 
