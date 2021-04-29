@@ -125,7 +125,5 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		free(pdnode);
 	}
 	double_list_free(&prouter->datagram_list);
-	if (!prouter->b_stop)
-		pthread_detach(pthread_self());
 	pthread_exit(nullptr);
 }
