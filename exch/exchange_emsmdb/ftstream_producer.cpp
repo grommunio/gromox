@@ -849,48 +849,48 @@ static BOOL ftstream_producer_write_groupinfo(
 				&ext_push, pginfo->pgroups[i].pproptag[j])) {
 				return FALSE;
 			}
-			if (propid & 0x8000) {
-				if (FALSE == logon_object_get_named_propname(
-					pstream->plogon, propid, &propname)) {
-					return FALSE;
-				}
-				if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
-					&ext_push, &propname.guid)) {
-					return FALSE;
-				}
+			if (!(propid & 0x8000))
+				continue;
+			if (FALSE == logon_object_get_named_propname(
+			    pstream->plogon, propid, &propname)) {
+				return FALSE;
+			}
+			if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
+			    &ext_push, &propname.guid)) {
+				return FALSE;
+			}
+			if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
+			    &ext_push, propname.kind)) {
+				return FALSE;
+			}
+			switch (propname.kind) {
+			case MNID_ID:
 				if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-					&ext_push, propname.kind)) {
+				    &ext_push, *propname.plid)) {
 					return FALSE;
 				}
-				switch (propname.kind) {
-				case MNID_ID:
-					if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-						&ext_push, *propname.plid)) {
-						return FALSE;
-					}
-					break;
-				case MNID_STRING:
-					offset = ext_push.offset;
-					if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-						&ext_push, sizeof(uint32_t))) {
-						return FALSE;
-					}
-					if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
-						&ext_push, propname.pname)) {
-						return FALSE;
-					}
-					offset1 = ext_push.offset - sizeof(uint16_t);
-					name_size = offset1 - (offset + sizeof(uint32_t));
-					ext_push.offset = offset;
-					if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-						&ext_push, name_size)) {
-						return FALSE;
-					}
-					ext_push.offset = offset1;
-					break;
-				default:
+				break;
+			case MNID_STRING:
+				offset = ext_push.offset;
+				if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
+				    &ext_push, sizeof(uint32_t))) {
 					return FALSE;
 				}
+				if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
+				    &ext_push, propname.pname)) {
+					return FALSE;
+				}
+				offset1 = ext_push.offset - sizeof(uint16_t);
+				name_size = offset1 - (offset + sizeof(uint32_t));
+				ext_push.offset = offset;
+				if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
+				    &ext_push, name_size)) {
+					return FALSE;
+				}
+				ext_push.offset = offset1;
+				break;
+			default:
+				return FALSE;
 			}
 		}
 	}
