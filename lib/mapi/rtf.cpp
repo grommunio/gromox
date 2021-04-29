@@ -222,39 +222,36 @@ struct FONTENTRY {
 };
 
 struct RTF_READER {
-	bool is_within_table, b_printed_row_begin, b_printed_cell_begin;
-	bool b_printed_row_end, b_printed_cell_end, b_simulate_smallcaps;
-	bool b_simulate_allcaps, b_ubytes_switch, is_within_picture;
-	bool have_printed_body, is_within_header, have_ansicpg, have_fromhtml;
-	bool is_within_htmltag, is_within_htmlrtf;
-	int coming_pars_tabular;
-	int ubytes_num;
-	int ubytes_left;
-	int picture_file_number;
-	char picture_path[256];
-	int picture_width;
-	int picture_height;
-	int picture_bits_per_pixel;
-	int picture_type;
-	int picture_wmf_type;
-	const char *picture_wmf_str;
-	int color_table[MAX_COLORS];
-	int total_colors;
-	int total_chars_in_line;
-	char default_encoding[32];
-	char current_encoding[32]; 
-	char html_charset[32];
-	int default_font_number;
-	INT_HASH_TABLE *pfont_hash;
-	DOUBLE_LIST attr_stack_list;
-	EXT_PULL ext_pull;
-	EXT_PUSH ext_push;
-	int ungot_chars[3];
-	int last_returned_ch;
-	iconv_t conv_id;
-	EXT_PUSH iconv_push;
-	SIMPLE_TREE element_tree;
-	ATTACHMENT_LIST *pattachments;
+	~RTF_READER();
+
+	bool is_within_table = false, b_printed_row_begin = false;
+	bool b_printed_cell_begin = false, b_printed_row_end = false;
+	bool b_printed_cell_end = false, b_simulate_smallcaps = false;
+	bool b_simulate_allcaps = false, b_ubytes_switch = false;
+	bool is_within_picture = false, have_printed_body = false;
+	bool is_within_header = true, have_ansicpg = false;
+	bool have_fromhtml = false, is_within_htmltag = false;
+	bool is_within_htmlrtf = false;
+	int coming_pars_tabular = 0, ubytes_num = 0, ubytes_left = 0;
+	int picture_file_number = 1;
+	char picture_path[256]{};
+	int picture_width = 0, picture_height = 0, picture_bits_per_pixel = 1;
+	int picture_type = 0, picture_wmf_type = 0;
+	const char *picture_wmf_str = nullptr;
+	int color_table[MAX_COLORS]{}, total_colors = 0;
+	int total_chars_in_line = 0;
+	char default_encoding[32] = "windows-1252", current_encoding[32]{};
+	char html_charset[32]{};
+	int default_font_number = 0;
+	INT_HASH_TABLE *pfont_hash = nullptr;
+	DOUBLE_LIST attr_stack_list{};
+	EXT_PULL ext_pull{};
+	EXT_PUSH ext_push{};
+	int ungot_chars[3] = {-1, -1, -1}, last_returned_ch = 0;
+	iconv_t conv_id{iconv_t(-1)};
+	EXT_PUSH iconv_push{};
+	SIMPLE_TREE element_tree{};
+	ATTACHMENT_LIST *pattachments = nullptr;
 };
 
 struct GROUP_NODE {
@@ -580,34 +577,21 @@ static void rtf_free_collection(DOUBLE_LIST *plist)
 static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
     uint32_t rtf_length, ATTACHMENT_LIST *pattachments)
 {
-	memset(preader, 0, sizeof(RTF_READER));
-	preader->picture_file_number = 1;
-	preader->picture_bits_per_pixel = 1;
-	preader->is_within_header = true;
-	strcpy(preader->default_encoding, "windows-1252"); 
-	preader->conv_id = (iconv_t)-1;
 	double_list_init(&preader->attr_stack_list);
 	ext_buffer_pull_init(&preader->ext_pull,
 		prtf_buff, rtf_length, NULL, 0);
-	preader->ungot_chars[0] = -1;
-	preader->ungot_chars[1] = -1;
-	preader->ungot_chars[2] = -1;
 	preader->pfont_hash = int_hash_init(MAX_FONTS, sizeof(FONTENTRY));
 	if (NULL == preader->pfont_hash) {
 		return false;
 	}
 	if (FALSE == ext_buffer_push_init(
 		&preader->ext_push, NULL, 0, 0)) {
-		int_hash_free(preader->pfont_hash);
 		return false;
 	}
 	if (FALSE == ext_buffer_push_init(
 		&preader->iconv_push, NULL, 0, 0)) {
-		int_hash_free(preader->pfont_hash);
-		ext_buffer_push_free(&preader->ext_push);
 		return false;
 	}
-	preader->conv_id = (iconv_t)-1;
 	simple_tree_init(&preader->element_tree);
 	preader->pattachments = pattachments;
 	return true;
@@ -624,8 +608,9 @@ static void rtf_delete_tree_node(SIMPLE_TREE_NODE *pnode)
 	free(pnode);
 }
 
-static void rtf_free_reader(RTF_READER *preader)
+RTF_READER::~RTF_READER()
 {
+	auto preader = this;
 	DOUBLE_LIST_NODE *pnode;
 	SIMPLE_TREE_NODE *proot;
 	ATTRSTACK_NODE *pattrstack;
@@ -3338,7 +3323,6 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	*pbuff_out = nullptr;
 	if (!rtf_init_reader(&reader, pbuff_in, length, pattachments))
 		return false;
-	auto cl_0 = make_scope_exit([&]() { rtf_free_reader(&reader); });
 	if (!rtf_load_element_tree(&reader)) {
 		return false;
 	}
