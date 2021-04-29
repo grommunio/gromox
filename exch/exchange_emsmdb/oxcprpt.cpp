@@ -558,10 +558,10 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	}
 	for (i=0; i<proptags.count; i++) {
 		propid = PROP_ID(proptags.pproptag[i]);
-		if (propid & 0x8000) {
-			propids.ppropid[propids.count] = propid;
-			propids.count ++;
-		}
+		if (!(propid & 0x8000))
+			continue;
+		propids.ppropid[propids.count] = propid;
+		propids.count++;
 	}
 	if (0 == propids.count) {
 		ppropidnames->count = 0;
