@@ -2175,18 +2175,15 @@ int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r)
 /* FALSE: overflow, TRUE: not overflow */
 BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size)
 {
-	uint32_t size;
-	uint32_t alloc_size;
-	
-	size = extra_size + pext->offset;
-	if (pext->alloc_size >= size) {
+	auto alloc_size = extra_size + pext->offset;
+	if (pext->alloc_size >= alloc_size)
 		return TRUE;
-	}
 	if (FALSE == pext->b_alloc) {
 		return FALSE;
 	}
-	for (alloc_size=pext->alloc_size; alloc_size<size;
-		alloc_size+=GROWING_BLOCK_SIZE);
+	if (alloc_size < pext->alloc_size * 2)
+		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
+		alloc_size = pext->alloc_size * 2;
 	auto pdata = static_cast<uint8_t *>(pext->mgt.realloc(pext->data, alloc_size));
 	if (NULL == pdata) {
 		return FALSE;
