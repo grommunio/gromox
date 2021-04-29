@@ -601,10 +601,8 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 		pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_folder_entryid(
 		&ext_pull, &tmp_entryid)) {
-		ext_buffer_pull_free(&ext_pull);
 		return FALSE;	
 	}
-	ext_buffer_pull_free(&ext_pull);
 	switch (tmp_entryid.folder_type) {
 	case EITLT_PRIVATE_FOLDER:
 		if (FALSE == logon_object_check_private(plogon)) {
@@ -657,12 +655,10 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 		pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_message_entryid(
 		&ext_pull, &tmp_entryid)) {
-		ext_buffer_pull_free(&ext_pull);
 		return FALSE;	
 	}
 	if (0 != memcmp(&tmp_entryid.folder_database_guid,
 		&tmp_entryid.message_database_guid, sizeof(GUID))) {
-		ext_buffer_pull_free(&ext_pull);
 		return FALSE;
 	}
 	switch (tmp_entryid.message_type) {

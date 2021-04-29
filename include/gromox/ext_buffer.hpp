@@ -97,7 +97,6 @@ struct XID;
 
 extern void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	uint32_t data_size, EXT_BUFFER_ALLOC alloc, uint32_t flags);
-void ext_buffer_pull_free(EXT_PULL *pext);
 int ext_buffer_pull_advance(EXT_PULL *pext, uint32_t size);
 int ext_buffer_pull_rpc_header_ext(EXT_PULL *pext, RPC_HEADER_EXT *r);
 int ext_buffer_pull_int8(EXT_PULL *pext, int8_t *v);

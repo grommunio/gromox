@@ -23,11 +23,6 @@ void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	pext->flags = flags;
 }
 
-void ext_buffer_pull_free(EXT_PULL *pext)
-{
-	/* do nothing */
-}
-
 int ext_buffer_pull_advance(EXT_PULL *pext, uint32_t size)
 {
 	pext->offset += size;
