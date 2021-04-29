@@ -215,7 +215,6 @@ static BOOL codepage_lang_load_cplist(const char *filename, const char *sdlist, 
 		if (FALSE == codepage_lang_load_langlist(&pcodepage->lang_list,
 			ptr, temp_len)) {
 			codepage_lang_unload_langlist(&pcodepage->lang_list);
-			single_list_free(&pcodepage->lang_list);
 			free(pcodepage);
 			printf("[codepage_lang]: fail to parse line %d in %s\n", i + 1, filename);
 			return FALSE;
@@ -253,11 +252,6 @@ static int codepage_lang_stop()
 {
 	codepage_lang_unload_cplist(&g_cp_list);
 	return 0;
-}
-
-static void codepage_lang_free()
-{
-	single_list_free(&g_cp_list);
 }
 
 static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
@@ -317,7 +311,6 @@ static BOOL svc_codepage_lang(int reason, void **ppdata)
 		return TRUE;
 	case PLUGIN_FREE:
 		codepage_lang_stop();
-		codepage_lang_free();
 		return TRUE;
 	}
 	return TRUE;

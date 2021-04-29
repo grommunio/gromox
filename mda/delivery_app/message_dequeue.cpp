@@ -278,8 +278,6 @@ void message_dequeue_free()
 {
 	g_path[0] = '\0';
     g_max_memory = 0;
-    single_list_free(&g_used_list);
-    single_list_free(&g_free_list);
 	g_current_mem  = 0;
     g_msg_id = -1;
 	g_message_ptr = NULL;

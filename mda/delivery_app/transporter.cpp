@@ -431,7 +431,6 @@ void transporter_free()
 	g_threads_min = 0;
 	g_threads_max = 0;
 	g_mime_num = 0;
-	single_list_free(&g_free_list);
 	double_list_free(&g_hook_list);
 	double_list_free(&g_lib_list);
 	double_list_free(&g_unloading_list);

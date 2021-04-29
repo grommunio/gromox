@@ -150,7 +150,6 @@ int resource_stop()
 	if (NULL != g_lang_list) {
 		while ((pnode = single_list_pop_front(g_lang_list)) != nullptr)
 			free(pnode->pdata);
-		single_list_free(g_lang_list);
 		free(g_lang_list);
 		g_lang_list = NULL;
 	}
@@ -229,7 +228,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
                 filename);
 			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
-			single_list_free(&temp_list);
 			return -1;
 		}
 		
@@ -240,7 +238,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
                 filename);
 			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
-			single_list_free(&temp_list);
 			return -1;
 		}
 		
@@ -271,7 +268,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			free(plang);
 			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 				free(pnode->pdata);
-			single_list_free(&temp_list);
 			return -1;
 		}
 		single_list_append_as_tail(&temp_list, &plang->node);
@@ -293,7 +289,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		printf("[resource]: cannot find default lang (%s) in %s\n", dfl_lang, filename);
 		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 			free(pnode->pdata);
-		single_list_free(&temp_list);
 		return -1;
 	}
 	
@@ -301,7 +296,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		printf("[resource]: too many langs in %s\n", filename);
 		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
 			free(pnode->pdata);
-		single_list_free(&temp_list);
 		return -1;
 	}
 	

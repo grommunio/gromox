@@ -153,7 +153,6 @@ int flusher_run()
  */
 int flusher_stop()
 {
-	single_list_free(&g_flush_queue);
 	lib_buffer_free(g_allocator);
 	if (TRUE == flusher_unload_plugin())
 		return 0;

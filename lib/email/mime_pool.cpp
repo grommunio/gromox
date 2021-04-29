@@ -77,7 +77,6 @@ void mime_pool_free(MIME_POOL *pmime_pool)
 	if (pmime_pool->number != single_list_get_nodes_num(&pmime_pool->free_list)) {
 		debug_info("[mime_pool]: there's still some mimes unfree");
 	}
-	single_list_free(&pmime_pool->free_list);
 	if (TRUE == pmime_pool->thread_safe) {
     	pthread_mutex_destroy(&pmime_pool->mutex);
     }

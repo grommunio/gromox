@@ -1787,7 +1787,6 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 	          "messages WHERE folder_id=%llu ORDER BY uid", LLU(folder_id));
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr) {
-		single_list_free(&presult->list);
 		free(presult);
 		return NULL;
 	}

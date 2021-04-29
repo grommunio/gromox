@@ -278,15 +278,12 @@ AB_BASE::~AB_BASE()
 		ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
 		free(pnode->pdata);
 	}
-	single_list_free(&pbase->list);
 	while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
 		ab_tree_put_snode(pnode);
-	single_list_free(&pbase->gal_list);
 	while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
 		ab_tree_put_abnode(static_cast<AB_NODE *>(pnode->pdata));
 		ab_tree_put_snode(pnode);
 	}
-	single_list_free(&pbase->remote_list);
 	if (NULL != pbase->phash) {
 		int_hash_free(pbase->phash);
 		pbase->phash = NULL;

@@ -78,7 +78,6 @@ void fifo_free(FIFO* pfifo)
 	if (NULL == pfifo) {
 		return;
 	}
-	single_list_free(&pfifo->mlist);
 }
 
 /*

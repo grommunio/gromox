@@ -65,7 +65,6 @@ void array_free(ARRAY* parray)
 		free(parray->cache_ptrs);
 		parray->cache_ptrs = NULL;
 	}
-	single_list_free(&parray->mlist);
 }
 
 

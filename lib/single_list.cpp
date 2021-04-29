@@ -27,9 +27,6 @@ void single_list_init(SINGLE_LIST* plist)
 	plist->cur_size	 = 0;
 }
 
-void single_list_free(SINGLE_LIST* plist) {
-	/* do nothing */
-}
 /*
  *	append one node at the end of the list
  *

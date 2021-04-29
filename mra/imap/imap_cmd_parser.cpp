@@ -2965,7 +2965,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	result = system_services_remove_mail(pcontext->maildir,
 	         pcontext->selected_folder, &temp_list, &errnum);
-	single_list_free(&temp_list);
 	switch(result) {
 	case MIDB_RESULT_OK: {
 		stream_clear(&pcontext->stream);
@@ -3348,7 +3347,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		system_services_remove_mail(pcontext->maildir,
 			temp_name, &temp_list, &errnum);
-		single_list_free(&temp_list);
 	}
 	xarray_free(&xarray);
 	stream_clear(&pcontext->stream);
@@ -3709,7 +3707,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		system_services_remove_mail(pcontext->maildir,
 			temp_name, &temp_list, &errnum);
-		single_list_free(&temp_list);
 	}
 	xarray_free(&xarray);
 	stream_clear(&pcontext->stream);
@@ -3804,7 +3801,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	result = system_services_remove_mail(pcontext->maildir,
 	         pcontext->selected_folder, &temp_list, &errnum);
-	single_list_free(&temp_list);
 	switch(result) {
 	case MIDB_RESULT_OK: {
 		stream_clear(&pcontext->stream);
@@ -3931,7 +3927,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	}
 	result = system_services_remove_mail(pcontext->maildir,
 	         prev_selected, &temp_list, &errnum);
-	single_list_free(&temp_list);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		for (i=0; i<num; i++) {

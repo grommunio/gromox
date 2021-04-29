@@ -814,7 +814,6 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
     pcontext->connection.sockd = -1;
 	pcontext->message_fd = -1;
 	array_clear(&pcontext->array);
-	single_list_free(&pcontext->list);
 	single_list_init(&pcontext->list);
 	stream_clear(&pcontext->stream);
 	memset(pcontext->read_buffer, 0, 1024);
@@ -842,7 +841,6 @@ static void pop3_parser_context_free(POP3_CONTEXT *pcontext)
 	}
     array_free(&pcontext->array);
     stream_free(&pcontext->stream);
-	single_list_free(&pcontext->list);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_shutdown(pcontext->connection.ssl);
 		SSL_free(pcontext->connection.ssl);
