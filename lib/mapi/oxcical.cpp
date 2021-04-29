@@ -2038,7 +2038,6 @@ static BOOL oxcical_parse_appointment_recurrence(
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_appointmentrecurrencepattern(
 		&ext_push, papprecurr)) {
-		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
 	tmp_bin.cb = ext_push.offset;
@@ -2049,16 +2048,13 @@ static BOOL oxcical_parse_appointment_recurrence(
 	propname.kind = MNID_ID;
 	propname.plid = &lid1;
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
-		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
-	ext_buffer_push_free(&ext_push);
 	(*plast_propid) ++;
 	if (ENDTYPE_NEVER_END == papprecurr->recurrencepattern.endtype ||
 		ENDTYPE_NEVER_END1 == papprecurr->recurrencepattern.endtype) {

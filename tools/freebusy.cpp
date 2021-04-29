@@ -222,10 +222,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	EXT_PUSH ext_push;
 	if (!ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	auto ret = exmdb_client_push_request2(ext_push, call_id, prequest, pbin_out);
-	if (ret != 0)
-		ext_buffer_push_free(&ext_push);
-	return ret;
+	return exmdb_client_push_request2(ext_push, call_id, prequest, pbin_out);
 }
 
 static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)

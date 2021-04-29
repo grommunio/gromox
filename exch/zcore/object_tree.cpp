@@ -158,7 +158,6 @@ static void object_tree_free_root(ROOT_OBJECT *prootobj)
 					close(fd);
 				}
 			}
-			ext_buffer_push_free(&ext_push);
 		}
 	}
 	tarray_set_free(prootobj->pprof_set);

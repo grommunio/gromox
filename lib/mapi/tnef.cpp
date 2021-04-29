@@ -3025,12 +3025,10 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 	}
 	if (FALSE == tnef_serialize_internal(&ext_push, FALSE,
 		pmsg, alloc, get_propname)) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;

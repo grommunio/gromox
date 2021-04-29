@@ -3519,7 +3519,6 @@ static BOOL message_make_deferred_action_message(
 	int id_count;
 	SVREID svreid;
 	BOOL b_result;
-	BINARY tmp_bin;
 	uint64_t tmp_eid;
 	uint64_t mid_val;
 	uint64_t nt_time;
@@ -3652,20 +3651,18 @@ static BOOL message_make_deferred_action_message(
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
 		&ext_push, &actions)) {
-		ext_buffer_push_free(&ext_push);
 		message_content_free(pmsg);
 		return FALSE;
 	}
+	BINARY tmp_bin;
 	tmp_bin.pb = ext_push.data;
 	tmp_bin.cb = ext_push.offset;
 	propval.proptag = PROP_TAG_CLIENTACTIONS;
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		ext_buffer_push_free(&ext_push);
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	ext_buffer_push_free(&ext_push);
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
 	propval.proptag = PROP_TAG_RULEIDS;

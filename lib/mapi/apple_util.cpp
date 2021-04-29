@@ -44,12 +44,10 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 		return nullptr;
 	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
-		ext_buffer_push_free(&ext_push);
 		return nullptr;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
@@ -113,12 +111,10 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 		return NULL;
 	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
@@ -173,12 +169,10 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 		return NULL;
 	}
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
@@ -233,12 +227,10 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 		return NULL;
 	}
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
@@ -272,12 +264,10 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 		return NULL;
 	}
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
@@ -310,14 +300,12 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		return nullptr;
 	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
-		ext_buffer_push_free(&ext_push);
 		free(applefile.pentries);
 		return nullptr;
 	}
 	free(applefile.pentries);
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;

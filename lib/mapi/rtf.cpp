@@ -627,8 +627,6 @@ RTF_READER::~RTF_READER()
 			proot, rtf_delete_tree_node);
 	}
 	simple_tree_free(&preader->element_tree);
-	ext_buffer_push_free(&preader->iconv_push);
-	ext_buffer_push_free(&preader->ext_push);
 	if ((iconv_t)-1 != preader->conv_id) {
 		iconv_close(preader->conv_id);
 	}
@@ -3281,7 +3279,6 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				goto CONVERT_FAILURE;
 			}
 		}
-		ext_buffer_push_free(&picture_push);
 		preader->is_within_picture = false;
 	}
 	rtf_flush_iconv_cache(preader);
@@ -3303,8 +3300,6 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	return true;
 	
  CONVERT_FAILURE:
-	if (b_picture_push)
-		ext_buffer_push_free(&picture_push);
 	return false;
 }
 

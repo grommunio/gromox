@@ -86,31 +86,26 @@ static int exmdb_client_push_request(uint8_t call_id,
 	}
 	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	status = ext_buffer_push_uint8(&ext_push, call_id);
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	switch (call_id) {
 	case exmdb_callid::CONNECT:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
 	case exmdb_callid::UNLOAD_STORE:
 		status = exmdb_client_push_unload_store_request(&ext_push, static_cast<UNLOAD_STORE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
-			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
 	default:
-		ext_buffer_push_free(&ext_push);
 		return EXT_ERR_BAD_SWITCH;
 	}
 	pbin_out->cb = ext_push.offset;

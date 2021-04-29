@@ -175,11 +175,9 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	pbin->cb = ext_push.offset;
 	pbin->pv = common_util_alloc(pbin->cb);
 	if (pbin->pv == nullptr) {
-		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
 	memcpy(pbin->pv, ext_push.data, pbin->cb);
-	ext_buffer_push_free(&ext_push);
 	return pbin;
 }
 

@@ -3150,12 +3150,10 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	}
 	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	status = ext_buffer_push_uint8(&ext_push, prequest->call_id);
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	if (prequest->call_id == exmdb_callid::CONNECT) {
@@ -3169,7 +3167,6 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	}
 	status = ext_buffer_push_string(&ext_push, prequest->dir);
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	switch (prequest->call_id) {
@@ -3655,12 +3652,10 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 		status = EXT_ERR_SUCCESS;
 		break;
 	default:
-		ext_buffer_push_free(&ext_push);
 		return EXT_ERR_BAD_SWITCH;
 	}
  END_PUSH_REQUEST:
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	pbin_out->cb = ext_push.offset;
@@ -5589,12 +5584,10 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	}
 	status = ext_buffer_push_uint8(&ext_push, exmdb_response::SUCCESS);
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	switch (presponse->call_id) {
@@ -6060,11 +6053,9 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 		status = EXT_ERR_SUCCESS;
 		break;
 	default:
-		ext_buffer_push_free(&ext_push);
 		return EXT_ERR_BAD_SWITCH;
 	}
 	if (EXT_ERR_SUCCESS != status) {
-		ext_buffer_push_free(&ext_push);
 		return status;
 	}
 	pbin_out->cb = ext_push.offset;
@@ -6449,8 +6440,5 @@ int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 	EXT_PUSH ext_push;
 	if (!ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	auto ret = exmdb_ext_push_db_notify2(ext_push, pnotify, pbin_out);
-	if (ret != 0)
-		ext_buffer_push_free(&ext_push);
-	return ret;
+	return exmdb_ext_push_db_notify2(ext_push, pnotify, pbin_out);
 }

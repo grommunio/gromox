@@ -3070,7 +3070,6 @@ BOOL common_util_set_properties(int table_type,
 	char *pstring;
 	uint64_t tmp_id;
 	uint16_t proptype;
-	EXT_PUSH ext_push;
 	char sql_string[256];
 	uint8_t temp_buff[256];
 	STRING_ARRAY *pstrings;
@@ -3458,7 +3457,8 @@ BOOL common_util_set_properties(int table_type,
 				*(uint8_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PT_CLSID:
+		case PT_CLSID: {
+			EXT_PUSH ext_push;
 			ext_buffer_push_init(&ext_push, temp_buff, 16, 0);
 			if (ext_buffer_push_guid(&ext_push,
 			    static_cast<GUID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
@@ -3468,7 +3468,9 @@ BOOL common_util_set_properties(int table_type,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PT_SVREID:
+		}
+		case PT_SVREID: {
+			EXT_PUSH ext_push;
 			ext_buffer_push_init(&ext_push, temp_buff, 256, 0);
 			if (ext_buffer_push_svreid(&ext_push,
 			    static_cast<SVREID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
@@ -3478,34 +3480,35 @@ BOOL common_util_set_properties(int table_type,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PT_SRESTRICT:
+		}
+		case PT_SRESTRICT: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_restriction(&ext_push,
 			    static_cast<RESTRICTION *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_ACTIONS:
+		}
+		case PT_ACTIONS: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_rule_actions(&ext_push,
 			    static_cast<RULE_ACTIONS *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
+		}
 		case PT_OBJECT:
 		case PT_BINARY: {
 			auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
@@ -3516,49 +3519,49 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
-		case PT_MV_SHORT:
+		case PT_MV_SHORT: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_short_array(&ext_push,
 			    static_cast<SHORT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_MV_LONG:
+		}
+		case PT_MV_LONG: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_long_array(&ext_push,
 			    static_cast<LONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_MV_I8:
+		}
+		case PT_MV_I8: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_longlong_array(&ext_push,
 			    static_cast<LONGLONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_MV_STRING8:
+		}
+		case PT_MV_STRING8: {
 			if (0 != cpid) {
 				tmp_strings.count = ((STRING_ARRAY*)
 					ppropvals->ppropval[i].pvalue)->count;
@@ -3578,61 +3581,61 @@ BOOL common_util_set_properties(int table_type,
 			} else {
 				pstrings = static_cast<STRING_ARRAY *>(ppropvals->ppropval[i].pvalue);
 			}
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (EXT_ERR_SUCCESS != ext_buffer_push_string_array(
 				&ext_push, pstrings)) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_MV_UNICODE:
+		}
+		case PT_MV_UNICODE: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_wstring_array(&ext_push,
 			    static_cast<STRING_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_MV_CLSID:
+		}
+		case PT_MV_CLSID: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_guid_array(&ext_push,
 			    static_cast<GUID_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
-		case PT_MV_BINARY:
+		}
+		case PT_MV_BINARY: {
+			EXT_PUSH ext_push;
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				return FALSE;
 			}
 			if (ext_buffer_push_binary_array(&ext_push,
 			    static_cast<BINARY_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			sqlite3_bind_blob(pstmt, 2, ext_push.data,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
-			ext_buffer_push_free(&ext_push);
 			break;
+		}
 		default:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =

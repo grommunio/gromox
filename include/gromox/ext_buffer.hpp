@@ -40,6 +40,8 @@ struct EXT_PULL {
 };
 
 struct EXT_PUSH {
+	~EXT_PUSH();
+
 	BOOL b_alloc = false;
 	union {
 		uint8_t *data, *udata;
@@ -169,7 +171,6 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r);
 int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *pmsg);
 extern BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size, uint32_t flags, const EXT_BUFFER_MGT *mgt = nullptr);
-void ext_buffer_push_free(EXT_PUSH *pext);
 int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size);
 int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r);
 BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size);

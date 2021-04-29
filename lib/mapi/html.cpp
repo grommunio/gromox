@@ -32,8 +32,6 @@ namespace {
 using rgb_t = unsigned int;
 
 struct RTF_WRITER {
-	~RTF_WRITER();
-
 	EXT_PUSH ext_push{};
 	std::map<std::string, unsigned int> pfont_hash /* font -> index */;
 	std::map<rgb_t, unsigned int> pcolor_hash; /* color -> index */
@@ -280,12 +278,6 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 	return TRUE;
 } 
  
-RTF_WRITER::~RTF_WRITER()
-{
-	auto pwriter = this;
-	ext_buffer_push_free(&pwriter->ext_push);
-}
-
 static int html_utf8_byte_num(unsigned char ch)
 {
 	int byte_num = 0;

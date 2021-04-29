@@ -806,7 +806,6 @@ static BOOL ftstream_producer_write_groupinfo(
 	FTSTREAM_PRODUCER *pstream,
 	const PROPERTY_GROUPINFO *pginfo)
 {
-	BINARY tmp_bin;
 	uint16_t propid;
 	uint32_t marker;
 	uint32_t offset;
@@ -829,53 +828,44 @@ static BOOL ftstream_producer_write_groupinfo(
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 		&ext_push, pginfo->group_id)) {
-		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 		&ext_push, pginfo->reserved)) {
-		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 		&ext_push, pginfo->count)) {
-		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
 	for (size_t i = 0; i < pginfo->count; ++i) {
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 			&ext_push, pginfo->pgroups[i].count)) {
-			ext_buffer_push_free(&ext_push);
 			return FALSE;
 		}
 		for (size_t j = 0; j < pginfo->pgroups[i].count; ++j) {
 			propid = PROP_ID(pginfo->pgroups[i].pproptag[j]);
 			if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 				&ext_push, pginfo->pgroups[i].pproptag[j])) {
-				ext_buffer_push_free(&ext_push);
 				return FALSE;
 			}
 			if (propid & 0x8000) {
 				if (FALSE == logon_object_get_named_propname(
 					pstream->plogon, propid, &propname)) {
-					ext_buffer_push_free(&ext_push);
 					return FALSE;
 				}
 				if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
 					&ext_push, &propname.guid)) {
-					ext_buffer_push_free(&ext_push);
 					return FALSE;
 				}
 				if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 					&ext_push, propname.kind)) {
-					ext_buffer_push_free(&ext_push);
 					return FALSE;
 				}
 				switch (propname.kind) {
 				case MNID_ID:
 					if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 						&ext_push, *propname.plid)) {
-						ext_buffer_push_free(&ext_push);
 						return FALSE;
 					}
 					break;
@@ -883,12 +873,10 @@ static BOOL ftstream_producer_write_groupinfo(
 					offset = ext_push.offset;
 					if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
 						&ext_push, sizeof(uint32_t))) {
-						ext_buffer_push_free(&ext_push);
 						return FALSE;
 					}
 					if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
 						&ext_push, propname.pname)) {
-						ext_buffer_push_free(&ext_push);
 						return FALSE;
 					}
 					offset1 = ext_push.offset - sizeof(uint16_t);
@@ -896,26 +884,20 @@ static BOOL ftstream_producer_write_groupinfo(
 					ext_push.offset = offset;
 					if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 						&ext_push, name_size)) {
-						ext_buffer_push_free(&ext_push);
 						return FALSE;
 					}
 					ext_push.offset = offset1;
 					break;
 				default:
-					ext_buffer_push_free(&ext_push);
 					return FALSE;
 				}
 			}
 		}
 	}
+	BINARY tmp_bin;
 	tmp_bin.cb = ext_push.offset;
 	tmp_bin.pb = ext_push.data;
-	if (FALSE == ftstream_producer_write_binary(pstream, &tmp_bin)) {
-		ext_buffer_push_free(&ext_push);
-		return FALSE;
-	}
-	ext_buffer_push_free(&ext_push);
-	return TRUE;
+	return ftstream_producer_write_binary(pstream, &tmp_bin);
 }
 
 BOOL ftstream_producer_write_messagechangepartial(

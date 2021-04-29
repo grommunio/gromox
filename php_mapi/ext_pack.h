@@ -53,7 +53,6 @@ zend_bool ext_pack_pull_znotification_array(
 	PULL_CTX *pctx, ZNOTIFICATION_ARRAY *r);
 
 #define ext_pack_push_init(c) ext_buffer_push_init((c), nullptr, 0, EXT_FLAG_WCOUNT, &ext_buffer_mgt)
-#define ext_pack_push_free(c) ext_buffer_push_free(c)
 #define ext_pack_push_advance(c, v) (ext_buffer_push_advance((c), (v)) == EXT_ERR_SUCCESS)
 #define ext_pack_push_bytes(c, v, z) (ext_buffer_push_bytes((c), (v), (z)) == EXT_ERR_SUCCESS)
 #define ext_pack_push_uint8(c, v) (ext_buffer_push_uint8((c), (v)) == EXT_ERR_SUCCESS)

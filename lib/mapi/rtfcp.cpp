@@ -243,12 +243,10 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	    ext_buffer_push_uint32(&ext_push, RTF_UNCOMPRESSED) != EXT_ERR_SUCCESS ||
 	    ext_buffer_push_uint32(&ext_push, 0) != EXT_ERR_SUCCESS ||
 	    ext_buffer_push_bytes(&ext_push, pin_buff, in_length) != EXT_ERR_SUCCESS) {
-		ext_buffer_push_free(&ext_push);
 		return nullptr;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (pbin == nullptr) {
-		ext_buffer_push_free(&ext_push);
 		return nullptr;
 	}
 	pbin->cb = ext_push.offset;

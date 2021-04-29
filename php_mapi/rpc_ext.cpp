@@ -1310,11 +1310,9 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 
 	TRY(ext_pack_push_init(&push_ctx));
 	if (!ext_pack_push_advance(&push_ctx, sizeof(uint32_t))) {
-		ext_pack_push_free(&push_ctx);
 		return 0;
 	}
 	if (!ext_pack_push_uint8(&push_ctx, prequest->call_id)) {
-		ext_pack_push_free(&push_ctx);
 		return 0;
 	}
 	switch (prequest->call_id) {
@@ -1658,7 +1656,6 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		return 0;
 	}
 	if (!b_result) {
-		ext_pack_push_free(&push_ctx);
 		return 0;
 	}
 	pbin_out->cb = push_ctx.offset;

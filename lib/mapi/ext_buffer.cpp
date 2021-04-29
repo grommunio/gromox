@@ -2156,8 +2156,9 @@ BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size,
 	return TRUE;
 }
 
-void ext_buffer_push_free(EXT_PUSH *pext)
+EXT_PUSH::~EXT_PUSH()
 {
+	auto pext = this;
 	if (TRUE == pext->b_alloc) {
 		pext->mgt.free(pext->data);
 	}
