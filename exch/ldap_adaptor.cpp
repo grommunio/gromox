@@ -112,7 +112,7 @@ static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
 	if (ld == nullptr)
 		ld = make_conn();
 	if (ld == nullptr)
-		return false;
+		return LDAP_SERVER_DOWN;
 	auto ret = func(ld.get(), args...);
 	if (ret != LDAP_SERVER_DOWN)
 		return ret;
