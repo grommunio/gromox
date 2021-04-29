@@ -44,11 +44,13 @@ struct COLOR_NODE {
 };
 
 struct RTF_WRITER {
-	EXT_PUSH ext_push;
-	DOUBLE_LIST font_table;
-	STR_HASH_TABLE *pfont_hash;
-	INT_HASH_TABLE *pcolor_hash;
-	DOUBLE_LIST color_table;
+	~RTF_WRITER();
+
+	EXT_PUSH ext_push{};
+	DOUBLE_LIST font_table{};
+	STR_HASH_TABLE *pfont_hash = nullptr;
+	INT_HASH_TABLE *pcolor_hash = nullptr;
+	DOUBLE_LIST color_table{};
 };
 }
 
@@ -321,8 +323,9 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 	return TRUE;
 } 
  
-static void html_free_writer(RTF_WRITER *pwriter)
+RTF_WRITER::~RTF_WRITER()
 {
+	auto pwriter = this;
 	str_hash_free(pwriter->pfont_hash);
 	double_list_free(&pwriter->font_table);
 	int_hash_free(pwriter->pcolor_hash);
@@ -1486,7 +1489,6 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 	}
 	pgumbo_html = gumbo_parse(pbuffer);
 	if (NULL == pgumbo_html) {
-		html_free_writer(&writer);
 		free(pbuffer);
 		return FALSE;
 	}
@@ -1496,7 +1498,6 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 			FALSE == html_enum_write(&writer, pgumbo_html->root) ||
 			FALSE == html_write_tail(&writer)) {
 			gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);
-			html_free_writer(&writer);
 			free(pbuffer);
 			return FALSE;
 		}
@@ -1506,7 +1507,6 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 	if (*pbuff_out != nullptr)
 		memcpy(*pbuff_out, writer.ext_push.data, *plength);
 	gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);
-	html_free_writer(&writer);
 	free(pbuffer);
 	return *pbuff_out != nullptr ? TRUE : FALSE;
 }
