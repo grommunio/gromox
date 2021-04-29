@@ -28,30 +28,26 @@ struct EXT_BUFFER_MGT {
 };
 
 struct EXT_PULL {
-	EXT_BUFFER_ALLOC alloc;
+	EXT_BUFFER_ALLOC alloc{};
 	template<typename T> inline T *anew() { return static_cast<T *>(alloc(sizeof(T))); }
 	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(alloc(sizeof(T) * elem)); }
 	union {
 		const uint8_t *data, *udata;
 		const char *cdata;
-		const void *vdata;
+		const void *vdata = nullptr;
 	};
-	uint32_t data_size;
-	uint32_t offset;
-	uint32_t flags;
+	uint32_t data_size = 0, offset = 0, flags = 0;
 };
 
 struct EXT_PUSH {
-	BOOL b_alloc;
+	BOOL b_alloc = false;
 	union {
 		uint8_t *data, *udata;
 		char *cdata;
-		void *vdata;
+		void *vdata = nullptr;
 	};
-	uint32_t alloc_size;
-	uint32_t offset;
-	uint32_t flags;
-	EXT_BUFFER_MGT mgt;
+	uint32_t alloc_size = 0, offset = 0, flags = 0;
+	EXT_BUFFER_MGT mgt{};
 };
 
 /* bitmap RPC_HEADER_EXT flags */
