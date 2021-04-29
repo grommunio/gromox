@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cassert>
 #include <cctype>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -26,43 +29,28 @@
 #define MAX_TABLE_ITEMS						1024
 
 namespace {
-struct COLOR_ITEM {
-	const char *name;
-	int value;
-};
-
-struct FONT_NODE {
-	DOUBLE_LIST_NODE node;
-	char font_name[128];
-	int index;
-};
-
-struct COLOR_NODE {
-	DOUBLE_LIST_NODE node;
-	int color;
-	int index;
-};
+using rgb_t = unsigned int;
 
 struct RTF_WRITER {
 	~RTF_WRITER();
 
 	EXT_PUSH ext_push{};
-	DOUBLE_LIST font_table{};
-	STR_HASH_TABLE *pfont_hash = nullptr;
-	INT_HASH_TABLE *pcolor_hash = nullptr;
-	DOUBLE_LIST color_table{};
+	std::map<std::string, unsigned int> pfont_hash /* font -> index */;
+	std::map<rgb_t, unsigned int> pcolor_hash; /* color -> index */
+	std::vector<rgb_t> colors_ordered; /* index -> color */
+	std::vector<std::string> fonts_ordered; /* index -> font */
 };
 }
 
 static iconv_t g_conv_id;
-static STR_HASH_TABLE *g_color_hash;
+static std::map<std::string, rgb_t> g_color_hash;
 static CPID_TO_CHARSET html_cpid_to_charset;
 
 static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
 
 BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
-	static const COLOR_ITEM color_map[] =
+	static constexpr std::pair<const char *, rgb_t> color_map[] =
 		{{"black",				0x000000},
 		{"silver",				0xc0c0c0},
 		{"gray",				0x808080},
@@ -212,86 +200,69 @@ BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"yellowgreen",			0x9acd32},
 		{"rebeccapurple",		0x663399}};
 	
-	if (g_color_hash != nullptr)
+	if (g_color_hash.size() > 0)
 		return TRUE;
-	g_color_hash = str_hash_init(
-	               sizeof(color_map)/sizeof(COLOR_ITEM) + 1,
-	               sizeof(int), NULL);
-	if (NULL == g_color_hash) {
+	try {
+		for (const auto &e : color_map)
+			g_color_hash.emplace(e.first, e.second);
+	} catch (const std::bad_alloc &) {
+		g_color_hash.clear();
 		return FALSE;
 	}
-	for (size_t i = 0; i < GX_ARRAY_SIZE(color_map); ++i)
-		str_hash_add(g_color_hash,
-		             color_map[i].name,
-		             &color_map[i].value);
 	g_conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if ((iconv_t)-1 == g_conv_id) {
-		str_hash_free(g_color_hash);
-		g_color_hash = NULL;
 		return FALSE;
 	}
 	html_cpid_to_charset = cpid_to_charset;
 	return TRUE;
 }
 
-static void html_set_fonttable(RTF_WRITER *pwriter, const char* font_name) 
+static void html_set_fonttable(RTF_WRITER *w, const char *name) try
 {
-	FONT_NODE tmp_node;
-	
-	gx_strlcpy(tmp_node.font_name, font_name, GX_ARRAY_SIZE(tmp_node.font_name));
-	HX_strlower(tmp_node.font_name);
-	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_node.font_name));
-	if (NULL != pfnode) {
-		return;
+	auto it = w->pfont_hash.find(name);
+	if (it != w->pfont_hash.cend())
+		return; /* font already present */
+	if (w->pfont_hash.size() >= MAX_TABLE_ITEMS)
+		return; /* table full */
+	assert(w->pfont_hash.size() == w->fonts_ordered.size());
+	auto tp = w->pfont_hash.emplace(name, w->pfont_hash.size());
+	assert(tp.second);
+	try {
+		w->fonts_ordered.push_back(name);
+	} catch (const std::bad_alloc &) {
+		w->pfont_hash.erase(tp.first);
 	}
-	tmp_node.index = double_list_get_nodes_num(&pwriter->font_table);
-	if (1 != str_hash_add(pwriter->pfont_hash,
-		tmp_node.font_name, &tmp_node)) {
-		return;
-	}
-	pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_node.font_name));
-	pfnode->node.pdata = pfnode;
-	double_list_append_as_tail(&pwriter->font_table, &pfnode->node);
+} catch (const std::bad_alloc &) {
 }
 
 static int html_get_fonttable(RTF_WRITER *pwriter, const char* font_name)
 {
-	char tmp_buff[128];
-	
-	gx_strlcpy(tmp_buff, font_name, GX_ARRAY_SIZE(tmp_buff));
-	HX_strlower(tmp_buff);
-	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_buff));
-	if (NULL == pfnode) {
-		return -1;
-	}
-	return pfnode->index;
+	auto it = pwriter->pfont_hash.find(font_name);
+	return it != pwriter->pfont_hash.cend() ? it->second : -1;
 }
 
-static void html_set_colortable(RTF_WRITER *pwriter, int color) 
+static void html_set_colortable(RTF_WRITER *w, rgb_t color) try
 { 
-	COLOR_NODE tmp_node;
-	
-	auto pcnode = static_cast<COLOR_NODE *>(int_hash_query(pwriter->pcolor_hash, color));
-	if (NULL != pcnode) {
-		return;
+	auto it = w->pcolor_hash.find(color);
+	if (it != w->pcolor_hash.cend())
+		return; /* color already present */
+	if (w->pcolor_hash.size() >= MAX_TABLE_ITEMS)
+		return; /* table full */
+	assert(w->pcolor_hash.size() == w->colors_ordered.size());
+	auto tp = w->pcolor_hash.emplace(color, w->pcolor_hash.size());
+	assert(tp.second);
+	try {
+		w->colors_ordered.push_back(color);
+	} catch (const std::bad_alloc &) {
+		w->pcolor_hash.erase(tp.first);
 	}
-	tmp_node.color = color;
-	tmp_node.index = double_list_get_nodes_num(&pwriter->color_table);
-	if (1 != int_hash_add(pwriter->pcolor_hash, color, &tmp_node)) {
-		return;
-	}
-	pcnode = static_cast<COLOR_NODE *>(int_hash_query(pwriter->pcolor_hash, color));
-	pcnode->node.pdata = pcnode;
-	double_list_append_as_tail(&pwriter->color_table, &pcnode->node);
+} catch (const std::bad_alloc &) {
 }
 
-static int html_get_colortable(RTF_WRITER *pwriter, int color)
+static int html_get_colortable(RTF_WRITER *w, rgb_t color)
 {
-	auto pcnode = static_cast<COLOR_NODE *>(int_hash_query(pwriter->pcolor_hash, color));
-	if (NULL == pcnode) {
-		return -1;
-	}
-	return pcnode->index;
+	auto it = w->pcolor_hash.find(color);
+	return it != w->pcolor_hash.cend() ? it->second : -1;
 }
 
 static BOOL html_init_writer(RTF_WRITER *pwriter) 
@@ -300,20 +271,6 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 		&pwriter->ext_push, NULL, 0, 0)) {
 		return FALSE;	
 	}
-	pwriter->pfont_hash = str_hash_init(
-		MAX_TABLE_ITEMS, sizeof(FONT_NODE), NULL);
-	if (NULL == pwriter->pfont_hash) {
-		ext_buffer_push_free(&pwriter->ext_push);
-		return FALSE;
-	}
-	pwriter->pcolor_hash = int_hash_init(MAX_TABLE_ITEMS, sizeof(COLOR_NODE));
-	if (NULL == pwriter->pcolor_hash) {
-		str_hash_free(pwriter->pfont_hash);
-		ext_buffer_push_free(&pwriter->ext_push);
-		return FALSE;
-	}
-	double_list_init(&pwriter->font_table);
-	double_list_init(&pwriter->color_table);
 	html_set_fonttable(pwriter, "Times New Roman");
 	html_set_fonttable(pwriter, "Arial");
 	/* first item in font table is for symbol */
@@ -326,10 +283,6 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 RTF_WRITER::~RTF_WRITER()
 {
 	auto pwriter = this;
-	str_hash_free(pwriter->pfont_hash);
-	double_list_free(&pwriter->font_table);
-	int_hash_free(pwriter->pcolor_hash);
-	double_list_free(&pwriter->color_table);
 	ext_buffer_push_free(&pwriter->ext_push);
 }
 
@@ -409,37 +362,27 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 static BOOL html_write_header(RTF_WRITER*pwriter)
 {
 	int length;
-	FONT_NODE *pfnode;
-	COLOR_NODE *pcnode;
 	char tmp_string[256];
-	DOUBLE_LIST_NODE *pnode;
+	size_t i = 0;
 	
 	length = sprintf(tmp_string,
 		"{\\rtf1\\ansi\\fbidis\\ansicpg1252\\deff0");
 	QRF(ext_buffer_push_bytes(&pwriter->ext_push, tmp_string, length));
 	QRF(ext_buffer_push_bytes(&pwriter->ext_push, "{\\fonttbl", 9));
-	while ((pnode = double_list_pop_front(&pwriter->font_table)) != nullptr) {
-		pfnode = (FONT_NODE*)pnode->pdata;
-		if (0 == strcasecmp(pfnode->font_name, "symbol")) {
-			length = sprintf(tmp_string,
-				"{\\f%d\\fswiss\\fcharset2 ", pfnode->index);
-		} else {
-			length = sprintf(tmp_string,
-				"{\\f%d\\fswiss\\fcharset0 ", pfnode->index);
-		}
+	for (const auto &font : pwriter->fonts_ordered) {
+		length = snprintf(tmp_string, GX_ARRAY_SIZE(tmp_string),
+		         "{\\f%zu\\fswiss\\fcharset%d ", i++,
+		         strcasecmp(font.c_str(), "symbol") == 0 ? 2 : 0);
 		QRF(ext_buffer_push_bytes(&pwriter->ext_push, tmp_string, length));
-		if (FALSE == html_write_string(pwriter, pfnode->font_name)) {
+		if (!html_write_string(pwriter, font.c_str()))
 			return FALSE;
-		}
 		QRF(ext_buffer_push_bytes(&pwriter->ext_push, ";}", 2));
 	}
 	QRF(ext_buffer_push_bytes(&pwriter->ext_push, "}{\\colortbl", 11));
-	while ((pnode = double_list_pop_front(&pwriter->color_table)) != nullptr) {
-		pcnode = (COLOR_NODE*)pnode->pdata;
+	for (auto color : pwriter->colors_ordered) {
 		length = sprintf(tmp_string, "\\red%d\\green%d\\blue%d;",
-							(pcnode->color & 0xFF0000) >> 16,
-							(pcnode->color & 0xFF00) >> 8,
-							pcnode->color & 0xFF);
+		         (color & 0xFF0000) >> 16, (color & 0xFF00) >> 8,
+		         color & 0xFF);
 		QRF(ext_buffer_push_bytes(&pwriter->ext_push, tmp_string, length));
 	}
 	length = sprintf(tmp_string,
@@ -608,11 +551,8 @@ static int html_convert_color(const char *value)
 	}
 	gx_strlcpy(color_string, value, GX_ARRAY_SIZE(color_string));
 	HX_strlower(color_string);
-	auto pcolor = static_cast<int *>(str_hash_query(g_color_hash, color_string));
-	if (NULL != pcolor) {
-		return *pcolor;
-	}
-	return -1;
+	auto it = g_color_hash.find(color_string);
+	return it != g_color_hash.cend() ? it->second : -1;
 }
 
 static BOOL html_match_style(const char *style_string,
