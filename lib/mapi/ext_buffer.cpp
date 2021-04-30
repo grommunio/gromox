@@ -2443,7 +2443,7 @@ int ext_buffer_push_guid_array(EXT_PUSH *pext, const GUID_ARRAY *r)
 {
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_guid(pext, &r->pguid[i]));
+		TRY(pext->p_guid(&r->pguid[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2642,7 +2642,7 @@ static int ext_buffer_push_reply_action(
 {
 	TRY(pext->p_uint64(r->template_folder_id));
 	TRY(pext->p_uint64(r->template_message_id));
-	return ext_buffer_push_guid(pext, &r->template_guid);
+	return pext->p_guid(&r->template_guid);
 }
 
 static int ext_buffer_push_recipient_block(
@@ -2767,7 +2767,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PT_UNICODE:
 		return pext->p_wstr(static_cast<const char *>(pval));
 	case PT_CLSID:
-		return ext_buffer_push_guid(pext, static_cast<const GUID *>(pval));
+		return pext->p_guid(static_cast<const GUID *>(pval));
 	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, static_cast<const SVREID *>(pval));
 	case PT_SRESTRICT:
@@ -2810,7 +2810,7 @@ int ext_buffer_push_tagged_propval(EXT_PUSH *pext, const TAGGED_PROPVAL *r)
 
 int ext_buffer_push_long_term_id(EXT_PUSH *pext, const LONG_TERM_ID *r)
 {
-	TRY(ext_buffer_push_guid(pext, &r->guid));
+	TRY(pext->p_guid(&r->guid));
 	TRY(pext->p_bytes(r->global_counter, 6));
 	return pext->p_uint16(r->padding);
 }
@@ -2845,7 +2845,7 @@ int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	uint8_t name_size;
 	
 	TRY(pext->p_uint8(r->kind));
-	TRY(ext_buffer_push_guid(pext, &r->guid));
+	TRY(pext->p_guid(&r->guid));
 	if (r->kind == MNID_ID) {
 		TRY(pext->p_uint32(r->lid));
 	} else if (r->kind == MNID_STRING) {
@@ -2926,7 +2926,7 @@ int ext_buffer_push_xid(EXT_PUSH *pext, uint8_t size, const XID *pxid)
 	if (size < 17 || size > 24) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_push_guid(pext, &pxid->guid));
+	TRY(pext->p_guid(&pxid->guid));
 	return pext->p_bytes(pxid->local_id, size - 16);
 }
 
@@ -2936,7 +2936,7 @@ int ext_buffer_push_folder_entryid(
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->folder_type));
-	TRY(ext_buffer_push_guid(pext, &r->database_guid));
+	TRY(pext->p_guid(&r->database_guid));
 	TRY(pext->p_bytes(r->global_counter, 6));
 	return pext->p_bytes(r->pad, 2);
 }
@@ -2946,10 +2946,10 @@ int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->message_type));
-	TRY(ext_buffer_push_guid(pext, &r->folder_database_guid));
+	TRY(pext->p_guid(&r->folder_database_guid));
 	TRY(pext->p_bytes(r->folder_global_counter, 6));
 	TRY(pext->p_bytes(r->pad1, 2));
-	TRY(ext_buffer_push_guid(pext, &r->message_database_guid));
+	TRY(pext->p_guid(&r->message_database_guid));
 	TRY(pext->p_bytes(r->message_global_counter, 6));
 	return pext->p_bytes(r->pad2, 2);
 }

@@ -103,7 +103,7 @@ static int exmdb_client_push_connect_request(
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_bool(pext, r->b_private);
+	return pext->p_bool(r->b_private);
 }
 
 static int exmdb_client_push_delivery_message_request(
@@ -148,10 +148,8 @@ static int exmdb_client_push_request(uint8_t call_id,
 	int status;
 	EXT_PUSH ext_push;
 	
-	if (FALSE == ext_buffer_push_init(
-		&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	}
 	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
 		return status;

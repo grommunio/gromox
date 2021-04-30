@@ -1698,8 +1698,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		ab_entryid.px500dn = dn;
 		bv->pv = common_util_alloc(1280);
-		if (bv->pv == nullptr ||
-		    !ext_buffer_push_init(&ext_push, bv->pv, 1280, 0))
+		if (bv->pv == nullptr || !ext_push.init(bv->pv, 1280, 0))
 			return FALSE;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 			&ext_push, &ab_entryid)) {

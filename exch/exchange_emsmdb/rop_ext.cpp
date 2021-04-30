@@ -119,9 +119,9 @@ static int rop_ext_push_logon_pmb_response(
 		TRY(pext->p_uint64(r->folder_ids[i]));
 	}
 	TRY(pext->p_uint8(r->response_flags));
-	TRY(ext_buffer_push_guid(pext, &r->mailbox_guid));
+	TRY(pext->p_guid(&r->mailbox_guid));
 	TRY(pext->p_uint16(r->replica_id));
-	TRY(ext_buffer_push_guid(pext, &r->replica_guid));
+	TRY(pext->p_guid(&r->replica_guid));
 	TRY(rop_ext_push_logon_time(pext, &r->logon_time));
 	TRY(pext->p_uint64(r->gwart_time));
 	return pext->p_uint32(r->store_stat);
@@ -138,8 +138,8 @@ static int rop_ext_push_logon_pf_response(
 		TRY(pext->p_uint64(r->folder_ids[i]));
 	}
 	TRY(pext->p_uint16(r->replica_id));
-	TRY(ext_buffer_push_guid(pext, &r->replica_guid));
-	return ext_buffer_push_guid(pext, &r->per_user_guid);
+	TRY(pext->p_guid(&r->replica_guid));
+	return pext->p_guid(&r->per_user_guid);
 }
 
 static int rop_ext_push_logon_redirect_response(
@@ -269,7 +269,7 @@ static int rop_ext_pull_getperuserguid_request(
 static int rop_ext_push_getperuserguid_response(
 	EXT_PUSH *pext, const GETPERUSERGUID_RESPONSE *r)
 {
-	return ext_buffer_push_guid(pext, &r->guid);
+	return pext->p_guid(&r->guid);
 }
 
 static int rop_ext_pull_readperuserinformation_request(
@@ -1865,7 +1865,7 @@ static int rop_ext_pull_getlocalreplicaids_request(
 static int rop_ext_push_getlocalreplicaids_response(
 	EXT_PUSH *pext, const GETLOCALREPLICAIDS_RESPONSE *r)
 {
-	TRY(ext_buffer_push_guid(pext, &r->guid));
+	TRY(pext->p_guid(&r->guid));
 	return pext->p_bytes(r->global_count, 6);
 }
 
@@ -3297,7 +3297,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	uint8_t tmp_buff[0x10000];
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	if (!ext_buffer_push_init(&subext, ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
+	if (!subext.init(ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(subext.p_uint16(in_len + sizeof(uint16_t)));
 	TRY(subext.p_bytes(pbuff_in, in_len));
@@ -3328,7 +3328,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	}
-	if (!ext_buffer_push_init(&ext_push, pbuff_out, *pout_len, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(ext_buffer_push_rpc_header_ext(&ext_push, &rpc_header_ext));
 	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));

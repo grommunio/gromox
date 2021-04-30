@@ -306,7 +306,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	}
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = (char*)username;
-	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
 	status = ext_buffer_push_oneoff_entryid(&ext_push, &tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
@@ -331,7 +331,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = (char*)pessdn;
-	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -842,7 +842,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	len ++;
 	ptoken_prev = field;
 	count = 0;
-	if (!ext_buffer_push_init(&ext_push, bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
+	if (!ext_push.init(bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
 		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
 		&ext_push, sizeof(uint32_t))) {

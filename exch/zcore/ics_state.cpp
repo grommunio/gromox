@@ -161,7 +161,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		}
 		rop_util_free_binary(pbin);
 	}
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0)) {
 		tpropval_array_free(pproplist);
 		return NULL;
 	}

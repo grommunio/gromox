@@ -2422,7 +2422,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		goto CRITERIA_FAILURE;
 	}
 	if (NULL != prestriction) {
-		if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
 			goto CRITERIA_FAILURE;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
 			&ext_push, prestriction)) {
@@ -2931,7 +2931,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (NULL == pcondition) {
 				continue;
 			}
-			if (!ext_buffer_push_init(&ext_push, condition_buff, sizeof(condition_buff), 0))
+			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0))
 				goto RULE_FAILURE;
 			if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
 				&ext_push, pcondition)) {
@@ -2943,7 +2943,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (NULL == paction) {
 				continue;
 			}
-			if (!ext_buffer_push_init(&ext_push, action_buff, sizeof(action_buff), 0))
+			if (!ext_push.init(action_buff, sizeof(action_buff), 0))
 				goto RULE_FAILURE;
 			if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
 				&ext_push, paction)) {
@@ -3078,7 +3078,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
 			             &prow[i].propvals, PROP_TAG_RULECONDITION));
 			if (NULL != pcondition) {
-				if (!ext_buffer_push_init(&ext_push, condition_buff, sizeof(condition_buff), 0))
+				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0))
 					goto RULE_FAILURE;
 				if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
 					&ext_push, pcondition)) {
@@ -3101,7 +3101,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL != paction) {
-				if (!ext_buffer_push_init(&ext_push, action_buff, sizeof(action_buff), 0))
+				if (!ext_push.init(action_buff, sizeof(action_buff), 0))
 					goto RULE_FAILURE;
 				if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
 					&ext_push, paction)) {

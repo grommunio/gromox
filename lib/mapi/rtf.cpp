@@ -583,14 +583,9 @@ static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
 	if (NULL == preader->pfont_hash) {
 		return false;
 	}
-	if (FALSE == ext_buffer_push_init(
-		&preader->ext_push, NULL, 0, 0)) {
+	if (!preader->ext_push.init(nullptr, 0, 0) ||
+	    !preader->iconv_push.init(nullptr, 0, 0))
 		return false;
-	}
-	if (FALSE == ext_buffer_push_init(
-		&preader->iconv_push, NULL, 0, 0)) {
-		return false;
-	}
 	simple_tree_init(&preader->element_tree);
 	preader->pattachments = pattachments;
 	return true;
@@ -3010,10 +3005,8 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 						sprintf(cid_name, "\"cid:picture%04d@rtf\"", 
 								preader->picture_file_number);
 						preader->picture_file_number ++;
-						if (FALSE == ext_buffer_push_init(
-							&picture_push, NULL, 0, 0)) {
+						if (!picture_push.init(nullptr, 0, 0))
 							return -ENOMEM;
-						}
 						b_picture_push = true;
 					}
 					if (' ' != string[0]) {

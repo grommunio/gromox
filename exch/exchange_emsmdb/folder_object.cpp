@@ -490,7 +490,7 @@ static BOOL folder_object_get_calculated_property(
 		persistdatas.ppitems[2]->element.pentry_id =
 			common_util_to_folder_entryid(pfolder->plogon,
 			rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
-		if (!ext_buffer_push_init(&ext_push, temp_buff, sizeof(temp_buff), 0))
+		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0))
 			return false;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_persistdata_array(
 			&ext_push, &persistdatas)) {

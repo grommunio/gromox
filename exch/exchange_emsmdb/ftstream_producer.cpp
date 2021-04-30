@@ -358,13 +358,9 @@ static BOOL ftstream_producer_write_propdef(
 		pstream->plogon, propid, &propname)) {
 		return FALSE;
 	}
-	if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16))
-		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
-		&ext_push, &propname.guid)) {
-		return FALSE;
-	}
-	if (ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
+	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16) ||
+	    ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
 		return FALSE;
 	switch (propname.kind) {
 	case MNID_ID:
@@ -734,13 +730,9 @@ static BOOL ftstream_producer_write_groupinfo(
 	if (!pstream->write_uint32(INCRSYNCGROUPINFO))
 		return FALSE;
 	/* 0x00000102 is the only proptag in proplist */
-	if (!pstream->write_uint32(PT_BINARY))
-		return FALSE;
-	if (FALSE == ext_buffer_push_init(
-		&ext_push, NULL, 0, EXT_FLAG_UTF16)) {
-		return FALSE;	
-	}
-	if (ext_push.p_uint32(pginfo->group_id) != EXT_ERR_SUCCESS ||
+	if (!pstream->write_uint32(PT_BINARY) ||
+	    !ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_uint32(pginfo->group_id) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(pginfo->reserved) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(pginfo->count) != EXT_ERR_SUCCESS)
 		return FALSE;
@@ -757,11 +749,8 @@ static BOOL ftstream_producer_write_groupinfo(
 			    pstream->plogon, propid, &propname)) {
 				return FALSE;
 			}
-			if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
-			    &ext_push, &propname.guid)) {
-				return FALSE;
-			}
-			if (ext_push.p_uint32(propname.kind) != EXT_ERR_SUCCESS)
+			if (ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
+			    ext_push.p_uint32(propname.kind) != EXT_ERR_SUCCESS)
 				return FALSE;
 			switch (propname.kind) {
 			case MNID_ID:

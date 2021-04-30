@@ -144,7 +144,7 @@ static void object_tree_free_root(ROOT_OBJECT *prootobj)
 	char tmp_path[256];
 	
 	if (prootobj->b_touched &&
-	    ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT) &&
+	    ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) &&
 	    ext_buffer_push_tpropval_array(&ext_push, prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
 	    ext_buffer_push_tarray_set(&ext_push, prootobj->pprof_set) == EXT_ERR_SUCCESS) {
 		sprintf(tmp_path, "%s/config/zarafa.dat",

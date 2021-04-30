@@ -431,7 +431,7 @@ static BOOL rpc_ext_push_zreply_action(
 	EXT_PUSH *pext, const ZREPLY_ACTION *r)
 {	
 	QRF(ext_buffer_push_binary(pext, &r->message_eid));
-	QRF(ext_buffer_push_guid(pext, &r->template_guid));
+	QRF(pext->p_guid(&r->template_guid));
 	return TRUE;
 }
 
@@ -575,7 +575,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		QRF(pext->p_wstr(static_cast<const char *>(pval)));
 		return TRUE;
 	case PT_CLSID:
-		QRF(ext_buffer_push_guid(pext, static_cast<const GUID *>(pval)));
+		QRF(pext->p_guid(static_cast<const GUID *>(pval)));
 		return TRUE;
 	case PT_SRESTRICT:
 		QRF(ext_buffer_push_restriction(pext, static_cast<const RESTRICTION *>(pval)));
@@ -794,7 +794,7 @@ static BOOL rpc_ext_pull_logon_request(
 static BOOL rpc_ext_push_logon_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_push_guid(pext, &ppayload->logon.hsession));
+	QRF(pext->p_guid(&ppayload->logon.hsession));
 	return TRUE;
 }
 
@@ -2450,10 +2450,8 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	BOOL b_result;
 	EXT_PUSH ext_push;
 
-	if (FALSE == ext_buffer_push_init(
-		&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return FALSE;
-	}
 	QRF(ext_push.p_uint8(zcore_response::SUCCESS));
 	if (EXT_ERR_SUCCESS != presponse->result) {
 		if (ext_push.p_uint32(4) != EXT_ERR_SUCCESS ||

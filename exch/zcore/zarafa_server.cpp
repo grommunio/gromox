@@ -830,7 +830,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	tmp_entryid.px500dn = x500dn;
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pentryid->pb, 1280, EXT_FLAG_UTF16))
+	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16))
 		return ecError;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -2570,7 +2570,7 @@ uint32_t zarafa_server_getstoreentryid(
 	store_entryid.pmailbox_dn = deconst(mailbox_dn);
 	pentryid->pv = common_util_alloc(1024);
 	if (pentryid->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pentryid->pb, 1024, EXT_FLAG_UTF16))
+	    !ext_push.init(pentryid->pb, 1024, EXT_FLAG_UTF16))
 		return ecError;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
 		&ext_push, &store_entryid)) {

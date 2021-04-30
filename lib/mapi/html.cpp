@@ -265,10 +265,8 @@ static int html_get_colortable(RTF_WRITER *w, rgb_t color)
 
 static BOOL html_init_writer(RTF_WRITER *pwriter) 
 {
-	if (FALSE == ext_buffer_push_init(
-		&pwriter->ext_push, NULL, 0, 0)) {
+	if (!pwriter->ext_push.init(nullptr, 0, 0))
 		return FALSE;	
-	}
 	html_set_fonttable(pwriter, "Times New Roman");
 	html_set_fonttable(pwriter, "Arial");
 	/* first item in font table is for symbol */

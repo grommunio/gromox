@@ -113,14 +113,14 @@ static int exmdb_client_push_connect_request(
 {
 	TRY(pext->p_str(r->prefix));
 	TRY(pext->p_str(r->remote_id));
-	return ext_buffer_push_bool(pext, r->b_private);
+	return pext->p_bool(r->b_private);
 }
 
 static int exmdb_client_push_get_named_propids(
 	EXT_PUSH *pext, const GET_NAMED_PROPIDS_REQUEST *r)
 {
 	TRY(pext->p_str(r->dir));
-	TRY(ext_buffer_push_bool(pext, r->b_create));
+	TRY(pext->p_bool(r->b_create));
 	return ext_buffer_push_propname_array(pext, r->ppropnames);
 }
 
@@ -221,7 +221,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	void *prequest, BINARY *pbin_out)
 {
 	EXT_PUSH ext_push;
-	if (!ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT))
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
 	return exmdb_client_push_request2(ext_push, call_id, prequest, pbin_out);
 }
@@ -1263,7 +1263,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
-			if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
 				return false;
 			if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 				&ext_push, &globalobjectid)) {
@@ -1286,9 +1286,9 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pv = tmp_buff1;
 		guid = guid_random_new();
-		if (!ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0) ||
-		    ext_buffer_push_guid(&ext_push, &guid) != EXT_ERR_SUCCESS ||
-		    !ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+		if (!ext_push.init(tmp_buff1, 16, 0) ||
+		    ext_push.p_guid(&guid) != EXT_ERR_SUCCESS ||
+		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
 			return false;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 			&ext_push, &globalobjectid)) {

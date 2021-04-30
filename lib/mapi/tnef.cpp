@@ -186,7 +186,7 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	}
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = deconst(username);
-	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_oneoff_entryid(
 		&ext_push, &tmp_entry)) {
@@ -1864,7 +1864,7 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	uint32_t offset1;
 	uint32_t tmp_int;
 	
-	TRY(ext_buffer_push_guid(pext, &r->guid));
+	TRY(pext->p_guid(&r->guid));
 	if (r->kind == MNID_ID)
 		tmp_int = 0;
 	else if (r->kind == MNID_STRING)
@@ -1942,7 +1942,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		pext->offset = offset1;
 		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	case PT_CLSID:
-		return ext_buffer_push_guid(pext, static_cast<GUID *>(r->pvalue));
+		return pext->p_guid(static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
@@ -2035,7 +2035,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		auto ga = static_cast<GUID_ARRAY *>(r->pvalue);
 		TRY(pext->p_uint32(ga->count));
 		for (size_t i = 0; i < ga->count; ++i)
-			TRY(ext_buffer_push_guid(pext, ga->pguid + i));
+			TRY(pext->p_guid(ga->pguid + i));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {
@@ -2989,10 +2989,8 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 {
 	EXT_PUSH ext_push;
 	
-	if (FALSE == ext_buffer_push_init(&ext_push,
-		NULL, 0, EXT_FLAG_UTF16)) {
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16))
 		return NULL;
-	}
 	if (FALSE == tnef_serialize_internal(&ext_push, FALSE,
 		pmsg, alloc, get_propname)) {
 		return NULL;

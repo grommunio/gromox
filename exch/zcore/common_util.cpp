@@ -1068,7 +1068,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	}
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
+	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return NULL;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -1092,7 +1092,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = deconst(essdn);
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -1151,7 +1151,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	                             deconst(pdisplay_name) : deconst(username);
 	oneoff_entry.paddress_type = deconst("SMTP");
 	oneoff_entry.pmail_address = (char*)username;
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
 	status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
@@ -1342,8 +1342,7 @@ BINARY* common_util_to_folder_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 256, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
 		return NULL;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -1384,10 +1383,8 @@ BINARY* common_util_calculate_folder_sourcekey(
 		}	
 	}
 	rop_util_get_gc_array(folder_id, longid.global_counter);
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
-		return nullptr;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
-		&longid.guid) ||
+	if (!ext_push.init(pbin->pv, 22, 0) ||
+	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
@@ -1436,8 +1433,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 256, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
 		return NULL;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -1463,10 +1459,8 @@ BINARY* common_util_calculate_message_sourcekey(
 		return NULL;
 	longid.guid = pstore->guid();
 	rop_util_get_gc_array(message_id, longid.global_counter);
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
-		return nullptr;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
-		&longid.guid) ||
+	if (!ext_push.init(pbin->pv, 22, 0) ||
+	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
@@ -1481,8 +1475,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(24);
-	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 24, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0))
 		return NULL;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_xid(
 		&ext_push, size, pxid)) {
@@ -2229,7 +2222,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	}
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pb == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 1024, EXT_FLAG_UTF16))
+	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16))
 		return NULL;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
 		&ext_push, &store_entryid)) {
@@ -2252,7 +2245,7 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 	if (0 == pmovecopy->same_store) {
 		pmovecopy1->store_eid.pv = common_util_alloc(1024);
 		if (pmovecopy1->store_eid.pv == nullptr ||
-		    !ext_buffer_push_init(&ext_push, pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16))
+		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16))
 			return NULL;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
 			&ext_push, pmovecopy->pstore_eid)) {
