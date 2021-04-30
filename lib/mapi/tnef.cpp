@@ -3000,7 +3000,7 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 

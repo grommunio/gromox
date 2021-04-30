@@ -186,7 +186,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_buffer_push_release(&ext_push);
+	pbin_out->pb = ext_push.release();
 	return EXT_ERR_SUCCESS;
 }
 

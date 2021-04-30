@@ -147,12 +147,9 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(24);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
+	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_xid(
-		&ext_push, size, pxid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -259,7 +256,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	xid.xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_buffer_push_xid(&ext_push, 22, &xid.xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
 		return false;
 	tmp_bin.pv = tmp_buff;
 	tmp_bin.cb = ext_push.offset;

@@ -180,7 +180,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	xid.xid.guid = rop_util_make_domain_guid(domain_id);
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_buffer_push_xid(&ext_push, 22, &xid.xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
 		return false;
 	sqlite3_bind_int64(pstmt, 1, PR_CHANGE_KEY);
 	sqlite3_bind_blob(pstmt, 2, ext_push.data,

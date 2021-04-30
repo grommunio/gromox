@@ -2456,7 +2456,7 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		    ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
 			return FALSE;
 		pbin_out->cb = ext_push.offset;
-		pbin_out->pb = ext_buffer_push_release(&ext_push);
+		pbin_out->pb = ext_push.release();
 		return TRUE;
 	}
 	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS ||
@@ -2757,6 +2757,6 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	ext_push.offset = 1;
 	if (ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1) != EXT_ERR_SUCCESS)
 		return false;
-	pbin_out->pb = ext_buffer_push_release(&ext_push);
+	pbin_out->pb = ext_push.release();
 	return TRUE;
 }

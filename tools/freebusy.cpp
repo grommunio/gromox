@@ -213,7 +213,7 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	ext_push.offset = 0;
 	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
 	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_buffer_push_release(&ext_push);
+	pbin_out->pb = ext_push.release();
 	return EXT_ERR_SUCCESS;
 }
 

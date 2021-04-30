@@ -3525,7 +3525,7 @@ int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r)
 	TRY(pext->p_uint8(r->day));
 	TRY(pext->p_uint64(r->creationtime));
 	TRY(pext->p_bytes(r->x, 8));
-	return ext_buffer_push_exbinary(pext, &r->data);
+	return pext->p_bin_ex(&r->data);
 }
 
 
