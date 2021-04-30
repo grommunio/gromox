@@ -1053,8 +1053,8 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 	uint8_t paddings[AUX_ALIGN_SIZE];
 	
 	memset(paddings, 0, AUX_ALIGN_SIZE);
-	ext_buffer_push_init(&subext, tmp_buff,
-		sizeof(tmp_buff), EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&subext, tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16))
+		return EXT_ERR_ALLOC;
 	switch (r->version) {
 	case AUX_VERSION_1:
 		TRY(aux_ext_push_aux_header_type_union1(&subext, r->type, r->ppayload));
@@ -1137,9 +1137,8 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 	if ((r->rhe_flags & RHE_FLAG_LAST) == 0) {
 		return EXT_ERR_HEADER_FLAGS;
 	}
-	
-	ext_buffer_push_init(&subext, ext_buff,
-		sizeof(ext_buff), EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&subext, ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
+		return EXT_ERR_ALLOC;
 	for (pnode=double_list_get_head(&r->aux_list); NULL!=pnode;
 		pnode=double_list_get_after(&r->aux_list, pnode)) {
 		TRY(aux_ext_push_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));

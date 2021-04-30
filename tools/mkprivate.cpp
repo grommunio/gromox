@@ -206,8 +206,9 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	xid.size = 22;
 	xid.xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
-	ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
-	ext_buffer_push_xid(&ext_push, 22, &xid.xid);
+	if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0) ||
+	    ext_buffer_push_xid(&ext_push, 22, &xid.xid) != EXT_ERR_SUCCESS)
+		return false;
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CHANGEKEY);
 	sqlite3_bind_blob(pstmt, 2, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
@@ -355,8 +356,9 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	xid.size = 22;
 	xid.xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
-	ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
-	ext_buffer_push_xid(&ext_push, 22, &xid.xid);
+	if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0) ||
+	    ext_buffer_push_xid(&ext_push, 22, &xid.xid) != EXT_ERR_SUCCESS)
+		return false;
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CHANGEKEY);
 	sqlite3_bind_blob(pstmt, 2, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);

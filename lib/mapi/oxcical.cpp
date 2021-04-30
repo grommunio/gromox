@@ -276,7 +276,8 @@ static BOOL oxcical_tzdefinition_to_binary(
 	int i;
 	EXT_PUSH ext_push;
 	
-	ext_buffer_push_init(&ext_push, pbin->pb, MAX_TZDEFINITION_LENGTH, 0);
+	if (!ext_buffer_push_init(&ext_push, pbin->pb, MAX_TZDEFINITION_LENGTH, 0))
+		return false;
 	for (i=0; i<ptz_definition->crules; i++) {
 		ptz_definition->prules[i].flags = tzrule_flags;
 	}
@@ -293,7 +294,8 @@ static BOOL oxcical_timezonestruct_to_binary(
 {
 	EXT_PUSH ext_push;
 	
-	ext_buffer_push_init(&ext_push, pbin->pb, 256, 0);
+	if (!ext_buffer_push_init(&ext_push, pbin->pb, 256, 0))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_timezonestruct(
 		&ext_push, ptzstruct)) {
 		return FALSE;
@@ -1445,7 +1447,8 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	memcpy(globalobjectid.data.pb, ThirdPartyGlobalId, 12);
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
  MAKE_GLOBALOBJID:
-	ext_buffer_push_init(&ext_push, tmp_buff, 1024, 0);
+	if (!ext_buffer_push_init(&ext_push, tmp_buff, 1024, 0))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 		&ext_push, &globalobjectid)) {
 		return FALSE;
@@ -1468,7 +1471,8 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	globalobjectid.year = 0;
 	globalobjectid.month = 0;
 	globalobjectid.day = 0;
-	ext_buffer_push_init(&ext_push, tmp_buff, 1024, 0);
+	if (!ext_buffer_push_init(&ext_push, tmp_buff, 1024, 0))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 		&ext_push, &globalobjectid)) {
 		return FALSE;
@@ -5332,7 +5336,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
-			ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
+			if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+				return false;
 			if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 				&ext_push, &globalobjectid)) {
 				return FALSE;
@@ -5357,9 +5362,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pc = tmp_buff1;
 		guid = guid_random_new();
-		ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0);
-		ext_buffer_push_guid(&ext_push, &guid);
-		ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
+		if (!ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0) ||
+		    ext_buffer_push_guid(&ext_push, &guid) != EXT_ERR_SUCCESS ||
+		    !ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+			return false;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 			&ext_push, &globalobjectid)) {
 			return FALSE;

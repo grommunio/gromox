@@ -539,13 +539,17 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	header_cap.ppayload = &aux_cap;
 	node_cap.pdata = &header_cap;
 	double_list_append_as_tail(&aux_out.aux_list, &node_cap);
-	
-	ext_buffer_push_init(&ext_push, pauxout, 0x1008, EXT_FLAG_UTF16);
+	DCERPC_INFO rpc_info;
+	if (!ext_buffer_push_init(&ext_push, pauxout, 0x1008, EXT_FLAG_UTF16)) {
+		double_list_free(&aux_out.aux_list);
+		result = ecMAPIOOM;
+		goto CONNECT_FAILURE;
+	}
 	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ? 0 : ext_push.offset;
 	double_list_free(&aux_out.aux_list);
 	
 	pdn_prefix[0] = '\0';
-	auto rpc_info = get_rpc_info();
+	rpc_info = get_rpc_info();
 	if (flags & FLAG_PRIVILEGE_ADMIN) {
 		result = ecLoginPerm;
 		goto CONNECT_FAILURE;

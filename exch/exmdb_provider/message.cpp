@@ -1302,16 +1302,16 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 	}
 	sqlite3_bind_int64(pstmt, 1, mid_val);
 	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(cn));
-	ext_buffer_push_init(&ext_push,
-		indices_buff, sizeof(indices_buff), 0);
+	if (!ext_buffer_push_init(&ext_push, indices_buff, sizeof(indices_buff), 0))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_proptag_array(
 		&ext_push, pindices)) {
 		return FALSE;
 	}
 	sqlite3_bind_blob(pstmt, 3, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
-	ext_buffer_push_init(&ext_push,
-		proptags_buff, sizeof(proptags_buff), 0);
+	if (!ext_buffer_push_init(&ext_push, proptags_buff, sizeof(proptags_buff), 0))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_proptag_array(
 		&ext_push, pungroup_proptags)) {
 		return FALSE;
@@ -1906,8 +1906,9 @@ static BOOL message_rectify_message(const char *account,
 		if (pbin->pv == nullptr)
 			return FALSE;
 		tmp_guid = guid_random_new();
-		ext_buffer_push_init(&ext_push, pbin->pb, 16, 0);
-		ext_buffer_push_guid(&ext_push, &tmp_guid);
+		if (!ext_buffer_push_init(&ext_push, pbin->pb, 16, 0) ||
+		    ext_buffer_push_guid(&ext_push, &tmp_guid) != EXT_ERR_SUCCESS)
+			return false;
 		vc->proptag = PROP_TAG_SEARCHKEY;
 		vc->pvalue = pbin;
 		pmsgctnt1->proplist.count ++;
@@ -1916,8 +1917,9 @@ static BOOL message_rectify_message(const char *account,
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_BODYCONTENTID)) {
 		tmp_guid = guid_random_new();
-		ext_buffer_push_init(&ext_push, cid_string, 256, 0);
-		ext_buffer_push_guid(&ext_push, &tmp_guid);
+		if (!ext_buffer_push_init(&ext_push, cid_string, 256, 0) ||
+		    ext_buffer_push_guid(&ext_push, &tmp_guid) != EXT_ERR_SUCCESS)
+			return false;
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
 		cid_string[32] = '@';
@@ -2022,8 +2024,9 @@ static BOOL message_rectify_message(const char *account,
 			message_md5_string(static_cast<char *>(pvalue), pbin->pb);
 		} else {
 			tmp_guid = guid_random_new();
-			ext_buffer_push_init(&ext_push, pbin->pb, 16, 0);
-			ext_buffer_push_guid(&ext_push, &tmp_guid);
+			if (!ext_buffer_push_init(&ext_push, pbin->pb, 16, 0) ||
+			    ext_buffer_push_guid(&ext_push, &tmp_guid) != EXT_ERR_SUCCESS)
+				return false;
 		}
 	}
 	vc->proptag = PROP_TAG_CONVERSATIONID;
@@ -2043,14 +2046,14 @@ static BOOL message_rectify_message(const char *account,
 		if (pbin1->pv == nullptr)
 			return FALSE;
 		nt_time = rop_util_current_nttime();
-		ext_buffer_push_init(&ext_push, pbin1->pb, 27, 0);
-		ext_buffer_push_uint8(&ext_push, 1);
-		ext_buffer_push_uint32(&ext_push, nt_time >> 32);
-		ext_buffer_push_uint8(&ext_push,
-			(nt_time & 0xFFFFFFFF) >> 24);
-		ext_buffer_push_bytes(&ext_push, pbin->pb, 16);
-		ext_buffer_push_uint32(&ext_push, 0xFFFFFFFF);
-		ext_buffer_push_uint8(&ext_push, nt_time & 0xFF);
+		if (!ext_buffer_push_init(&ext_push, pbin1->pb, 27, 0) ||
+		    ext_buffer_push_uint8(&ext_push, 1) != EXT_ERR_SUCCESS ||
+		    ext_buffer_push_uint32(&ext_push, nt_time >> 32) != EXT_ERR_SUCCESS ||
+		    ext_buffer_push_uint8(&ext_push, (nt_time & 0xFFFFFFFF) >> 24)  != EXT_ERR_SUCCESS ||
+		    ext_buffer_push_bytes(&ext_push, pbin->pb, 16) != EXT_ERR_SUCCESS ||
+		    ext_buffer_push_uint32(&ext_push, 0xFFFFFFFF) != EXT_ERR_SUCCESS ||
+		    ext_buffer_push_uint8(&ext_push, nt_time & 0xFF))
+			return false;
 		pbin1->cb = 27;
 		vc->proptag = PROP_TAG_CONVERSATIONINDEX;
 		vc->pvalue = pbin1;

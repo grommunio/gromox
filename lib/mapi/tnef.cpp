@@ -186,7 +186,8 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	}
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = deconst(username);
-	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_oneoff_entryid(
 		&ext_push, &tmp_entry)) {
 		return FALSE;

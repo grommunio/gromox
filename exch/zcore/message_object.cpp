@@ -357,8 +357,9 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.count ++;
 	
 	tmp_guid = guid_random_new();
-	ext_buffer_push_init(&ext_push, id_string, 256, 0);
-	ext_buffer_push_guid(&ext_push, &tmp_guid);
+	if (!ext_buffer_push_init(&ext_push, id_string, 256, 0) ||
+	    ext_buffer_push_guid(&ext_push, &tmp_guid) != EXT_ERR_SUCCESS)
+		return false;
 	encode_hex_binary(id_string, 16, id_string + 16, 64);
 	id_string[0] = '<';
 	memmove(id_string + 1, id_string + 16, 32);

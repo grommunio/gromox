@@ -358,8 +358,8 @@ static BOOL ftstream_producer_write_propdef(
 		pstream->plogon, propid, &propname)) {
 		return FALSE;
 	}
-	ext_buffer_push_init(&ext_push, tmp_buff,
-			sizeof(tmp_buff), EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16))
+		return false;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
 		&ext_push, &propname.guid)) {
 		return FALSE;

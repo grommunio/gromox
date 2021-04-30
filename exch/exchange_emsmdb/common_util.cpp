@@ -361,9 +361,9 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(1280);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -391,9 +391,9 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(1280);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -447,9 +447,9 @@ BINARY* common_util_to_folder_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 256, 0))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 256, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -494,7 +494,8 @@ BINARY* common_util_calculate_folder_sourcekey(
 		}	
 	}
 	rop_util_get_gc_array(folder_id, longid.global_counter);
-	ext_buffer_push_init(&ext_push, pbin->pv, 22, 0);
+	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
+		return nullptr;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
 		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&ext_push, longid.global_counter, 6)) {
@@ -552,9 +553,9 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 256, 0))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 256, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -579,7 +580,8 @@ BINARY* common_util_calculate_message_sourcekey(
 		return NULL;
 	longid.guid = logon_object_guid(plogon);
 	rop_util_get_gc_array(message_id, longid.global_counter);
-	ext_buffer_push_init(&ext_push, pbin->pv, 22, 0);
+	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
+		return nullptr;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
 		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&ext_push, longid.global_counter, 6)) {
@@ -717,9 +719,9 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(24);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 24, 0))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 24, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_xid(
 		&ext_push, size, pxid)) {
 		return NULL;	
@@ -892,9 +894,9 @@ BINARY* common_util_to_folder_replica(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(1024);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 1024, 0))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pv, 1024, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 		&ext_push, 0)) {
 		return NULL;	

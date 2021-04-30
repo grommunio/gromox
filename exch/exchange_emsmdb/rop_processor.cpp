@@ -542,7 +542,8 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	}
 	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
 			- sizeof(uint32_t)*prop_buff->hnum;
-	ext_buffer_push_init(&ext_push, ext_buff, tmp_len, EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&ext_push, ext_buff, tmp_len, EXT_FLAG_UTF16))
+		return ecMAPIOOM;
 	rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
@@ -653,8 +654,9 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				*pnotify->notification_data.ptable_event)) {
 				auto tbl = static_cast<TABLE_OBJECT *>(pobject);
 				pcolumns = table_object_get_columns(tbl);
-				ext_buffer_push_init(&ext_push1, ext_buff1,
-					sizeof(ext_buff1), EXT_FLAG_UTF16);
+				if (!ext_buffer_push_init(&ext_push1, ext_buff1,
+				    sizeof(ext_buff1), EXT_FLAG_UTF16))
+					goto NEXT_NOTIFY;
 				if (pnotify->notification_data.notification_flags
 					&NOTIFICATION_FLAG_MOST_MESSAGE) {
 					if (!table_object_read_row(tbl,

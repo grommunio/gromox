@@ -3651,8 +3651,9 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	ext_buffer_push_uint32(&ext_push,
-		pbin_out->cb - sizeof(uint32_t));
+	status = ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t));
+	if (status != EXT_ERR_SUCCESS)
+		return status;
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_buffer_push_release(&ext_push);
 	return EXT_ERR_SUCCESS;
@@ -6041,8 +6042,9 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 1;
-	ext_buffer_push_uint32(&ext_push,
-		pbin_out->cb - sizeof(uint32_t) - 1);
+	status = ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t) - 1);
+	if (status != EXT_ERR_SUCCESS)
+		return status;
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_buffer_push_release(&ext_push);
 	return EXT_ERR_SUCCESS;
@@ -6410,7 +6412,7 @@ static int exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t));
+	TRY(ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t)));
 	pbin_out->pb = ext_buffer_push_release(&ext_push);
 	return EXT_ERR_SUCCESS;
 }

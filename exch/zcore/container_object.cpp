@@ -285,9 +285,9 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;
@@ -322,9 +322,9 @@ static BINARY* container_object_message_to_addressbook_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr)
+	if (pbin->pv == nullptr ||
+	    !ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16))
 		return NULL;
-	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;
@@ -686,9 +686,9 @@ BOOL container_object_fetch_special_property(
 		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?
 		                     deconst("") : deconst("/");
 		bv->pv = common_util_alloc(128);
-		if (bv->pv == nullptr)
+		if (bv->pv == nullptr ||
+		    !ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0))
 			return FALSE;
-		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 			&ext_push, &ab_entryid)) {
 			return FALSE;

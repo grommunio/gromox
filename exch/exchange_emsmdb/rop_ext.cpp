@@ -3300,8 +3300,8 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	uint8_t tmp_buff[0x10000];
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	ext_buffer_push_init(&subext, ext_buff,
-		sizeof(ext_buff), EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&subext, ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
+		return EXT_ERR_ALLOC;
 	TRY(ext_buffer_push_uint16(&subext, in_len + sizeof(uint16_t)));
 	TRY(ext_buffer_push_bytes(&subext, pbuff_in, in_len));
 	for (i=0; i<prop_buff->hnum; i++) {
@@ -3331,7 +3331,8 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	}
-	ext_buffer_push_init(&ext_push, pbuff_out, *pout_len, EXT_FLAG_UTF16);
+	if (!ext_buffer_push_init(&ext_push, pbuff_out, *pout_len, EXT_FLAG_UTF16))
+		return EXT_ERR_ALLOC;
 	TRY(ext_buffer_push_rpc_header_ext(&ext_push, &rpc_header_ext));
 	TRY(ext_buffer_push_bytes(&ext_push, ext_buff, rpc_header_ext.size));
 	*pout_len = ext_push.offset;

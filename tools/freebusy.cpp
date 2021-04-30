@@ -209,8 +209,7 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	ext_buffer_push_uint32(&ext_push,
-		pbin_out->cb - sizeof(uint32_t));
+	TRY(ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t)));
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_buffer_push_release(&ext_push);
 	return EXT_ERR_SUCCESS;
@@ -1388,7 +1387,8 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
-			ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
+			if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+				return false;
 			if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 				&ext_push, &globalobjectid)) {
 				return FALSE;
@@ -1410,9 +1410,10 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pv = tmp_buff1;
 		guid = guid_random_new();
-		ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0);
-		ext_buffer_push_guid(&ext_push, &guid);
-		ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
+		if (!ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0) ||
+		    ext_buffer_push_guid(&ext_push, &guid) != EXT_ERR_SUCCESS ||
+		    !ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+			return false;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
 			&ext_push, &globalobjectid)) {
 			return FALSE;

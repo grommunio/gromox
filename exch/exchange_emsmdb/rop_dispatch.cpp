@@ -524,10 +524,9 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		max_rop -= 0x80;
 		pdata = common_util_alloc(max_rop);
-		if (NULL == pdata) {
+		if (pdata == nullptr ||
+		    !ext_buffer_push_init(&ext_push, pdata, max_rop, EXT_FLAG_UTF16 | EXT_FLAG_TBLLMT))
 			return ecMAPIOOM;
-		}
-		ext_buffer_push_init(&ext_push, pdata, max_rop, EXT_FLAG_UTF16|EXT_FLAG_TBLLMT);
 		auto rq = static_cast<QUERYROWS_REQUEST *>(prequest->ppayload);
 		auto rsp = static_cast<QUERYROWS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_queryrows(rq->flags,
@@ -670,10 +669,9 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		max_rop -= 0x80;
 		pdata = common_util_alloc(max_rop);
-		if (NULL == pdata) {
+		if (pdata == nullptr ||
+		    !ext_buffer_push_init(&ext_push, pdata, max_rop, EXT_FLAG_UTF16))
 			return ecMAPIOOM;
-		}
-		ext_buffer_push_init(&ext_push, pdata, max_rop, EXT_FLAG_UTF16);
 		auto rq = static_cast<EXPANDROW_REQUEST *>(prequest->ppayload);
 		auto rsp = static_cast<EXPANDROW_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_expandrow(rq->max_count,
@@ -803,10 +801,9 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		max_rop -= 0x80;
 		pdata = common_util_alloc(max_rop);
-		if (NULL == pdata) {
+		if (pdata == nullptr ||
+		    !ext_buffer_push_init(&ext_push, pdata, max_rop, EXT_FLAG_UTF16))
 			return ecMAPIOOM;
-		}
-		ext_buffer_push_init(&ext_push, pdata, max_rop, EXT_FLAG_UTF16);
 		auto rq = static_cast<READRECIPIENTS_REQUEST *>(prequest->ppayload);
 		auto rsp = static_cast<READRECIPIENTS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_readrecipients(rq->row_id,
