@@ -923,10 +923,8 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 					return FALSE;
 				ext_push.offset = offset2;
 				pad_len = ((bytes + 3) & ~3) - bytes;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&ext_push, pad_bytes, pad_len)) {
+				if (ext_push.p_bytes(pad_bytes, pad_len) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				count ++;
 			}
 			ptoken_prev = ptoken + 1;

@@ -111,15 +111,15 @@ static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->prefix));
-	TRY(ext_buffer_push_string(pext, r->remote_id));
+	TRY(pext->p_str(r->prefix));
+	TRY(pext->p_str(r->remote_id));
 	return ext_buffer_push_bool(pext, r->b_private);
 }
 
 static int exmdb_client_push_get_named_propids(
 	EXT_PUSH *pext, const GET_NAMED_PROPIDS_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(pext->p_str(r->dir));
 	TRY(ext_buffer_push_bool(pext, r->b_create));
 	return ext_buffer_push_propname_array(pext, r->ppropnames);
 }
@@ -127,22 +127,22 @@ static int exmdb_client_push_get_named_propids(
 static int exmdb_client_push_check_folder_permission_request(
 	EXT_PUSH *pext, const CHECK_FOLDER_PERMISSION_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(pext->p_str(r->dir));
 	TRY(pext->p_uint64(r->folder_id));
-	return ext_buffer_push_string(pext, r->username);
+	return pext->p_str(r->username);
 }
 
 static int exmdb_client_push_load_content_table_request(
 	EXT_PUSH *pext, const LOAD_CONTENT_TABLE_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(pext->p_str(r->dir));
 	TRY(pext->p_uint32(r->cpid));
 	TRY(pext->p_uint64(r->folder_id));
 	if (NULL == r->username) {
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		TRY(ext_buffer_push_string(pext, r->username));
+		TRY(pext->p_str(r->username));
 	}
 	TRY(pext->p_uint8(r->table_flags));
 	if (NULL == r->prestriction) {
@@ -161,19 +161,19 @@ static int exmdb_client_push_load_content_table_request(
 static int exmdb_client_push_unload_table_request(
 	EXT_PUSH *pext, const UNLOAD_TABLE_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(pext->p_str(r->dir));
 	return pext->p_uint32(r->table_id);
 }
 
 static int exmdb_client_push_query_table_request(
 	EXT_PUSH *pext, const QUERY_TABLE_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(pext->p_str(r->dir));
 	if (NULL == r->username) {
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		TRY(ext_buffer_push_string(pext, r->username));
+		TRY(pext->p_str(r->username));
 	}
 	TRY(pext->p_uint32(r->cpid));
 	TRY(pext->p_uint32(r->table_id));

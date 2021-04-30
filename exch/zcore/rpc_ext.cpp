@@ -496,7 +496,7 @@ static BOOL rpc_ext_push_action_block(
 		break;
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		QRF(ext_buffer_push_bytes(pext, r->pdata, tmp_len));
+		QRF(pext->p_bytes(r->pdata, tmp_len));
 		break;
 	case OP_BOUNCE:
 		QRF(pext->p_uint32(*static_cast<uint32_t *>(r->pdata)));
@@ -569,10 +569,10 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		QRF(pext->p_uint64(*static_cast<const uint64_t *>(pval)));
 		return TRUE;
 	case PT_STRING8:
-		QRF(ext_buffer_push_string(pext, static_cast<const char *>(pval)));
+		QRF(pext->p_str(static_cast<const char *>(pval)));
 		return TRUE;
 	case PT_UNICODE:
-		QRF(ext_buffer_push_wstring(pext, static_cast<const char *>(pval)));
+		QRF(pext->p_wstr(static_cast<const char *>(pval)));
 		return TRUE;
 	case PT_CLSID:
 		QRF(ext_buffer_push_guid(pext, static_cast<const GUID *>(pval)));
@@ -695,7 +695,7 @@ static BOOL rpc_ext_push_newmail_znotification(
 	QRF(ext_buffer_push_binary(pext, &r->entryid));
 	QRF(ext_buffer_push_binary(pext, &r->parentid));
 	QRF(pext->p_uint32(r->flags));
-	QRF(ext_buffer_push_string(pext, r->message_class));
+	QRF(pext->p_str(r->message_class));
 	QRF(pext->p_uint32(r->message_flags));
 	return TRUE;
 }
@@ -816,8 +816,8 @@ static BOOL rpc_ext_push_uinfo_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	QRF(ext_buffer_push_binary(pext, &ppayload->uinfo.entryid));
-	QRF(ext_buffer_push_string(pext, ppayload->uinfo.pdisplay_name));
-	QRF(ext_buffer_push_string(pext, ppayload->uinfo.px500dn));
+	QRF(pext->p_str(ppayload->uinfo.pdisplay_name));
+	QRF(pext->p_str(ppayload->uinfo.px500dn));
 	QRF(pext->p_uint32(ppayload->uinfo.privilege_bits));
 	return TRUE;
 }
@@ -2156,8 +2156,7 @@ static BOOL rpc_ext_push_getuseravailability_response(
 		return TRUE;
 	}
 	QRF(pext->p_uint8(1));
-	QRF(ext_buffer_push_string(pext,
-		ppayload->getuseravailability.result_string));
+	QRF(pext->p_str(ppayload->getuseravailability.result_string));
 	return TRUE;
 }
 

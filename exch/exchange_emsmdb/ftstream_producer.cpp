@@ -372,10 +372,8 @@ static BOOL ftstream_producer_write_propdef(
 			return FALSE;
 		break;
 	case MNID_STRING:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
-			&ext_push, propname.pname)) {
+		if (ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		break;
 	default:
 		return FALSE;
@@ -776,10 +774,8 @@ static BOOL ftstream_producer_write_groupinfo(
 				    &ext_push, sizeof(uint32_t))) {
 					return FALSE;
 				}
-				if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
-				    &ext_push, propname.pname)) {
+				if (ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				offset1 = ext_push.offset - sizeof(uint16_t);
 				name_size = offset1 - (offset + sizeof(uint32_t));
 				ext_push.offset = offset;

@@ -344,7 +344,7 @@ static int applefile_push_asheader(EXT_PUSH *pext, const ASHEADER *r)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(applefile_push_uint32(pext, r->version_num));
-	return ext_buffer_push_bytes(pext, r->filler, 16);
+	return pext->p_bytes(r->filler, 16);
 }
 
 static int applefile_push_asiconbw(EXT_PUSH *pext, const ASICONBW *r)
@@ -381,11 +381,11 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 	} else {
 		count = r->valid_count;
 	}
-	TRY(ext_buffer_push_bytes(pext, &r->finfo.fd_type, 4));
+	TRY(pext->p_bytes(&r->finfo.fd_type, 4));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_bytes(pext, &r->finfo.fd_creator, 4));
+	TRY(pext->p_bytes(&r->finfo.fd_creator, 4));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -434,7 +434,7 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 
 static int applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
 {
-	TRY(ext_buffer_push_bytes(pext, r->filler, 3));
+	TRY(pext->p_bytes(r->filler, 3));
 	return pext->p_uint8(r->attribute);
 }
 
@@ -453,7 +453,7 @@ static int applefile_push_asmsdosinfo(EXT_PUSH *pext, const ASMSDOSINFO *r)
 
 static int applefile_push_asafpinfo(EXT_PUSH *pext, const ASAFPINFO *r)
 {
-	TRY(ext_buffer_push_bytes(pext, r->filler, 3));
+	TRY(pext->p_bytes(r->filler, 3));
 	return pext->p_uint8(r->attr);
 }
 
@@ -483,9 +483,8 @@ static int applefile_push_entry(EXT_PUSH *pext,
 	case AS_AFPDIRID:
 		return applefile_push_asafpdirid(pext, static_cast<const ASAFPDIRID *>(pentry));
 	default:
-		return ext_buffer_push_bytes(pext,
-				((BINARY*)pentry)->pb,
-				((BINARY*)pentry)->cb);
+		return pext->p_bytes(static_cast<const BINARY *>(pentry)->pb,
+		       static_cast<const BINARY *>(pentry)->cb);
 	}
 	
 }

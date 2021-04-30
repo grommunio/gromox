@@ -189,22 +189,22 @@ static int aux_ext_push_aux_perf_clientinfo(
 	TRY(pext->p_uint16(r->client_mode));
 	TRY(pext->p_uint16(r->reserved));
 	if (NULL != r->machine_name) {
-		TRY(ext_buffer_push_string(pext, r->machine_name));
+		TRY(pext->p_str(r->machine_name));
 	}
 	if (NULL != r->user_name) {
-		TRY(ext_buffer_push_string(pext, r->user_name));
+		TRY(pext->p_str(r->user_name));
 	}
 	if (NULL != r->client_ip) {
-		TRY(ext_buffer_push_bytes(pext, r->client_ip, r->client_ip_size));
+		TRY(pext->p_bytes(r->client_ip, r->client_ip_size));
 	}
 	if (NULL != r->client_ip_mask) {
-		TRY(ext_buffer_push_bytes(pext, r->client_ip_mask, r->client_ip_mask_size));
+		TRY(pext->p_bytes(r->client_ip_mask, r->client_ip_mask_size));
 	}
 	if (NULL != r->adapter_name) {
-		TRY(ext_buffer_push_string(pext, r->adapter_name));
+		TRY(pext->p_str(r->adapter_name));
 	}
 	if (NULL != r->mac_address) {
-		TRY(ext_buffer_push_bytes(pext, r->mac_address, r->mac_address_size));
+		TRY(pext->p_bytes(r->mac_address, r->mac_address_size));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -253,10 +253,10 @@ static int aux_ext_push_aux_perf_serverinfo(
 	uint16_t server_name_offset = r->server_name == nullptr ? 0 : 12 + server_dn_size;
 	TRY(pext->p_uint16(server_name_offset));
 	if (NULL != r->server_dn) {
-		TRY(ext_buffer_push_string(pext, r->server_dn));
+		TRY(pext->p_str(r->server_dn));
 	}
 	if (NULL != r->server_name) {
-		TRY(ext_buffer_push_string(pext, r->server_name));
+		TRY(pext->p_str(r->server_name));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -291,7 +291,7 @@ static int aux_ext_push_aux_perf_processinfo(
 	TRY(pext->p_uint16(process_name_offset));
 	TRY(pext->p_uint16(r->reserved2));
 	if (NULL != r->process_name) {
-		TRY(ext_buffer_push_string(pext, r->process_name));
+		TRY(pext->p_str(r->process_name));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -333,7 +333,7 @@ static int aux_ext_push_aux_perf_defgc_success(
 	TRY(pext->p_uint32(r->time_since_request));
 	TRY(pext->p_uint32(r->time_to_complete_request));
 	TRY(pext->p_uint8(r->request_operation));
-	return ext_buffer_push_bytes(pext, r->reserved, 3);
+	return pext->p_bytes(r->reserved, 3);
 }
 
 static int aux_ext_pull_aux_perf_mdb_success(
@@ -407,7 +407,7 @@ static int aux_ext_push_aux_perf_gc_success(
 	TRY(pext->p_uint32(r->time_since_request));
 	TRY(pext->p_uint32(r->time_to_complete_request));
 	TRY(pext->p_uint8(r->request_operation));
-	return ext_buffer_push_bytes(pext, r->reserved2, 3);
+	return pext->p_bytes(r->reserved2, 3);
 }
 
 static int aux_ext_pull_aux_perf_gc_success_v2(
@@ -433,7 +433,7 @@ static int aux_ext_push_aux_perf_gc_success_v2(
 	TRY(pext->p_uint32(r->time_since_request));
 	TRY(pext->p_uint32(r->time_to_complete_request));
 	TRY(pext->p_uint8(r->request_operation));
-	return ext_buffer_push_bytes(pext, r->reserved, 3);
+	return pext->p_bytes(r->reserved, 3);
 }
 
 static int aux_ext_pull_aux_perf_failure(EXT_PULL *pext, AUX_PERF_FAILURE *r)
@@ -460,7 +460,7 @@ static int aux_ext_push_aux_perf_failure(
 	TRY(pext->p_uint32(r->time_to_fail_request));
 	TRY(pext->p_uint32(r->result_code));
 	TRY(pext->p_uint8(r->request_operation));
-	return ext_buffer_push_bytes(pext, r->reserved, 3);
+	return pext->p_bytes(r->reserved, 3);
 }
 
 static int aux_ext_pull_aux_perf_failure_v2(
@@ -492,7 +492,7 @@ static int aux_ext_push_aux_perf_failure_v2(
 	TRY(pext->p_uint32(r->time_to_fail_request));
 	TRY(pext->p_uint32(r->result_code));
 	TRY(pext->p_uint8(r->request_operation));
-	return ext_buffer_push_bytes(pext, r->reserved2, 3);
+	return pext->p_bytes(r->reserved2, 3);
 }
 
 static int aux_ext_pull_aux_client_control(
@@ -529,7 +529,7 @@ static int aux_ext_push_aux_osversioninfo(
 	TRY(pext->p_uint32(r->major_version));
 	TRY(pext->p_uint32(r->minor_version));
 	TRY(pext->p_uint32(r->build_number));
-	TRY(ext_buffer_push_bytes(pext, r->reserved1, 132));
+	TRY(pext->p_bytes(r->reserved1, 132));
 	TRY(pext->p_uint16(r->service_pack_major));
 	TRY(pext->p_uint16(r->service_pack_minor));
 	return pext->p_uint32(r->reserved2);
@@ -605,7 +605,7 @@ static int aux_ext_push_aux_client_connection_info(
 	TRY(pext->p_uint32(r->connection_attempts));
 	TRY(pext->p_uint32(r->connection_flags));
 	if (NULL != r->connection_context_info) {
-		TRY(ext_buffer_push_string(pext, r->connection_context_info));
+		TRY(pext->p_str(r->connection_context_info));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -633,7 +633,7 @@ static int aux_ext_push_aux_server_session_info(
 	uint16_t offset_server_session_context_info = r->server_session_context_info == nullptr ? 0 : 6;
 	TRY(pext->p_uint16(offset_server_session_context_info));
 	if (NULL != r->server_session_context_info) {
-		TRY(ext_buffer_push_string(pext, r->server_session_context_info));
+		TRY(pext->p_str(r->server_session_context_info));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -743,19 +743,19 @@ static int aux_ext_push_aux_protocol_device_identification(
 	}
 	TRY(pext->p_uint16(device_firmware_version_offset));
 	if (NULL != r->device_manufacturer) {
-		TRY(ext_buffer_push_string(pext, r->device_manufacturer));
+		TRY(pext->p_str(r->device_manufacturer));
 	}
 	if (NULL != r->device_model) {
-		TRY(ext_buffer_push_string(pext, r->device_model));
+		TRY(pext->p_str(r->device_model));
 	}
 	if (NULL != r->device_serial_number) {
-		TRY(ext_buffer_push_string(pext, r->device_serial_number));
+		TRY(pext->p_str(r->device_serial_number));
 	}
 	if (NULL != r->device_version) {
-		TRY(ext_buffer_push_string(pext, r->device_version));
+		TRY(pext->p_str(r->device_version));
 	}
 	if (NULL != r->device_firmware_version) {
-		TRY(ext_buffer_push_string(pext, r->device_firmware_version));
+		TRY(pext->p_str(r->device_firmware_version));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1069,8 +1069,8 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 	TRY(pext->p_uint16(size));
 	TRY(pext->p_uint8(r->version));
 	TRY(pext->p_uint8(r->type));
-	TRY(ext_buffer_push_bytes(pext, subext.data, subext.offset));
-	return ext_buffer_push_bytes(pext, paddings, size - actual_size);
+	TRY(pext->p_bytes(subext.data, subext.offset));
+	return pext->p_bytes(paddings, size - actual_size);
 }
 
 int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
@@ -1167,5 +1167,5 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	}
 	TRY(ext_buffer_push_rpc_header_ext(pext, &rpc_header_ext));
-	return ext_buffer_push_bytes(pext, ext_buff, rpc_header_ext.size);
+	return pext->p_bytes(ext_buff, rpc_header_ext.size);
 }

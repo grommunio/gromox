@@ -95,13 +95,11 @@ static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socke
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->prefix);
+	auto status = pext->p_str(r->prefix);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->remote_id);
+	status = pext->p_str(r->remote_id);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -111,17 +109,15 @@ static int exmdb_client_push_connect_request(
 static int exmdb_client_push_delivery_message_request(
 	EXT_PUSH *pext, const DELIVERY_MESSAGE_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
+	auto status = pext->p_str(r->dir);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->from_address);
+	status = pext->p_str(r->from_address);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->account);
+	status = pext->p_str(r->account);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -133,19 +129,17 @@ static int exmdb_client_push_delivery_message_request(
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_string(pext, r->pdigest);
+	return pext->p_str(r->pdigest);
 }
 
 static int exmdb_client_push_check_contact_address_request(
 	EXT_PUSH *pext, const CHECK_CONTACT_ADDRESS_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
+	auto status = pext->p_str(r->dir);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_string(pext, r->paddress);
+	return pext->p_str(r->paddress);
 }
 
 static int exmdb_client_push_request(uint8_t call_id,

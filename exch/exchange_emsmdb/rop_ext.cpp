@@ -33,7 +33,7 @@ static int rop_ext_push_ghost_server(EXT_PUSH *pext, const GHOST_SERVER *r)
 	TRY(pext->p_uint16(r->server_count));
 	TRY(pext->p_uint16(r->cheap_server_count));
 	for (i=0; i<r->server_count; i++) {
-		TRY(ext_buffer_push_string(pext, r->ppservers[i]));
+		TRY(pext->p_str(r->ppservers[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -150,7 +150,7 @@ static int rop_ext_push_logon_redirect_response(
 	TRY(pext->p_uint8(r->logon_flags));
 	size = strlen(r->pserver_name) + 1;
 	TRY(pext->p_uint8(size));
-	return ext_buffer_push_bytes(pext, r->pserver_name, size);
+	return pext->p_bytes(r->pserver_name, size);
 }
 
 static int rop_ext_pull_getreceivefolder_request(
@@ -163,7 +163,7 @@ static int rop_ext_push_getreceivefolder_response(
 	EXT_PUSH *pext, const GETRECEIVEFOLDER_RESPONSE *r)
 {
 	TRY(pext->p_uint64(r->folder_id));
-	return ext_buffer_push_string(pext, r->pstr_class);
+	return pext->p_str(r->pstr_class);
 }
 
 static int rop_ext_pull_setreceivefolder_request(
@@ -636,7 +636,7 @@ static int rop_ext_push_queryrows_response(
 {
 	TRY(pext->p_uint8(r->seek_pos));
 	TRY(pext->p_uint16(r->count));
-	return ext_buffer_push_bytes(pext, r->bin_rows.pb, r->bin_rows.cb);
+	return pext->p_bytes(r->bin_rows.pb, r->bin_rows.cb);
 }
 
 static int rop_ext_push_abort_response(
@@ -763,7 +763,7 @@ static int rop_ext_push_expandrow_response(
 {
 	TRY(pext->p_uint32(r->expanded_count));
 	TRY(pext->p_uint16(r->count));
-	return ext_buffer_push_bytes(pext, r->bin_rows.pb, r->bin_rows.cb);
+	return pext->p_bytes(r->bin_rows.pb, r->bin_rows.cb);
 }
 
 static int rop_ext_pull_collapserow_request(EXT_PULL *pext,
@@ -924,8 +924,7 @@ static int rop_ext_push_readrecipients_response(
 	EXT_PUSH *pext, READRECIPIENTS_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->count));
-	return ext_buffer_push_bytes(pext,
-		r->bin_recipients.pb, r->bin_recipients.cb);
+	return pext->p_bytes(r->bin_recipients.pb, r->bin_recipients.cb);
 }
 
 static int rop_ext_pull_reloadcachedinformation_request(
@@ -1159,7 +1158,7 @@ static int rop_ext_push_getaddresstypes_response(
 	offset = pext->offset;
 	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
 	for (size_t i = 0; i < r->address_types.count; ++i)
-		TRY(ext_buffer_push_string(pext, r->address_types.ppstr[i]));
+		TRY(pext->p_str(r->address_types.ppstr[i]));
 	size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
 	pext->offset = offset;
@@ -1215,7 +1214,7 @@ static int rop_ext_push_optionsdata_response(
 	TRY(ext_buffer_push_sbinary(pext, &r->options_info));
 	TRY(ext_buffer_push_sbinary(pext, &r->help_file));
 	if (r->help_file.cb > 0) {
-		return ext_buffer_push_string(pext, r->pfile_name);
+		return pext->p_str(r->pfile_name);
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1867,7 +1866,7 @@ static int rop_ext_push_getlocalreplicaids_response(
 	EXT_PUSH *pext, const GETLOCALREPLICAIDS_RESPONSE *r)
 {
 	TRY(ext_buffer_push_guid(pext, &r->guid));
-	return ext_buffer_push_bytes(pext, r->global_count, 6);
+	return pext->p_bytes(r->global_count, 6);
 }
 
 static int rop_ext_pull_registernotification_request(
@@ -1956,9 +1955,9 @@ static int rop_ext_push_notification_data(
 	if (NULL != r->punicode_flag) {
 		TRY(pext->p_uint8(*r->punicode_flag));
 		if (0 == *r->punicode_flag) {
-			TRY(ext_buffer_push_string(pext, r->pstr_class));
+			TRY(pext->p_str(r->pstr_class));
 		} else {
-			TRY(ext_buffer_push_wstring(pext, r->pstr_class));
+			TRY(pext->p_wstr(r->pstr_class));
 		}
 	}
 	return EXT_ERR_SUCCESS;
@@ -3301,7 +3300,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	if (!ext_buffer_push_init(&subext, ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(subext.p_uint16(in_len + sizeof(uint16_t)));
-	TRY(ext_buffer_push_bytes(&subext, pbuff_in, in_len));
+	TRY(subext.p_bytes(pbuff_in, in_len));
 	for (i=0; i<prop_buff->hnum; i++) {
 		TRY(subext.p_uint32(prop_buff->phandles[i]));
 	}
@@ -3332,7 +3331,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	if (!ext_buffer_push_init(&ext_push, pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(ext_buffer_push_rpc_header_ext(&ext_push, &rpc_header_ext));
-	TRY(ext_buffer_push_bytes(&ext_push, ext_buff, rpc_header_ext.size));
+	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));
 	*pout_len = ext_push.offset;
 	return EXT_ERR_SUCCESS;
 }

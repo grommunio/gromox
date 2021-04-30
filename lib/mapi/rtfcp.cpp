@@ -242,9 +242,8 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	    ext_push.p_uint32(in_length) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(RTF_UNCOMPRESSED) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
-	    ext_buffer_push_bytes(&ext_push, pin_buff, in_length) != EXT_ERR_SUCCESS) {
+	    ext_push.p_bytes(pin_buff, in_length) != EXT_ERR_SUCCESS)
 		return nullptr;
-	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (pbin == nullptr) {
 		return nullptr;

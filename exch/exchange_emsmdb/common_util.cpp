@@ -497,10 +497,9 @@ BINARY* common_util_calculate_folder_sourcekey(
 	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
 		return nullptr;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
-		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&ext_push, longid.global_counter, 6)) {
+		&longid.guid) ||
+	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	return pbin;
 }
 
@@ -583,10 +582,9 @@ BINARY* common_util_calculate_message_sourcekey(
 	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
 		return nullptr;
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
-		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&ext_push, longid.global_counter, 6)) {
+		&longid.guid) ||
+	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	return pbin;
 }
 
@@ -904,12 +902,9 @@ BINARY* common_util_to_folder_replica(
 		return NULL;	
 	}
 	if (ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS)
+	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
+	    ext_push.p_str(essdn) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_string(
-		&ext_push, essdn)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }

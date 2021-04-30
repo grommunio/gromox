@@ -187,9 +187,9 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	TRY(pext->p_uint8(tmp_byte));
 	char newfile[64]{};
 	gx_strlcpy(newfile, r->file_name, sizeof(newfile));
-	TRY(ext_buffer_push_bytes(pext, newfile, 63));
-	TRY(ext_buffer_push_bytes(pext, &r->type, 4));
-	TRY(ext_buffer_push_bytes(pext, &r->creator, 4));
+	TRY(pext->p_bytes(newfile, 63));
+	TRY(pext->p_bytes(&r->type, 4));
+	TRY(pext->p_bytes(&r->creator, 4));
 	TRY(pext->p_uint8(r->original_flags));
 	TRY(pext->p_uint8(r->pad1));
 	TRY(macbinary_push_uint16(pext, r->point_v));
@@ -208,10 +208,10 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	if (0 != strncmp((char*)&r->signature, "mBIN", 4)) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_push_bytes(pext, (uint8_t*)&r->signature, 4));
+	TRY(pext->p_bytes(&r->signature, 4));
 	TRY(pext->p_int8(r->fd_script));
 	TRY(pext->p_int8(r->fd_xflags));
-	TRY(ext_buffer_push_bytes(pext, r->pads1, 8));
+	TRY(pext->p_bytes(r->pads1, 8));
 	TRY(macbinary_push_uint32(pext, r->total_unpacked));
 	TRY(macbinary_push_uint16(pext, r->xheader_len));
 	if (130 != r->version) {
@@ -224,7 +224,7 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	TRY(pext->p_uint8(r->mini_version));
 	crc = macbinary_crc(pext->data + offset, 124, 0);
 	TRY(macbinary_push_uint16(pext, crc));
-	return ext_buffer_push_bytes(pext, r->pads2, 2);
+	return pext->p_bytes(r->pads2, 2);
 }
 
 int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
@@ -284,32 +284,32 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
-		TRY(ext_buffer_push_bytes(pext,r->pxheader, r->header.xheader_len));
+		TRY(pext->p_bytes(pad_buff, pad_len));
+		TRY(pext->p_bytes(r->pxheader, r->header.xheader_len));
 	}
 	if (0 != r->header.data_len) {
 		if (NULL == r->pdata) {
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
-		TRY(ext_buffer_push_bytes(pext, r->pdata, r->header.data_len));
+		TRY(pext->p_bytes(pad_buff, pad_len));
+		TRY(pext->p_bytes(r->pdata, r->header.data_len));
 	}
 	if (0 != r->header.res_len) {
 		if (NULL == r->presource) {
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
-		TRY(ext_buffer_push_bytes(pext, r->presource, r->header.res_len));
+		TRY(pext->p_bytes(pad_buff, pad_len));
+		TRY(pext->p_bytes(r->presource, r->header.res_len));
 	}
 	if (0 != r->header.comment_len) {
 		if (NULL == r->pcomment) {
 			return EXT_ERR_FORMAT;
 		}
 		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
-		TRY(ext_buffer_push_bytes(pext, pad_buff, pad_len));
-		TRY(ext_buffer_push_bytes(pext,r->pcomment, r->header.comment_len));
+		TRY(pext->p_bytes(pad_buff, pad_len));
+		TRY(pext->p_bytes(r->pcomment, r->header.comment_len));
 	}
 	return EXT_ERR_SUCCESS;
 }

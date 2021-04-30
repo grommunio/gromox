@@ -57,13 +57,11 @@ static int cl_rd_sock(int fd, BINARY *b) { return ::exmdb_client_read_socket(fd,
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->prefix);
+	auto status = pext->p_str(r->prefix);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->remote_id);
+	status = pext->p_str(r->remote_id);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -73,7 +71,7 @@ static int exmdb_client_push_connect_request(
 static int exmdb_client_push_unload_store_request(
 	EXT_PUSH *pext, const UNLOAD_STORE_REQUEST *r)
 {
-	return ext_buffer_push_string(pext, r->dir);
+	return pext->p_str(r->dir);
 }
 
 static int exmdb_client_push_request(uint8_t call_id,
