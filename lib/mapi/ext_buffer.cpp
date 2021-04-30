@@ -2186,18 +2186,16 @@ BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size)
 
 int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, size)) {
+	if (!pext->check_ovf(size))
 		return EXT_ERR_BUFSIZE;
-	}
 	pext->offset += size;
 	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, n)) {
+	if (!pext->check_ovf(n))
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(pext->data + pext->offset, pdata, n);
 	pext->offset += n;
 	return EXT_ERR_SUCCESS;
@@ -2205,9 +2203,8 @@ int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n)
 
 int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint8_t))) {
+	if (!pext->check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	pext->data[pext->offset] = v;
 	pext->offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
@@ -2215,9 +2212,8 @@ int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
 
 int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
+	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_le16(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint16_t);
@@ -2226,9 +2222,8 @@ int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
 
 int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint32_t))) {
+	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_le32(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint32_t);
@@ -2237,9 +2232,8 @@ int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v)
 
 int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint64_t))) {
+	if (!pext->check_ovf(sizeof(uint64_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_le64(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint64_t);
@@ -2248,9 +2242,8 @@ int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v)
 
 int ext_buffer_push_float(EXT_PUSH *pext, float v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(float))) {
+	if (!pext->check_ovf(sizeof(float)))
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
@@ -2259,9 +2252,8 @@ int ext_buffer_push_float(EXT_PUSH *pext, float v)
 int ext_buffer_push_double(EXT_PUSH *pext, double v)
 {
 	static_assert(sizeof(v) == 8 && CHAR_BIT == 8, "");
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(double))) {
+	if (!pext->check_ovf(sizeof(double)))
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
@@ -2278,9 +2270,8 @@ int ext_buffer_push_bool(EXT_PUSH *pext, BOOL v)
 	} else {
 		return EXT_ERR_FORMAT;
 	}
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint8_t))) {
+	if (!pext->check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	pext->data[pext->offset] = tmp_byte;
 	pext->offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
@@ -2898,7 +2889,7 @@ int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r)
 {
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_tpropval_array(pext, r->pparray[i]));
+		TRY(pext->p_tpropval_a(r->pparray[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3163,13 +3154,13 @@ int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
 int ext_buffer_push_permission_data(EXT_PUSH *pext, const PERMISSION_DATA *r)
 {
 	TRY(pext->p_uint8(r->flags));
-	return ext_buffer_push_tpropval_array(pext, &r->propvals);
+	return pext->p_tpropval_a(&r->propvals);
 }
 
 int ext_buffer_push_rule_data(EXT_PUSH *pext, const RULE_DATA *r)
 {
 	TRY(pext->p_uint8(r->flags));
-	return ext_buffer_push_tpropval_array(pext, &r->propvals);
+	return pext->p_tpropval_a(&r->propvals);
 }
 
 int ext_buffer_push_addressbook_entryid(
@@ -3536,7 +3527,7 @@ static int ext_buffer_push_attachment_list(
 	
 	TRY(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_push_tpropval_array(pext, &r->pplist[i]->proplist));
+		TRY(pext->p_tpropval_a(&r->pplist[i]->proplist));
 		if (NULL != r->pplist[i]->pembedded) {
 			TRY(pext->p_uint8(1));
 			TRY(ext_buffer_push_message_content(pext, r->pplist[i]->pembedded));
@@ -3550,10 +3541,10 @@ static int ext_buffer_push_attachment_list(
 int ext_buffer_push_message_content(
 	EXT_PUSH *pext, const MESSAGE_CONTENT *r)
 {
-	TRY(ext_buffer_push_tpropval_array(pext, &r->proplist));
+	TRY(pext->p_tpropval_a(&r->proplist));
 	if (NULL != r->children.prcpts) {
 		TRY(pext->p_uint8(1));
-		TRY(ext_buffer_push_tarray_set(pext, r->children.prcpts));
+		TRY(pext->p_tarray_set(r->children.prcpts));
 	} else {
 		TRY(pext->p_uint8(0));
 	}

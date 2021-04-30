@@ -313,9 +313,8 @@ static int applefile_pull_entry(EXT_PULL *pext,
 
 static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
+	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_be16(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint16_t);
@@ -324,9 +323,8 @@ static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 
 static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint32_t))) {
+	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_be32(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint32_t);

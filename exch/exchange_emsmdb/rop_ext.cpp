@@ -1181,7 +1181,7 @@ static int rop_ext_push_transportsend_response(
 		return pext->p_uint8(1);
 	} else {
 		TRY(pext->p_uint8(0));
-		return ext_buffer_push_tpropval_array(pext, r->ppropvals);
+		return pext->p_tpropval_a(r->ppropvals);
 	}
 }
 
@@ -1268,7 +1268,7 @@ static int rop_ext_pull_getpropertiesall_request(
 static int rop_ext_push_getpropertiesall_response(
 	EXT_PUSH *pext, const GETPROPERTIESALL_RESPONSE *r)
 {
-	return ext_buffer_push_tpropval_array(pext, &r->propvals);
+	return pext->p_tpropval_a(&r->propvals);
 }
 
 static int rop_ext_push_getpropertieslist_response(
