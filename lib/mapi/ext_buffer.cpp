@@ -2616,7 +2616,7 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 	TRY(pext->p_uint8(r->same_store));
 	if (0 == r->same_store) {
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+		TRY(pext->advance(sizeof(uint16_t)));
 		if (NULL == r->pstore_eid) {
 			return EXT_ERR_FORMAT;
 		}
@@ -2684,7 +2684,7 @@ static int ext_buffer_push_action_block(
 	uint16_t tmp_len;
 	
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(pext->p_uint8(r->type));
 	TRY(pext->p_uint32(r->flavor));
 	TRY(pext->p_uint32(r->flags));
@@ -2850,7 +2850,7 @@ int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 		TRY(pext->p_uint32(r->lid));
 	} else if (r->kind == MNID_STRING) {
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint8_t)));
+		TRY(pext->advance(sizeof(uint8_t)));
 		TRY(pext->p_wstr(r->pname));
 		name_size = pext->offset - (offset + sizeof(uint8_t));
 		offset1 = pext->offset;
@@ -3128,7 +3128,7 @@ int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 	TRY(pext->p_uint16(r->cpid));
 	TRY(pext->p_uint16(r->reserved));
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(ext_buffer_push_recipient_row(pext, pproptags, &r->recipient_row));
 	row_size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
@@ -3150,7 +3150,7 @@ int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
 	TRY(pext->p_uint16(r->cpid));
 	TRY(pext->p_uint16(r->reserved));
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(ext_buffer_push_recipient_row(pext, pproptags, &r->recipient_row));
 	row_size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;
@@ -3226,7 +3226,7 @@ static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 		return pext->p_uint16(0);
 	}
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(ext_buffer_push_persistelement(pext, &r->element));
 	tmp_size = pext->offset - (offset + sizeof(uint16_t));
 	offset1 = pext->offset;

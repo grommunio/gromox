@@ -844,15 +844,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	count = 0;
 	if (!ext_push.init(bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-		&ext_push, sizeof(uint32_t))) {
+	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	offset = ext_push.offset;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-		&ext_push, sizeof(uint32_t))) {
+	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	str_offset = 0;
 	tmp_entry.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
@@ -898,10 +894,8 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 			    oxcmail_check_ascii(email_addr.local_part) &&
 			    oxcmail_check_ascii(email_addr.domain)) {
 				offset1 = ext_push.offset;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-					&ext_push, sizeof(uint32_t))) {
+				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				sprintf(tmp_buff, "%s@%s",
 					email_addr.local_part, email_addr.domain);
 				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;

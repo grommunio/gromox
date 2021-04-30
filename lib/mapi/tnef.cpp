@@ -1876,7 +1876,7 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 		return pext->p_uint32(r->lid);
 	} else if (1 == tmp_int) {
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_wstr(r->pname));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
@@ -1922,7 +1922,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_STRING8:
 		TRY(pext->p_uint32(1));
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_str(static_cast<char *>(r->pvalue)));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
@@ -1933,7 +1933,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_UNICODE:
 		TRY(pext->p_uint32(1));
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_wstr(static_cast<char *>(r->pvalue)));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
@@ -1956,7 +1956,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			       tnef_align(bv->cb + 16));
 		} else {
 			offset = pext->offset;
-			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+			TRY(pext->advance(sizeof(uint32_t)));
 			TRY(pext->p_bytes(IID_IMessage, 16));
 			if (FALSE == tnef_serialize_internal(pext, TRUE,
 			    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
@@ -2004,7 +2004,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
-			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+			TRY(pext->advance(sizeof(uint32_t)));
 			TRY(pext->p_str(sa->ppstr[i]));
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
@@ -2020,7 +2020,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
-			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+			TRY(pext->advance(sizeof(uint32_t)));
 			TRY(pext->p_wstr(sa->ppstr[i]));
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
@@ -2068,7 +2068,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	TRY(pext->p_uint8(r->lvl));
 	TRY(pext->p_uint32(r->attr_id));
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+	TRY(pext->advance(sizeof(uint32_t)));
 	switch (r->attr_id) {
 	case ATTRIBUTE_ID_FROM:
 		TRY(pext->p_uint16(0x0004));

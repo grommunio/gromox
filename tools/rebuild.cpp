@@ -82,7 +82,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
+	status = ext_push.advance(sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}

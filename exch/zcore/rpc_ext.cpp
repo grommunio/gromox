@@ -477,7 +477,7 @@ static BOOL rpc_ext_push_action_block(
 	uint16_t tmp_len;
 	
 	offset = pext->offset;
-	QRF(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	QRF(pext->advance(sizeof(uint16_t)));
 	QRF(pext->p_uint8(r->type));
 	QRF(pext->p_uint32(r->flavor));
 	QRF(pext->p_uint32(r->flags));
@@ -732,7 +732,7 @@ static BOOL rpc_ext_push_object_znotification(
 		QRF(pext->p_uint8(0));
 	} else {
 		QRF(pext->p_uint8(1));
-		QRF(ext_buffer_push_proptag_array(pext, r->pproptags));
+		QRF(pext->p_proptag_a(r->pproptags));
 	}
 	return TRUE;
 }
@@ -2461,11 +2461,8 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		pbin_out->pb = ext_buffer_push_release(&ext_push);
 		return TRUE;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-		&ext_push, sizeof(uint32_t))) {
-		return FALSE;
-	}
-	if (ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
+	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
 		return FALSE;
 	switch (presponse->call_id) {
 	case zcore_callid::LOGON:

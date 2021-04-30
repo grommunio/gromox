@@ -1298,20 +1298,14 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 	}
 	sqlite3_bind_int64(pstmt, 1, mid_val);
 	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(cn));
-	if (!ext_push.init(indices_buff, sizeof(indices_buff), 0))
+	if (!ext_push.init(indices_buff, sizeof(indices_buff), 0) ||
+	    ext_push.p_proptag_a(pindices) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_proptag_array(
-		&ext_push, pindices)) {
-		return FALSE;
-	}
 	sqlite3_bind_blob(pstmt, 3, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
-	if (!ext_push.init(proptags_buff, sizeof(proptags_buff), 0))
+	if (!ext_push.init(proptags_buff, sizeof(proptags_buff), 0) ||
+	    ext_push.p_proptag_a(pungroup_proptags) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_proptag_array(
-		&ext_push, pungroup_proptags)) {
-		return FALSE;
-	}
 	sqlite3_bind_blob(pstmt, 4, ext_push.data,
 			ext_push.offset, SQLITE_STATIC);
 	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;

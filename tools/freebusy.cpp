@@ -177,7 +177,7 @@ static int exmdb_client_push_query_table_request(
 	}
 	TRY(pext->p_uint32(r->cpid));
 	TRY(pext->p_uint32(r->table_id));
-	TRY(ext_buffer_push_proptag_array(pext, r->pproptags));
+	TRY(pext->p_proptag_a(r->pproptags));
 	TRY(pext->p_uint32(r->start_pos));
 	return pext->p_int32(r->row_needed);
 }
@@ -185,7 +185,7 @@ static int exmdb_client_push_query_table_request(
 static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	void *prequest, BINARY *pbin_out)
 {
-	TRY(ext_buffer_push_advance(&ext_push, sizeof(uint32_t)));
+	TRY(ext_push.advance(sizeof(uint32_t)));
 	TRY(ext_push.p_uint8(call_id));
 	switch (call_id) {
 	case exmdb_callid::CONNECT:

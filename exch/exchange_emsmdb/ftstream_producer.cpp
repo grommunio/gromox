@@ -759,11 +759,8 @@ static BOOL ftstream_producer_write_groupinfo(
 				break;
 			case MNID_STRING:
 				offset = ext_push.offset;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-				    &ext_push, sizeof(uint32_t))) {
-					return FALSE;
-				}
-				if (ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
+				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS ||
+				    ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
 					return FALSE;
 				offset1 = ext_push.offset - sizeof(uint16_t);
 				name_size = offset1 - (offset + sizeof(uint32_t));

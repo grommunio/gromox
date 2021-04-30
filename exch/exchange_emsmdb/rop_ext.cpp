@@ -417,7 +417,7 @@ static int rop_ext_push_getsearchcriteria_response(
 		TRY(pext->p_uint16(0));
 	} else {
 		offset1 = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+		TRY(pext->advance(sizeof(uint16_t)));
 		TRY(ext_buffer_push_restriction(pext, r->pres));
 		res_size = pext->offset - (offset1 + sizeof(uint16_t));
 		offset2 = pext->offset;
@@ -704,7 +704,7 @@ static int rop_ext_push_createbookmark_response(
 static int rop_ext_push_querycolumnsall_response(
 	EXT_PUSH *pext, const QUERYCOLUMNSALL_RESPONSE *r)
 {
-	return ext_buffer_push_proptag_array(pext, &r->proptags);
+	return pext->p_proptag_a(&r->proptags);
 }
 
 static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
@@ -825,12 +825,12 @@ static int rop_ext_push_openmessage_response(
 	TRY(ext_buffer_push_typed_string(pext, &r->subject_prefix));
 	TRY(ext_buffer_push_typed_string(pext, &r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
-	TRY(ext_buffer_push_proptag_array(pext, &r->recipient_columns));
+	TRY(pext->p_proptag_a(&r->recipient_columns));
 	if (0 == r->row_count) {
 		return pext->p_uint8(0);
 	}
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint8_t)));
+	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		last_offset = pext->offset;
 		int status = ext_buffer_push_openrecipient_row(pext,
@@ -945,12 +945,12 @@ static int rop_ext_push_reloadcachedinformation_response(
 	TRY(ext_buffer_push_typed_string(pext, &r->subject_prefix));
 	TRY(ext_buffer_push_typed_string(pext, &r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
-	TRY(ext_buffer_push_proptag_array(pext, &r->recipient_columns));
+	TRY(pext->p_proptag_a(&r->recipient_columns));
 	if (0 == r->row_count) {
 		return pext->p_uint8(0);
 	}
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint8_t)));
+	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		last_offset = pext->offset;
 		int status = ext_buffer_push_openrecipient_row(pext,
@@ -1094,12 +1094,12 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(ext_buffer_push_typed_string(pext, &r->subject_prefix));
 	TRY(ext_buffer_push_typed_string(pext, &r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
-	TRY(ext_buffer_push_proptag_array(pext, &r->recipient_columns));
+	TRY(pext->p_proptag_a(&r->recipient_columns));
 	if (0 == r->row_count) {
 		return pext->p_uint8(0);
 	}
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint8_t)));
+	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		last_offset = pext->offset;
 		int status = ext_buffer_push_openrecipient_row(pext,
@@ -1156,7 +1156,7 @@ static int rop_ext_push_getaddresstypes_response(
 	
 	TRY(pext->p_uint16(r->address_types.count));
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint16_t)));
+	TRY(pext->advance(sizeof(uint16_t)));
 	for (size_t i = 0; i < r->address_types.count; ++i)
 		TRY(pext->p_str(r->address_types.ppstr[i]));
 	size = pext->offset - (offset + sizeof(uint16_t));
@@ -1274,7 +1274,7 @@ static int rop_ext_push_getpropertiesall_response(
 static int rop_ext_push_getpropertieslist_response(
 	EXT_PUSH *pext, const GETPROPERTIESLIST_RESPONSE *r)
 {
-	return ext_buffer_push_proptag_array(pext, &r->proptags);
+	return pext->p_proptag_a(&r->proptags);
 }
 
 static int rop_ext_pull_setproperties_request(
@@ -1941,7 +1941,7 @@ static int rop_ext_push_notification_data(
 		TRY(pext->p_uint64(*r->pold_parent_id));
 	}
 	if (NULL != r->pproptags) {
-		TRY(ext_buffer_push_proptag_array(pext, r->pproptags));
+		TRY(pext->p_proptag_a(r->pproptags));
 	}
 	if (NULL != r->ptotal_count) {
 		TRY(pext->p_uint32(*r->ptotal_count));

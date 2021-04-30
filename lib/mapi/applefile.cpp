@@ -529,7 +529,7 @@ int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
 	TRY(applefile_push_asheader(pext, &r->header));
 	TRY(applefile_push_uint16(pext, r->count));
 	des_offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, r->count * 3 * sizeof(uint32_t)));
+	TRY(pext->advance(r->count * 3 * sizeof(uint32_t)));
 	entry_offset = pext->offset;
 	for (i=0; i<r->count; i++) {
 		TRY(applefile_push_entry(pext, r->pentries[i].entry_id, r->pentries[i].pentry));
