@@ -2422,12 +2422,9 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		goto CRITERIA_FAILURE;
 	}
 	if (NULL != prestriction) {
-		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
+		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_restriction(prestriction) != EXT_ERR_SUCCESS)
 			goto CRITERIA_FAILURE;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
-			&ext_push, prestriction)) {
-			goto CRITERIA_FAILURE;
-		}
 		sprintf(sql_string, "UPDATE folders SET "
 		          "search_criteria=? WHERE folder_id=%llu", LLU(fid_val));
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -2931,12 +2928,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (NULL == pcondition) {
 				continue;
 			}
-			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0))
+			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
+			    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
-				&ext_push, pcondition)) {
-				goto RULE_FAILURE;
-			}
 			condition_len = ext_push.offset;
 			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
@@ -3078,12 +3072,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
 			             &prow[i].propvals, PROP_TAG_RULECONDITION));
 			if (NULL != pcondition) {
-				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0))
+				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
+				    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 					goto RULE_FAILURE;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
-					&ext_push, pcondition)) {
-					goto RULE_FAILURE;
-				}
 				condition_len = ext_push.offset;
 				sprintf(sql_string, "UPDATE rules SET "
 				          "condition=? WHERE rule_id=%llu", LLU(rule_id));

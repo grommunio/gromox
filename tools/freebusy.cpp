@@ -149,7 +149,7 @@ static int exmdb_client_push_load_content_table_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		TRY(ext_buffer_push_restriction(pext, r->prestriction));
+		TRY(pext->p_restriction(r->prestriction));
 	}
 	if (NULL == r->psorts) {
 		return pext->p_uint8(0);

@@ -285,7 +285,7 @@ static int rop_ext_push_readperuserinformation_response(
 	EXT_PUSH *pext, const READPERUSERINFORMATION_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->has_finished));
-	return ext_buffer_push_sbinary(pext, &r->data);
+	return pext->p_bin_s(&r->data);
 }
 
 static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
@@ -418,7 +418,7 @@ static int rop_ext_push_getsearchcriteria_response(
 	} else {
 		offset1 = pext->offset;
 		TRY(pext->advance(sizeof(uint16_t)));
-		TRY(ext_buffer_push_restriction(pext, r->pres));
+		TRY(pext->p_restriction(r->pres));
 		res_size = pext->offset - (offset1 + sizeof(uint16_t));
 		offset2 = pext->offset;
 		pext->offset = offset1;
@@ -698,7 +698,7 @@ static int rop_ext_pull_seekrowfractional_request(
 static int rop_ext_push_createbookmark_response(
 	EXT_PUSH *pext, const CREATEBOOKMARK_RESPONSE *r)
 {
-	return ext_buffer_push_sbinary(pext, &r->bookmark);
+	return pext->p_bin_s(&r->bookmark);
 }
 
 static int rop_ext_push_querycolumnsall_response(
@@ -788,7 +788,7 @@ static int rop_ext_pull_getcollapsestate_request(EXT_PULL *pext,
 static int rop_ext_push_getcollapsestate_response(EXT_PUSH *pext,
 	const GETCOLLAPSESTATE_RESPONSE *r)
 {
-	return ext_buffer_push_sbinary(pext, &r->collapse_state);
+	return pext->p_bin_s(&r->collapse_state);
 }
 
 static int rop_ext_pull_setcollapsestate_request(EXT_PULL *pext,
@@ -800,7 +800,7 @@ static int rop_ext_pull_setcollapsestate_request(EXT_PULL *pext,
 static int rop_ext_push_setcollapsestate_response(EXT_PUSH *pext,
 	const SETCOLLAPSESTATE_RESPONSE *r)
 {
-	return ext_buffer_push_sbinary(pext, &r->bookmark);
+	return pext->p_bin_s(&r->bookmark);
 }
 
 static int rop_ext_pull_openmessage_request(
@@ -1211,8 +1211,8 @@ static int rop_ext_push_optionsdata_response(
 	EXT_PUSH *pext, const OPTIONSDATA_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->reserved));
-	TRY(ext_buffer_push_sbinary(pext, &r->options_info));
-	TRY(ext_buffer_push_sbinary(pext, &r->help_file));
+	TRY(pext->p_bin_s(&r->options_info));
+	TRY(pext->p_bin_s(&r->help_file));
 	if (r->help_file.cb > 0) {
 		return pext->p_str(r->pfile_name);
 	}
@@ -1442,7 +1442,7 @@ static int rop_ext_pull_readstream_request(
 static int rop_ext_push_readstream_response(
 	EXT_PUSH *pext, const READSTREAM_RESPONSE *r)
 {
-	return ext_buffer_push_sbinary(pext, &r->data);
+	return pext->p_bin_s(&r->data);
 }
 
 static int rop_ext_pull_writestream_request(
@@ -1645,7 +1645,7 @@ static int rop_ext_push_fasttransfersourcegetbuffer_response(
 	TRY(pext->p_uint16(r->in_progress_count));
 	TRY(pext->p_uint16(r->total_step_count));
 	TRY(pext->p_uint8(r->reserved));
-	return ext_buffer_push_sbinary(pext, &r->transfer_data);
+	return pext->p_bin_s(&r->transfer_data);
 }
 
 static int rop_ext_pull_fasttransfersourcecopyfolder_request(
@@ -1920,7 +1920,7 @@ static int rop_ext_push_notification_data(
 		TRY(pext->p_uint32(*r->pafter_instance));
 	}
 	if (NULL != r->prow_data) {
-		TRY(ext_buffer_push_sbinary(pext, r->prow_data));
+		TRY(pext->p_bin_s(r->prow_data));
 	}
 	if (NULL != r->pfolder_id) {
 		TRY(pext->p_uint64(*r->pfolder_id));

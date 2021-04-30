@@ -2419,7 +2419,7 @@ int ext_buffer_push_binary_array(EXT_PUSH *pext, const BINARY_ARRAY *r)
 {
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_binary(pext, &r->pbin[i]));
+		TRY(pext->p_bin(&r->pbin[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2456,14 +2456,14 @@ static int ext_buffer_push_restriction_and_or(
 		TRY(pext->p_uint16(r->count));
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_restriction(pext, &r->pres[i]));
+		TRY(pext->p_restriction(&r->pres[i]));
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_push_restriction_not(
 	EXT_PUSH *pext, const RESTRICTION_NOT *r)
 {
-	return ext_buffer_push_restriction(pext, &r->res);
+	return pext->p_restriction(&r->res);
 }
 
 static int ext_buffer_push_restriction_content(
@@ -2516,7 +2516,7 @@ static int ext_buffer_push_restriction_subobj(
 	EXT_PUSH *pext, const RESTRICTION_SUBOBJ *r)
 {
 	TRY(pext->p_uint32(r->subobject));
-	return ext_buffer_push_restriction(pext, &r->res);
+	return pext->p_restriction(&r->res);
 }
 
 static int ext_buffer_push_restriction_comment(
@@ -2533,7 +2533,7 @@ static int ext_buffer_push_restriction_comment(
 	}
 	if (NULL != r->pres) {
 		TRY(pext->p_uint8(1));
-		return ext_buffer_push_restriction(pext, r->pres);
+		return pext->p_restriction(r->pres);
 	}
 	return pext->p_uint8(0);
 }
@@ -2542,7 +2542,7 @@ static int ext_buffer_push_restriction_count(
 	EXT_PUSH *pext, const RESTRICTION_COUNT *r)
 {
 	TRY(pext->p_uint32(r->count));
-	return ext_buffer_push_restriction(pext, &r->sub_res);
+	return pext->p_restriction(&r->sub_res);
 }
 
 int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r)
@@ -2633,7 +2633,7 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 	if (0 != r->same_store) {
 		return ext_buffer_push_svreid(pext, static_cast<SVREID *>(r->pfolder_eid));
 	} else {
-		return ext_buffer_push_binary(pext, static_cast<BINARY *>(r->pfolder_eid));
+		return pext->p_bin(static_cast<BINARY *>(r->pfolder_eid));
 	}
 }
 
@@ -2771,12 +2771,12 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, static_cast<const SVREID *>(pval));
 	case PT_SRESTRICT:
-		return ext_buffer_push_restriction(pext, static_cast<const RESTRICTION *>(pval));
+		return pext->p_restriction(static_cast<const RESTRICTION *>(pval));
 	case PT_ACTIONS:
 		return ext_buffer_push_rule_actions(pext, static_cast<const RULE_ACTIONS *>(pval));
 	case PT_BINARY:
 	case PT_OBJECT:
-		return ext_buffer_push_binary(pext, static_cast<const BINARY *>(pval));
+		return pext->p_bin(static_cast<const BINARY *>(pval));
 	case PT_MV_SHORT:
 		return ext_buffer_push_short_array(pext, static_cast<const SHORT_ARRAY *>(pval));
 	case PT_MV_LONG:
@@ -2790,7 +2790,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PT_MV_CLSID:
 		return ext_buffer_push_guid_array(pext, static_cast<const GUID_ARRAY *>(pval));
 	case PT_MV_BINARY:
-		return ext_buffer_push_binary_array(pext, static_cast<const BINARY_ARRAY *>(pval));
+		return pext->p_bin_a(static_cast<const BINARY_ARRAY *>(pval));
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
@@ -3072,10 +3072,10 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 		TRY(pext->p_str(r->px500dn));
 	}
 	if (NULL != r->pentry_id) {
-		TRY(ext_buffer_push_binary(pext, r->pentry_id));
+		TRY(pext->p_bin(r->pentry_id));
 	}
 	if (NULL != r->psearch_key) {
-		TRY(ext_buffer_push_binary(pext, r->psearch_key));
+		TRY(pext->p_bin(r->psearch_key));
 	}
 	if (NULL != r->paddress_type) {
 		TRY(pext->p_str(r->paddress_type));
@@ -3209,7 +3209,7 @@ static int ext_buffer_push_persistelement(
 		TRY(pext->p_uint16(4));
 		return pext->p_uint32(0);
 	case RSF_ELID_ENTRYID:
-		return ext_buffer_push_binary(pext, r->pentry_id);
+		return pext->p_bin(r->pentry_id);
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
