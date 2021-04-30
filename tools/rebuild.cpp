@@ -90,7 +90,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_uint8(&ext_push, call_id);
+	status = ext_push.p_uint8(call_id);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -112,7 +112,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	status = ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t));
+	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	/* memory referenced by ext_push.data will be freed outside */

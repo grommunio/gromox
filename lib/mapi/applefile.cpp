@@ -435,7 +435,7 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 static int applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
 {
 	TRY(ext_buffer_push_bytes(pext, r->filler, 3));
-	return ext_buffer_push_uint8(pext, r->attribute);
+	return pext->p_uint8(r->attribute);
 }
 
 static int applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
@@ -447,14 +447,14 @@ static int applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
 
 static int applefile_push_asmsdosinfo(EXT_PUSH *pext, const ASMSDOSINFO *r)
 {
-	TRY(ext_buffer_push_uint8(pext, r->filler));
-	return ext_buffer_push_uint8(pext, r->attr);
+	TRY(pext->p_uint8(r->filler));
+	return pext->p_uint8(r->attr);
 }
 
 static int applefile_push_asafpinfo(EXT_PUSH *pext, const ASAFPINFO *r)
 {
 	TRY(ext_buffer_push_bytes(pext, r->filler, 3));
-	return ext_buffer_push_uint8(pext, r->attr);
+	return pext->p_uint8(r->attr);
 }
 
 static int applefile_push_asafpdirid(EXT_PUSH *pext, const ASAFPDIRID *r)

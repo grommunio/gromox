@@ -2050,12 +2050,12 @@ static BOOL message_rectify_message(const char *account,
 			return FALSE;
 		nt_time = rop_util_current_nttime();
 		if (!ext_buffer_push_init(&ext_push, pbin1->pb, 27, 0) ||
-		    ext_buffer_push_uint8(&ext_push, 1) != EXT_ERR_SUCCESS ||
-		    ext_buffer_push_uint32(&ext_push, nt_time >> 32) != EXT_ERR_SUCCESS ||
-		    ext_buffer_push_uint8(&ext_push, (nt_time & 0xFFFFFFFF) >> 24)  != EXT_ERR_SUCCESS ||
+		    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
+		    ext_push.p_uint32(nt_time >> 32) != EXT_ERR_SUCCESS ||
+		    ext_push.p_uint8((nt_time & 0xFFFFFFFF) >> 24) != EXT_ERR_SUCCESS ||
 		    ext_buffer_push_bytes(&ext_push, pbin->pb, 16) != EXT_ERR_SUCCESS ||
-		    ext_buffer_push_uint32(&ext_push, 0xFFFFFFFF) != EXT_ERR_SUCCESS ||
-		    ext_buffer_push_uint8(&ext_push, nt_time & 0xFF))
+		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
+		    ext_push.p_uint8(nt_time & 0xFF))
 			return false;
 		pbin1->cb = 27;
 		vc->proptag = PROP_TAG_CONVERSATIONINDEX;

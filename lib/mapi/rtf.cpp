@@ -365,7 +365,7 @@ static bool rtf_escape_output(RTF_READER *preader, char *string)
 			QRF(ext_buffer_push_bytes(&preader->ext_push, "&amp;", 5));
 			break;
 		default:
-			QRF(ext_buffer_push_uint8(&preader->ext_push, string[i]));
+			QRF(preader->ext_push.p_uint8(string[i]));
 			break;
 		}
 	}
@@ -1538,7 +1538,7 @@ static bool rtf_put_iconv_cache(RTF_READER *preader, int ch)
 			return true;
 		}
 	}
-	QRF(ext_buffer_push_uint8(&preader->iconv_push, ch));
+	QRF(preader->iconv_push.p_uint8(ch));
 	return true;
 }
 
@@ -1763,7 +1763,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 								return false;
 						} else if ('\'' == ((char*)pword2->pdata)[1]) {
 							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
-							QRF(ext_buffer_push_uint8(&preader->iconv_push, ch));
+							QRF(preader->iconv_push.p_uint8(ch));
 						}
 					}
 					pword2 = simple_tree_node_get_sibling(pword2);
@@ -1783,7 +1783,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 								return false;
 						} else if ('\'' == ((char*)pword2->pdata)[1]) {
 							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
-							QRF(ext_buffer_push_uint8(&preader->iconv_push, ch));
+							QRF(preader->iconv_push.p_uint8(ch));
 						}
 					}
 					pword2 = simple_tree_node_get_sibling(pword2);
@@ -2056,10 +2056,8 @@ static int rtf_cmd_tab(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
 	int need;
 	
 	if (preader->have_fromhtml) {
-		if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
-			&preader->ext_push,  0x09)) {
+		if (preader->ext_push.p_uint8(0x09) != EXT_ERR_SUCCESS)
 			return CMD_RESULT_ERROR;
-		}
 		return CMD_RESULT_CONTINUE;
 	} else {
 		need = 8 - preader->total_chars_in_line%8;
@@ -3204,8 +3202,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 			tmp_bin.pv = malloc(tmp_bin.cb);
 			if (tmp_bin.pv == nullptr)
 				return -EINVAL;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
-				&picture_push, 0)) {
+			if (picture_push.p_uint8(0) != EXT_ERR_SUCCESS) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}

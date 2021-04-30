@@ -334,7 +334,7 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 			} else if ('}' == *ptr) {
 				QRF(ext_buffer_push_bytes(&pwriter->ext_push, "\\}", 2));
 			} else {
-				QRF(ext_buffer_push_uint8(&pwriter->ext_push, *ptr));
+				QRF(pwriter->ext_push.p_uint8(*ptr));
 			}
 		} else {
 			wchar = html_utf8_to_wchar(ptr, len);
@@ -387,7 +387,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 
 static BOOL html_write_tail(RTF_WRITER*pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -684,7 +684,7 @@ static BOOL html_write_b_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_b_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -700,7 +700,7 @@ static BOOL html_write_i_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_i_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -776,7 +776,7 @@ static BOOL html_write_s_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_s_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -792,7 +792,7 @@ static BOOL html_write_em_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_em_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -810,7 +810,7 @@ static BOOL html_write_ol_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_ol_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -828,7 +828,7 @@ static BOOL html_write_ul_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_ul_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -875,37 +875,37 @@ static BOOL html_write_center_end(RTF_WRITER *pwriter)
 
 static BOOL html_write_table_begin(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '{'));
+	QRF(pwriter->ext_push.p_uint8('{'));
 	return TRUE;
 }
 
 static BOOL html_write_table_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
 static BOOL html_write_span_begin(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '{'));
+	QRF(pwriter->ext_push.p_uint8('{'));
 	return TRUE;
 }
 
 static BOOL html_write_span_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
 static BOOL html_write_font_begin(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '{'));
+	QRF(pwriter->ext_push.p_uint8('{'));
 	return TRUE;
 }
 
 static BOOL html_write_font_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -915,7 +915,7 @@ static BOOL html_write_mark_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '{'));
+	QRF(pwriter->ext_push.p_uint8('{'));
 	index = html_get_colortable(pwriter, 0xFFFF00);
 	if (index >= 0) {
 		length = sprintf(tmp_buff, "\\highlight%d ", index);
@@ -926,7 +926,7 @@ static BOOL html_write_mark_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_mark_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -1015,7 +1015,7 @@ static BOOL html_write_sub_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_sub_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 
@@ -1032,7 +1032,7 @@ static BOOL html_write_sup_begin(RTF_WRITER *pwriter)
 
 static BOOL html_write_sup_end(RTF_WRITER *pwriter)
 {
-	QRF(ext_buffer_push_uint8(&pwriter->ext_push, '}'));
+	QRF(pwriter->ext_push.p_uint8('}'));
 	return TRUE;
 }
 

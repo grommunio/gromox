@@ -4353,20 +4353,12 @@ static BINARY* common_util_get_message_parent_svrid(
 				sizeof(uint64_t) + sizeof(uint64_t);
 	pbin->pv = common_util_alloc(pbin->cb);
 	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, pbin->cb, 0))
+	    !ext_buffer_push_init(&ext_push, pbin->pv, pbin->cb, 0) ||
+	    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint64(folder_id) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint64(0) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(&ext_push, 1)) {
-		return NULL;	
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint64(&ext_push, folder_id)) {
-		return NULL;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint64(&ext_push, 0)) {
-		return NULL;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(&ext_push, 0)) {
-		return NULL;
-	}
 	if (ext_push.offset != pbin->cb) {
 		return NULL;
 	}

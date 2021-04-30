@@ -919,10 +919,8 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 				offset2 = ext_push.offset;
 				bytes = offset2 - (offset1 + sizeof(uint32_t));
 				ext_push.offset = offset1;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-					&ext_push, bytes)) {
+				if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				ext_push.offset = offset2;
 				pad_len = ((bytes + 3) & ~3) - bytes;
 				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
@@ -940,13 +938,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		tmp_bin.pb = bin_buff;
 		bytes = ext_push.offset - (offset + sizeof(uint32_t));
 		ext_push.offset = 0;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(&ext_push, count)) {
+		if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		ext_push.offset = offset;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(&ext_push, bytes)) {
+		if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_REPLYRECIPIENTENTRIES;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))

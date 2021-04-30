@@ -179,24 +179,24 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	uint8_t tmp_byte;
 	
 	offset = pext->offset;
-	TRY(ext_buffer_push_uint8(pext, r->old_version));
+	TRY(pext->p_uint8(r->old_version));
 	tmp_byte = strlen(r->file_name);
 	if (tmp_byte > 63) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_push_uint8(pext, tmp_byte));
+	TRY(pext->p_uint8(tmp_byte));
 	char newfile[64]{};
 	gx_strlcpy(newfile, r->file_name, sizeof(newfile));
 	TRY(ext_buffer_push_bytes(pext, newfile, 63));
 	TRY(ext_buffer_push_bytes(pext, &r->type, 4));
 	TRY(ext_buffer_push_bytes(pext, &r->creator, 4));
-	TRY(ext_buffer_push_uint8(pext, r->original_flags));
-	TRY(ext_buffer_push_uint8(pext, r->pad1));
+	TRY(pext->p_uint8(r->original_flags));
+	TRY(pext->p_uint8(r->pad1));
 	TRY(macbinary_push_uint16(pext, r->point_v));
 	TRY(macbinary_push_uint16(pext, r->point_h));
 	TRY(macbinary_push_uint16(pext, r->folder_id));
-	TRY(ext_buffer_push_uint8(pext, r->protected_flag));
-	TRY(ext_buffer_push_uint8(pext, r->pad2));
+	TRY(pext->p_uint8(r->protected_flag));
+	TRY(pext->p_uint8(r->pad2));
 	TRY(macbinary_push_uint32(pext, r->data_len));
 	TRY(macbinary_push_uint32(pext, r->res_len));
 	tmp_int = r->creat_time - TIMEDIFF;
@@ -204,7 +204,7 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	tmp_int = r->modify_time - TIMEDIFF;
 	TRY(macbinary_push_int32(pext, tmp_int));
 	TRY(macbinary_push_uint16(pext, r->comment_len));
-	TRY(ext_buffer_push_uint8(pext, r->finder_flags));
+	TRY(pext->p_uint8(r->finder_flags));
 	if (0 != strncmp((char*)&r->signature, "mBIN", 4)) {
 		return EXT_ERR_FORMAT;
 	}
@@ -217,11 +217,11 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	if (130 != r->version) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_push_uint8(pext, r->version));
+	TRY(pext->p_uint8(r->version));
 	if (129 != r->mini_version) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_push_uint8(pext, r->mini_version));
+	TRY(pext->p_uint8(r->mini_version));
 	crc = macbinary_crc(pext->data + offset, 124, 0);
 	TRY(macbinary_push_uint16(pext, crc));
 	return ext_buffer_push_bytes(pext, r->pads2, 2);

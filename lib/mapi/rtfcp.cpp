@@ -238,10 +238,10 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	
 	if (!ext_buffer_push_init(&ext_push, nullptr, 0, 0))
 		return nullptr;
-	if (ext_buffer_push_uint32(&ext_push, in_length + 12) != EXT_ERR_SUCCESS ||
-	    ext_buffer_push_uint32(&ext_push, in_length) != EXT_ERR_SUCCESS ||
-	    ext_buffer_push_uint32(&ext_push, RTF_UNCOMPRESSED) != EXT_ERR_SUCCESS ||
-	    ext_buffer_push_uint32(&ext_push, 0) != EXT_ERR_SUCCESS ||
+	if (ext_push.p_uint32(in_length + 12) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(in_length) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(RTF_UNCOMPRESSED) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
 	    ext_buffer_push_bytes(&ext_push, pin_buff, in_length) != EXT_ERR_SUCCESS) {
 		return nullptr;
 	}

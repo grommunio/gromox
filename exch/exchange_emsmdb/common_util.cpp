@@ -895,28 +895,17 @@ BINARY* common_util_to_folder_replica(
 	}
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 1024, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-		&ext_push, 0)) {
+	    !ext_buffer_push_init(&ext_push, pbin->pv, 1024, 0) ||
+	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-		&ext_push, 0)) {
-		return NULL;	
-	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_long_term_id(
 		&ext_push, plongid)) {
 		return NULL;	
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-		&ext_push, 1)) {
+	if (ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
+	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-		&ext_push, 1)) {
-		return NULL;
-	}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_string(
 		&ext_push, essdn)) {
 		return NULL;

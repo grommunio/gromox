@@ -128,7 +128,7 @@ static int exmdb_client_push_check_folder_permission_request(
 	EXT_PUSH *pext, const CHECK_FOLDER_PERMISSION_REQUEST *r)
 {
 	TRY(ext_buffer_push_string(pext, r->dir));
-	TRY(ext_buffer_push_uint64(pext, r->folder_id));
+	TRY(pext->p_uint64(r->folder_id));
 	return ext_buffer_push_string(pext, r->username);
 }
 
@@ -136,25 +136,25 @@ static int exmdb_client_push_load_content_table_request(
 	EXT_PUSH *pext, const LOAD_CONTENT_TABLE_REQUEST *r)
 {
 	TRY(ext_buffer_push_string(pext, r->dir));
-	TRY(ext_buffer_push_uint32(pext, r->cpid));
-	TRY(ext_buffer_push_uint64(pext, r->folder_id));
+	TRY(pext->p_uint32(r->cpid));
+	TRY(pext->p_uint64(r->folder_id));
 	if (NULL == r->username) {
-		TRY(ext_buffer_push_uint8(pext, 0));
+		TRY(pext->p_uint8(0));
 	} else {
-		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(pext->p_uint8(1));
 		TRY(ext_buffer_push_string(pext, r->username));
 	}
-	TRY(ext_buffer_push_uint8(pext, r->table_flags));
+	TRY(pext->p_uint8(r->table_flags));
 	if (NULL == r->prestriction) {
-		TRY(ext_buffer_push_uint8(pext, 0));
+		TRY(pext->p_uint8(0));
 	} else {
-		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(pext->p_uint8(1));
 		TRY(ext_buffer_push_restriction(pext, r->prestriction));
 	}
 	if (NULL == r->psorts) {
-		return ext_buffer_push_uint8(pext, 0);
+		return pext->p_uint8(0);
 	}
-	TRY(ext_buffer_push_uint8(pext, 1));
+	TRY(pext->p_uint8(1));
 	return ext_buffer_push_sortorder_set(pext, r->psorts);
 }
 
@@ -162,7 +162,7 @@ static int exmdb_client_push_unload_table_request(
 	EXT_PUSH *pext, const UNLOAD_TABLE_REQUEST *r)
 {
 	TRY(ext_buffer_push_string(pext, r->dir));
-	return ext_buffer_push_uint32(pext, r->table_id);
+	return pext->p_uint32(r->table_id);
 }
 
 static int exmdb_client_push_query_table_request(
@@ -170,15 +170,15 @@ static int exmdb_client_push_query_table_request(
 {
 	TRY(ext_buffer_push_string(pext, r->dir));
 	if (NULL == r->username) {
-		TRY(ext_buffer_push_uint8(pext, 0));
+		TRY(pext->p_uint8(0));
 	} else {
-		TRY(ext_buffer_push_uint8(pext, 1));
+		TRY(pext->p_uint8(1));
 		TRY(ext_buffer_push_string(pext, r->username));
 	}
-	TRY(ext_buffer_push_uint32(pext, r->cpid));
-	TRY(ext_buffer_push_uint32(pext, r->table_id));
+	TRY(pext->p_uint32(r->cpid));
+	TRY(pext->p_uint32(r->table_id));
 	TRY(ext_buffer_push_proptag_array(pext, r->pproptags));
-	TRY(ext_buffer_push_uint32(pext, r->start_pos));
+	TRY(pext->p_uint32(r->start_pos));
 	return ext_buffer_push_int32(pext, r->row_needed);
 }
 
@@ -186,7 +186,7 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	void *prequest, BINARY *pbin_out)
 {
 	TRY(ext_buffer_push_advance(&ext_push, sizeof(uint32_t)));
-	TRY(ext_buffer_push_uint8(&ext_push, call_id));
+	TRY(ext_push.p_uint8(call_id));
 	switch (call_id) {
 	case exmdb_callid::CONNECT:
 		TRY(exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest)));
@@ -211,7 +211,7 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	TRY(ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t)));
+	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_buffer_push_release(&ext_push);
 	return EXT_ERR_SUCCESS;
