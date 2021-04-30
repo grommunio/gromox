@@ -3143,7 +3143,7 @@ int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 }
 
 int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
-	PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
+    const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
 {
 	uint32_t offset;
 	uint32_t offset1;

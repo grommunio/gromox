@@ -39,19 +39,7 @@ struct EXT_PULL {
 	uint32_t data_size = 0, offset = 0, flags = 0;
 };
 
-struct EXT_PUSH {
-	~EXT_PUSH();
-
-	BOOL b_alloc = false;
-	union {
-		uint8_t *data, *udata;
-		char *cdata;
-		void *vdata = nullptr;
-	};
-	uint32_t alloc_size = 0, offset = 0, flags = 0;
-	EXT_BUFFER_MGT mgt{};
-};
-
+struct EXT_PUSH;
 /* bitmap RPC_HEADER_EXT flags */
 #define RHE_FLAG_COMPRESSED							0x0001
 #define RHE_FLAG_XORMAGIC							0x0002
@@ -232,7 +220,7 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r);
 int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
-	PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r);
+	const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r);
 int ext_buffer_push_permission_data(EXT_PUSH *pext, const PERMISSION_DATA *r);
 int ext_buffer_push_rule_data(EXT_PUSH *pext, const RULE_DATA *r);
 int ext_buffer_push_addressbook_entryid(
@@ -252,3 +240,87 @@ int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r);
 int ext_buffer_push_message_content(
 	EXT_PUSH *pext, const MESSAGE_CONTENT *pmsg);
 uint8_t *ext_buffer_push_release(EXT_PUSH *);
+
+struct EXT_PUSH {
+	~EXT_PUSH();
+	inline BOOL init(void *d, uint32_t asize, uint32_t fl, const EXT_BUFFER_MGT *m = nullptr) { return ext_buffer_push_init(this, d, asize, fl, m); }
+	inline uint8_t *release() { return ext_buffer_push_release(this); }
+	inline BOOL check_ovf(uint32_t n) { return ext_buffer_push_check_overflow(this, n); }
+	inline int advance(uint32_t n) { return ext_buffer_push_advance(this, n); }
+	inline int p_bytes(const void *d, uint32_t n) { return ext_buffer_push_bytes(this, d, n); }
+	inline int p_uint8(uint8_t v) { return ext_buffer_push_uint8(this, v); }
+	inline int p_int8(int8_t v) { return ext_buffer_push_uint8(this, v); }
+	inline int p_uint16(uint16_t v) { return ext_buffer_push_uint16(this, v); }
+	inline int p_int16(int16_t v) { return ext_buffer_push_uint16(this, v); }
+	inline int p_uint32(uint32_t v) { return ext_buffer_push_uint32(this, v); }
+	inline int p_int32(int32_t v) { return ext_buffer_push_uint32(this, v); }
+	inline int p_uint64(uint64_t v) { return ext_buffer_push_uint64(this, v); }
+	inline int p_int64(int64_t v) { return ext_buffer_push_uint64(this, v); }
+	inline int p_float(float v) { return ext_buffer_push_float(this, v); }
+	inline int p_double(double v) { return ext_buffer_push_double(this, v); }
+	inline int p_bool(BOOL v) { return ext_buffer_push_bool(this, v); }
+	inline int p_blob(DATA_BLOB v) { return ext_buffer_push_data_blob(this, v); }
+	inline int p_bin(const BINARY *v) { return ext_buffer_push_binary(this, v); }
+	inline int p_bin_s(const BINARY *v) { return ext_buffer_push_sbinary(this, v); }
+	inline int p_bin_ex(const BINARY *v) { return ext_buffer_push_exbinary(this, v); }
+	inline int p_guid(const GUID *v) { return ext_buffer_push_guid(this, v); }
+	inline int p_str(const char *v) { return ext_buffer_push_string(this, v); }
+	inline int p_wstr(const char *v) { return ext_buffer_push_wstring(this, v); }
+	inline int p_uint16_a(const SHORT_ARRAY *v) { return ext_buffer_push_short_array(this, v); }
+	inline int p_uint32_a(const LONG_ARRAY *v) { return ext_buffer_push_long_array(this, v); }
+	inline int p_uint64_a(const LONGLONG_ARRAY *v) { return ext_buffer_push_longlong_array(this, v); }
+	inline int p_uint64_sa(const LONGLONG_ARRAY *v) { return ext_buffer_push_slonglong_array(this, v); }
+	inline int p_bin_a(const BINARY_ARRAY *v) { return ext_buffer_push_binary_array(this, v); }
+	inline int p_str_a(const STRING_ARRAY *v) { return ext_buffer_push_string_array(this, v); }
+	inline int p_wstr_a(const STRING_ARRAY *v) { return ext_buffer_push_wstring_array(this, v); }
+	inline int p_guid_a(const GUID_ARRAY *v) { return ext_buffer_push_guid_array(this, v); }
+	inline int p_proptag_a(const PROPTAG_ARRAY *v) { return ext_buffer_push_proptag_array(this, v); }
+	inline int p_restriction(const RESTRICTION *v) { return ext_buffer_push_restriction(this, v); }
+	inline int p_svreid(const SVREID *v) { return ext_buffer_push_svreid(this, v); }
+	inline int p_store_eid(const STORE_ENTRYID *v) { return ext_buffer_push_store_entryid(this, v); }
+	inline int p_rule_actions(const RULE_ACTIONS *v) { return ext_buffer_push_rule_actions(this, v); }
+	inline int p_longterm(const LONG_TERM_ID *v) { return ext_buffer_push_long_term_id(this, v); }
+	inline int p_longterm_a(const LONG_TERM_ID_ARRAY *v) { return ext_buffer_push_long_term_id_array(this, v); }
+	inline int p_propval(uint16_t type, const void *v) { return ext_buffer_push_propval(this, type, v); }
+	inline int p_tagged_pv(const TAGGED_PROPVAL *v) { return ext_buffer_push_tagged_propval(this, v); }
+	inline int p_typed_pv(const TYPED_PROPVAL *v) { return ext_buffer_push_typed_propval(this, v); }
+	inline int p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *v) { return ext_buffer_push_flagged_propval(this, type, v); }
+	inline int p_proprow(const PROPTAG_ARRAY *cols, const PROPERTY_ROW *v) { return ext_buffer_push_property_row(this, cols, v); }
+	inline int p_propname(const PROPERTY_NAME *v) { return ext_buffer_push_property_name(this, v); }
+	inline int p_propname_a(const PROPNAME_ARRAY *v) { return ext_buffer_push_propname_array(this, v); }
+	inline int p_propid_a(const PROPID_ARRAY *v) { return ext_buffer_push_propid_array(this, v); }
+	inline int p_tpropval_a(const TPROPVAL_ARRAY *v) { return ext_buffer_push_tpropval_array(this, v); }
+	inline int p_tarray_set(const TARRAY_SET *v) { return ext_buffer_push_tarray_set(this, v); }
+	inline int p_problem_a(const PROBLEM_ARRAY *v) { return ext_buffer_push_problem_array(this, v); }
+	inline int p_xid(uint8_t z, const XID *v) { return ext_buffer_push_xid(this, z, v); }
+	inline int p_folder_eid(const FOLDER_ENTRYID *v) { return ext_buffer_push_folder_entryid(this, v); }
+	inline int p_msg_eid(const MESSAGE_ENTRYID *v) { return ext_buffer_push_message_entryid(this, v); }
+	inline int p_sortorder(const SORT_ORDER *v) { return ext_buffer_push_sort_order(this, v); }
+	inline int p_sortorder_set(const SORTORDER_SET *v) { return ext_buffer_push_sortorder_set(this, v); }
+	inline int p_typed_str(const TYPED_STRING *v) { return ext_buffer_push_typed_string(this, v); }
+	inline int p_recipient_row(const PROPTAG_ARRAY *tags, const RECIPIENT_ROW *v) { return ext_buffer_push_recipient_row(this, tags, v); }
+	inline int p_openrecipient_row(const PROPTAG_ARRAY *tags, const OPENRECIPIENT_ROW *v) { return ext_buffer_push_openrecipient_row(this, tags, v); }
+	inline int p_readrecipient_row(const PROPTAG_ARRAY *tags, const READRECIPIENT_ROW *v) { return ext_buffer_push_readrecipient_row(this, tags, v); }
+	inline int p_permission_data(const PERMISSION_DATA *v) { return ext_buffer_push_permission_data(this, v); }
+	inline int p_rule_data(const RULE_DATA *v) { return ext_buffer_push_rule_data(this, v); }
+	inline int p_abk_eid(const ADDRESSBOOK_ENTRYID *v) { return ext_buffer_push_addressbook_entryid(this, v); }
+	inline int p_oneoff_eid(const ONEOFF_ENTRYID *v) { return ext_buffer_push_oneoff_entryid(this, v); }
+	inline int p_persistdata_a(const PERSISTDATA_ARRAY *v) { return ext_buffer_push_persistdata_array(this, v); }
+	inline int p_eid_a(const EID_ARRAY *v) { return ext_buffer_push_eid_array(this, v); }
+	inline int p_systime(const SYSTEMTIME *v) { return ext_buffer_push_systemtime(this, v); }
+	inline int p_tzstruct(const TIMEZONESTRUCT *v) { return ext_buffer_push_timezonestruct(this, v); }
+	inline int p_tzdef(const TIMEZONEDEFINITION *v) { return ext_buffer_push_timezonedefinition(this, v); }
+	inline int p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *v) { return ext_buffer_push_appointmentrecurrencepattern(this, v); }
+	inline int p_goid(const GLOBALOBJECTID *v) { return ext_buffer_push_globalobjectid(this, v); }
+	inline int p_msgctnt(const MESSAGE_CONTENT *v) { return ext_buffer_push_message_content(this, v); }
+	inline int p_rpchdr(const RPC_HEADER_EXT *v) { return ext_buffer_push_rpc_header_ext(this, v); }
+
+	BOOL b_alloc = false;
+	union {
+		uint8_t *data, *udata;
+		char *cdata;
+		void *vdata = nullptr;
+	};
+	uint32_t alloc_size = 0, offset = 0, flags = 0;
+	EXT_BUFFER_MGT mgt{};
+};
