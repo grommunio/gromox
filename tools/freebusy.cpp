@@ -179,7 +179,7 @@ static int exmdb_client_push_query_table_request(
 	TRY(pext->p_uint32(r->table_id));
 	TRY(ext_buffer_push_proptag_array(pext, r->pproptags));
 	TRY(pext->p_uint32(r->start_pos));
-	return ext_buffer_push_int32(pext, r->row_needed);
+	return pext->p_int32(r->row_needed);
 }
 
 static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,

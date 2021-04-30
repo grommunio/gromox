@@ -209,8 +209,8 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(ext_buffer_push_bytes(pext, (uint8_t*)&r->signature, 4));
-	TRY(ext_buffer_push_int8(pext, r->fd_script));
-	TRY(ext_buffer_push_int8(pext, r->fd_xflags));
+	TRY(pext->p_int8(r->fd_script));
+	TRY(pext->p_int8(r->fd_xflags));
 	TRY(ext_buffer_push_bytes(pext, r->pads1, 8));
 	TRY(macbinary_push_uint32(pext, r->total_unpacked));
 	TRY(macbinary_push_uint16(pext, r->xheader_len));

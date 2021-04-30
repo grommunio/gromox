@@ -3261,24 +3261,24 @@ int ext_buffer_push_eid_array(EXT_PUSH *pext, const EID_ARRAY *r)
 
 int ext_buffer_push_systemtime(EXT_PUSH *pext, const SYSTEMTIME *r)
 {
-	TRY(ext_buffer_push_int16(pext, r->year));
-	TRY(ext_buffer_push_int16(pext, r->month));
-	TRY(ext_buffer_push_int16(pext, r->dayofweek));
-	TRY(ext_buffer_push_int16(pext, r->day));
-	TRY(ext_buffer_push_int16(pext, r->hour));
-	TRY(ext_buffer_push_int16(pext, r->minute));
-	TRY(ext_buffer_push_int16(pext, r->second));
-	return ext_buffer_push_int16(pext, r->milliseconds);
+	TRY(pext->p_int16(r->year));
+	TRY(pext->p_int16(r->month));
+	TRY(pext->p_int16(r->dayofweek));
+	TRY(pext->p_int16(r->day));
+	TRY(pext->p_int16(r->hour));
+	TRY(pext->p_int16(r->minute));
+	TRY(pext->p_int16(r->second));
+	return pext->p_int16(r->milliseconds);
 }
 
 int ext_buffer_push_timezonestruct(EXT_PUSH *pext, const TIMEZONESTRUCT *r)
 {
-	TRY(ext_buffer_push_int32(pext, r->bias));
-	TRY(ext_buffer_push_int32(pext, r->standardbias));
-	TRY(ext_buffer_push_int32(pext, r->daylightbias));
-	TRY(ext_buffer_push_int16(pext, r->standardyear));
+	TRY(pext->p_int32(r->bias));
+	TRY(pext->p_int32(r->standardbias));
+	TRY(pext->p_int32(r->daylightbias));
+	TRY(pext->p_int16(r->standardyear));
 	TRY(ext_buffer_push_systemtime(pext, &r->standarddate));
-	TRY(ext_buffer_push_int16(pext, r->daylightyear));
+	TRY(pext->p_int16(r->daylightyear));
 	return ext_buffer_push_systemtime(pext, &r->daylightdate);
 }
 
@@ -3288,11 +3288,11 @@ static int ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 	TRY(pext->p_uint8(r->minor));
 	TRY(pext->p_uint16(r->reserved));
 	TRY(pext->p_uint16(r->flags));
-	TRY(ext_buffer_push_int16(pext, r->year));
+	TRY(pext->p_int16(r->year));
 	TRY(ext_buffer_push_bytes(pext, r->x, 14));
-	TRY(ext_buffer_push_int32(pext, r->bias));
-	TRY(ext_buffer_push_int32(pext, r->standardbias));
-	TRY(ext_buffer_push_int32(pext, r->daylightbias));
+	TRY(pext->p_int32(r->bias));
+	TRY(pext->p_int32(r->standardbias));
+	TRY(pext->p_int32(r->daylightbias));
 	TRY(ext_buffer_push_systemtime(pext, &r->standarddate));
 	return ext_buffer_push_systemtime(pext, &r->daylightdate);
 }

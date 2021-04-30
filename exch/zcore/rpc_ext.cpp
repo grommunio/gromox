@@ -1376,7 +1376,7 @@ static BOOL rpc_ext_pull_seekrow_request(
 static BOOL rpc_ext_push_seekrow_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_push_int32(pext, ppayload->seekrow.sought_rows));
+	QRF(pext->p_int32(ppayload->seekrow.sought_rows));
 	return TRUE;
 }
 

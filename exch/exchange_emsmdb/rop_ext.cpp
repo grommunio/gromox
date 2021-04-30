@@ -669,7 +669,7 @@ static int rop_ext_push_seekrow_response(
 	EXT_PUSH *pext, const SEEKROW_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->has_soughtless));
-	return ext_buffer_push_int32(pext, r->offset_sought);
+	return pext->p_int32(r->offset_sought);
 }
 
 static int rop_ext_pull_seekrowbookmark_request(

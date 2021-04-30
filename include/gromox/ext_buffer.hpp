@@ -163,9 +163,6 @@ int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size);
 int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r);
 BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size);
 extern int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n);
-#define ext_buffer_push_int8(e, v) ext_buffer_push_uint8((e), (v))
-#define ext_buffer_push_int16(e, v) ext_buffer_push_uint16((e), (v))
-#define ext_buffer_push_int32(e, v) ext_buffer_push_uint32((e), (v))
 int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v);
 int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v);
 int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v);

@@ -1003,7 +1003,7 @@ static int exmdb_ext_push_query_table_request(
 	TRY(pext->p_uint32(ppayload->query_table.table_id));
 	TRY(ext_buffer_push_proptag_array( pext, ppayload->query_table.pproptags));
 	TRY(pext->p_uint32(ppayload->query_table.start_pos));
-	return ext_buffer_push_int32(pext, ppayload->query_table.row_needed);
+	return pext->p_int32(ppayload->query_table.row_needed);
 }
 
 static int exmdb_ext_pull_match_table_request(
@@ -1725,8 +1725,7 @@ static int exmdb_ext_push_query_message_instance_attachment_table_request(
 	TRY(pext->p_uint32(ppayload->query_message_instance_attachment_table.instance_id));
 	TRY(ext_buffer_push_proptag_array(pext, ppayload->query_message_instance_attachment_table.pproptags));
 	TRY(pext->p_uint32(ppayload->query_message_instance_attachment_table.start_pos));
-	return ext_buffer_push_int32(pext,
-		ppayload->query_message_instance_attachment_table.row_needed);
+	return pext->p_int32(ppayload->query_message_instance_attachment_table.row_needed);
 }
 
 static int exmdb_ext_pull_copy_instance_attachments_request(
@@ -4216,7 +4215,7 @@ static int exmdb_ext_pull_match_table_response(
 static int exmdb_ext_push_match_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_push_int32(pext, ppayload->match_table.position));
+	TRY(pext->p_int32(ppayload->match_table.position));
 	return ext_buffer_push_tpropval_array(pext,
 			&ppayload->match_table.propvals);	
 }
@@ -4232,7 +4231,7 @@ static int exmdb_ext_pull_locate_table_response(
 static int exmdb_ext_push_locate_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_push_int32(pext, ppayload->locate_table.position));
+	TRY(pext->p_int32(ppayload->locate_table.position));
 	return pext->p_uint32(ppayload->locate_table.row_type);
 }
 
@@ -4294,7 +4293,7 @@ static int exmdb_ext_push_expand_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(ext_buffer_push_bool(pext, ppayload->expand_table.b_found));
-	TRY(ext_buffer_push_int32(pext, ppayload->expand_table.position));
+	TRY(pext->p_int32(ppayload->expand_table.position));
 	return pext->p_uint32(ppayload->expand_table.row_count);
 }
 
@@ -4311,7 +4310,7 @@ static int exmdb_ext_push_collapse_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(ext_buffer_push_bool(pext, ppayload->collapse_table.b_found));
-	TRY(ext_buffer_push_int32(pext, ppayload->collapse_table.position));
+	TRY(pext->p_int32(ppayload->collapse_table.position));
 	return pext->p_uint32(ppayload->collapse_table.row_count);
 }
 
@@ -4338,8 +4337,7 @@ static int exmdb_ext_pull_restore_table_state_response(
 static int exmdb_ext_push_restore_table_state_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_int32(pext,
-		ppayload->restore_table_state.position);
+	return pext->p_int32(ppayload->restore_table_state.position);
 }
 
 static int exmdb_ext_pull_check_message_response(

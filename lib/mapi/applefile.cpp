@@ -416,19 +416,19 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_int8(pext, r->fxinfo.fd_script));
+	TRY(pext->p_int8(r->fxinfo.fd_script));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_int8(pext, r->fxinfo.fd_xflags));
+	TRY(pext->p_int8(r->fxinfo.fd_xflags));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_int16(pext, r->fxinfo.fd_comment));
+	TRY(pext->p_int16(r->fxinfo.fd_comment));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	return ext_buffer_push_int32(pext, r->fxinfo.fd_putaway);
+	return pext->p_int32(r->fxinfo.fd_putaway);
 	
 }
 
