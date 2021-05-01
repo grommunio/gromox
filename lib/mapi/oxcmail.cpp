@@ -308,10 +308,10 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	tmp_entry.pmail_address = (char*)username;
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_buffer_push_oneoff_entryid(&ext_push, &tmp_entry);
+	status = ext_push.p_oneoff_eid(&tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
-		status = ext_buffer_push_oneoff_entryid(&ext_push, &tmp_entry);
+		status = ext_push.p_oneoff_eid(&tmp_entry);
 	}
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;
@@ -896,13 +896,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 				sprintf(tmp_buff, "%s@%s",
 					email_addr.local_part, email_addr.domain);
 				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
-				status = ext_buffer_push_oneoff_entryid(
-								&ext_push, &tmp_entry);
+				status = ext_push.p_oneoff_eid(&tmp_entry);
 				if (EXT_ERR_CHARCNV == status) {
 					ext_push.offset = offset1 + sizeof(uint32_t);
 					tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
-					status = ext_buffer_push_oneoff_entryid(
-									&ext_push, &tmp_entry);
+					status = ext_push.p_oneoff_eid(&tmp_entry);
 				}
 				if (EXT_ERR_SUCCESS != status) {
 					return FALSE;

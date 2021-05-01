@@ -672,10 +672,8 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				}
 				if (FALSE == common_util_propvals_to_row(
 					&propvals, pcolumns, &tmp_row) ||
-					EXT_ERR_SUCCESS != ext_buffer_push_property_row(
-					&ext_push1, pcolumns, &tmp_row)) {
+				    ext_push1.p_proprow(pcolumns, &tmp_row) != EXT_ERR_SUCCESS)
 					goto NEXT_NOTIFY;
-				}	
 				tmp_bin.cb = ext_push1.offset;
 				tmp_bin.pb = ext_push1.data;
 				pnotify->notification_data.prow_data = &tmp_bin;

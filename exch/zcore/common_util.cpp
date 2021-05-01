@@ -1147,10 +1147,10 @@ static BOOL common_util_username_to_entryid(const char *username,
 	oneoff_entry.pmail_address = (char*)username;
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
+	status = ext_push.p_oneoff_eid(&oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH;
-		status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
+		status = ext_push.p_oneoff_eid(&oneoff_entry);
 	}
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;

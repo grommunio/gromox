@@ -184,7 +184,7 @@ static int rop_ext_push_getreceivefoldertable_response(
 	columns.pproptag = proptags;
 	TRY(pext->p_uint32(r->rows.count));
 	for (i=0; i<r->rows.count; i++) {
-		TRY(ext_buffer_push_property_row(pext, &columns, &r->rows.prows[i]));
+		TRY(pext->p_proprow(&columns, &r->rows.prows[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -738,7 +738,7 @@ static int rop_ext_push_findrow_response(
 	TRY(pext->p_uint8(r->bookmark_invisible));
 	if (NULL != r->prow) {
 		TRY(pext->p_uint8(1));
-		TRY(ext_buffer_push_property_row(pext, r->pcolumns, r->prow));
+		TRY(pext->p_proprow(r->pcolumns, r->prow));
 		return EXT_ERR_SUCCESS;
 	} else {
 		return pext->p_uint8(0);
@@ -1255,7 +1255,7 @@ static int rop_ext_pull_getpropertiesspecific_request(
 static int rop_ext_push_getpropertiesspecific_response(
 	EXT_PUSH *pext, const GETPROPERTIESSPECIFIC_RESPONSE *r)
 {
-	return ext_buffer_push_property_row(pext, r->pproptags, &r->row);
+	return pext->p_proprow(r->pproptags, &r->row);
 }
 
 static int rop_ext_pull_getpropertiesall_request(

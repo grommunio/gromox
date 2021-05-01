@@ -329,8 +329,7 @@ uint32_t rop_queryrows(uint8_t flags,
 				return ecMAPIOOM;
 			}
 			last_offset = pext->offset;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_property_row(
-				pext, table_object_get_columns(ptable), &tmp_row)) {
+			if (pext->p_proprow(table_object_get_columns(ptable), &tmp_row) != EXT_ERR_SUCCESS) {
 				pext->offset = last_offset;
 				break;
 			}
@@ -800,8 +799,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 			return ecMAPIOOM;
 		}
 		last_offset = pext->offset;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_property_row(
-			pext, table_object_get_columns(ptable), &tmp_row)) {
+		if (pext->p_proprow(table_object_get_columns(ptable), &tmp_row) != EXT_ERR_SUCCESS) {
 			pext->offset = last_offset;
 			break;
 		}

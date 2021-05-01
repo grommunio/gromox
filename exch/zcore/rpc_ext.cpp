@@ -446,7 +446,7 @@ static BOOL rpc_ext_push_recipient_block(
 	QRF(pext->p_uint8(r->reserved));
 	QRF(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		QRF(ext_buffer_push_tagged_propval(pext, &r->ppropval[i]));
+		QRF(pext->p_tagged_pv(&r->ppropval[i]));
 	}
 	return TRUE;
 }
@@ -506,7 +506,7 @@ static BOOL rpc_ext_push_action_block(
 		return rpc_ext_push_forwarddelegate_action(pext,
 		       static_cast<const FORWARDDELEGATE_ACTION *>(r->pdata));
 	case OP_TAG:
-		QRF(ext_buffer_push_tagged_propval(pext, static_cast<const TAGGED_PROPVAL *>(r->pdata)));
+		QRF(pext->p_tagged_pv(static_cast<const TAGGED_PROPVAL *>(r->pdata)));
 		break;
 	case OP_DELETE:
 	case OP_MARK_AS_READ:

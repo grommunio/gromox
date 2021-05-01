@@ -2462,7 +2462,7 @@ static int ext_buffer_push_restriction_content(
 {
 	TRY(pext->p_uint32(r->fuzzy_level));
 	TRY(pext->p_uint32(r->proptag));
-	return ext_buffer_push_tagged_propval(pext, &r->propval);
+	return pext->p_tagged_pv(&r->propval);
 }
 
 static int ext_buffer_push_restriction_property(
@@ -2470,7 +2470,7 @@ static int ext_buffer_push_restriction_property(
 {
 	TRY(pext->p_uint8(r->relop));
 	TRY(pext->p_uint32(r->proptag));
-	return ext_buffer_push_tagged_propval(pext, &r->propval);
+	return pext->p_tagged_pv(&r->propval);
 }
 
 static int ext_buffer_push_restriction_propcompare(
@@ -2520,7 +2520,7 @@ static int ext_buffer_push_restriction_comment(
 	}
 	TRY(pext->p_uint8(r->count));
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_push_tagged_propval(pext, &r->ppropval[i]));
+		TRY(pext->p_tagged_pv(&r->ppropval[i]));
 	}
 	if (NULL != r->pres) {
 		TRY(pext->p_uint8(1));
@@ -2647,7 +2647,7 @@ static int ext_buffer_push_recipient_block(
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_push_tagged_propval(pext, &r->ppropval[i]));
+		TRY(pext->p_tagged_pv(&r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -2700,7 +2700,7 @@ static int ext_buffer_push_action_block(
 		TRY(ext_buffer_push_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)));
 		break;
 	case OP_TAG:
-		TRY(ext_buffer_push_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata)));
+		TRY(pext->p_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata)));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
 		break;
@@ -2880,7 +2880,7 @@ int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
 	
 	TRY(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_push_tagged_propval(pext, r->ppropval + i));
+		TRY(pext->p_tagged_pv(&r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3105,7 +3105,7 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 	}
 	proptags.count = r->count;
 	proptags.pproptag = (uint32_t*)pproptags->pproptag;
-	return ext_buffer_push_property_row(pext, &proptags, &r->properties);
+	return pext->p_proprow(&proptags, &r->properties);
 }
 
 int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
