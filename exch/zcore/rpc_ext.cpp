@@ -555,11 +555,11 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		QRF(pext->p_uint32(*static_cast<const uint32_t *>(pval)));
 		return TRUE;
 	case PT_FLOAT:
-		QRF(ext_buffer_push_float(pext, *static_cast<const float *>(pval)));
+		QRF(pext->p_float(*static_cast<const float *>(pval)));
 		return TRUE;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		QRF(ext_buffer_push_double(pext, *static_cast<const double *>(pval)));
+		QRF(pext->p_double(*static_cast<const double *>(pval)));
 		return TRUE;
 	case PT_BOOLEAN:
 		QRF(pext->p_uint8(*static_cast<const uint8_t *>(pval)));
@@ -586,22 +586,22 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		QRF(pext->p_bin(static_cast<const BINARY *>(pval)));
 		return TRUE;
 	case PT_MV_SHORT:
-		QRF(ext_buffer_push_short_array(pext, static_cast<const SHORT_ARRAY *>(pval)));
+		QRF(pext->p_uint16_a(static_cast<const SHORT_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_LONG:
-		QRF(ext_buffer_push_long_array(pext, static_cast<const LONG_ARRAY *>(pval)));
+		QRF(pext->p_uint32_a(static_cast<const LONG_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_I8:
-		QRF(ext_buffer_push_longlong_array(pext, static_cast<const LONGLONG_ARRAY *>(pval)));
+		QRF(pext->p_uint64_a(static_cast<const LONGLONG_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_STRING8:
-		QRF(ext_buffer_push_string_array(pext, static_cast<const STRING_ARRAY *>(pval)));
+		QRF(pext->p_str_a(static_cast<const STRING_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_UNICODE:
-		QRF(ext_buffer_push_wstring_array(pext, static_cast<const STRING_ARRAY *>(pval)));
+		QRF(pext->p_wstr_a(static_cast<const STRING_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_CLSID:
-		QRF(ext_buffer_push_guid_array(pext, static_cast<const GUID_ARRAY *>(pval)));
+		QRF(pext->p_guid_a(static_cast<const GUID_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_BINARY:
 		QRF(pext->p_bin_a(static_cast<const BINARY_ARRAY *>(pval)));
@@ -1668,7 +1668,7 @@ static BOOL rpc_ext_pull_getnamedpropids_request(
 static BOOL rpc_ext_push_getnamedpropids_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_push_propid_array(pext, &ppayload->getnamedpropids.propids));
+	QRF(pext->p_propid_a(&ppayload->getnamedpropids.propids));
 	return TRUE;
 }
 
@@ -1688,7 +1688,7 @@ static BOOL rpc_ext_pull_getpropnames_request(
 static BOOL rpc_ext_push_getpropnames_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_push_propname_array(pext, &ppayload->getpropnames.propnames));
+	QRF(pext->p_propname_a(&ppayload->getpropnames.propnames));
 	return TRUE;
 }
 

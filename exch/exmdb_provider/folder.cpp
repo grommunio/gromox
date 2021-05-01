@@ -2937,12 +2937,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (NULL == paction) {
 				continue;
 			}
-			if (!ext_push.init(action_buff, sizeof(action_buff), 0))
+			if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
+			    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
-				&ext_push, paction)) {
-				goto RULE_FAILURE;
-			}
 			action_len = ext_push.offset;
 			if (NULL == pstmt) {
 				sprintf(sql_string, "INSERT INTO rules "
@@ -3092,12 +3089,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL != paction) {
-				if (!ext_push.init(action_buff, sizeof(action_buff), 0))
+				if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
+				    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
 					goto RULE_FAILURE;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
-					&ext_push, paction)) {
-					goto RULE_FAILURE;
-				}
 				action_len = ext_push.offset;
 				sprintf(sql_string, "UPDATE rules SET "
 				          "actions=? WHERE rule_id=%llu", LLU(rule_id));

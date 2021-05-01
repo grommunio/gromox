@@ -941,7 +941,7 @@ static int aux_ext_push_aux_header_type_union1(
 	case AUX_TYPE_PROTOCOL_DEVICE_ID:
 		return aux_ext_push_aux_protocol_device_identification(pext, static_cast<AUX_PROTOCOL_DEVICE_IDENTIFICATION *>(ppayload));
 	}
-	return ext_buffer_push_data_blob(pext, *(DATA_BLOB*)ppayload);
+	return pext->p_blob(*static_cast<DATA_BLOB *>(ppayload));
 }
 
 static int aux_ext_pull_aux_header_type_union2(
@@ -1013,7 +1013,7 @@ static int aux_ext_push_aux_header_type_union2(
 	case AUX_TYPE_PERF_PROCESSINFO:
 		return aux_ext_push_aux_perf_processinfo(pext, static_cast<AUX_PERF_PROCESSINFO *>(ppayload));
 	}
-	return ext_buffer_push_data_blob(pext, *(DATA_BLOB*)ppayload);
+	return pext->p_blob(*static_cast<DATA_BLOB *>(ppayload));
 }
 
 static int aux_ext_pull_aux_header(EXT_PULL *pext, AUX_HEADER *r)
@@ -1166,6 +1166,6 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	}
-	TRY(ext_buffer_push_rpc_header_ext(pext, &rpc_header_ext));
+	TRY(pext->p_rpchdr(&rpc_header_ext));
 	return pext->p_bytes(ext_buff, rpc_header_ext.size);
 }

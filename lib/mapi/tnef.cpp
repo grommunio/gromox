@@ -1905,10 +1905,10 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_LONG:
 		return pext->p_uint32(*static_cast<uint32_t *>(r->pvalue));
 	case PT_FLOAT:
-		return ext_buffer_push_float(pext, *(float*)r->pvalue);
+		return pext->p_float(*static_cast<float *>(r->pvalue));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		return ext_buffer_push_double(pext, *(double*)r->pvalue);
+		return pext->p_double(*static_cast<double *>(r->pvalue));
 	case PT_BOOLEAN:
 		TRY(pext->p_uint16(*static_cast<uint8_t *>(r->pvalue)));
 		return pext->p_bytes(g_pad_bytes, 2);
@@ -1941,7 +1941,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_CLSID:
 		return pext->p_guid(static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
-		return ext_buffer_push_svreid(pext, static_cast<SVREID *>(r->pvalue));
+		return pext->p_svreid(static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
 		TRY(pext->p_uint32(1));
 		auto bv = static_cast<BINARY *>(r->pvalue);

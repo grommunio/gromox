@@ -121,7 +121,7 @@ static int exmdb_client_push_get_named_propids(
 {
 	TRY(pext->p_str(r->dir));
 	TRY(pext->p_bool(r->b_create));
-	return ext_buffer_push_propname_array(pext, r->ppropnames);
+	return pext->p_propname_a(r->ppropnames);
 }
 
 static int exmdb_client_push_check_folder_permission_request(
@@ -155,7 +155,7 @@ static int exmdb_client_push_load_content_table_request(
 		return pext->p_uint8(0);
 	}
 	TRY(pext->p_uint8(1));
-	return ext_buffer_push_sortorder_set(pext, r->psorts);
+	return pext->p_sortorder_set(r->psorts);
 }
 
 static int exmdb_client_push_unload_table_request(
@@ -1263,12 +1263,9 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
-			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
+			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-				&ext_push, &globalobjectid)) {
-				return FALSE;
-			}
 			if (FALSE == encode_hex_binary(tmp_buff,
 				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 				return FALSE;
@@ -1288,12 +1285,9 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		guid = guid_random_new();
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
 		    ext_push.p_guid(&guid) != EXT_ERR_SUCCESS ||
-		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
+		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-			&ext_push, &globalobjectid)) {
-			return FALSE;
-		}
 		if (FALSE == encode_hex_binary(tmp_buff,
 			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 			return FALSE;

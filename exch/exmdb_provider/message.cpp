@@ -3637,12 +3637,8 @@ static BOOL message_make_deferred_action_message(
 			id_count ++;
 		}
 	}
-	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
-		&ext_push, &actions)) {
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_rule_actions(&actions) != EXT_ERR_SUCCESS) {
 		message_content_free(pmsg);
 		return FALSE;
 	}

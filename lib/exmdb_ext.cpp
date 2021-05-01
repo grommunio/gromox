@@ -70,8 +70,7 @@ static int exmdb_ext_push_get_named_propids_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_bool(ppayload->get_named_propids.b_create));
-	return ext_buffer_push_propname_array(pext,
-		ppayload->get_named_propids.ppropnames);
+	return pext->p_propname_a(ppayload->get_named_propids.ppropnames);
 }
 
 static int exmdb_ext_pull_get_named_propnames_request(
@@ -88,8 +87,7 @@ static int exmdb_ext_pull_get_named_propnames_request(
 static int exmdb_ext_push_get_named_propnames_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_propid_array(pext,
-		ppayload->get_named_propnames.ppropids);
+	return pext->p_propid_a(ppayload->get_named_propnames.ppropids);
 }
 
 static int exmdb_ext_pull_get_mapping_guid_request(
@@ -537,8 +535,7 @@ static int exmdb_ext_push_set_search_criteria_request(
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_restriction(ppayload->set_search_criteria.prestriction));
 	}
-	return ext_buffer_push_longlong_array(pext,
-		ppayload->set_search_criteria.pfolder_ids);
+	return pext->p_uint64_a(ppayload->set_search_criteria.pfolder_ids);
 }
 
 static int exmdb_ext_pull_movecopy_message_request(
@@ -852,8 +849,7 @@ static int exmdb_ext_push_load_content_table_request(
 		return pext->p_uint8(0);
 	}
 	TRY(pext->p_uint8(1));
-	return ext_buffer_push_sortorder_set(pext,
-		ppayload->load_content_table.psorts);
+	return pext->p_sortorder_set(ppayload->load_content_table.psorts);
 }
 
 static int exmdb_ext_pull_reload_content_table_request(
@@ -2126,7 +2122,7 @@ static int exmdb_ext_push_update_folder_permission_request(
 	TRY(pext->p_bool(ppayload->update_folder_permission.b_freebusy));
 	TRY(pext->p_uint16(ppayload->update_folder_permission.count));
 	for (i=0; i<ppayload->update_folder_permission.count; i++) {
-		TRY(ext_buffer_push_permission_data(pext, ppayload->update_folder_permission.prow + i));
+		TRY(pext->p_permission_data(&ppayload->update_folder_permission.prow[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -2172,7 +2168,7 @@ static int exmdb_ext_push_update_folder_rule_request(
 	TRY(pext->p_uint64(ppayload->update_folder_rule.folder_id));
 	TRY(pext->p_uint16(ppayload->update_folder_rule.count));
 	for (i=0; i<ppayload->update_folder_rule.count; i++) {
-		TRY(ext_buffer_push_rule_data(pext, ppayload->update_folder_rule.prow + i));
+		TRY(pext->p_rule_data(&ppayload->update_folder_rule.prow[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3566,8 +3562,7 @@ static int exmdb_ext_pull_get_all_named_propids_response(
 static int exmdb_ext_push_get_all_named_propids_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_propid_array(pext,
-		&ppayload->get_all_named_propids.propids);
+	return pext->p_propid_a(&ppayload->get_all_named_propids.propids);
 }
 
 static int exmdb_ext_pull_get_named_propids_response(
@@ -3580,8 +3575,7 @@ static int exmdb_ext_pull_get_named_propids_response(
 static int exmdb_ext_push_get_named_propids_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_propid_array(pext,
-		&ppayload->get_named_propids.propids);
+	return pext->p_propid_a(&ppayload->get_named_propids.propids);
 }
 
 static int exmdb_ext_pull_get_named_propnames_response(
@@ -3594,8 +3588,7 @@ static int exmdb_ext_pull_get_named_propnames_response(
 static int exmdb_ext_push_get_named_propnames_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_propname_array(pext,
-		&ppayload->get_named_propnames.propnames);
+	return pext->p_propname_a(&ppayload->get_named_propnames.propnames);
 }
 
 static int exmdb_ext_pull_get_mapping_guid_response(
@@ -3664,8 +3657,7 @@ static int exmdb_ext_pull_set_store_properties_response(
 static int exmdb_ext_push_set_store_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->set_store_properties.problems);
+	return pext->p_problem_a(&ppayload->set_store_properties.problems);
 }
 
 static int exmdb_ext_pull_check_mailbox_permission_response(
@@ -3836,8 +3828,7 @@ static int exmdb_ext_pull_set_folder_properties_response(
 static int exmdb_ext_push_set_folder_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->set_folder_properties.problems);
+	return pext->p_problem_a(&ppayload->set_folder_properties.problems);
 }
 
 static int exmdb_ext_pull_delete_folder_response(
@@ -3924,8 +3915,7 @@ static int exmdb_ext_push_get_search_criteria_response(
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_restriction(ppayload->get_search_criteria.prestriction));
 	}
-	return ext_buffer_push_longlong_array(pext,
-		&ppayload->get_search_criteria.folder_ids);
+	return pext->p_uint64_a(&ppayload->get_search_criteria.folder_ids);
 }
 
 static int exmdb_ext_pull_set_search_criteria_response(
@@ -4385,8 +4375,7 @@ static int exmdb_ext_push_write_message_instance_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->p_proptag_a(&ppayload->write_message_instance.proptags));
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->write_message_instance.problems);
+	return pext->p_problem_a(&ppayload->write_message_instance.problems);
 }
 
 static int exmdb_ext_pull_load_attachment_instance_response(
@@ -4457,8 +4446,7 @@ static int exmdb_ext_pull_write_attachment_instance_response(
 static int exmdb_ext_push_write_attachment_instance_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->write_attachment_instance.problems);
+	return pext->p_problem_a(&ppayload->write_attachment_instance.problems);
 }
 
 static int exmdb_ext_pull_flush_instance_response(
@@ -4509,8 +4497,7 @@ static int exmdb_ext_pull_set_instance_properties_response(
 static int exmdb_ext_push_set_instance_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->set_instance_properties.problems);
+	return pext->p_problem_a(&ppayload->set_instance_properties.problems);
 }
 
 static int exmdb_ext_pull_remove_instance_properties_response(
@@ -4523,8 +4510,7 @@ static int exmdb_ext_pull_remove_instance_properties_response(
 static int exmdb_ext_push_remove_instance_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->remove_instance_properties.problems);
+	return pext->p_problem_a(&ppayload->remove_instance_properties.problems);
 }
 
 static int exmdb_ext_pull_check_instance_cycle_response(
@@ -4680,8 +4666,7 @@ static int exmdb_ext_pull_set_message_properties_response(
 static int exmdb_ext_push_set_message_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_problem_array(pext,
-		&ppayload->set_message_properties.problems);
+	return pext->p_problem_a(&ppayload->set_message_properties.problems);
 }
 
 static int exmdb_ext_pull_set_message_read_state_response(
@@ -6071,7 +6056,7 @@ static int exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	TRY(ext_push.advance(sizeof(uint32_t)));
 	TRY(ext_push.p_str(pnotify->dir));
 	TRY(ext_push.p_bool(pnotify->b_table));
-	TRY(ext_buffer_push_long_array(&ext_push, &pnotify->id_array));
+	TRY(ext_push.p_uint32_a(&pnotify->id_array));
 	TRY(ext_push.p_uint8(pnotify->db_notify.type));
 	switch (pnotify->db_notify.type) {
 	case DB_NOTIFY_TYPE_NEW_MAIL: {

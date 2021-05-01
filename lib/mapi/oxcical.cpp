@@ -302,10 +302,8 @@ static BOOL oxcical_tzdefinition_to_binary(
 	for (i=0; i<ptz_definition->crules; i++) {
 		ptz_definition->prules[i].flags = tzrule_flags;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_timezonedefinition(
-		&ext_push, ptz_definition)) {
+	if (ext_push.p_tzdef(ptz_definition) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	pbin->cb = ext_push.offset;
 	return TRUE;
 }
@@ -315,12 +313,9 @@ static BOOL oxcical_timezonestruct_to_binary(
 {
 	EXT_PUSH ext_push;
 	
-	if (!ext_push.init(pbin->pb, 256, 0))
+	if (!ext_push.init(pbin->pb, 256, 0) ||
+	    ext_push.p_tzstruct(ptzstruct) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_timezonestruct(
-		&ext_push, ptzstruct)) {
-		return FALSE;
-	}
 	pbin->cb = ext_push.offset;
 	return TRUE;
 }
@@ -1403,12 +1398,9 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	memcpy(globalobjectid.data.pb, ThirdPartyGlobalId, 12);
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
  MAKE_GLOBALOBJID:
-	if (!ext_push.init(tmp_buff, 1024, 0))
+	if (!ext_push.init(tmp_buff, 1024, 0) ||
+	    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-		&ext_push, &globalobjectid)) {
-		return FALSE;
-	}
 	tmp_bin.cb = ext_push.offset;
 	tmp_bin.pc = tmp_buff;
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
@@ -1424,12 +1416,9 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	globalobjectid.year = 0;
 	globalobjectid.month = 0;
 	globalobjectid.day = 0;
-	if (!ext_push.init(tmp_buff, 1024, 0))
+	if (!ext_push.init(tmp_buff, 1024, 0) ||
+	    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-		&ext_push, &globalobjectid)) {
-		return FALSE;
-	}
 	tmp_bin.cb = ext_push.offset;
 	tmp_bin.pc = tmp_buff;
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
@@ -1935,12 +1924,9 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENTRECURRENCEPATTERN *p
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
-	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16))
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+	    ext_push.p_apptrecpat(papprecurr) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_appointmentrecurrencepattern(
-		&ext_push, papprecurr)) {
-		return FALSE;
-	}
 	tmp_bin.cb = ext_push.offset;
 	tmp_bin.pb = ext_push.data;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
@@ -5091,12 +5077,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
-			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
+			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-				&ext_push, &globalobjectid)) {
-				return FALSE;
-			}
 			if (FALSE == encode_hex_binary(tmp_buff,
 				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 				return FALSE;
@@ -5119,12 +5102,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		guid = guid_random_new();
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
 		    ext_push.p_guid(&guid) != EXT_ERR_SUCCESS ||
-		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0))
+		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-			&ext_push, &globalobjectid)) {
-			return FALSE;
-		}
 		if (FALSE == encode_hex_binary(tmp_buff,
 			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 			return FALSE;

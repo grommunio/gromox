@@ -74,7 +74,7 @@ static int rop_ext_push_propidname_array(
 		TRY(pext->p_uint16(r->ppropid[i]));
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_push_property_name(pext, r->ppropname + i));
+		TRY(pext->p_propname(&r->ppropname[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -233,7 +233,7 @@ static int rop_ext_pull_longtermidfromid_request(
 static int rop_ext_push_longtermidfromid_response(
 	EXT_PUSH *pext, const LONGTERMIDFROMID_RESPONSE *r)
 {
-	return ext_buffer_push_long_term_id(pext, &r->long_term_id);
+	return pext->p_longterm(&r->long_term_id);
 }
 
 static int rop_ext_pull_idfromlongtermid_request(
@@ -257,7 +257,7 @@ static int rop_ext_pull_getperuserlongtermids_request(
 static int rop_ext_push_getperuserlongtermids_response(
 	EXT_PUSH *pext, const GETPERUSERLONGTERMIDS_RESPONSE *r)
 {	
-	return ext_buffer_push_long_term_id_array(pext, &r->ids);
+	return pext->p_longterm_a(&r->ids);
 }
 
 static int rop_ext_pull_getperuserguid_request(
@@ -426,7 +426,7 @@ static int rop_ext_push_getsearchcriteria_response(
 		pext->offset = offset2;
 	}
 	TRY(pext->p_uint8(r->logon_id));
-	TRY(ext_buffer_push_slonglong_array(pext, &r->folder_ids));
+	TRY(pext->p_uint64_sa(&r->folder_ids));
 	return pext->p_uint32(r->search_status);
 }
 
@@ -822,8 +822,8 @@ static int rop_ext_push_openmessage_response(
 	uint32_t last_offset;
 	
 	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(ext_buffer_push_typed_string(pext, &r->subject_prefix));
-	TRY(ext_buffer_push_typed_string(pext, &r->normalized_subject));
+	TRY(pext->p_typed_str(&r->subject_prefix));
+	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(&r->recipient_columns));
 	if (0 == r->row_count) {
@@ -833,8 +833,7 @@ static int rop_ext_push_openmessage_response(
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		last_offset = pext->offset;
-		int status = ext_buffer_push_openrecipient_row(pext,
-			&r->recipient_columns, &r->precipient_row[i]);
+		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
 			pext->alloc_size - pext->offset < 256) {
 			pext->offset = last_offset;
@@ -942,8 +941,8 @@ static int rop_ext_push_reloadcachedinformation_response(
 	uint32_t last_offset;
 	
 	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(ext_buffer_push_typed_string(pext, &r->subject_prefix));
-	TRY(ext_buffer_push_typed_string(pext, &r->normalized_subject));
+	TRY(pext->p_typed_str(&r->subject_prefix));
+	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(&r->recipient_columns));
 	if (0 == r->row_count) {
@@ -953,8 +952,7 @@ static int rop_ext_push_reloadcachedinformation_response(
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		last_offset = pext->offset;
-		int status = ext_buffer_push_openrecipient_row(pext,
-			&r->recipient_columns, &r->precipient_row[i]);
+		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
 			pext->alloc_size - pext->offset < 256) {
 			pext->offset = last_offset;
@@ -1034,7 +1032,7 @@ static int rop_ext_push_setmessagereadflag_response(
 	if (0 != r->read_changed && NULL != r->pclient_data) {
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_uint8(r->logon_id));
-		return ext_buffer_push_long_term_id(pext, r->pclient_data);
+		return pext->p_longterm(r->pclient_data);
 	}
 	return pext->p_uint8(0);
 }
@@ -1091,8 +1089,8 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint64(r->message_id));
 	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(ext_buffer_push_typed_string(pext, &r->subject_prefix));
-	TRY(ext_buffer_push_typed_string(pext, &r->normalized_subject));
+	TRY(pext->p_typed_str(&r->subject_prefix));
+	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(&r->recipient_columns));
 	if (0 == r->row_count) {
@@ -1102,8 +1100,7 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		last_offset = pext->offset;
-		int status = ext_buffer_push_openrecipient_row(pext,
-			&r->recipient_columns, &r->precipient_row[i]);
+		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
 			pext->alloc_size - pext->offset < 256) {
 			pext->offset = last_offset;
@@ -1130,7 +1127,7 @@ static int rop_ext_pull_getattachmenttable_request(
 static int rop_ext_push_getvalidattachments_response(
 	EXT_PUSH *pext, const GETVALIDATTACHMENTS_RESPONSE *r)
 {	
-	return ext_buffer_push_long_array(pext, &r->attachment_ids);
+	return pext->p_uint32_a(&r->attachment_ids);
 }
 
 static int rop_ext_pull_submitmessage_request(
@@ -1229,7 +1226,7 @@ static int rop_ext_pull_getpropertyidsfromnames_request(
 static int rop_ext_push_getpropertyidsfromnames_response(
 	EXT_PUSH *pext, const GETPROPERTYIDSFROMNAMES_RESPONSE *r)
 {
-	return ext_buffer_push_propid_array(pext, &r->propids);
+	return pext->p_propid_a(&r->propids);
 }
 
 static int rop_ext_pull_getnamesfrompropertyids_request(
@@ -1241,7 +1238,7 @@ static int rop_ext_pull_getnamesfrompropertyids_request(
 static int rop_ext_push_getnamesfrompropertyids_response(
 	EXT_PUSH *pext, const GETNAMESFROMPROPERTYIDS_RESPONSE *r)
 {
-	return ext_buffer_push_propname_array(pext, &r->propnames);
+	return pext->p_propname_a(&r->propnames);
 }
 
 static int rop_ext_pull_getpropertiesspecific_request(
@@ -3330,7 +3327,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	}
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
-	TRY(ext_buffer_push_rpc_header_ext(&ext_push, &rpc_header_ext));
+	TRY(ext_push.p_rpchdr(&rpc_header_ext));
 	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));
 	*pout_len = ext_push.offset;
 	return EXT_ERR_SUCCESS;
