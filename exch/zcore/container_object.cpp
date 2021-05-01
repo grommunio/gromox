@@ -263,12 +263,9 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16))
+	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -300,12 +297,9 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16))
+	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -657,12 +651,9 @@ BOOL container_object_fetch_special_property(
 		                     deconst("") : deconst("/");
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr ||
-		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0))
+		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0) ||
+		    ext_push.p_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-			&ext_push, &ab_entryid)) {
-			return FALSE;
-		}
 		bv->cb = ext_push.offset;
 		*ppvalue = pvalue;
 		return TRUE;

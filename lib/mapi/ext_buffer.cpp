@@ -3530,7 +3530,7 @@ static int ext_buffer_push_attachment_list(
 		TRY(pext->p_tpropval_a(&r->pplist[i]->proplist));
 		if (NULL != r->pplist[i]->pembedded) {
 			TRY(pext->p_uint8(1));
-			TRY(ext_buffer_push_message_content(pext, r->pplist[i]->pembedded));
+			TRY(pext->p_msgctnt(r->pplist[i]->pembedded));
 		} else {
 			TRY(pext->p_uint8(0));
 		}

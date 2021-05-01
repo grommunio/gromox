@@ -331,12 +331,9 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = (char*)pessdn;
-	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return FALSE;
-	}
 	pbin->cb = ext_push.offset;
 	return TRUE;
 }

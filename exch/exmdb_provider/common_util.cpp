@@ -4252,12 +4252,9 @@ BINARY* common_util_username_to_addressbook_entryid(
 	}
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
+	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
