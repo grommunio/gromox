@@ -2567,12 +2567,9 @@ uint32_t zarafa_server_getstoreentryid(
 	store_entryid.pmailbox_dn = deconst(mailbox_dn);
 	pentryid->pv = common_util_alloc(1024);
 	if (pentryid->pv == nullptr ||
-	    !ext_push.init(pentryid->pb, 1024, EXT_FLAG_UTF16))
+	    !ext_push.init(pentryid->pb, 1024, EXT_FLAG_UTF16) ||
+	    ext_push.p_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
-		&ext_push, &store_entryid)) {
-		return ecError;
-	}
 	pentryid->cb = ext_push.offset;
 	return ecSuccess;
 }

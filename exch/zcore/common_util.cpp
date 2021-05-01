@@ -1336,12 +1336,9 @@ BINARY* common_util_to_folder_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
-		&ext_push, &tmp_entryid)) {
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -1427,12 +1424,9 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
-		&ext_push, &tmp_entryid)) {
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -2213,12 +2207,9 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	}
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pb == nullptr ||
-	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
-		&ext_push, &store_entryid)) {
+	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
+	    ext_push.p_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -2236,12 +2227,9 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 	if (0 == pmovecopy->same_store) {
 		pmovecopy1->store_eid.pv = common_util_alloc(1024);
 		if (pmovecopy1->store_eid.pv == nullptr ||
-		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16))
-			return NULL;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
-			&ext_push, pmovecopy->pstore_eid)) {
+		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
+		    ext_push.p_store_eid(pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
-		}
 		pmovecopy1->store_eid.cb = ext_push.offset;
 		pmovecopy1->folder_eid = *(BINARY*)pmovecopy->pfolder_eid;
 	} else {

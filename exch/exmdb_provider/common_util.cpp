@@ -1267,12 +1267,9 @@ static BINARY* common_util_to_folder_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
-		&ext_push, &tmp_entryid)) {
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -1323,12 +1320,9 @@ static BINARY* common_util_to_message_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
-		&ext_push, &tmp_entryid)) {
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -4118,12 +4112,9 @@ BINARY* common_util_to_private_folder_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -4161,12 +4152,9 @@ BINARY* common_util_to_private_message_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }

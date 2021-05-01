@@ -2611,7 +2611,7 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 		if (NULL == r->pstore_eid) {
 			return EXT_ERR_FORMAT;
 		}
-		TRY(ext_buffer_push_store_entryid(pext, r->pstore_eid));
+		TRY(pext->p_store_eid(r->pstore_eid));
 		offset1 = pext->offset;
 		eid_size = offset1 - (offset + sizeof(uint16_t));
 		pext->offset = offset;
