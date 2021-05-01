@@ -2124,9 +2124,10 @@ int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *r)
 	return EXT_ERR_SUCCESS;
 }
 
-BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size,
+BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
     uint32_t flags, const EXT_BUFFER_MGT *mgt)
 {
+	auto pext = this;
 	const EXT_BUFFER_MGT default_mgt = {malloc, realloc, free};
 	pext->mgt = mgt != nullptr ? *mgt : default_mgt;
 	if (NULL == pdata) {
@@ -2155,8 +2156,9 @@ EXT_PUSH::~EXT_PUSH()
 	}
 }
 
-int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r)
+int EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint16(r->version));
 	TRY(pext->p_uint16(r->flags));
 	TRY(pext->p_uint16(r->size));
@@ -2164,8 +2166,9 @@ int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r)
 }
 
 /* FALSE: overflow, TRUE: not overflow */
-BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size)
+BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 {
+	auto pext = this;
 	auto alloc_size = extra_size + pext->offset;
 	if (pext->alloc_size >= alloc_size)
 		return TRUE;
@@ -2184,16 +2187,18 @@ BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size)
 	return TRUE;
 }
 
-int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size)
+int EXT_PUSH::advance(uint32_t size)
 {
+	auto pext = this;
 	if (!pext->check_ovf(size))
 		return EXT_ERR_BUFSIZE;
 	pext->offset += size;
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n)
+int EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
 {
+	auto pext = this;
 	if (!pext->check_ovf(n))
 		return EXT_ERR_BUFSIZE;
 	memcpy(pext->data + pext->offset, pdata, n);
@@ -2201,8 +2206,9 @@ int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
+int EXT_PUSH::p_uint8(uint8_t v)
 {
+	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
 	pext->data[pext->offset] = v;
@@ -2210,8 +2216,9 @@ int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
+int EXT_PUSH::p_uint16(uint16_t v)
 {
+	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_le16(v);
@@ -2220,8 +2227,9 @@ int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v)
+int EXT_PUSH::p_uint32(uint32_t v)
 {
+	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_le32(v);
@@ -2230,8 +2238,9 @@ int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v)
+int EXT_PUSH::p_uint64(uint64_t v)
 {
+	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint64_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_le64(v);
@@ -2240,8 +2249,9 @@ int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_float(EXT_PUSH *pext, float v)
+int EXT_PUSH::p_float(float v)
 {
+	auto pext = this;
 	if (!pext->check_ovf(sizeof(float)))
 		return EXT_ERR_BUFSIZE;
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
@@ -2249,8 +2259,9 @@ int ext_buffer_push_float(EXT_PUSH *pext, float v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_double(EXT_PUSH *pext, double v)
+int EXT_PUSH::p_double(double v)
 {
+	auto pext = this;
 	static_assert(sizeof(v) == 8 && CHAR_BIT == 8, "");
 	if (!pext->check_ovf(sizeof(double)))
 		return EXT_ERR_BUFSIZE;
@@ -2259,8 +2270,9 @@ int ext_buffer_push_double(EXT_PUSH *pext, double v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_bool(EXT_PUSH *pext, BOOL v)
+int EXT_PUSH::p_bool(BOOL v)
 {
+	auto pext = this;
 	uint8_t tmp_byte;
 	
 	if (TRUE == v) {
@@ -2278,13 +2290,15 @@ int ext_buffer_push_bool(EXT_PUSH *pext, BOOL v)
 	
 }
 
-int ext_buffer_push_data_blob(EXT_PUSH *pext, DATA_BLOB blob)
+int EXT_PUSH::p_blob(DATA_BLOB blob)
 {
+	auto pext = this;
 	return pext->p_bytes(blob.data, blob.length);
 }
 
-int ext_buffer_push_binary(EXT_PUSH *pext, const BINARY *r)
+int EXT_PUSH::p_bin(const BINARY *r)
 {
+	auto pext = this;
 	if (pext->flags & EXT_FLAG_WCOUNT) {
 		TRY(pext->p_uint32(r->cb));
 	} else {
@@ -2299,8 +2313,9 @@ int ext_buffer_push_binary(EXT_PUSH *pext, const BINARY *r)
 	return pext->p_bytes(r->pb, r->cb);
 }
 
-int ext_buffer_push_sbinary(EXT_PUSH *pext, const BINARY *r)
+int EXT_PUSH::p_bin_s(const BINARY *r)
 {
+	auto pext = this;
 	if (r->cb > 0xFFFF) {
 		return EXT_ERR_FORMAT;
 	}
@@ -2311,8 +2326,9 @@ int ext_buffer_push_sbinary(EXT_PUSH *pext, const BINARY *r)
 	return pext->p_bytes(r->pb, r->cb);
 }
 
-int ext_buffer_push_exbinary(EXT_PUSH *pext, const BINARY *r)
+int EXT_PUSH::p_bin_ex(const BINARY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->cb));
 	if (0 == r->cb) {
 		return EXT_ERR_SUCCESS;
@@ -2320,8 +2336,9 @@ int ext_buffer_push_exbinary(EXT_PUSH *pext, const BINARY *r)
 	return pext->p_bytes(r->pb, r->cb);
 }
 
-int ext_buffer_push_guid(EXT_PUSH *pext, const GUID *r)
+int EXT_PUSH::p_guid(const GUID *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->time_low));
 	TRY(pext->p_uint16(r->time_mid));
 	TRY(pext->p_uint16(r->time_hi_and_version));
@@ -2329,8 +2346,9 @@ int ext_buffer_push_guid(EXT_PUSH *pext, const GUID *r)
 	return pext->p_bytes(r->node, 6);
 }
 
-int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr)
+int EXT_PUSH::p_str(const char *pstr)
 {
+	auto pext = this;
 	size_t len = strlen(pstr);
 	if (pext->flags & EXT_FLAG_TBLLMT) {
 		if (len > 509) {
@@ -2341,8 +2359,9 @@ int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr)
 	return pext->p_bytes(pstr, len + 1);
 }
 
-int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
+int EXT_PUSH::p_wstr(const char *pstr)
 {
+	auto pext = this;
 	int len;
 	
 	if (0 == (pext->flags & EXT_FLAG_UTF16)) {
@@ -2371,32 +2390,36 @@ int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr)
 	return pext->p_bytes(pbuff.get(), len);
 }
 
-int ext_buffer_push_short_array(EXT_PUSH *pext, const SHORT_ARRAY *r)
+int EXT_PUSH::p_uint16_a(const SHORT_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint16(r->ps[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_long_array(EXT_PUSH *pext, const LONG_ARRAY *r)
+int EXT_PUSH::p_uint32_a(const LONG_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint32(r->pl[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_longlong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
+int EXT_PUSH::p_uint64_a(const LONGLONG_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint64(r->pll[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_slonglong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
+int EXT_PUSH::p_uint64_sa(const LONGLONG_ARRAY *r)
 {
+	auto pext = this;
 	if (r->count > 0xFFFF) {
 		return EXT_ERR_FORMAT;
 	}
@@ -2406,32 +2429,36 @@ int ext_buffer_push_slonglong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_binary_array(EXT_PUSH *pext, const BINARY_ARRAY *r)
+int EXT_PUSH::p_bin_a(const BINARY_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_bin(&r->pbin[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_string_array(EXT_PUSH *pext, const STRING_ARRAY *r)
+int EXT_PUSH::p_str_a(const STRING_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_str(r->ppstr[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_wstring_array(EXT_PUSH *pext, const STRING_ARRAY *r)
+int EXT_PUSH::p_wstr_a(const STRING_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_wstr(r->ppstr[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_guid_array(EXT_PUSH *pext, const GUID_ARRAY *r)
+int EXT_PUSH::p_guid_a(const GUID_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_guid(&r->pguid[i]));
@@ -2536,8 +2563,9 @@ static int ext_buffer_push_restriction_count(
 	return pext->p_restriction(&r->sub_res);
 }
 
-int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r)
+int EXT_PUSH::p_restriction(const RESTRICTION *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint8(r->rt));
 	switch (r->rt) {
 	case RES_AND:
@@ -2569,8 +2597,9 @@ int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r)
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int ext_buffer_push_svreid(EXT_PUSH *pext, const SVREID *r)
+int EXT_PUSH::p_svreid(const SVREID *r)
 {
+	auto pext = this;
 	if (NULL != r->pbin) {
 		TRY(pext->p_uint16(r->pbin->cb + 1));
 		TRY(pext->p_uint8(0));
@@ -2583,8 +2612,9 @@ int ext_buffer_push_svreid(EXT_PUSH *pext, const SVREID *r)
 	return pext->p_uint32(r->instance);
 }
 
-int ext_buffer_push_store_entryid(EXT_PUSH *pext, const STORE_ENTRYID *r)
+int EXT_PUSH::p_store_eid(const STORE_ENTRYID *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint8(r->version));
@@ -2715,8 +2745,9 @@ static int ext_buffer_push_action_block(
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_rule_actions(EXT_PUSH *pext, const RULE_ACTIONS *r)
+int EXT_PUSH::p_rule_actions(const RULE_ACTIONS *r)
 {
+	auto pext = this;
 	int i;
 	
 	if (0 == r->count) {
@@ -2729,8 +2760,9 @@ int ext_buffer_push_rule_actions(EXT_PUSH *pext, const RULE_ACTIONS *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
+int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 {
+	auto pext = this;
 	/* convert multi-value instance into single value */
 	if ((type & MVI_FLAG) == MVI_FLAG)
 		type &= ~MVI_FLAG;
@@ -2787,28 +2819,31 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	}
 }
 
-int ext_buffer_push_typed_propval(EXT_PUSH *pext, const TYPED_PROPVAL *r)
+int EXT_PUSH::p_typed_pv(const TYPED_PROPVAL *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint16(r->type));
 	return pext->p_propval(r->type, r->pvalue);
 }
 
-int ext_buffer_push_tagged_propval(EXT_PUSH *pext, const TAGGED_PROPVAL *r)
+int EXT_PUSH::p_tagged_pv(const TAGGED_PROPVAL *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->proptag));
 	return pext->p_propval(PROP_TYPE(r->proptag), r->pvalue);
 }
 
-int ext_buffer_push_long_term_id(EXT_PUSH *pext, const LONG_TERM_ID *r)
+int EXT_PUSH::p_longterm(const LONG_TERM_ID *r)
 {
+	auto pext = this;
 	TRY(pext->p_guid(&r->guid));
 	TRY(pext->p_bytes(r->global_counter, 6));
 	return pext->p_uint16(r->padding);
 }
 
-int ext_buffer_push_long_term_id_array(
-	EXT_PUSH *pext, const LONG_TERM_ID_ARRAY *r)
+int EXT_PUSH::p_longterm_a(const LONG_TERM_ID_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint16(r->count));
@@ -2818,8 +2853,9 @@ int ext_buffer_push_long_term_id_array(
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_proptag_array(EXT_PUSH *pext, const PROPTAG_ARRAY *r)
+int EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint16(r->count));
@@ -2829,8 +2865,9 @@ int ext_buffer_push_proptag_array(EXT_PUSH *pext, const PROPTAG_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
+int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
 {
+	auto pext = this;
 	uint32_t offset;
 	uint32_t offset1;
 	uint8_t name_size;
@@ -2852,8 +2889,9 @@ int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_propname_array(EXT_PUSH *pext, const PROPNAME_ARRAY *r)
+int EXT_PUSH::p_propname_a(const PROPNAME_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint16(r->count));
@@ -2863,8 +2901,9 @@ int ext_buffer_push_propname_array(EXT_PUSH *pext, const PROPNAME_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_propid_array(EXT_PUSH *pext, const PROPID_ARRAY *r)
+int EXT_PUSH::p_propid_a(const PROPID_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint16(r->count));
@@ -2874,8 +2913,9 @@ int ext_buffer_push_propid_array(EXT_PUSH *pext, const PROPID_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
+int EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint16(r->count));
@@ -2885,8 +2925,9 @@ int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r)
+int EXT_PUSH::p_tarray_set(const TARRAY_SET *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_tpropval_a(r->pparray[i]));
@@ -2901,8 +2942,9 @@ static int ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBL
 	return pext->p_uint32(r->err);
 }
 
-int ext_buffer_push_problem_array(EXT_PUSH *pext, const PROBLEM_ARRAY *r)
+int EXT_PUSH::p_problem_a(const PROBLEM_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint16(r->count));
@@ -2912,8 +2954,9 @@ int ext_buffer_push_problem_array(EXT_PUSH *pext, const PROBLEM_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_xid(EXT_PUSH *pext, uint8_t size, const XID *pxid)
+int EXT_PUSH::p_xid(uint8_t size, const XID *pxid)
 {
+	auto pext = this;
 	if (size < 17 || size > 24) {
 		return EXT_ERR_FORMAT;
 	}
@@ -2921,9 +2964,9 @@ int ext_buffer_push_xid(EXT_PUSH *pext, uint8_t size, const XID *pxid)
 	return pext->p_bytes(pxid->local_id, size - 16);
 }
 
-int ext_buffer_push_folder_entryid(
-	EXT_PUSH *pext, const FOLDER_ENTRYID *r)
+int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->folder_type));
@@ -2932,8 +2975,9 @@ int ext_buffer_push_folder_entryid(
 	return pext->p_bytes(r->pad, 2);
 }
 
-int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
+int EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->message_type));
@@ -2945,9 +2989,9 @@ int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
 	return pext->p_bytes(r->pad2, 2);
 }
 
-int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
-	uint16_t type, const FLAGGED_PROPVAL *r)
+int EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *r)
 {
+	auto pext = this;
 	void *pvalue = nullptr;
 	
 	if (type == PT_UNSPECIFIED) {
@@ -2977,9 +3021,9 @@ int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 	}
 }
 
-int ext_buffer_push_property_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r)
+int EXT_PUSH::p_proprow(const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(pext->p_uint8(r->flag));
@@ -2998,8 +3042,9 @@ int ext_buffer_push_property_row(EXT_PUSH *pext,
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int ext_buffer_push_sort_order(EXT_PUSH *pext, const SORT_ORDER *r)
+int EXT_PUSH::p_sortorder(const SORT_ORDER *r)
 {
+	auto pext = this;
 	if ((r->type & MVI_FLAG) == MV_FLAG)
 		/* MV_FLAG set without MV_INSTANCE */
 		return EXT_ERR_FORMAT;
@@ -3008,8 +3053,9 @@ int ext_buffer_push_sort_order(EXT_PUSH *pext, const SORT_ORDER *r)
 	return pext->p_uint8(r->table_sort);
 }
 
-int ext_buffer_push_sortorder_set(EXT_PUSH *pext, const SORTORDER_SET *r)
+int EXT_PUSH::p_sortorder_set(const SORTORDER_SET *r)
 {
+	auto pext = this;
 	int i;
 	
 	if (0 == r->count || r->ccategories > r->count ||
@@ -3025,8 +3071,9 @@ int ext_buffer_push_sortorder_set(EXT_PUSH *pext, const SORTORDER_SET *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_typed_string(EXT_PUSH *pext, const TYPED_STRING *r)
+int EXT_PUSH::p_typed_str(const TYPED_STRING *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint8(r->string_type));
 	switch(r->string_type) {
 	case STRING_TYPE_NONE:
@@ -3042,9 +3089,9 @@ int ext_buffer_push_typed_string(EXT_PUSH *pext, const TYPED_STRING *r)
 	}
 }
 
-int ext_buffer_push_recipient_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pproptags, const RECIPIENT_ROW *r)
+int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_ROW *r)
 {
+	auto pext = this;
 	BOOL b_unicode;
 	PROPTAG_ARRAY proptags;
 	
@@ -3108,9 +3155,9 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 	return pext->p_proprow(&proptags, &r->properties);
 }
 
-int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r)
+int EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r)
 {
+	auto pext = this;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t row_size;
@@ -3129,9 +3176,9 @@ int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
-    const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
+int EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
 {
+	auto pext = this;
 	uint32_t offset;
 	uint32_t offset1;
 	uint16_t row_size;
@@ -3151,21 +3198,23 @@ int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_permission_data(EXT_PUSH *pext, const PERMISSION_DATA *r)
+int EXT_PUSH::p_permission_data(const PERMISSION_DATA *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint8(r->flags));
 	return pext->p_tpropval_a(&r->propvals);
 }
 
-int ext_buffer_push_rule_data(EXT_PUSH *pext, const RULE_DATA *r)
+int EXT_PUSH::p_rule_data(const RULE_DATA *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint8(r->flags));
 	return pext->p_tpropval_a(&r->propvals);
 }
 
-int ext_buffer_push_addressbook_entryid(
-	EXT_PUSH *pext, const ADDRESSBOOK_ENTRYID *r)
+int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint32(r->version));
@@ -3173,9 +3222,9 @@ int ext_buffer_push_addressbook_entryid(
 	return pext->p_str(r->px500dn);
 }
 
-int ext_buffer_push_oneoff_entryid(EXT_PUSH *pext,
-	const ONEOFF_ENTRYID *r)
+int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->flags));
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->version));
@@ -3227,9 +3276,9 @@ static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_persistdata_array(
-	EXT_PUSH *pext, const PERSISTDATA_ARRAY *r)
+int EXT_PUSH::p_persistdata_a(const PERSISTDATA_ARRAY *r)
 {
+	auto pext = this;
 	int i;
 	PERSISTDATA last_data;
 	
@@ -3242,16 +3291,18 @@ int ext_buffer_push_persistdata_array(
 	return ext_buffer_push_persistdata(pext, &last_data);
 }
 
-int ext_buffer_push_eid_array(EXT_PUSH *pext, const EID_ARRAY *r)
+int EXT_PUSH::p_eid_a(const EID_ARRAY *r)
 {
+	auto pext = this;
 	TRY(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint64(r->pids[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_systemtime(EXT_PUSH *pext, const SYSTEMTIME *r)
+int EXT_PUSH::p_systime(const SYSTEMTIME *r)
 {
+	auto pext = this;
 	TRY(pext->p_int16(r->year));
 	TRY(pext->p_int16(r->month));
 	TRY(pext->p_int16(r->dayofweek));
@@ -3262,8 +3313,9 @@ int ext_buffer_push_systemtime(EXT_PUSH *pext, const SYSTEMTIME *r)
 	return pext->p_int16(r->milliseconds);
 }
 
-int ext_buffer_push_timezonestruct(EXT_PUSH *pext, const TIMEZONESTRUCT *r)
+int EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT *r)
 {
+	auto pext = this;
 	TRY(pext->p_int32(r->bias));
 	TRY(pext->p_int32(r->standardbias));
 	TRY(pext->p_int32(r->daylightbias));
@@ -3288,9 +3340,9 @@ static int ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 	return pext->p_systime(&r->daylightdate);
 }
 
-int ext_buffer_push_timezonedefinition(
-	EXT_PUSH *pext, const TIMEZONEDEFINITION *r)
+int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION *r)
 {
+	auto pext = this;
 	int i;
 	int len;
 	uint16_t cbheader;
@@ -3482,9 +3534,9 @@ static int ext_buffer_push_extendedexception(
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_appointmentrecurrencepattern(
-	EXT_PUSH *pext, const APPOINTMENTRECURRENCEPATTERN *r)
+int EXT_PUSH::p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *r)
 {
+	auto pext = this;
 	int i;
 	
 	TRY(ext_buffer_push_recurrencepattern(pext, &r->recurrencepattern));
@@ -3507,8 +3559,9 @@ int ext_buffer_push_appointmentrecurrencepattern(
 	return pext->p_bytes(r->preservedblock2, r->reservedblock2size);
 }
 
-int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r)
+int EXT_PUSH::p_goid(const GLOBALOBJECTID *r)
 {
+	auto pext = this;
 	TRY(pext->p_bytes(r->arrayid, 16));
 	TRY(pext->p_uint8(r->year >> 8));
 	TRY(pext->p_uint8(r->year & 0xFF));
@@ -3538,9 +3591,9 @@ static int ext_buffer_push_attachment_list(
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_message_content(
-	EXT_PUSH *pext, const MESSAGE_CONTENT *r)
+int EXT_PUSH::p_msgctnt(const MESSAGE_CONTENT *r)
 {
+	auto pext = this;
 	TRY(pext->p_tpropval_a(&r->proplist));
 	if (NULL != r->children.prcpts) {
 		TRY(pext->p_uint8(1));
@@ -3557,8 +3610,9 @@ int ext_buffer_push_message_content(
 	}
 }
 
-uint8_t *ext_buffer_push_release(EXT_PUSH *p)
+uint8_t *EXT_PUSH::release()
 {
+	auto p = this;
 	uint8_t *t = p->data;
 	p->data = nullptr;
 	p->b_alloc = false;

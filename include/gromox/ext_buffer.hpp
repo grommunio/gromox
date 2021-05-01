@@ -158,159 +158,80 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 	EXT_PULL *pext, APPOINTMENTRECURRENCEPATTERN *r);
 int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r);
 int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *pmsg);
-extern BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata, uint32_t alloc_size, uint32_t flags, const EXT_BUFFER_MGT *mgt = nullptr);
-int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size);
-int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r);
-BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size);
-extern int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n);
-int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v);
-int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v);
-int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v);
-int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v);
-int ext_buffer_push_float(EXT_PUSH *pext, float v);
-int ext_buffer_push_double(EXT_PUSH *pext, double v);
-int ext_buffer_push_bool(EXT_PUSH *pext, BOOL v);
-int ext_buffer_push_data_blob(EXT_PUSH *pext, DATA_BLOB blob);
-int ext_buffer_push_binary(EXT_PUSH *pext, const BINARY *r);
-int ext_buffer_push_sbinary(EXT_PUSH *pext, const BINARY *r);
-int ext_buffer_push_exbinary(EXT_PUSH *pext, const BINARY *r);
-int ext_buffer_push_guid(EXT_PUSH *pext, const GUID *r);
-int ext_buffer_push_string(EXT_PUSH *pext, const char *pstr);
-int ext_buffer_push_wstring(EXT_PUSH *pext, const char *pstr);
-int ext_buffer_push_short_array(EXT_PUSH *pext, const SHORT_ARRAY *r);
-int ext_buffer_push_long_array(EXT_PUSH *pext, const LONG_ARRAY *r);
-int ext_buffer_push_longlong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r);
-int ext_buffer_push_slonglong_array(EXT_PUSH *pext, const LONGLONG_ARRAY *r);
-int ext_buffer_push_binary_array(EXT_PUSH *pext, const BINARY_ARRAY *r);
-int ext_buffer_push_string_array(EXT_PUSH *pext, const STRING_ARRAY *r);
-int ext_buffer_push_wstring_array(EXT_PUSH *pext, const STRING_ARRAY *r);
-int ext_buffer_push_guid_array(EXT_PUSH *pext, const GUID_ARRAY *r);
-int ext_buffer_push_proptag_array(EXT_PUSH *pext, const PROPTAG_ARRAY *r);
-int ext_buffer_push_restriction(EXT_PUSH *pext, const RESTRICTION *r);
-int ext_buffer_push_svreid(EXT_PUSH *pext, const SVREID *r);
-int ext_buffer_push_store_entryid(EXT_PUSH *pext, const STORE_ENTRYID *r);
-int ext_buffer_push_rule_actions(EXT_PUSH *pext, const RULE_ACTIONS *r);
-int ext_buffer_push_long_term_id(EXT_PUSH *pext, const LONG_TERM_ID *r);
-int ext_buffer_push_long_term_id_array(
-	EXT_PUSH *pext, const LONG_TERM_ID_ARRAY *r);
-int ext_buffer_push_typed_propval(EXT_PUSH *pext, const TYPED_PROPVAL *r);
-int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval);
-int ext_buffer_push_tagged_propval(EXT_PUSH *pext, const TAGGED_PROPVAL *r);
-int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
-	uint16_t type, const FLAGGED_PROPVAL *r);
-int ext_buffer_push_property_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r);
-int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r);
-int ext_buffer_push_propname_array(EXT_PUSH *pext, const PROPNAME_ARRAY *r);
-int ext_buffer_push_propid_array(EXT_PUSH *pext, const PROPID_ARRAY *r);
-int ext_buffer_push_tpropval_array(EXT_PUSH *pext, const TPROPVAL_ARRAY *r);
-int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r);
-int ext_buffer_push_problem_array(EXT_PUSH *pext, const PROBLEM_ARRAY *r);
-int ext_buffer_push_xid(EXT_PUSH *pext, uint8_t size, const XID *pxid);
-int ext_buffer_push_folder_entryid(EXT_PUSH *pext, const FOLDER_ENTRYID *r);
-int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r);
-int ext_buffer_push_sort_order(EXT_PUSH *pext, const SORT_ORDER *r);
-int ext_buffer_push_sortorder_set(EXT_PUSH *pext, const SORTORDER_SET *r);
-int ext_buffer_push_typed_string(EXT_PUSH *pext, const TYPED_STRING *r);
-int ext_buffer_push_recipient_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pproptags, const RECIPIENT_ROW *r);
-int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r);
-int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r);
-int ext_buffer_push_permission_data(EXT_PUSH *pext, const PERMISSION_DATA *r);
-int ext_buffer_push_rule_data(EXT_PUSH *pext, const RULE_DATA *r);
-int ext_buffer_push_addressbook_entryid(
-	EXT_PUSH *pext, const ADDRESSBOOK_ENTRYID *r);
-int ext_buffer_push_oneoff_entryid(EXT_PUSH *pext,
-	const ONEOFF_ENTRYID *r);
-int ext_buffer_push_persistdata_array(
-	EXT_PUSH *pext, const PERSISTDATA_ARRAY *r);
-int ext_buffer_push_eid_array(EXT_PUSH *pext, const EID_ARRAY *r);
-int ext_buffer_push_systemtime(EXT_PUSH *pext, const SYSTEMTIME *r);
-int ext_buffer_push_timezonestruct(EXT_PUSH *pext, const TIMEZONESTRUCT *r);
-int ext_buffer_push_timezonedefinition(
-	EXT_PUSH *pext, const TIMEZONEDEFINITION *r);
-int ext_buffer_push_appointmentrecurrencepattern(
-	EXT_PUSH *pext, const APPOINTMENTRECURRENCEPATTERN *r);
-int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r);
-int ext_buffer_push_message_content(
-	EXT_PUSH *pext, const MESSAGE_CONTENT *pmsg);
-uint8_t *ext_buffer_push_release(EXT_PUSH *);
 
 struct EXT_PUSH {
 	~EXT_PUSH();
-	inline BOOL init(void *d, uint32_t asize, uint32_t fl, const EXT_BUFFER_MGT *m = nullptr) { return ext_buffer_push_init(this, d, asize, fl, m); }
-	inline uint8_t *release() { return ext_buffer_push_release(this); }
-	inline BOOL check_ovf(uint32_t n) { return ext_buffer_push_check_overflow(this, n); }
-	inline int advance(uint32_t n) { return ext_buffer_push_advance(this, n); }
-	inline int p_bytes(const void *d, uint32_t n) { return ext_buffer_push_bytes(this, d, n); }
-	inline int p_uint8(uint8_t v) { return ext_buffer_push_uint8(this, v); }
-	inline int p_int8(int8_t v) { return ext_buffer_push_uint8(this, v); }
-	inline int p_uint16(uint16_t v) { return ext_buffer_push_uint16(this, v); }
-	inline int p_int16(int16_t v) { return ext_buffer_push_uint16(this, v); }
-	inline int p_uint32(uint32_t v) { return ext_buffer_push_uint32(this, v); }
-	inline int p_int32(int32_t v) { return ext_buffer_push_uint32(this, v); }
-	inline int p_uint64(uint64_t v) { return ext_buffer_push_uint64(this, v); }
-	inline int p_int64(int64_t v) { return ext_buffer_push_uint64(this, v); }
-	inline int p_float(float v) { return ext_buffer_push_float(this, v); }
-	inline int p_double(double v) { return ext_buffer_push_double(this, v); }
-	inline int p_bool(BOOL v) { return ext_buffer_push_bool(this, v); }
-	inline int p_blob(DATA_BLOB v) { return ext_buffer_push_data_blob(this, v); }
-	inline int p_bin(const BINARY *v) { return ext_buffer_push_binary(this, v); }
-	inline int p_bin_s(const BINARY *v) { return ext_buffer_push_sbinary(this, v); }
-	inline int p_bin_ex(const BINARY *v) { return ext_buffer_push_exbinary(this, v); }
-	inline int p_guid(const GUID *v) { return ext_buffer_push_guid(this, v); }
-	inline int p_str(const char *v) { return ext_buffer_push_string(this, v); }
-	inline int p_wstr(const char *v) { return ext_buffer_push_wstring(this, v); }
-	inline int p_uint16_a(const SHORT_ARRAY *v) { return ext_buffer_push_short_array(this, v); }
-	inline int p_uint32_a(const LONG_ARRAY *v) { return ext_buffer_push_long_array(this, v); }
-	inline int p_uint64_a(const LONGLONG_ARRAY *v) { return ext_buffer_push_longlong_array(this, v); }
-	inline int p_uint64_sa(const LONGLONG_ARRAY *v) { return ext_buffer_push_slonglong_array(this, v); }
-	inline int p_bin_a(const BINARY_ARRAY *v) { return ext_buffer_push_binary_array(this, v); }
-	inline int p_str_a(const STRING_ARRAY *v) { return ext_buffer_push_string_array(this, v); }
-	inline int p_wstr_a(const STRING_ARRAY *v) { return ext_buffer_push_wstring_array(this, v); }
-	inline int p_guid_a(const GUID_ARRAY *v) { return ext_buffer_push_guid_array(this, v); }
-	inline int p_proptag_a(const PROPTAG_ARRAY *v) { return ext_buffer_push_proptag_array(this, v); }
-	inline int p_restriction(const RESTRICTION *v) { return ext_buffer_push_restriction(this, v); }
-	inline int p_svreid(const SVREID *v) { return ext_buffer_push_svreid(this, v); }
-	inline int p_store_eid(const STORE_ENTRYID *v) { return ext_buffer_push_store_entryid(this, v); }
-	inline int p_rule_actions(const RULE_ACTIONS *v) { return ext_buffer_push_rule_actions(this, v); }
-	inline int p_longterm(const LONG_TERM_ID *v) { return ext_buffer_push_long_term_id(this, v); }
-	inline int p_longterm_a(const LONG_TERM_ID_ARRAY *v) { return ext_buffer_push_long_term_id_array(this, v); }
-	inline int p_propval(uint16_t type, const void *v) { return ext_buffer_push_propval(this, type, v); }
-	inline int p_tagged_pv(const TAGGED_PROPVAL *v) { return ext_buffer_push_tagged_propval(this, v); }
-	inline int p_typed_pv(const TYPED_PROPVAL *v) { return ext_buffer_push_typed_propval(this, v); }
-	inline int p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *v) { return ext_buffer_push_flagged_propval(this, type, v); }
-	inline int p_proprow(const PROPTAG_ARRAY *cols, const PROPERTY_ROW *v) { return ext_buffer_push_property_row(this, cols, v); }
-	inline int p_propname(const PROPERTY_NAME *v) { return ext_buffer_push_property_name(this, v); }
-	inline int p_propname_a(const PROPNAME_ARRAY *v) { return ext_buffer_push_propname_array(this, v); }
-	inline int p_propid_a(const PROPID_ARRAY *v) { return ext_buffer_push_propid_array(this, v); }
-	inline int p_tpropval_a(const TPROPVAL_ARRAY *v) { return ext_buffer_push_tpropval_array(this, v); }
-	inline int p_tarray_set(const TARRAY_SET *v) { return ext_buffer_push_tarray_set(this, v); }
-	inline int p_problem_a(const PROBLEM_ARRAY *v) { return ext_buffer_push_problem_array(this, v); }
-	inline int p_xid(uint8_t z, const XID *v) { return ext_buffer_push_xid(this, z, v); }
-	inline int p_folder_eid(const FOLDER_ENTRYID *v) { return ext_buffer_push_folder_entryid(this, v); }
-	inline int p_msg_eid(const MESSAGE_ENTRYID *v) { return ext_buffer_push_message_entryid(this, v); }
-	inline int p_sortorder(const SORT_ORDER *v) { return ext_buffer_push_sort_order(this, v); }
-	inline int p_sortorder_set(const SORTORDER_SET *v) { return ext_buffer_push_sortorder_set(this, v); }
-	inline int p_typed_str(const TYPED_STRING *v) { return ext_buffer_push_typed_string(this, v); }
-	inline int p_recipient_row(const PROPTAG_ARRAY *tags, const RECIPIENT_ROW *v) { return ext_buffer_push_recipient_row(this, tags, v); }
-	inline int p_openrecipient_row(const PROPTAG_ARRAY *tags, const OPENRECIPIENT_ROW *v) { return ext_buffer_push_openrecipient_row(this, tags, v); }
-	inline int p_readrecipient_row(const PROPTAG_ARRAY *tags, const READRECIPIENT_ROW *v) { return ext_buffer_push_readrecipient_row(this, tags, v); }
-	inline int p_permission_data(const PERMISSION_DATA *v) { return ext_buffer_push_permission_data(this, v); }
-	inline int p_rule_data(const RULE_DATA *v) { return ext_buffer_push_rule_data(this, v); }
-	inline int p_abk_eid(const ADDRESSBOOK_ENTRYID *v) { return ext_buffer_push_addressbook_entryid(this, v); }
-	inline int p_oneoff_eid(const ONEOFF_ENTRYID *v) { return ext_buffer_push_oneoff_entryid(this, v); }
-	inline int p_persistdata_a(const PERSISTDATA_ARRAY *v) { return ext_buffer_push_persistdata_array(this, v); }
-	inline int p_eid_a(const EID_ARRAY *v) { return ext_buffer_push_eid_array(this, v); }
-	inline int p_systime(const SYSTEMTIME *v) { return ext_buffer_push_systemtime(this, v); }
-	inline int p_tzstruct(const TIMEZONESTRUCT *v) { return ext_buffer_push_timezonestruct(this, v); }
-	inline int p_tzdef(const TIMEZONEDEFINITION *v) { return ext_buffer_push_timezonedefinition(this, v); }
-	inline int p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *v) { return ext_buffer_push_appointmentrecurrencepattern(this, v); }
-	inline int p_goid(const GLOBALOBJECTID *v) { return ext_buffer_push_globalobjectid(this, v); }
-	inline int p_msgctnt(const MESSAGE_CONTENT *v) { return ext_buffer_push_message_content(this, v); }
-	inline int p_rpchdr(const RPC_HEADER_EXT *v) { return ext_buffer_push_rpc_header_ext(this, v); }
+	BOOL init(void *, uint32_t, uint32_t, const EXT_BUFFER_MGT * = nullptr);
+	uint8_t *release();
+	BOOL check_ovf(uint32_t);
+	int advance(uint32_t);
+	int p_bytes(const void *, uint32_t);
+	int p_uint8(uint8_t);
+	inline int p_int8(int8_t v) { return p_uint8(v); }
+	int p_uint16(uint16_t);
+	inline int p_int16(int16_t v) { return p_uint16(v); }
+	int p_uint32(uint32_t);
+	inline int p_int32(int32_t v) { return p_uint32(v); }
+	int p_uint64(uint64_t);
+	inline int p_int64(int64_t v) { return p_uint64(v); }
+	int p_float(float);
+	int p_double(double);
+	int p_bool(BOOL);
+	int p_blob(DATA_BLOB);
+	int p_bin(const BINARY *);
+	int p_bin_s(const BINARY *);
+	int p_bin_ex(const BINARY *);
+	int p_guid(const GUID *);
+	int p_str(const char *);
+	int p_wstr(const char *);
+	int p_uint16_a(const SHORT_ARRAY *);
+	int p_uint32_a(const LONG_ARRAY *);
+	int p_uint64_a(const LONGLONG_ARRAY *);
+	int p_uint64_sa(const LONGLONG_ARRAY *);
+	int p_bin_a(const BINARY_ARRAY *);
+	int p_str_a(const STRING_ARRAY *);
+	int p_wstr_a(const STRING_ARRAY *);
+	int p_guid_a(const GUID_ARRAY *);
+	int p_proptag_a(const PROPTAG_ARRAY *);
+	int p_restriction(const RESTRICTION *);
+	int p_svreid(const SVREID *);
+	int p_store_eid(const STORE_ENTRYID *);
+	int p_rule_actions(const RULE_ACTIONS *);
+	int p_longterm(const LONG_TERM_ID *);
+	int p_longterm_a(const LONG_TERM_ID_ARRAY *);
+	int p_propval(uint16_t, const void *);
+	int p_tagged_pv(const TAGGED_PROPVAL *);
+	int p_typed_pv(const TYPED_PROPVAL *);
+	int p_flagged_pv(uint16_t, const FLAGGED_PROPVAL *);
+	int p_proprow(const PROPTAG_ARRAY *, const PROPERTY_ROW *);
+	int p_propname(const PROPERTY_NAME *);
+	int p_propname_a(const PROPNAME_ARRAY *);
+	int p_propid_a(const PROPID_ARRAY *);
+	int p_tpropval_a(const TPROPVAL_ARRAY *);
+	int p_tarray_set(const TARRAY_SET *);
+	int p_problem_a(const PROBLEM_ARRAY *);
+	int p_xid(uint8_t, const XID *);
+	int p_folder_eid(const FOLDER_ENTRYID *);
+	int p_msg_eid(const MESSAGE_ENTRYID *);
+	int p_sortorder(const SORT_ORDER *);
+	int p_sortorder_set(const SORTORDER_SET *);
+	int p_typed_str(const TYPED_STRING *);
+	int p_recipient_row(const PROPTAG_ARRAY *tags, const RECIPIENT_ROW *);
+	int p_openrecipient_row(const PROPTAG_ARRAY *tags, const OPENRECIPIENT_ROW *);
+	int p_readrecipient_row(const PROPTAG_ARRAY *tags, const READRECIPIENT_ROW *);
+	int p_permission_data(const PERMISSION_DATA *);
+	int p_rule_data(const RULE_DATA *);
+	int p_abk_eid(const ADDRESSBOOK_ENTRYID *);
+	int p_oneoff_eid(const ONEOFF_ENTRYID *);
+	int p_persistdata_a(const PERSISTDATA_ARRAY *);
+	int p_eid_a(const EID_ARRAY *);
+	int p_systime(const SYSTEMTIME *);
+	int p_tzstruct(const TIMEZONESTRUCT *);
+	int p_tzdef(const TIMEZONEDEFINITION *);
+	int p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *);
+	int p_goid(const GLOBALOBJECTID *);
+	int p_msgctnt(const MESSAGE_CONTENT *);
+	int p_rpchdr(const RPC_HEADER_EXT *);
 
 	BOOL b_alloc = false;
 	union {
