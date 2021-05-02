@@ -570,6 +570,7 @@ static void *dxp_thrwork(void *arg)
 						pthread_detach(pthread_self());
 						return nullptr;
 					}
+					tl_hold.unlock();
 					std::unique_lock cm_hold(g_cond_mutex);
 					g_waken_cond.wait(cm_hold);
 				}
