@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -14,9 +15,10 @@ using namespace gromox;
 using REQUEST_PAYLOAD = EXMDB_REQUEST_PAYLOAD;
 using RESPONSE_PAYLOAD = EXMDB_RESPONSE_PAYLOAD;
 
-void *(*exmdb_rpc_alloc)(size_t);
-void (*exmdb_rpc_free)(void *);
-BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
+void *(*exmdb_rpc_alloc)(size_t) = malloc;
+void (*exmdb_rpc_free)(void *) = free;
+BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *) =
+	[](const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *) -> BOOL { return false; };
 template<typename T> T *cu_alloc() { return static_cast<T *>(exmdb_rpc_alloc(sizeof(T))); }
 template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem)); }
 
