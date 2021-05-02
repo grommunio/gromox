@@ -6440,6 +6440,10 @@ const char *exmdb_rpc_strerror(unsigned int v)
 	case exmdb_response::LACK_MEMORY: return "mMximum connections reached in server";
 	case exmdb_response::MISCONFIG_PREFIX: return "Maximum connections reached in server";
 	case exmdb_response::MISCONFIG_MODE: return "Maximum connections reached in server";
+	case exmdb_response::CONNECT_INCOMPLETE: return "No prior CONNECT RPC made";
+	case exmdb_response::PULL_ERROR: return "Invalid request/Server-side deserializing error";
+	case exmdb_response::DISPATCH_ERROR: return "Dispatch error";
+	case exmdb_response::PUSH_ERROR: return "Server-side serialize error";
 	}
 	thread_local char xbuf[32];
 	snprintf(xbuf, GX_ARRAY_SIZE(xbuf), "Unknown error %u", v);
