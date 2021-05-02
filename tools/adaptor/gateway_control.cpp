@@ -76,8 +76,11 @@ static BOOL gateway_control_send(const char *ip, int port, const char *command)
 	int cmd_len, read_len, offset;
 	char temp_buff[1024];
 	int sockd = gx_inet_connect(ip, port, 0);
-	if (sockd < 0)
+	if (sockd < 0) {
+		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		        ip, port, strerror(-sockd));
 		return FALSE;
+	}
 	offset = 0;
 	memset(temp_buff, 0, 1024);
 	/* read welcome information */

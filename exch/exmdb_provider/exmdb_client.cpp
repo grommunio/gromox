@@ -181,8 +181,11 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	uint8_t response_code;
 
 	int sockd = gx_inet_connect(pserver->host.c_str(), pserver->port, 0);
-	if (sockd < 0)
+	if (sockd < 0) {
+		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		        pserver->host.c_str(), pserver->port, strerror(-sockd));
 	        return -1;
+	}
 	str_host = get_host_ID();
 	process_id = getpid();
 	sprintf(remote_id, "%s:%d", str_host, process_id);

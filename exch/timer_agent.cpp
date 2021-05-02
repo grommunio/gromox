@@ -353,8 +353,11 @@ static int connect_timer()
 {
     char temp_buff[1024];
 	int sockd = gx_inet_connect(g_timer_ip, g_timer_port, 0);
-	if (sockd < 0)
+	if (sockd < 0) {
+		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		        g_timer_ip, g_timer_port, strerror(-sockd));
 	        return -1;
+	}
 	if (-1 == read_line(sockd, temp_buff, 1024) ||
 		0 != strcasecmp(temp_buff, "OK")) {
 		close(sockd);

@@ -3352,8 +3352,11 @@ static int connect_midb(const char *ip_addr, int port)
 	struct pollfd pfd_read;
 
 	int sockd = gx_inet_connect(ip_addr, port, 0);
-	if (sockd < 0)
+	if (sockd < 0) {
+		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		        ip_addr, port, strerror(-sockd));
 		return -1;
+	}
 	tv_msec = SOCKET_TIMEOUT * 1000;
 	pfd_read.fd = sockd;
 	pfd_read.events = POLLIN|POLLPRI;

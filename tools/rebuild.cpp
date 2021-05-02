@@ -216,8 +216,11 @@ static int connect_exmdb(const char *dir)
 	if (pexnode == g_exmdb_list.cend())
 		return -1;
 	int sockd = gx_inet_connect(pexnode->host.c_str(), pexnode->port, 0);
-	if (sockd < 0)
+	if (sockd < 0) {
+		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		        pexnode->host.c_str(), pexnode->port, strerror(-sockd));
 	        return -1;
+	}
 	process_id = getpid();
 	sprintf(remote_id, "freebusy:%d", process_id);
 	request.prefix    = deconst(pexnode->prefix.c_str());
