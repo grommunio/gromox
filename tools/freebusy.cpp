@@ -403,7 +403,7 @@ static int connect_exmdb(const char *dir)
 	}
 	response_code = tmp_bin.pb[0];
 	if (response_code == exmdb_response::SUCCESS) {
-		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
+		if (tmp_bin.cb != 5) {
 			fprintf(stderr, "response format error during connect to "
 				"[%s]:%hu/%s\n", pexnode->host.c_str(),
 				pexnode->port, pexnode->prefix.c_str());

@@ -142,7 +142,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	}
 	response_code = tmp_bin.pb[0];
 	if (response_code == exmdb_response::SUCCESS) {
-		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
+		if (tmp_bin.cb != 5) {
 			exmdb_server_free_environment();
 			printf("[exmdb_client]: response format error "
 			       "during connect to [%s]:%hu/%s\n",
