@@ -68,6 +68,9 @@ struct AGENT_THREAD {
 
 }
 
+static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
+static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socket(fd, b, SOCKET_TIMEOUT * 1000); }
+
 static int g_conn_num;
 static int g_threads_num;
 static std::atomic<bool> g_notify_stop{false};
@@ -92,83 +95,6 @@ int exmdb_client_get_param(int param)
 		return g_lost_list.size();
 	}
 	return -1;
-}
-
-static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
-{
-	int tv_msec;
-	int read_len;
-	uint32_t offset = 0;
-	uint8_t resp_buff[5];
-	struct pollfd pfd_read;
-	
-	pbin->pb = NULL;
-	while (TRUE) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
-		pfd_read.fd = sockd;
-		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			return FALSE;
-		}
-		if (NULL == pbin->pb) {
-			read_len = read(sockd, resp_buff, 5);
-			if (1 == read_len) {
-				pbin->cb = 1;
-				pbin->pb = cu_alloc<uint8_t>();
-				if (pbin->pb == nullptr)
-					return FALSE;
-				*(uint8_t*)pbin->pb = resp_buff[0];
-				return TRUE;
-			} else if (5 == read_len) {
-				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pb = cu_alloc<uint8_t>(pbin->cb);
-				if (pbin->pb == nullptr)
-					return FALSE;
-				memcpy(pbin->pb, resp_buff, 5);
-				offset = 5;
-				if (offset == pbin->cb) {
-					return TRUE;
-				}
-				continue;
-			} else {
-				return FALSE;
-			}
-		}
-		read_len = read(sockd, pbin->pb + offset, pbin->cb - offset);
-		if (read_len <= 0) {
-			return FALSE;
-		}
-		offset += read_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
-}
-
-static BOOL exmdb_client_write_socket(int sockd, const BINARY *pbin)
-{
-	int tv_msec;
-	int written_len;
-	uint32_t offset;
-	struct pollfd pfd_write;
-	
-	offset = 0;
-	while (TRUE) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
-		pfd_write.fd = sockd;
-		pfd_write.events = POLLOUT|POLLWRBAND;
-		if (1 != poll(&pfd_write, 1, tv_msec)) {
-			return FALSE;
-		}
-		written_len = write(sockd, pbin->pb + offset, pbin->cb - offset);
-		if (written_len <= 0) {
-			return FALSE;
-		}
-		offset += written_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
 }
 
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
@@ -202,14 +128,14 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		close(sockd);
 		return -1;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
+	if (!cl_wr_sock(sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		close(sockd);
 		return -1;
 	}
 	free(tmp_bin.pb);
 	exmdb_server_build_environment(false, pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false, nullptr);
-	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
+	if (!cl_rd_sock(sockd, &tmp_bin)) {
 		exmdb_server_free_environment();
 		close(sockd);
 		return -1;
@@ -586,18 +512,13 @@ BOOL exmdb_client_do_rpc(const char *dir,
 		return FALSE;
 	}
 	auto pconn = exmdb_client_get_connection(dir);
-	if (pconn == nullptr) {
-		free(tmp_bin.pb);
-		return FALSE;
-	}
-	if (FALSE == exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
+	if (pconn == nullptr || !cl_wr_sock(pconn->sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		return FALSE;
 	}
 	free(tmp_bin.pb);
-	if (FALSE == exmdb_client_read_socket(pconn->sockd, &tmp_bin)) {
+	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
 		return FALSE;
-	}
 	time(&pconn->last_time);
 	pconn.reset();
 	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)

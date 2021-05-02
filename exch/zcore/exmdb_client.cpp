@@ -79,6 +79,8 @@ static std::mutex g_server_lock;
 static void (*exmdb_client_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
+static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
+
 int exmdb_client_get_param(int param)
 {
 	int total_num;
@@ -93,77 +95,6 @@ int exmdb_client_get_param(int param)
 		return g_lost_list.size();
 	}
 	return -1;
-}
-
-static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
-{
-	int tv_msec;
-	int read_len;
-	uint32_t offset = 0;
-	uint8_t resp_buff[5];
-	struct pollfd pfd_read;
-	
-	pbin->pb = NULL;
-	while (TRUE) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
-		pfd_read.fd = sockd;
-		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			return FALSE;
-		}
-		if (pbin->pb == nullptr) {
-			read_len = read(sockd, resp_buff, 5);
-			if (1 == read_len) {
-				pbin->cb = 1;
-				pbin->pb = cu_alloc<uint8_t>(1);
-				if (pbin->pb == nullptr)
-					return FALSE;
-				*pbin->pb = resp_buff[0];
-				return TRUE;
-			} else if (5 == read_len) {
-				uint32_t cb;
-				memcpy(&cb, resp_buff + 1, sizeof(cb));
-				pbin->cb = cb + 5;
-				pbin->pb = cu_alloc<uint8_t>(pbin->cb);
-				if (pbin->pb == nullptr)
-					return FALSE;
-				memcpy(pbin->pb, resp_buff, 5);
-				offset = 5;
-				if (offset == pbin->cb) {
-					return TRUE;
-				}
-				continue;
-			} else {
-				return FALSE;
-			}
-		}
-		read_len = read(sockd, pbin->pb + offset, pbin->cb - offset);
-		if (read_len <= 0) {
-			return FALSE;
-		}
-		offset += read_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
-}
-
-static BOOL exmdb_client_write_socket(int sockd, const BINARY *pbin)
-{
-	int written_len;
-	uint32_t offset;
-	
-	offset = 0;
-	while (TRUE) {
-		written_len = write(sockd, pbin->pb + offset, pbin->cb - offset);
-		if (written_len <= 0) {
-			return FALSE;
-		}
-		offset += written_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
 }
 
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
@@ -202,7 +133,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	}
 	free(tmp_bin.pb);
 	common_util_build_environment();
-	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
+	if (!cl_rd_sock(sockd, &tmp_bin)) {
 		common_util_free_environment();
 		close(sockd);
 		return -1;
@@ -563,9 +494,8 @@ BOOL exmdb_client_do_rpc(const char *dir,
 		return FALSE;
 	}
 	free(tmp_bin.pb);
-	if (FALSE == exmdb_client_read_socket(pconn->sockd, &tmp_bin)) {
+	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
 		return FALSE;
-	}
 	time(&pconn->last_time);
 	pconn.reset();
 	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)

@@ -1466,6 +1466,14 @@ struct DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify;
 };
 
+struct exmdb_hell {
+	BOOL rdsock(int, BINARY *, long timeout_ms = -1);
+	BOOL wrsock(int, const BINARY *, long timeout_ms = -1);
+
+	void *(*alloc)(size_t);
+	BOOL (*exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
+};
+
 extern GX_EXPORT int exmdb_ext_pull_request(const BINARY *, EXMDB_REQUEST *);
 extern GX_EXPORT int exmdb_ext_push_request(const EXMDB_REQUEST *, BINARY *);
 extern GX_EXPORT int exmdb_ext_pull_response(const BINARY *, EXMDB_RESPONSE *);
@@ -1473,6 +1481,8 @@ extern GX_EXPORT int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse, BI
 extern GX_EXPORT int exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
 extern GX_EXPORT int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
 extern GX_EXPORT const char *exmdb_rpc_strerror(unsigned int);
+extern GX_EXPORT BOOL exmdb_client_read_socket(int, BINARY *, long timeout = -1);
+extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY *, long timeout = -1);
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);

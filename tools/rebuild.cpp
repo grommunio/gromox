@@ -52,6 +52,8 @@ static const struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static int cl_rd_sock(int fd, BINARY *b) { return ::exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
+
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
@@ -118,90 +120,6 @@ static int exmdb_client_push_request(uint8_t call_id,
 	return EXT_ERR_SUCCESS;
 }
 
-static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
-{
-	fd_set myset;
-	int read_len;
-	uint32_t offset = 0;
-	struct timeval tv;
-	uint8_t resp_buff[5];
-	
-	pbin->cb = 0;
-	pbin->pb = NULL;
-	while (TRUE) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(sockd, &myset);
-		if (select(sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
-			if (NULL != pbin->pb) {
-				free(pbin->pb);
-				pbin->pb = NULL;
-			}
-			return FALSE;
-		}
-		if (0 == pbin->cb) {
-			read_len = read(sockd, resp_buff, 5);
-			if (1 == read_len) {
-				pbin->cb = 1;
-				pbin->pv = malloc(1);
-				if (pbin->pv == nullptr)
-					return FALSE;
-				*(uint8_t*)pbin->pb = resp_buff[0];
-				return TRUE;
-			} else if (5 == read_len) {
-				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pv = malloc(pbin->cb);
-				if (pbin->pv == nullptr) {
-					pbin->cb = 0;
-					return FALSE;
-				}
-				memcpy(pbin->pv, resp_buff, 5);
-				offset = 5;
-				if (offset == pbin->cb) {
-					return TRUE;
-				}
-				continue;
-			} else {
-				return FALSE;
-			}
-		}
-		read_len = read(sockd,
-			pbin->pb + offset,
-			pbin->cb - offset);
-		if (read_len <= 0) {
-			free(pbin->pb);
-			pbin->pb = NULL;
-			return FALSE;
-		}
-		offset += read_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
-}
-
-static BOOL exmdb_client_write_socket(
-	int sockd, const BINARY *pbin)
-{
-	int written_len;
-	uint32_t offset;
-	
-	offset = 0;
-	while (TRUE) {
-		written_len = write(sockd,
-				pbin->pb + offset,
-				pbin->cb - offset);
-		if (written_len <= 0) {
-			return FALSE;
-		}
-		offset += written_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
-}
-
 static int connect_exmdb(const char *dir)
 {
 	int process_id;
@@ -236,7 +154,7 @@ static int connect_exmdb(const char *dir)
 		return -1;
 	}
 	tmp_bin.pv = tmp_buff;
-	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
+	if (!cl_rd_sock(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
 	}
@@ -272,15 +190,9 @@ static BOOL exmdb_client_unload_store(const char *dir)
 	if (-1 == sockd) {
 		return FALSE;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
-		close(sockd);
-		return FALSE;
-	}
-	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
-		close(sockd);
-		return FALSE;
-	}
-	if (tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS) {
+	if (!exmdb_client_write_socket(sockd, &tmp_bin) ||
+	    !cl_rd_sock(sockd, &tmp_bin) ||
+	    tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS) {
 		close(sockd);
 		return FALSE;
 	}

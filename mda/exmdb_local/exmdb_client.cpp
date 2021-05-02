@@ -89,6 +89,9 @@ static std::list<REMOTE_CONN> g_lost_list;
 static std::list<REMOTE_SVR> g_server_list;
 static std::mutex g_server_lock;
 
+static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
+static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socket(fd, b, SOCKET_TIMEOUT * 1000); }
+
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
@@ -195,94 +198,13 @@ static int exmdb_client_push_request(uint8_t call_id,
 	return EXT_ERR_SUCCESS;
 }
 
-static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
-{
-	fd_set myset;
-	int read_len;
-	uint32_t offset = 0;
-	struct timeval tv;
-	uint8_t resp_buff[5];
-	
-	pbin->cb = 0;
-	while (TRUE) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(sockd, &myset);
-		if (select(sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
-			return FALSE;
-		}
-		if (0 == pbin->cb) {
-			read_len = read(sockd, resp_buff, 5);
-			if (1 == read_len) {
-				pbin->cb = 1;
-				*(uint8_t*)pbin->pb = resp_buff[0];
-				return TRUE;
-			} else if (5 == read_len) {
-				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				if (pbin->cb >= 1024) {
-					return FALSE;
-				}
-				memcpy(pbin->pb, resp_buff, 5);
-				offset = 5;
-				if (offset == pbin->cb) {
-					return TRUE;
-				}
-				continue;
-			} else {
-				return FALSE;
-			}
-		}
-		read_len = read(sockd,
-			pbin->pb + offset,
-			pbin->cb - offset);
-		if (read_len <= 0) {
-			return FALSE;
-		}
-		offset += read_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
-}
-
-static BOOL exmdb_client_write_socket(
-	int sockd, const BINARY *pbin)
-{
-	fd_set myset;
-	int written_len;
-	uint32_t offset;
-	struct timeval tv;
-	
-	offset = 0;
-	while (TRUE) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(sockd, &myset);
-		if (select(sockd + 1, NULL, &myset, NULL, &tv) <= 0) {
-			return FALSE;
-		}
-		written_len = write(sockd,
-				pbin->pb + offset,
-				pbin->cb - offset);
-		if (written_len <= 0) {
-			return FALSE;
-		}
-		offset += written_len;
-		if (offset == pbin->cb) {
-			return TRUE;
-		}
-	}
-}
-
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 {
 	int process_id;
 	BINARY tmp_bin;
 	char remote_id[128];
 	const char *str_host;
-	uint8_t response_code, tmp_buff[1024];
+	uint8_t response_code;
 	CONNECT_REQUEST request;
 
 	int sockd = gx_inet_connect(pserver->host.c_str(), pserver->port, 0);
@@ -302,14 +224,14 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 		close(sockd);
 		return -1;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
+	if (!cl_wr_sock(sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		close(sockd);
 		return -1;
 	}
 	free(tmp_bin.pb);
-	tmp_bin.pb = tmp_buff;
-	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
+	tmp_bin.pb = nullptr;
+	if (!cl_rd_sock(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
 	}
@@ -567,15 +489,14 @@ int exmdb_client_delivery_message(const char *dir,
 		free(tmp_bin.pb);
 		return EXMDB_NO_SERVER;
 	}
-	if (FALSE == exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
+	if (!cl_wr_sock(pconn->sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		return EXMDB_RDWR_ERROR;
 	}
 	free(tmp_bin.pb);
 	tmp_bin.pb = tmp_buff;
-	if (FALSE == exmdb_client_read_socket(pconn->sockd, &tmp_bin)) {
+	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
 		return EXMDB_RDWR_ERROR;
-	}
 	time(&pconn->last_time);
 	pconn.reset();
 	if (5 + sizeof(uint32_t) != tmp_bin.cb ||
@@ -609,15 +530,14 @@ int exmdb_client_check_contact_address(const char *dir,
 		free(tmp_bin.pb);
 		return EXMDB_NO_SERVER;
 	}
-	if (FALSE == exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
+	if (!cl_wr_sock(pconn->sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		return EXMDB_RDWR_ERROR;
 	}
 	free(tmp_bin.pb);
 	tmp_bin.pb = tmp_buff;
-	if (FALSE == exmdb_client_read_socket(pconn->sockd, &tmp_bin)) {
+	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
 		return EXMDB_RDWR_ERROR;
-	}
 	time(&pconn->last_time);
 	pconn.reset();
 	if (5 + sizeof(uint8_t) != tmp_bin.cb ||
