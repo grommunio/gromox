@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
 #include <condition_variable>
+#include <csignal>
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -404,10 +405,10 @@ int transporter_stop()
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
 		pthr = (THREAD_DATA*)pnode->pdata;
 		g_waken_cond.notify_all();
-        pthread_cancel(pthr->id);
+		pthread_kill(pthr->id, SIGALRM);
 	}
 	tl_hold.unlock();
-	pthread_cancel(g_scan_id);
+	pthread_kill(g_scan_id, SIGALRM);
 	transporter_collect_hooks();
 	for (size_t i = 0; i < g_threads_max; ++i)
 		mail_free(&g_data_ptr[i].fake_context.mail);
