@@ -402,13 +402,16 @@ int transporter_stop()
 
 	g_notify_stop = true;
 	std::unique_lock tl_hold(g_threads_list_mutex);
+	g_waken_cond.notify_all();
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
 		pthr = (THREAD_DATA*)pnode->pdata;
-		g_waken_cond.notify_all();
-		pthread_kill(pthr->id, SIGALRM);
+		auto id = pthr->id;
+		pthread_kill(id, SIGALRM);
+		pthread_join(id, nullptr);
 	}
 	tl_hold.unlock();
 	pthread_kill(g_scan_id, SIGALRM);
+	pthread_join(g_scan_id, nullptr);
 	transporter_collect_hooks();
 	for (size_t i = 0; i < g_threads_max; ++i)
 		mail_free(&g_data_ptr[i].fake_context.mail);
