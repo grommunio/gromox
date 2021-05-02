@@ -116,7 +116,7 @@ int exmdb_local_run()
 	E(exmdb_local_mime_to_extension, "mime_to_extension");
 	E(exmdb_local_extension_to_mime, "extension_to_mime");
 	E(exmdb_local_get_user_ids, "get_user_ids");
-	E(exmdb_local_get_username, "get_username");
+	E(exmdb_local_get_username, "get_username_from_id");
 #undef E
 
 	if (FALSE == oxcmail_init_library(g_org_name,

@@ -1694,25 +1694,3 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 	}
 	return TRUE;
 }
-
-BOOL mysql_adaptor_get_username(int user_id, char *username)
-{
-	char sql_string[1024];
-
-	snprintf(sql_string, 1024, "SELECT username FROM users "
-		"WHERE id=%d", user_id);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
-		return false;
-	if (!conn.res.query(sql_string))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1)
-		return FALSE;
-	auto myrow = pmyres.fetch_row();
-	strncpy(username, myrow[0], 256);
-	return TRUE;
-}
