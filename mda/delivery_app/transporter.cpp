@@ -233,8 +233,8 @@ int transporter_run()
 	}
 	memset(g_data_ptr, 0, size);
 	for (size_t i = 0; i < g_threads_max; ++i) {
-		(g_data_ptr + i)->node.pdata = g_data_ptr + i;
-		panti = &(g_data_ptr + i)->anti_loop;
+		g_data_ptr[i].node.pdata = g_data_ptr + i;
+		panti = &g_data_ptr[i].anti_loop;
 		double_list_init(&panti->free_list);
 		double_list_init(&panti->throwed_list);
 		for (size_t j = 0; j < MAX_THROWING_NUM; ++j) {
@@ -272,20 +272,16 @@ int transporter_run()
         return -5;
     }
 	for (size_t i = 0; i < g_threads_max; ++i) {
-		mem_file_init(&(g_data_ptr + i)->fake_context.mail_control.f_rcpt_to,
-			g_file_allocator);
-		mail_init(&(g_data_ptr + i)->fake_context.mail, g_mime_pool);
-		(g_data_ptr + i)->fake_context.context.pmail = 
-				&(g_data_ptr + i)->fake_context.mail;
-        (g_data_ptr + i)->fake_context.context.pcontrol =
-				&(g_data_ptr + i)->fake_context.mail_control;
+		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, g_file_allocator);
+		mail_init(&g_data_ptr[i].fake_context.mail, g_mime_pool);
+		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
+		g_data_ptr[i].fake_context.context.pcontrol = &g_data_ptr[i].fake_context.mail_control;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
-		mem_file_init(&(g_free_ptr + i)->mail_control.f_rcpt_to,
-            g_file_allocator);
-		mail_init(&(g_free_ptr + i)->mail, g_mime_pool);
-		(g_free_ptr + i)->context.pmail = &(g_free_ptr + i)->mail;
-		(g_free_ptr + i)->context.pcontrol = &(g_free_ptr + i)->mail_control;
+		mem_file_init(&g_free_ptr[i].mail_control.f_rcpt_to, g_file_allocator);
+		mail_init(&g_free_ptr[i].mail, g_mime_pool);
+		g_free_ptr[i].context.pmail = &g_free_ptr[i].mail;
+		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;
 	}
 
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
@@ -305,9 +301,9 @@ int transporter_run()
 	}
 
 	for (size_t i = g_threads_min; i < g_threads_max; ++i)
-		double_list_append_as_tail(&g_free_threads, &(g_data_ptr + i)->node);
+		double_list_append_as_tail(&g_free_threads, &g_data_ptr[i].node);
 	for (size_t i = 0; i < g_threads_min; ++i) {
-		(g_data_ptr + i)->wait_on_event = TRUE;
+		g_data_ptr[i].wait_on_event = TRUE;
 		pthread_attr_init(&attr);
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 		auto ret = pthread_create(&g_data_ptr[i].id, &attr, dxp_thrwork, &g_data_ptr[i]);
@@ -322,7 +318,7 @@ int transporter_run()
 		snprintf(buf, sizeof(buf), "xprt/%zu", i);
 		pthread_setname_np(g_data_ptr[i].id, buf);
 		pthread_attr_destroy(&attr);
-		double_list_append_as_tail(&g_threads_list, &(g_data_ptr + i)->node);
+		double_list_append_as_tail(&g_threads_list, &g_data_ptr[i].node);
     }
 	/* create the scanning thread */
 	pthread_attr_init(&attr);
@@ -414,9 +410,9 @@ int transporter_stop()
 	pthread_cancel(g_scan_id);
 	transporter_collect_hooks();
 	for (size_t i = 0; i < g_threads_max; ++i)
-		mail_free(&(g_data_ptr + i)->fake_context.mail);
+		mail_free(&g_data_ptr[i].fake_context.mail);
 	for (size_t i = 0; i < g_free_num; ++i)
-		mail_free(&(g_free_ptr + i)->mail);
+		mail_free(&g_free_ptr[i].mail);
 	transporter_collect_resource();
     return 0;
 }
