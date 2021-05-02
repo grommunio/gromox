@@ -224,29 +224,10 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		exmdb_server_free_environment();
 		return sockd;
 	}
-	printf("[exmdb_provider]: Failed to connect to [%s]:%hu/%s",
-	       pserver->host.c_str(), pserver->port, pserver->prefix.c_str());
+	printf("[exmdb_provider]: Failed to connect to [%s]:%hu/%s: %s\n",
+	       pserver->host.c_str(), pserver->port, pserver->prefix.c_str(),
+	       exmdb_rpc_strerror(response_code));
 	exmdb_server_free_environment();
-	switch (response_code) {
-	case exmdb_response::ACCESS_DENY:
-		printf(": access denied\n");
-		break;
-	case exmdb_response::MAX_REACHED:
-		printf(": maximum connections reached in server\n");
-		break;
-	case exmdb_response::LACK_MEMORY:
-		printf(": server out of memory\n");
-		break;
-	case exmdb_response::MISCONFIG_PREFIX:
-		printf(": prefix not served by server\n");
-		break;
-	case exmdb_response::MISCONFIG_MODE:
-		printf(": misconfigured prefix mode\n");
-		break;
-	default:
-		printf(": error code %d\n", response_code);
-		break;
-	}
 	close(sockd);
 	return -1;
 }

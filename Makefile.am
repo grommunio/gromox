@@ -126,7 +126,7 @@ libgxm_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxm_alias_translator_la_DEPENDENCIES = ${default_sym}
 libgxm_exmdb_local_la_SOURCES = mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_client.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/main.cpp mda/exmdb_local/net_failure.cpp
 libgxm_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxm_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+libgxm_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = ${default_sym}
 libgxm_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/main.cpp
 libgxm_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -226,7 +226,7 @@ libgxs_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
 
 freebusy_SOURCES = tools/freebusy.cpp
-freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp exch/http/service.cpp
 pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
@@ -249,7 +249,7 @@ mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_
 mkpublic_SOURCES = tools/mkpublic.cpp
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 rebuild_SOURCES = tools/rebuild.cpp
-rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 

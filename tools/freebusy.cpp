@@ -516,28 +516,9 @@ static int connect_exmdb(const char *dir)
 		}
 		return sockd;
 	}
-	fprintf(stderr, "Failed to connect to [%s]:%hu/%s",
-	        pexnode->host.c_str(), pexnode->port, pexnode->prefix.c_str());
-	switch (response_code) {
-	case exmdb_response::ACCESS_DENY:
-		fprintf(stderr, ": access deniedn\n");
-		break;
-	case exmdb_response::MAX_REACHED:
-		fprintf(stderr, ": maximum connections reached in server\n");
-		break;
-	case exmdb_response::LACK_MEMORY:
-		fprintf(stderr, ": server out of memory\n");
-		break;
-	case exmdb_response::MISCONFIG_PREFIX:
-		fprintf(stderr, ": prefix not served by server\n");
-		break;
-	case exmdb_response::MISCONFIG_MODE:
-		fprintf(stderr, ": misconfigured prefix mode\n");
-		break;
-	default:
-		fprintf(stderr, ": error code %d\n", response_code);
-		break;
-	}
+	fprintf(stderr, "Failed to connect to [%s]:%hu/%s: %s\n",
+	        pexnode->host.c_str(), pexnode->port, pexnode->prefix.c_str(),
+	        exmdb_rpc_strerror(response_code));
 	close(sockd);
 	return -1;
 }

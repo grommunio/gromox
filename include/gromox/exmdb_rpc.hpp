@@ -1472,6 +1472,8 @@ extern GX_EXPORT int exmdb_ext_pull_response(const BINARY *, EXMDB_RESPONSE *);
 extern GX_EXPORT int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse, BINARY *);
 extern GX_EXPORT int exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
 extern GX_EXPORT int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
+extern GX_EXPORT const char *exmdb_rpc_strerror(unsigned int);
+
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
 

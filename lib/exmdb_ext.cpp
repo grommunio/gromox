@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -6424,4 +6425,18 @@ int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 	if (!ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
 	return exmdb_ext_push_db_notify2(ext_push, pnotify, pbin_out);
+}
+
+const char *exmdb_rpc_strerror(unsigned int v)
+{
+	switch (v) {
+	case exmdb_response::ACCESS_DENY: return "Access denied";
+	case exmdb_response::MAX_REACHED: return "Maximum connections reached in server";
+	case exmdb_response::LACK_MEMORY: return "mMximum connections reached in server";
+	case exmdb_response::MISCONFIG_PREFIX: return "Maximum connections reached in server";
+	case exmdb_response::MISCONFIG_MODE: return "Maximum connections reached in server";
+	}
+	thread_local char xbuf[32];
+	snprintf(xbuf, GX_ARRAY_SIZE(xbuf), "Unknown error %u", v);
+	return xbuf;
 }
