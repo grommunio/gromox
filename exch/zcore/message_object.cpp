@@ -696,6 +696,13 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	return TRUE;
 }
 
+static constexpr uint32_t trimtags[] = {
+	PROP_TAG_MID, PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYCC,
+	PROP_TAG_DISPLAYBCC, PROP_TAG_MESSAGESIZE, PROP_TAG_HASATTACHMENTS,
+	PROP_TAG_CHANGEKEY, PROP_TAG_CHANGENUMBER,
+	PROP_TAG_PREDECESSORCHANGELIST,
+};
+
 BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 	const MESSAGE_CONTENT *pmsgctnt)
 {
@@ -710,24 +717,8 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 	}
 	memcpy(msgctnt.proplist.ppropval, pmsgctnt->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_MID);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_DISPLAYTO);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_DISPLAYCC);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_DISPLAYBCC);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_MESSAGESIZE);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_HASATTACHMENTS);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_CHANGEKEY);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_CHANGENUMBER);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_PREDECESSORCHANGELIST);
+	for (auto t : trimtags)
+		common_util_remove_propvals(&msgctnt.proplist, t);
 	if (!exmdb_client::clear_message_instance(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id)) {
@@ -1430,24 +1421,8 @@ BOOL message_object_copy_to(
 		pmessage_src->instance_id, &msgctnt)) {
 		return FALSE;
 	}
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_MID);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_DISPLAYTO);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_DISPLAYCC);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_DISPLAYBCC);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_MESSAGESIZE);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_HASATTACHMENTS);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_CHANGEKEY);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_CHANGENUMBER);
-	common_util_remove_propvals(
-		&msgctnt.proplist, PROP_TAG_PREDECESSORCHANGELIST);
+	for (auto t : trimtags)
+		common_util_remove_propvals(&msgctnt.proplist, t);
 	i = 0;
 	while (i < msgctnt.proplist.count) {
 		if (common_util_index_proptags(pexcluded_proptags,

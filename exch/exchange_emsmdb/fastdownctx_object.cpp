@@ -426,18 +426,15 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			}
 			if (NULL == pctx->pmsglst) {
 				if (FALSE == pctx->b_chginfo) {
-					common_util_remove_propvals(&pmsgctnt->proplist,
-												PROP_TAG_ENTRYID);
-					common_util_remove_propvals(&pmsgctnt->proplist,
-												PROP_TAG_SOURCEKEY);
-					common_util_remove_propvals(&pmsgctnt->proplist,
-												PROP_TAG_CHANGEKEY);
-					common_util_remove_propvals(&pmsgctnt->proplist,
-										PROP_TAG_ORIGINALENTRYID);
-					common_util_remove_propvals(&pmsgctnt->proplist,
-									PROP_TAG_LASTMODIFICATIONTIME);
-					common_util_remove_propvals(&pmsgctnt->proplist,
-									PROP_TAG_PREDECESSORCHANGELIST);
+					static constexpr uint32_t tags[] = {
+						PROP_TAG_ENTRYID, PROP_TAG_SOURCEKEY,
+						PROP_TAG_CHANGEKEY,
+						PROP_TAG_ORIGINALENTRYID,
+						PROP_TAG_LASTMODIFICATIONTIME,
+						PROP_TAG_PREDECESSORCHANGELIST,
+					};
+					for (auto t : tags)
+						common_util_remove_propvals(&pmsgctnt->proplist, t);
 				} else {
 					common_util_remove_propvals(&pmsgctnt->proplist,
 										PROP_TAG_ORIGINALENTRYID);

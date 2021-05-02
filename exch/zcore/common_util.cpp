@@ -2392,40 +2392,18 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	if (NULL == pmsgctnt) {
 		return GXERR_SUCCESS;
 	}
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CONVERSATIONID);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_DISPLAYTO);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_DISPLAYTO_STRING8);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_DISPLAYCC);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_DISPLAYCC_STRING8);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_DISPLAYBCC);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist,PROP_TAG_DISPLAYBCC_STRING8);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MID);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGESIZE);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGESIZEEXTENDED);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_HASNAMEDPROPERTIES);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_HASATTACHMENTS);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_ENTRYID);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_FOLDERID);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_OBJECTTYPE);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_PARENTENTRYID);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_STORERECORDKEY);
+	static constexpr uint32_t tags[] = {
+		PROP_TAG_CONVERSATIONID, PROP_TAG_DISPLAYTO,
+		PROP_TAG_DISPLAYTO_STRING8, PROP_TAG_DISPLAYCC,
+		PROP_TAG_DISPLAYCC_STRING8, PROP_TAG_DISPLAYBCC,
+		PROP_TAG_DISPLAYBCC_STRING8, PROP_TAG_MID,
+		PROP_TAG_MESSAGESIZE, PROP_TAG_MESSAGESIZEEXTENDED,
+		PROP_TAG_HASNAMEDPROPERTIES, PROP_TAG_HASATTACHMENTS,
+		PROP_TAG_ENTRYID, PROP_TAG_FOLDERID, PROP_TAG_OBJECTTYPE,
+		PROP_TAG_PARENTENTRYID, PROP_TAG_STORERECORDKEY,
+	};
+	for (auto t : tags)
+		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!exmdb_client::allocate_cn(
 		store_object_get_dir(pstore), &change_num)) {
 		return GXERR_CALL_FAILED;
@@ -2473,40 +2451,24 @@ static BOOL common_util_create_folder(
 	TAGGED_PROPVAL propval;
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
-	
-	common_util_remove_propvals(pproplist, PROP_TAG_ACCESS);
-	common_util_remove_propvals(pproplist, PROP_TAG_ACCESSLEVEL);
-	common_util_remove_propvals(pproplist, PROP_TAG_ADDRESSBOOKENTRYID);
-	common_util_remove_propvals(pproplist, PROP_TAG_ASSOCIATEDCONTENTCOUNT);
-	common_util_remove_propvals(pproplist, PROP_TAG_ATTRIBUTEREADONLY);
-	common_util_remove_propvals(pproplist, PROP_TAG_CONTENTCOUNT);
-	common_util_remove_propvals(pproplist, PROP_TAG_CONTENTUNREADCOUNT);
-	common_util_remove_propvals(pproplist, PROP_TAG_DELETEDCOUNTTOTAL);
-	common_util_remove_propvals(pproplist, PROP_TAG_DELETEDFOLDERTOTAL);
-	common_util_remove_propvals(pproplist, PROP_TAG_ARTICLENUMBERNEXT);
-	common_util_remove_propvals(pproplist, PROP_TAG_INTERNETARTICLENUMBER);
-	common_util_remove_propvals(pproplist, PROP_TAG_DISPLAYTYPE);
-	common_util_remove_propvals(pproplist, PROP_TAG_DELETEDON);
-	common_util_remove_propvals(pproplist, PROP_TAG_ENTRYID);
-	common_util_remove_propvals(pproplist, PROP_TAG_FOLDERCHILDCOUNT);
-	common_util_remove_propvals(pproplist, PROP_TAG_FOLDERFLAGS);
-	common_util_remove_propvals(pproplist, PROP_TAG_FOLDERID);
-	common_util_remove_propvals(pproplist, PROP_TAG_FOLDERTYPE);
-	common_util_remove_propvals(pproplist, PROP_TAG_HASRULES);
-	common_util_remove_propvals(pproplist, PROP_TAG_HIERARCHYCHANGENUMBER);
-	common_util_remove_propvals(pproplist, PROP_TAG_LOCALCOMMITTIME);
-	common_util_remove_propvals(pproplist, PROP_TAG_LOCALCOMMITTIMEMAX);
-	common_util_remove_propvals(pproplist, PROP_TAG_MESSAGESIZE);
-	common_util_remove_propvals(pproplist, PROP_TAG_MESSAGESIZEEXTENDED);
-	common_util_remove_propvals(pproplist, PROP_TAG_NATIVEBODY);
-	common_util_remove_propvals(pproplist, PROP_TAG_OBJECTTYPE);
-	common_util_remove_propvals(pproplist, PROP_TAG_PARENTENTRYID);
-	common_util_remove_propvals(pproplist, PROP_TAG_RECORDKEY);
-	common_util_remove_propvals(pproplist, PROP_TAG_SEARCHKEY);
-	common_util_remove_propvals(pproplist, PROP_TAG_STOREENTRYID);
-	common_util_remove_propvals(pproplist, PROP_TAG_STORERECORDKEY);
-	common_util_remove_propvals(pproplist, PROP_TAG_SOURCEKEY);
-	common_util_remove_propvals(pproplist, PROP_TAG_PARENTSOURCEKEY);
+
+	static constexpr uint32_t tags[] = {	
+		PROP_TAG_ACCESS, PROP_TAG_ACCESSLEVEL, PROP_TAG_ADDRESSBOOKENTRYID,
+		PROP_TAG_ASSOCIATEDCONTENTCOUNT, PROP_TAG_ATTRIBUTEREADONLY,
+		PROP_TAG_CONTENTCOUNT, PROP_TAG_CONTENTUNREADCOUNT,
+		PROP_TAG_DELETEDCOUNTTOTAL, PROP_TAG_DELETEDFOLDERTOTAL,
+		PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_INTERNETARTICLENUMBER,
+		PROP_TAG_DISPLAYTYPE, PROP_TAG_DELETEDON, PROP_TAG_ENTRYID,
+		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PROP_TAG_FOLDERID,
+		PROP_TAG_FOLDERTYPE, PROP_TAG_HASRULES, PROP_TAG_HIERARCHYCHANGENUMBER,
+		PROP_TAG_LOCALCOMMITTIME, PROP_TAG_LOCALCOMMITTIMEMAX,
+		PROP_TAG_MESSAGESIZE, PROP_TAG_MESSAGESIZEEXTENDED, PROP_TAG_NATIVEBODY,
+		PROP_TAG_OBJECTTYPE, PROP_TAG_PARENTENTRYID, PROP_TAG_RECORDKEY,
+		PROP_TAG_SEARCHKEY, PROP_TAG_STOREENTRYID, PROP_TAG_STORERECORDKEY,
+		PROP_TAG_SOURCEKEY, PROP_TAG_PARENTSOURCEKEY,
+	};
+	for (auto t : tags)
+		common_util_remove_propvals(pproplist, t);
 	if (NULL == common_util_get_propvals(
 		pproplist, PROP_TAG_DISPLAYNAME)) {
 		return FALSE;

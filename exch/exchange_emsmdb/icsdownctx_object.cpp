@@ -358,36 +358,15 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		}
 	}
 	for (size_t i = 0; i < fldchgs.count; ++i) {
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_FOLDERPATHNAME);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_NORMALMESSAGESIZE);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_NORMALMESSAGESIZEEXTENDED);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_MESSAGESIZEEXTENDED);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_ASSOCMESSAGESIZE);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_FOLDERCHILDCOUNT);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_DELETEDFOLDERTOTAL);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_ARTICLENUMBERNEXT);
-		common_util_remove_propvals(
-			fldchgs.pfldchgs + i,
-			PROP_TAG_FOLDERFLAGS);
+		static constexpr uint32_t tags[] = {
+			PROP_TAG_FOLDERPATHNAME, PROP_TAG_NORMALMESSAGESIZE,
+			PROP_TAG_NORMALMESSAGESIZEEXTENDED, PROP_TAG_MESSAGESIZEEXTENDED,
+			PROP_TAG_ASSOCMESSAGESIZE, PROP_TAG_ASSOCMESSAGESIZEEXTENDED,
+			PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_DELETEDFOLDERTOTAL,
+			PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_FOLDERFLAGS,
+		};
+		for (auto t : tags)
+			common_util_remove_propvals(&fldchgs.pfldchgs[i], t);
 		if (NULL == common_util_get_propvals(
 			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTEHIDDEN)) {
 			tmp_propval.proptag = PROP_TAG_ATTRIBUTEHIDDEN;

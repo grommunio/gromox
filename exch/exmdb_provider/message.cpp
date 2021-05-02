@@ -4070,38 +4070,19 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						" again", account, LLU(message_id), LLU(folder_id));
 					break;	
 				}
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYTO);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYTO_STRING8);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYCC);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYCC_STRING8);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYBCC);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYBCC_STRING8);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MID);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MESSAGESIZE);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_CHANGEKEY);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_READ);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_HASATTACHMENTS);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_PREDECESSORCHANGELIST);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MESSAGETOME);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MESSAGECCME);
+				static constexpr uint32_t tags[] = {
+					PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
+					PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8,
+					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
+					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
+					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+					PROP_TAG_CHANGEKEY, PROP_TAG_READ,
+					PROP_TAG_HASATTACHMENTS,
+					PROP_TAG_PREDECESSORCHANGELIST,
+					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
+				};
+				for (auto t : tags)
+					common_util_remove_propvals(&pmsgctnt->proplist, t);
 				if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
 					PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
 					memcpy(essdn_buff, "EX:", 3);
@@ -4515,38 +4496,19 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						" again", account, LLU(message_id), LLU(folder_id));
 					break;	
 				}
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYTO);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYTO_STRING8);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYCC);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYCC_STRING8);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYBCC);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_DISPLAYBCC_STRING8);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MID);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MESSAGESIZE);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_CHANGEKEY);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_READ);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_HASATTACHMENTS);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_PREDECESSORCHANGELIST);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MESSAGETOME);
-				common_util_remove_propvals(
-					&pmsgctnt->proplist, PROP_TAG_MESSAGECCME);
+				static constexpr uint32_t tags[] = {
+					PROP_TAG_DISPLAYTO, PROP_TAG_DISPLAYTO_STRING8,
+					PROP_TAG_DISPLAYCC, PROP_TAG_DISPLAYCC_STRING8,
+					PROP_TAG_DISPLAYBCC, PROP_TAG_DISPLAYBCC_STRING8,
+					PROP_TAG_MID, PROP_TAG_MESSAGESIZE,
+					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+					PROP_TAG_CHANGEKEY, PROP_TAG_READ,
+					PROP_TAG_HASATTACHMENTS,
+					PROP_TAG_PREDECESSORCHANGELIST,
+					PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,
+				};
+				for (auto t : tags)
+					common_util_remove_propvals(&pmsgctnt->proplist, t);
 				if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
 					PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
 					memcpy(essdn_buff, "EX:", 3);
