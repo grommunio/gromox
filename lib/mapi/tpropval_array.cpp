@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
-static BOOL tpropval_array_append(TPROPVAL_ARRAY *parray,
+static bool tpropval_array_append(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval)
 {
 	int count;
@@ -15,24 +15,24 @@ static BOOL tpropval_array_append(TPROPVAL_ARRAY *parray,
 	if (NULL == ppropval->pvalue) {
 		debug_info("[tpropval_array]: pvalue is"
 			" NULL in tpropval_array_append");
-		return TRUE;
+		return true;
 	}
 	count = (parray->count/100 + 1) * 100;
 	if (parray->count + 1 >= count) {
 		count += 100;
 		ppropvals = static_cast<TAGGED_PROPVAL *>(realloc(parray->ppropval, count * sizeof(TAGGED_PROPVAL)));
 		if (NULL == ppropvals) {
-			return FALSE;
+			return false;
 		}
 		parray->ppropval = ppropvals;
 	}
 	parray->ppropval[parray->count].proptag = ppropval->proptag;
 	parray->ppropval[parray->count].pvalue = propval_dup(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 	if (NULL == parray->ppropval[parray->count].pvalue) {
-		return FALSE;
+		return false;
 	}
 	parray->count ++;
-	return TRUE;
+	return true;
 }
 
 void *tpropval_array_get_propval(const TPROPVAL_ARRAY *parray, uint32_t proptag)
@@ -133,8 +133,7 @@ TPROPVAL_ARRAY* tpropval_array_dup(TPROPVAL_ARRAY *parray)
 		return NULL;
 	}
 	for (i=0; i<parray->count; i++) {
-		if (FALSE == tpropval_array_append(
-			parray1, parray->ppropval + i)) {
+		if (!tpropval_array_append(parray1, &parray->ppropval[i])) {
 			tpropval_array_free(parray1);
 			return NULL;
 		}
