@@ -225,7 +225,6 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	if (NULL == pmime_last) {
         simple_tree_add_child(&pmail->tree, &pmime_parent->node,
 			&pmime->node,SIMPLE_TREE_ADD_LAST);
-		pmime_last = pmime;
     } else {
 		simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
@@ -749,7 +748,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 		goto PARSE_FAILURE;
 	} else {
 		buff_len += gmd;
-		buff_len += sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
+		sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
 		return 1;
 	}
 	

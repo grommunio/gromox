@@ -254,7 +254,6 @@ static void *consrv_work(void *argp)
 	char last_command[MAXLINE];
 	
 	offset = 0;
-	read_len = 0;
 	pconsole = (CONSOLE_NODE*)argp;
 	client_fd = pconsole->client_fd;
 	pthread_setspecific(g_client_fd_key, (const void*)(long)client_fd);
@@ -482,7 +481,7 @@ void console_server_notify_main_stop()
 		write(pconsole->client_fd, STOP_STRING, sizeof(STOP_STRING) - 1);
 		close(pconsole->client_fd);
 	}
-	while ((pnode = double_list_pop_front(&g_free_list)) != nullptr)
+	while (double_list_pop_front(&g_free_list) != nullptr)
 		/* do nothing */;
 	ll_hold.unlock();
 	g_notify_stop = true;

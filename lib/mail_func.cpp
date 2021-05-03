@@ -525,10 +525,8 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 	int bgettoken;
 	int lasttokenloc;
 	const char *tmp_ptr;
-	const char *loc_ptr;
 	
 	tmp_ptr = email;
-	loc_ptr = email;
 	tokenloc = 0;
 	bquoted = 0;
 	bgettoken = 0;
@@ -585,7 +583,7 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 		}
 	}
 	/* get the first < token */
-	loc_ptr = tmp_ptr;
+	const char *loc_ptr = tmp_ptr;
 	bgettoken = 0;
 	tokenloc = 0;
 	lasttokenloc = -1;
@@ -1014,11 +1012,9 @@ static const char B64Chars[64] = {
 int utf7_to_utf8 (const char *u7, size_t u7len, char *u8, size_t u8len)
 {
   char *u8end;
-  char *buf, *p;
   int b, ch, k;
 
-  p = buf = u8;
-
+	auto p = u8;
   u8end = u8 + u8len - 1;
 
   for (; u7len&&p<u8end; u7++, u7len--)
@@ -1757,7 +1753,7 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
 	int i = 0;
-	char is_xml = 0, lc = 0, *tp;
+	char is_xml = 0, lc = 0;
 	int depth = 0, in_q = 0;
 	
 	auto rbuf = std::make_unique<char[]>(len + 1);
@@ -1774,7 +1770,7 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 	char c = buf[0];
 	char *p = buf.get();
 	char *rp = rbuf.get();
-	char *tbuf = tp = NULL;
+	char *tbuf = nullptr;
 	while (i < len) {
 		switch (c) {
 		case '\0':
@@ -1874,13 +1870,11 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 			case st::QUOTE:
 				state = st::NONE;
 				in_q = 0;
-				tp = tbuf;
 				break;
 			case st::COMMENT:
 				if (p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '-') {
 					state = st::NONE;
 					in_q = 0;
-					tp = tbuf;
 				}
 				break;
 			default:

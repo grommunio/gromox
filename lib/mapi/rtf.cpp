@@ -289,7 +289,6 @@ static int rtf_decode_hex_char(const char *in)
 	if (strlen(in) < 2) {
 		return 0;
 	}
-	retval = 0;
 	if (in[0] >= '0' && in[0] <= '9') {
 		retval = in[0] - '0';
 	} else if ((in[0] >= 'a' && in[0] <= 'f')) {

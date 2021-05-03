@@ -681,7 +681,6 @@ char* itvltoa(long interval, char *string)
 	days = 0;
 	hours = 0;
 	minutes = 0;
-	seconds = 0;
 	offset = 0;
 	if (0 == interval) {
 		strcpy(string, "0second");
@@ -745,10 +744,8 @@ char* itvltoa(long interval, char *string)
 			ltoa(seconds, string + offset, 10);
 			offset = strlen(string);
 			strcpy(string + offset, "seconds");
-			offset += 7;
 		} else if (1 == seconds) {
 			strcpy(string + offset, "1second");
-			offset += 8;
 		}
 	}
 	return string;
@@ -1065,7 +1062,6 @@ void randstring_k(char *buff, int length, const char *string)
 	if (length <= 0) {
 		length = 1;
 	}
-	key = 0;
 	string_len = strlen(string);
 	
 	srand(time(NULL) * length + ++myseed);
