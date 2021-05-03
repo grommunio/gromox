@@ -12,12 +12,11 @@
 
 namespace {
 struct READ_STAT {
-	uint8_t *pbuff;
-	uint32_t length;
-	uint32_t offset;
-	uint16_t crc;
-	int state86, lastch;
-	uint8_t runlen;
+	uint8_t *pbuff = nullptr;
+	uint32_t length = 0, offset = 0;
+	uint16_t crc = 0;
+	int state86 = 0, lastch = -1;
+	uint8_t runlen = 0;
 };
 
 struct BINHEX_STREAM {
@@ -117,11 +116,6 @@ static bool binhex_init_read_stat(READ_STAT *pstat,
 {
 	pstat->pbuff = static_cast<uint8_t *>(pbuff);
 	pstat->length = length;
-	pstat->offset = 0;
-	pstat->state86 = 0;
-	pstat->lastch = -1;
-	pstat->runlen = 0;
-	pstat->crc = 0;
 	auto ptr = memmem(pbuff, length, g_hqxheader, HEADERMATCH);
 	if (NULL == ptr) {
 		debug_info("[binhex]: hqx buffer header not found");
