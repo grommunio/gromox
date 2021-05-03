@@ -16,9 +16,8 @@ struct READ_STAT {
 	uint32_t length;
 	uint32_t offset;
 	uint16_t crc;
-	int state86;
+	int state86, lastch;
 	uint8_t runlen;
-	uint8_t lastch;
 };
 
 struct BINHEX_STREAM {
@@ -120,6 +119,7 @@ static bool binhex_init_read_stat(READ_STAT *pstat,
 	pstat->length = length;
 	pstat->offset = 0;
 	pstat->state86 = 0;
+	pstat->lastch = -1;
 	pstat->runlen = 0;
 	pstat->crc = 0;
 	auto ptr = memmem(pbuff, length, g_hqxheader, HEADERMATCH);
@@ -227,6 +227,9 @@ static bool binhex_read_buffer(READ_STAT *pstat, void *pbuff, uint32_t len)
 			if (!binhex_decode_char(pstat, &rl))
 				return false;
 			if (rl > 0) {
+				if (pstat->lastch < 0)
+					/* Cannot repeat without prior byte */
+					return false;
 				pstat->runlen = rl - 1;
 				i --;
 				continue;
