@@ -1,3 +1,26 @@
+0.22 (2021-05-03)
+=================
+
+Enhancements:
+
+* exch: implement send quota
+* logthru: add logfile support, add an close-open-cycle on SIGHUP
+  to facilitate external log rotation
+
+Changes:
+
+* mysql_adaptor: change default schema_upgrades action to "skip"
+* exch: remove log_plugin service plugin
+* exch: remove mod_proxy plugin
+
+Fixes:
+
+* midb: fix leftover debugging breakpoint infinite loop
+* ldap_adaptor: fix null deref when LDAP server is away
+* exmdb_provider: fix double-free on shutdown
+* delivery: replace pthread_cancel calls, fixing a crash on shutdown
+
+
 0.21 (2021-04-20)
 =================
 
