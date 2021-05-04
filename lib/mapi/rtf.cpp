@@ -1388,8 +1388,10 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				debug_info("[rtf]: rtf format error, missing first '{'");
 				return false;
 			}
-			if (rtf_optimize_element(&plast_group->collection_list, input_word))
+			if (rtf_optimize_element(&plast_group->collection_list, input_word)) {
+				free(input_word);
 				return true;
+			}
 			pword = static_cast<SIMPLE_TREE_NODE *>(malloc(sizeof(SIMPLE_TREE_NODE)));
 			if (NULL == pword) {
 				free(input_word);
