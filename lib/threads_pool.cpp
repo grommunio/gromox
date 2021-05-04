@@ -192,8 +192,8 @@ static void *tpol_thrwork(void *pparam)
 				std::unique_lock tpd_hold(g_threads_pool_data_lock);
 				int gpr;
 				if (g_threads_pool_cur_thr_num > g_threads_pool_min_num &&
-				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS) >= 0 &&
-				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr))) {
+				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS)) >= 0 &&
+				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr)) {
 					double_list_remove(&g_threads_data_list, &pdata->node);
 					lib_buffer_put(g_threads_data_buff, pdata);
 					g_threads_pool_cur_thr_num --;
