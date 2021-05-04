@@ -298,6 +298,7 @@ RULE_ACTIONS* rule_actions_dup(const RULE_ACTIONS *prule)
 	paction->count = prule->count;
 	paction->pblock = static_cast<ACTION_BLOCK *>(malloc(sizeof(ACTION_BLOCK) * paction->count));
 	if (NULL == paction->pblock) {
+		free(paction);
 		return NULL;
 	}
 	for (i=0; i<prule->count; i++) {
