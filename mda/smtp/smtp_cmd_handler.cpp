@@ -301,7 +301,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     const char* smtp_reply_str;
     STREAM stream;
-	unsigned int size, size_copied, size2, size2_used;
+	unsigned int size, size2, size2_used;
 
     if (T_RCPT_CMD != pcontext->last_cmd) {
         /* 503 bad sequence of command, RCPT first */
@@ -340,17 +340,15 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
          * do not need to check the pbuff pointer because it will never
          * be NULL because of stream's characteristic
          */
-        size_copied = 0;
         size2_used = 0;
         do{
             if (size <= size2 - size2_used) {
                 memcpy(pbuff2, pbuff, size);
                 size2_used += size;
             } else {
-                size_copied = size2 - size2_used;
+                auto size_copied = size2 - size2_used;
 				memcpy(static_cast<char *>(pbuff2) + size2_used, pbuff, size_copied);
                 size2 = STREAM_BLOCK_SIZE;
-                size2_used = 0;
                 stream_forward_writing_ptr(&stream, STREAM_BLOCK_SIZE);
                 pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
                 if (NULL == pbuff2) {

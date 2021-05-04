@@ -410,7 +410,6 @@ static void *mdl_thrwork(void *arg)
 				}
 			}
 			close(fd);
-			fd = -1;
 			if (TRUE == need_remove) {
 				if (remove(temp_path) < 0 && errno != ENOENT)
 					fprintf(stderr, "W-1432: remove %s: %s\n", temp_path, strerror(errno));

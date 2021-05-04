@@ -845,7 +845,7 @@ static void transporter_clean_up_unloading()
 			} catch (...) {
 			}
 			/* empty the list_hook of plib */
-			while ((pnode1 = double_list_pop_front(&plib->list_hook)) != nullptr)
+			while (double_list_pop_front(&plib->list_hook) != nullptr)
 				/* nothing */;
 			double_list_free(&plib->list_hook);
 			/* free the service reference of the plugin */
