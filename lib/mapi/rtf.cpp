@@ -3139,6 +3139,8 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 						have_param = true;
 					} else {
 						have_param = false;
+						/* \b is like \b1 */
+						num = 1;
 					}
 					if (preader->have_fromhtml) {
 						if (0 == strcmp("par", name) ||
