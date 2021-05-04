@@ -1152,7 +1152,7 @@ static char* rtf_read_element(RTF_READER *preader)
 	
 	ix = 0;
 	current_max_length = 10;
-	auto input_str = static_cast<char *>(malloc(current_max_length));
+	auto input_str = static_cast<char *>(calloc(1, current_max_length));
 	if (NULL == input_str) {
 		debug_info("[rtf]: cannot allocate word storage");
 		return NULL;
@@ -1302,11 +1302,9 @@ static char* rtf_read_element(RTF_READER *preader)
 	if (need_unget)
 		rtf_ungetchar(preader, ch);
 	input_str[ix] = '\0';
-	if (0 == memcmp(input_str, "\\bin", 4)
-	    && HX_isdigit(input_str[4])) {
+	if (strncmp(input_str, "\\bin", 4) == 0 && HX_isdigit(input_str[4]))
 		ext_buffer_pull_advance(&preader->ext_pull,
 			atoi(input_str + 4));
-	}
 	return input_str;
 }
 
