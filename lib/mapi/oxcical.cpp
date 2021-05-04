@@ -222,10 +222,8 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 			pdaylight_rule = ptz_definition->prules + i;
 		} else {
 			if (NULL != pdaylight_rule) {
-				ptz_definition->prules[i].daylightdate =
-							pstandard_rule->daylightdate;
-				ptz_definition->prules[i].daylightbias =
-							pstandard_rule->daylightbias;
+				ptz_definition->prules[i].daylightdate = pdaylight_rule->daylightdate;
+				ptz_definition->prules[i].daylightbias = pdaylight_rule->daylightbias;
 			}
 		}
 		/* ignore the definition which has only STANDARD component 
