@@ -143,6 +143,31 @@ static const char tbl_domains_0[] =
 "  KEY `org_id` (`org_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_fetchmail_75[] =
+"CREATE TABLE `fetchmail` ("
+"  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,"
+"  `user_id` int(10) unsigned NOT NULL,"
+"  `mailbox` varchar(320) NOT NULL,"
+"  `active` tinyint(1) unsigned NOT NULL DEFAULT '1',"
+"  `src_server` varchar(255) NOT NULL,"
+"  `src_auth` enum('password','kerberos_v5','kerberos','kerberos_v4','gssapi','cram-md5','otp','ntlm','msn','ssh','any') NOT NULL DEFAULT 'password',"
+"  `src_user` varchar(255) NOT NULL,"
+"  `src_password` varchar(255) NOT NULL,"
+"  `src_folder` varchar(255) NOT NULL,"
+"  `fetchall` tinyint(1) unsigned NOT NULL DEFAULT '0',"
+"  `keep` tinyint(1) unsigned NOT NULL DEFAULT '1',"
+"  `protocol` enum('POP3','IMAP','POP2','ETRN','AUTO') NOT NULL DEFAULT 'IMAP',"
+"  `usessl` tinyint(1) unsigned NOT NULL DEFAULT '1',"
+"  `sslcertck` tinyint(1) unsigned NOT NULL DEFAULT '0',"
+"  `sslcertpath` varchar(255) CHARACTER SET utf8 DEFAULT NULL,"
+"  `sslfingerprint` varchar(255) CHARACTER SET latin1 DEFAULT NULL,"
+"  `extra_options` text,"
+"  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
+"  PRIMARY KEY (`id`),"
+"  KEY `fetchmail_ibfk_1` (`user_id`),"
+"  CONSTRAINT `fetchmail_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+")";
+
 static const char tbl_forwards_0[] =
 "CREATE TABLE `forwards` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -594,6 +619,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{72, "ALTER TABLE `orgs` DROP COLUMN `memo`"},
 	{73, "ALTER TABLE `orgs` ADD COLUMN `name` varchar(32) NOT NULL"},
 	{74, "ALTER TABLE `orgs` ADD COLUMN `description` varchar(128)"},
+	{75, tbl_fetchmail_75},
 	{0, nullptr},
 };
 
