@@ -263,6 +263,7 @@ MESSAGE_CONTENT* message_content_init()
 	}
 	if (FALSE == message_content_init_internal(pmsgctnt)) {
 		free(pmsgctnt);
+		return nullptr;
 	}
 	return pmsgctnt;
 }

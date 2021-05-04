@@ -1213,7 +1213,7 @@ static char* rtf_read_element(RTF_READER *preader)
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 				free(input_str);
 				debug_info("[rtf]: fail to get char from reader");
-				return input_str;
+				return nullptr;
 			}
 			input_str[2] = ch;
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
