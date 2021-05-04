@@ -2240,6 +2240,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		return NULL;
 	}
 	ptnef_proplist->count = 0;
+	const char *psmtp = nullptr, *pdisplay_name = nullptr;
 	if (0 == pproplist->count) {
 		ptnef_proplist->ppropval = NULL;
 	} else {
@@ -2247,10 +2248,9 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		if (NULL == ptnef_proplist->ppropval) {
 			return NULL;
 		}
+		psmtp = static_cast<char *>(tpropval_array_get_propval(pproplist, PROP_TAG_SMTPADDRESS));
+		pdisplay_name = static_cast<char *>(tpropval_array_get_propval(pproplist, PROP_TAG_DISPLAYNAME));
 	}
-	auto psmtp = static_cast<char *>(tpropval_array_get_propval(pproplist, PROP_TAG_SMTPADDRESS));
-	auto pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
-	                     pproplist, PROP_TAG_DISPLAYNAME));
 	for (i=0; i<pproplist->count; i++) {
 		ptnef_proplist->ppropval[ptnef_proplist->count].propid =
 			PROP_ID(pproplist->ppropval[i].proptag);
