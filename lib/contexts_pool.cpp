@@ -27,9 +27,8 @@ static struct epoll_event *g_events;
 static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
 static std::mutex g_context_locks[CONTEXT_TYPES];
 
-static int (*contexts_pool_get_context_socket)(void *pcontext);
-
-static struct timeval (*contexts_pool_get_context_timestamp)(void *pcontext);
+static int (*contexts_pool_get_context_socket)(SCHEDULE_CONTEXT *);
+static struct timeval (*contexts_pool_get_context_timestamp)(SCHEDULE_CONTEXT *);
 
 static void context_init(SCHEDULE_CONTEXT *pcontext)
 {
@@ -184,8 +183,8 @@ static void *ctxp_scanwork(void *pparam)
 }
 
 void contexts_pool_init(void *pcontexts, unsigned int context_num,
-    unsigned int unit_offset, int (*get_socket)(void*),
-    struct timeval (*get_timestamp)(void*),
+    unsigned int unit_offset, int (*get_socket)(SCHEDULE_CONTEXT *),
+    struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *),
     unsigned int contexts_per_thr, int timeout)
 {
 	SCHEDULE_CONTEXT* pcontext;

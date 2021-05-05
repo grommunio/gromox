@@ -359,14 +359,14 @@ void imap_parser_free()
 	g_block_auth_fail   = 0;
 }
 
-int imap_parser_get_context_socket(IMAP_CONTEXT *pcontext)
+int imap_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 {
-	return pcontext->connection.sockd;
+	return static_cast<IMAP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval imap_parser_get_context_timestamp(IMAP_CONTEXT *pcontext)
+struct timeval imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
-	return pcontext->connection.last_timestamp;
+	return static_cast<IMAP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
 
 int imap_parser_threads_event_proc(int action)

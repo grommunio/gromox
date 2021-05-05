@@ -241,14 +241,14 @@ void smtp_parser_free()
 	g_auth_times        = 0;
 }
 
-int smtp_parser_get_context_socket(SMTP_CONTEXT *pcontext)
+int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 {
-	return pcontext->connection.sockd;
+	return static_cast<SMTP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval smtp_parser_get_context_timestamp(SMTP_CONTEXT *pcontext)
+struct timeval smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
-	return pcontext->connection.last_timestamp;
+	return static_cast<SMTP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
 
 /*

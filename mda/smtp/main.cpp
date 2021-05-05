@@ -575,8 +575,8 @@ int main(int argc, const char **argv)
 	
 	contexts_pool_init(smtp_parser_get_contexts_list(),	 
 		context_num, sizeof(SMTP_CONTEXT),
-		reinterpret_cast<int (*)(void *)>(smtp_parser_get_context_socket),
-		reinterpret_cast<timeval (*)(void *)>(smtp_parser_get_context_timestamp),
+		smtp_parser_get_context_socket,
+		smtp_parser_get_context_timestamp,
 		thread_charge_num, smtp_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 

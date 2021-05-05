@@ -253,14 +253,14 @@ int http_parser_threads_event_proc(int action)
 	return 0;
 }
 
-int http_parser_get_context_socket(HTTP_CONTEXT *pcontext)
+int http_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 {
-	return pcontext->connection.sockd;
+	return static_cast<HTTP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext)
+struct timeval http_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
-	return pcontext->connection.last_timestamp;
+	return static_cast<HTTP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
 
 static VCONN_REF http_parser_get_vconnection(const char *host,

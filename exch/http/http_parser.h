@@ -122,9 +122,9 @@ extern void http_parser_init(size_t context_num, unsigned int timeout, int max_a
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern int http_parser_stop();
-int http_parser_get_context_socket(HTTP_CONTEXT *pcontext);
+extern int http_parser_get_context_socket(SCHEDULE_CONTEXT *);
 void http_parser_set_context(int context_id);
-struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext);
+extern struct timeval http_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
 int http_parser_get_param(int param);
 int http_parser_set_param(int param, int value);
 extern HTTP_CONTEXT *http_parser_get_contexts_list();

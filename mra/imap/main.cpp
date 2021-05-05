@@ -471,8 +471,8 @@ int main(int argc, const char **argv)
 	
 	contexts_pool_init(imap_parser_get_contexts_list(),  
 		context_num, sizeof(IMAP_CONTEXT),
-		reinterpret_cast<int (*)(void *)>(imap_parser_get_context_socket),
-		reinterpret_cast<timeval (*)(void *)>(imap_parser_get_context_timestamp),
+		imap_parser_get_context_socket,
+		imap_parser_get_context_timestamp,
 		thread_charge_num, imap_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 

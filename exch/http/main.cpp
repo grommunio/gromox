@@ -636,8 +636,8 @@ int main(int argc, const char **argv)
 
 	contexts_pool_init(http_parser_get_contexts_list(),
 		context_num, sizeof(HTTP_CONTEXT),
-		reinterpret_cast<int (*)(void *)>(http_parser_get_context_socket),
-		reinterpret_cast<timeval (*)(void *)>(http_parser_get_context_timestamp),
+		http_parser_get_context_socket,
+		http_parser_get_context_timestamp,
 		thread_charge_num, http_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 
