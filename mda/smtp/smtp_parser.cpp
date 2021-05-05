@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <mutex>
 #include <unistd.h>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "smtp_parser.h"
@@ -48,13 +49,9 @@ enum{
 static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length, 
 	SMTP_CONTEXT *pcontext);
 
-static void smtp_parser_context_init(SMTP_CONTEXT *pcontext);
-
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext);
 
 static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext);
-
-static void smtp_parser_context_free(SMTP_CONTEXT *pcontext);
 
 static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole);
 static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
@@ -75,7 +72,7 @@ static size_t g_flushing_size;
 static unsigned int g_timeout;
 static size_t g_auth_times;
 static size_t g_blktime_auths;
-static SMTP_CONTEXT *g_context_list;
+static std::vector<SMTP_CONTEXT> g_context_list;
 static int g_block_ID;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
@@ -198,13 +195,12 @@ int smtp_parser_run()
 		CRYPTO_THREADID_set_callback(smtp_parser_ssl_id);
 		CRYPTO_set_locking_callback(smtp_parser_ssl_locking);
 	}
-	g_context_list = static_cast<SMTP_CONTEXT *>(malloc(sizeof(SMTP_CONTEXT) * g_context_num));
-	if (NULL== g_context_list) {
+	try {
+		g_context_list.resize(g_context_num);
+	} catch (const std::bad_alloc &) {
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
 	}
-	for (size_t i = 0; i < g_context_num; ++i)
-		smtp_parser_context_init(g_context_list + i);
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	return 0;
@@ -218,13 +214,7 @@ int smtp_parser_run()
  */
 int smtp_parser_stop()
 {
-	if (NULL != g_context_list) {
-		for (size_t i = 0; i < g_context_num; ++i)
-			smtp_parser_context_free(g_context_list + i);
-		free(g_context_list);
-		g_context_list = NULL;        
-	}
-
+	g_context_list.clear();
 	if (TRUE == g_support_starttls && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
@@ -802,7 +792,7 @@ long smtp_parser_get_param(int param)
  */
 SMTP_CONTEXT* smtp_parser_get_contexts_list()
 {
-	return g_context_list;
+	return g_context_list.data();
 }
 
 /*
@@ -994,16 +984,13 @@ void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext)
  *    @param
  *        pcontext [in]    indicate the smtp context object
  */
-static void smtp_parser_context_init(SMTP_CONTEXT *pcontext)
+SMTP_CONTEXT::SMTP_CONTEXT()
 {
+	auto pcontext = this;
 	LIB_BUFFER *palloc_stream, *palloc_file;
 	
-	if (NULL == pcontext) {
-		return;
-	}
 	palloc_stream = blocks_allocator_get_allocator();
 	palloc_file = files_allocator_get_allocator();
-	memset(pcontext, 0, sizeof(SMTP_CONTEXT));
 	pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file);
 	mem_file_init(&pcontext->mail.envelop.f_rcpt_to, palloc_file);
@@ -1097,8 +1084,9 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
  *    @param
  *        pcontext [in]    indicate the smtp context object
  */
-static void smtp_parser_context_free(SMTP_CONTEXT *pcontext)
+SMTP_CONTEXT::~SMTP_CONTEXT()
 {
+	auto pcontext = this;
 	mem_file_free(&pcontext->block_info.f_last_blkmime);
 	mem_file_free(&pcontext->mail.envelop.f_rcpt_to);
 	mem_file_free(&pcontext->mail.head.f_mime_to);

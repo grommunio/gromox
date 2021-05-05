@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -83,7 +84,7 @@ static int g_block_auth_fail;
 static unsigned int g_timeout;
 static pthread_key_t g_context_key;
 static LIB_BUFFER *g_file_allocator;
-static HTTP_CONTEXT *g_context_list;
+static std::vector<HTTP_CONTEXT> g_context_list;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
@@ -92,12 +93,7 @@ static LIB_BUFFER *g_inchannel_allocator;
 static LIB_BUFFER *g_outchannel_allocator;
 static std::mutex g_vconnection_lock;
 
-static void http_parser_context_init(HTTP_CONTEXT *pcontext);
-
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
-
-static void http_parser_context_free(HTTP_CONTEXT *pcontext);
-
 static void http_parser_request_clear(HTTP_REQUEST *prequest);
 
 void http_parser_init(size_t context_num, unsigned int timeout,
@@ -198,8 +194,9 @@ int http_parser_run()
 		printf("[http_parser]: Failed to init mem file allocator\n");
 		return -6;
 	}
-	g_context_list = static_cast<HTTP_CONTEXT *>(malloc(sizeof(HTTP_CONTEXT) * g_context_num));
-    if (NULL== g_context_list) {
+	try {
+		g_context_list.resize(g_context_num);
+	} catch (const std::bad_alloc &) {
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
@@ -213,8 +210,6 @@ int http_parser_run()
 	if (NULL == g_outchannel_allocator) {
 		return -10;
 	}
-	for (size_t i = 0; i < g_context_num; ++i)
-		http_parser_context_init(g_context_list + i);
     return 0;
 }
 
@@ -234,12 +229,7 @@ int http_parser_stop()
 		lib_buffer_free(g_outchannel_allocator);
 		g_outchannel_allocator = NULL;
 	}
-	if (NULL != g_context_list) {
-		for (size_t i = 0; i < g_context_num; ++i)
-			http_parser_context_free(g_context_list + i);
-		free(g_context_list);
-		g_context_list = NULL;
-	}
+	g_context_list.clear();
 	g_vconnection_hash.clear();
 	if (NULL != g_file_allocator) {
 		lib_buffer_free(g_file_allocator);
@@ -2031,7 +2021,7 @@ int http_parser_get_param(int param)
  */
 HTTP_CONTEXT* http_parser_get_contexts_list()
 {
-    return g_context_list;
+	return g_context_list.data();
 }
 
 /*
@@ -2065,17 +2055,13 @@ int http_parser_set_param(int param, int value)
  *    @param
  *        pcontext [in]    indicate the http context object
  */
-static void http_parser_context_init(HTTP_CONTEXT *pcontext)
+HTTP_CONTEXT::HTTP_CONTEXT()
 {
+	auto pcontext = this;
     LIB_BUFFER *palloc_stream;
     
-    if (NULL == pcontext) {
-        return;
-    }
     palloc_stream = blocks_allocator_get_allocator();
-    memset(pcontext, 0, sizeof(HTTP_CONTEXT));
     pcontext->connection.sockd = -1;
-	pcontext->b_close = TRUE;
 	mem_file_init(&pcontext->request.f_request_uri, g_file_allocator);
 	mem_file_init(&pcontext->request.f_host, g_file_allocator);
 	mem_file_init(&pcontext->request.f_user_agent, g_file_allocator);
@@ -2143,11 +2129,9 @@ static void http_parser_request_clear(HTTP_REQUEST *prequest)
 	mem_file_clear(&prequest->f_others);
 }
 
-static void http_parser_context_free(HTTP_CONTEXT *pcontext)
+HTTP_CONTEXT::~HTTP_CONTEXT()
 {
-	if (NULL == pcontext) {
-		return;
-	}
+	auto pcontext = this;
 	stream_free(&pcontext->stream_in);
 	stream_free(&pcontext->stream_out);
 	mem_file_free(&pcontext->request.f_request_uri);
@@ -2209,7 +2193,11 @@ HTTP_CONTEXT* http_parser_get_context()
 
 void http_parser_set_context(int context_id)
 {
-	pthread_setspecific(g_context_key, g_context_list + context_id);
+	if (context_id < 0 ||
+	    static_cast<size_t>(context_id) >= g_context_list.size())
+		pthread_setspecific(g_context_key, nullptr);
+	else
+		pthread_setspecific(g_context_key, &g_context_list[context_id]);
 }
 
 bool http_parser_get_password(const char *username, char *password)

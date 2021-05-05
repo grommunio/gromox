@@ -69,31 +69,27 @@ enum {
 	CHANNEL_TYPE_OUT
 };
 
-struct HTTP_CONTEXT {
-	SCHEDULE_CONTEXT	sched_context;
-	CONNECTION			connection;
-	HTTP_REQUEST		request;
-	uint64_t			total_length;
-	uint64_t			bytes_rw;
-	unsigned int sched_stat;
-	STREAM				stream_in;			/* stream for reading */
-	STREAM				stream_out;			/* stream for writing */
-	void *write_buff;
-	int					write_offset;
-	int					write_length;
-	BOOL				b_close;			/* Connection MIME Header for indicating closing */
-	BOOL				b_authed;
-	int					auth_times;
-	char username[UADDR_SIZE];
-	char				password[128];
-	char				maildir[256];
-	char				lang[32];
-	DOUBLE_LIST_NODE	node;
-	char host[256];
-	int 				port;
-	int					channel_type;
-	void				*pchannel;
-	FASTCGI_CONTEXT		*pfast_context;
+struct HTTP_CONTEXT final {
+	HTTP_CONTEXT();
+	~HTTP_CONTEXT();
+
+	SCHEDULE_CONTEXT sched_context{};
+	CONNECTION connection{};
+	HTTP_REQUEST request{};
+	uint64_t total_length = 0, bytes_rw = 0;
+	unsigned int sched_stat = 0;
+	STREAM stream_in{}, stream_out{};
+	void *write_buff = nullptr;
+	int write_offset = 0, write_length = 0;
+	BOOL b_close = TRUE; /* Connection MIME Header for indicating closing */
+	BOOL b_authed = false;
+	int auth_times = 0;
+	char username[UADDR_SIZE]{}, password[128]{}, maildir[256]{}, lang[32]{};
+	DOUBLE_LIST_NODE node{};
+	char host[256]{};
+	int port = 0, channel_type = 0;
+	void *pchannel = nullptr;
+	FASTCGI_CONTEXT *pfast_context = nullptr;
 };
 
 struct RPC_IN_CHANNEL {

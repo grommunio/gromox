@@ -38,10 +38,10 @@ enum{
 #define POLLING_WRITE						0x2
 
 struct SCHEDULE_CONTEXT {
-	DOUBLE_LIST_NODE node;
-	int type;
-	BOOL b_waiting;		/* is still in epoll queue */
-	int polling_mask;
+	DOUBLE_LIST_NODE node{};
+	int type = CONTEXT_FREE;
+	BOOL b_waiting = false; /* is still in epoll queue */
+	int polling_mask = 0;
 };
 
 extern GX_EXPORT void contexts_pool_init(void *pcontexts, unsigned int context_num, unsigned int unit_offset, int (*get_socket)(void *), struct timeval (*get_timestamp)(void *), unsigned int contexts_per_thr, int timeout);

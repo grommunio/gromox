@@ -155,22 +155,25 @@ struct EXT_DATA {
     int              cur_pos;
 };
 
-struct SMTP_CONTEXT {
-    SCHEDULE_CONTEXT sched_context;
-    CONNECTION       connection;
-    STREAM           stream;       /* stream accepted from smtp client */
-    BOOL             is_splitted;  /* whether stream_second has data in */
-    STREAM           stream_second;/* stream for recording splitted data */
-    int              last_cmd;     /* indicate SMTP state of the connection */
-    MAIL_INFO        mail;         /* for recording the mail information */
-    FLUSH_INFO       flusher;      /* the flusher for saving mail information */
-    BOOL             is_spam;      /* whether the mail is spam */
-	unsigned int session_num; /* session number of the context */
-    size_t           total_length; /* mail total length */
-    char             last_bytes[4];/* last bytes for part mail */
-    PARSING_BLOCK    block_info;   /* parsing block information */
-    int              pre_rstlen;   /* previous bytes rested by last flushing */
-    EXT_DATA         ext_data;
+struct SMTP_CONTEXT final {
+	SMTP_CONTEXT();
+	~SMTP_CONTEXT();
+
+	SCHEDULE_CONTEXT sched_context{};
+	CONNECTION connection{};
+	STREAM stream{}; /* stream accepted from smtp client */
+	BOOL is_splitted = false; /* whether stream_second has data in */
+	STREAM stream_second{}; /* stream for recording splitted data */
+	int last_cmd = 0; /* indicate SMTP state of the connection */
+	MAIL_INFO mail{}; /* for recording the mail information */
+	FLUSH_INFO flusher{}; /* the flusher for saving mail information */
+	BOOL is_spam = false; /* whether the mail is spam */
+	unsigned int session_num = 0; /* session number of the context */
+	size_t total_length = 0; /* mail total length */
+	char last_bytes[4]{}; /* last bytes for part mail */
+	PARSING_BLOCK block_info{}; /* parsing block information */
+	int pre_rstlen{}; /* previous bytes rested by last flushing */
+	EXT_DATA ext_data{};
 };
 
 extern void smtp_parser_init(unsigned int context_num, unsigned int threads_num, BOOL dm_valid, BOOL need_auth, size_t max_mail_length, size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size, size_t timeout, size_t auth_times, size_t blktime_auths, BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);

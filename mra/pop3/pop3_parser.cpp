@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <mutex>
 #include <unistd.h>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "pop3_parser.h"
@@ -30,15 +31,10 @@
 
 #define SLEEP_BEFORE_CLOSE    usleep(1000)
 
-
 static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length, 
     POP3_CONTEXT *pcontext);
 
-static void pop3_parser_context_init(POP3_CONTEXT *pcontext);
-
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
-
-static void pop3_parser_context_free(POP3_CONTEXT *pcontext);
 
 static int g_context_num;
 static size_t g_retrieving_size;
@@ -46,7 +42,7 @@ static unsigned int g_timeout;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static int g_ssl_port;
-static POP3_CONTEXT *g_context_list;
+static std::vector<POP3_CONTEXT> g_context_list;
 static BOOL g_support_stls;
 static BOOL g_force_stls;
 static char g_cdn_path[256];
@@ -105,8 +101,6 @@ static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int pop3_parser_run()
 {
-    int i;
-
 	if (TRUE == g_support_stls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
@@ -152,14 +146,12 @@ int pop3_parser_run()
 		CRYPTO_THREADID_set_callback(pop3_parser_ssl_id);
 		CRYPTO_set_locking_callback(pop3_parser_ssl_locking);
 	}
-    
-	g_context_list = static_cast<POP3_CONTEXT *>(malloc(sizeof(POP3_CONTEXT) * g_context_num));
-    if (NULL== g_context_list) {
+
+	try {
+		g_context_list.resize(g_context_num);
+	} catch (const std::bad_alloc &) {
 		printf("[pop3_parser]: Failed to allocate POP3 contexts\n");
         return -4;
-    }
-    for (i=0; i<g_context_num; i++) {
-        pop3_parser_context_init(g_context_list + i);
     }
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
@@ -174,16 +166,7 @@ int pop3_parser_run()
  */
 int pop3_parser_stop()
 {
-    int i;
-
-    if (NULL != g_context_list) {
-        for (i=0; i<g_context_num; i++) {
-            pop3_parser_context_free(g_context_list + i);
-        }
-        free(g_context_list);
-        g_context_list = NULL;        
-    }
-
+	g_context_list.clear();
 	if (TRUE == g_support_stls && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
@@ -662,7 +645,7 @@ int pop3_parser_get_param(int param)
  */
 POP3_CONTEXT* pop3_parser_get_contexts_list()
 {
-    return g_context_list;
+	return g_context_list.data();
 }
 
 /*
@@ -781,8 +764,9 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
  *    @param
  *        pcontext [in]    indicate the pop3 context object
  */
-static void pop3_parser_context_init(POP3_CONTEXT *pcontext)
+POP3_CONTEXT::POP3_CONTEXT()
 {
+	auto pcontext = this;
     LIB_BUFFER *palloc_stream, *palloc_unit;
     
     if (NULL == pcontext) {
@@ -790,11 +774,7 @@ static void pop3_parser_context_init(POP3_CONTEXT *pcontext)
     }
     palloc_stream = blocks_allocator_get_allocator();
     palloc_unit = units_allocator_get_allocator();
-    memset(pcontext, 0, sizeof(POP3_CONTEXT));
     pcontext->connection.sockd = -1;
-	pcontext->message_fd = -1;
-	pcontext->cur_line = -1;
-	pcontext->until_line = 0x7FFFFFFF;
     array_init(&pcontext->array, palloc_unit, sizeof(MSG_UNIT));
     stream_init(&pcontext->stream, palloc_stream);
 	single_list_init(&pcontext->list);
@@ -834,11 +814,9 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	memset(pcontext->maildir, 0, 256);
 }
 
-static void pop3_parser_context_free(POP3_CONTEXT *pcontext)
+POP3_CONTEXT::~POP3_CONTEXT()
 {
-	if (NULL == pcontext) {
-		return;
-	}
+	auto pcontext = this;
     array_free(&pcontext->array);
     stream_free(&pcontext->stream);
 	if (NULL != pcontext->connection.ssl) {

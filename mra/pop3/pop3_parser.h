@@ -33,29 +33,28 @@ struct CONNECTION {
     struct timeval last_timestamp;     /* last time when system got data from */
 };
 
-struct POP3_CONTEXT {
-    SCHEDULE_CONTEXT sched_context;
-    CONNECTION       connection;
-	char             read_buffer[1024];
-	size_t           read_offset;
-	char             *write_buff;
-	size_t           write_length;
-	size_t           write_offset;
-	BOOL             data_stat;
-	BOOL             list_stat;
-	int              until_line;
-	int              cur_line;
-	int              message_fd;
-    STREAM           stream;         /* stream accepted from pop3 client */
-	int              total_mail;
-	uint64_t         total_size;
-	ARRAY            array;          /* mailbox message list */
-	SINGLE_LIST      list;           /* deleted message list */
-    BOOL             is_login;       /* if user is logged in */
-	BOOL             is_stls;        /* if last command is STLS */
-	int              auth_times;
-	char username[UADDR_SIZE];
-	char             maildir[256];
+struct POP3_CONTEXT final {
+	POP3_CONTEXT();
+	~POP3_CONTEXT();
+
+	SCHEDULE_CONTEXT sched_context{};
+	CONNECTION connection{};
+	char read_buffer[1024]{};
+	size_t read_offset{};
+	char *write_buff = nullptr;
+	size_t write_length = 0, write_offset = 0;
+	BOOL data_stat = false, list_stat = false;
+	int until_line = 0x7FFFFFFF, cur_line = -1, message_fd = -1;
+	STREAM stream{}; /* stream accepted from pop3 client */
+	int total_mail = 0;
+	uint64_t total_size = 0;
+	ARRAY array{}; /* mailbox message list */
+	SINGLE_LIST list{}; /* deleted message list */
+	BOOL is_login = false; /* if user is logged in */
+	BOOL is_stls = false; /* if last command is STLS */
+	int auth_times = 0;
+	char username[UADDR_SIZE]{};
+	char maildir[256]{};
 };
 
 void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,

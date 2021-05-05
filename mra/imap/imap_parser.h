@@ -81,37 +81,33 @@ struct MITEM {
 	MEM_FILE f_digest;
 };
 
-struct IMAP_CONTEXT {
-    SCHEDULE_CONTEXT sched_context;
-    CONNECTION       connection;
-	DOUBLE_LIST_NODE hash_node;
-	DOUBLE_LIST_NODE sleeping_node;
-	int              proto_stat;
-	int              sched_stat;
-	char             mid[128];
-	char             file_path[256];
-	int              message_fd;
-	char             *write_buff;
-	size_t           write_length;
-	size_t           write_offset;
-	time_t           selected_time;
-	char             selected_folder[1024];
-	BOOL b_readonly; /* is selected folder read only, this is for the examine command */
-	BOOL             b_modify;
-	MEM_FILE         f_flags;
-	char             tag_string[32];
-	int              command_len;
-	char             command_buffer[64*1024];
-	int              read_offset;
-	char             read_buffer[64*1024];
-	char             *literal_ptr;
-	int              literal_len;
-	int              current_len;
-    STREAM           stream;                   /* stream for writing to imap client */
-	int              auth_times;
-	char username[UADDR_SIZE];
-	char             maildir[256];
-	char             lang[32];
+struct IMAP_CONTEXT final {
+	IMAP_CONTEXT();
+	~IMAP_CONTEXT();
+
+	SCHEDULE_CONTEXT sched_context{};
+	CONNECTION connection{};
+	DOUBLE_LIST_NODE hash_node{}, sleeping_node{};
+	int proto_stat = 0, sched_stat = 0;
+	char mid[128]{}, file_path[256]{};
+	int message_fd = -1;
+	char *write_buff = nullptr;
+	size_t write_length = 0, write_offset = 0;
+	time_t selected_time = 0;
+	char selected_folder[1024]{};
+	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
+	BOOL b_modify = false;
+	MEM_FILE f_flags{};
+	char tag_string[32]{};
+	int command_len = 0;
+	char command_buffer[64*1024]{};
+	int read_offset = 0;
+	char read_buffer[64*1024]{};
+	char *literal_ptr = nullptr;
+	int literal_len = 0, current_len = 0;
+	STREAM stream{}; /* stream for writing to imap client */
+	int auth_times = 0;
+	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{};
 };
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,

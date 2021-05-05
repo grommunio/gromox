@@ -7,6 +7,7 @@
 #include <climits>
 #include <csignal>
 #include <mutex>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -58,11 +59,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 
 static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontext);
 
-static void imap_parser_context_init(IMAP_CONTEXT *pcontext);
-
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
-
-static void imap_parser_context_free(IMAP_CONTEXT *pcontext);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
 static std::atomic<int> g_sequence_id{0};
@@ -77,7 +74,7 @@ static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
 static std::atomic<bool> g_notify_stop{false};
-static IMAP_CONTEXT *g_context_list;
+static std::vector<IMAP_CONTEXT> g_context_list;
 static LIB_BUFFER *g_alloc_file;
 static LIB_BUFFER *g_alloc_mjson;
 static LIB_BUFFER *g_alloc_xarray;
@@ -157,8 +154,7 @@ static void imap_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int imap_parser_run()
 {
-    int i, num;
-
+	int num;
 	
 	if (TRUE == g_support_starttls) {
 		SSL_library_init();
@@ -260,13 +256,11 @@ int imap_parser_run()
 		return -9;
 	}
 	
-	g_context_list = static_cast<IMAP_CONTEXT *>(malloc(sizeof(IMAP_CONTEXT) * g_context_num));
-    if (NULL== g_context_list) {
+	try {
+		g_context_list.resize(g_context_num);
+	} catch (const std::bad_alloc &) {
 		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
         return -10;
-    }
-    for (i=0; i<g_context_num; i++) {
-        imap_parser_context_init(g_context_list + i);
     }
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
@@ -301,7 +295,6 @@ int imap_parser_run()
  */
 int imap_parser_stop()
 {
-	int i;
 	system_services_install_event_stub(nullptr);
 	if (!g_notify_stop) {
 		g_notify_stop = true;
@@ -311,15 +304,7 @@ int imap_parser_stop()
 		pthread_join(g_scan_id, NULL);
 	}
 	
-	
-	if (NULL != g_context_list) {
-       for (i=0; i<g_context_num; i++) {
-            imap_parser_context_free(g_context_list + i);
-        }
-        free(g_context_list);
-        g_context_list = NULL;        
-    }
-
+	g_context_list.clear();
 	if (NULL != g_alloc_file) {
 		lib_buffer_free(g_alloc_file);
 		g_alloc_file = NULL;
@@ -1524,7 +1509,7 @@ int imap_parser_get_param(int param)
  */
 IMAP_CONTEXT* imap_parser_get_contexts_list()
 {
-    return g_context_list;
+	return g_context_list.data();
 }
 
 /*
@@ -1696,19 +1681,15 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
  *    @param
  *        pcontext [in]    indicate the imap context object
  */
-static void imap_parser_context_init(IMAP_CONTEXT *pcontext)
+IMAP_CONTEXT::IMAP_CONTEXT()
 {
+	auto pcontext = this;
     LIB_BUFFER *palloc_stream;
     
-    if (NULL == pcontext) {
-        return;
-    }
     palloc_stream = blocks_allocator_get_allocator();
-    memset(pcontext, 0, sizeof(IMAP_CONTEXT));
 	pcontext->hash_node.pdata = pcontext;
 	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
-	pcontext->message_fd = -1;
     stream_init(&pcontext->stream, palloc_stream);
 	mem_file_init(&pcontext->f_flags, g_alloc_file);
 }
@@ -1751,11 +1732,9 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 	pcontext->maildir[0] = '\0';
 }
 
-static void imap_parser_context_free(IMAP_CONTEXT *pcontext)
+IMAP_CONTEXT::~IMAP_CONTEXT()
 {
-	if (NULL == pcontext) {
-		return;
-	}
+	auto pcontext = this;
 	stream_free(&pcontext->stream);
 	mem_file_free(&pcontext->f_flags);
 	if (NULL != pcontext->connection.ssl) {
