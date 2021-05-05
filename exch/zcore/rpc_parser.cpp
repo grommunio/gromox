@@ -762,7 +762,6 @@ static void *zcrp_thrwork(void *param)
 		goto NEXT_CLIFD;
 	}
 	common_util_free_environment();
-	offset = 0;
 	fdpoll.events = POLLOUT|POLLWRBAND;
 	if (1 == poll(&fdpoll, 1, tv_msec)) {
 		write(clifd, tmp_bin.pb, tmp_bin.cb);
