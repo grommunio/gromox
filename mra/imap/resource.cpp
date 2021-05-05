@@ -189,6 +189,7 @@ static BOOL resource_load_imap_lang_list()
 		return FALSE;
 	}
     if (0 != resource_construct_lang_list(plist)) {
+		free(plist);
         return FALSE;
     }
 	g_lang_list = plist;
