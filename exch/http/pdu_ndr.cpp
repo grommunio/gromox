@@ -403,7 +403,7 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 	if (r->secondary_address_size > sizeof(r->secondary_address)) {
 		return NDR_ERR_RANGE;
 	}
-	status = ndr_pull_string(pndr, r->secondary_address, r->secondary_address_size);
+	TRY(ndr_pull_string(pndr, r->secondary_address, r->secondary_address_size));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN4);
 	status = ndr_pull_data_blob(pndr, &r->pad);
@@ -509,6 +509,8 @@ static int pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, DCERPC_ORPHANED *r)
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->auth_info);
 	pndr->flags = saved_flags;
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->auth_info);
@@ -534,6 +536,8 @@ static int pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, DCERPC_AUTH3 *r)
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
 	status = ndr_pull_data_blob(pndr, &r->auth_info);
 	pndr->flags = saved_flags;
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	status = ndr_pull_trailer_align(pndr, 4);
 	if (NDR_ERR_SUCCESS != status) {
 		ndr_free_data_blob(&r->auth_info);
