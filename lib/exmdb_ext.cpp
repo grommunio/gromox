@@ -671,7 +671,7 @@ static int exmdb_ext_push_movecopy_folder_request(
 	TRY(ext_buffer_push_uint64(pext, ppayload->movecopy_folder.src_pid));
 	TRY(ext_buffer_push_uint64(pext, ppayload->movecopy_folder.src_fid));
 	TRY(ext_buffer_push_uint64(pext, ppayload->movecopy_folder.dst_fid));
-	TRY(ext_buffer_push_string(pext, ppayload->movecopy_folder.str_new));
+	TRY(ext_buffer_push_string(pext, ppayload->movecopy_folder.str_new != nullptr ? ppayload->movecopy_folder.str_new : ""));
 	return ext_buffer_push_bool(pext,
 		ppayload->movecopy_folder.b_copy);
 }
