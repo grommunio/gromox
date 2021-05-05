@@ -910,7 +910,7 @@ BOOL mime_append_field(MIME *pmime, const char *tag, const char *value)
  */
 BOOL mime_remove_field(MIME *pmime, const char *tag)
 {
-	BOOL found_tag;
+	BOOL found_tag = false;
 	MEM_FILE file_tmp;
 	char tmp_buff[MIME_FIELD_LEN];
 	int tag_len, val_len;
