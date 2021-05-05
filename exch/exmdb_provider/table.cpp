@@ -550,10 +550,10 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 				where_clause, tmp_proptag, tmp_proptag);
 	}
 	if (TABLE_SORT_ASCEND == psorts->psort[depth].table_sort) {
-		sql_len += gx_snprintf(sql_string + sql_len,
+		gx_snprintf(sql_string + sql_len,
 		           GX_ARRAY_SIZE(sql_string) - sql_len, " ASC");
 	} else {
-		sql_len += gx_snprintf(sql_string + sql_len,
+		gx_snprintf(sql_string + sql_len,
 		           GX_ARRAY_SIZE(sql_string) - sql_len, " DESC");
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -683,7 +683,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	} else {
-		sql_len = sprintf(sql_string, "SELECT is_search FROM"
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU(fid_val));
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
@@ -3960,7 +3960,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT row_id, inst_id,"
+	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT row_id, inst_id,"
 			" row_stat, depth FROM t%u", ptnode->table_id);
 	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
@@ -3984,7 +3984,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT parent_id FROM"
+	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT parent_id FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
 	auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt2 == nullptr) {
@@ -3994,7 +3994,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT value FROM"
+	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
 	auto pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt3 == nullptr) {

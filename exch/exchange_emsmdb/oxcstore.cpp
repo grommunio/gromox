@@ -440,7 +440,7 @@ uint32_t rop_getowningservers(
 			}
 		}
 	} else {
-		domain_id = logon_object_get_account_id(plogon);
+		// domain_id = logon_object_get_account_id(plogon);
 	}
 	static constexpr size_t dnmax = 256;
 	pghost->ppservers[0] = cu_alloc<char>(dnmax);

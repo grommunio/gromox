@@ -1306,7 +1306,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 	id = atoi(myrow[0]);
 	type = atoi(myrow[1]);
 	privilege = atoi(myrow[2]);
-	b_chkintl = FALSE;
 
 	switch (type) {
 	case MLIST_TYPE_NORMAL:

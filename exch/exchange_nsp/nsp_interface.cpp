@@ -1675,7 +1675,6 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
-		result = ecSuccess;
 		goto FETCH_ROWS;
 	}
 	if (NULL != pfilter) {
