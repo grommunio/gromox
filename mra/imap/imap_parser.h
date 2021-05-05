@@ -81,11 +81,10 @@ struct MITEM {
 	MEM_FILE f_digest;
 };
 
-struct IMAP_CONTEXT final {
+struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	IMAP_CONTEXT();
 	~IMAP_CONTEXT();
 
-	SCHEDULE_CONTEXT sched_context{};
 	CONNECTION connection{};
 	DOUBLE_LIST_NODE hash_node{}, sleeping_node{};
 	int proto_stat = 0, sched_stat = 0;

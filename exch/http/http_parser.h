@@ -69,11 +69,10 @@ enum {
 	CHANNEL_TYPE_OUT
 };
 
-struct HTTP_CONTEXT final {
+struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	HTTP_CONTEXT();
 	~HTTP_CONTEXT();
 
-	SCHEDULE_CONTEXT sched_context{};
 	CONNECTION connection{};
 	HTTP_REQUEST request{};
 	uint64_t total_length = 0, bytes_rw = 0;

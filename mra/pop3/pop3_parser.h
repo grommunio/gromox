@@ -33,11 +33,10 @@ struct CONNECTION {
     struct timeval last_timestamp;     /* last time when system got data from */
 };
 
-struct POP3_CONTEXT final {
+struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	POP3_CONTEXT();
 	~POP3_CONTEXT();
 
-	SCHEDULE_CONTEXT sched_context{};
 	CONNECTION connection{};
 	char read_buffer[1024]{};
 	size_t read_offset{};

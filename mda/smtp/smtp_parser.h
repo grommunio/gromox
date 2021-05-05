@@ -155,11 +155,10 @@ struct EXT_DATA {
     int              cur_pos;
 };
 
-struct SMTP_CONTEXT final {
+struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	SMTP_CONTEXT();
 	~SMTP_CONTEXT();
 
-	SCHEDULE_CONTEXT sched_context{};
 	CONNECTION connection{};
 	STREAM stream{}; /* stream accepted from smtp client */
 	BOOL is_splitted = false; /* whether stream_second has data in */
