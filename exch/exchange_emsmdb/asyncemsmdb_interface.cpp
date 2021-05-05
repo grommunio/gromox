@@ -57,7 +57,7 @@ static void (*active_hpm_context)(int context_id, BOOL b_pending);
 /* called by moh_emsmdb module */
 void asyncemsmdb_interface_register_active(void *pproc)
 {
-	active_hpm_context = reinterpret_cast<decltype(*active_hpm_context)>(pproc);
+	active_hpm_context = reinterpret_cast<decltype(active_hpm_context)>(pproc);
 }
 
 void asyncemsmdb_interface_init(int threads_num)
