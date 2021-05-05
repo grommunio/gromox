@@ -781,7 +781,7 @@ POP3_CONTEXT::POP3_CONTEXT()
     palloc_stream = blocks_allocator_get_allocator();
     palloc_unit = units_allocator_get_allocator();
     pcontext->connection.sockd = -1;
-    array_init(&pcontext->array, palloc_unit, sizeof(MSG_UNIT));
+//    array_init(&pcontext->array, palloc_unit, sizeof(MSG_UNIT));
     stream_init(&pcontext->stream, palloc_stream);
 	single_list_init(&pcontext->list);
 }
@@ -799,7 +799,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
     memset(&pcontext->connection, 0, sizeof(CONNECTION));
     pcontext->connection.sockd = -1;
 	pcontext->message_fd = -1;
-	array_clear(&pcontext->array);
+	pcontext->array.clear();
 	single_list_init(&pcontext->list);
 	stream_clear(&pcontext->stream);
 	memset(pcontext->read_buffer, 0, 1024);
@@ -823,7 +823,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 POP3_CONTEXT::~POP3_CONTEXT()
 {
 	auto pcontext = this;
-    array_free(&pcontext->array);
+	pcontext->array.clear();
     stream_free(&pcontext->stream);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_shutdown(pcontext->connection.ssl);

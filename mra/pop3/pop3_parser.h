@@ -1,11 +1,14 @@
 #pragma once
 #include <cstdint>
+#include <deque>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/msg_unit.hpp>
+#include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
-#include <gromox/array.hpp>
 #include <sys/time.h>
 #include <openssl/ssl.h>
+#include "units_allocator.h"
 #define MAX_LINE_LENGTH    64*1024
 
 /* enumeration of pop3_parser */
@@ -47,7 +50,7 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	STREAM stream{}; /* stream accepted from pop3 client */
 	int total_mail = 0;
 	uint64_t total_size = 0;
-	ARRAY array{}; /* mailbox message list */
+	std::deque<gromox::MSG_UNIT> array; /* mailbox message list */
 	SINGLE_LIST list{}; /* deleted message list */
 	BOOL is_login = false; /* if user is logged in */
 	BOOL is_stls = false; /* if last command is STLS */

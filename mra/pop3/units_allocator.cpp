@@ -4,7 +4,10 @@
  */
 #include <gromox/common_types.hpp>
 #include <gromox/array.hpp>
+#include <gromox/msg_unit.hpp>
 #include "units_allocator.h"
+
+using namespace gromox;
 
 static size_t g_blocks_num;
 static LIB_BUFFER *g_allocator;

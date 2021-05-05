@@ -34,6 +34,13 @@
 
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
+using namespace gromox;
+
+/* special "array" */
+template<typename T> static inline T *sa_get_item(std::deque<T> &arr, size_t idx)
+{
+	return idx < arr.size() ? &arr[idx] : nullptr;
+}
 
 int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
@@ -130,7 +137,6 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	int count;
 	size_t string_length = 0;
 	char reason[256];
 	char temp_buff[1024];
@@ -158,7 +164,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	HX_strltrim(temp_password);
 	if (TRUE == system_services_auth_login(pcontext->username, temp_password,
 		pcontext->maildir, NULL, reason, 256)) {
-		array_clear(&pcontext->array);
+		pcontext->array.clear();
 		pcontext->total_size = 0;
 		
 		if ('\0' == pcontext->maildir[0]) {
@@ -166,7 +172,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		}
 		
 		switch (system_services_list_mail(pcontext->maildir, "inbox",
-			&pcontext->array, &pcontext->total_mail, &pcontext->total_size)) {
+			pcontext->array, &pcontext->total_mail, &pcontext->total_size)) {
 		case MIDB_RESULT_OK:
 			break;
 		case MIDB_NO_SERVER:
@@ -182,12 +188,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			pop3_parser_log_info(pcontext, 8, "midb return error result");
 			return DISPATCH_SHOULD_CLOSE;
 		}
-
-		count = array_get_capacity(&pcontext->array);
-		if (count != pcontext->total_mail) {
+		if (pcontext->array.size() != pcontext->total_mail)
 			return 1722;
-		}
-
 		pcontext->is_login = TRUE;
 		pop3_parser_log_info(pcontext, 8, "login success");
 		return 1700;
@@ -242,13 +244,10 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	int n, i;
-	int count;
 	unsigned int tmp_len;
 	size_t string_length = 0;
 	char temp_buff[1024];
 	char temp_command[1024];
-	MSG_UNIT *punit;
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
@@ -263,10 +262,10 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		stream_clear(&pcontext->stream);
 		stream_write(&pcontext->stream, "+OK\r\n", 5);
 
-		count = array_get_capacity(&pcontext->array);
-		for (i=0; i<count; i++) {
-			punit = (MSG_UNIT*)array_get_item(&pcontext->array, i);
-			string_length = sprintf(temp_buff, "%d %s\r\n", i + 1,
+		auto count = pcontext->array.size();
+		for (size_t i = 0; i < count; ++i) {
+			auto punit = sa_get_item(pcontext->array, i);
+			string_length = sprintf(temp_buff, "%zu %s\r\n", i + 1,
 								punit->file_name);
 			stream_write(&pcontext->stream, temp_buff, string_length);
 		}
@@ -290,9 +289,9 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	n = atoi(temp_command + 5);
-	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
-		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
+	auto n = atoi(temp_command + 5);
+	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
+		auto punit = sa_get_item(pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %s\r\n", n,
 							punit->file_name);
 		if (NULL != pcontext->connection.ssl) {
@@ -308,13 +307,10 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
-	int i, n;
-	int count;
 	unsigned int tmp_len;
 	size_t string_length = 0;
 	char temp_buff[1024];
 	char temp_command[1024];
-	MSG_UNIT *punit;
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
@@ -330,11 +326,10 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		stream_clear(&pcontext->stream);
 		stream_write(&pcontext->stream, "+OK\r\n", 5);
 		
-		count = array_get_capacity(&pcontext->array);
-
-		for (i=0; i<count; i++) {
-			punit = (MSG_UNIT*)array_get_item(&pcontext->array, i);
-			string_length = sprintf(temp_buff, "%d %ld\r\n", i + 1, punit->size);
+		auto count = pcontext->array.size();
+		for (size_t i = 0; i < count; ++i) {
+			auto punit = sa_get_item(pcontext->array, i);
+			string_length = sprintf(temp_buff, "%zu %ld\r\n", i + 1, punit->size);
 			stream_write(&pcontext->stream, temp_buff, string_length);
 		}
 		stream_write(&pcontext->stream, ".\r\n", 3);
@@ -358,10 +353,9 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	n = atoi(temp_command + 5);
-	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
-		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
-			
+	auto n = atoi(temp_command + 5);
+	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
+		auto punit = sa_get_item(pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %ld\r\n", n, punit->size);	
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, temp_buff, string_length);
@@ -379,7 +373,6 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	int n;
 	char temp_path[256];
 	char temp_command[256];
-	MSG_UNIT *punit;
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
@@ -400,8 +393,8 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	n = atoi(temp_command + 5);
 	pcontext->cur_line = -1;
 	pcontext->until_line = 0x7FFFFFFF;
-	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
-		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
+	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
+		auto punit = sa_get_item(pcontext->array, n - 1);
 		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
 			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
@@ -428,7 +421,6 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 {
 	int n;
 	char temp_command[256];
-	MSG_UNIT *punit;
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
@@ -447,8 +439,8 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	}
 	
 	n = atoi(temp_command + 5);
-	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
-		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
+	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
+		auto punit = sa_get_item(pcontext->array, n - 1);
 		if (FALSE == punit->b_deleted) {
 			punit->b_deleted = TRUE;
 			punit->node.pdata = punit;
@@ -467,7 +459,6 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	char temp_path[256];
 	char temp_buff[1024];
 	char temp_command[256];
-	MSG_UNIT *punit;
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
@@ -497,8 +488,8 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		pcontext->until_line = atoi(ptoken + 1);
 	}
 	pcontext->cur_line = -1;
-	if (n > 0 && static_cast<size_t>(n) <= array_get_capacity(&pcontext->array)) {
-		punit = (MSG_UNIT*)array_get_item(&pcontext->array, n - 1);
+	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
+		auto punit = &pcontext->array.at(n - 1);
 		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
 			punit->file_name);
 		pcontext->message_fd = open(temp_path, O_RDONLY);
@@ -522,7 +513,6 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	size_t string_length = 0;
 	char temp_path[256];
 	char temp_buff[1024];
-	MSG_UNIT *punit;
 	SINGLE_LIST_NODE *pnode;
     
 	if (4 != line_length) {
@@ -554,7 +544,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 			system_services_broadcast_event(temp_buff);
 
 			while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) {
-				punit = (MSG_UNIT*)pnode->pdata;
+				auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
 				snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
 					punit->file_name);
 				if (0 == remove(temp_path)) {
@@ -565,7 +555,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 		}
 	}
 
-	array_clear(&pcontext->array);
+	pcontext->array.clear();
 	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(1710, 1,
 		&string_length), resource_get_string("HOST_ID"),
 			resource_get_pop3_code(1710, 2, &string_length));
@@ -581,7 +571,6 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	MSG_UNIT *punit;
 	SINGLE_LIST_NODE *pnode;
             
 	if (4 != line_length) {
@@ -590,7 +579,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 
 	if (TRUE == pcontext->is_login) {
 		while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) {
-			punit = (MSG_UNIT*)pnode->pdata;
+			auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
 			punit->b_deleted = FALSE;
 		}
 	}

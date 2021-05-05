@@ -3,15 +3,16 @@
 #include <atomic>
 #include <cassert>
 #include <csignal>
+#include <deque>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/msg_unit.hpp>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/single_list.hpp>
-#include <gromox/array.hpp>
 #include <gromox/xarray.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/list_file.hpp>
@@ -47,6 +48,8 @@
 
 #define FLAG_LOADED				0x80
 
+using namespace gromox;
+
 namespace {
 
 struct MITEM {
@@ -80,13 +83,6 @@ struct BACK_CONN {
 	BACK_SVR *psvr;
 };
 
-struct MSG_UNIT {
-	SINGLE_LIST_NODE node;
-	size_t size;
-	char file_name[128];
-	BOOL b_deleted;
-};
-
 }
 
 static void *midbag_scanwork(void *);
@@ -95,7 +91,7 @@ static BOOL read_line(int sockd, char *buff, int length);
 static int connect_midb(const char *ip_addr, int port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
-static int list_mail(const char *path, const char *folder, ARRAY *parray, int *pnum, uint64_t *psize);
+static int list_mail(const char *path, const char *folder, std::deque<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist);
 static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
 static int get_mail_uid(const char *path, const char *folder, const char *mid_string, unsigned int *uid);
@@ -446,8 +442,8 @@ static BACK_CONN *get_connection(const char *prefix)
 	return NULL;
 }
 
-static int list_mail(const char *path, const char *folder, ARRAY *parray,
-	int *pnum, uint64_t *psize)
+static int list_mail(const char *path, const char *folder,
+    std::deque<MSG_UNIT> &parray, int *pnum, uint64_t *psize)
 {
 	int i;
 	int lines;
@@ -458,7 +454,6 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	MSG_UNIT msg;
 	char *pspace;
 	int tv_msec;
 	char num_buff[32];
@@ -538,11 +533,14 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 				pspace ++;
 				temp_line[line_pos] = '\0';
 
-				strcpy(msg.file_name, temp_line);
+				MSG_UNIT msg;
+				gx_strlcpy(msg.file_name, temp_line, GX_ARRAY_SIZE(msg.file_name));
 				msg.size = atoi(pspace);
 				*psize += msg.size;
 				msg.b_deleted = FALSE;
-				if (array_append(parray, &msg) < 0) {
+				try {
+					parray.push_back(std::move(msg));
+				} catch (const std::bad_alloc &) {
 					b_fail = TRUE;
 				}
 				line_pos = 0;
@@ -562,7 +560,7 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
 			if (TRUE == b_fail) {
-				array_clear(parray);
+				parray.clear();
 				return MIDB_RESULT_ERROR;
 			} else {
 				return MIDB_RESULT_OK;
@@ -592,7 +590,7 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	array_clear(parray);
+	parray.clear();
 	return MIDB_RDWR_ERROR;
 }
 
