@@ -664,7 +664,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	uint16_t cxr;
 	AUX_INFO aux_in;
 	EXT_PULL ext_pull;
-	char username[256];
+	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
 	struct timeval first_time;
 	
@@ -726,7 +726,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		}
 	}
 	result = rop_processor_proc(*pflags, pin, cb_in, pout, pcb_out);
-	strcpy(username, phandle->username);
+	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 	cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
@@ -1127,7 +1127,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	uint16_t cxr;
 	uint8_t logon_id;
 	BOOL b_processing;
-	char username[256];
+	char username[UADDR_SIZE];
 	uint32_t obj_handle;
 	HANDLE_DATA *phandle;
 	DOUBLE_LIST_NODE *pnode;
@@ -1163,7 +1163,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 			b_processing = phandle->b_processing;
 			if (FALSE == b_processing) {
 				cxr = phandle->cxr;
-				strcpy(username, phandle->username);
+				gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 			}
 			emsmdb_interface_put_handle_notify_list(phandle);
 			if (FALSE == b_processing) {
@@ -1195,7 +1195,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	}
 	cxr = phandle->cxr;
-	strcpy(username, phandle->username);
+	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		emsmdb_interface_put_handle_notify_list(phandle);

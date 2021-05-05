@@ -4,6 +4,7 @@
 #include <csignal>
 #include <cstring>
 #include <mutex>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
@@ -27,7 +28,7 @@ namespace {
 struct ASYNC_WAIT {
 	DOUBLE_LIST_NODE node;
 	time_t wait_time;
-	char username[256];
+	char username[UADDR_SIZE];
 	uint16_t cxr;
 	uint32_t async_id;
 	union {
@@ -38,7 +39,7 @@ struct ASYNC_WAIT {
 
 }
 
-static constexpr size_t TAG_SIZE = 256;
+static constexpr size_t TAG_SIZE = UADDR_SIZE + 1 + HXSIZEOF_Z32;
 static int g_threads_num;
 static pthread_t g_scan_id;
 static pthread_t *g_thread_ids;
@@ -243,7 +244,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 	uint16_t cxr;
 	ASYNC_WAIT *pwait;
 	char tmp_tag[TAG_SIZE];
-	char username[256];
+	char username[UADDR_SIZE];
 
 	if (FALSE == emsmdb_interface_check_acxh(
 		pacxh, username, &cxr, FALSE)) {

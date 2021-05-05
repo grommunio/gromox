@@ -23,7 +23,8 @@ using namespace gromox;
 
 namespace {
 struct dlgitem {
-	char user[256];
+	/* This is used by list_file_*, don't switch to UADDR_SIZE */
+	char user[324];
 };
 }
 
@@ -256,7 +257,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	pstmt.finalize();
 	pdb.reset();
 	sprintf(temp_path, "%s/config/delegates.txt", dir);
-	auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
+	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
 	if (NULL != pfile) {
 		auto item_num = pfile->get_size();
 		auto pitem = static_cast<dlgitem *>(pfile->get_list());

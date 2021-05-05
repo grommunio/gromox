@@ -280,7 +280,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecError;
 	account = logon_object_get_account(plogon);
 	if ('\0' == username[0]) {
-		strcpy(username, account);
+		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else {
 		if (FALSE == oxomsg_check_permission(account, username)) {
 			return ecAccessDenied;
@@ -697,7 +697,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecError;
 	account = logon_object_get_account(plogon);
 	if ('\0' == username[0]) {
-		strcpy(username, account);
+		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else {
 		if (FALSE == oxomsg_check_permission(account, username)) {
 			return ecAccessDenied;

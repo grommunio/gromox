@@ -194,11 +194,11 @@ BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t
 BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir)
 {
-	struct srcitem { char user[256]; };
+	struct srcitem { char user[324]; };
 	char temp_path[256];
 	
 	sprintf(temp_path, "%s/config/delegates.txt", maildir);
-	auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
+	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
 	if (NULL == pfile) {
 		return FALSE;
 	}

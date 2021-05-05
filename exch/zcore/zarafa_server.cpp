@@ -4601,7 +4601,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	account = store_object_get_account(pstore);
 	if ('\0' == username[0]) {
-		strcpy(username, account);
+		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else {
 		if (FALSE == common_util_check_delegate_permission_ex(
 			account, username)) {

@@ -43,7 +43,8 @@ struct nsp_sort_item {
 };
 
 struct dlgitem {
-	char user[256];
+	/* This is used by list_file_*, don't switch to UADDR_SIZE */
+	char user[324];
 };
 
 }
@@ -1649,7 +1650,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
 		         "%s/config/delegates.txt", maildir);
-		auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
+		auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
 		if (NULL == pfile) {
 			result = ecSuccess;
 			goto EXIT_GET_MATCHES;
