@@ -830,7 +830,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->is_login = 0;
 	pcontext->is_stls = 0;
 	pcontext->auth_times = 0;
-	memset(pcontext->username, 0, 256);
+	memset(pcontext->username, 0, GX_ARRAY_SIZE(pcontext->username));
 	memset(pcontext->maildir, 0, 256);
 }
 

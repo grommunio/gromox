@@ -54,7 +54,7 @@ struct POP3_CONTEXT {
     BOOL             is_login;       /* if user is logged in */
 	BOOL             is_stls;        /* if last command is STLS */
 	int              auth_times;
-	char             username[256];
+	char username[UADDR_SIZE];
 	char             maildir[256];
 };
 

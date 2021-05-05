@@ -1498,8 +1498,10 @@ static int imap_cmd_parser_username2(int argc, char **argv, IMAP_CONTEXT *pconte
 	size_t temp_len;
 	size_t string_length = 0;
 	
-	if (0 == strlen(argv[0]) || 0 != decode64_ex(argv[0],
-		strlen(argv[0]), pcontext->username, 256, &temp_len)) {
+	if (strlen(argv[0]) == 0 ||
+	    decode64_ex(argv[0], strlen(argv[0]),
+	    pcontext->username, GX_ARRAY_SIZE(pcontext->username),
+	    &temp_len) != 0) {
 		pcontext->proto_stat = PROTO_STAT_NOAUTH;
 		return 1819 | DISPATCH_TAG;
 	}
@@ -1583,13 +1585,13 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		NULL == pcontext->connection.ssl) {
 		return 1802;
 	}
-	if (4 != argc || strlen(argv[2]) > 255 || strlen(argv[3]) > 255) {
+	if (argc != 4 || strlen(argv[2]) >= GX_ARRAY_SIZE(pcontext->username) ||
+	    strlen(argv[3]) > 255)
 		return 1800;
-	}
 	if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
 		return 1803;
 	}
-	strcpy(pcontext->username, argv[2]);
+	gx_strlcpy(pcontext->username, argv[2], GX_ARRAY_SIZE(pcontext->username));
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {

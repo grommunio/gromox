@@ -109,7 +109,7 @@ struct IMAP_CONTEXT {
 	int              current_len;
     STREAM           stream;                   /* stream for writing to imap client */
 	int              auth_times;
-	char             username[256];
+	char username[UADDR_SIZE];
 	char             maildir[256];
 	char             lang[32];
 };

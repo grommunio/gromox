@@ -1286,8 +1286,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
-	
-	strncpy(buff, username, 256);
+	gx_strlcpy(buff, username, GX_ARRAY_SIZE(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
@@ -1334,7 +1333,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
-	strncpy(buff, pcontext->username, 256);
+	gx_strlcpy(buff, pcontext->username, GX_ARRAY_SIZE(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
@@ -1949,7 +1948,7 @@ static void *imps_scanwork(void *argp)
 	time_t cur_time;
 	char folder[128];
 	char maildir[256];
-	char username[256];
+	char username[UADDR_SIZE];
 	MEM_FILE temp_file;
 	DOUBLE_LIST *plist;
 	STR_HASH_ITER *iter;
@@ -1986,7 +1985,7 @@ static void *imps_scanwork(void *argp)
 		str_hash_iter_free(iter);
 		hl_hold.unlock();
 		
-		while (MEM_END_OF_FILE != mem_file_readline(&temp_file, username, 256)) {
+		while (MEM_END_OF_FILE != mem_file_readline(&temp_file, username, GX_ARRAY_SIZE(username))) {
 			mem_file_readline(&temp_file, maildir, 256);
 			mem_file_readline(&temp_file, folder, 128);
 			system_services_broadcast_select(username, folder);

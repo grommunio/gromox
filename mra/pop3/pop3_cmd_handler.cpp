@@ -104,8 +104,9 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 		if (TRUE == pcontext->is_login) {
 			return 1720;
 		}
-        memcpy(pcontext->username, cmd_line + 5, line_length - 5);
-        pcontext->username[line_length - 5] = '\0';
+		auto umx = std::min(static_cast<size_t>(line_length - 5), GX_ARRAY_SIZE(pcontext->username) - 1);
+		memcpy(pcontext->username, cmd_line + 5, umx);
+		pcontext->username[umx] = '\0';
 		HX_strltrim(pcontext->username);
 		if (system_services_judge_user != nullptr &&
 		    !system_services_judge_user(pcontext->username)) {

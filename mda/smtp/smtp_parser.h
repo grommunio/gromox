@@ -83,8 +83,8 @@ enum {
 struct ENVELOP_INFO {
     char        parsed_domain[256];/* parsed domain according connection*/
     char        hello_domain[256]; /* domain name after helo */
-    char        from[256];         /* envelop's from message */
-    char        username[256];     /* user name for login */
+	char from[UADDR_SIZE]; /* envelop's from message */
+	char username[UADDR_SIZE]; /* user name for login */
     MEM_FILE    f_rcpt_to;         /* envelop's rcpt to message */
     BOOL        is_login;          /* user is logged in */
     BOOL        is_outbound;       /* in-bound or out-bound */
