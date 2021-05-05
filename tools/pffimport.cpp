@@ -118,7 +118,6 @@ static char *g_username;
 static std::string g_storedir_s, g_root_name;
 static const char *g_storedir;
 static unsigned int g_wet_run = 1, g_show_tree, g_user_id;
-static bool g_atx_warning;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
@@ -269,33 +268,36 @@ static void az_recordset(unsigned int depth, libpff_record_set_t *rset)
 	tlog("}\n");
 }
 
-/* Pretty-print a libpff attachment */
-static bool az_attach(unsigned int depth, uint64_t parent_fld,
-    MESSAGE_CONTENT *parent_msg, libpff_item_t *atx)
+static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
 {
 	int atype = 0;
 	size_t asize = 0;
+
 	if (libpff_attachment_get_type(atx, &atype, nullptr) < 1)
 		throw "PF-1012";
 	tree(depth);
-	tlog("[attachment type=%c", atype);
 	if (atype == LIBPFF_ATTACHMENT_TYPE_DATA) {
 		if (libpff_attachment_get_data_size(atx, &asize, nullptr) < 1)
 			throw "PF-1013";
-		tlog(" size=%zu]\n", asize);
+		/*
+		 * Data is in PROP_TAG_ATTACHDATABINARY, and so was
+		 * already spooled into atc->proplist by the caller.
+		 */
+		tlog("[attachment type=%c size=%zu]\n", atype, asize);
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_ITEM) {
-		libpff_item_ptr subatx;
-		if (libpff_attachment_get_item(atx, &unique_tie(subatx), nullptr) < 1)
+		libpff_item_ptr emb_item;
+		if (libpff_attachment_get_item(atx, &unique_tie(emb_item), nullptr) < 1)
 			throw "PF-1014";
-		tlog(" subitem]\n");
-		if (!do_item(depth + 1, parent_desc::as_attach(nullptr), subatx.get()))
-			return false;
+		tlog("[attachment type=%c embedded_msg]\n", atype);
+		auto ret = do_item(depth + 1, parent_desc::as_attach(atc), emb_item.get());
+		if (ret != 0)
+			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
-		tlog(" reference]\n");
+		tlog("[attachment type=%c]\n", atype);
 	} else {
-		tlog("]\n");
+		tlog("[attachment type=unknown]\n");
 	}
-	return true;
+	return 0;
 }
 
 static std::string sql_escape(MYSQL *sqh, const char *in)
@@ -558,6 +560,12 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		u.lla.pll = reinterpret_cast<uint64_t *>(buf.get());
 		pv.pvalue = &u.lla;
 		break;
+	case PT_OBJECT:
+		if (pv.proptag == PROP_TAG_ATTACHDATAOBJECT)
+			return 0; /* Embedded message, which separately handled. */
+		fprintf(stderr, "Unsupported proptag %xh (datasize %zu). Implement me!\n",
+		        pv.proptag, dsize);
+		return -EOPNOTSUPP;
 	default:
 		fprintf(stderr, "Unsupported proptype %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);
@@ -645,7 +653,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 {
 	uint64_t msg_id = 0, change_num = 0;
 	if (!exmdb_client::allocate_message_id(g_storedir, parent_fld, &msg_id)) {
-		fprintf(stderr, "allocate_message_id RPC failed\n");
+		fprintf(stderr, "allocate_message_id RPC failed (timeout?)\n");
 		return -EIO;
 	} else if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "allocate_cn RPC failed\n");
@@ -754,10 +762,16 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		if (ret < 0)
 			return ret;
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
-		if (!g_atx_warning)
-			fprintf(stderr, "Attachments not handled yet. Implement me!\n");
-		g_atx_warning = true;
-		return 0;
+		std::unique_ptr<ATTACHMENT_CONTENT, afree> atc(attachment_content_init());
+		if (atc == nullptr) {
+			fprintf(stderr, "attachment_content_init: ENOMEM\n");
+			return -ENOMEM;
+		}
+		std::swap(atc->proplist.count, props->count);
+		std::swap(atc->proplist.ppropval, props->ppropval);
+		auto ret = do_attach(depth, atc.get(), item);
+		if (ret != 0)
+			return ret;
 	}
 
 	/*
@@ -767,6 +781,11 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	std::unique_ptr<MESSAGE_CONTENT, afree> ctnt(message_content_init());
 	if (ctnt == nullptr) {
 		fprintf(stderr, "message_content_init: ENOMEM\n");
+		return -ENOMEM;
+	}
+	ctnt->children.pattachments = attachment_list_init();
+	if (ctnt->children.pattachments == nullptr) {
+		fprintf(stderr, "attachment_list_init: ENOMEM\n");
 		return -ENOMEM;
 	}
 	ctnt->children.prcpts = tarray_set_init();
@@ -802,11 +821,17 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_MESSAGE_SUBJECT);
 		tree(depth);
 		tlog("subject=\"%s\"\n", name.c_str());
+		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_ATTACHMENT_FILENAME_LONG);
+		tree(depth);
+		tlog("filename=\"%s\"\n", name.c_str());
 	}
 
-	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_EMAIL &&
-	    parent.type == LIBPFF_ITEM_TYPE_FOLDER)
+	if (item_type != LIBPFF_ITEM_TYPE_EMAIL)
+		return 0;
+	if (g_wet_run && parent.type == LIBPFF_ITEM_TYPE_FOLDER)
 		return exm_create_msg(parent.folder_id, ctnt.get());
+	if (parent.type == LIBPFF_ITEM_TYPE_ATTACHMENT)
+		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
 	return 0;
 }
 
