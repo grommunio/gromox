@@ -45,7 +45,7 @@ struct SCHEDULE_CONTEXT {
 	unsigned int context_id = 0;
 };
 
-extern GX_EXPORT void contexts_pool_init(void *pcontexts, unsigned int context_num, unsigned int unit_offset, int (*get_socket)(SCHEDULE_CONTEXT *), struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *), unsigned int contexts_per_thr, int timeout);
+extern GX_EXPORT void contexts_pool_init(SCHEDULE_CONTEXT **, unsigned int context_num, int (*get_socket)(SCHEDULE_CONTEXT *), struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *), unsigned int contexts_per_thr, int timeout);
 extern int contexts_pool_run();
 extern int contexts_pool_stop();
 extern void contexts_pool_free();

@@ -635,7 +635,7 @@ int main(int argc, const char **argv)
 	auto cleanup_22 = make_scope_exit(http_parser_stop);
 
 	contexts_pool_init(http_parser_get_contexts_list(),
-		context_num, sizeof(HTTP_CONTEXT),
+		context_num,
 		http_parser_get_context_socket,
 		http_parser_get_context_timestamp,
 		thread_charge_num, http_conn_timeout); 

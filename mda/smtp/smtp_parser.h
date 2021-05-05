@@ -189,7 +189,7 @@ extern BOOL smtp_parser_domainlist_valid();
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
-extern SMTP_CONTEXT *smtp_parser_get_contexts_list();
+extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);

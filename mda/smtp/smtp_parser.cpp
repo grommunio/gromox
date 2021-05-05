@@ -73,6 +73,7 @@ static unsigned int g_timeout;
 static size_t g_auth_times;
 static size_t g_blktime_auths;
 static std::vector<SMTP_CONTEXT> g_context_list;
+static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static int g_block_ID;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
@@ -197,12 +198,15 @@ int smtp_parser_run()
 	}
 	try {
 		g_context_list.resize(g_context_num);
+		g_context_list2.resize(g_context_num);
+		for (size_t i = 0; i < g_context_num; ++i) {
+			g_context_list[i].context_id = i;
+			g_context_list2[i] = &g_context_list[i];
+		}
 	} catch (const std::bad_alloc &) {
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
 	}
-	for (size_t i = 0; i < g_context_num; ++i)
-		g_context_list[i].context_id = i;
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	return 0;
@@ -216,6 +220,7 @@ int smtp_parser_run()
  */
 int smtp_parser_stop()
 {
+	g_context_list2.clear();
 	g_context_list.clear();
 	if (TRUE == g_support_starttls && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
@@ -792,9 +797,9 @@ long smtp_parser_get_param(int param)
  *    @return
  *        contexts array's address
  */
-SMTP_CONTEXT* smtp_parser_get_contexts_list()
+SCHEDULE_CONTEXT **smtp_parser_get_contexts_list()
 {
-	return g_context_list.data();
+	return g_context_list2.data();
 }
 
 /*

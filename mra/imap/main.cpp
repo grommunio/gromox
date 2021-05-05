@@ -470,7 +470,7 @@ int main(int argc, const char **argv)
 	auto cleanup_12 = make_scope_exit(imap_parser_stop);
 	
 	contexts_pool_init(imap_parser_get_contexts_list(),  
-		context_num, sizeof(IMAP_CONTEXT),
+		context_num,
 		imap_parser_get_context_socket,
 		imap_parser_get_context_timestamp,
 		thread_charge_num, imap_conn_timeout); 

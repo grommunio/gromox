@@ -466,8 +466,7 @@ int main(int argc, const char **argv)
 	auto cleanup_13 = make_scope_exit(pop3_parser_free);
 	auto cleanup_14 = make_scope_exit(pop3_parser_stop);
 	
-	contexts_pool_init(pop3_parser_get_contexts_list(),  
-		context_num, sizeof(POP3_CONTEXT),
+	contexts_pool_init(pop3_parser_get_contexts_list(), context_num,
 		pop3_parser_get_context_socket,
 		pop3_parser_get_context_timestamp,
 		thread_charge_num, pop3_conn_timeout); 

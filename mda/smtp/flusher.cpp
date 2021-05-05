@@ -388,19 +388,19 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 
 static int flusher_get_extra_num(int context_ID)
 {
-	auto pcontext = static_cast<SMTP_CONTEXT *>(&smtp_parser_get_contexts_list()[context_ID]);
+	auto pcontext = static_cast<SMTP_CONTEXT *>(smtp_parser_get_contexts_list()[context_ID]);
 	return smtp_parser_get_extra_num(pcontext);
 }
 	
 static const char* flusher_get_extra_tag(int context_ID, int pos)
 {
-	auto pcontext = static_cast<SMTP_CONTEXT *>(&smtp_parser_get_contexts_list()[context_ID]);
+	auto pcontext = static_cast<SMTP_CONTEXT *>(smtp_parser_get_contexts_list()[context_ID]);
 	return smtp_parser_get_extra_tag(pcontext, pos);
 }
 
 static const char* flusher_get_extra_value(int context_ID, int pos)
 {
-	auto pcontext = static_cast<SMTP_CONTEXT *>(&smtp_parser_get_contexts_list()[context_ID]);
+	auto pcontext = static_cast<SMTP_CONTEXT *>(smtp_parser_get_contexts_list()[context_ID]);
 	return smtp_parser_get_extra_value(pcontext, pos);
 }
 

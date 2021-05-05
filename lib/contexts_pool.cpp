@@ -19,8 +19,7 @@ static int g_time_out;
 static unsigned int g_context_num, g_contexts_per_thr;
 static int g_epoll_fd = -1;
 static pthread_t g_scan_id;
-static void *g_context_list;
-static unsigned int g_context_offset;
+static SCHEDULE_CONTEXT **g_context_list;
 static pthread_t g_thread_id;
 static std::atomic<bool> g_notify_stop{true};
 static struct epoll_event *g_events;
@@ -182,29 +181,21 @@ static void *ctxp_scanwork(void *pparam)
 	return nullptr;
 }
 
-void contexts_pool_init(void *pcontexts, unsigned int context_num,
-    unsigned int unit_offset, int (*get_socket)(SCHEDULE_CONTEXT *),
+void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
+    int (*get_socket)(SCHEDULE_CONTEXT *),
     struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *),
     unsigned int contexts_per_thr, int timeout)
 {
-	SCHEDULE_CONTEXT* pcontext;
-	
 	g_context_list = pcontexts;
 	g_context_num = context_num;
-	g_context_offset = unit_offset;
 	contexts_pool_get_context_socket = get_socket;
 	contexts_pool_get_context_timestamp = get_timestamp;
 	g_contexts_per_thr = contexts_per_thr;
 	g_time_out = timeout;
 	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_init(&g_context_lists[i]);
-	if (g_context_offset < sizeof(SCHEDULE_CONTEXT)) {
-		debug_info("[contexts_pool]: contexts offset"
-				" error passed into contexts pool\n");
-	}
 	for (size_t i = 0; i < g_context_num; ++i) {
-		pcontext = (SCHEDULE_CONTEXT*)((char*)
-			g_context_list + i*g_context_offset);
+		auto pcontext = g_context_list[i];
 		context_init(pcontext);
 		double_list_append_as_tail(
 			&g_context_lists[CONTEXT_FREE], &pcontext->node);
@@ -270,8 +261,7 @@ int contexts_pool_stop()
 void contexts_pool_free()
 {
 	for (size_t i = 0; i < g_context_num; ++i)
-		context_free((SCHEDULE_CONTEXT*)((char*)
-			g_context_list + i * g_context_offset));
+		context_free(g_context_list[i]);
 	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_free(&g_context_lists[i]);
 	g_context_list = NULL;

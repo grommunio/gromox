@@ -164,24 +164,20 @@ static const char *hpm_processor_get_state_path()
 	return p != nullptr ? p : PKGSTATEDIR;
 }
 
-static int hpm_processor_get_context_num()
+static unsigned int hpm_processor_get_context_num()
 {
 	return g_context_num;
 }
 
-static CONNECTION* hpm_processor_get_connection(int context_id)
+static CONNECTION *hpm_processor_get_connection(unsigned int context_id)
 {
-	HTTP_CONTEXT *phttp;
-	
-	phttp = http_parser_get_contexts_list() + context_id;
+	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	return &phttp->connection;
 }
 
-static HTTP_REQUEST* hpm_processor_get_request(int context_id)
+static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 {
-	HTTP_CONTEXT *phttp;
-	
-	phttp = http_parser_get_contexts_list() + context_id;
+	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	mem_file_seek(&phttp->request.f_request_uri,
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	mem_file_seek(&phttp->request.f_host,
@@ -207,12 +203,11 @@ static HTTP_REQUEST* hpm_processor_get_request(int context_id)
 	return &phttp->request;
 }
 
-static HTTP_AUTH_INFO hpm_processor_get_auth_info(int context_id)
+static HTTP_AUTH_INFO hpm_processor_get_auth_info(unsigned int context_id)
 {
 	HTTP_AUTH_INFO info;
-	HTTP_CONTEXT *phttp;
 	
-	phttp = http_parser_get_contexts_list() + context_id;
+	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	info.b_authed = phttp->b_authed;
 	info.username = phttp->username;
 	info.password = phttp->password;
@@ -221,22 +216,18 @@ static HTTP_AUTH_INFO hpm_processor_get_auth_info(int context_id)
 	return info;
 }
 
-static void hpm_processor_set_ep_info(
-	int context_id, const char *host, int port)
+static void hpm_processor_set_ep_info(unsigned int context_id,
+    const char *host, int port)
 {
-	HTTP_CONTEXT *phttp;
-	
-	phttp = http_parser_get_contexts_list() + context_id;
+	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	gx_strlcpy(phttp->host, host, GX_ARRAY_SIZE(phttp->host));
 	phttp->port = port;
 }
 
-static BOOL hpm_processor_write_response(int context_id,
+static BOOL hpm_processor_write_response(unsigned int context_id,
 	void *response_buff, int response_len)
 {
-	HTTP_CONTEXT *phttp;
-	
-	phttp = http_parser_get_contexts_list() + context_id;
+	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
 		response_buff, response_len)) {
 		return FALSE;
@@ -244,11 +235,9 @@ static BOOL hpm_processor_write_response(int context_id,
 	return TRUE;
 }
 
-static void hpm_processor_wakeup_context(int context_id)
+static void hpm_processor_wakeup_context(unsigned int context_id)
 {
-	HTTP_CONTEXT *phttp;
-	
-	phttp = http_parser_get_contexts_list() + context_id;
+	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	if (SCHED_STAT_WAIT != phttp->sched_stat) {
 		return;
 	}
@@ -256,12 +245,9 @@ static void hpm_processor_wakeup_context(int context_id)
 	contexts_pool_signal((SCHEDULE_CONTEXT*)phttp);
 }
 
-static void hpm_processor_activate_context(int context_id)
+static void hpm_processor_activate_context(unsigned int context_id)
 {
-	HTTP_CONTEXT *phttp;
-	
-	phttp = http_parser_get_contexts_list() + context_id;
-	context_pool_activate_context((SCHEDULE_CONTEXT*)phttp);
+	context_pool_activate_context(http_parser_get_contexts_list()[context_id]);
 }
 
 static void *hpm_processor_queryservice(const char *service, const std::type_info &ti)

@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <vector>
 #include "mod_fastcgi.h"
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -127,7 +128,7 @@ void http_parser_set_context(int context_id);
 extern struct timeval http_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
 int http_parser_get_param(int param);
 int http_parser_set_param(int param, int value);
-extern HTTP_CONTEXT *http_parser_get_contexts_list();
+extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
 BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext);

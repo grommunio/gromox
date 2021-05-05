@@ -574,7 +574,7 @@ int main(int argc, const char **argv)
 	auto cleanup_16 = make_scope_exit(smtp_parser_stop);
 	
 	contexts_pool_init(smtp_parser_get_contexts_list(),	 
-		context_num, sizeof(SMTP_CONTEXT),
+		context_num,
 		smtp_parser_get_context_socket,
 		smtp_parser_get_context_timestamp,
 		thread_charge_num, smtp_conn_timeout); 

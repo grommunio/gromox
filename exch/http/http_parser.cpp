@@ -85,6 +85,7 @@ static unsigned int g_timeout;
 static pthread_key_t g_context_key;
 static LIB_BUFFER *g_file_allocator;
 static std::vector<HTTP_CONTEXT> g_context_list;
+static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
@@ -196,12 +197,15 @@ int http_parser_run()
 	}
 	try {
 		g_context_list.resize(g_context_num);
+		g_context_list2.resize(g_context_num);
+		for (size_t i = 0; i < g_context_num; ++i) {
+			g_context_list[i].context_id = i;
+			g_context_list2[i] = &g_context_list[i];
+		}
 	} catch (const std::bad_alloc &) {
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
-	for (size_t i = 0; i < g_context_num; ++i)
-		g_context_list[i].context_id = i;
 	g_inchannel_allocator = lib_buffer_init(
 		sizeof(RPC_IN_CHANNEL), g_context_num, TRUE);
 	if (NULL == g_inchannel_allocator) {
@@ -231,6 +235,7 @@ int http_parser_stop()
 		lib_buffer_free(g_outchannel_allocator);
 		g_outchannel_allocator = NULL;
 	}
+	g_context_list2.clear();
 	g_context_list.clear();
 	g_vconnection_hash.clear();
 	if (NULL != g_file_allocator) {
@@ -2021,9 +2026,9 @@ int http_parser_get_param(int param)
  *    @return
  *        contexts array's address
  */
-HTTP_CONTEXT* http_parser_get_contexts_list()
+SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 {
-	return g_context_list.data();
+	return g_context_list2.data();
 }
 
 /*

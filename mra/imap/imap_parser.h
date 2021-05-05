@@ -121,7 +121,7 @@ extern int imap_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern struct timeval imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
 int imap_parser_get_param(int param);
 int imap_parser_set_param(int param, int value);
-extern IMAP_CONTEXT *imap_parser_get_contexts_list();
+extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 int imap_parser_threads_event_proc(int action);
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder);
 void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream);

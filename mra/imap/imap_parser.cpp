@@ -74,6 +74,7 @@ static pthread_t g_thr_id;
 static pthread_t g_scan_id;
 static std::atomic<bool> g_notify_stop{false};
 static std::vector<IMAP_CONTEXT> g_context_list;
+static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static LIB_BUFFER *g_alloc_file;
 static LIB_BUFFER *g_alloc_mjson;
 static LIB_BUFFER *g_alloc_xarray;
@@ -257,12 +258,15 @@ int imap_parser_run()
 	
 	try {
 		g_context_list.resize(g_context_num);
+		g_context_list2.resize(g_context_num);
+		for (size_t i = 0; i < g_context_num; ++i) {
+			g_context_list[i].context_id = i;
+			g_context_list2[i] = &g_context_list[i];
+		}
 	} catch (const std::bad_alloc &) {
 		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
         return -10;
     }
-	for (size_t i = 0; i < g_context_num; ++i)
-		g_context_list[i].context_id = i;
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	
@@ -305,6 +309,7 @@ int imap_parser_stop()
 		pthread_join(g_scan_id, NULL);
 	}
 	
+	g_context_list2.clear();
 	g_context_list.clear();
 	if (NULL != g_alloc_file) {
 		lib_buffer_free(g_alloc_file);
@@ -1503,14 +1508,9 @@ int imap_parser_get_param(int param)
     }
 }
 
-/* 
- *    get contexts list for contexts pool
- *    @return
- *        contexts array's address
- */
-IMAP_CONTEXT* imap_parser_get_contexts_list()
+SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 {
-	return g_context_list.data();
+	return g_context_list2.data();
 }
 
 /*
