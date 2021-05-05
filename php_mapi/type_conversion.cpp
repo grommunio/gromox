@@ -860,7 +860,6 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		auto rnot = pres->xnot;
 		if (rnot == nullptr)
 			return 0;
-		i = 0;
 		HashPosition hpos;
 		zend_hash_internal_pointer_reset_ex(pdata_hash, &hpos);
 		value_entry = zend_hash_get_current_data_ex(pdata_hash, &hpos);
