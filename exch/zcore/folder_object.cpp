@@ -1090,11 +1090,12 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 			pprovider, "Schedule+ EMS Interface")) {
 			continue;	
 		}
-		pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
+		auto act = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 					&plist->prule[i].propvals,
 		           PROP_TAG_RULEACTIONS));
 		if (NULL != pactions) {
 			b_delegate = TRUE;
+			pactions = act;
 		}
 	}
 	if (TRUE == store_object_check_private(pfolder->pstore) &&
