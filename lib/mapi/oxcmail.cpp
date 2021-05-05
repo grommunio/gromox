@@ -481,7 +481,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	int address_type;
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
-	char username[256];
+	char username[UADDR_SIZE];
 	char tmp_buff[1280];
 	char utf8_field[512];
 	char display_name[256];
@@ -552,7 +552,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	if (paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&
 	    oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
-		snprintf(username, 256, "%s@%s", paddr->local_part, paddr->domain);
+		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
 		if (FALSE == oxcmail_username_to_essdn(
 			username, essdn, &address_type)) {
 			essdn[0] = '\0';
@@ -712,7 +712,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 {
 	BINARY tmp_bin;
 	char essdn[1024];
-	char username[256];
+	char username[UADDR_SIZE];
 	char tmp_buff[1280];
 	char utf8_field[512];
 	TAGGED_PROPVAL propval;
@@ -729,7 +729,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 	} else if ('\0' != paddr->local_part[0] && '\0' != paddr->domain[0]) {
-		sprintf(username, "%s@%s", paddr->local_part, paddr->domain);
+		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
 		propval.proptag = oxcmail_check_ascii(username) ? proptag1 :
 		                  CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 		propval.pvalue = username;
@@ -739,7 +739,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 	if (paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&
 	    oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
-		sprintf(username, "%s@%s", paddr->local_part, paddr->domain);
+		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
 		propval.proptag = proptag2;
 		propval.pvalue  = deconst("SMTP");
 		if (!tpropval_array_set_propval(pproplist, &propval))
@@ -6396,7 +6396,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 	pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
 	                &pmsg->proplist, PROP_TAG_SENDERNAME));
 	if (NULL != pvalue) {
-		strncpy(tmp_address, static_cast<char *>(pvalue), 256);
+		gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 	} else {
 		pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE);
