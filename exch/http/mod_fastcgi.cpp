@@ -400,14 +400,12 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	char *ptoken;
 	char *ptoken1;
 	BOOL b_chunked;
-	int context_id;
 	char suffix[16];
 	char domain[256];
 	char file_name[256];
 	char tmp_buff[8192];
 	char request_uri[8192];
 	uint64_t content_length;
-	FASTCGI_CONTEXT *pcontext;
 	
 	auto tmp_len = mem_file_get_total_length(&phttp->request.f_host);
 	if (tmp_len >= sizeof(domain)) {
@@ -516,12 +514,11 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 			b_chunked = TRUE;
 		}
 	}
-	context_id = phttp - http_parser_get_contexts_list();
-	pcontext = g_context_list + context_id;
+	auto pcontext = &g_context_list[phttp->context_id];
 	time(&pcontext->last_time);
 	pcontext->pfnode = pfnode;
 	if (TRUE == b_chunked || content_length > g_cache_size) {
-		sprintf(tmp_buff, "/tmp/http-%d", context_id);
+		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
 		pcontext->cache_fd = open(tmp_buff,
 			O_CREAT|O_TRUNC|O_RDWR, 0666);
 		if (-1 == pcontext->cache_fd) {
@@ -799,7 +796,6 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	void *pbuff;
 	int cli_sockd;
 	int ndr_length;
-	int context_id;
 	NDR_PUSH ndr_push;
 	char tmp_path[256];
 	char tmp_buff[65535];
@@ -892,8 +888,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			} else if (0 == tmp_len) {
 				close(phttp->pfast_context->cache_fd);
 				phttp->pfast_context->cache_fd = -1;
-				context_id = phttp - http_parser_get_contexts_list();
-				sprintf(tmp_path, "/tmp/http-%d", context_id);
+				snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
 				if (remove(tmp_path) < 0 && errno != ENOENT)
 					fprintf(stderr, "W-1362: remove %s: %s\n", tmp_path, strerror(errno));
 				break;
@@ -941,13 +936,11 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 {
-	int context_id;
 	char tmp_path[256];
 	
 	if (-1 != phttp->pfast_context->cache_fd) {
 		close(phttp->pfast_context->cache_fd);
-		context_id = phttp - http_parser_get_contexts_list();
-		sprintf(tmp_path, "/tmp/http-%d", context_id);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
 		if (remove(tmp_path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1361: remove %s: %s\n", tmp_path, strerror(errno));
 	}

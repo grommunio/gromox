@@ -36,8 +36,7 @@ static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length,
 
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 
-static int g_context_num;
-static size_t g_retrieving_size;
+static size_t g_context_num, g_retrieving_size;
 static unsigned int g_timeout;
 static int g_max_auth_times;
 static int g_block_auth_fail;
@@ -153,6 +152,8 @@ int pop3_parser_run()
 		printf("[pop3_parser]: Failed to allocate POP3 contexts\n");
         return -4;
     }
+	for (size_t i = 0; i < g_context_num; ++i)
+		g_context_list[i].context_id = i;
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
     return 0;

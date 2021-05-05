@@ -42,6 +42,7 @@ struct SCHEDULE_CONTEXT {
 	int type = CONTEXT_FREE;
 	BOOL b_waiting = false; /* is still in epoll queue */
 	int polling_mask = 0;
+	unsigned int context_id = 0;
 };
 
 extern GX_EXPORT void contexts_pool_init(void *pcontexts, unsigned int context_num, unsigned int unit_offset, int (*get_socket)(SCHEDULE_CONTEXT *), struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *), unsigned int contexts_per_thr, int timeout);

@@ -63,9 +63,8 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
 static std::atomic<int> g_sequence_id{0};
-static int g_context_num;
 static int g_average_num;
-static size_t g_cache_size;
+static size_t g_context_num, g_cache_size;
 static unsigned int g_timeout;
 static unsigned int g_autologout_time;
 static int g_max_auth_times;
@@ -262,6 +261,8 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
         return -10;
     }
+	for (size_t i = 0; i < g_context_num; ++i)
+		g_context_list[i].context_id = i;
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	

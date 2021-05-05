@@ -261,10 +261,7 @@ void mod_cache_free()
 
 static CACHE_CONTEXT* mod_cache_get_cache_context(HTTP_CONTEXT *phttp)
 {
-	int context_id;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	return g_context_list + context_id;
+	return &g_context_list[phttp->context_id];
 }
 
 BOOL mod_cache_check_caching(HTTP_CONTEXT *phttp)

@@ -181,7 +181,7 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext)
 	pentity->penvelop       = &pcontext->mail.envelop;
 	pentity->pflusher       = &pcontext->flusher;
 	pentity->pstream        = &pcontext->stream;
-	pentity->context_ID     = pcontext - smtp_parser_get_contexts_list();
+	pentity->context_ID     = pcontext->context_id;
 	pentity->pcontext       = pcontext;
 	pentity->node.pdata     = pentity;
 
@@ -388,28 +388,19 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 
 static int flusher_get_extra_num(int context_ID)
 {
-	SMTP_CONTEXT* pcontext;
-
-	pcontext = smtp_parser_get_contexts_list();
-	pcontext = pcontext + context_ID;
+	auto pcontext = static_cast<SMTP_CONTEXT *>(&smtp_parser_get_contexts_list()[context_ID]);
 	return smtp_parser_get_extra_num(pcontext);
 }
 	
 static const char* flusher_get_extra_tag(int context_ID, int pos)
 {
-	SMTP_CONTEXT* pcontext;
-
-	pcontext = smtp_parser_get_contexts_list();
-	pcontext = pcontext + context_ID;
+	auto pcontext = static_cast<SMTP_CONTEXT *>(&smtp_parser_get_contexts_list()[context_ID]);
 	return smtp_parser_get_extra_tag(pcontext, pos);
 }
 
 static const char* flusher_get_extra_value(int context_ID, int pos)
 {
-	SMTP_CONTEXT* pcontext;
-
-	pcontext = smtp_parser_get_contexts_list();
-	pcontext = pcontext + context_ID;
+	auto pcontext = static_cast<SMTP_CONTEXT *>(&smtp_parser_get_contexts_list()[context_ID]);
 	return smtp_parser_get_extra_value(pcontext, pos);
 }
 

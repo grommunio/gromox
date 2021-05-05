@@ -201,6 +201,8 @@ int smtp_parser_run()
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
 	}
+	for (size_t i = 0; i < g_context_num; ++i)
+		g_context_list[i].context_id = i;
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
 	return 0;

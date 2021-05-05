@@ -200,6 +200,8 @@ int http_parser_run()
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
+	for (size_t i = 0; i < g_context_num; ++i)
+		g_context_list[i].context_id = i;
 	g_inchannel_allocator = lib_buffer_init(
 		sizeof(RPC_IN_CHANNEL), g_context_num, TRUE);
 	if (NULL == g_inchannel_allocator) {
@@ -2167,7 +2169,6 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
     const char *format, ...)
 {
 	va_list ap;
-	int context_id;
 	char log_buf[2048];
 
 	va_start(ap, format);
@@ -2176,9 +2177,8 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	if ('\0' == pcontext->username[0]) {
-		context_id = pcontext - http_parser_get_contexts_list();
-		system_services_log_info(level, "context-ID: %d, IP: %s  %s",
-				context_id, pcontext->connection.client_ip, log_buf);
+		system_services_log_info(level, "context-ID: %u, IP: %s  %s",
+			pcontext->context_id, pcontext->connection.client_ip, log_buf);
 	} else {
 		system_services_log_info(level, "user: %s, IP: %s  %s",
 			pcontext->username, pcontext->connection.client_ip, log_buf);

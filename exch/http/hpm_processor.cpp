@@ -499,17 +499,14 @@ int hpm_processor_console_talk(int argc,
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 {
 	int tmp_len;
-	int context_id;
 	BOOL b_chunked;
 	char tmp_buff[64];
-	HPM_CONTEXT *phpm_ctx;
 	uint64_t content_length;
 	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
+	auto phpm_ctx = &g_context_list[phttp->context_id];
 	for (const auto &p : g_plugin_list) {
 		auto pplugin = &p;
-		if (TRUE == pplugin->interface.preproc(context_id)) {
+		if (pplugin->interface.preproc(phttp->context_id)) {
 			tmp_len = mem_file_get_total_length(
 				&phttp->request.f_content_length);
 			if (0 == tmp_len) {
@@ -548,7 +545,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 				}
 			}
 			if (TRUE == b_chunked || content_length > g_cache_size) {
-				sprintf(tmp_buff, "/tmp/http-%d", context_id);
+				snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
 				phpm_ctx->cache_fd = open(tmp_buff,
 					O_CREAT|O_TRUNC|O_RDWR, 0666);
 				if (-1 == phpm_ctx->cache_fd) {
@@ -577,11 +574,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 
 BOOL hpm_processor_check_context(HTTP_CONTEXT *phttp)
 {
-	int context_id;
-	HPM_CONTEXT *phpm_ctx;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
+	auto phpm_ctx = &g_context_list[phttp->context_id];
 	return phpm_ctx->b_preproc;
 }
 
@@ -591,12 +584,9 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	int tmp_len;
 	void *pbuff;
 	char *ptoken;
-	int context_id;
 	char tmp_buff[1024];
-	HPM_CONTEXT *phpm_ctx;
 	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
+	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (TRUE == phpm_ctx->b_end) {
 		return TRUE;
 	}
@@ -711,25 +701,17 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 
 BOOL hpm_processor_check_end_of_request(HTTP_CONTEXT *phttp)
 {
-	int context_id;
-	HPM_CONTEXT *phpm_ctx;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
-	return phpm_ctx->b_end;
+	return g_context_list[phttp->context_id].b_end;
 }
 
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 {
 	BOOL b_result;
 	void *pcontent;
-	int context_id;
 	char tmp_path[256];
 	struct stat node_stat;
-	HPM_CONTEXT *phpm_ctx;
 	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
+	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (-1 == phpm_ctx->cache_fd) {
 		if (0 == phpm_ctx->content_length) {
 			pcontent = NULL;
@@ -764,11 +746,11 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
 		phpm_ctx->content_length = node_stat.st_size;
-		sprintf(tmp_path, "/tmp/http-%d", context_id);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
 		if (remove(tmp_path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1347: remove %s: %s\n", tmp_path, strerror(errno));
 	}
-	b_result = phpm_ctx->pinterface->proc(context_id,
+	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
 				pcontent, phpm_ctx->content_length);
 	phpm_ctx->content_length = 0;
 	if (NULL != pcontent) {
@@ -780,51 +762,34 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
 	const void *pbuff, int length)
 {
-	int context_id;
-	HPM_CONTEXT *phpm_ctx;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
-	return phpm_ctx->pinterface->send(context_id, pbuff, length);
-	
+	auto id = phttp->context_id;
+	return g_context_list[id].pinterface->send(id, pbuff, length);
 }
 
 int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length)
 {
-	int context_id;
-	HPM_CONTEXT *phpm_ctx;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
-	return phpm_ctx->pinterface->receive(context_id, pbuff, length);
+	auto id = phttp->context_id;
+	return g_context_list[id].pinterface->receive(id, pbuff, length);
 }
 
 int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)
 {
-	int context_id;
-	HPM_CONTEXT *phpm_ctx;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
-	return phpm_ctx->pinterface->retr(context_id);
+	auto id = phttp->context_id;
+	return g_context_list[id].pinterface->retr(id);
 }
 
 void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 {
-	int context_id;
 	char tmp_path[256];
-	HPM_CONTEXT *phpm_ctx;
-	
-	context_id = phttp - http_parser_get_contexts_list();
-	phpm_ctx = g_context_list + context_id;
+	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (NULL != phpm_ctx->pinterface->term) {
-		phpm_ctx->pinterface->term(context_id);
+		phpm_ctx->pinterface->term(phttp->context_id);
 	}
 	if (-1 != phpm_ctx->cache_fd) {
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
-		sprintf(tmp_path, "/tmp/http-%d", context_id);
+		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
 		if (remove(tmp_path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1369: remove %s: %s\n", tmp_path, strerror(errno));
 	}
