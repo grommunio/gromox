@@ -225,9 +225,6 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	const char *configdir = config_file_get_value(pconfig, "config_file_path");
-	if (configdir == nullptr)
-		configdir = PKGSYSCONFDIR;
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
 	                      config_file_get_value(pconfig, "data_file_path");
 	if (datadir == nullptr)
