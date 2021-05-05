@@ -4,15 +4,17 @@
  *  programmer to set and get the configuration dynamicly
  *
  */
+#include <algorithm>
 #include <cerrno>
+#include <list>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include "resource.h"
-#include <gromox/single_list.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
@@ -24,7 +26,6 @@ using namespace gromox;
 namespace {
 
 struct LANG_FOLDER {
-	SINGLE_LIST_NODE node;
 	char lang[32];
 	char *folders[4];
 	char charset[256];
@@ -32,6 +33,8 @@ struct LANG_FOLDER {
 	char sent[256];
 	char trash[256];
 	char junk[256];
+
+	bool operator==(const char *s) const { return strcasecmp(lang, s) == 0; }
 };
 
 }
@@ -124,9 +127,8 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
-static SINGLE_LIST* g_lang_list;
+static std::list<LANG_FOLDER> g_lang_list;
 
-static int resource_construct_lang_list(SINGLE_LIST *plist);
 static BOOL resource_load_imap_lang_list();
 
 int resource_run()
@@ -145,14 +147,7 @@ int resource_run()
 
 int resource_stop()
 {
-	SINGLE_LIST_NODE *pnode;
         g_def_code_table.clear();
-	if (NULL != g_lang_list) {
-		while ((pnode = single_list_pop_front(g_lang_list)) != nullptr)
-			free(pnode->pdata);
-		free(g_lang_list);
-		g_lang_list = NULL;
-	}
     return 0;
 }
 
@@ -182,31 +177,13 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 	return "unknown error\r\n";
 }
 
-static BOOL resource_load_imap_lang_list()
-{
-	auto plist = static_cast<SINGLE_LIST *>(malloc(sizeof(SINGLE_LIST)));
-	if (NULL == plist) {
-		return FALSE;
-	}
-    if (0 != resource_construct_lang_list(plist)) {
-		free(plist);
-        return FALSE;
-    }
-	g_lang_list = plist;
-    return TRUE;
-}
-
-static int resource_construct_lang_list(SINGLE_LIST *plist)
+static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 {
 	char *ptr;
 	size_t temp_len;
-	SINGLE_LIST temp_list;
-	SINGLE_LIST_NODE *pnode;
-	LANG_FOLDER *plang;
 	char temp_buff[256];
 	char line[MAX_FILE_LINE_LEN];
 	
-	single_list_init(&temp_list);
 	const char *filename = resource_get_string("IMAP_LANG_PATH");
 	if (NULL == filename) {
 		filename = "imap_lang.txt";
@@ -216,8 +193,9 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		printf("[resource]: fopen_sd %s: %s\n", filename, strerror(errno));
         return -1;
     }
-	
-	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) {
+
+	std::list<LANG_FOLDER> temp_list;
+	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) try {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 		   /* skip empty line or comments */
 		   continue;
@@ -227,22 +205,11 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		if (NULL == ptr) {
 			printf("[resource]: line %d format error in %s\n", total + 1,
                 filename);
-			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
-				free(pnode->pdata);
 			return -1;
 		}
 		
 		*ptr = '\0';
-		plang = (LANG_FOLDER*)malloc(sizeof(LANG_FOLDER));
-		if (NULL == plang) {
-			printf("[resource]: out of memory while loading file %s\n",
-                filename);
-			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
-				free(pnode->pdata);
-			return -1;
-		}
-		
-		plang->node.pdata = plang;
+		LANG_FOLDER lf, *plang = &lf;
 		gx_strlcpy(plang->lang, line, GX_ARRAY_SIZE(plang->lang));
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
@@ -266,12 +233,12 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			0 == strlen(temp_buff) ||
 			0 != decode64(temp_buff, strlen(temp_buff), plang->junk, &temp_len)) {
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);
-			free(plang);
-			while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
-				free(pnode->pdata);
 			return -1;
 		}
-		single_list_append_as_tail(&temp_list, &plang->node);
+		temp_list.push_back(std::move(lf));
+	} catch (const std::bad_alloc &) {
+		printf("[resource]: out of memory while loading file %s\n", filename);
+		return -1;
 	}
 
 	const char *dfl_lang = resource_get_string("DEFAULT_LANG");
@@ -279,75 +246,42 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		dfl_lang = "en";
 		resource_set_string("DEFAULT_LANG", dfl_lang);
 	}
-	for (pnode=single_list_get_head(&temp_list); NULL!=pnode;
-		pnode=single_list_get_after(&temp_list, pnode)) {
-		plang = (LANG_FOLDER*)pnode->pdata;
-		if (strcasecmp(plang->lang, dfl_lang) == 0)
-			break;
-	}
-	
-	if (NULL == pnode) {
+	auto it = std::find(temp_list.cbegin(), temp_list.cend(), dfl_lang);
+	if (it == temp_list.cend()) {
 		printf("[resource]: cannot find default lang (%s) in %s\n", dfl_lang, filename);
-		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
-			free(pnode->pdata);
 		return -1;
 	}
-	
-	if (single_list_get_nodes_num(&temp_list) > 127) {
+	if (temp_list.size() > 127) {
 		printf("[resource]: too many langs in %s\n", filename);
-		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
-			free(pnode->pdata);
 		return -1;
 	}
-	
-	*plist = temp_list;
+	plist = std::move(temp_list);
 	return 0;
+}
+
+static BOOL resource_load_imap_lang_list()
+{
+	return resource_construct_lang_list(g_lang_list) == 0 ? TRUE : false;
 }
 
 const char* resource_get_default_charset(const char *lang)
 {
-	SINGLE_LIST_NODE *pnode;
-	LANG_FOLDER *plang;
-	
-	for (pnode=single_list_get_head(g_lang_list); NULL!=pnode;
-		pnode=single_list_get_after(g_lang_list, pnode)) {
-		plang = (LANG_FOLDER*)pnode->pdata;
-		if (0 == strcasecmp(plang->lang, lang)) {
-			return plang->charset;
-		}
-	}
-	
-	for (pnode=single_list_get_head(g_lang_list); NULL!=pnode;
-		pnode=single_list_get_after(g_lang_list, pnode)) {
-		plang = (LANG_FOLDER*)pnode->pdata;
-		if (strcasecmp(plang->lang, resource_get_string("DEFAULT_LANG")) == 0)
-			return plang->charset;
-	}
-	
-	return NULL;
+	auto i = std::find(g_lang_list.cbegin(), g_lang_list.cend(), lang);
+	if (i != g_lang_list.cend())
+		return i->charset;
+	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
+	    resource_get_string("DEFAULT_LANG"));
+	return i != g_lang_list.cend() ? i->charset : nullptr;
 }
 
 const char *const *resource_get_folder_strings(const char *lang)
 {
-	SINGLE_LIST_NODE *pnode;
-	LANG_FOLDER *plang;
-	
-	for (pnode=single_list_get_head(g_lang_list); NULL!=pnode;
-		pnode=single_list_get_after(g_lang_list, pnode)) {
-		plang = (LANG_FOLDER*)pnode->pdata;
-		if (0 == strcasecmp(plang->lang, lang)) {
-			return plang->folders;
-		}
-	}
-	
-	for (pnode=single_list_get_head(g_lang_list); NULL!=pnode;
-		pnode=single_list_get_after(g_lang_list, pnode)) {
-		plang = (LANG_FOLDER*)pnode->pdata;
-		if (strcasecmp(plang->lang, resource_get_string("DEFAULT_LANG")) == 0)
-			return plang->folders;
-	}
-	
-	return NULL;
+	auto i = std::find(g_lang_list.cbegin(), g_lang_list.cend(), lang);
+	if (i != g_lang_list.cend())
+		return i->folders;
+	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
+	    resource_get_string("DEFAULT_LANG"));
+	return i != g_lang_list.cend() ? i->folders : nullptr;
 }
 
 const char *resource_get_error_string(unsigned int code)
