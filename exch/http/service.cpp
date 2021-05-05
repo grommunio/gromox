@@ -223,7 +223,7 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	if (plib->file_name.size() > 0)
 		printf("[service]: unloading %s\n", plib->file_name.c_str());
 	func = (PLUGIN_MAIN)plib->lib_main;
-	if (plib->completed_init)
+	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it will be unloaded */
 		func(PLUGIN_FREE, NULL);
 	/* check if the there rests service(s) that has not been unrigstered */

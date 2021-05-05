@@ -393,7 +393,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	if (pplugin->file_name.size() > 0)
 		printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
 	func = (PLUGIN_MAIN)pplugin->lib_main;
-	if (pplugin->completed_init)
+	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
 		func(PLUGIN_FREE, NULL);
 

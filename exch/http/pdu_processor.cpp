@@ -3493,7 +3493,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	double_list_free(&pplugin->interface_list);
 	
 	func = (PLUGIN_MAIN)pplugin->lib_main;
-	if (pplugin->completed_init)
+	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
 		func(PLUGIN_FREE, NULL);
 	

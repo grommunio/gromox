@@ -805,7 +805,7 @@ int transporter_unload_library(const char* path)
     }
 	auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
     func = (PLUGIN_MAIN)plib->lib_main;
-	if (plib->completed_init)
+	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it willbe unloaded */
 		func(PLUGIN_FREE, NULL);
 
