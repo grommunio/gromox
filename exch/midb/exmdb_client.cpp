@@ -225,6 +225,7 @@ static void *midcl_scanwork(void *pparam)
 
 		sv_hold.lock();
 		temp_list = std::move(g_lost_list);
+		g_lost_list.clear();
 		sv_hold.unlock();
 
 		while (temp_list.size() > 0) {
