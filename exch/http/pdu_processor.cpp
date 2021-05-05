@@ -1845,7 +1845,6 @@ static uint32_t pdu_processor_apply_async_id()
 	NDR_STACK_ROOT *pstack_root;
 	RPC_IN_CHANNEL *pchannel_in;
 	
-	async_id = 0;
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
 		return 0;

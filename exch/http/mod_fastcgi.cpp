@@ -638,9 +638,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	ptoken = strrchr(uri_path, '.');
 	if (NULL != ptoken) {
 		ptoken1 = strchr(ptoken + 1, '/');
-		if (NULL == ptoken1) {
-			ptoken1 = uri_path + tmp_len;
-		} else {
+		if (ptoken1 != nullptr) {
 			QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_INFO", ptoken1));
 			*ptoken1 = '\0';
 			path_info = ptoken1 + 1;

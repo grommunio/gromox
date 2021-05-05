@@ -364,7 +364,6 @@ static int http_parser_reconstruct_stream(
 	int size;
 	int size1;
 	int size1_used;
-	int size_copied;
 	
 	stream_init(pstream_dst, blocks_allocator_get_allocator());
 	size = STREAM_BLOCK_SIZE;
@@ -380,17 +379,15 @@ static int http_parser_reconstruct_stream(
 	 * do not need to check the pbuff pointer because it will
 	 * never be NULL because of stream's characteristic
 	 */
-	size_copied = 0;
 	size1_used = 0;
 	do {
 		if (size <= size1 - size1_used) {
 			memcpy(pbuff1, pbuff, size);
 			size1_used += size;
 		} else {
-			size_copied = size1 - size1_used;
+			auto size_copied = size1 - size1_used;
 			memcpy(static_cast<char *>(pbuff1) + size1_used, pbuff, size_copied);
 			size1 = STREAM_BLOCK_SIZE;
-			size1_used = 0;
 			stream_forward_writing_ptr(pstream_dst, STREAM_BLOCK_SIZE);
 			pbuff1 = stream_getbuffer_for_writing(pstream_dst,
 			         reinterpret_cast<unsigned int *>(&size1));
