@@ -69,6 +69,7 @@ struct NOTIFY_ITEM {
 
 }
 
+static constexpr size_t TAG_SIZE = 256;
 static time_t g_start_time;
 static pthread_t g_scan_id;
 static std::mutex g_lock, g_notify_lock;
@@ -901,13 +902,13 @@ BOOL emsmdb_interface_set_rop_num(int num)
 void emsmdb_interface_add_table_notify(const char *dir,
 	uint32_t table_id, uint32_t handle, uint8_t logon_id, GUID *pguid)
 {
-	char tag_buff[256];
+	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM tmp_notify;
 	
 	tmp_notify.handle = handle;
 	tmp_notify.logon_id = logon_id;
 	tmp_notify.guid = *pguid;
-	sprintf(tag_buff, "%u:%s", table_id, dir);
+	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	str_hash_add(g_notify_hash, tag_buff, &tmp_notify);
 }
@@ -915,10 +916,10 @@ void emsmdb_interface_add_table_notify(const char *dir,
 static BOOL emsmdb_interface_get_table_notify(const char *dir,
 	uint32_t table_id, uint32_t *phandle, uint8_t *plogon_id, GUID *pguid)
 {
-	char tag_buff[256];
+	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM *pnotify;
 	
-	sprintf(tag_buff, "%u:%s", table_id, dir);
+	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	pnotify = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_hash, tag_buff));
 	if (NULL == pnotify) {
@@ -933,9 +934,9 @@ static BOOL emsmdb_interface_get_table_notify(const char *dir,
 void emsmdb_interface_remove_table_notify(
 	const char *dir, uint32_t table_id)
 {
-	char tag_buff[256];
+	char tag_buff[TAG_SIZE];
 	
-	sprintf(tag_buff, "%u:%s", table_id, dir);
+	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	str_hash_remove(g_notify_hash, tag_buff);
 }
@@ -943,7 +944,7 @@ void emsmdb_interface_remove_table_notify(
 void emsmdb_interface_add_subscription_notify(const char *dir,
 	uint32_t sub_id, uint32_t handle, uint8_t logon_id, GUID *pguid)
 {
-	char tag_buff[256];
+	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM tmp_notify;
 	
 	
@@ -951,7 +952,7 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 	tmp_notify.logon_id = logon_id;
 	tmp_notify.guid = *pguid;
 	
-	sprintf(tag_buff, "%u|%s", sub_id, dir);
+	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	str_hash_add(g_notify_hash, tag_buff, &tmp_notify);
 }
@@ -960,10 +961,10 @@ static BOOL emsmdb_interface_get_subscription_notify(
 	const char *dir, uint32_t sub_id, uint32_t *phandle,
 	uint8_t *plogon_id, GUID *pguid)
 {
-	char tag_buff[256];
+	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM *pnotify;
 	
-	sprintf(tag_buff, "%u|%s", sub_id, dir);
+	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	pnotify = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_hash, tag_buff));
 	if (NULL == pnotify) {
@@ -978,9 +979,9 @@ static BOOL emsmdb_interface_get_subscription_notify(
 void emsmdb_interface_remove_subscription_notify(
 	const char *dir, uint32_t sub_id)
 {
-	char tag_buff[256];
+	char tag_buff[TAG_SIZE];
 	
-	sprintf(tag_buff, "%u|%s", sub_id, dir);
+	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	str_hash_remove(g_notify_hash, tag_buff);
 }

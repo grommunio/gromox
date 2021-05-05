@@ -38,6 +38,7 @@ struct ASYNC_WAIT {
 
 }
 
+static constexpr size_t TAG_SIZE = 256;
 static int g_threads_num;
 static pthread_t g_scan_id;
 static pthread_t *g_thread_ids;
@@ -158,7 +159,7 @@ void asyncemsmdb_interface_free()
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
 {
-	char tmp_tag[256];
+	char tmp_tag[TAG_SIZE];
 	
 	auto pwait = static_cast<ASYNC_WAIT *>(lib_buffer_get(g_wait_allocator));
 	if (NULL == pwait) {
@@ -218,7 +219,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 
 void asyncemsmdb_interface_reclaim(uint32_t async_id)
 {
-	char tmp_tag[256];
+	char tmp_tag[TAG_SIZE];
 	ASYNC_WAIT *pwait;
 	
 	std::unique_lock as_hold(g_async_lock);
@@ -241,14 +242,14 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 {
 	uint16_t cxr;
 	ASYNC_WAIT *pwait;
-	char tmp_tag[256];
+	char tmp_tag[TAG_SIZE];
 	char username[256];
 
 	if (FALSE == emsmdb_interface_check_acxh(
 		pacxh, username, &cxr, FALSE)) {
 		return;
 	}
-	sprintf(tmp_tag, "%s:%d", username, cxr);
+	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", username, cxr);
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);
 	auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_query(g_tag_hash, tmp_tag));
@@ -286,10 +287,11 @@ static void asyncemsmdb_interface_activate(
 
 void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 {
-	char tmp_tag[256];
+	char tmp_tag[TAG_SIZE];
 	ASYNC_WAIT *pwait;
 	
-	sprintf(tmp_tag, "%s:%d", username, (int)cxr);
+	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d",
+	         username, static_cast<int>(cxr));
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);
 	auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_query(g_tag_hash, tmp_tag));
