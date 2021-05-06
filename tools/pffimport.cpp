@@ -697,7 +697,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		}
 	}
 
-	if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_FOLDER) {
 		/*
 		 * @depth is the display depth/indent, not the folder nesting
 		 * level, hence testing for 1 (not 0).
@@ -763,7 +763,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		tlog("subject=\"%s\"\n", name.c_str());
 	}
 
-	if (item_type == LIBPFF_ITEM_TYPE_EMAIL &&
+	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_EMAIL &&
 	    parent.type == LIBPFF_ITEM_TYPE_FOLDER)
 		return exm_create_msg(parent.folder_id, ctnt.get());
 	return 0;
