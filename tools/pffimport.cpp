@@ -174,7 +174,7 @@ static bool az_item_get_record_entry_by_type(libpff_item_t *item, uint16_t propi
     libpff_record_set_t **rset, libpff_record_entry_t **rent, uint8_t flags)
 {
 	auto ret = libpff_item_get_record_set_by_index(item, 0, rset, nullptr);
-	if (ret < 1)
+	if (ret < 0)
 		throw "PF-1000";
 	else if (ret == 0)
 		return false;
@@ -305,8 +305,7 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 	std::string out;
 	out.resize(strlen(in) * 2 + 1);
 	auto ret = mysql_real_escape_string(sqh, out.data(), in, strlen(in));
-	if (ret >= 0)
-		out.resize(ret);
+	out.resize(ret);
 	return out;
 }
 
@@ -915,8 +914,7 @@ static int do_file(const char *filename) try
 	libpff_item_ptr root;
 	if (libpff_file_get_root_folder(file.get(), &unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
-	do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
-	return 0;
+	return do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);
 	return -ECANCELED;
