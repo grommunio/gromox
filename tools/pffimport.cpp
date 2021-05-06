@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdint>
@@ -72,6 +73,35 @@ struct libpff_record_set_del { void operator()(libpff_record_set_t *x) { libpff_
 struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) { libpff_record_entry_free(&x, nullptr); } };
 struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpff_multi_value_free(&x, nullptr); } };
 
+struct parent_desc {
+	enum LIBPFF_ITEM_TYPES type;
+	union {
+		void *unknown = nullptr;
+		uint64_t folder_id;
+		MESSAGE_CONTENT *message;
+		ATTACHMENT_CONTENT *attach;
+	};
+
+	static inline parent_desc as_msg(MESSAGE_CONTENT *m)
+	{
+		parent_desc d{LIBPFF_ITEM_TYPE_EMAIL};
+		d.message = m;
+		return d;
+	}
+	static inline parent_desc as_attach(ATTACHMENT_CONTENT *a)
+	{
+		parent_desc d{LIBPFF_ITEM_TYPE_ATTACHMENT};
+		d.attach = a;
+		return d;
+	}
+	static inline parent_desc as_folder(uint64_t id)
+	{
+		parent_desc d{LIBPFF_ITEM_TYPE_FOLDER};
+		d.folder_id = id;
+		return d;
+	}
+};
+
 }
 
 using namespace std::string_literals;
@@ -96,7 +126,7 @@ static const struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static int do_item(unsigned int, uint64_t, MESSAGE_CONTENT *, libpff_item_t *);
+static int do_item(unsigned int, const parent_desc &, libpff_item_t *);
 
 static int g_socket = -1;
 
@@ -248,7 +278,7 @@ static bool az_attach(unsigned int depth, uint64_t parent_fld,
 		if (libpff_attachment_get_item(atx, &unique_tie(subatx), nullptr) < 1)
 			throw "PF-1014";
 		tlog(" subitem]\n");
-		if (!do_item(depth + 1, parent_fld, parent_msg, subatx.get()))
+		if (!do_item(depth + 1, parent_desc::as_attach(nullptr), subatx.get()))
 			return false;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog(" reference]\n");
@@ -628,9 +658,8 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 }
 
 /* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
-static int do_item2(unsigned int depth, uint64_t parent_fld,
-    MESSAGE_CONTENT *parent_msg, libpff_item_t *item, unsigned int item_type,
-    int nsets, uint64_t *new_fld_id)
+static int do_item2(unsigned int depth, const parent_desc &parent,
+    libpff_item_t *item, unsigned int item_type, int nsets, uint64_t *new_fld_id)
 {
 	std::unique_ptr<TPROPVAL_ARRAY, afree> props(tpropval_array_init());
 	if (props == nullptr) {
@@ -655,7 +684,8 @@ static int do_item2(unsigned int depth, uint64_t parent_fld,
 			continue;
 
 		/* Turn this property set into a "recipient". */
-		if (!tarray_set_append_internal(parent_msg->children.prcpts, props.get())) {
+		assert(parent.type == LIBPFF_ITEM_TYPE_EMAIL);
+		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get())) {
 			fprintf(stderr, "tarray_set_append: ENOMEM\n");
 			return -ENOMEM;
 		}
@@ -678,7 +708,8 @@ static int do_item2(unsigned int depth, uint64_t parent_fld,
 			fprintf(stderr, "tpropval: ENOMEM\n");
 			return -ENOMEM;
 		}
-		auto ret = exm_create_folder(depth, parent_fld, props.get(), new_fld_id);
+		assert(parent.type == item_type);
+		auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
 		if (ret < 0)
 			return ret;
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
@@ -707,7 +738,7 @@ static int do_item2(unsigned int depth, uint64_t parent_fld,
 
 	libpff_item_ptr recip_set;
 	if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
-		auto ret = do_item(depth + 1, parent_fld, ctnt.get(), recip_set.get());
+		auto ret = do_item(depth + 1, parent_desc::as_msg(ctnt.get()), recip_set.get());
 		if (ret < 0)
 			return ret;
 	}
@@ -718,7 +749,7 @@ static int do_item2(unsigned int depth, uint64_t parent_fld,
 			libpff_item_ptr atx;
 			if (libpff_message_get_attachment(item, atidx, &unique_tie(atx), nullptr) < 1)
 				throw "PF-1017";
-			if (!do_item(depth, parent_fld, ctnt.get(), atx.get()))
+			if (!do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get()))
 				return false;
 		}
 	}
@@ -732,14 +763,14 @@ static int do_item2(unsigned int depth, uint64_t parent_fld,
 		tlog("subject=\"%s\"\n", name.c_str());
 	}
 
-	if (item_type == LIBPFF_ITEM_TYPE_EMAIL)
-		return exm_create_msg(parent_fld, ctnt.get());
+	if (item_type == LIBPFF_ITEM_TYPE_EMAIL &&
+	    parent.type == LIBPFF_ITEM_TYPE_FOLDER)
+		return exm_create_msg(parent.folder_id, ctnt.get());
 	return 0;
 }
 
 /* General look at an (arbitrary) PFF item */
-static int do_item(unsigned int depth, uint64_t parent_fld,
-    MESSAGE_CONTENT *parent_msg, libpff_item_t *item)
+static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
 {
 	uint32_t ident = 0, nent = 0;
 	uint8_t item_type = 0;
@@ -767,12 +798,14 @@ static int do_item(unsigned int depth, uint64_t parent_fld,
 	 * If message: collect props and recurse into recipient sets & attachments...
 	 */
 	uint64_t new_fld_id = 0;
-	auto ret = do_item2(depth, parent_fld, parent_msg, item, item_type,
-	           nsets, &new_fld_id);
+	auto ret = do_item2(depth, parent, item, item_type, nsets, &new_fld_id);
 	if (ret < 0)
 		return ret;
-	if (new_fld_id != 0)
-		parent_fld = new_fld_id;
+	auto new_parent = parent;
+	if (new_fld_id != 0) {
+		new_parent.type = LIBPFF_ITEM_TYPE_FOLDER;
+		new_parent.folder_id = new_fld_id;
+	}
 
 	/*
 	 * Subitems usually consist exclusively of messages (<=> attachments
@@ -785,15 +818,14 @@ static int do_item(unsigned int depth, uint64_t parent_fld,
 		libpff_item_ptr subitem;
 		if (libpff_item_get_sub_item(item, i, &unique_tie(subitem), nullptr) < 1)
 			throw "PF-1004";
-		ret = do_item(depth, parent_fld, parent_msg, subitem.get());
+		ret = do_item(depth, new_parent, subitem.get());
 		if (ret < 0)
 			return ret;
 	}
 	return 0;
 }
 
-static int do_file(uint64_t parent_fld, MESSAGE_CONTENT *parent_msg,
-    const char *filename) try
+static int do_file(const char *filename) try
 {
 	libpff_file_ptr file;
 	if (libpff_file_initialize(&unique_tie(file), nullptr) < 1)
@@ -813,7 +845,7 @@ static int do_file(uint64_t parent_fld, MESSAGE_CONTENT *parent_msg,
 	libpff_item_ptr root;
 	if (libpff_file_get_root_folder(file.get(), &unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
-	do_item(0, parent_fld, parent_msg, root.get());
+	do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
 	return 0;
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);
@@ -856,7 +888,7 @@ int main(int argc, const char **argv)
 	}
 	int ret = EXIT_SUCCESS;
 	while (--argc > 0) {
-		auto r2 = do_file(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE), nullptr, *++argv);
+		auto r2 = do_file(*++argv);
 		if (r2 != 0) {
 			ret = EXIT_FAILURE;
 			break;
