@@ -118,7 +118,7 @@ static char *g_username;
 static std::string g_storedir_s, g_root_name;
 static const char *g_storedir;
 static unsigned int g_wet_run = 1, g_show_tree, g_user_id;
-static bool g_mv_warning, g_atx_warning;
+static bool g_atx_warning;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
@@ -236,6 +236,16 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 		tlog("astr(%zu), ", size);
 	} else if (vtype == LIBPFF_VALUE_TYPE_STRING_UNICODE) {
 		tlog("wstr(%zu), ", size / 2);
+	} else if (vtype == LIBPFF_VALUE_TYPE_BINARY_DATA) {
+		tlog("bin(%zu), ", size);
+	} else if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
+		libpff_multi_value_ptr mv;
+		int numv = 0;
+		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
+			throw "PF-1038";
+		if (libpff_multi_value_get_number_of_values(mv.get(), &numv, nullptr) < 1)
+			throw "PF-1039";
+		tlog("mv[%d], ", numv);
 	} else {
 		tlog(",");
 	}
@@ -434,38 +444,43 @@ static int exm_connect(const char *dir)
 
 static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
 {
+	libpff_multi_value_ptr mv;
 	unsigned int etype = 0, vtype = 0;
 	size_t dsize = 0;
+	int mvnum = 0;
 
 	if (libpff_record_entry_get_entry_type(rent, &etype, nullptr) < 1)
 		throw "PF-1030";
 	if (libpff_record_entry_get_value_type(rent, &vtype, nullptr) < 1)
 		throw "PF-1031";
-	if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
-		libpff_multi_value_ptr mv;
-		int numv = 0;
-
-		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
-			throw "PF-1034";
-		if (libpff_multi_value_get_number_of_values(mv.get(), &numv, nullptr) < 1)
-			throw "PF-1035";
-		if (!g_mv_warning)
-			fprintf(stderr, "Multivalue properties not handled. Skipping.\n");
-		g_mv_warning = true;
-		return 0;
-	}
-
 	if (libpff_record_entry_get_data_size(rent, &dsize, nullptr) < 1)
 		throw "PF-1032";
+
+	TAGGED_PROPVAL pv;
+	pv.proptag = PROP_TAG(vtype, etype);
+	if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
+		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
+			throw "PF-1034";
+		if (libpff_multi_value_get_number_of_values(mv.get(), &mvnum, nullptr) < 1)
+			throw "PF-1035";
+		if (mvnum == 0 && dsize != 0) {
+			fprintf(stderr, "Multivalue property %xh with 0 items, but still with size %zu. "
+			        "Broken PFF file/parser?\n", pv.proptag, dsize);
+			return 0;
+		}
+	}
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
 	if (dsize == 0)
 		buf[0] = '\0';
 	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, nullptr) < 1)
 		throw "PF-1033";
 
-	TAGGED_PROPVAL pv;
-	BINARY tb;
-	pv.proptag = PROP_TAG(vtype, etype);
+	union {
+		BINARY bin;
+		SHORT_ARRAY sa;
+		LONG_ARRAY la;
+		LONGLONG_ARRAY lla;
+	} u;
 	pv.pvalue = buf.get();
 	switch (vtype) {
 	case PT_SHORT:
@@ -511,9 +526,37 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		pv.pvalue = buf.get();
 		break;
 	case PT_BINARY:
-		tb.cb = dsize;
-		tb.pv = buf.get();
-		pv.pvalue = &tb;
+		u.bin.cb = dsize;
+		u.bin.pv = buf.get();
+		pv.pvalue = &u.bin;
+		break;
+	case PT_MV_SHORT:
+		if (dsize != mvnum * sizeof(uint16_t)) {
+			fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
+			return -EINVAL;
+		}
+		u.sa.count = mvnum;
+		u.sa.ps = reinterpret_cast<uint16_t *>(buf.get());
+		pv.pvalue = &u.sa;
+		break;
+	case PT_MV_LONG:
+		if (dsize != mvnum * sizeof(uint32_t)) {
+			fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
+			return -EINVAL;
+		}
+		u.la.count = mvnum;
+		u.la.pl = reinterpret_cast<uint32_t *>(buf.get());
+		pv.pvalue = &u.la;
+		break;
+	case PT_MV_I8:
+	case PT_MV_SYSTIME:
+		if (dsize != mvnum * sizeof(uint64_t)) {
+			fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
+			return -EINVAL;
+		}
+		u.lla.count = mvnum;
+		u.lla.pll = reinterpret_cast<uint64_t *>(buf.get());
+		pv.pvalue = &u.lla;
 		break;
 	default:
 		fprintf(stderr, "Unsupported proptype %xh (datasize %zu). Implement me!\n",
@@ -674,11 +717,9 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			throw "PF-1022";
 		if (g_show_tree)
 			az_recordset(depth, rset.get());
-		if (g_wet_run) {
-			auto ret = recordset_to_tpropval_a(rset.get(), props.get());
-			if (ret < 0)
-				return ret;
-		}
+		auto ret = recordset_to_tpropval_a(rset.get(), props.get());
+		if (ret < 0)
+			return ret;
 		if (item_type != LIBPFF_ITEM_TYPE_RECIPIENTS)
 			/* For folders, messages, attachments, etc. keep properties in @props. */
 			continue;
