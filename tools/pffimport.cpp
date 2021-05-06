@@ -351,13 +351,13 @@ static int exm_connect(const char *dir)
 	std::vector<EXMDB_ITEM> exmlist;
 	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, exmlist);
 	if (ret < 0) {
-		printf("[exmdb_client]: list_file_read_exmdb: %s\n", strerror(-ret));
+		fprintf(stderr, "[exmdb_client]: list_file_read_exmdb: %s\n", strerror(-ret));
 		return ret;
 	}
 	auto xn = std::find_if(exmlist.begin(), exmlist.end(),
 	          [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
 	if (xn == exmlist.end()) {
-		printf("No target for %s\n", dir);
+		fprintf(stderr, "No target for %s\n", dir);
 		return -ENOENT;
 	}
 	wrapfd fd(gx_inet_connect(xn->host.c_str(), xn->port, 0));
@@ -441,34 +441,34 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 	case PT_SHORT:
 		if (dsize == sizeof(uint16_t))
 			break;
-		printf("Datasize mismatch on %xh\n", pv.proptag);
+		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_LONG:
 		if (dsize == sizeof(uint32_t))
 			break;
-		printf("Datasize mismatch on %xh\n", pv.proptag);
+		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_I8:
 	case PT_SYSTIME:
 		if (dsize == sizeof(uint64_t))
 			break;
-		printf("Datasize mismatch on %xh\n", pv.proptag);
+		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_FLOAT:
 		if (dsize == sizeof(float))
 			break;
-		printf("Datasize mismatch on %xh\n", pv.proptag);
+		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		if (dsize == sizeof(double))
 			break;
-		printf("Datasize mismatch on %xh\n", pv.proptag);
+		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_BOOLEAN:
 		if (dsize == sizeof(uint8_t))
 			break;
-		printf("Datasize mismatch on %xh\n", pv.proptag);
+		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_STRING8:
 	case PT_UNICODE:
@@ -517,7 +517,7 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 {
 	uint64_t change_num = 0;
 	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		printf("allocate_cn RPC failed\n");
+		fprintf(stderr, "allocate_cn RPC failed\n");
 		return -EIO;
 	}
 	SIZED_XID zxid;
@@ -529,39 +529,39 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, sizeof(tmp_buff), 0) ||
 	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
-		printf("ext_push: ENOMEM\n");
+		fprintf(stderr, "ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.offset;
 	std::unique_ptr<PCL, afree> pcl(pcl_init());
 	if (pcl == nullptr) {
-		printf("pcl_init: ENOMEM\n");
+		fprintf(stderr, "pcl_init: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!pcl_append(pcl.get(), &zxid)) {
-		printf("pcl_append: ENOMEM\n");
+		fprintf(stderr, "pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
 	std::unique_ptr<BINARY, afree> pclbin(pcl_serialize(pcl.get()));
 	if (pclbin == nullptr){
-		printf("pcl_serialize: ENOMEM\n");
+		fprintf(stderr, "pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGEKEY, &bxid) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_PREDECESSORCHANGELIST, pclbin.get())) {
-		printf("tpropval: ENOMEM\n");
+		fprintf(stderr, "tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!exmdb_client::create_folder_by_properties(g_storedir, 0, props, new_fld_id)) {
-		printf("create_folder_by_properties RPC failed\n");
+		fprintf(stderr, "create_folder_by_properties RPC failed\n");
 		return -EIO;
 	}
 	if (*new_fld_id == 0) {
 		auto dn = tpropval_array_get_propval(props, PROP_TAG_DISPLAYNAME);
-		printf("createfolder: folder \"%s\" already existed\n",
+		fprintf(stderr, "createfolder: folder \"%s\" already existed\n",
 		       dn != nullptr ? static_cast<char *>(dn) : "<ERROR>");
 		return -EEXIST;
 	}
@@ -572,10 +572,10 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 {
 	uint64_t msg_id = 0, change_num = 0;
 	if (!exmdb_client::allocate_message_id(g_storedir, parent_fld, &msg_id)) {
-		printf("allocate_message_id RPC failed\n");
+		fprintf(stderr, "allocate_message_id RPC failed\n");
 		return -EIO;
 	} else if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		printf("allocate_cn RPC failed\n");
+		fprintf(stderr, "allocate_cn RPC failed\n");
 		return -EIO;
 	}
 
@@ -588,23 +588,23 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, sizeof(tmp_buff), 0) ||
 	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
-		printf("ext_push: ENOMEM\n");
+		fprintf(stderr, "ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.offset;
 	std::unique_ptr<PCL, afree> pcl(pcl_init());
 	if (pcl == nullptr) {
-		printf("pcl_init: ENOMEM\n");
+		fprintf(stderr, "pcl_init: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!pcl_append(pcl.get(), &zxid)) {
-		printf("pcl_append: ENOMEM\n");
+		fprintf(stderr, "pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
 	std::unique_ptr<BINARY, afree> pclbin(pcl_serialize(pcl.get()));
 	if (pclbin == nullptr){
-		printf("pcl_serialize: ENOMEM\n");
+		fprintf(stderr, "pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
 	auto props = &ctnt->proplist;
@@ -612,16 +612,16 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGEKEY, &bxid) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_PREDECESSORCHANGELIST, pclbin.get())) {
-		printf("tpropval: ENOMEM\n");
+		fprintf(stderr, "tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
 	gxerr_t e_result = GXERR_SUCCESS;
 	if (!exmdb_client::write_message(g_storedir, g_username, 65001,
 	    parent_fld, ctnt, &e_result)) {
-		printf("write_message RPC failed\n");
+		fprintf(stderr, "write_message RPC failed\n");
 		return -EIO;
 	} else if (e_result != 0) {
-		printf("write_message: gxerr %d\n", e_result);
+		fprintf(stderr, "write_message: gxerr %d\n", e_result);
 		return -EIO;
 	}
 	return 0;
@@ -833,7 +833,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	if (argc < 2) {
-		printf("Usage: pffimport [-t] username pstfilename...\n");
+		fprintf(stderr, "Usage: pffimport [-t] username pstfilename...\n");
 		return EXIT_FAILURE;
 	}
 	if (g_username != nullptr) {
