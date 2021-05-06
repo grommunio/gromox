@@ -814,8 +814,8 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		}
 	}
 
+	auto name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_DISPLAY_NAME);
 	if (g_show_tree) {
-		auto name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_DISPLAY_NAME);
 		tree(depth);
 		tlog("display_name=\"%s\"\n", name.c_str());
 		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_MESSAGE_SUBJECT);
@@ -824,6 +824,8 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_ATTACHMENT_FILENAME_LONG);
 		tree(depth);
 		tlog("filename=\"%s\"\n", name.c_str());
+	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+		printf("Processing folder \"%s\"...\n", name.c_str());
 	}
 
 	if (item_type != LIBPFF_ITEM_TYPE_EMAIL)
@@ -896,12 +898,14 @@ static int do_file(const char *filename) try
 	libpff_file_ptr file;
 	if (libpff_file_initialize(&unique_tie(file), nullptr) < 1)
 		throw "PF-1023";
+	fprintf(stderr, "Reading %s...\n", filename);
 	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ, nullptr) < 1) {
 		int s = errno;
 		fprintf(stderr, "Could not open \"%s\": %s\n", filename, strerror(s));
 		return -(errno = s);
 	}
 
+	fprintf(stderr, "Transferring objects...\n");
 	char timebuf[64];
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
@@ -960,5 +964,7 @@ int main(int argc, const char **argv)
 			break;
 		}
 	}
+	if (ret == EXIT_FAILURE)
+		fprintf(stderr, "Import unsuccessful.\n");
 	return ret ? EXIT_SUCCESS : EXIT_FAILURE;
 }
