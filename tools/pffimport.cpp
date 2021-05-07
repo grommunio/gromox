@@ -815,14 +815,20 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 
 	auto name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_DISPLAY_NAME);
 	if (g_show_tree) {
-		tree(depth);
-		tlog("display_name=\"%s\"\n", name.c_str());
+		if (!name.empty()) {
+			tree(depth);
+			tlog("display_name=\"%s\"\n", name.c_str());
+		}
 		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_MESSAGE_SUBJECT);
-		tree(depth);
-		tlog("subject=\"%s\"\n", name.c_str());
+		if (!name.empty()) {
+			tree(depth);
+			tlog("subject=\"%s\"\n", name.c_str());
+		}
 		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_ATTACHMENT_FILENAME_LONG);
-		tree(depth);
-		tlog("filename=\"%s\"\n", name.c_str());
+		if (!name.empty()) {
+			tree(depth);
+			tlog("filename=\"%s\"\n", name.c_str());
+		}
 	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
 		printf("Processing folder \"%s\"...\n", name.c_str());
 	}
