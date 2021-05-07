@@ -140,7 +140,7 @@ libgxs_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_domain_list_la_DEPENDENCIES = ${default_sym}
 
-pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/pop3/console_cmd_handler.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp mra/pop3/units_allocator.cpp
+pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/pop3/console_cmd_handler.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mra/imap/console_cmd_handler.cpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/listener.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la

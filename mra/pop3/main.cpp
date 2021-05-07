@@ -12,7 +12,6 @@
 #include "listener.h" 
 #include "resource.h" 
 #include "pop3_parser.h" 
-#include "units_allocator.h" 
 #include "blocks_allocator.h" 
 #include <gromox/threads_pool.hpp>
 #include "console_cmd_handler.h"
@@ -436,14 +435,6 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
-
-	units_allocator_init(context_num * context_aver_units);
-	if (0 != units_allocator_run()) { 
-		printf("[system]: can not run units allocator\n"); 
-		return EXIT_FAILURE;
-	}
-	auto cleanup_9 = make_scope_exit(units_allocator_free);
-	auto cleanup_10 = make_scope_exit(units_allocator_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
  

@@ -4,7 +4,6 @@
 #endif
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
-#include "units_allocator.h"
 #include <gromox/console_server.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/threads_pool.hpp>
@@ -174,8 +173,6 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 BOOL cmd_handler_system_control(int argc, char** argv)
 {
 	LIB_BUFFER* block_allocator;
-	LIB_BUFFER* units_allocator;
-	long max_units_num, current_alloc_units;
 	size_t max_block_num, current_alloc_num, block_size;
 	long max_context_num, parsing_context_num, current_thread_num;
 
@@ -207,30 +204,23 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		max_context_num     = contexts_pool_get_param(MAX_CONTEXTS_NUM);
 		parsing_context_num = contexts_pool_get_param(CUR_VALID_CONTEXTS);
 		block_allocator     = blocks_allocator_get_allocator();
-		units_allocator     = units_allocator_get_allocator();
 		max_block_num       = lib_buffer_get_param(block_allocator, MEM_ITEM_NUM);
 		block_size          = lib_buffer_get_param(block_allocator, MEM_ITEM_SIZE);
 		current_alloc_num   = lib_buffer_get_param(block_allocator, ALLOCATED_NUM);
-		max_units_num       = lib_buffer_get_param(units_allocator, MEM_ITEM_NUM);
-		current_alloc_units = lib_buffer_get_param(units_allocator, ALLOCATED_NUM);
 		current_thread_num  = threads_pool_get_param(THREADS_POOL_CUR_THR_NUM);
 		console_server_reply_to_client("250 pop3 system running status of %s:\r\n"
 			"\tmaximum contexts number      %ld\r\n"
 			"\tcurrent parsing contexts     %ld\r\n"
 			"\tmaximum memory blocks        %zu\r\n"
-			"\tmaximum units number         %ld\r\n"
 			"\tmemory block size            %zuK\r\n"
 			"\tcurrent allocated blocks     %zu\r\n"
-			"\tcurrent allocated units      %ld\r\n"
 			"\tcurrent threads number       %ld",
 			resource_get_string("HOST_ID"),
 			max_context_num,
 			parsing_context_num,
 			max_block_num,
-			max_units_num,
 			block_size / 1024,
 			current_alloc_num,
-			current_alloc_units,
 			current_thread_num);
 		
 		return TRUE;

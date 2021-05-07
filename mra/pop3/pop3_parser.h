@@ -8,7 +8,6 @@
 #include <gromox/stream.hpp>
 #include <sys/time.h>
 #include <openssl/ssl.h>
-#include "units_allocator.h"
 #define MAX_LINE_LENGTH    64*1024
 
 /* enumeration of pop3_parser */

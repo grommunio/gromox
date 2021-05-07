@@ -11,7 +11,6 @@
 #include "pop3_parser.h"
 #include "pop3_cmd_handler.h"
 #include "blocks_allocator.h"
-#include "units_allocator.h"
 #include <gromox/threads_pool.hpp>
 #include "system_services.h"
 #include "resource.h"
@@ -773,13 +772,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 POP3_CONTEXT::POP3_CONTEXT()
 {
 	auto pcontext = this;
-    LIB_BUFFER *palloc_stream, *palloc_unit;
-    
-    if (NULL == pcontext) {
-        return;
-    }
-    palloc_stream = blocks_allocator_get_allocator();
-    palloc_unit = units_allocator_get_allocator();
+	auto palloc_stream = blocks_allocator_get_allocator();
     pcontext->connection.sockd = -1;
     stream_init(&pcontext->stream, palloc_stream);
 	single_list_init(&pcontext->list);

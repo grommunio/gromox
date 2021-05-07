@@ -13,7 +13,6 @@
 #include "system_services.h"
 #include "resource.h"
 #include "blocks_allocator.h"
-#include "units_allocator.h"
 #include <gromox/util.hpp>
 #include <gromox/array.hpp>
 #include <gromox/mail_func.hpp>
