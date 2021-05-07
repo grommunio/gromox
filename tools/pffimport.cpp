@@ -290,7 +290,7 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 			throw "PF-1014";
 		tlog("[attachment type=%c embedded_msg]\n", atype);
 		auto ret = do_item(depth + 1, parent_desc::as_attach(atc), emb_item.get());
-		if (ret != 0)
+		if (ret < 0)
 			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog("[attachment type=%c]\n", atype);
@@ -769,7 +769,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		std::swap(atc->proplist.count, props->count);
 		std::swap(atc->proplist.ppropval, props->ppropval);
 		auto ret = do_attach(depth, atc.get(), item);
-		if (ret != 0)
+		if (ret < 0)
 			return ret;
 	}
 
@@ -808,8 +808,9 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			libpff_item_ptr atx;
 			if (libpff_message_get_attachment(item, atidx, &unique_tie(atx), nullptr) < 1)
 				throw "PF-1017";
-			if (!do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get()))
-				return false;
+			auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
+			if (ret < 0)
+				return ret;
 		}
 	}
 
@@ -963,7 +964,7 @@ int main(int argc, const char **argv)
 	int ret = EXIT_SUCCESS;
 	while (--argc > 0) {
 		auto r2 = do_file(*++argv);
-		if (r2 != 0) {
+		if (r2 < 0) {
 			ret = EXIT_FAILURE;
 			break;
 		}
