@@ -781,7 +781,6 @@ POP3_CONTEXT::POP3_CONTEXT()
     palloc_stream = blocks_allocator_get_allocator();
     palloc_unit = units_allocator_get_allocator();
     pcontext->connection.sockd = -1;
-//    array_init(&pcontext->array, palloc_unit, sizeof(MSG_UNIT));
     stream_init(&pcontext->stream, palloc_stream);
 	single_list_init(&pcontext->list);
 }

@@ -1,11 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-/*
- *	array is a certain data struct same as type of array, but the number of
- *	items is not fix. items can be appended into array any time. but when an 
- *	item is added into array, it can not be deleted because the index is 
- *	permanently assigned to this item. access the data according index will be 
- *	slow if the index is very large (e.g. 1000000). 
- */
 #include <gromox/array.hpp>
 #include <gromox/util.hpp>
 #include <cstring>

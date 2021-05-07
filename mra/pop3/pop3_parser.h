@@ -50,6 +50,13 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	STREAM stream{}; /* stream accepted from pop3 client */
 	int total_mail = 0;
 	uint64_t total_size = 0;
+
+	/*
+	 * @list will hold indices/iterators/pointers to @array elements, so
+	 * these elements must not change their memory location when @array is
+	 * modified (specifically: only append). We also want O(1) random
+	 * access in @array. Therefore, deque is used.
+	 */
 	std::deque<gromox::MSG_UNIT> array; /* mailbox message list */
 	SINGLE_LIST list{}; /* deleted message list */
 	BOOL is_login = false; /* if user is logged in */
