@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <deque>
 #include <gromox/common_types.hpp>
-#include <gromox/array.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/single_list.hpp>
 
