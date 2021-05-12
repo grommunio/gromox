@@ -271,7 +271,7 @@ static void az_recordset(unsigned int depth, libpff_record_set_t *rset)
 static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
 {
 	int atype = 0;
-	size_t asize = 0;
+	uint64_t asize = 0;
 
 	if (libpff_attachment_get_type(atx, &atype, nullptr) < 1)
 		throw "PF-1012";
