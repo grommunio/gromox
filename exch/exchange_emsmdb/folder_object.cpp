@@ -242,7 +242,7 @@ static BOOL folder_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		**reinterpret_cast<uint32_t **>(pvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -255,7 +255,7 @@ static BOOL folder_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		**reinterpret_cast<uint32_t **>(pvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_NORMALMESSAGESIZE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -268,7 +268,7 @@ static BOOL folder_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		**reinterpret_cast<uint32_t **>(pvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ACCESS:
 		*ppvalue = &pfolder->tag_access;
