@@ -1,3 +1,17 @@
+0.23 (2021-05-13)
+=================
+
+Enhancements:
+
+* New utility ``gromox-pffimport`` for importing PFF/PST/OST
+
+Fixes:
+
+* exchange_emsmdb: fix a crash upon retrieval of calculated properties
+* lib: fix crash when zcore uses a zero-length name during
+  zcore_callid::COPYFOLDER
+
+
 0.22 (2021-05-03)
 =================
 
