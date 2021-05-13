@@ -294,8 +294,10 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog("[attachment type=%c]\n", atype);
+		return -EOPNOTSUPP;
 	} else {
 		tlog("[attachment type=unknown]\n");
+		return -EOPNOTSUPP;
 	}
 	return 0;
 }
@@ -771,6 +773,13 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		auto ret = do_attach(depth, atc.get(), item);
 		if (ret < 0)
 			return ret;
+		if (parent.type == LIBPFF_ITEM_TYPE_EMAIL) {
+			if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get())) {
+				fprintf(stderr, "attachment_list_append_internal: ENOMEM\n");
+				return -ENOMEM;
+			}
+			atc.release();
+		}
 	}
 
 	/*
