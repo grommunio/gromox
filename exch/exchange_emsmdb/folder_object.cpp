@@ -205,7 +205,7 @@ BOOL folder_object_check_readonly_property(
 }
 
 static BOOL folder_object_get_calculated_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag, void **ppvalue)
+	FOLDER_OBJECT *pfolder, uint32_t proptag, void **outvalue)
 {
 	BINARY *pbin;
 	void *pvalue;
@@ -220,73 +220,67 @@ static BOOL folder_object_get_calculated_property(
 	switch (proptag) {
 	case PROP_TAG_CONTENTUNREADCOUNT:
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
-			*ppvalue = cu_alloc<uint32_t>();
-			if (NULL == *ppvalue) {
+			*outvalue = cu_alloc<uint32_t>();
+			if (*outvalue == nullptr)
 				return FALSE;
-			}
 			auto rpc_info = get_rpc_info();
 			return exmdb_client_get_public_folder_unread_count(
 						logon_object_get_dir(pfolder->plogon),
 						rpc_info.username, pfolder->folder_id,
-			       static_cast<uint32_t *>(*ppvalue));
+			       static_cast<uint32_t *>(*outvalue));
 		}
 		return FALSE;
 	case PROP_TAG_MESSAGESIZE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<uint32_t>();
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(pfolder->plogon), 0,
 			pfolder->folder_id, PROP_TAG_MESSAGESIZEEXTENDED,
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ASSOCMESSAGESIZE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<uint32_t>();
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(pfolder->plogon), 0,
 			pfolder->folder_id, PROP_TAG_ASSOCMESSAGESIZEEXTENDED,
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_NORMALMESSAGESIZE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<uint32_t>();
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(pfolder->plogon), 0,
 			pfolder->folder_id, PROP_TAG_NORMALMESSAGESIZEEXTENDED,
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PROP_TAG_ACCESS:
-		*ppvalue = &pfolder->tag_access;
+		*outvalue = &pfolder->tag_access;
 		return TRUE;
 	case PROP_TAG_FOLDERID:
-		*ppvalue = cu_alloc<uint64_t>();
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<uint64_t>();
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
-		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
+		*static_cast<uint64_t *>(*outvalue) = pfolder->folder_id;
 		return TRUE;
 	case PROP_TAG_RIGHTS:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<uint32_t>();
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		if (LOGON_MODE_OWNER == logon_object_get_mode(pfolder->plogon)) {
-			*(uint32_t*)(*ppvalue) = PERMISSION_READANY|PERMISSION_CREATE|
+			*static_cast<uint32_t *>(*outvalue) = PERMISSION_READANY | PERMISSION_CREATE |
 									PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
 									PERMISSION_EDITANY|PERMISSION_DELETEANY|
 									PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
@@ -296,12 +290,12 @@ static BOOL folder_object_get_calculated_property(
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(pfolder->plogon),
 			    pfolder->folder_id, rpc_info.username,
-			    static_cast<uint32_t *>(*ppvalue)))
+			    static_cast<uint32_t *>(*outvalue)))
 				return FALSE;
 		}
 		return TRUE;
 	case PROP_TAG_ENTRYID:
-		*ppvalue = common_util_to_folder_entryid(
+		*outvalue = common_util_to_folder_entryid(
 			pfolder->plogon, pfolder->folder_id);
 		return TRUE;
 	case PROP_TAG_PARENTENTRYID:
@@ -311,20 +305,20 @@ static BOOL folder_object_get_calculated_property(
 			&pvalue) || NULL == pvalue) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(
+		*outvalue = common_util_to_folder_entryid(
 			pfolder->plogon, *(uint64_t*)pvalue);
 		return TRUE;
 	case PROP_TAG_PARENTSOURCEKEY:
 		if (TRUE == logon_object_check_private(pfolder->plogon)) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {
-				*ppvalue = deconst(&fake_bin);
+				*outvalue = deconst(&fake_bin);
 				return TRUE;
 			}
 		} else {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PUBLIC_FID_ROOT)) {
-				*ppvalue = deconst(&fake_bin);
+				*outvalue = deconst(&fake_bin);
 				return TRUE;
 			}
 		}
@@ -337,26 +331,24 @@ static BOOL folder_object_get_calculated_property(
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(pfolder->plogon), 0,
 			*(uint64_t*)pvalue, PROP_TAG_SOURCEKEY,
-			ppvalue)) {
+		    outvalue))
 			return FALSE;
-		}
-		if (NULL == *ppvalue) {
-			*ppvalue = common_util_calculate_folder_sourcekey(
+		if (*outvalue == nullptr) {
+			*outvalue = common_util_calculate_folder_sourcekey(
 						pfolder->plogon, *(uint64_t*)pvalue);
-			if (NULL == *ppvalue) {
+			if (*outvalue == nullptr)
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PROP_TAG_STORERECORDKEY:
 	case PROP_TAG_MAPPINGSIGNATURE:
-		*ppvalue = common_util_guid_to_binary(
+		*outvalue = common_util_guid_to_binary(
 					logon_object_get_mailbox_guid(
 					pfolder->plogon));
 		return TRUE;
 	case PROP_TAG_DELETEDFOLDERTOTAL:
 		/* just like exchange 2013, alway return 0 */
-		*ppvalue = deconst(&fake_del);
+		*outvalue = deconst(&fake_del);
 		return TRUE;
 	case PROP_TAG_IPMDRAFTSENTRYID:
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
@@ -366,7 +358,7 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PROP_TAG_IPMCONTACTENTRYID:
@@ -377,7 +369,7 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PROP_TAG_IPMAPPOINTMENTENTRYID:
@@ -388,7 +380,7 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PROP_TAG_IPMJOURNALENTRYID:
@@ -399,7 +391,7 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PROP_TAG_IPMNOTEENTRYID:
@@ -410,7 +402,7 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PROP_TAG_IPMTASKENTRYID:
@@ -421,7 +413,7 @@ static BOOL folder_object_get_calculated_property(
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PROP_TAG_REMINDERSONLINEENTRYID:
@@ -438,7 +430,7 @@ static BOOL folder_object_get_calculated_property(
 			NULL == pvalue) {
 			return FALSE;
 		}
-		*ppvalue = pvalue;
+		*outvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_ADDITIONALRENENTRYIDS: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
@@ -455,14 +447,13 @@ static BOOL folder_object_get_calculated_property(
 			return FALSE;
 		}
 		if (NULL != pvalue) {
-			*ppvalue = pvalue;
+			*outvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = cu_alloc<BINARY_ARRAY>();
-		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<BINARY_ARRAY>();
+		auto ba = static_cast<BINARY_ARRAY *>(*outvalue);
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		ba->count = 5;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr) {
@@ -516,14 +507,13 @@ static BOOL folder_object_get_calculated_property(
 			return FALSE;
 		}
 		if (NULL != pvalue) {
-			*ppvalue = pvalue;
+			*outvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = cu_alloc<BINARY>();
-		auto bv = static_cast<BINARY *>(*ppvalue);
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<BINARY>();
+		auto bv = static_cast<BINARY *>(*outvalue);
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		persistdatas.count = 3;
 		persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 		if (NULL == persistdatas.ppitems) {
@@ -579,14 +569,13 @@ static BOOL folder_object_get_calculated_property(
 			return FALSE;
 		}
 		if (NULL != pvalue) {
-			*ppvalue = pvalue;
+			*outvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = cu_alloc<BINARY_ARRAY>();
-		auto ba = static_cast<BINARY_ARRAY *>(*ppvalue);
-		if (NULL == *ppvalue) {
+		*outvalue = cu_alloc<BINARY_ARRAY>();
+		auto ba = static_cast<BINARY_ARRAY *>(*outvalue);
+		if (*outvalue == nullptr)
 			return FALSE;
-		}
 		ba->count = 4;
 		ba->pbin = cu_alloc<BINARY>(ba->count);
 		if (ba->pbin == nullptr) {
