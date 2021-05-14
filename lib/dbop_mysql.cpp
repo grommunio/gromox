@@ -7,7 +7,10 @@
 #include <mysql.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
-
+/*
+ * Note to self: New tables need not just an edit of @tbl_upgrade_list, but
+ * also @tbl_init_top!
+ */
 using namespace gromox;
 
 namespace {
@@ -500,6 +503,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"admin_role_permission_relation", tbl_admroleperm_42},
 	{"admin_user_role_relation", tbl_admuserrole_43},
 	{"classes", tbl_classes_top},
+	{"fetchmail", tbl_fetchmail_75},
 	{nullptr},
 };
 
