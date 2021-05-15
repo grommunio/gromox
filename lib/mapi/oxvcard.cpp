@@ -678,9 +678,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			if (child_strings.count > 16) {
+			if (child_strings.count >= GX_ARRAY_SIZE(child_buff))
 				goto IMPORT_FAILURE;
-			}
 			child_strings.ppstr[child_strings.count] = (char*)pstring;
 			child_strings.count ++;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEXT")) {
