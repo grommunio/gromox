@@ -292,7 +292,7 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 	}
 	for (i=lasttokenloc+1, j=0; *(tmp_ptr+j)!='\0' && *(tmp_ptr+j)!='>'; 
 		 i++, j++) {
-		if (j >= sizeof(e_addr->domain)) {
+		if (j >= GX_ARRAY_SIZE(e_addr->domain) - 1) {
 			j = 0;
 			break;
 		}
@@ -638,7 +638,7 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 	}
 	for (i=lasttokenloc+1, j=0; *(tmp_ptr+j)!='\0' && *(tmp_ptr+j)!='>'; 
 		 i++, j++) {
-		if (j >= sizeof(e_addr->domain)) {
+		if (j >= GX_ARRAY_SIZE(e_addr->domain) - 1) {
 			j = 0;
 			break;
 		}
