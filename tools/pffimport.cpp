@@ -174,9 +174,7 @@ static bool az_item_get_record_entry_by_type(libpff_item_t *item, uint16_t propi
     libpff_record_set_t **rset, libpff_record_entry_t **rent, uint8_t flags)
 {
 	auto ret = libpff_item_get_record_set_by_index(item, 0, rset, nullptr);
-	if (ret < 0)
-		throw "PF-1000";
-	else if (ret == 0)
+	if (ret <= 0)
 		return false;
 	ret = libpff_record_set_get_entry_by_type(*rset, propid, 0, rent,
 	      LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE, nullptr);
