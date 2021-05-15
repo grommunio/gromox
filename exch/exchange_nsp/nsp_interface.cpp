@@ -2757,6 +2757,8 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 	int temp_len;
 	
 	for (unsigned int i = 0; i < pstrs->cvalues; ++i) {
+		if (pstrs->ppstr[i] == nullptr)
+			continue;
 		temp_len = 2 * strlen(pstrs->ppstr[i]) + 1;
 		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (NULL == pstr) {
