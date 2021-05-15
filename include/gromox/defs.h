@@ -97,6 +97,7 @@ enum ec_error_t {
 };
 
 enum {
+	ULCLPART_SIZE = 65, /* localpart(64) plus \0 */
 	UDOM_SIZE = 256, /* domain(255) plus \0 */
 	UADDR_SIZE = 321, /* localpart(64) "@" domain \0 */
 };

@@ -9,11 +9,8 @@
 #define MIME_NAME_LEN 80U
 #define MIME_FIELD_LEN (64U * 1024)
 
-/* address following RFC2822 */
 struct EMAIL_ADDR {
-    char display_name[256];
-    char local_part[64];
-    char domain[64];
+	char display_name[256], local_part[ULCLPART_SIZE], domain[UDOM_SIZE];
 };
 
 struct MIME_FIELD {
