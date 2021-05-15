@@ -201,7 +201,7 @@ static int connect_event()
     char temp_buff[1024];
 	int sockd = gx_inet_connect(g_event_ip, g_event_port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		fprintf(stderr, "gx_inet_connect event_stub@[%s]:%hu: %s\n",
 		        g_event_ip, g_event_port, strerror(-sockd));
 		return -1;
 	}

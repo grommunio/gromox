@@ -405,7 +405,7 @@ static int exm_connect(const char *dir)
 	}
 	wrapfd fd(gx_inet_connect(xn->host.c_str(), xn->port, 0));
 	if (fd.get() < 0) {
-		fprintf(stderr, "gx_inet_connect: %s:%hu: %s\n",
+		fprintf(stderr, "gx_inet_connect pffimport@[%s]:%hu: %s\n",
 		        xn->host.c_str(), xn->port, strerror(-fd.get()));
 		return -errno;
 	}

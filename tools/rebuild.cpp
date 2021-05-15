@@ -135,7 +135,7 @@ static int connect_exmdb(const char *dir)
 		return -1;
 	int sockd = gx_inet_connect(pexnode->host.c_str(), pexnode->port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		fprintf(stderr, "gx_inet_connect rebuild@[%s]:%hu: %s\n",
 		        pexnode->host.c_str(), pexnode->port, strerror(-sockd));
 	        return -1;
 	}

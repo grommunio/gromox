@@ -3351,7 +3351,7 @@ static int connect_midb(const char *ip_addr, int port)
 
 	int sockd = gx_inet_connect(ip_addr, port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect %s:%hu: %s\n",
+		fprintf(stderr, "gx_inet_connect midb_agent@[%s]:%hu: %s\n",
 		        ip_addr, port, strerror(-sockd));
 		return -1;
 	}
