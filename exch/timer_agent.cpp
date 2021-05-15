@@ -359,7 +359,7 @@ static int connect_timer()
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			fprintf(stderr, "gx_inet_connect timer@[%s]:%hu: %s\n",
+			fprintf(stderr, "gx_inet_connect timer_agent@[%s]:%hu: %s\n",
 			        g_timer_ip, g_timer_port, strerror(-sockd));
 	        return -1;
 	}

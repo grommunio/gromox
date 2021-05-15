@@ -322,8 +322,13 @@ static int connect_event()
     char temp_buff[1024];
 	int sockd = gx_inet_connect(g_event_ip, g_event_port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect event_proxy@[%s]:%hu: %s\n",
-		        g_event_ip, g_event_port, strerror(-sockd));
+		static std::atomic<time_t> g_lastwarn_time;
+		auto prev = g_lastwarn_time.load();
+		auto next = prev + 60;
+		auto now = time(nullptr);
+		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
+			fprintf(stderr, "gx_inet_connect event_proxy@[%s]:%hu: %s\n",
+			        g_event_ip, g_event_port, strerror(-sockd));
 		return -1;
 	}
 	if (-1 == read_line(sockd, temp_buff, 1024) ||
