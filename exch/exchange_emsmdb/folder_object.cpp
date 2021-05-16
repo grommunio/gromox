@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "emsmdb_interface.h"
@@ -14,11 +15,13 @@
 #include <cstdlib>
 #include <cstring>
 
-FOLDER_OBJECT* folder_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<FOLDER_OBJECT> folder_object_create(LOGON_OBJECT *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
-	auto pfolder = me_alloc<FOLDER_OBJECT>();
-	if (NULL == pfolder) {
+	std::unique_ptr<FOLDER_OBJECT> pfolder;
+	try {
+		pfolder = std::make_unique<FOLDER_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pfolder->plogon = plogon;
@@ -26,11 +29,6 @@ FOLDER_OBJECT* folder_object_create(LOGON_OBJECT *plogon,
 	pfolder->type = type;
 	pfolder->tag_access = tag_access;
 	return pfolder;
-}
-
-void folder_object_free(FOLDER_OBJECT *pfolder)
-{
-	free(pfolder);
 }
 
 uint64_t folder_object_get_id(FOLDER_OBJECT *pfolder)

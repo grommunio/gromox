@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <memory>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -20,12 +21,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-
-FOLDER_OBJECT* folder_object_create(STORE_OBJECT *pstore,
+std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
-	auto pfolder = me_alloc<FOLDER_OBJECT>();
-	if (NULL == pfolder) {
+	std::unique_ptr<FOLDER_OBJECT> pfolder;
+	try {
+		pfolder = std::make_unique<FOLDER_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pfolder->pstore = pstore;
@@ -33,11 +35,6 @@ FOLDER_OBJECT* folder_object_create(STORE_OBJECT *pstore,
 	pfolder->type = type;
 	pfolder->tag_access = tag_access;
 	return pfolder;
-}
-
-void folder_object_free(FOLDER_OBJECT *pfolder)
-{
-	free(pfolder);
 }
 
 uint64_t folder_object_get_id(FOLDER_OBJECT *pfolder)

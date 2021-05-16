@@ -1057,7 +1057,6 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	uint32_t folder_type;
 	STORE_OBJECT *pstore;
 	uint32_t address_type;
-	FOLDER_OBJECT *pfolder;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -1301,21 +1300,20 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 				}
 			}
 		}
-		pfolder = folder_object_create(pstore,
+		auto pfolder = folder_object_create(pstore,
 			folder_id, folder_type, tag_access);
 		if (NULL == pfolder) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
-		*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hobject, MAPI_FOLDER, pfolder);
+		*phobject = object_tree_add_object_handle(pinfo->ptree,
+		            hobject, MAPI_FOLDER, pfolder.get());
 		if (INVALID_HANDLE == *phobject) {
-			folder_object_free(pfolder);
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
-		} else {
-			*pmapi_type = MAPI_FOLDER;
 		}
+		pfolder.release();
+		*pmapi_type = MAPI_FOLDER;
 	}
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
@@ -2662,7 +2660,6 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	uint32_t tag_access;
 	uint32_t permission;
 	STORE_OBJECT *pstore;
-	FOLDER_OBJECT *pfolder;
 	FOLDER_OBJECT *pparent;
 	TPROPVAL_ARRAY tmp_propvals;
 	PERMISSION_DATA permission_row;
@@ -2809,7 +2806,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
-	pfolder = folder_object_create(pstore,
+	auto pfolder = folder_object_create(pstore,
 		folder_id, folder_type, tag_access);
 	if (NULL == pfolder) {
 		zarafa_server_put_user_info(pinfo);
@@ -2822,22 +2819,20 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		hstore = object_tree_get_store_handle(pinfo->ptree,
 				TRUE, store_object_get_account_id(pstore));
 		if (INVALID_HANDLE == hstore) {
-			folder_object_free(pfolder);
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
-		*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hstore, MAPI_FOLDER, pfolder);
+		*phobject = object_tree_add_object_handle(pinfo->ptree,
+		            hstore, MAPI_FOLDER, pfolder.get());
 	} else {
-		*phobject = object_tree_add_object_handle(
-					pinfo->ptree, hparent_folder,
-					MAPI_FOLDER, pfolder);
+		*phobject = object_tree_add_object_handle(pinfo->ptree,
+		            hparent_folder, MAPI_FOLDER, pfolder.get());
 	}
 	if (INVALID_HANDLE == *phobject) {
-		folder_object_free(pfolder);
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pfolder.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }

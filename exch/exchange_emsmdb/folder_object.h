@@ -1,18 +1,17 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/mapi_types.hpp>
 #include "logon_object.h"
 
 struct FOLDER_OBJECT {
-	LOGON_OBJECT *plogon;
-	uint64_t folder_id;
-	uint8_t type;
-	uint32_t tag_access;
+	LOGON_OBJECT *plogon = nullptr;
+	uint64_t folder_id = 0;
+	uint8_t type = 0;
+	uint32_t tag_access = 0;
 };
 
-FOLDER_OBJECT* folder_object_create(LOGON_OBJECT *plogon,
-	uint64_t folder_id, uint8_t type, uint32_t tag_access);
-void folder_object_free(FOLDER_OBJECT *pfolder);
+extern std::unique_ptr<FOLDER_OBJECT> folder_object_create(LOGON_OBJECT *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
 uint64_t folder_object_get_id(FOLDER_OBJECT *pfolder);
 uint8_t folder_object_get_type(FOLDER_OBJECT *pfolder);
 uint32_t folder_object_get_tag_access(FOLDER_OBJECT *pfolder);

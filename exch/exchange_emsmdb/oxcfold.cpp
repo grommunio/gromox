@@ -28,7 +28,6 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	uint64_t fid_val;
 	uint32_t tag_access;
 	uint32_t permission;
-	FOLDER_OBJECT *pfolder;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -131,17 +130,17 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		return ecError;
 	}
 	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
-	pfolder = folder_object_create(plogon,
+	auto pfolder = folder_object_create(plogon,
 			folder_id, type, tag_access);
 	if (NULL == pfolder) {
 		return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
+	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder.get());
 	if (hnd < 0) {
-		folder_object_free(pfolder);
 		return ecError;
 	}
+	pfolder.release();
 	*phout = hnd;
 	*ppghost = NULL;
 	return ecSuccess;
@@ -168,7 +167,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	uint32_t tag_access;
 	uint32_t permission;
 	char folder_name[256];
-	FOLDER_OBJECT *pfolder;
 	char folder_comment[1024];
 	TPROPVAL_ARRAY tmp_propvals;
 	PERMISSION_DATA permission_row;
@@ -323,17 +321,17 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
-	pfolder = folder_object_create(plogon,
+	auto pfolder = folder_object_create(plogon,
 		folder_id, folder_type, tag_access);
 	if (NULL == pfolder) {
 		return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
+	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder.get());
 	if (hnd < 0) {
-		folder_object_free(pfolder);
 		return ecError;
 	}
+	pfolder.release();
 	*phout = hnd;
 	*pfolder_id = folder_id;
 	*pis_existing = 0; /* just like exchange 2010 or later */

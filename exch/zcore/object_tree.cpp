@@ -196,7 +196,7 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		container_object_free(static_cast<CONTAINER_OBJECT *>(pobject));
 		break;
 	case MAPI_FOLDER:
-		folder_object_free(static_cast<FOLDER_OBJECT *>(pobject));
+		delete static_cast<FOLDER_OBJECT *>(pobject);
 		break;
 	case MAPI_STORE:
 		store_object_free(static_cast<STORE_OBJECT *>(pobject));
