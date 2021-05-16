@@ -665,7 +665,7 @@ int ext_buffer_pull_svreid(EXT_PULL *pext, SVREID *r)
 		if (NULL == r->pbin) {
 			return EXT_ERR_ALLOC;
 		}
-		r->pbin->cb = length - 1;
+		r->pbin->cb = length > 0 ? length - 1 : 0;
 		r->pbin->pv = pext->alloc(r->pbin->cb);
 		if (r->pbin->pv == nullptr) {
 			r->pbin->cb = 0;
