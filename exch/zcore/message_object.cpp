@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
@@ -35,36 +36,31 @@ BOOL message_object_get_recipient_all_proptags(
 						pmessage->instance_id, pproptags);
 }
 
-MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
+std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 	BOOL b_new, uint32_t cpid, uint64_t message_id,
 	void *pparent, uint32_t tag_access, BOOL b_writable,
 	ICS_STATE *pstate)
 {
 	uint64_t *pchange_num;
-	
-	auto pmessage = me_alloc<MESSAGE_OBJECT>();
-	if (NULL == pmessage) {
+	std::unique_ptr<MESSAGE_OBJECT> pmessage;
+	try {
+		pmessage = std::make_unique<MESSAGE_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	memset(pmessage, 0, sizeof(MESSAGE_OBJECT));
 	pmessage->pstore = pstore;
 	pmessage->b_new = b_new;
-	pmessage->b_touched = FALSE;
 	pmessage->cpid = cpid;
 	pmessage->message_id = message_id;
 	pmessage->tag_access = tag_access;
 	pmessage->b_writable = b_writable;
 	pmessage->pstate = pstate;
-	pmessage->change_num = 0;
-	pmessage->pchanged_proptags = NULL;
-	pmessage->premoved_proptags = NULL;
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<ATTACHMENT_OBJECT *>(pparent);
 		if (!exmdb_client::load_embedded_instance(
 			store_object_get_dir(pstore), b_new,
 			((ATTACHMENT_OBJECT*)pparent)->instance_id,
 			&pmessage->instance_id)) {
-			free(pmessage);
 			return NULL;
 		}
 		/* cannot find embedded message in attachment, return
@@ -80,7 +76,6 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 				store_object_get_dir(pstore), NULL, cpid,
 				b_new, pmessage->folder_id, message_id,
 				&pmessage->instance_id)) {
-				free(pmessage);
 				return NULL;
 			}
 		} else {
@@ -89,30 +84,25 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 				store_object_get_dir(pstore), pinfo->username,
 				cpid, b_new, pmessage->folder_id, message_id,
 				&pmessage->instance_id)) {
-				free(pmessage);
 				return NULL;
 			}
 		}
 	}
 	if (0 == pmessage->instance_id) {
-		free(pmessage);
 		return NULL;
 	}
 	pmessage->pchanged_proptags = proptag_array_init();
 	if (NULL == pmessage->pchanged_proptags) {
-		message_object_free(pmessage);
 		return NULL;
 	}
 	pmessage->premoved_proptags = proptag_array_init();
 	if (NULL == pmessage->premoved_proptags) {
-		message_object_free(pmessage);
 		return NULL;
 	}
 	if (FALSE == b_new) {
 		if (FALSE == exmdb_client_get_instance_property(
 			store_object_get_dir(pstore), pmessage->instance_id,
 			PROP_TAG_CHANGENUMBER, (void**)&pchange_num)) {
-			message_object_free(pmessage);
 			return NULL;
 		}
 		if (NULL != pchange_num) {
@@ -166,8 +156,9 @@ BOOL message_object_check_orignal_touched(
 	return TRUE;
 }
 
-void message_object_free(MESSAGE_OBJECT *pmessage)
+MESSAGE_OBJECT::~MESSAGE_OBJECT()
 {	
+	auto pmessage = this;
 	if (0 != pmessage->instance_id) { 
 		exmdb_client::unload_instance(
 			store_object_get_dir(pmessage->pstore),
@@ -179,7 +170,6 @@ void message_object_free(MESSAGE_OBJECT *pmessage)
 	if (NULL != pmessage->premoved_proptags) {
 		proptag_array_free(pmessage->premoved_proptags);
 	}
-	free(pmessage);
 }
 
 BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,

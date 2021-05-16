@@ -1058,7 +1058,6 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	STORE_OBJECT *pstore;
 	uint32_t address_type;
 	FOLDER_OBJECT *pfolder;
-	MESSAGE_OBJECT *pmessage;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -1213,22 +1212,21 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			return ecAccessDenied;
 		}
 		BOOL b_writable = !(tag_access & TAG_ACCESS_MODIFY) ? false : TRUE;
-		pmessage = message_object_create(pstore, FALSE, pinfo->cpid,
-				message_id, &folder_id, tag_access, b_writable, NULL);
+		auto pmessage = message_object_create(pstore, false,
+		                pinfo->cpid, message_id, &folder_id, tag_access,
+		                b_writable, nullptr);
 		if (NULL == pmessage) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
-		*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hobject, MAPI_MESSAGE,
-			pmessage);
+		*phobject = object_tree_add_object_handle(pinfo->ptree,
+		            hobject, MAPI_MESSAGE, pmessage.get());
 		if (INVALID_HANDLE == *phobject) {
-			message_object_free(pmessage);
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
-		} else {
-			*pmapi_type = MAPI_MESSAGE;
 		}
+		pmessage.release();
+		*pmapi_type = MAPI_MESSAGE;
 	} else {
 		if (!exmdb_client::check_folder_id(
 			store_object_get_dir(pstore), folder_id,
@@ -2015,7 +2013,6 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	uint64_t message_id;
 	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
-	MESSAGE_OBJECT *pmessage;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -2104,7 +2101,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	pmessage = message_object_create(pstore, TRUE,
+	auto pmessage = message_object_create(pstore, TRUE,
 			pinfo->cpid, message_id, &folder_id,
 			tag_access, TRUE, NULL);
 	if (NULL == pmessage) {
@@ -2112,23 +2109,20 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 		return ecError;
 	}
 	BOOL b_fai = (flags & FLAG_ASSOCIATED) ? TRUE : false;
-	if (FALSE == message_object_init_message(
-		pmessage, b_fai, pinfo->cpid)) {
-		message_object_free(pmessage);
+	if (!message_object_init_message(pmessage.get(), b_fai, pinfo->cpid)) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of folder */
-	*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hstore, MAPI_MESSAGE,
-			pmessage);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hstore,
+	            MAPI_MESSAGE, pmessage.get());
 	if (INVALID_HANDLE == *phobject) {
-		message_object_free(pmessage);
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pmessage.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }
@@ -5287,7 +5281,6 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	uint8_t mapi_type;
 	uint32_t tag_access;
 	STORE_OBJECT *pstore;
-	MESSAGE_OBJECT *pmessage;
 	ATTACHMENT_OBJECT *pattachment;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -5318,34 +5311,31 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecAccessDenied;
 	}
-	pmessage = message_object_create(pstore,
+	auto pmessage = message_object_create(pstore,
 		FALSE, pinfo->cpid, 0, pattachment,
 		tag_access, b_writable, NULL);
 	if (NULL == pmessage) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	if (0 == message_object_get_instance_id(pmessage)) {
+	if (message_object_get_instance_id(pmessage.get()) == 0) {
 		if (0 == (FLAG_CREATE & flags)) {
-			message_object_free(pmessage);
 			zarafa_server_put_user_info(pinfo);
 			return ecNotFound;
 		}
-		message_object_free(pmessage);
 		if (FALSE == b_writable) {
 			zarafa_server_put_user_info(pinfo);
 			return ecAccessDenied;
 		}
-		pmessage = message_object_create(pstore, TRUE,
+		auto pmessage = message_object_create(pstore, TRUE,
 			pinfo->cpid, 0, pattachment, tag_access,
 			TRUE, NULL);
 		if (NULL == pmessage) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
-		if (FALSE == message_object_init_message(
-			pmessage, FALSE, pinfo->cpid)) {
-			message_object_free(pmessage);
+		if (!message_object_init_message(pmessage.get(),
+		    false, pinfo->cpid)) {
 			zarafa_server_put_user_info(pinfo);
 			return ecError;
 		}
@@ -5353,14 +5343,13 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of attachment */
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hstore, MAPI_MESSAGE,
-		pmessage);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hstore,
+	            MAPI_MESSAGE, pmessage.get());
 	if (INVALID_HANDLE == *phobject) {
-		message_object_free(pmessage);
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pmessage.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }
@@ -6151,7 +6140,6 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	uint32_t permission, tag_access = 0;
 	STORE_OBJECT *pstore;
 	ICSUPCTX_OBJECT *pctx;
-	MESSAGE_OBJECT *pmessage;
 	
 	pvalue = common_util_get_propvals(pproplist, PROP_TAG_ASSOCIATED);
 	if (NULL != pvalue) {
@@ -6291,27 +6279,25 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 			return ecError;
 		}
 	}
-	pmessage = message_object_create(pstore, b_new,
+	auto pmessage = message_object_create(pstore, b_new,
 		pinfo->cpid, message_id, &folder_id, tag_access,
 		OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (NULL == pmessage) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	if (TRUE == b_new) {
-		if (FALSE == message_object_init_message(
-			pmessage, b_fai, pinfo->cpid)) {
-			zarafa_server_put_user_info(pinfo);
-			return ecError;
-		}
-	}
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hctx, MAPI_MESSAGE, pmessage);
-	if (INVALID_HANDLE == *phobject) {
-		message_object_free(pmessage);
+	if (b_new && !message_object_init_message(pmessage.get(),
+	    b_fai, pinfo->cpid)) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hctx,
+	            MAPI_MESSAGE, pmessage.get());
+	if (*phobject == INVALID_HANDLE) {
+		zarafa_server_put_user_info(pinfo);
+		return ecError;
+	}
+	pmessage.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }

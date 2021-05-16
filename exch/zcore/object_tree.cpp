@@ -187,7 +187,7 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		table_object_free(static_cast<TABLE_OBJECT *>(pobject));
 		break;
 	case MAPI_MESSAGE:
-		message_object_free(static_cast<MESSAGE_OBJECT *>(pobject));
+		delete static_cast<MESSAGE_OBJECT *>(pobject);
 		break;
 	case MAPI_ATTACHMENT:
 		attachment_object_free(static_cast<ATTACHMENT_OBJECT *>(pobject));

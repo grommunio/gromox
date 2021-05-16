@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include "ics_state.h"
 #include <gromox/mapi_types.hpp>
@@ -12,27 +13,23 @@
 struct ATTACHMENT_OBJECT;
 
 struct MESSAGE_OBJECT {
-	LOGON_OBJECT *plogon;
-	BOOL b_new;
-	BOOL b_touched;
-	uint32_t cpid;
-	uint64_t change_num;
-	uint64_t message_id;
-	uint64_t folder_id;
-	uint32_t instance_id;
-	ATTACHMENT_OBJECT *pembedding;
-	uint32_t tag_access;
-	uint8_t open_flags;
-	ICS_STATE *pstate;
-	PROPTAG_ARRAY *precipient_columns;
-	PROPTAG_ARRAY *pchanged_proptags;
-	PROPTAG_ARRAY *premoved_proptags;
-	DOUBLE_LIST stream_list;
+	~MESSAGE_OBJECT();
+
+	LOGON_OBJECT *plogon = nullptr;
+	BOOL b_new = false, b_touched = false;
+	uint32_t cpid = 0;
+	uint64_t change_num = 0, message_id = 0, folder_id = 0;
+	uint32_t instance_id = 0;
+	ATTACHMENT_OBJECT *pembedding = nullptr;
+	uint32_t tag_access = 0;
+	uint8_t open_flags = 0;
+	ICS_STATE *pstate = nullptr;
+	PROPTAG_ARRAY *precipient_columns = nullptr;
+	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
+	DOUBLE_LIST stream_list{};
 };
 
-MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
-	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
-	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate);
+extern std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, ICS_STATE *);
 uint32_t message_object_get_instance_id(MESSAGE_OBJECT *pmessage);
 BOOL message_object_check_orignal_touched(
 	MESSAGE_OBJECT *pmessage, BOOL *pb_touched);
@@ -45,7 +42,6 @@ uint32_t message_object_get_tag_access(MESSAGE_OBJECT *pmessage);
 uint8_t message_object_get_open_flags(MESSAGE_OBJECT *pmessage);
 void message_object_set_open_flags(
 	MESSAGE_OBJECT *pmessage, uint8_t open_flags);
-void message_object_free(MESSAGE_OBJECT *pmessage);
 extern gxerr_t message_object_save(MESSAGE_OBJECT *);
 BOOL message_object_reload(MESSAGE_OBJECT *pmessage);
 PROPTAG_ARRAY* message_object_get_rcpt_columns(MESSAGE_OBJECT *pmessage);

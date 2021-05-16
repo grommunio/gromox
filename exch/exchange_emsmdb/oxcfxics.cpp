@@ -1002,7 +1002,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	uint32_t tmp_proptag;
 	FOLDER_OBJECT *pfolder;
 	PROPTAG_ARRAY proptags;
-	MESSAGE_OBJECT *pmessage;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -1118,7 +1117,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		b_new = TRUE;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	pmessage = message_object_create(plogon, b_new,
+	auto pmessage = message_object_create(plogon, b_new,
 		pinfo->cpid, message_id, &folder_id, tag_access,
 		OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (NULL == pmessage) {
@@ -1128,27 +1127,22 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PROP_TAG_PREDECESSORCHANGELIST;
-		if (FALSE == message_object_get_properties(
-			pmessage, 0, &proptags, &tmp_propvals)) {
-			message_object_free(pmessage);
+		if (!message_object_get_properties(pmessage.get(),
+		    0, &proptags, &tmp_propvals))
 			return ecError;
-		}
 		pvalue = common_util_get_propvals(&tmp_propvals, 
 						PROP_TAG_PREDECESSORCHANGELIST);
 		if (NULL == pvalue) {
-			message_object_free(pmessage);
 			return ecError;
 		}
 		if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue),
 		    static_cast<BINARY *>(ppropvals->ppropval[3].pvalue), &result)) {
-			message_object_free(pmessage);
 			return ecError;
 		}
 		if (PCL_INCLUDE & result) {
 			return SYNC_E_IGNORE;
 		} else if (PCL_CONFLICT == result) {
 			if (IMPORT_FLAG_FAILONCONFLICT & import_flags) {
-				message_object_free(pmessage);
 				return SYNC_E_CONFLICT;
 			}
 		}
@@ -1156,32 +1150,28 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (FALSE == b_new) {
 		if (FALSE == exmdb_client_clear_message_instance(
 			logon_object_get_dir(plogon),
-			message_object_get_instance_id(pmessage))) {
-			message_object_free(pmessage);
+		    message_object_get_instance_id(pmessage.get())))
 			return ecError;
-		}
 	} else {
 		BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-		if (FALSE == message_object_init_message(
-			pmessage, b_fai, pinfo->cpid)) {
+		if (!message_object_init_message(pmessage.get(),
+		    b_fai, pinfo->cpid))
 			return ecError;
-		}
 	}
 	tmp_propvals.count = 3;
 	tmp_propvals.ppropval = ppropvals->ppropval + 1;
 	if (FALSE == exmdb_client_set_instance_properties(
 		logon_object_get_dir(plogon),
-		message_object_get_instance_id(pmessage),
+	    message_object_get_instance_id(pmessage.get()),
 		&tmp_propvals, &tmp_problems)) {
-		message_object_free(pmessage);
 		return ecError;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
+	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
 	if (hnd < 0) {
-		message_object_free(pmessage);
 		return ecError;
 	}
+	pmessage.release();
 	*phout = hnd;
 	return ecSuccess;
 }

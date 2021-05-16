@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
@@ -83,30 +84,26 @@ static uint32_t message_object_rectify_proptag(uint32_t proptag)
 	return proptag;
 }
 
-MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *plogon,
 	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
 	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate)
 {
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY tmp_columns;
+	std::unique_ptr<MESSAGE_OBJECT> pmessage;
 	
-	auto pmessage = me_alloc<MESSAGE_OBJECT>();
-	if (NULL == pmessage) {
+	try {
+		pmessage = std::make_unique<MESSAGE_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	memset(pmessage, 0, sizeof(MESSAGE_OBJECT));
 	pmessage->plogon = plogon;
 	pmessage->b_new = b_new;
-	pmessage->b_touched = FALSE;
 	pmessage->cpid = cpid;
 	pmessage->message_id = message_id;
 	pmessage->tag_access = tag_access;
 	pmessage->open_flags = open_flags;
 	pmessage->pstate = pstate;
-	pmessage->change_num = 0;
-	pmessage->pchanged_proptags = NULL;
-	pmessage->premoved_proptags = NULL;
-	pmessage->precipient_columns = NULL;
 	double_list_init(&pmessage->stream_list);
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<ATTACHMENT_OBJECT *>(pparent);
@@ -114,7 +111,6 @@ MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 			logon_object_get_dir(plogon), b_new,
 			((ATTACHMENT_OBJECT*)pparent)->instance_id,
 			&pmessage->instance_id)) {
-			free(pmessage);
 			return NULL;
 		}
 		/* cannot find embedded message in attachment, return
@@ -130,7 +126,6 @@ MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 				logon_object_get_dir(plogon), NULL, cpid,
 				b_new, pmessage->folder_id, message_id,
 				&pmessage->instance_id)) {
-				free(pmessage);
 				return NULL;
 			}
 		} else {
@@ -139,44 +134,35 @@ MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 				logon_object_get_dir(plogon), rpc_info.username,
 				cpid, b_new, pmessage->folder_id, message_id,
 				&pmessage->instance_id)) {
-				free(pmessage);
 				return NULL;
 			}
 		}
 	}
 	if (0 == pmessage->instance_id) {
-		free(pmessage);
 		return NULL;
 	}
 	pmessage->pchanged_proptags = proptag_array_init();
 	if (NULL == pmessage->pchanged_proptags) {
-		message_object_free(pmessage);
 		return NULL;
 	}
 	pmessage->premoved_proptags = proptag_array_init();
 	if (NULL == pmessage->premoved_proptags) {
-		message_object_free(pmessage);
 		return NULL;
 	}
 	if (FALSE == b_new) {
 		if (FALSE == exmdb_client_get_instance_property(
 			logon_object_get_dir(plogon), pmessage->instance_id,
 			PROP_TAG_CHANGENUMBER, (void**)&pchange_num)) {
-			message_object_free(pmessage);
 			return NULL;
 		}
 		if (NULL != pchange_num) {
 			pmessage->change_num = *pchange_num;
 		}
 	}
-	if (FALSE == message_object_get_recipient_all_proptags(
-		pmessage, &tmp_columns)) {
-		message_object_free(pmessage);
+	if (!message_object_get_recipient_all_proptags(pmessage.get(), &tmp_columns))
 		return NULL;
-	}
 	pmessage->precipient_columns = proptag_array_dup(&tmp_columns);
 	if (NULL == pmessage->precipient_columns) {
-		message_object_free(pmessage);
 		return NULL;
 	}
 	return pmessage;
@@ -221,8 +207,9 @@ BOOL message_object_check_orignal_touched(
 	return TRUE;
 }
 
-void message_object_free(MESSAGE_OBJECT *pmessage)
+MESSAGE_OBJECT::~MESSAGE_OBJECT()
 {
+	auto pmessage = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 != pmessage->instance_id) { 
@@ -242,7 +229,6 @@ void message_object_free(MESSAGE_OBJECT *pmessage)
 	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr)
 		free(pnode);
 	double_list_free(&pmessage->stream_list);
-	free(pmessage);
 }
 
 BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,

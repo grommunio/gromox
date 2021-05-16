@@ -104,7 +104,7 @@ static void rop_processor_free_object(void *pobject, int type)
 		folder_object_free(static_cast<FOLDER_OBJECT *>(pobject));
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		message_object_free(static_cast<MESSAGE_OBJECT *>(pobject));
+		delete static_cast<MESSAGE_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
 		attachment_object_free(static_cast<ATTACHMENT_OBJECT *>(pobject));
