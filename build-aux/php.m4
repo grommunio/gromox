@@ -27,6 +27,7 @@ AC_DEFUN([PHP_WITH_PHP_CONFIG],[
 
 	AC_MSG_CHECKING([for PHP ini directory])
 	PHP_SYSCONF_DIR=$($PHP_CONFIG --ini-dir)
+	AS_IF([test "$?" -ne 0], [PHP_SYSCONF_DIR=""])
 	if test -z "${PHP_SYSCONF_DIR}"; then
 	if test -d "/etc/php.d"; then
 		PHP_SYSCONF_DIR="/etc/php.d"
@@ -39,7 +40,8 @@ AC_DEFUN([PHP_WITH_PHP_CONFIG],[
 	elif test -d "/etc/php7/apache2/conf.d"; then
 		PHP_SYSCONF_DIR="/etc/php7/apache2/conf.d"
 	else
-		AC_MSG_ERROR([Cannot find php-ini dir])
+		dnl Let packagers figure it out
+		PHP_SYSCONF_DIR='${pkgdatadir}/php.conf.d'
 	fi
 	fi
 	AC_MSG_RESULT($PHP_SYSCONF_DIR)
