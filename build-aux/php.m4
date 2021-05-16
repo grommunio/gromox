@@ -7,13 +7,25 @@
 #  PHP_VERSION
 
 AC_DEFUN([PHP_WITH_PHP_CONFIG],[
-	PHP_INCLUDES=$($PHP_CONFIG --includes)
-	PHP_LDFLAGS=$($PHP_CONFIG --ldflags)
-	PHP_EXTENSION_DIR=$($PHP_CONFIG --extension-dir)
-	AS_IF([test "$?" -ne 0], [AC_MSG_ERROR([Cannot execute $PHP_CONFIG])])
 	AC_MSG_CHECKING([for PHP])
 	PHP_VERSION=$($PHP_CONFIG --version)
+	AS_IF([test "$?" -ne 0], [AC_MSG_ERROR([Cannot execute $PHP_CONFIG])])
 	AC_MSG_RESULT([$PHP_VERSION])
+	AC_SUBST([PHP_VERSION])
+
+	AC_MSG_CHECKING([for PHP includes])
+	PHP_INCLUDES=$($PHP_CONFIG --includes)
+	PHP_LDFLAGS=$($PHP_CONFIG --ldflags)
+	AC_MSG_RESULT([$PHP_INCLUDES])
+	AC_SUBST([PHP_INCLUDES])
+	AC_SUBST([PHP_LDFLAGS])
+
+	AC_MSG_CHECKING([for PHP extension directory])
+	PHP_EXTENSION_DIR=$($PHP_CONFIG --extension-dir)
+	AC_MSG_RESULT([$PHP_EXTENSION_DIR])
+	AC_SUBST([PHP_EXTENSION_DIR])
+
+	AC_MSG_CHECKING([for PHP ini directory])
 	PHP_SYSCONF_DIR=$($PHP_CONFIG --ini-dir)
 	if test -z "${PHP_SYSCONF_DIR}"; then
 	if test -d "/etc/php.d"; then
@@ -30,16 +42,6 @@ AC_DEFUN([PHP_WITH_PHP_CONFIG],[
 		AC_MSG_ERROR([Cannot find php-ini dir])
 	fi
 	fi
-	AC_SUBST(PHP_SYSCONF_DIR)
-	AC_SUBST(PHP_INCLUDES)
-	AC_SUBST(PHP_LDFLAGS)
-	AC_SUBST(PHP_EXTENSION_DIR)
-	AC_SUBST(PHP_VERSION)
-
-	AC_MSG_CHECKING([for PHP includes])
-	AC_MSG_RESULT($PHP_INCLUDES)
-	AC_MSG_CHECKING([for PHP extension directory])
-	AC_MSG_RESULT($PHP_EXTENSION_DIR)
-	AC_MSG_CHECKING([for PHP ini directory])
 	AC_MSG_RESULT($PHP_SYSCONF_DIR)
+	AC_SUBST([PHP_SYSCONF_DIR])
 ])
