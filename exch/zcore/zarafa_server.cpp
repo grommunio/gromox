@@ -4810,7 +4810,6 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 {
 	uint8_t mapi_type;
 	MESSAGE_OBJECT *pmessage;
-	ATTACHMENT_OBJECT *pattachment;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -4826,24 +4825,22 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotSupported;
 	}
-	pattachment = attachment_object_create(pmessage, attach_id);
+	auto pattachment = attachment_object_create(pmessage, attach_id);
 	if (NULL == pattachment) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	if (0 == attachment_object_get_instance_id(pattachment)) {
-		attachment_object_free(pattachment);
+	if (attachment_object_get_instance_id(pattachment.get()) == 0) {
 		zarafa_server_put_user_info(pinfo);
 		return ecNotFound;
 	}
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hmessage, MAPI_ATTACHMENT,
-		pattachment);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hmessage,
+	            MAPI_ATTACHMENT, pattachment.get());
 	if (INVALID_HANDLE == *phobject) {
-		attachment_object_free(pattachment);
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pattachment.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }
@@ -4853,7 +4850,6 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 {
 	uint8_t mapi_type;
 	MESSAGE_OBJECT *pmessage;
-	ATTACHMENT_OBJECT *pattachment;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -4873,31 +4869,27 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecAccessDenied;
 	}
-	pattachment = attachment_object_create(
+	auto pattachment = attachment_object_create(
 		pmessage, ATTACHMENT_NUM_INVALID);
 	if (NULL == pattachment) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	if (attachment_object_get_attachment_num(
-		pattachment) == ATTACHMENT_NUM_INVALID) {
-		attachment_object_free(pattachment);
+	if (attachment_object_get_attachment_num(pattachment.get()) == ATTACHMENT_NUM_INVALID) {
 		zarafa_server_put_user_info(pinfo);
 		return ecMaxAttachmentExceeded;
 	}
-	if (FALSE == attachment_object_init_attachment(pattachment)) {
-		attachment_object_free(pattachment);
+	if (!attachment_object_init_attachment(pattachment.get())) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hmessage, MAPI_ATTACHMENT,
-		pattachment);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hmessage,
+	            MAPI_ATTACHMENT, pattachment.get());
 	if (INVALID_HANDLE == *phobject) {
-		attachment_object_free(pattachment);
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
+	pattachment.release();
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
 }

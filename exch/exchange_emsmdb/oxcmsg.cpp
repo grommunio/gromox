@@ -867,7 +867,6 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 {
 	int object_type;
 	uint32_t tag_access;
-	ATTACHMENT_OBJECT *pattachment;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -891,21 +890,19 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 			}
 		}
 	}
-	pattachment = attachment_object_create(
+	auto pattachment = attachment_object_create(
 			pmessage, attachment_id, flags);
 	if (NULL == pattachment) {
 		return ecError;
 	}
-	if (0 == attachment_object_get_instance_id(pattachment)) {
-		attachment_object_free(pattachment);
+	if (attachment_object_get_instance_id(pattachment.get()) == 0)
 		return ecNotFound;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, OBJECT_TYPE_ATTACHMENT, pattachment);
+	           hin, OBJECT_TYPE_ATTACHMENT, pattachment.get());
 	if (hnd < 0) {
-		attachment_object_free(pattachment);
 		return ecError;
 	}
+	pattachment.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -915,7 +912,6 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 {
 	int object_type;
 	uint32_t tag_access;
-	ATTACHMENT_OBJECT *pattachment;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -933,26 +929,23 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 		return ecAccessDenied;
 	}
-	pattachment = attachment_object_create(pmessage,
+	auto pattachment = attachment_object_create(pmessage,
 		ATTACHMENT_NUM_INVALID, OPEN_MODE_FLAG_READWRITE);
 	if (NULL == pattachment) {
 		return ecError;
 	}
-	*pattachment_id = attachment_object_get_attachment_num(pattachment);
+	*pattachment_id = attachment_object_get_attachment_num(pattachment.get());
 	if (ATTACHMENT_NUM_INVALID == *pattachment_id) {
-		attachment_object_free(pattachment);
 		return ecMaxAttachmentExceeded;
 	}
-	if (FALSE == attachment_object_init_attachment(pattachment)) {
-		attachment_object_free(pattachment);
+	if (!attachment_object_init_attachment(pattachment.get()))
 		return ecError;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, OBJECT_TYPE_ATTACHMENT, pattachment);
+	           hin, OBJECT_TYPE_ATTACHMENT, pattachment.get());
 	if (hnd < 0) {
-		attachment_object_free(pattachment);
 		return ecError;
 	}
+	pattachment.release();
 	*phout = hnd;
 	return ecSuccess;
 }

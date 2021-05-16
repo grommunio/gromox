@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
@@ -10,26 +11,25 @@
 #include <cstdlib>
 #include <cstring>
 
-ATTACHMENT_OBJECT* attachment_object_create(
+std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(
 	MESSAGE_OBJECT *pparent, uint32_t attachment_num)
 {
-	auto pattachment = me_alloc<ATTACHMENT_OBJECT>();
-	if (NULL == pattachment) {
+	std::unique_ptr<ATTACHMENT_OBJECT> pattachment;
+	try {
+		pattachment = std::make_unique<ATTACHMENT_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pattachment->pparent = pparent;
 	pattachment->b_writable = pparent->b_writable;
-	pattachment->b_touched = FALSE;
 	if (ATTACHMENT_NUM_INVALID == attachment_num) {
 		if (!exmdb_client::create_attachment_instance(
 			store_object_get_dir(pparent->pstore), pparent->instance_id,
 			&pattachment->instance_id, &pattachment->attachment_num)) {
-			free(pattachment);
 			return NULL;
 		}
 		if (0 == pattachment->instance_id &&
 			ATTACHMENT_NUM_INVALID != pattachment->attachment_num) {
-			free(pattachment);
 			return NULL;	
 		}
 		pattachment->b_new = TRUE;
@@ -38,11 +38,9 @@ ATTACHMENT_OBJECT* attachment_object_create(
 			store_object_get_dir(pparent->pstore),
 			pparent->instance_id, attachment_num,
 			&pattachment->instance_id)) {
-			free(pattachment);
 			return NULL;
 		}
 		pattachment->attachment_num = attachment_num;
-		pattachment->b_new = FALSE;
 	}
 	return pattachment;
 }
@@ -112,15 +110,15 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 		pattachment->instance_id, &propvals, &problems);
 }
 
-void attachment_object_free(ATTACHMENT_OBJECT *pattachment)
+ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
 {
+	auto pattachment = this;
 	if (0 != pattachment->instance_id) {
 		exmdb_client::unload_instance(
 			store_object_get_dir(
 			pattachment->pparent->pstore),
 			pattachment->instance_id);
 	}
-	free(pattachment);
 }
 
 uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment)

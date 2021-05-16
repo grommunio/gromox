@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
@@ -11,26 +12,25 @@
 #include <cstdlib>
 #include <cstring>
 
-ATTACHMENT_OBJECT* attachment_object_create(MESSAGE_OBJECT *pparent,
+std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(MESSAGE_OBJECT *pparent,
 	uint32_t attachment_num, uint8_t open_flags)
 {
-	auto pattachment = me_alloc<ATTACHMENT_OBJECT>();
-	if (NULL == pattachment) {
+	std::unique_ptr<ATTACHMENT_OBJECT> pattachment;
+	try {
+		pattachment = std::make_unique<ATTACHMENT_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pattachment->pparent = pparent;
 	pattachment->open_flags = open_flags;
-	pattachment->b_touched = FALSE;
 	if (ATTACHMENT_NUM_INVALID == attachment_num) {
 		if (FALSE == exmdb_client_create_attachment_instance(
 			logon_object_get_dir(pparent->plogon), pparent->instance_id,
 			&pattachment->instance_id, &pattachment->attachment_num)) {
-			free(pattachment);
 			return NULL;
 		}
 		if (0 == pattachment->instance_id &&
 			ATTACHMENT_NUM_INVALID != pattachment->attachment_num) {
-			free(pattachment);
 			return NULL;	
 		}
 		pattachment->b_new = TRUE;
@@ -38,11 +38,9 @@ ATTACHMENT_OBJECT* attachment_object_create(MESSAGE_OBJECT *pparent,
 		if (FALSE == exmdb_client_load_attachment_instance(
 			logon_object_get_dir(pparent->plogon), pparent->instance_id,
 			attachment_num, &pattachment->instance_id)) {
-			free(pattachment);
 			return NULL;
 		}
 		pattachment->attachment_num = attachment_num;
-		pattachment->b_new = FALSE;
 	}
 	double_list_init(&pattachment->stream_list);
 	return pattachment;
@@ -108,8 +106,9 @@ BOOL attachment_object_init_attachment(
 			pattachment->instance_id, &propvals, &problems);
 }
 
-void attachment_object_free(ATTACHMENT_OBJECT *pattachment)
+ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
 {
+	auto pattachment = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 != pattachment->instance_id) {
@@ -120,7 +119,6 @@ void attachment_object_free(ATTACHMENT_OBJECT *pattachment)
 	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr)
 		free(pnode);
 	double_list_free(&pattachment->stream_list);
-	free(pattachment);
 }
 
 uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment)

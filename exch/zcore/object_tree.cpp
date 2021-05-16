@@ -190,7 +190,7 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		delete static_cast<MESSAGE_OBJECT *>(pobject);
 		break;
 	case MAPI_ATTACHMENT:
-		attachment_object_free(static_cast<ATTACHMENT_OBJECT *>(pobject));
+		delete static_cast<ATTACHMENT_OBJECT *>(pobject);
 		break;
 	case MAPI_ABCONT:
 		container_object_free(static_cast<CONTAINER_OBJECT *>(pobject));

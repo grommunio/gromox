@@ -5,20 +5,17 @@
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
 	so they can operate internal variables of each other */
 struct ATTACHMENT_OBJECT {
-	BOOL b_new;
-	BOOL b_writable;
-	BOOL b_touched;
-	MESSAGE_OBJECT *pparent;
-	uint32_t instance_id;
-	uint32_t attachment_num;
+	~ATTACHMENT_OBJECT();
+
+	BOOL b_new = false, b_writable = false, b_touched = false;
+	MESSAGE_OBJECT *pparent = nullptr;
+	uint32_t instance_id = 0, attachment_num = 0;
 };
 
-ATTACHMENT_OBJECT* attachment_object_create(
-	MESSAGE_OBJECT *pparent, uint32_t attachment_num);
+extern std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(MESSAGE_OBJECT *parent, uint32_t at_num);
 uint32_t attachment_object_get_instance_id(
 	ATTACHMENT_OBJECT *pattachment);
 BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment);
-void attachment_object_free(ATTACHMENT_OBJECT *pattachment);
 uint32_t attachment_object_get_attachment_num(
 	ATTACHMENT_OBJECT *pattachment);
 uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment);
