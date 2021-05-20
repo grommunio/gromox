@@ -7,6 +7,7 @@ PartOf=gromox-sa.target
 Type=simple
 User=gromox
 ExecStart=@libexecdir@/gromox/event
+ProtectSystem=yes
 
 [Install]
 WantedBy=multi-user.target

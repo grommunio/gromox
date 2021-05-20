@@ -8,6 +8,7 @@ After=mariadb.service mysql.service
 Type=simple
 ExecStart=@libexecdir@/gromox/delivery
 ExecReload=/bin/kill -HUP $MAINPID
+ProtectSystem=yes
 
 [Install]
 WantedBy=multi-user.target
