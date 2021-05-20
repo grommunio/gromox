@@ -53,11 +53,10 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
-	if (opt_config_file != nullptr && pconfig == nullptr) {
+	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (pconfig == nullptr)
 		return 2;
-	}
-
 	auto str_value = config_file_get_value(pconfig, "MYSQL_HOST");
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");

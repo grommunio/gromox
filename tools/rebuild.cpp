@@ -215,10 +215,10 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
-	if (opt_config_file != nullptr && pconfig == nullptr) {
+	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (pconfig == nullptr)
 		return 2;
-	}
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", argv[1]);
 	if (access(temp_path, R_OK) < 0) {
 		printf("%s: %s\n", temp_path, strerror(errno));

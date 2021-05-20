@@ -118,10 +118,10 @@ int main(int argc, const char **argv)
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
 	g_config_file = pconfig = config_file_prg(opt_config_file, "zcore.cfg");
-	if (opt_config_file != nullptr && pconfig == nullptr) {
+	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (pconfig == nullptr)
 		return 2;
-	}
 
 	str_value = config_file_get_value(pconfig, "HOST_ID");
 	if (NULL == str_value) {

@@ -57,10 +57,10 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	auto pconfig = config_file_prg(opt_config_file, "adaptor.cfg");
-	if (opt_config_file != nullptr && pconfig == nullptr) {
+	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (pconfig == nullptr)
 		return 1;
-	}
 	auto str_value = config_file_get_value(pconfig, "STATE_PATH");
 	if (NULL == str_value) {
 		gx_strlcpy(state_dir, PKGSTATEDIR, sizeof(state_dir));

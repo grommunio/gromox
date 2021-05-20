@@ -48,8 +48,9 @@ int main(int argc, const char **argv)
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	if (opt_config_file == nullptr) {
 		auto http_config = config_file_prg(nullptr, "http.cfg");
-		const char *http_cfgdir = http_config != nullptr ?
-			config_file_get_value(http_config, "CONFIG_FILE_PATH") : nullptr;
+		if (http_config == nullptr)
+			return EXIT_FAILURE;
+		const char *http_cfgdir = config_file_get_value(http_config, "CONFIG_FILE_PATH");
 		if (http_cfgdir == nullptr)
 			http_cfgdir = PKGSYSCONFDIR "/http:" PKGSYSCONFDIR;
 		pconfig = config_file_initd("mysql_adaptor.cfg", http_cfgdir);

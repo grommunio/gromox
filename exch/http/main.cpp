@@ -123,10 +123,11 @@ int main(int argc, const char **argv)
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
 	g_config_file = config_file_prg(opt_config_file, "http.cfg");
-	if (opt_config_file != nullptr && g_config_file == nullptr) {
+	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	}
+
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 80; 
 		resource_set_integer("LISTEN_PORT", listen_port);

@@ -103,10 +103,10 @@ int main(int argc, const char **argv)
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	g_config_file = config_file_prg(opt_config_file, "smtp.cfg");
-	if (opt_config_file != nullptr && g_config_file == nullptr) {
+	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	}
 
 	if (0 != resource_run()) { 
 		printf("[system]: Failed to load resource\n");
