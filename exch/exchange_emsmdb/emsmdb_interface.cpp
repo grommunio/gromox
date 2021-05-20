@@ -12,6 +12,7 @@
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
 #include "aux_ext.h"
 #include <gromox/util.hpp>
@@ -43,6 +44,8 @@
 #define HANLDE_VALID_INTERVAL			2000
 
 #define MAX_HANDLE_PER_USER				100
+
+using namespace gromox;
 
 namespace {
 
@@ -512,7 +515,20 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	AUX_CLIENT_CONTROL aux_control;
 	AUX_ENDPOINT_CAPABILITIES aux_cap;
 	uint16_t server_normal_version[4] = {15, 0, 847, 4040};
-	
+
+	auto cl_0 = make_scope_exit([&]() {
+		if (result == ecSuccess)
+			return;
+		memset(pcxh, 0, sizeof(CXH));
+		*pmax_polls = 0;
+		*pmax_retry = 0;
+		*pretry_delay = 0;
+		*pcxr = 0;
+		pdisplayname[0] = '\0';
+		memset(pserver_vers, 0, 3 * sizeof(*pserver_vers));
+		memset(pbest_vers, 0, 3 * sizeof(*pbest_vers));
+		*ptimestamp = 0;
+	});
 	
 	aux_out.rhe_version = 0;
 	aux_out.rhe_flags = RHE_FLAG_LAST;
@@ -543,8 +559,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	DCERPC_INFO rpc_info;
 	if (!ext_buffer_push_init(&ext_push, pauxout, 0x1008, EXT_FLAG_UTF16)) {
 		double_list_free(&aux_out.aux_list);
-		result = ecMAPIOOM;
-		goto CONNECT_FAILURE;
+		return result = ecMAPIOOM;
 	}
 	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ? 0 : ext_push.offset;
 	double_list_free(&aux_out.aux_list);
@@ -552,8 +567,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	pdn_prefix[0] = '\0';
 	rpc_info = get_rpc_info();
 	if (flags & FLAG_PRIVILEGE_ADMIN) {
-		result = ecLoginPerm;
-		goto CONNECT_FAILURE;
+		return result = ecLoginPerm;
 	}
 	
 	*pmax_polls = EMSMDB_PCMSPOLLMAX;
@@ -561,26 +575,21 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	*pretry_delay = EMSMDB_PCRETRYDELAY;
 	
 	if ('\0' == puser_dn[0]) {
-		result = ecAccessDenied;
-		goto CONNECT_FAILURE;
+		return result = ecAccessDenied;
 	}
 	if (!common_util_essdn_to_username(puser_dn,
 	    username, GX_ARRAY_SIZE(username))) {
-		result = ecRpcFailed;
-		goto CONNECT_FAILURE;
+		return result = ecRpcFailed;
 	}
 	if (*username == '\0') {
-		result = ecUnknownUser;
-		goto CONNECT_FAILURE;
+		return result = ecUnknownUser;
 	}
 	if (0 != strcasecmp(username, rpc_info.username)) {
-		result = ecAccessDenied;
-		goto CONNECT_FAILURE;
+		return result = ecAccessDenied;
 	}
 	if (FALSE == common_util_get_user_displayname(username, temp_buff) ||
 		common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0) {
-		result = ecRpcFailed;
-		goto CONNECT_FAILURE;
+		return result = ecRpcFailed;
 	}
 	if ('\0' == pdisplayname[0]) {
 		strcpy(pdisplayname, rpc_info.username);
@@ -593,11 +602,9 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	pbest_vers[2] = pclient_vers[2];
 	
 	if (cb_auxin > 0 && cb_auxin < 0x8) {
-		result = ecRpcFailed;
-		goto CONNECT_FAILURE;
+		return result = ecRpcFailed;
 	} else if (cb_auxin > 0x1008) {
-		result = RPC_X_BAD_STUB_DATA;
-		goto CONNECT_FAILURE;
+		return result = RPC_X_BAD_STUB_DATA;
 	}
 	
 	client_mode = CLIENT_MODE_UNKNOWN;
@@ -628,22 +635,9 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (FALSE == emsmdb_interface_create_handle(
 		rpc_info.username, client_version, client_mode,
 		cpid, lcid_string, lcid_sort, pcxr, pcxh)) {
-		result = ecLoginFailure;
-		goto CONNECT_FAILURE;
+		return result = ecLoginFailure;
 	}
 	return ecSuccess;
-	
- CONNECT_FAILURE:
-	memset(pcxh, 0, sizeof(CXH));
-	*pmax_polls = 0;
-	*pmax_retry = 0;
-	*pretry_delay = 0;
-	*pcxr = 0;
-	pdisplayname[0] = '\0';
-	memset(pserver_vers, 0, 3 * sizeof(*pserver_vers));
-	memset(pbest_vers, 0, 3 * sizeof(*pbest_vers));
-	*ptimestamp = 0;
-	return result;
 }
 
 static uint32_t emsmdb_interface_get_interval(struct timeval first_time)
