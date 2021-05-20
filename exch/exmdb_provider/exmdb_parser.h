@@ -50,3 +50,5 @@ void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&);
 extern std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_get_router(const char *remote_id);
 extern void exmdb_parser_put_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_remove_router(const std::shared_ptr<ROUTER_CONNECTION> &);
+
+extern unsigned int g_exrpc_debug;

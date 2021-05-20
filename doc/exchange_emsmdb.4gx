@@ -16,6 +16,13 @@ Default: \fI1000\fP
 \fBaverage_mem\fP
 Default: \fI4K\fP
 .TP
+\fBexrpc_debug\fP
+Log every incoming exmdb RPC and the return code of the operation in a minimal
+fashion to stdout. Level 1 emits RPCs with a failure return code, level 2 emits
+all RPCs.
+.br
+Default: \fI0\fP
+.TP
 \fBmailbox_ping_interval\fP
 Default: \fI5 minutes\fP
 .TP

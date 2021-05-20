@@ -109,7 +109,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 		gx_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
-
+		str_value = config_file_get_value(pconfig, "exrpc_debug");
+		if (str_value != nullptr)
+			g_exrpc_debug = strtoul(str_value, nullptr, 0);
 		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));

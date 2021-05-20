@@ -37,7 +37,7 @@ static std::vector<EXMDB_ITEM> g_local_list;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
 static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
-static unsigned int g_exrpc_debug;
+unsigned int g_exrpc_debug;
 
 EXMDB_CONNECTION::~EXMDB_CONNECTION()
 {
