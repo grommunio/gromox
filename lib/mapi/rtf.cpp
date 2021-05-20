@@ -2945,7 +2945,7 @@ static void rtf_unescape_string(char *string)
 	}
 }
 
-static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
+static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 {
 	int ch;
 	int num;
@@ -2969,10 +2969,10 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	paragraph_align = ALIGN_LEFT;
 	if (simple_tree_node_get_depth(pnode) >= MAX_GROUP_DEPTH) {
 		debug_info("[rtf]: max group depth reached");
-		return false;
+		return -ELOOP;
 	}
 	if (!rtf_check_for_table(preader) || !rtf_stack_list_new_node(preader))
-		return false;
+		return -EINVAL;
 	while (NULL != pnode) {    
 		if (NULL != pnode->pdata) {
 			if (preader->have_fromhtml) {
@@ -3189,7 +3189,8 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				b_paragraph_begun = true;
 			}
 			if (NULL != pchild)  {
-				if (!rtf_convert_group_node(preader, pchild))
+				auto ret = rtf_convert_group_node(preader, pchild);
+				if (ret != 0)
 					goto CONVERT_FAILURE;
 			}
 		}
@@ -3294,10 +3295,10 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 			goto CONVERT_FAILURE;
 	}
 	rtf_stack_list_free_node(preader);
-	return true;
+	return 0;
 	
  CONVERT_FAILURE:
-	return false;
+	return -EINVAL;
 }
 
 bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
@@ -3337,9 +3338,9 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		tmp_len = sprintf(tmp_buff, TAG_HTML_CHARSET, charset);
 		QRF(ext_buffer_push_bytes(&reader.ext_push, tmp_buff, tmp_len));
 	}
-	if (!rtf_convert_group_node(&reader, proot)) {
+	auto ret = rtf_convert_group_node(&reader, proot);
+	if (ret != 0)
 		return false;
-	}
 	if (!rtf_end_table(&reader)) {
 		return false;
 	}
