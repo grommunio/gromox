@@ -107,8 +107,13 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 
 	int sockd = gx_inet_connect(pserver->host.c_str(), pserver->port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect exmdb_client@[%s]:%hu: %s\n",
-		        pserver->host.c_str(), pserver->port, strerror(-sockd));
+		static std::atomic<time_t> g_lastwarn_time;
+		auto prev = g_lastwarn_time.load();
+		auto next = prev + 60;
+		auto now = time(nullptr);
+		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
+			fprintf(stderr, "gx_inet_connect exmdb_client@zcore@[%s]:%hu: %s\n",
+			        pserver->host.c_str(), pserver->port, strerror(-sockd));
 	        return -1;
 	}
 	process_id = getpid();
