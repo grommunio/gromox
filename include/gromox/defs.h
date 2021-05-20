@@ -42,6 +42,7 @@ typedef enum {
 
 enum ec_error_t {
 	ecSuccess = 0,
+	MAPI_E_DISK_FULL = 0x4,
 	ecUnknownUser = 0x000003EB,
 	ecServerOOM = 0x000003F0,
 	ecLoginPerm = 0x000003F2,
@@ -85,6 +86,7 @@ enum ec_error_t {
 	ecDuplicateName = 0x80040604,
 	ecNotInitialized = 0x80040605,
 	MAPI_E_FOLDER_CYCLE = 0x8004060B,
+	MAPI_E_STORE_FULL = 0x8004060C,
 	EC_EXCEEDED_SIZE = 0x80040610,
 	ecAmbiguousRecip = 0x80040700,
 	SYNC_E_IGNORE = 0x80040801,
