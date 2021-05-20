@@ -41,7 +41,7 @@ static pthread_t *g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;
 static std::mutex g_conn_lock, g_cond_mutex;
-static unsigned int g_zrpc_debug;
+unsigned int g_zrpc_debug;
 
 void rpc_parser_init(int thread_num)
 {

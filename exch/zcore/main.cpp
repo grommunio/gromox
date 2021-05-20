@@ -123,6 +123,9 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 
+	str_value = config_file_get_value(pconfig, "zrpc_debug");
+	if (str_value != nullptr)
+		g_zrpc_debug = strtoul(str_value, nullptr, 0);
 	str_value = config_file_get_value(pconfig, "HOST_ID");
 	if (NULL == str_value) {
 		gethostname(host_name, 256);

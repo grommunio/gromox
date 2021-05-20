@@ -205,6 +205,13 @@ Default: \fI100\fP
 The named path for the AF_LOCAL socket that zcore will listen on.
 .br
 Default: \fI/run/gromox/zcore.sock\fP
+.TP
+\fBzrpc_debug\fP
+Log every incoming zcore RPC and the return code of the operation in a minimal
+fashion to stdout. Level 1 emits RPCs with a failure return code, level 2 emits
+all RPCs.
+.br
+Default: \fI0\fP
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
