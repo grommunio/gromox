@@ -859,7 +859,7 @@ static char* common_util_calculate_folder_path(
 		memcpy(temp_path + 4095 - len, sqlite3_column_text(pstmt, 0), len1);
 		pstmt.finalize();
 		len ++;
-		*(temp_path + 4095 - len) = '\\';
+		temp_path[4095-len] = '\\';
 		if ((TRUE == b_private && PRIVATE_FID_ROOT == tmp_fid) ||
 			(FALSE == b_private && PUBLIC_FID_ROOT == tmp_fid)) {
 			break;

@@ -1598,8 +1598,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 					memcpy(tmp_buff + tmp_offset, string, tmp_len);
 					tmp_offset += tmp_len;
 				}
-			} else if ('\'' == *(string + 1) &&
-				'\0' != *(string + 2) && '\0' != *(string + 3)) {
+			} else if (string[1] == '\'' && string[2] != '\0' && string[3] != '\0') {
 				if (tmp_offset + 1 > sizeof(tmp_buff) - 1) {
 					debug_info("[rtf]: invalid font name");
 					return false;
@@ -3069,9 +3068,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					if (!rtf_escape_output(preader, string))
 						goto CONVERT_FAILURE;
 				}
-			} else if ('\\' == *(string + 1) ||
-				'{' == *(string + 1) ||
-				'}' ==  *(string + 1)) {
+			} else if (string[1] == '\\' || string[1] == '{' || string[1] == '}') {
 				rtf_unescape_string(string);
 				preader->total_chars_in_line += strlen(string);
 				if (!rtf_escape_output(preader, string))
@@ -3125,8 +3122,7 @@ static bool rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 						preader->b_printed_row_begin = false;
 						preader->b_printed_row_end = true;
 					}
-				} else if ( '\'' == *string && '\0' != *(string + 1)
-					&& '\0' != *(string + 2)) {
+				} else if (string[0] == '\'' && string[1] != '\0' && string[2] != '\0') {
 					ch = rtf_decode_hex_char(string + 1);
 					if (!rtf_put_iconv_cache(preader, ch))
 						goto CONVERT_FAILURE;

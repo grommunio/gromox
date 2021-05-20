@@ -2783,7 +2783,7 @@ static BOOL mime_parse_multiple(MIME *pmime)
 	begin = pmime->content_begin;
 	end = begin + pmime->content_length - boundary_len;
 	for (ptr=begin; ptr < end; ptr++) {
-		if ('-' == *ptr && '-' == *(ptr + 1) &&
+		if (ptr[0] == '-' && ptr[1] == '-' &&
 			0 == strncmp(pmime->boundary_string, ptr + 2,boundary_len)
 			&& '\r' == ptr[2 + boundary_len] && 
 			'\n' == ptr[3 + boundary_len]) {

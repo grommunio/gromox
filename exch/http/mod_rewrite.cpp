@@ -73,8 +73,8 @@ static BOOL mod_rewrite_rreplace(char *buf,
 		rp_offsets[i] = -1;
 	}
 	for (pos=original_rp; '\0'!=*pos; pos++) {
-		if ('\\' == *pos && *(pos + 1) > '0' && *(pos + 1) <= '9') {
-			rp_offsets[*(pos + 1) - '0'] = pos + 2 - original_rp;
+		if (pos[0] == '\\' && pos[1] > '0' && pos[1] <= '9') {
+			rp_offsets[pos[1]-'0'] = pos + 2 - original_rp;
 			*pos = '\0';
 		}
 	}

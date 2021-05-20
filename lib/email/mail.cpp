@@ -152,7 +152,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	ptr_last = ptr_begin;
 	pmime_last = NULL;
 	while (ptr < ptr_end) {
-		if ('-' == *ptr && '-' == *(ptr + 1) &&
+		if (ptr[0] == '-' && ptr[1] == '-' &&
 			strncmp(ptr + 2, pmime_parent->boundary_string, 
 			pmime_parent->boundary_len) == 0 &&
 			('\r' == ptr[2 + pmime_parent->boundary_len] ||

@@ -644,8 +644,8 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 	last_space = pbuff;
     while (*ptr != '\0') {
 		/* back slash should be treated as transferred meaning */
-		if (('\\' == *ptr && '\"' == *(ptr + 1)) ||
-			('\\' == *ptr && '\\' == *(ptr + 1))) {
+		if ((*ptr == '\\' && ptr[1] == '\"') ||
+		    (*ptr == '\\' && ptr[1] == '\\')) {
 			memmove(ptr, ptr + 1, strlen(ptr + 1) + 1);
 			ptr ++;
 		}

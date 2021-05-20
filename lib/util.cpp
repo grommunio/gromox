@@ -541,7 +541,7 @@ void swap_string(char *dest, const char *src)
 
 	str_len = strlen(src);
 	for (i=str_len-1, j=0; i>=0; i--,j++) {
-		*(dest+j) = *(src+i);
+		dest[j] = src[i];
 	}
 	dest[str_len] = '\0';
 }

@@ -290,7 +290,7 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 	if (bgettoken != 0) {
 		tmp_ptr ++;
 	}
-	for (i=lasttokenloc+1, j=0; *(tmp_ptr+j)!='\0' && *(tmp_ptr+j)!='>'; 
+	for (i = lasttokenloc + 1, j = 0; tmp_ptr[j] != '\0' && tmp_ptr[j] != '>'; 
 		 i++, j++) {
 		if (j >= GX_ARRAY_SIZE(e_addr->domain) - 1) {
 			j = 0;
@@ -636,7 +636,7 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 	if (bgettoken != 0) {
 		tmp_ptr ++;
 	}
-	for (i=lasttokenloc+1, j=0; *(tmp_ptr+j)!='\0' && *(tmp_ptr+j)!='>'; 
+	for (i = lasttokenloc + 1, j = 0; tmp_ptr[j] != '\0' && tmp_ptr[j] != '>';
 		 i++, j++) {
 		if (j >= GX_ARRAY_SIZE(e_addr->domain) - 1) {
 			j = 0;
@@ -700,8 +700,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 	while (TRUE) {
 		meet_slash = FALSE;
 		while (i < buff_len && *tmp_ptr != '\r' && *tmp_ptr != '\n') {
-			if ('\\' == *tmp_ptr && ('\r' == *(tmp_ptr + 1) ||
-				'\n' == *(tmp_ptr + 1))) {
+			if (tmp_ptr[0] == '\\' && (tmp_ptr[1] == '\r' || tmp_ptr[1] == '\n')) {
 				meet_slash = TRUE;
 			} else {
 				*dest_ptr = *tmp_ptr;

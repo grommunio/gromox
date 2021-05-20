@@ -324,9 +324,8 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 			ptr1 = NULL;
 			if ('\0' != *ptr) {
 				pend = strchr(ptr + 1, '>');
-				if ('<' != *ptr || NULL == pend || '\0' != *(pend + 1)) {
+				if (*ptr != '<' || pend == nullptr || pend[1] != '\0')
 					return FALSE;
-				}
 				ptr ++;
 				count = 0;
 				last_ptr = ptr;
@@ -951,14 +950,14 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			pend = strchr(ptr, ']');
 			offset = 0;
 			length = -1;
-			if ('<' == *(pend + 1)) {
+			if (pend[1] == '<') {
 				offset = atol(pend + 2);
 				pdot = strchr(pend + 2, '.');
 				if (NULL != pdot) {
 					length = atol(pdot + 1);
 					/* trim the length information for response tag */
-					*pdot = '>';
-					*(pdot + 1) = '\0';
+					pdot[0] = '>';
+					pdot[1] = '\0';
 				}
 			}
 			auto len = pend - ptr;
