@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <gromox/defs.h>
 
+using namespace gromox;
+
 BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 {
 	BINARY tmp_bin;
@@ -66,7 +68,7 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 	
 	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
 	applefile.header.version_num = APPLEFILE_VERSION;
-	memset(applefile.header.filler, 0, 16);
+	memset(applefile.header.filler, 0, arsizeof(applefile.header.filler));
 	applefile.count = 0;
 	applefile.pentries = entry_buff;
 	entry_buff[applefile.count].entry_id = AS_REALNAME;

@@ -48,6 +48,8 @@
 	parsing email object into message object!
 */
 
+using namespace gromox;
+
 namespace {
 
 struct FIELD_ENUM_PARAM {
@@ -2399,7 +2401,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	for (i=0; i<applefile.count; i++) {
 		if (FALSE == b_filename && AS_REALNAME ==
 			applefile.pentries[i].entry_id) {
-			memset(tmp_buff, 0, 256);
+			memset(tmp_buff, 0, arsizeof(tmp_buff));
 			auto bv = static_cast<BINARY *>(applefile.pentries[i].pentry);
 			if (bv->cb > 255)
 				memcpy(tmp_buff, bv->pb, 255);
@@ -2624,7 +2626,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		if (FALSE == b_filename && AS_REALNAME ==
 			applefile.pentries[i].entry_id) {
 			auto bv = static_cast<BINARY *>(applefile.pentries[i].pentry);
-			memset(tmp_buff, 0, 256);
+			memset(tmp_buff, 0, arsizeof(tmp_buff));
 			if (bv->cb > 255)
 				memcpy(tmp_buff, bv->pb, 255);
 			else

@@ -108,8 +108,8 @@ int main(int argc, const char **argv)
 
 	str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, 256);
-		gethostname(temp_buff, 256);
+		memset(temp_buff, 0, arsizeof(temp_buff));
+		gethostname(temp_buff, arsizeof(temp_buff));
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find host ID, OS host name will be "
@@ -119,8 +119,8 @@ int main(int argc, const char **argv)
 	
 	str_val = resource_get_string("DEFAULT_DOMAIN");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, 256);
-		getdomainname(temp_buff, 256);
+		memset(temp_buff, 0, arsizeof(temp_buff));
+		getdomainname(temp_buff, arsizeof(temp_buff));
 		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "

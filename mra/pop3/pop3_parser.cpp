@@ -30,6 +30,8 @@
 
 #define SLEEP_BEFORE_CLOSE    usleep(1000)
 
+using namespace gromox;
+
 static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length, 
     POP3_CONTEXT *pcontext);
 
@@ -794,7 +796,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->array.clear();
 	single_list_init(&pcontext->list);
 	stream_clear(&pcontext->stream);
-	memset(pcontext->read_buffer, 0, 1024);
+	memset(pcontext->read_buffer, 0, arsizeof(pcontext->read_buffer));
 	pcontext->read_offset = 0;
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
@@ -809,7 +811,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->is_stls = 0;
 	pcontext->auth_times = 0;
 	memset(pcontext->username, 0, GX_ARRAY_SIZE(pcontext->username));
-	memset(pcontext->maildir, 0, 256);
+	memset(pcontext->maildir, 0, arsizeof(pcontext->maildir));
 }
 
 POP3_CONTEXT::~POP3_CONTEXT()

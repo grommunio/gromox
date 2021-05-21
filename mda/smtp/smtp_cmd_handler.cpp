@@ -14,6 +14,8 @@
 #include <cstring>
 #include <cstdio>
 
+using namespace gromox;
+
 static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext);
 
@@ -103,7 +105,7 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 		return 506;
 	}
 	pcontext->last_cmd = T_STARTTLS_CMD;
-	memset(pcontext->mail.envelop.hello_domain, 0, 256);
+	memset(pcontext->mail.envelop.hello_domain, 0, arsizeof(pcontext->mail.envelop.hello_domain));
 	smtp_parser_reset_context_envelop(pcontext);
 	return 210;
 }

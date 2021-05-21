@@ -39,6 +39,8 @@
 
 #define SLEEP_BEFORE_CLOSE    usleep(1000)
 
+using namespace gromox;
+
 /* return value for smtp_parser_parse_and_save_blkmime */
 enum{
 	ERROR_FOUND,
@@ -1032,7 +1034,7 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	}
 	pcontext->mail.envelop.is_login = FALSE;
 	pcontext->mail.envelop.is_relay = FALSE;
-	memset(&pcontext->mail.envelop.username, 0, 256);
+	memset(&pcontext->mail.envelop.username, 0, arsizeof(pcontext->mail.envelop.username));
 	smtp_parser_reset_context_session(pcontext);    
 }
 
@@ -1047,9 +1049,9 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 		return;
 	}
 	memset(&pcontext->ext_data, 0, sizeof(EXT_DATA));
-	memset(&pcontext->last_bytes, 0, 4);
-	memset(&pcontext->block_info.block_type, 0, 256);
-	memset(&pcontext->block_info.block_mime, 0, MAX_BLOCK_MIME_LEN);
+	memset(&pcontext->last_bytes, 0, arsizeof(pcontext->last_bytes));
+	memset(&pcontext->block_info.block_type, 0, arsizeof(pcontext->block_info.block_type));
+	memset(&pcontext->block_info.block_mime, 0, arsizeof(pcontext->block_info.block_mime));
 	pcontext->block_info.block_mime_len    = 0;
 	pcontext->block_info.last_block_ID     = 0;
 	pcontext->block_info.state             = 0;
@@ -1066,10 +1068,10 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	stream_clear(&pcontext->stream);
 	mem_file_clear(&pcontext->block_info.f_last_blkmime);
 	strcpy(pcontext->mail.envelop.parsed_domain, "unknown");
-	memset(&pcontext->mail.envelop.hello_domain, 0, 256);
-	memset(&pcontext->mail.envelop.from, 0, 256);
+	memset(&pcontext->mail.envelop.hello_domain, 0, arsizeof(pcontext->mail.envelop.hello_domain));
+	memset(&pcontext->mail.envelop.from, 0, arsizeof(pcontext->mail.envelop.from));
 	if (FALSE == pcontext->mail.envelop.is_login) {
-		memset(&pcontext->mail.envelop.username, 0, 256);
+		memset(&pcontext->mail.envelop.username, 0, arsizeof(pcontext->mail.envelop.username));
 	}
 	mem_file_clear(&pcontext->mail.envelop.f_rcpt_to);
 	mem_file_clear(&pcontext->mail.head.f_mime_to);
@@ -1082,7 +1084,7 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	mem_file_clear(&pcontext->mail.head.f_others);
 	mem_file_clear(&pcontext->mail.body.f_mail_parts);
 	memset(&pcontext->mail.head.x_original_ip, 0, sizeof(pcontext->mail.head.x_original_ip));
-	memset(&pcontext->mail.head.compose_time, 0, 64);
+	memset(&pcontext->mail.head.compose_time, 0, arsizeof(pcontext->mail.head.compose_time));
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
 }
 

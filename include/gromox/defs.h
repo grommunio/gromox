@@ -3,6 +3,9 @@
 #include <cstddef>
 #include <cstdint>
 template<typename T, size_t N> constexpr inline size_t GX_ARRAY_SIZE(T (&)[N]) { return N; }
+namespace gromox {
+template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { return N; }
+}
 #define GX_EXPORT __attribute__((visibility("default")))
 
 #if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
