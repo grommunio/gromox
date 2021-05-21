@@ -1346,7 +1346,7 @@ BOOL container_object_query_user_table(
 			row_count = start_pos + 1;
 		} else {
 			first_pos = start_pos + 1 + row_needed;
-			row_count = (-1)*row_needed;
+			row_count = -row_needed;
 		}
 	}
 	pset->count = 0;

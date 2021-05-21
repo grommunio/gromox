@@ -3555,7 +3555,6 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 {
 	int day;
 	int order;
-	int utc_offset;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
@@ -3701,7 +3700,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 				return NULL;
 		}
 	}
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
+	int utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	if (utc_offset >= 0) {
 		tmp_buff[0] = '+';
 	} else {
@@ -3714,7 +3713,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		return nullptr;
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
+	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	if (utc_offset >= 0) {
 		tmp_buff[0] = '+';
 	} else {
@@ -3853,7 +3852,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	}
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
+	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	if (utc_offset >= 0) {
 		tmp_buff[0] = '+';
 	} else {
@@ -3866,7 +3865,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		return nullptr;
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
+	utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	if (utc_offset >= 0) {
 		tmp_buff[0] = '+';
 	} else {

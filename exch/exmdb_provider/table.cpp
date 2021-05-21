@@ -390,7 +390,6 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	BOOL b_orderby;
 	int bind_index;
 	int multi_index;
-	int64_t prev_id;
 	BOOL b_extremum;
 	uint64_t header_id;
 	uint32_t tmp_proptag;
@@ -401,7 +400,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_NODE tmp_cnode;
 	
-	prev_id = (-1)*parent_id;
+	int64_t prev_id = -parent_id;
 	table_condition_list_to_where_clause(pcondition_list,
 					where_clause, sizeof(where_clause));
 	if (depth == psorts->ccategories) {
@@ -3468,7 +3467,7 @@ static BOOL table_expand_sub_contents(int depth,
 	uint64_t row_id;
 	uint8_t row_stat;
 	
-	sqlite3_bind_int64(pstmt, 1, (-1)*parent_id);
+	sqlite3_bind_int64(pstmt, 1, -parent_id);
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_reset(pstmt);
 		return TRUE;

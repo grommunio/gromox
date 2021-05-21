@@ -508,7 +508,7 @@ static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 		{FONTTECH_STR, ""}};
 	
 	if (num < 0) {
-		return &fake_entries[(-1)*num - 1];
+		return &fake_entries[-num-1];
 	}
 	return static_cast<FONTENTRY *>(int_hash_query(preader->pfont_hash, num));
 }

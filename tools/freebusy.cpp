@@ -424,7 +424,6 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 {
 	int day;
 	int order;
-	int utc_offset;
 	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
@@ -570,7 +569,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 				return NULL;
 		}
 	}
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
+	int utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
@@ -579,7 +578,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		return nullptr;
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
+	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
@@ -717,7 +716,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	}
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->standardbias);
+	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
@@ -726,7 +725,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		return nullptr;
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
-	utc_offset = (-1)*(ptzstruct->bias + ptzstruct->daylightbias);
+	utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);

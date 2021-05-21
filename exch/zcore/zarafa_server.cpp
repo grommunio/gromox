@@ -1456,7 +1456,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			if (domain_id != pinfo->domain_id && FALSE ==
 				system_services_check_same_org(domain_id,
 				pinfo->domain_id)) {
-				base_id = domain_id * (-1);
+				base_id = -domain_id;
 			}
 			minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
 			pobject = user_object_create(base_id, minid);

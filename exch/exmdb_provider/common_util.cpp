@@ -6010,7 +6010,7 @@ BOOL common_util_indexing_sub_contents(
 		sqlite3_reset(pstmt1);
 		if (step > 0 && 0 != sqlite3_column_int64(pstmt, 1)) {
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, (-1)*row_id);
+			sqlite3_bind_int64(pstmt, 1, -row_id);
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
 				if (FALSE == common_util_indexing_sub_contents(
 					step - 1, pstmt, pstmt1, pidx)) {

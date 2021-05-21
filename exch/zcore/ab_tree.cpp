@@ -695,7 +695,6 @@ static void ab_tree_enum_nodes(SIMPLE_TREE_NODE *pnode, void *pparam)
 static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
 	int i, num;
-	int domain_id;
 	SORT_ITEM *parray;
 	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
@@ -730,7 +729,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			return FALSE;
 		}
 		pdomain->node.pdata = pdomain;
-		domain_id = pbase->base_id * (-1);
+		int domain_id = -pbase->base_id;
 		pdomain->domain_id = domain_id;
 		simple_tree_init(&pdomain->tree);
 		if (FALSE == ab_tree_load_tree(
@@ -953,7 +952,7 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 	b_remote = FALSE;
 	if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
 		b_remote = TRUE;
-		pbase = ab_tree_get_base((-1)*((AB_NODE*)pnode)->id);
+		pbase = ab_tree_get_base(-reinterpret_cast<AB_NODE *>(pnode)->id);
 		if (NULL == pbase) {
 			return FALSE;
 		}
@@ -1126,7 +1125,7 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
 		b_remote = TRUE;
-		pbase = ab_tree_get_base((-1)*pabnode->id);
+		pbase = ab_tree_get_base(-pabnode->id);
 		if (NULL == pbase) {
 			return FALSE;
 		}
@@ -1232,7 +1231,7 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 	
 	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
-		pbase = ab_tree_get_base((-1)*pabnode->id);
+		pbase = ab_tree_get_base(-pabnode->id);
 		if (NULL == pbase) {
 			return NODE_TYPE_REMOTE;
 		}
@@ -1433,7 +1432,7 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
 		b_remote = TRUE;
-		pbase = ab_tree_get_base((-1)*pabnode->id);
+		pbase = ab_tree_get_base(-pabnode->id);
 		if (NULL == pbase) {
 			str_name[0] = '\0';
 			str_address[0] = '\0';
@@ -1471,7 +1470,7 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 	b_remote = FALSE;
 	if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
 		b_remote = TRUE;
-		pbase = ab_tree_get_base((-1)*((AB_NODE*)pnode)->id);
+		pbase = ab_tree_get_base(-reinterpret_cast<AB_NODE *>(pnode)->id);
 		if (NULL == pbase) {
 			str_name[0] = '\0';
 			return;

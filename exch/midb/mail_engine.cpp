@@ -3155,7 +3155,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 			LLU(folder_id), idx1, idx2);
 	} else {
 		if (offset < 0) {
-			idx2 = (-1)*offset;
+			idx2 = -offset;
 			if (idx2 > total_mail) {
 				idx2 = total_mail;
 			}

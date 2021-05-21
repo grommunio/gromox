@@ -1311,7 +1311,7 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		if (i == depth && 0 != after_row_id) {
 			sqlite3_bind_int64(pstmt_insert, 11, after_row_id);
 		} else {
-			sqlite3_bind_int64(pstmt_insert, 11, (-1)*parent_id);
+			sqlite3_bind_int64(pstmt_insert, 11, -parent_id);
 		}
 		if (SQLITE_DONE != sqlite3_step(pstmt_insert)) {
 			return FALSE;
@@ -1921,7 +1921,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					if ((type & MVI_FLAG) == MVI_FLAG)
 						type &= ~MVI_FLAG;
 					sqlite3_reset(pstmt);
-					sqlite3_bind_int64(pstmt, 1, (-1)*row_id1);
+					sqlite3_bind_int64(pstmt, 1, -row_id1);
 					while (SQLITE_ROW == sqlite3_step(pstmt)) {
 						row_id = row_id1;
 						row_id1 = sqlite3_column_int64(pstmt, 0);
@@ -1973,7 +1973,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				row_id1 = 0;
 				b_break = ptable->psorts->count > ptable->psorts->ccategories ? false : TRUE;
 				sqlite3_reset(pstmt);
-				sqlite3_bind_int64(pstmt, 1, (-1)*parent_id);
+				sqlite3_bind_int64(pstmt, 1, -parent_id);
 				while (SQLITE_ROW == sqlite3_step(pstmt)) {
 					row_id = row_id1;
 					row_id1 = sqlite3_column_int64(pstmt, 0);
@@ -2120,7 +2120,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				sqlite3_reset(pstmt4);
 				table_sort = ptable->psorts->psort[
 					ptable->psorts->ccategories - 1].table_sort;
-				prev_id = (-1)*parent_id;
+				prev_id = -parent_id;
 				row_id1 = 0;
 				b_break = FALSE;
 				sqlite3_reset(pstmt);
@@ -3288,7 +3288,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			sqlite3_reset(pstmt2);
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories - 1].table_sort;
-			prev_id = (-1)*parent_id;
+			prev_id = -parent_id;
 			row_id1 = 0;
 			b_break = FALSE;
 			sqlite3_bind_int64(pstmt4, 1, prev_id);

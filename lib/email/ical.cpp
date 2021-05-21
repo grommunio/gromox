@@ -1104,7 +1104,7 @@ static int ical_get_negative_weekofyear(int year, int month,
 		return -1;
 	} else if (weeknumber > ical_get_yearweeks(year)) {
 		*pb_yeargap = TRUE;
-		return (-1)*ical_get_yearweeks(year + 1);
+		return -ical_get_yearweeks(year + 1);
 	}
 	return weeknumber - yearweeks - 1;
 }
@@ -1872,7 +1872,7 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 						itime.month, itime.day);
 		if (ICAL_FREQUENCY_WEEK == pirrule->frequency) {
 			weekorder = ical_delta_day(itime, pirrule->base_itime)/7 + 1;
-			nweekorder = (-1)*(ical_delta_day(itime,
+			nweekorder = -(ical_delta_day(itime,
 				pirrule->next_base_itime) - 1)/7 - 1;
 		} else {
 			if (ICAL_FREQUENCY_MONTH == pirrule->frequency ||
@@ -2323,7 +2323,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->mday_bitmap, tmp_int - 1);
 			} else {
-				ical_set_bitmap(pirrule->nmday_bitmap, (-1)*tmp_int - 1);
+				ical_set_bitmap(pirrule->nmday_bitmap, -tmp_int - 1);
 			}
 		}
 		if (pirrule->real_frequency > ICAL_FREQUENCY_DAY) {
@@ -2343,7 +2343,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->yday_bitmap, tmp_int - 1);
 			} else {
-				ical_set_bitmap(pirrule->nyday_bitmap, (-1)*tmp_int - 1);
+				ical_set_bitmap(pirrule->nyday_bitmap, -tmp_int - 1);
 			}
 		}
 		if (pirrule->real_frequency > ICAL_FREQUENCY_DAY) {
@@ -2371,7 +2371,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 						7*(weekorder - 1) + dayofweek);
 				} else if (weekorder < 0) {
 					ical_set_bitmap(pirrule->nwday_bitmap,
-						7*((-1)*weekorder - 1) + dayofweek);
+						7 * (-weekorder - 1) + dayofweek);
 				} else {
 					for (i=0; i<5; i++) {
 						ical_set_bitmap(pirrule->wday_bitmap, 7*i + dayofweek); 
@@ -2383,7 +2383,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 						7*(weekorder - 1) + dayofweek);
 				} else if (weekorder < 0) {
 					ical_set_bitmap(pirrule->nwday_bitmap,
-						7*((-1)*weekorder - 1) + dayofweek);
+						7 * (-weekorder - 1) + dayofweek);
 				} else {
 					for (i=0; i<53; i++) {
 						ical_set_bitmap(pirrule->wday_bitmap, 7*i + dayofweek); 
@@ -2413,7 +2413,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->week_bitmap, tmp_int - 1);
 			} else {
-				ical_set_bitmap(pirrule->nweek_bitmap, (-1)*tmp_int - 1);
+				ical_set_bitmap(pirrule->nweek_bitmap, -tmp_int - 1);
 			}
 		}
 		if (pirrule->real_frequency > ICAL_FREQUENCY_WEEK) {
@@ -2517,7 +2517,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (tmp_int > 0) {
 				ical_set_bitmap(pirrule->setpos_bitmap, tmp_int - 1);
 			} else {
-				ical_set_bitmap(pirrule->nsetpos_bitmap, (-1)*tmp_int - 1);
+				ical_set_bitmap(pirrule->nsetpos_bitmap, -tmp_int - 1);
 			}
 		}
 		pirrule->by_mask[RRULE_BY_SETPOS] = true;
