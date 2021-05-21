@@ -771,13 +771,12 @@ static void *mdpps_thrwork(void *pparam)
 	uint8_t tmp_byte;
 	BOOL is_connected;
 	uint32_t buff_len;
-	uint8_t resp_buff[5];
+	uint8_t resp_buff[5]{};
 	EXMDB_REQUEST request;
 	struct pollfd pfd_read;
 	EXMDB_RESPONSE response;
 	
 	b_private = FALSE; /* whatever for connect request */
-	memset(resp_buff, 0, 5);
 	/* unordered_set currently owns it, now take another ref */
 	auto pconnection = static_cast<EXMDB_CONNECTION *>(pparam)->shared_from_this();
 	pthread_setname_np(pconnection->thr_id, "exmdb_parser");

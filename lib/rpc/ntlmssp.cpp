@@ -1071,7 +1071,6 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	DATA_BLOB *pchallenge;
 	uint8_t tmp_key_buff[256];
 	char upper_domain[128];
-	uint8_t nt_p16[16], p16[16];
 	const DATA_BLOB *plm_response;
 	const DATA_BLOB *pnt_response;
 	
@@ -1081,10 +1080,8 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	
 	gx_strlcpy(upper_domain, pntlmssp->domain, GX_ARRAY_SIZE(upper_domain));
 	HX_strupper(upper_domain);
-	memset(nt_p16, 0, 16);
+	uint8_t nt_p16[16]{}, p16[16]{};
 	ntlmssp_md4hash(plain_passwd, nt_p16);
-	
-	memset(p16, 0, 16);
 	ntlmssp_deshash(plain_passwd, p16);
 	
 	if (pnt_response->length != 0 && pnt_response->length < 24) {

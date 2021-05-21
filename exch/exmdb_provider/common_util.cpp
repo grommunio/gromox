@@ -838,9 +838,8 @@ static char* common_util_calculate_folder_path(
 	int len1;
 	BOOL b_private;
 	uint64_t tmp_fid;
-	char sql_string[128], temp_path[4096];
+	char sql_string[128], temp_path[4096]{};
 	
-	memset(temp_path, 0, 4096);
 	len = 0;
 	tmp_fid = folder_id;
 	b_private = exmdb_server_check_private();

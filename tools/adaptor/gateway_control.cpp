@@ -74,7 +74,6 @@ void gateway_control_notify(const char *command, int control_mask)
 static BOOL gateway_control_send(const char *ip, int port, const char *command)
 {
 	int cmd_len, read_len, offset;
-	char temp_buff[1024];
 	int sockd = gx_inet_connect(ip, port, 0);
 	if (sockd < 0) {
 		fprintf(stderr, "gx_inet_connect gateway_control@[%s]:%hu: %s\n",
@@ -82,7 +81,7 @@ static BOOL gateway_control_send(const char *ip, int port, const char *command)
 		return FALSE;
 	}
 	offset = 0;
-	memset(temp_buff, 0, 1024);
+	char temp_buff[1024]{};
 	/* read welcome information */
 	do {
 		read_len = read(sockd, temp_buff + offset, 1024 - offset);

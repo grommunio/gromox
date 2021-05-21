@@ -11,11 +11,10 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 	BINARY tmp_bin;
 	BINARY tmp_bin1;
 	EXT_PUSH ext_push;
-	APPLEFILE applefile;
+	APPLEFILE applefile{};
 	ASFINDERINFO fdr_entry;
 	ENTRY_DATA entry_buff[3];
 	
-	memset(&applefile.header, 0, sizeof(ASHEADER));
 	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
 	applefile.header.version_num = APPLEFILE_VERSION;
 	if (0 == pbinhex->res_len) {
@@ -60,7 +59,6 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 	BINARY tmp_bin;
 	BINARY tmp_bin1;
 	EXT_PUSH ext_push;
-	ASMACINFO mac_info;
 	APPLEFILE applefile;
 	ASFILEDATES entry_date;
 	ENTRY_DATA entry_buff[5];
@@ -96,8 +94,9 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 	finder_entry.finfo.fd_location.h = pmacbin->header.point_h;
 	applefile.count ++;
 	entry_buff[applefile.count].entry_id = AS_MACINFO;
+
+	ASMACINFO mac_info{};
 	entry_buff[applefile.count].pentry = &mac_info;
-	memset(&mac_info, 0 , sizeof(ASMACINFO));
 	mac_info.attribute = (pmacbin->header.protected_flag >> 1) & 0x01;
 	applefile.count ++;
 	if (0 != pmacbin->header.res_len) {
@@ -126,10 +125,9 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 	const void *pdata, uint32_t data_len)
 {
 	int i;
-	MACBINARY macbin;
+	MACBINARY macbin{};
 	EXT_PUSH ext_push;
 	
-	memset(&macbin, 0, sizeof(MACBINARY));
 	for (i=0; i<papplefile->count; i++) {
 		if (AS_REALNAME == papplefile->pentries[i].entry_id) {
 			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
@@ -183,10 +181,9 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 {
 	int i;
-	MACBINARY macbin;
+	MACBINARY macbin{};
 	EXT_PUSH ext_push;
 	
-	memset(&macbin, 0, sizeof(MACBINARY));
 	for (i=0; i<papplefile->count; i++) {
 		if (AS_REALNAME == papplefile->pentries[i].entry_id) {
 			auto bin = static_cast<BINARY *>(papplefile->pentries[i].pentry);
@@ -240,10 +237,9 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 
 BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 {
-	MACBINARY macbin;
+	MACBINARY macbin{};
 	EXT_PUSH ext_push;
 	
-	memset(&macbin, 0, sizeof(MACBINARY));
 	strcpy(macbin.header.file_name, pbinhex->file_name);
 	macbin.header.type = pbinhex->type;
 	macbin.header.creator = pbinhex->creator;

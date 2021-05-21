@@ -276,9 +276,8 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 {
 	uint32_t pad_len;
-	uint8_t pad_buff[128];
+	uint8_t pad_buff[128]{};
 	
-	memset(pad_buff, 0, 128);
 	TRY(macbinary_push_header(pext, &r->header));
 	if (0 != r->header.xheader_len) {
 		if (NULL == r->pxheader) {

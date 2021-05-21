@@ -1050,9 +1050,8 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 	EXT_PUSH subext;
 	uint16_t actual_size;
 	uint8_t tmp_buff[0x1008];
-	uint8_t paddings[AUX_ALIGN_SIZE];
+	uint8_t paddings[AUX_ALIGN_SIZE]{};
 	
-	memset(paddings, 0, AUX_ALIGN_SIZE);
 	if (!ext_buffer_push_init(&subext, tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	switch (r->version) {
