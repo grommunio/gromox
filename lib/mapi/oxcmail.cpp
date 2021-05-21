@@ -2403,10 +2403,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 			applefile.pentries[i].entry_id) {
 			memset(tmp_buff, 0, arsizeof(tmp_buff));
 			auto bv = static_cast<BINARY *>(applefile.pentries[i].pentry);
-			if (bv->cb > 255)
-				memcpy(tmp_buff, bv->pb, 255);
-			else
-				memcpy(tmp_buff, bv->pb, bv->cb);
+			memcpy(tmp_buff, bv->pb, std::min(bv->cb, static_cast<uint32_t>(255)));
 			if (FALSE == oxcmail_set_mac_attachname(
 				&pattachment->proplist, b_description, tmp_buff)) {
 				free(pcontent);
@@ -2627,10 +2624,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 			applefile.pentries[i].entry_id) {
 			auto bv = static_cast<BINARY *>(applefile.pentries[i].pentry);
 			memset(tmp_buff, 0, arsizeof(tmp_buff));
-			if (bv->cb > 255)
-				memcpy(tmp_buff, bv->pb, 255);
-			else
-				memcpy(tmp_buff, bv->pb, bv->cb);
+			memcpy(tmp_buff, bv->pb, std::min(bv->cb, static_cast<uint32_t>(255)));
 			if (FALSE == oxcmail_set_mac_attachname(
 				&pattachment->proplist, b_description, tmp_buff)) {
 				free(pcontent);
