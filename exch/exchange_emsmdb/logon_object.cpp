@@ -312,11 +312,8 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 			pindex_map[i] = i;
 			continue;
 		}
-		if (NULL != plogon->ppropid_hash) {
-			pname = static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash, ppropids->ppropid[i]));
-		} else {
-			pname = NULL;
-		}
+		pname = plogon->ppropid_hash == nullptr ? nullptr :
+		        static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash, ppropids->ppropid[i]));
 		if (NULL != pname) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;
@@ -445,11 +442,8 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 			pindex_map[i] = i;
 			continue;
 		}
-		if (NULL != plogon->ppropname_hash) {
-			pid = static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
-		} else {
-			pid = NULL;
-		}
+		pid = plogon->ppropname_hash == nullptr ? nullptr :
+		      static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
 		if (NULL != pid) {
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;

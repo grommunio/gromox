@@ -378,11 +378,8 @@ static BOOL bounce_producer_make_content(const char *username,
 	charset[0] = '\0';
 	time_zone[0] = '\0';
 	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
-	if (NULL == pvalue) {
-		time(&tmp_time);
-	} else {
-		tmp_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
-	}
+	tmp_time = pvalue == nullptr ? time(nullptr) :
+	           rop_util_nttime_to_unix(*static_cast<uint64_t *>(pvalue));
 	from = static_cast<char *>(common_util_get_propvals(&pbrief->proplist,
 	       PROP_TAG_SENTREPRESENTINGSMTPADDRESS));
 	if (NULL == from) {
@@ -419,11 +416,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			strcpy(charset, "ascii");
 		} else {
 			pcharset = common_util_cpid_to_charset(*(uint32_t*)pvalue);
-			if (NULL == pcharset) {
-				strcpy(charset, "ascii");
-			} else {
-				gx_strlcpy(charset, pcharset, GX_ARRAY_SIZE(charset));
-			}
+			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}
 	std::shared_lock rd_hold(g_list_lock);

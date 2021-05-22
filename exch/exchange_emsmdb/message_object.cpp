@@ -675,13 +675,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	}
 	
 	if (NULL != pmessage->pstate) {
-		if (FALSE == b_fai) {
-			idset_append(pmessage->pstate->pseen,
-							pmessage->change_num);
-		} else {
-			idset_append(pmessage->pstate->pseen_fai,
-								pmessage->change_num);
-		}
+		auto &x = pmessage->pstate;
+		idset_append(b_fai ? x->pseen_fai : x->pseen, pmessage->change_num);
 	}
 	
 	if (0 == pmessage->message_id || TRUE == b_fai) {
@@ -1761,7 +1756,6 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint32_t result;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
-	const char *username;
 	PROBLEM_ARRAY problems;
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pbrief;
@@ -1770,11 +1764,8 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	TAGGED_PROPVAL propval_buff[2];
 	
 	auto rpc_info = get_rpc_info();
-	if (TRUE == logon_object_check_private(pmessage->plogon)) {
-		username = NULL;
-	} else {
-		username = rpc_info.username;
-	}
+	const char *username = logon_object_check_private(pmessage->plogon) ?
+	                       nullptr : rpc_info.username;
 	b_notify = FALSE;
 	*pb_changed = FALSE;
 	switch (read_flag) {
