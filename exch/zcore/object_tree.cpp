@@ -143,21 +143,16 @@ static void object_tree_free_root(ROOT_OBJECT *prootobj)
 	EXT_PUSH ext_push;
 	char tmp_path[256];
 	
-	if (TRUE == prootobj->b_touched) {
-		if (TRUE == ext_buffer_push_init(
-			&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
-			if (EXT_ERR_SUCCESS == ext_buffer_push_tpropval_array(
-				&ext_push, prootobj->pprivate_proplist) &&
-				EXT_ERR_SUCCESS == ext_buffer_push_tarray_set(
-				&ext_push, prootobj->pprof_set)) {
-				sprintf(tmp_path, "%s/config/zarafa.dat",
-					prootobj->maildir);
-				fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
-				if (-1 != fd) {
-					write(fd, ext_push.data, ext_push.offset);
-					close(fd);
-				}
-			}
+	if (prootobj->b_touched &&
+	    ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT) &&
+	    ext_buffer_push_tpropval_array(&ext_push, prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
+	    ext_buffer_push_tarray_set(&ext_push, prootobj->pprof_set) == EXT_ERR_SUCCESS) {
+		sprintf(tmp_path, "%s/config/zarafa.dat",
+			prootobj->maildir);
+		fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
+		if (-1 != fd) {
+			write(fd, ext_push.data, ext_push.offset);
+			close(fd);
 		}
 	}
 	tarray_set_free(prootobj->pprof_set);
