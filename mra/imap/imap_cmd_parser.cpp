@@ -1547,23 +1547,22 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
 		return 1705 | DISPATCH_TAG;
-	} else {		
-		imap_parser_log_info(pcontext, 8, "login fail");
-		pcontext->auth_times ++;
-		if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
-			if (system_services_add_user_into_temp_list != nullptr)
-				system_services_add_user_into_temp_list(pcontext->username,
-					imap_parser_get_param(BLOCK_AUTH_FAIL));
-			return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
-		}
-		/* IMAP_CODE_2190004: NO login auth fail, */
-		auto imap_reply_str = resource_get_imap_code(1904, 1, &string_length);
-		auto imap_reply_str1 = resource_get_imap_code(1904, 2, &string_length1);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s",
-			pcontext->tag_string, imap_reply_str, reason, imap_reply_str1);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_CONTINUE;
 	}
+	imap_parser_log_info(pcontext, 8, "login fail");
+	pcontext->auth_times ++;
+	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
+		if (system_services_add_user_into_temp_list != nullptr)
+			system_services_add_user_into_temp_list(pcontext->username,
+				imap_parser_get_param(BLOCK_AUTH_FAIL));
+		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
+	}
+	/* IMAP_CODE_2190004: NO login auth fail, */
+	auto imap_reply_str = resource_get_imap_code(1904, 1, &string_length);
+	auto imap_reply_str1 = resource_get_imap_code(1904, 2, &string_length1);
+	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s",
+	                pcontext->tag_string, imap_reply_str, reason, imap_reply_str1);
+	imap_parser_safe_write(pcontext, buff, string_length);
+	return DISPATCH_CONTINUE;
 }
 
 int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
