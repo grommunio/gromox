@@ -352,13 +352,13 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 		return FALSE;	
 	}
 	for (i=0; i<ppropids->count; i++) {
-		if (pindex_map[i] < 0) {
-			ppropnames->ppropname[i] = tmp_propnames.ppropname[-pindex_map[i]-1];
-			if (ppropnames->ppropname[i].kind == MNID_ID ||
-			    ppropnames->ppropname[i].kind == MNID_STRING)
-				store_object_cache_propname(pstore,
-					ppropids->ppropid[i], ppropnames->ppropname + i);
-		}
+		if (pindex_map[i] >= 0)
+			continue;
+		ppropnames->ppropname[i] = tmp_propnames.ppropname[-pindex_map[i]-1];
+		if (ppropnames->ppropname[i].kind == MNID_ID ||
+		    ppropnames->ppropname[i].kind == MNID_STRING)
+			store_object_cache_propname(pstore,
+				ppropids->ppropid[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
 }
@@ -487,12 +487,12 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 		return FALSE;	
 	}
 	for (i=0; i<ppropnames->count; i++) {
-		if (pindex_map[i] < 0) {
-			ppropids->ppropid[i] = tmp_propids.ppropid[-pindex_map[i]-1];
-			if (0 != ppropids->ppropid[i]) {
-				store_object_cache_propname(pstore,
-					ppropids->ppropid[i], ppropnames->ppropname + i);
-			}
+		if (pindex_map[i] >= 0)
+			continue;
+		ppropids->ppropid[i] = tmp_propids.ppropid[-pindex_map[i]-1];
+		if (0 != ppropids->ppropid[i]) {
+			store_object_cache_propname(pstore,
+				ppropids->ppropid[i], ppropnames->ppropname + i);
 		}
 	}
 	return TRUE;
