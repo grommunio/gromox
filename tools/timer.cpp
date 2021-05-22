@@ -168,12 +168,12 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 static TIMER *put_timer(TIMER &&ptimer)
 {
 	for (auto pos = g_exec_list.begin(); pos != g_exec_list.end(); ++pos) {
-		if (pos->exec_time > ptimer.exec_time) {
-			std::list<TIMER> stash;
-			stash.push_back(std::move(ptimer));
-			g_exec_list.splice(pos, stash, stash.begin());
-			return &*pos;
-		}
+		if (pos->exec_time <= ptimer.exec_time)
+			continue;
+		std::list<TIMER> stash;
+		stash.push_back(std::move(ptimer));
+		g_exec_list.splice(pos, stash, stash.begin());
+		return &*pos;
 	}
 	g_exec_list.push_back(std::move(ptimer));
 	return &g_exec_list.back();
@@ -265,16 +265,16 @@ int main(int argc, const char **argv)
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
 	for (size_t i = 0; i < item_num; ++i) {
-		if (pitem[i].exectime == 0) {
-			for (size_t j = 0; j < item_num; ++j) {
-				if (i == j) {
-					continue;
-				}
-				if (pitem[i].tid == pitem[j].tid) {
-					pitem[j].exectime = 0;
-					break;
-				}
-			} 
+		if (pitem[i].exectime != 0)
+			continue;
+		for (size_t j = 0; j < item_num; ++j) {
+			if (i == j) {
+				continue;
+			}
+			if (pitem[i].tid == pitem[j].tid) {
+				pitem[j].exectime = 0;
+				break;
+			}
 		}
 	}
 
