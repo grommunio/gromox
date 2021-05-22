@@ -13,6 +13,8 @@ DECLARE_API();
 #define MLIST_RESULT_PRIVIL_INTERNAL    3
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 
+using namespace gromox;
+
 static decltype(mysql_adaptor_get_mlist) *get_mlist;
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext);
@@ -60,8 +62,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	int result;
 	int i, num;
 	BOOL b_touched;
-	char rcpt_to[256];
-	char delivered_to[256];
+	char rcpt_to[UADDR_SIZE], delivered_to[UADDR_SIZE];
 	std::vector<std::string> temp_file1;
 	MEM_FILE temp_file2;
 	MIME *phead;
@@ -80,8 +81,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 
 
 	b_touched = FALSE;
-	while (MEM_END_OF_FILE != mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
-		rcpt_to, 256)) {
+	while (mem_file_readline(&pcontext->pcontrol->f_rcpt_to, rcpt_to, arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
 		get_mlist(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
 		switch (result) {
 		case MLIST_RESULT_OK:
@@ -231,7 +231,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	if (NULL == pcontext_expand) {
 		for (const auto &rcpt_to : temp_file1) {
 			for (i = 0; i < num; ++i)
-				if (mime_search_field(phead, "Delivered-To", i, delivered_to, 256) &&
+				if (mime_search_field(phead, "Delivered-To", i, delivered_to, arsizeof(delivered_to)) &&
 				    strcasecmp(delivered_to, rcpt_to.c_str()) == 0)
 					break;
 			if (i == num) {
@@ -246,7 +246,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 
 	for (auto &&rcpt_to : temp_file1) {
 		for (i = 0; i < num; ++i)
-			if (mime_search_field(phead, "Delivered-To", i, delivered_to, 256) &&
+			if (mime_search_field(phead, "Delivered-To", i, delivered_to, arsizeof(delivered_to)) &&
 			    strcasecmp(delivered_to, rcpt_to.c_str()) == 0)
 				break;
 		if (i == num) {
