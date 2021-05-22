@@ -126,16 +126,12 @@ static TIMER *put_timer(TIMER &&ptimer)
 
 int main(int argc, const char **argv)
 {
-	int temp_fd;
-	int temp_len;
 	int listen_port;
 	time_t cur_time;
 	time_t last_cltime;
 	pthread_t thr_accept_id{};
 	std::vector<pthread_t> thr_ids;
 	char listen_ip[40];
-	char temp_path[256];
-	char temp_line[2048];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -336,7 +332,7 @@ int main(int argc, const char **argv)
 			execute_timer(&stash.front());
 		}
 
-		if (cur_time - last_cltime > 7 * 86400) {
+		if (cur_time - last_cltime > 7 * 86400) [](time_t &last_cltime, const time_t &cur_time) {
 			close(g_list_fd);
 			auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
 			if (NULL != pfile) {
@@ -355,13 +351,15 @@ int main(int argc, const char **argv)
 						}
 					} 
 				}
+				char temp_path[256];
 				snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_list_path);
-				temp_fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+				auto temp_fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 				if (-1 != temp_fd) {
 					for (size_t i = 0; i < item_num; ++i) {
 						if (pitem[i].exectime == 0)
 							continue;
-						temp_len = sprintf(temp_line, "%d\t%ld\t",
+						char temp_line[2048];
+						auto temp_len = gx_snprintf(temp_line, arsizeof(temp_line), "%d\t%ld\t",
 						           pitem[i].tid, pitem[i].exectime);
 						encode_line(pitem[i].command, temp_line + temp_len);
 						temp_len = strlen(temp_line);
@@ -378,7 +376,7 @@ int main(int argc, const char **argv)
 				last_cltime = cur_time;
 			}
 			g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
-		}
+		}(last_cltime, cur_time);
 		li_hold.unlock();
 		sleep(1);
 
