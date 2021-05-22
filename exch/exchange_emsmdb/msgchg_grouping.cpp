@@ -146,7 +146,7 @@ static BOOL msgchg_grouping_append_info_list(INFO_NODE *pinfo_node)
 	return TRUE;
 }
 
-static BOOL msgchg_grouping_veryfy_group_list(INFO_NODE *pinfo_node)
+static BOOL msgchg_grouping_verify_group_list(INFO_NODE *pinfo_node)
 {
 	size_t i;
 	DOUBLE_LIST_NODE *pnode;
@@ -353,7 +353,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 		}
 		pline += 256;
 	}
-	if (TRUE == msgchg_grouping_veryfy_group_list(pinfo_node)) {
+	if (msgchg_grouping_verify_group_list(pinfo_node)) {
 		if (TRUE == msgchg_grouping_append_info_list(pinfo_node)) {
 			return pinfo_node;
 		} else {
