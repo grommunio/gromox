@@ -61,6 +61,12 @@ struct TIMER {
 	std::string command;
 };
 
+struct srcitem {
+	int tid;
+	long exectime;
+	char command[512];
+} __attribute__((packed));
+
 }
 
 static std::atomic<bool> g_notify_stop{false};
@@ -108,6 +114,55 @@ CONNECTION_NODE::~CONNECTION_NODE()
 {
 	if (sockd >= 0)
 		close(sockd);
+}
+
+static void save_timers(time_t &last_cltime, const time_t &cur_time)
+{
+	close(g_list_fd);
+	auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
+	if (pfile == nullptr) {
+		g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
+		return;
+	}
+	auto item_num = pfile->get_size();
+	auto pitem = static_cast<srcitem *>(pfile->get_list());
+	for (size_t i = 0; i < item_num; ++i) {
+		if (pitem[i].exectime != 0)
+			continue;
+		for (size_t j = 0; j < item_num; ++j) {
+			if (i == j) {
+				continue;
+			}
+			if (pitem[i].tid == pitem[j].tid) {
+				pitem[j].exectime = 0;
+				break;
+			}
+		}
+	}
+	char temp_path[256];
+	snprintf(temp_path, arsizeof(temp_path), "%s.tmp", g_list_path);
+	auto temp_fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
+	if (temp_fd >= 0) {
+		for (size_t i = 0; i < item_num; ++i) {
+			if (pitem[i].exectime == 0)
+				continue;
+			char temp_line[2048];
+			auto temp_len = gx_snprintf(temp_line, arsizeof(temp_line), "%d\t%ld\t",
+				   pitem[i].tid, pitem[i].exectime);
+			encode_line(pitem[i].command, temp_line + temp_len);
+			temp_len = strlen(temp_line);
+			temp_line[temp_len] = '\n';
+			++temp_len;
+			write(temp_fd, temp_line, temp_len);
+		}
+		close(temp_fd);
+		if (remove(g_list_path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1403: remove %s: %s\n", g_list_path, strerror(errno));
+		if (rename(temp_path, g_list_path) < 0)
+			fprintf(stderr, "E-1404: rename %s %s: %s\n", temp_path, g_list_path, strerror(errno));
+	}
+	last_cltime = cur_time;
+	g_list_fd = open(g_list_path, O_APPEND | O_WRONLY);
 }
 
 static TIMER *put_timer(TIMER &&ptimer)
@@ -200,11 +255,6 @@ int main(int argc, const char **argv)
 	printf("[system]: processing threads number is %zu\n", g_threads_num);
 	g_threads_num ++;
 
-	struct srcitem {
-		int tid;
-		long exectime;
-		char command[512];
-	} __attribute__((packed));
 	auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
@@ -332,51 +382,8 @@ int main(int argc, const char **argv)
 			execute_timer(&stash.front());
 		}
 
-		if (cur_time - last_cltime > 7 * 86400) [](time_t &last_cltime, const time_t &cur_time) {
-			close(g_list_fd);
-			auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
-			if (NULL != pfile) {
-				auto item_num = pfile->get_size();
-				auto pitem = static_cast<srcitem *>(pfile->get_list());
-				for (size_t i = 0; i < item_num; ++i) {
-					if (pitem[i].exectime == 0) {
-						for (size_t j = 0; j < item_num; ++j) {
-							if (i == j) {
-								continue;
-							}
-							if (pitem[i].tid == pitem[j].tid) {
-								pitem[j].exectime = 0;
-								break;
-							}
-						}
-					} 
-				}
-				char temp_path[256];
-				snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_list_path);
-				auto temp_fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-				if (-1 != temp_fd) {
-					for (size_t i = 0; i < item_num; ++i) {
-						if (pitem[i].exectime == 0)
-							continue;
-						char temp_line[2048];
-						auto temp_len = gx_snprintf(temp_line, arsizeof(temp_line), "%d\t%ld\t",
-						           pitem[i].tid, pitem[i].exectime);
-						encode_line(pitem[i].command, temp_line + temp_len);
-						temp_len = strlen(temp_line);
-						temp_line[temp_len] = '\n';
-						temp_len ++;
-						write(temp_fd, temp_line, temp_len);
-					}
-					close(temp_fd);
-					if (remove(g_list_path) < 0 && errno != ENOENT)
-						fprintf(stderr, "W-1403: remove %s: %s\n", g_list_path, strerror(errno));
-					if (rename(temp_path, g_list_path) < 0)
-						fprintf(stderr, "E-1404: rename %s %s: %s\n", temp_path, g_list_path, strerror(errno));
-				}
-				last_cltime = cur_time;
-			}
-			g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
-		}(last_cltime, cur_time);
+		if (cur_time - last_cltime > 7 * 86400)
+			save_timers(last_cltime, cur_time);
 		li_hold.unlock();
 		sleep(1);
 
