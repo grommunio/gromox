@@ -1230,21 +1230,20 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 	SIMPLE_TREE_NODE **ppnode;
 	
 	pabnode = (AB_NODE*)pnode;
-	if (NODE_TYPE_REMOTE == pabnode->node_type) {
-		pbase = ab_tree_get_base(-pabnode->id);
-		if (NULL == pbase) {
-			return NODE_TYPE_REMOTE;
-		}
-		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
-		if (NULL == ppnode) {
-			ab_tree_put_base(pbase);
-			return NODE_TYPE_REMOTE;
-		}
-		node_type = ((AB_NODE*)*ppnode)->node_type;
-		ab_tree_put_base(pbase);
-		return node_type;
+	if (pabnode->node_type != NODE_TYPE_REMOTE)
+		return pabnode->node_type;
+	pbase = ab_tree_get_base(-pabnode->id);
+	if (NULL == pbase) {
+		return NODE_TYPE_REMOTE;
 	}
-	return pabnode->node_type;
+	ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
+	if (NULL == ppnode) {
+		ab_tree_put_base(pbase);
+		return NODE_TYPE_REMOTE;
+	}
+	node_type = ((AB_NODE *)*ppnode)->node_type;
+	ab_tree_put_base(pbase);
+	return node_type;
 }
 
 static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
@@ -1393,31 +1392,31 @@ static void ab_tree_get_server_dn(
 	char username[UADDR_SIZE];
 	char hex_string[32];
 	
-	if (((AB_NODE*)pnode)->node_type < 0x80) {
-		memset(username, 0, sizeof(username));
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
-		ptoken = strchr(username, '@');
-		HX_strlower(username);
-		if (NULL != ptoken) {
-			ptoken ++;
-		} else {
-			ptoken = username;
-		}
-		if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
-			encode_hex_int(ab_tree_get_minid_value(
-				((AB_NODE*)pnode)->minid), hex_string);
-		} else {
-			encode_hex_int(((AB_NODE*)pnode)->id, hex_string);
-		}
-		snprintf(dn, length, "/o=%s/ou=Exchange Administrative "
-			"Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers"
-			"/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
-			"-%02x%02x%s@%s", g_org_name, username[0], username[1],
-			username[2], username[3], username[4], username[5],
-			username[6], username[7], username[8], username[9],
-			username[10], username[11], hex_string, ptoken);
-		HX_strupper(dn);
+	if (reinterpret_cast<AB_NODE *>(pnode)->node_type >= 0x80)
+		return;
+	memset(username, 0, sizeof(username));
+	ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
+	ptoken = strchr(username, '@');
+	HX_strlower(username);
+	if (NULL != ptoken) {
+		ptoken++;
+	} else {
+		ptoken = username;
 	}
+	if (NODE_TYPE_REMOTE == ((AB_NODE *)pnode)->node_type) {
+		encode_hex_int(ab_tree_get_minid_value(
+			((AB_NODE *)pnode)->minid), hex_string);
+	} else {
+		encode_hex_int(((AB_NODE *)pnode)->id, hex_string);
+	}
+	snprintf(dn, length, "/o=%s/ou=Exchange Administrative "
+	         "Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers"
+	         "/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
+	         "-%02x%02x%s@%s", g_org_name, username[0], username[1],
+	         username[2], username[3], username[4], username[5],
+	         username[6], username[7], username[8], username[9],
+	         username[10], username[11], hex_string, ptoken);
+	HX_strupper(dn);
 }
 
 static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
