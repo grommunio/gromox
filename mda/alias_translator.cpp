@@ -17,6 +17,8 @@
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
+using namespace gromox;
+
 enum{
 	REFRESH_OK,
 	REFRESH_FILE_ERROR,
@@ -26,7 +28,7 @@ enum{
 namespace {
 
 struct addritem {
-	char a[256], b[256];
+	char a[324], b[324];
 };
 
 }
@@ -80,8 +82,7 @@ HOOK_ENTRY(hook_alias_translator);
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 {
 	BOOL b_replaced;
-	char rcpt_to[256];
-	char mainname[256];
+	char rcpt_to[UADDR_SIZE], mainname[UADDR_SIZE];
 	MEM_FILE temp_file;
 	MEM_FILE rcpt_file;
 
@@ -101,7 +102,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	}
 
 	b_replaced = FALSE;
-	while (MEM_END_OF_FILE != mem_file_readline(&rcpt_file, rcpt_to, 256)) {
+	while (MEM_END_OF_FILE != mem_file_readline(&rcpt_file, rcpt_to, arsizeof(rcpt_to))) {
 		if (strchr(rcpt_to, '@') != nullptr &&
 		    address_table_query(rcpt_to, mainname)) {
 			alias_log_info(pcontext, 8, "replace alias rcpt-address "
@@ -124,7 +125,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
     const char *format, ...)
 {
-	char log_buf[2048], rcpt_buff[2048];
+	char log_buf[UADDR_SIZE*8], rcpt_buff[UADDR_SIZE*8];
 	size_t size_read = 0, rcpt_len = 0, i;
 	va_list ap;
 
@@ -138,7 +139,7 @@ static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
 		MEM_FILE_SEEK_BEGIN);
 	for (i=0; i<8; i++) {
 		size_read = mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
-						rcpt_buff + rcpt_len, 256);
+						rcpt_buff + rcpt_len, UADDR_SIZE);
 		if (size_read == MEM_END_OF_FILE) {
 			break;
 		}
@@ -165,7 +166,7 @@ static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
 
 BOOL address_table_query(const char *aliasname, char *mainname)
 {
-	char temp_string[256];
+	char temp_string[UADDR_SIZE];
 	
 	strncpy(temp_string, aliasname, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
@@ -188,7 +189,7 @@ static int address_table_refresh()
     STR_HASH_TABLE *phash = NULL;
 	
     /* initialize the list filter */
-	auto plist_file = list_file_initd(g_address_path, "/", "%s:256%s:256");
+	auto plist_file = list_file_initd(g_address_path, "/", "%s:324%s:324");
 	if (NULL == plist_file) {
 		printf("[alias_translator]: Failed to read address list from %s: %s\n",
 			g_address_path, strerror(errno));
@@ -196,7 +197,7 @@ static int address_table_refresh()
 	}
 	auto pitem = static_cast<struct addritem *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
-    phash = str_hash_init(list_len + 1, 256, NULL);
+	phash = str_hash_init(list_len + 1, UADDR_SIZE, nullptr);
 	if (NULL == phash) {
 		printf("[alias_translator]: Failed to allocate address hash map\n");
 		return REFRESH_HASH_FAIL;
