@@ -2415,31 +2415,31 @@ static int fetch_detail(const char *path, const char *folder,
 			
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
-					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-						if (0 == strncmp(buff, "TRUE ", 5)) {
-							memcpy(num_buff, buff + 5, i - 5);
-							num_buff[i - 5] = '\0';
-							lines = atoi(num_buff);
-							if (lines < 0) {
-								goto RDWR_ERROR;
-							}
-							last_pos = i + 2;
-							line_pos = 0;
-							break;
-						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							std::unique_lock sv_hold(g_server_lock);
-							double_list_append_as_tail(&pback->psvr->conn_list,
-								&pback->node);
-							sv_hold.unlock();
-							*perrno = atoi(buff + 6);
-							auto num = xarray_get_capacity(pxarray);
-							for (size_t i = 0; i < num; ++i) {
-								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
-								mem_file_free(&pitem->f_digest);
-							}
-							xarray_clear(pxarray);
-							return MIDB_RESULT_ERROR;
+					if (buff[i] != '\r' || buff[i+1] != '\n')
+						continue;
+					if (0 == strncmp(buff, "TRUE ", 5)) {
+						memcpy(num_buff, buff + 5, i - 5);
+						num_buff[i-5] = '\0';
+						lines = atoi(num_buff);
+						if (lines < 0) {
+							goto RDWR_ERROR;
 						}
+						last_pos = i + 2;
+						line_pos = 0;
+						break;
+					} else if (0 == strncmp(buff, "FALSE ", 6)) {
+						std::unique_lock sv_hold(g_server_lock);
+						double_list_append_as_tail(&pback->psvr->conn_list,
+							&pback->node);
+						sv_hold.unlock();
+						*perrno = atoi(buff + 6);
+						auto num = xarray_get_capacity(pxarray);
+						for (size_t i = 0; i < num; ++i) {
+							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+							mem_file_free(&pitem->f_digest);
+						}
+						xarray_clear(pxarray);
+						return MIDB_RESULT_ERROR;
 					}
 				}
 				if (-1 == lines) {
@@ -2500,13 +2500,11 @@ static int fetch_detail(const char *path, const char *folder,
 						b_format_error = TRUE;
 					}
 					line_pos = 0;
-				} else {
-					if ('\r' != buff[i] || i != offset - 1) {
-						temp_line[line_pos] = buff[i];
-						line_pos ++;
-						if (line_pos >= 257*1024) {
-							goto RDWR_ERROR;
-						}
+				} else if (buff[i] != '\r' || i != offset - 1) {
+					temp_line[line_pos] = buff[i];
+					line_pos ++;
+					if (line_pos >= 257*1024) {
+						goto RDWR_ERROR;
 					}
 				}
 			}
@@ -2818,31 +2816,31 @@ static int fetch_detail_uid(const char *path, const char *folder,
 
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
-					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-						if (0 == strncmp(buff, "TRUE ", 5)) {
-							memcpy(num_buff, buff + 5, i - 5);
-							num_buff[i - 5] = '\0';
-							lines = atoi(num_buff);
-							if (lines < 0) {
-								goto RDWR_ERROR;
-							}
-							last_pos = i + 2;
-							line_pos = 0;
-							break;
-						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							std::unique_lock sv_hold(g_server_lock);
-							double_list_append_as_tail(&pback->psvr->conn_list,
-								&pback->node);
-							sv_hold.unlock();
-							*perrno = atoi(buff + 6);
-							auto num = xarray_get_capacity(pxarray);
-							for (size_t i = 0; i < num; ++i) {
-								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
-								mem_file_free(&pitem->f_digest);
-							}
-							xarray_clear(pxarray);
-							return MIDB_RESULT_ERROR;
+					if (buff[i] != '\r' || buff[i+1] != '\n')
+						continue;
+					if (0 == strncmp(buff, "TRUE ", 5)) {
+						memcpy(num_buff, buff + 5, i - 5);
+						num_buff[i-5] = '\0';
+						lines = atoi(num_buff);
+						if (lines < 0) {
+							goto RDWR_ERROR;
 						}
+						last_pos = i + 2;
+						line_pos = 0;
+						break;
+					} else if (0 == strncmp(buff, "FALSE ", 6)) {
+						std::unique_lock sv_hold(g_server_lock);
+						double_list_append_as_tail(&pback->psvr->conn_list,
+							&pback->node);
+						sv_hold.unlock();
+						*perrno = atoi(buff + 6);
+						auto num = xarray_get_capacity(pxarray);
+						for (size_t i = 0; i < num; ++i) {
+							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+							mem_file_free(&pitem->f_digest);
+						}
+						xarray_clear(pxarray);
+						return MIDB_RESULT_ERROR;
 					}
 				}
 				if (-1 == lines) {
@@ -2908,13 +2906,11 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						b_format_error = TRUE;
 					}
 					line_pos = 0;
-				} else {
-					if ('\r' != buff[i] || i != offset - 1) {
-						temp_line[line_pos] = buff[i];
-						line_pos ++;
-						if (line_pos >= 257*1024) {
-							goto RDWR_ERROR;
-						}
+				} else if (buff[i] != '\r' || i != offset - 1) {
+					temp_line[line_pos] = buff[i];
+					line_pos ++;
+					if (line_pos >= 257 * 1024) {
+						goto RDWR_ERROR;
 					}
 				}
 			}
