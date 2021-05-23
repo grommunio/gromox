@@ -48,11 +48,25 @@ struct AB_BASE {
 	INT_HASH_TABLE *phash = nullptr;
 };
 
+struct AB_BASE_REF {
+	public:
+	AB_BASE_REF() = default;
+	explicit AB_BASE_REF(AB_BASE *p) : pbase(p) {}
+	AB_BASE_REF(AB_BASE_REF &&) = delete;
+	~AB_BASE_REF() { reset(); }
+	void operator=(AB_BASE_REF &&);
+	void reset();
+	operator AB_BASE *() { return pbase; }
+	AB_BASE *operator->() { return pbase; }
+
+	private:
+	AB_BASE *pbase = nullptr;
+};
+
 extern void ab_tree_init(const char *org_name, size_t base_size, int cache_interval, int file_blocks);
 extern int ab_tree_run();
 extern int ab_tree_stop();
-AB_BASE* ab_tree_get_base(int base_id);
-void ab_tree_put_base(AB_BASE *pbase);
+extern AB_BASE_REF ab_tree_get_base(int base_id);
 uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
 void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid);
 BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
