@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <atomic>
 #include <csignal>
+#include <memory>
 #include <mutex>
 #include <new>
 #include <string>
@@ -786,7 +787,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	return TRUE;
 }
 
-AB_BASE* ab_tree_get_base(int base_id)
+AB_BASE_REF ab_tree_get_base(int base_id)
 {
 	int count;
 	AB_BASE *pbase;
@@ -799,11 +800,11 @@ AB_BASE* ab_tree_get_base(int base_id)
 	if (NULL == ppbase) {
 		pbase = me_alloc<AB_BASE>();
 		if (NULL == pbase) {
-			return NULL;
+			return AB_BASE_REF(nullptr);
 		}
 		if (1 != int_hash_add(g_base_hash, base_id, &pbase)) {
 			free(pbase);
-			return NULL;
+			return AB_BASE_REF(nullptr);
 		}
 		pbase->base_id = base_id;
 		pbase->load_time = 0;
@@ -817,7 +818,7 @@ AB_BASE* ab_tree_get_base(int base_id)
 			bl_hold.lock();
 			int_hash_remove(g_base_hash, base_id);
 			free(pbase);
-			return NULL;
+			return AB_BASE_REF(nullptr);
 		}
 		time(&pbase->load_time);
 		bl_hold.lock();
@@ -827,7 +828,7 @@ AB_BASE* ab_tree_get_base(int base_id)
 			bl_hold.unlock();
 			count ++;
 			if (count > 60) {
-				return NULL;
+				return AB_BASE_REF(nullptr);
 			}
 			sleep(1);
 			goto RETRY_LOAD_BASE;
@@ -835,13 +836,23 @@ AB_BASE* ab_tree_get_base(int base_id)
 		pbase = *ppbase;
 	}
 	pbase->reference ++;
-	return pbase;
+	return AB_BASE_REF(pbase);
 }
 
-void ab_tree_put_base(AB_BASE *pbase)
+void AB_BASE_REF::operator=(AB_BASE_REF &&o)
 {
+	reset();
+	pbase = o.pbase;
+	o.pbase = nullptr;
+}
+
+void AB_BASE_REF::reset()
+{
+	if (pbase == nullptr)
+		return;
 	std::unique_lock bl_hold(g_base_lock);
 	pbase->reference --;
+	pbase = nullptr;
 }
 
 static void *zcoreab_scanwork(void *param)
@@ -944,14 +955,10 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 {
 	int len;
 	int offset;
-	BOOL b_remote;
-	AB_BASE *pbase;
+	AB_BASE_REF pbase;
 	SIMPLE_TREE_NODE **ppnode;
 	
-	
-	b_remote = FALSE;
 	if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
-		b_remote = TRUE;
 		pbase = ab_tree_get_base(-reinterpret_cast<AB_NODE *>(pnode)->id);
 		if (NULL == pbase) {
 			return FALSE;
@@ -959,7 +966,6 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash,
 		         reinterpret_cast<AB_NODE *>(pnode)->minid));
 		if (NULL == ppnode) {
-			ab_tree_put_base(pbase);
 			return FALSE;
 		}
 		pnode = *ppnode;
@@ -974,10 +980,6 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 		}
 		offset += len;
 	} while ((pnode = simple_tree_node_get_parent(pnode)) != NULL);
-	
-	if (TRUE == b_remote) {
-		ab_tree_put_base(pbase);
-	}
 	return TRUE;
 }
 
@@ -1113,25 +1115,21 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	GUID guid;
 	char *ptoken;
 	int domain_id;
-	BOOL b_remote;
-	AB_BASE *pbase = nullptr;
+	AB_BASE_REF pbase;
 	AB_NODE *pabnode;
 	char username[UADDR_SIZE];
 	char hex_string[32];
 	char hex_string1[32];
 	SIMPLE_TREE_NODE **ppnode;
 	
-	b_remote = FALSE;
 	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
-		b_remote = TRUE;
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (NULL == pbase) {
 			return FALSE;
 		}
 		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
-			ab_tree_put_base(pbase);
 			return FALSE;
 		}
 		pabnode = (AB_NODE*)*ppnode;
@@ -1164,9 +1162,6 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 			pabnode = (AB_NODE*)pnode;
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
-			if (TRUE == b_remote) {
-				ab_tree_put_base(pbase);
-			}
 			return FALSE;
 		}
 		domain_id = pabnode->id;
@@ -1187,9 +1182,6 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 			pabnode = (AB_NODE*)pnode;
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
-			if (TRUE == b_remote) {
-				ab_tree_put_base(pbase);
-			}
 			return FALSE;
 		}
 		domain_id = pabnode->id;
@@ -1201,18 +1193,10 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		HX_strupper(pbuff);
 		break;
 	} catch (...) {
-		if (b_remote)
-			ab_tree_put_base(pbase);
 		return false;
 	}
 	default:
-		if (TRUE == b_remote) {
-			ab_tree_put_base(pbase);
-		}
 		return FALSE;
-	}
-	if (TRUE == b_remote) {
-		ab_tree_put_base(pbase);
 	}
 	return TRUE;	
 }
@@ -1224,7 +1208,6 @@ uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode)
 
 uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 {
-	AB_BASE *pbase;
 	AB_NODE *pabnode;
 	uint8_t node_type;
 	SIMPLE_TREE_NODE **ppnode;
@@ -1232,17 +1215,15 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 	pabnode = (AB_NODE*)pnode;
 	if (pabnode->node_type != NODE_TYPE_REMOTE)
 		return pabnode->node_type;
-	pbase = ab_tree_get_base(-pabnode->id);
+	auto pbase = ab_tree_get_base(-pabnode->id);
 	if (NULL == pbase) {
 		return NODE_TYPE_REMOTE;
 	}
 	ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 	if (NULL == ppnode) {
-		ab_tree_put_base(pbase);
 		return NODE_TYPE_REMOTE;
 	}
 	node_type = ((AB_NODE *)*ppnode)->node_type;
-	ab_tree_put_base(pbase);
 	return node_type;
 }
 
@@ -1422,15 +1403,12 @@ static void ab_tree_get_server_dn(
 static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address)
 {
-	BOOL b_remote;
-	AB_BASE *pbase = nullptr;
+	AB_BASE_REF pbase;
 	AB_NODE *pabnode;
 	SIMPLE_TREE_NODE **ppnode;
 	
-	b_remote = FALSE;
 	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
-		b_remote = TRUE;
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (NULL == pbase) {
 			str_name[0] = '\0';
@@ -1439,7 +1417,6 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 		}
 		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
-			ab_tree_put_base(pbase);
 			str_name[0] = '\0';
 			str_address[0] = '\0';
 			return;
@@ -1454,21 +1431,15 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 		strcpy(str_name, obj->title.c_str());
 	if (str_address != nullptr)
 		strcpy(str_address, obj->address.c_str());
-	if (TRUE == b_remote) {
-		ab_tree_put_base(pbase);
-	}
 }
 
 static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 {
-	BOOL b_remote;
-	AB_BASE *pbase;
+	AB_BASE_REF pbase;
 	AB_NODE *pabnode;
 	SIMPLE_TREE_NODE **ppnode;
 	
-	b_remote = FALSE;
 	if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
-		b_remote = TRUE;
 		pbase = ab_tree_get_base(-reinterpret_cast<AB_NODE *>(pnode)->id);
 		if (NULL == pbase) {
 			str_name[0] = '\0';
@@ -1477,7 +1448,6 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash,
 		         reinterpret_cast<AB_NODE *>(pnode)->minid));
 		if (NULL == ppnode) {
-			ab_tree_put_base(pbase);
 			str_name[0] = '\0';
 			return;
 		}
@@ -1495,9 +1465,6 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 	}
 	auto obj = static_cast<sql_group *>(pabnode->d_info);
 	strcpy(str_name, obj->title.c_str());
-	if (TRUE == b_remote) {
-		ab_tree_put_base(pbase);
-	}
 }
 
 BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode)

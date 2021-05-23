@@ -20,16 +20,14 @@ USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 
 BOOL user_object_check_valid(USER_OBJECT *puser)
 {
-	AB_BASE *pbase;
 	char username[UADDR_SIZE];
 	SIMPLE_TREE_NODE *pnode;
-	
-	pbase = ab_tree_get_base(puser->base_id);
+	auto pbase = ab_tree_get_base(puser->base_id);
 	if (NULL == pbase) {
 		return FALSE;
 	}
 	pnode = ab_tree_minid_to_node(pbase, puser->minid);
-	ab_tree_put_base(pbase);
+	pbase.reset();
 	if (NULL == pnode) {
 		if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
 		    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
@@ -47,19 +45,18 @@ void user_object_free(USER_OBJECT *puser)
 BOOL user_object_get_properties(USER_OBJECT *puser,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	AB_BASE *pbase;
 	char username[UADDR_SIZE];
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
 	static const uint32_t fake_type = OBJECT_USER;
 	
-	pbase = ab_tree_get_base(puser->base_id);
+	auto pbase = ab_tree_get_base(puser->base_id);
 	if (NULL == pbase) {
 		return FALSE;
 	}
 	pnode = ab_tree_minid_to_node(pbase, puser->minid);
 	if (NULL == pnode) {
-		ab_tree_put_base(pbase);
+		pbase.reset();
 		/* if user is hidden from addressbook tree, we simply
 			return the necessary information to the caller */
 		if (common_util_index_proptags(pproptags,
@@ -156,14 +153,11 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	}
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
-		ab_tree_put_base(pbase);
 		return FALSE;
 	}
 	if (FALSE == ab_tree_fetch_node_properties(
 		pnode, pproptags, ppropvals)) {
-		ab_tree_put_base(pbase);
 		return FALSE;	
 	}
-	ab_tree_put_base(pbase);
 	return TRUE;
 }

@@ -1254,7 +1254,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	uint8_t type;
 	void *pobject;
 	int domain_id;
-	AB_BASE *pbase;
 	uint32_t minid;
 	uint8_t loc_type;
 	char essdn[1024];
@@ -1343,17 +1342,15 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 					memcpy(tmp_buff, essdn + 36, 2);
 					tmp_buff[2] = '\0';
 					guid.node[5] = strtol(tmp_buff, NULL, 16);
-					pbase = ab_tree_get_base(base_id);
+					auto pbase = ab_tree_get_base(base_id);
 					if (NULL == pbase) {
 						return ecError;
 					}
 					pnode = ab_tree_guid_to_node(pbase, guid);
 					if (NULL == pnode) {
-						ab_tree_put_base(pbase);
 						return ecNotFound;
 					}
 					minid = ab_tree_get_node_minid(pnode);
-					ab_tree_put_base(pbase);
 					type = CONTAINER_TYPE_ABTREE;
 					container_id.abtree_id.base_id = base_id;
 					container_id.abtree_id.minid = minid;
@@ -1414,7 +1411,6 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	const TARRAY_SET *pcond_set, TARRAY_SET *presult_set)
 {
 	char *pstring;
-	AB_BASE *pbase;
 	SINGLE_LIST temp_list;
 	PROPTAG_ARRAY proptags;
 	SINGLE_LIST result_list;
@@ -1424,7 +1420,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	if (pinfo == nullptr)
 		return ecError;
 	int base_id = pinfo->org_id == 0 ? -pinfo->domain_id : pinfo->org_id;
-	pbase = ab_tree_get_base(base_id);
+	auto pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase) {
 		return ecError;
 	}
@@ -1435,22 +1431,18 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		if (NULL == pstring) {
 			presult_set->count = 0;
 			presult_set->pparray = NULL;
-			ab_tree_put_base(pbase);
 			return ecSuccess;
 		}
 		if (FALSE == ab_tree_resolvename(pbase,
 			pinfo->cpid, pstring, &temp_list)) {
-			ab_tree_put_base(pbase);
 			return ecError;
 		}
 		switch (single_list_get_nodes_num(&temp_list)) {
 		case 0:
-			ab_tree_put_base(pbase);
 			return ecNotFound;
 		case 1:
 			break;
 		default:
-			ab_tree_put_base(pbase);
 			return ecAmbiguousRecip;
 		}
 		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
@@ -1459,12 +1451,10 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	presult_set->count = 0;
 	if (0 == single_list_get_nodes_num(&result_list)) {
 		presult_set->pparray = NULL;
-		ab_tree_put_base(pbase);
 		return ecNotFound;
 	}
 	presult_set->pparray = cu_alloc<TPROPVAL_ARRAY *>(single_list_get_nodes_num(&result_list));
 	if (NULL == presult_set->pparray) {
-		ab_tree_put_base(pbase);
 		return ecError;
 	}
 	container_object_get_user_table_all_proptags(&proptags);
@@ -1474,12 +1464,10 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		if (NULL == presult_set->pparray[presult_set->count] ||
 		    !ab_tree_fetch_node_properties(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata),
 		    &proptags, presult_set->pparray[presult_set->count])) {
-			ab_tree_put_base(pbase);
 			return ecError;
 		}
 		presult_set->count ++;
 	}
-	ab_tree_put_base(pbase);
 	return ecSuccess;
 }
 

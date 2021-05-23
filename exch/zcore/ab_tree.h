@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -53,12 +54,26 @@ struct AB_BASE {
 	INT_HASH_TABLE *phash;
 };
 
+struct AB_BASE_REF {
+	public:
+	AB_BASE_REF() = default;
+	explicit AB_BASE_REF(AB_BASE *p) : pbase(p) {}
+	AB_BASE_REF(AB_BASE_REF &&) = delete;
+	~AB_BASE_REF() { reset(); }
+	void operator=(AB_BASE_REF &&);
+	void reset();
+	operator AB_BASE *() { return pbase; }
+	AB_BASE *operator->() { return pbase; }
+
+	private:
+	AB_BASE *pbase = nullptr;
+};
+
 void ab_tree_init(const char *org_name, int base_size,
 	int cache_interval, int file_blocks);
 extern int ab_tree_run();
 extern int ab_tree_stop();
-AB_BASE* ab_tree_get_base(int base_id);
-void ab_tree_put_base(AB_BASE *pbase);
+extern AB_BASE_REF ab_tree_get_base(int base_id);
 uint32_t ab_tree_make_minid(uint8_t type, int value);
 uint8_t ab_tree_get_minid_type(uint32_t minid);
 int ab_tree_get_minid_value(uint32_t minid);
