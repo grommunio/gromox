@@ -65,8 +65,9 @@ class VCONN_REF {
 	VCONN_REF(VCONN_REF &&) = delete;
 	~VCONN_REF() { put(); }
 	void operator=(VCONN_REF &&) = delete;
+	bool operator!=(std::nullptr_t) const { return pvconnection != nullptr; }
+	bool operator==(std::nullptr_t) const { return pvconnection == nullptr; }
 	void put();
-	operator VIRTUAL_CONNECTION *() { return pvconnection; }
 	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
 	private:
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
@@ -282,9 +283,8 @@ static VCONN_REF http_parser_get_vconnection(const char *host,
 	auto it = g_vconnection_hash.find(tmp_buff);
 	if (it != g_vconnection_hash.end())
 		pvconnection = &it->second;
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr)
 		pvconnection->reference ++;
-	}
 	vhold.unlock();
 	if (pvconnection == nullptr)
 		return {};
@@ -1198,7 +1198,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		auto pvconnection = http_parser_get_vconnection(
 			pcontext->host, pcontext->port,
 			((RPC_OUT_CHANNEL*)pcontext->pchannel)->connection_cookie);
-		if (NULL == pvconnection) {
+		if (pvconnection == nullptr) {
 			http_parser_log_info(pcontext, 6,
 				"virtual connection error in hash table");
 			return X_RUNOFF;
@@ -1302,7 +1302,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		auto pvconnection = http_parser_get_vconnection(
 			pcontext->host, pcontext->port,
 			((RPC_OUT_CHANNEL*)pcontext->pchannel)->connection_cookie);
-		if (NULL == pvconnection) {
+		if (pvconnection == nullptr) {
 			http_parser_log_info(pcontext, 6,
 				"virtual connection error in hash table");
 			return X_RUNOFF;
@@ -1595,7 +1595,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			forward pdu to pdu processor */
 			auto pvconnection = http_parser_get_vconnection(pcontext->host,
 				pcontext->port, pchannel_in->connection_cookie);
-			if (NULL == pvconnection) {
+			if (pvconnection == nullptr) {
 				http_parser_log_info(pcontext, 6,
 					"virtual connection error in hash table");
 				return X_RUNOFF;
@@ -1702,7 +1702,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		/* in channel here, find the corresponding out channel first! */
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 			pcontext->port, pchannel_in->connection_cookie);
-		if (NULL == pvconnection) {
+		if (pvconnection == nullptr) {
 			pdu_processor_free_call(pcall);
 			http_parser_log_info(pcontext, 6,
 				"cannot find virtual connection in hash table");
@@ -1746,7 +1746,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 {
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 		pcontext->port, pchannel_out->connection_cookie);
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (pvconnection->pcontext_out == pcontext
 		    && NULL != pvconnection->pcontext_in) {
 			auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
@@ -1787,7 +1787,7 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 {
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 		pcontext->port, pchannel_out->connection_cookie);
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (pvconnection->pcontext_out == pcontext
 		    && NULL != pvconnection->pcontext_in) {
 			auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
@@ -1977,9 +1977,8 @@ void http_parser_vconnection_async_reply(const char *host,
 		return;
 	}
 	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
-	if (NULL == pvconnection) {
+	if (pvconnection == nullptr)
 		return;
-	}
 	if (NULL == pvconnection->pcontext_out) {
 		return;
 	}
@@ -2238,7 +2237,7 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
  RETRY_QUERY:
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, conn_cookie);
-	if (NULL == pvconnection) {
+	if (pvconnection == nullptr) {
 		std::unique_lock vc_hold(g_vconnection_lock);
 		if (g_vconnection_hash.size() >= g_context_num + 1) {
 			http_parser_log_info(pcontext, 6, "W-1293: vconn hash full");
@@ -2299,9 +2298,8 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
-	if (NULL == pvconnection) {
+	if (pvconnection == nullptr)
 		return;
-	}
 	if (NULL == pvconnection->pcontext_out) {
 		return;
 	}
@@ -2325,7 +2323,7 @@ BOOL http_parser_recycle_inchannel(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
 	
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (NULL != pvconnection->pcontext_in &&
 			0 == strcmp(predecessor_cookie, ((RPC_IN_CHANNEL*)
 			pvconnection->pcontext_in->pchannel)->channel_cookie)) {
@@ -2362,7 +2360,7 @@ BOOL http_parser_recycle_outchannel(
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_OUT_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (NULL != pvconnection->pcontext_out &&
 			0 == strcmp(predecessor_cookie, ((RPC_OUT_CHANNEL*)
 			pvconnection->pcontext_out->pchannel)->channel_cookie)) {
@@ -2407,8 +2405,7 @@ BOOL http_parser_activate_inrecycling(
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
-	
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (pcontext == pvconnection->pcontext_insucc &&
 			0 == strcmp(successor_cookie, ((RPC_IN_CHANNEL*)
 			pvconnection->pcontext_insucc->pchannel)->channel_cookie)) {
@@ -2436,8 +2433,7 @@ BOOL http_parser_activate_outrecycling(
 	}
 	auto pvconnection = http_parser_get_vconnection(pcontext->host, pcontext->port,
 		((RPC_IN_CHANNEL*)pcontext->pchannel)->connection_cookie);
-	
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (pcontext == pvconnection->pcontext_in &&
 			NULL != pvconnection->pcontext_out &&
 			NULL != pvconnection->pcontext_outsucc &&
@@ -2474,8 +2470,7 @@ void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
 		pcontext->pchannel)->connection_cookie);
-	
-	if (NULL != pvconnection) {
+	if (pvconnection != nullptr) {
 		if (pcontext == pvconnection->pcontext_in) {
 			pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
 			pchannel_in->client_keepalive = keepalive;
