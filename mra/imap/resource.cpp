@@ -26,13 +26,16 @@ using namespace gromox;
 namespace {
 
 struct LANG_FOLDER {
-	char lang[32];
-	char *folders[4];
-	char charset[256];
-	char draft[256];
-	char sent[256];
-	char trash[256];
-	char junk[256];
+	LANG_FOLDER();
+	LANG_FOLDER(const LANG_FOLDER &);
+
+	char lang[32]{};
+	char *folders[4]{};
+	char charset[256]{};
+	char draft[256]{};
+	char sent[256]{};
+	char trash[256]{};
+	char junk[256]{};
 
 	bool operator==(const char *s) const { return strcasecmp(lang, s) == 0; }
 };
@@ -131,6 +134,28 @@ static std::list<LANG_FOLDER> g_lang_list;
 
 static BOOL resource_load_imap_lang_list();
 
+LANG_FOLDER::LANG_FOLDER()
+{
+	folders[0] = draft;
+	folders[1] = sent;
+	folders[2] = trash;
+	folders[3] = junk;
+}
+
+LANG_FOLDER::LANG_FOLDER(const LANG_FOLDER &o)
+{
+	memcpy(lang, o.lang, arsizeof(lang));
+	memcpy(charset, o.charset, arsizeof(charset));
+	memcpy(draft, o.draft, arsizeof(draft));
+	memcpy(sent, o.sent, arsizeof(sent));
+	memcpy(trash, o.trash, arsizeof(trash));
+	memcpy(junk, o.junk, arsizeof(junk));
+	folders[0] = draft;
+	folders[1] = sent;
+	folders[2] = trash;
+	folders[3] = junk;
+}
+
 int resource_run()
 {
 	if (FALSE == resource_load_imap_lang_list()) {
@@ -213,10 +238,6 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		gx_strlcpy(plang->lang, line, GX_ARRAY_SIZE(plang->lang));
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
-		plang->folders[0] = plang->draft;
-		plang->folders[1] = plang->sent;
-		plang->folders[2] = plang->trash;
-		plang->folders[3] = plang->junk;
 		if (0 == strlen(plang->lang) ||
 			FALSE == get_digest(ptr + 1, "default-charset",
 			plang->charset, 256) || 0 == strlen(plang->charset) ||
