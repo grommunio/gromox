@@ -5,6 +5,7 @@
 #include <csignal>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -54,21 +55,13 @@ struct SINK_NODE {
 	NOTIF_SINK sink;
 };
 
-struct USER_INFO_REF {
-	public:
-	USER_INFO_REF() = default;
-	explicit USER_INFO_REF(USER_INFO *p) : pinfo(p) {}
-	USER_INFO_REF(USER_INFO_REF &&) = delete;
-	~USER_INFO_REF() { reset(); }
-	void operator=(USER_INFO_REF &&) = delete;
-	bool operator==(std::nullptr_t) const { return pinfo == nullptr; }
-	void reset();
-	USER_INFO *operator->() { return pinfo; }
-	private:
-	USER_INFO *pinfo = nullptr;
+struct user_info_del {
+	void operator()(USER_INFO *x);
 };
 
 }
+
+using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;
 
 static int g_table_size;
 static std::atomic<bool> g_notify_stop{false};
@@ -97,7 +90,7 @@ static USER_INFO_REF zarafa_server_query_session(GUID hsession)
 	std::unique_lock tl_hold(g_table_lock);
 	auto pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
 	if (pinfo == nullptr || guid_compare(&hsession, &pinfo->hsession) != 0)
-		return USER_INFO_REF(nullptr);
+		return nullptr;
 	pinfo->reference ++;
 	time(&pinfo->last_time);
 	tl_hold.unlock();
@@ -111,10 +104,8 @@ USER_INFO *zarafa_server_get_info()
 	return static_cast<USER_INFO *>(pthread_getspecific(g_info_key));
 }
 
-void USER_INFO_REF::reset()
+void user_info_del::operator()(USER_INFO *pinfo)
 {
-	if (pinfo == nullptr)
-		return;
 	pthread_mutex_unlock(&pinfo->lock);
 	std::unique_lock tl_hold(g_table_lock);
 	pinfo->reference --;
