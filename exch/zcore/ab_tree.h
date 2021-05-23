@@ -61,8 +61,10 @@ struct AB_BASE_REF {
 	AB_BASE_REF(AB_BASE_REF &&) = delete;
 	~AB_BASE_REF() { reset(); }
 	void operator=(AB_BASE_REF &&);
+	bool operator==(std::nullptr_t) const { return pbase == nullptr; }
+	bool operator!=(std::nullptr_t) const { return pbase != nullptr; }
 	void reset();
-	operator AB_BASE *() { return pbase; }
+	AB_BASE *get() { return pbase; }
 	AB_BASE *operator->() { return pbase; }
 
 	private:

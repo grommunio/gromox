@@ -379,12 +379,10 @@ BOOL container_object_load_user_table(
 			return TRUE;
 		}
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (NULL == pbase) {
+		if (pbase == nullptr)
 			return FALSE;
-		}
 		auto pinfo = zarafa_server_get_info();
-		if (FALSE == ab_tree_match_minids(
-			pbase, pcontainer->id.abtree_id.minid,
+		if (!ab_tree_match_minids(pbase.get(), pcontainer->id.abtree_id.minid,
 			pinfo->cpid, prestriction, &minid_array)) {
 			return FALSE;	
 		}
@@ -908,10 +906,9 @@ BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 				SPECIAL_CONTAINER_PROVIDER, pproptags, ppropvals);
 		}
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (NULL == pbase) {
+		if (pbase == nullptr)
 			return FALSE;
-		}
-		pnode = ab_tree_minid_to_node(pbase,
+		pnode = ab_tree_minid_to_node(pbase.get(),
 			pcontainer->id.abtree_id.minid);
 		if (NULL == pnode) {
 			ppropvals->count = 0;
@@ -1106,9 +1103,8 @@ BOOL container_object_query_container_table(
 		}
 	} else {
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (NULL == pbase) {
+		if (pbase == nullptr)
 			return FALSE;
-		}
 		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
@@ -1162,7 +1158,7 @@ BOOL container_object_query_container_table(
 				}
 			}
 		} else {
-			ptnode = ab_tree_minid_to_node(pbase,
+			ptnode = ab_tree_minid_to_node(pbase.get(),
 				pcontainer->id.abtree_id.minid);
 			if (NULL == ptnode) {
 				pset->count = 0;
@@ -1219,16 +1215,15 @@ BOOL container_object_get_user_table_num(
 			return TRUE;
 		}
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (NULL == pbase) {
+		if (pbase == nullptr)
 			return FALSE;
-		}
 		*pnum = 0;
 		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
 			*pnum = single_list_get_nodes_num(&pbase->gal_list);
 		} else if (0 == pcontainer->id.abtree_id.minid) {
 			*pnum = 0;
 		} else {
-			pnode = ab_tree_minid_to_node(pbase,
+			pnode = ab_tree_minid_to_node(pbase.get(),
 				pcontainer->id.abtree_id.minid);
 			if (NULL == pnode || NULL == (pnode =
 				simple_tree_node_get_child(pnode))) {
@@ -1339,13 +1334,12 @@ BOOL container_object_query_user_table(
 			return TRUE;
 		}
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (NULL == pbase) {
+		if (pbase == nullptr)
 			return FALSE;
-		}
 		if (NULL != pcontainer->contents.pminid_array) {
 			for (size_t i = first_pos; i < first_pos+row_count &&
 			     i < pcontainer->contents.pminid_array->count; ++i) {
-				ptnode = ab_tree_minid_to_node(pbase,
+				ptnode = ab_tree_minid_to_node(pbase.get(),
 					pcontainer->contents.pminid_array->pl[i]);
 				if (NULL == ptnode) {
 					continue;
@@ -1385,7 +1379,7 @@ BOOL container_object_query_user_table(
 			} else if (0 == pcontainer->id.abtree_id.minid) {
 				return TRUE;
 			} else {
-				ptnode = ab_tree_minid_to_node(pbase,
+				ptnode = ab_tree_minid_to_node(pbase.get(),
 					pcontainer->id.abtree_id.minid);
 				if (NULL == ptnode || NULL == (ptnode =
 					simple_tree_node_get_child(ptnode))) {

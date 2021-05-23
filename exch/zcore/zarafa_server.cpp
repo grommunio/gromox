@@ -1343,10 +1343,9 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 					tmp_buff[2] = '\0';
 					guid.node[5] = strtol(tmp_buff, NULL, 16);
 					auto pbase = ab_tree_get_base(base_id);
-					if (NULL == pbase) {
+					if (pbase == nullptr)
 						return ecError;
-					}
-					pnode = ab_tree_guid_to_node(pbase, guid);
+					pnode = ab_tree_guid_to_node(pbase.get(), guid);
 					if (NULL == pnode) {
 						return ecNotFound;
 					}
@@ -1421,9 +1420,8 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		return ecError;
 	int base_id = pinfo->org_id == 0 ? -pinfo->domain_id : pinfo->org_id;
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase) {
+	if (pbase == nullptr)
 		return ecError;
-	}
 	single_list_init(&result_list);
 	for (size_t i = 0; i < pcond_set->count; ++i) {
 		pstring = static_cast<char *>(common_util_get_propvals(
@@ -1433,10 +1431,8 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 			presult_set->pparray = NULL;
 			return ecSuccess;
 		}
-		if (FALSE == ab_tree_resolvename(pbase,
-			pinfo->cpid, pstring, &temp_list)) {
+		if (!ab_tree_resolvename(pbase.get(), pinfo->cpid, pstring, &temp_list))
 			return ecError;
-		}
 		switch (single_list_get_nodes_num(&temp_list)) {
 		case 0:
 			return ecNotFound;

@@ -23,10 +23,9 @@ BOOL user_object_check_valid(USER_OBJECT *puser)
 	char username[UADDR_SIZE];
 	SIMPLE_TREE_NODE *pnode;
 	auto pbase = ab_tree_get_base(puser->base_id);
-	if (NULL == pbase) {
+	if (pbase == nullptr)
 		return FALSE;
-	}
-	pnode = ab_tree_minid_to_node(pbase, puser->minid);
+	pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
 	pbase.reset();
 	if (NULL == pnode) {
 		if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
@@ -51,10 +50,9 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	static const uint32_t fake_type = OBJECT_USER;
 	
 	auto pbase = ab_tree_get_base(puser->base_id);
-	if (NULL == pbase) {
+	if (pbase == nullptr)
 		return FALSE;
-	}
-	pnode = ab_tree_minid_to_node(pbase, puser->minid);
+	pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
 	if (NULL == pnode) {
 		pbase.reset();
 		/* if user is hidden from addressbook tree, we simply
