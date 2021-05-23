@@ -800,11 +800,11 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	if (NULL == ppbase) {
 		pbase = me_alloc<AB_BASE>();
 		if (NULL == pbase) {
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		}
 		if (1 != int_hash_add(g_base_hash, base_id, &pbase)) {
 			free(pbase);
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		}
 		pbase->base_id = base_id;
 		pbase->load_time = 0;
@@ -818,7 +818,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			bl_hold.lock();
 			int_hash_remove(g_base_hash, base_id);
 			free(pbase);
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		}
 		time(&pbase->load_time);
 		bl_hold.lock();
@@ -828,7 +828,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			bl_hold.unlock();
 			count ++;
 			if (count > 60) {
-				return AB_BASE_REF(nullptr);
+				return nullptr;
 			}
 			sleep(1);
 			goto RETRY_LOAD_BASE;
@@ -839,20 +839,10 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	return AB_BASE_REF(pbase);
 }
 
-void AB_BASE_REF::operator=(AB_BASE_REF &&o)
+void ab_tree_del::operator()(AB_BASE *pbase)
 {
-	reset();
-	pbase = o.pbase;
-	o.pbase = nullptr;
-}
-
-void AB_BASE_REF::reset()
-{
-	if (pbase == nullptr)
-		return;
 	std::unique_lock bl_hold(g_base_lock);
 	pbase->reference --;
-	pbase = nullptr;
 }
 
 static void *zcoreab_scanwork(void *param)
