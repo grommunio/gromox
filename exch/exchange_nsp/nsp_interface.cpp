@@ -592,7 +592,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	phandle->handle_type = HANDLE_EXCHANGE_NSP;
 	int base_id = org_id == 0 ? -domain_id : org_id;
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase) {
+	if (pbase == nullptr) {
 		memset(&phandle->guid, 0, sizeof(GUID));
 		return ecError;
 	}
@@ -760,7 +760,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		return ecError;
 	}
@@ -769,7 +769,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		nsp_interface_position_in_list(pstat,
 			pgal_list, &row, &last_row, &total);
 	} else {
-		pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
 			return ecInvalidBookmark;
 		}
@@ -895,7 +895,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*pprows = NULL;
 		return ecError;
@@ -907,7 +907,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			nsp_interface_position_in_list(pstat,
 				pgal_list, &start_pos, &last_row, &total);
 		} else {
-			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+			pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
 				result = ecInvalidBookmark;
 				goto EXIT_QUERY_ROWS;
@@ -1013,7 +1013,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 				result = ecMAPIOOM;
 				goto EXIT_QUERY_ROWS;
 			}
-			pnode = ab_tree_minid_to_node(pbase, ptable[i]);
+			pnode = ab_tree_minid_to_node(pbase.get(), ptable[i]);
 			if (NULL == pnode) {
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 				continue;
@@ -1111,7 +1111,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*pprows = NULL;
 		return ecError;
@@ -1121,7 +1121,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		size_t row = 0;
 		tmp_minid = 0;
 		for (size_t i = 0; i < ptable->cvalues; ++i) {
-			pnode1 = ab_tree_minid_to_node(pbase, ptable->pproptag[i]);
+			pnode1 = ab_tree_minid_to_node(pbase.get(), ptable->pproptag[i]);
 			if (NULL == pnode1) {
 				continue;
 			}
@@ -1161,7 +1161,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			nsp_interface_position_in_list(pstat,
 				pgal_list, &start_pos, &last_row, &total);
 		} else {
-			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+			pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
 				result = ecInvalidBookmark;
 				goto EXIT_SEEK_ENTRIES;
@@ -1608,7 +1608,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
@@ -1616,7 +1616,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 	
 	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES == pstat->container_id) {
-		pnode = ab_tree_minid_to_node(pbase, pstat->cur_rec);
+		pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
 			goto EXIT_GET_MATCHES;
@@ -1640,7 +1640,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				break;
 			}
 			if (!get_id_from_username(pitem[i].user, &user_id) ||
-				NULL == (pnode = ab_tree_uid_to_node(pbase, user_id))) {
+				NULL == (pnode = ab_tree_uid_to_node(pbase.get(), user_id))) {
 				continue;
 			}
 			if (NULL != pfilter && FALSE == nsp_interface_match_node(
@@ -1682,7 +1682,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				i ++;
 			}
 		} else {
-			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+			pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
 				result = ecInvalidBookmark;
 				goto EXIT_GET_MATCHES;
@@ -1715,7 +1715,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 		}
 	} else {
-		pnode = ab_tree_minid_to_node(pbase, pstat->cur_rec);
+		pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
 		    TRUE, pstat->codepage, pstat->container_id, &prop_val,
 		    temp_buff, GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
@@ -1737,7 +1737,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
 			}
-			pnode = ab_tree_minid_to_node(pbase, (*ppoutmids)->pproptag[i]);
+			pnode = ab_tree_minid_to_node(pbase.get(), (*ppoutmids)->pproptag[i]);
 			if (NULL == pnode) {
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 			} else {
@@ -1800,7 +1800,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*ppoutmids = NULL;
 		return ecError;
@@ -1808,7 +1808,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	size_t count = 0;
 	b_found = FALSE;
 	for (size_t i = 0; i < pinmids->cvalues; ++i) {
-		pnode = ab_tree_minid_to_node(pbase, pinmids->pproptag[i]);
+		pnode = ab_tree_minid_to_node(pbase.get(), pinmids->pproptag[i]);
 		if (NULL == pnode) {
 			continue;
 		}
@@ -1866,7 +1866,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	(*ppoutmids)->cvalues = pnames->cvalues;
 	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->cvalues);
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*ppoutmids = NULL;
 		return ecError;
@@ -1874,7 +1874,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	for (unsigned int i = 0; i < pnames->cvalues; ++i) {
 		if (pnames->ppstr[i] == nullptr)
 			continue;
-		ptnode = ab_tree_dn_to_node(pbase, pnames->ppstr[i]);
+		ptnode = ab_tree_dn_to_node(pbase.get(), pnames->ppstr[i]);
 		if (NULL != ptnode) {
 			(*ppoutmids)->pproptag[i] = ab_tree_get_node_minid(ptnode);
 		}
@@ -1979,12 +1979,12 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		return ecMAPIOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*ppproptags = NULL;
 		return ecError;
 	}
-	pnode = ab_tree_minid_to_node(pbase, mid);
+	pnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == pnode) {
 		*ppproptags = NULL;
 		return ecInvalidObject;
@@ -2045,7 +2045,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*pprows = NULL;
 		return ecError;
@@ -2069,7 +2069,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			pnode1 = psnode == nullptr ? nullptr :
 			         static_cast<decltype(pnode1)>(psnode->pdata);
 		} else {
-			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+			pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
 				result = ecInvalidBookmark;
 				goto EXIT_GET_PROPS;
@@ -2091,11 +2091,10 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			}
 		}
 	} else {
-		pnode1 = ab_tree_minid_to_node(pbase, pstat->cur_rec);
+		pnode1 = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL != pnode1) {
 			if (0 != pstat->container_id) {
-				pnode = ab_tree_minid_to_node(
-					pbase, pstat->container_id);
+				pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 				if (NULL == pnode) {
 					result = ecInvalidBookmark;
 					goto EXIT_GET_PROPS;
@@ -2183,7 +2182,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		return ecError;
 	}
@@ -2205,7 +2204,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 			i ++;
 		}
 	} else {
-		pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
 			goto EXIT_COMPARE_MIDS;
@@ -2468,7 +2467,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*pprows = NULL;
 		return ecError;
@@ -2513,12 +2512,12 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		return ecError;
 	}
 	double_list_init(&tmp_list);
-	ptnode = ab_tree_minid_to_node(pbase, mid);
+	ptnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == ptnode) {
 		result = ecInvalidObject;
 		goto EXIT_MOD_LINKATT;
@@ -2570,9 +2569,9 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[29]) << 8;
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[30]) << 16;
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[31]) << 24;
-			ptnode = ab_tree_minid_to_node(pbase, tmp_mid);
+			ptnode = ab_tree_minid_to_node(pbase.get(), tmp_mid);
 		} else {
-			ptnode = ab_tree_dn_to_node(pbase, pentry_ids->pbin[i].pc + 28);
+			ptnode = ab_tree_dn_to_node(pbase.get(), pentry_ids->pbin[i].pc + 28);
 		}
 		if (NULL == ptnode) {
 			continue;
@@ -2945,7 +2944,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecMAPIOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase || (TRUE == g_session_check &&
+	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*ppmids = NULL;
 		*pprows = NULL;
@@ -3006,7 +3005,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			}		
 		}
 	} else {
-		pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
+		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
 			goto EXIT_RESOLVE_NAMESW;
