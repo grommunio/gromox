@@ -8,6 +8,7 @@
 #include <chrono>
 #include <climits>
 #include <csignal>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -146,22 +147,13 @@ struct IDB_ITEM {
 	std::timed_mutex lock;
 };
 
-class IDB_REF {
-	public:
-	IDB_REF() = default;
-	explicit IDB_REF(IDB_ITEM *p) : pidb(p) {}
-	IDB_REF(IDB_REF &&) = delete;
-	~IDB_REF() { put(); }
-	void operator=(IDB_REF &&) = delete;
-	bool operator==(std::nullptr_t) const { return pidb == nullptr; }
-	void put();
-	IDB_ITEM *get() { return pidb; }
-	IDB_ITEM *operator->() { return pidb; }
-	private:
-	IDB_ITEM *pidb = nullptr;
+struct idb_item_del {
+	void operator()(IDB_ITEM *);
 };
 
 }
+
+using IDB_REF = std::unique_ptr<IDB_ITEM, idb_item_del>;
 
 enum {
 	FIELD_NONE = 0,
@@ -2882,15 +2874,12 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	return IDB_REF(pidb);
 }
 
-void IDB_REF::put()
+void idb_item_del::operator()(IDB_ITEM *pidb)
 {
-	if (pidb == nullptr)
-		return;
 	time(&pidb->last_time);
 	pidb->lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pidb->reference --;
-	pidb = nullptr;
 }
 
 IDB_ITEM::~IDB_ITEM()
@@ -3049,7 +3038,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 		count ++;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
 	write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
@@ -3138,7 +3127,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 			}
 		} else {
 			if (offset >= total_mail) {
-				pidb.put();
+				pidb.reset();
 				write(sockd, "TRUE 0\r\n", 8);
 				return 0;
 			}
@@ -3159,7 +3148,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 			}
 		} else {
 			if (offset >= total_mail) {
-				pidb.put();
+				pidb.reset();
 				write(sockd, "TRUE 0\r\n", 8);
 				return 0;
 			}
@@ -3349,13 +3338,13 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 3;
 	}
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 4;
@@ -3380,7 +3369,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -3388,7 +3377,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		propval.proptag = PROP_TAG_READ;
 		propval.pvalue = &b_read;
 		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-			pidb.put();
+			pidb.reset();
 			message_content_free(pmsgctnt);
 			return 4;
 		}
@@ -3398,7 +3387,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		propval.pvalue = &tmp_flags;
 		tmp_flags = MESSAGE_FLAG_UNSENT;
 		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-			pidb.put();
+			pidb.reset();
 			message_content_free(pmsgctnt);
 			return 4;
 		}
@@ -3406,7 +3395,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
 		!exmdb_client::allocate_cn(argv[1], &change_num)) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -3415,7 +3404,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		" (%llu, ?, ?)", LLU(rop_util_get_gc_value(message_id)));
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;	
 	}
@@ -3423,7 +3412,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	sqlite3_bind_text(pstmt, 2, argv[4], -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		pstmt.finalize();
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -3432,11 +3421,11 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	try {
 		username = pidb->username;
 	} catch (const std::bad_alloc &) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
-	pidb.put();
+	pidb.reset();
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = &message_id;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -3527,7 +3516,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 		message_ids.count ++;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	if (!exmdb_client::delete_messages(argv[1],
 		user_id, 0, NULL, rop_util_make_eid_ex(1, folder_id),
 		&message_ids, TRUE, &b_partial)) {
@@ -3598,14 +3587,14 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 3;
 	}
 	auto folder_id1 = mail_engine_get_folder_id(pidb.get(), argv[4]);
 	if (0 == folder_id1) {
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 3;
@@ -3616,7 +3605,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		"WHERE mid_string=?");
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 4;
@@ -3625,7 +3614,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 	    gx_sql_col_uint64(pstmt, 12) != folder_id) {
 		pstmt.finalize();
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 5;
@@ -3658,7 +3647,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	nt_time = sqlite3_column_int64(pstmt, 10);
 	pstmt.finalize();
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
-		pidb.put();
+		pidb.reset();
 		mail_free(&imail);
 		free(pbuff);
 		return 4;
@@ -3696,7 +3685,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
 		!exmdb_client::allocate_cn(argv[1], &change_num)) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -3713,7 +3702,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		" (%llu, ?, ?)", LLU(rop_util_get_gc_value(message_id)));
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;	
 	}
@@ -3721,7 +3710,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	sqlite3_bind_text(pstmt, 2, flags_buff, -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		pstmt.finalize();
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -3730,11 +3719,11 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	try {
 		username = pidb->username;
 	} catch (const std::bad_alloc &) {
-		pidb.put();
+		pidb.reset();
 		message_content_free(pmsgctnt);
 		return 4;
 	}
-	pidb.put();
+	pidb.reset();
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = &message_id;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -3880,7 +3869,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		}
 		ptoken = ptoken1 + 1;
 	}
-	pidb.put();
+	pidb.reset();
 	if (parent_id != folder_id1) {
 		if (!exmdb_client::movecopy_folder(
 			argv[1], user_id, 0, FALSE, NULL,
@@ -4004,7 +3993,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 		}
 		ptoken = ptoken1 + 1;
 	}
-	pidb.put();
+	pidb.reset();
 	if (FALSE == common_util_create_folder(argv[1],
 		user_id, rop_util_make_eid_ex(1, folder_id1),
 		ptoken, &folder_id2) || 0 == folder_id2) {
@@ -4034,11 +4023,11 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 		return 2;
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.put();
+		pidb.reset();
 		write(sockd, "TRUE\r\n", 6);
 		return 0;
 	}
-	pidb.put();
+	pidb.reset();
 	folder_id = rop_util_make_eid_ex(1, folder_id);
 	if (!exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
 		TRUE, TRUE, TRUE, FALSE, &b_partial) || TRUE == b_partial ||
@@ -4127,7 +4116,7 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 		total_mail = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 	}
-	pidb.put();
+	pidb.reset();
 	if (TRUE == b_asc) {
 		temp_len = sprintf(temp_buff, "TRUE %d\r\n", idx - 1);
 	} else {
@@ -4167,7 +4156,7 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	}
 	uid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	temp_len = sprintf(temp_buff, "TRUE %u\r\n", uid);
 	write(sockd, temp_buff, temp_len);
 	return 0;
@@ -4278,7 +4267,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 		offset = -1;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	uidvalid = folder_id;
 	temp_len = sprintf(temp_buff, "TRUE %u %u %u %llu %u %d\r\n",
 	           total, recents, unreads, LLU(uidvalid), uidnext + 1, offset);
@@ -4303,7 +4292,7 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 	sprintf(sql_string, "UPDATE folders SET unsub=0"
 	        " WHERE folder_id=%llu", LLU(folder_id));
 	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
-	pidb.put();
+	pidb.reset();
 	write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -4325,7 +4314,7 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
 	sprintf(sql_string, "UPDATE folders SET unsub=1"
 	        " WHERE folder_id=%llu", LLU(folder_id));
 	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
-	pidb.put();
+	pidb.reset();
 	write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -4358,7 +4347,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 		count ++;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
 	write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
@@ -4453,7 +4442,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 			}
 		} else {
 			if (offset >= total_mail) {
-				pidb.put();
+				pidb.reset();
 				write(sockd, "TRUE 0\r\n", 8);
 				return 0;
 			}
@@ -4475,7 +4464,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 			}
 		} else {
 			if (offset >= total_mail) {
-				pidb.put();
+				pidb.reset();
 				write(sockd, "TRUE 0\r\n", 8);
 				return 0;
 			}
@@ -4542,7 +4531,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		temp_len += buff_len;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	write(sockd, temp_buff, temp_len);
 	return 0;
 }
@@ -4754,7 +4743,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 		memcpy(temp_buff + temp_len, temp_line, buff_len);
 		temp_len += buff_len;
 	}
-	pidb.put();
+	pidb.reset();
 	write(sockd, temp_buff, temp_len);
 	return 0;
 }
@@ -4852,7 +4841,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 		temp_len += buff_len;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	write(sockd, temp_buff, temp_len);
 	return 0;
 }
@@ -5105,7 +5094,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		        " WHERE message_id=%llu", LLU(message_id));
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 	}
-	pidb.put();
+	pidb.reset();
 	write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -5195,7 +5184,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		        " WHERE message_id=%llu", LLU(message_id));
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 	}
-	pidb.put();
+	pidb.reset();
 	write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -5261,7 +5250,7 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 		flags_len ++;
 	}
 	pstmt.finalize();
-	pidb.put();
+	pidb.reset();
 	flags_buff[flags_len] = ')';
 	flags_len ++;
 	flags_buff[flags_len] = '\0';
@@ -5317,11 +5306,11 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.put();
+		pidb.reset();
 		mail_engine_ct_destroy(ptree);
 		return 3;
 	}
-	pidb.put();
+	pidb.reset();
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
@@ -5403,11 +5392,11 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.put();
+		pidb.reset();
 		mail_engine_ct_destroy(ptree);
 		return 3;
 	}
-	pidb.put();
+	pidb.reset();
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
