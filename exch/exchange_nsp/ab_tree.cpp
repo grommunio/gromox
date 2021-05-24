@@ -844,20 +844,10 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	return AB_BASE_REF(pbase);
 }
 
-void AB_BASE_REF::operator=(AB_BASE_REF &&o)
+void ab_tree_del::operator()(AB_BASE *pbase)
 {
-	reset();
-	pbase = o.pbase;
-	o.pbase = nullptr;
-}
-
-void AB_BASE_REF::reset()
-{
-	if (pbase == nullptr)
-		return;
 	std::lock_guard bhold(g_base_lock);
 	pbase->reference --;
-	pbase = nullptr;
 }
 
 static void *nspab_scanwork(void *param)

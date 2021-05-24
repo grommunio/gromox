@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include <string>
 #include <vector>
 #include <gromox/proc_common.h>
@@ -48,22 +49,11 @@ struct AB_BASE {
 	INT_HASH_TABLE *phash = nullptr;
 };
 
-struct AB_BASE_REF {
-	public:
-	AB_BASE_REF() = default;
-	explicit AB_BASE_REF(AB_BASE *p) : pbase(p) {}
-	AB_BASE_REF(AB_BASE_REF &&) = delete;
-	~AB_BASE_REF() { reset(); }
-	void operator=(AB_BASE_REF &&);
-	bool operator==(std::nullptr_t) { return pbase == nullptr; }
-	bool operator!=(std::nullptr_t) { return pbase != nullptr; }
-	void reset();
-	AB_BASE *get() { return pbase; }
-	AB_BASE *operator->() { return pbase; }
-
-	private:
-	AB_BASE *pbase = nullptr;
+struct ab_tree_del {
+	void operator()(AB_BASE *);
 };
+
+using AB_BASE_REF = std::unique_ptr<AB_BASE, ab_tree_del>;
 
 extern void ab_tree_init(const char *org_name, size_t base_size, int cache_interval, int file_blocks);
 extern int ab_tree_run();
