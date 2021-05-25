@@ -518,15 +518,24 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
 		return -EINVAL;
 	case PT_STRING8:
-	case PT_UNICODE:
-		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) < 1)
-			throw "PF-1037";
-		++dsize;
-		buf = std::make_unique<uint8_t[]>(dsize);
-		if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) < 1)
-			throw "PF-1036";
+	case PT_UNICODE: {
+		libpff_error_ptr err;
+		size_t dsize2 = 0;
+		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize2, &unique_tie(err)) >= 1) {
+			++dsize;
+			buf = std::make_unique<uint8_t[]>(dsize);
+			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) < 1)
+				throw "PF-1036";
+		} else {
+			fprintf(stderr, "PF-1041: Garbage in Unicode string\n");
+			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize, "UTF-16", "UTF-8//IGNORE");
+			dsize = s.size() + 1;
+			buf = std::make_unique<uint8_t[]>(dsize);
+			memcpy(buf.get(), s.data(), dsize);
+		}
 		pv.pvalue = buf.get();
 		break;
+	}
 	case PT_BINARY:
 		u.bin.cb = dsize;
 		u.bin.pv = buf.get();

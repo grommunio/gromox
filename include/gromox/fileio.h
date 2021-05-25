@@ -47,7 +47,7 @@ class wrapfd {
 	int m_fd = -1;
 };
 
-extern std::string iconvtext(const char *, size_t, const char *from, const char *to);
+extern GX_EXPORT std::string iconvtext(const char *, size_t, const char *from, const char *to);
 extern GX_EXPORT pid_t popenfd(const char *const *, int *, int *, int *, const char *const *);
 extern GX_EXPORT ssize_t feed_w3m(const void *in, size_t insize, std::string &out);
 extern GX_EXPORT std::vector<std::string> gx_split(const std::string_view &, char sep);
