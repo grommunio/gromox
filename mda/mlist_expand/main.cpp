@@ -229,13 +229,13 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 
 	pcontext_expand =  get_context();
 	if (NULL == pcontext_expand) {
-		for (const auto &rcpt_to : temp_file1) {
+		for (const auto &recip : temp_file1) {
 			for (i = 0; i < num; ++i)
 				if (mime_search_field(phead, "Delivered-To", i, delivered_to, arsizeof(delivered_to)) &&
-				    strcasecmp(delivered_to, rcpt_to.c_str()) == 0)
+				    strcasecmp(delivered_to, recip.c_str()) == 0)
 					break;
 			if (i == num) {
-				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, rcpt_to.c_str());
+				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, recip.c_str());
 			}
 		}
 		goto EXIT_EXPAND;
@@ -244,13 +244,13 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	strcpy(pcontext_expand->pcontrol->from, pcontext->pcontrol->from);
 	pcontext_expand->pcontrol->need_bounce = pcontext->pcontrol->need_bounce;
 
-	for (auto &&rcpt_to : temp_file1) {
+	for (auto &&recip : temp_file1) {
 		for (i = 0; i < num; ++i)
 			if (mime_search_field(phead, "Delivered-To", i, delivered_to, arsizeof(delivered_to)) &&
-			    strcasecmp(delivered_to, rcpt_to.c_str()) == 0)
+			    strcasecmp(delivered_to, recip.c_str()) == 0)
 				break;
 		if (i == num) {
-			mem_file_writeline(&pcontext_expand->pcontrol->f_rcpt_to, rcpt_to.c_str());
+			mem_file_writeline(&pcontext_expand->pcontrol->f_rcpt_to, recip.c_str());
 		}
 	}
 	mail_dup(pcontext->pmail, pcontext_expand->pmail);

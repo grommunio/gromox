@@ -291,7 +291,6 @@ static BOOL firsttime_password(const char *username, const char *password,
 		if (!conn.res.query(sql_string))
 			continue;
 		mysql_data_seek(pmyres1.get(), 0);
-		size_t k;
 		for (k = 0; k < rows1; k++) {
 			char virtual_address[UADDR_SIZE], *pat;
 
@@ -426,7 +425,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 			/* ignore - logmsg already emitted */;
 	}
 	for (size_t j = 0; j < rows; ++j) {
-		auto myrow = pmyres.fetch_row();
+		myrow = pmyres.fetch_row();
 		mysql_adaptor_encode_squote(myrow[0], temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 				" WHERE username='%s'", encrypt_passwd, temp_name);
@@ -1268,7 +1267,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 	int type, privilege;
 	int group_id;
 	int domain_id;
-	int class_id;
 	BOOL b_chkintl;
 	char *pencode_domain;
 	char temp_name[UADDR_SIZE*2];
@@ -1616,10 +1614,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 
 		myrow = pmyres.fetch_row();
-		class_id = atoi(myrow[0]);
-		std::vector<int> file_temp{class_id};
+		int clsid = strtol(myrow[0], nullptr, 0);
+		std::vector<int> file_temp{clsid};
 		if (!mysql_adaptor_expand_hierarchy(conn.res.get(),
-		    file_temp, class_id)) {
+		    file_temp, clsid)) {
 			*presult = MLIST_RESULT_NONE;
 			return FALSE;
 		}
@@ -1646,8 +1644,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
-		for (auto &&temp_name : file_temp1)
-			pfile.push_back(std::move(temp_name));
+		for (auto &&t : file_temp1)
+			pfile.push_back(std::move(t));
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	}

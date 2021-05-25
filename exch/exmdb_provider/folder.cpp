@@ -2512,7 +2512,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		}
 		sprintf(sql_string, "INSERT INTO "
 		          "search_scopes VALUES (%llu, ?)", LLU(fid_val));
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			goto CRITERIA_FAILURE;
 		sprintf(sql_string, "SELECT count(*) "

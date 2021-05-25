@@ -2434,8 +2434,8 @@ static int fetch_detail(const char *path, const char *folder,
 						sv_hold.unlock();
 						*perrno = atoi(buff + 6);
 						auto num = xarray_get_capacity(pxarray);
-						for (size_t i = 0; i < num; ++i) {
-							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+						for (size_t j = 0; j < num; ++j) {
+							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, j));
 							mem_file_free(&pitem->f_digest);
 						}
 						xarray_clear(pxarray);
@@ -2835,8 +2835,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						sv_hold.unlock();
 						*perrno = atoi(buff + 6);
 						auto num = xarray_get_capacity(pxarray);
-						for (size_t i = 0; i < num; ++i) {
-							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+						for (size_t j = 0; j < num; ++j) {
+							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, j));
 							mem_file_free(&pitem->f_digest);
 						}
 						xarray_clear(pxarray);

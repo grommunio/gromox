@@ -70,6 +70,8 @@
 	CLASS: classname
 */
 
+using namespace gromox;
+
 namespace {
 
 struct AB_NODE {
@@ -1040,7 +1042,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	int domain_id;
 	AB_BASE_REF pbase;
 	AB_NODE *pabnode;
-	char username[UADDR_SIZE];
+	char cusername[UADDR_SIZE];
 	char hex_string[32];
 	char hex_string1[32];
 	SIMPLE_TREE_NODE **ppnode;
@@ -1062,8 +1064,8 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		id = pabnode->id;
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
-		ptoken = strchr(username, '@');
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, cusername, arsizeof(cusername));
+		ptoken = strchr(cusername, '@');
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 		}
@@ -1077,7 +1079,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-				g_org_name, hex_string1, hex_string, username);
+				g_org_name, hex_string1, hex_string, cusername);
 		HX_strupper(pbuff);
 		break;
 	case NODE_TYPE_MLIST: try {

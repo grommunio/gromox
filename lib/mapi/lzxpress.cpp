@@ -227,7 +227,6 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 					length = input[input_index];
 					input_index += sizeof(uint8_t);
 					if (255 == length) {
-						uint16_t enc2;
 						memcpy(&enc2, &input[input_index], sizeof(enc2));
 						length = le16_to_cpu(enc2);
 						input_index += sizeof(uint16_t);
