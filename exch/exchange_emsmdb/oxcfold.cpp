@@ -1014,23 +1014,17 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		return ecError;
 	}
 	auto rpc_info = get_rpc_info();
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-		if (FALSE == exmdb_client_check_folder_permission(
-			logon_object_get_dir(plogon),
-			folder_object_get_id(pfolder),
-			rpc_info.username, &permission)) {
-			return ecError;
-		}
-		if (permission & (PERMISSION_DELETEANY | PERMISSION_FOLDEROWNER)) {
-			username = NULL;
-		} else if (permission & PERMISSION_DELETEOWNED) {
-			username = rpc_info.username;
-		} else {
-			return ecAccessDenied;
-		}
-	} else {
+	if (logon_object_get_mode(plogon) == LOGON_MODE_OWNER)
 		username = NULL;
-	}
+	else if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+	    folder_object_get_id(pfolder), rpc_info.username, &permission))
+		return ecError;
+	else if (permission & (PERMISSION_DELETEANY | PERMISSION_FOLDEROWNER))
+		username = NULL;
+	else if (permission & PERMISSION_DELETEOWNED)
+		username = rpc_info.username;
+	else
+		return ecAccessDenied;
 	if (0 == notify_non_read) {
 		ids.count = pmessage_ids->count;
 		ids.pids = pmessage_ids->pll;
