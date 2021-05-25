@@ -115,10 +115,8 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 			username, &permission)) {
 			return NULL;	
 		}
-		if (0 == (permission & PERMISSION_READANY) &&
-			0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 			return NULL;
-		}
 	} else {
 		username = NULL;
 	}
@@ -959,10 +957,8 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 				rpc_info.username, &permission)) {
 				return ecError;
 			}
-			if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-				0 == (permission & PERMISSION_READANY)) {
+			if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)))
 				return ecAccessDenied;
-			}
 		}
 	}
 	if (NULL != pres) {
@@ -1063,14 +1059,10 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 				return ecAccessDenied;
 			}
 			tag_access = TAG_ACCESS_READ;
-			if ((permission & PERMISSION_EDITANY) ||
-				(permission & PERMISSION_EDITOWNED)) {
+			if (permission & (PERMISSION_EDITANY | PERMISSION_EDITOWNED))
 				tag_access |= TAG_ACCESS_MODIFY;	
-			}
-			if ((permission & PERMISSION_DELETEANY) ||
-				(permission & PERMISSION_DELETEOWNED)) {
+			if (permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED))
 				tag_access |= TAG_ACCESS_DELETE;	
-			}
 		} else {
 			if (permission & PERMISSION_FOLDEROWNER) {
 				tag_access = TAG_ACCESS_MODIFY|
@@ -1656,12 +1648,10 @@ uint32_t rop_syncimportdeletes(
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(plogon), folder_id,
 				rpc_info.username, &permission)) {
-				if ((permission & PERMISSION_FOLDEROWNER) ||
-					(permission & PERMISSION_DELETEANY)) {
+				if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY))
 					username = NULL;	
-				} else if (0 == (permission & PERMISSION_DELETEOWNED)) {
+				else if (!(permission & PERMISSION_DELETEOWNED))
 					return ecAccessDenied;
-				}
 			}
 		}
 	}

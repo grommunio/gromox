@@ -957,8 +957,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
 			}
-			if ((permission & PERMISSION_FOLDEROWNER) ||
-				(permission & PERMISSION_DELETEANY)) {
+			if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) {
 				b_check	= FALSE;
 			} else if (permission & PERMISSION_DELETEOWNED) {
 				b_check = TRUE;

@@ -96,11 +96,9 @@ uint32_t rop_openmessage(uint16_t cpid,
 		rpc_info.username, &permission)) {
 		return ecError;
 	}
-	if (0 == (permission & PERMISSION_READANY) &&
-		0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-		0 == (permission & PERMISSION_FOLDEROWNER)) {
+	if (!(permission & (PERMISSION_READANY |
+	    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 		return ecAccessDenied;
-	}
 	if (permission & PERMISSION_FOLDEROWNER) {
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
@@ -241,15 +239,11 @@ uint32_t rop_createmessage(uint16_t cpid,
 			rpc_info.username, &permission)) {
 			return ecError;
 		}
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATE)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATE)))
 			return ecAccessDenied;
-		}
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
-		if ((permission & PERMISSION_DELETEOWNED) ||
-			(permission & PERMISSION_DELETEANY)) {
+		if (permission & (PERMISSION_DELETEOWNED | PERMISSION_DELETEANY))
 			tag_access |= TAG_ACCESS_DELETE;
-		}
 	} else {
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 	}

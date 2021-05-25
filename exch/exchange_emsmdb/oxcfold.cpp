@@ -1021,8 +1021,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 			rpc_info.username, &permission)) {
 			return ecError;
 		}
-		if ((permission & PERMISSION_DELETEANY) ||
-			(permission & PERMISSION_FOLDEROWNER)) {
+		if (permission & (PERMISSION_DELETEANY | PERMISSION_FOLDEROWNER)) {
 			username = NULL;
 		} else if (permission & PERMISSION_DELETEOWNED) {
 			username = rpc_info.username;

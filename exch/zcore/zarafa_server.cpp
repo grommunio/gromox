@@ -1117,11 +1117,9 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			pinfo->username, &permission)) {
 			return ecError;
 		}
-		if (0 == (permission & PERMISSION_READANY) &&
-			0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-			0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & (PERMISSION_READANY |
+		    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 			return ecAccessDenied;
-		}
 		if (permission & PERMISSION_FOLDEROWNER) {
 			tag_access = TAG_ACCESS_MODIFY|
 				TAG_ACCESS_READ|TAG_ACCESS_DELETE;
@@ -1210,11 +1208,9 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 					}
 				}
 			}
-			if (0 == (permission & PERMISSION_READANY) &&
-				0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-				0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & (PERMISSION_READANY |
+			    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 				return ecNotFound;
-			}
 			if (permission & PERMISSION_FOLDEROWNER) {
 				tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 					TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
@@ -1735,10 +1731,8 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 			    pinfo->username, &permission)) {
 				return ecNotFound;
 			}
-			if (0 == (permission & PERMISSION_READANY) &&
-				0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 				return ecNotFound;
-			}
 		}
 		ptable = table_object_create(
 		         folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject)),
@@ -1873,15 +1867,11 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 			pinfo->username, &permission)) {
 			return ecError;
 		}
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATE)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATE)))
 			return ecNotFound;
-		}
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
-		if ((permission & PERMISSION_DELETEOWNED) ||
-			(permission & PERMISSION_DELETEANY)) {
+		if (permission & (PERMISSION_DELETEOWNED | PERMISSION_DELETEANY))
 			tag_access |= TAG_ACCESS_DELETE;
-		}
 	} else {
 		tag_access = TAG_ACCESS_MODIFY|
 			TAG_ACCESS_READ|TAG_ACCESS_DELETE;
@@ -1986,8 +1976,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 			pinfo->username, &permission)) {
 			return ecError;
 		}
-		if ((permission & PERMISSION_DELETEANY) ||
-			(permission & PERMISSION_FOLDEROWNER)) {
+		if (permission & (PERMISSION_DELETEANY | PERMISSION_FOLDEROWNER)) {
 			username = NULL;
 		} else if (permission & PERMISSION_DELETEOWNED) {
 			username = pinfo->username;
@@ -2468,10 +2457,8 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 			pinfo->username, &permission)) {
 			return ecError;
 		}
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
 			return ecAccessDenied;
-		}
 	}
 	if (!exmdb_client::get_folder_by_name(
 		store_object_get_dir(pstore),
@@ -2735,10 +2722,8 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 			pinfo->username, &permission)) {
 			return ecError;
 		}
-		if (0 == (permission & PERMISSION_DELETEANY) &&
-			0 == (permission & PERMISSION_DELETEOWNED)) {
+		if (!(permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED)))
 			return ecAccessDenied;
-		}
 		username = pinfo->username;
 	}
 	BOOL b_fai = (flags & FLAG_DEL_ASSOCIATED) ? TRUE : false;
@@ -2830,10 +2815,8 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 			pinfo->username, &permission)) {
 			return ecError;
 		}
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
 			return ecAccessDenied;
-		}
 		username = pinfo->username;
 		b_guest = TRUE;
 	} else {
@@ -5513,14 +5496,10 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 				return ecAccessDenied;
 			}
 			tag_access = TAG_ACCESS_READ;
-			if ((permission & PERMISSION_EDITANY) ||
-				(permission & PERMISSION_EDITOWNED)) {
+			if (permission & (PERMISSION_EDITANY | PERMISSION_EDITOWNED))
 				tag_access |= TAG_ACCESS_MODIFY;	
-			}
-			if ((permission & PERMISSION_DELETEANY) ||
-				(permission & PERMISSION_DELETEOWNED)) {
+			if (permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED))
 				tag_access |= TAG_ACCESS_DELETE;	
-			}
 		} else {
 			if (permission & PERMISSION_FOLDEROWNER) {
 				tag_access = TAG_ACCESS_MODIFY|
@@ -5941,8 +5920,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 			if (!exmdb_client::check_folder_permission(
 				store_object_get_dir(pstore), folder_id,
 				pinfo->username, &permission)) {
-				if ((permission & PERMISSION_FOLDEROWNER) ||
-					(permission & PERMISSION_DELETEANY)) {
+				if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) {
 					username = NULL;	
 				} else if (0 == (permission & PERMISSION_DELETEOWNED)) {
 					return ecAccessDenied;
@@ -6331,10 +6309,8 @@ uint32_t zarafa_server_setsearchcriteria(
 				pinfo->username, &permission)) {
 				return ecError;
 			}
-			if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-				0 == (permission & PERMISSION_READANY)) {
+			if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)))
 				return ecAccessDenied;
-			}
 		}
 	}
 	if (!exmdb_client::set_search_criteria(
