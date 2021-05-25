@@ -1643,17 +1643,13 @@ uint32_t rop_syncimportdeletes(
 	username = rpc_info.username;
 	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
 		username = NULL;
-	} else {
-		if (SYNC_TYPE_CONTENTS == sync_type) {
-			if (FALSE == exmdb_client_check_folder_permission(
-				logon_object_get_dir(plogon), folder_id,
-				rpc_info.username, &permission)) {
-				if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY))
-					username = NULL;	
-				else if (!(permission & PERMISSION_DELETEOWNED))
-					return ecAccessDenied;
-			}
-		}
+	} else if (sync_type == SYNC_TYPE_CONTENTS &&
+	    !exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+	    folder_id, rpc_info.username, &permission)) {
+		if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY))
+			username = NULL;
+		else if (!(permission & PERMISSION_DELETEOWNED))
+			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto pbins = static_cast<BINARY_ARRAY *>(ppropvals->ppropval[0].pvalue);
