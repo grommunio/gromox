@@ -6,6 +6,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "engine.h"
 #include "file_operation.h"
 #include <gromox/gateway_control.h>
@@ -17,6 +18,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+using namespace gromox;
 
 static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_thread_id1;
@@ -69,19 +72,19 @@ static void *adap_thrwork(void *param)
 	char temp_domain[257];
 	char temp_line[1024];
 	char temp_path[256];
-	DOMAIN_ITEM *pdomain_item;
-	ALIAS_ITEM *palias_item;
 	DATA_COLLECT *pcollect;
 
 	while (!g_notify_stop) {
 		fprintf(stderr, "[engine]: starting data collection\n");
 		pcollect = data_source_collect_init();
+		std::vector<DOMAIN_ITEM> domain_list;
+		std::vector<ALIAS_ITEM> alias_map;
 	
 		if (NULL == pcollect) {
 			goto NEXT_LOOP;
 		}
-		
-		if (FALSE == data_source_get_domain_list(pcollect)) {
+
+		if (!data_source_get_domain_list(domain_list)) {
 			data_source_collect_free(pcollect);
 			goto NEXT_LOOP;
 		}
@@ -92,12 +95,9 @@ static void *adap_thrwork(void *param)
 			goto NEXT_LOOP;
 		}
 	
-		for (data_source_collect_begin(pcollect);
-			!data_source_collect_done(pcollect);
-			data_source_collect_forward(pcollect)) {
-			pdomain_item = (DOMAIN_ITEM*)data_source_collect_get_value(
-							pcollect);
-			len = sprintf(temp_domain, "%s\n", pdomain_item->domainname);
+		for (const auto &e : domain_list) {
+			len = gx_snprintf(temp_domain, arsizeof(temp_domain),
+			      "%s\n", e.domainname.c_str());
 			write(fd, temp_domain, len);
 		}
 		close(fd);
@@ -112,7 +112,7 @@ static void *adap_thrwork(void *param)
 		
 		data_source_collect_clear(pcollect);
 
-		if (FALSE == data_source_get_alias_list(pcollect)) {
+		if (!data_source_get_alias_list(alias_map)) {
 			data_source_collect_free(pcollect);
 			goto NEXT_LOOP;
 		}
@@ -124,13 +124,10 @@ static void *adap_thrwork(void *param)
 			goto NEXT_LOOP;
 		}
 		
-		for (data_source_collect_begin(pcollect);
-			!data_source_collect_done(pcollect);
-			data_source_collect_forward(pcollect)) {
-			palias_item = (ALIAS_ITEM*)data_source_collect_get_value(pcollect);
-			len = sprintf(temp_line, "%s\t%s\n", palias_item->aliasname,
-				palias_item->mainname);
-			if (strchr(palias_item->aliasname, '@') != nullptr)
+		for (const auto &e : alias_map) {
+			len = gx_snprintf(temp_line, arsizeof(temp_line),
+			      "%s\t%s\n", e.aliasname.c_str(), e.mainname.c_str());
+			if (e.aliasname.find('@') != std::string::npos)
 				write(fd, temp_line, len);
 		}
 		close(fd);
