@@ -353,17 +353,14 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 		}
 		pline += 256;
 	}
-	if (msgchg_grouping_verify_group_list(pinfo_node)) {
-		if (TRUE == msgchg_grouping_append_info_list(pinfo_node)) {
-			return pinfo_node;
-		} else {
-			printf("[exchange_emsmdb]: duplicated "
-				"group_id 0x%x\n", pinfo_node->group_id);
-		}
-	} else {
+	if (!msgchg_grouping_verify_group_list(pinfo_node))
 		printf("[exchange_emsmdb]: indexes shoud "
 			"begin with 0 and be continuous\n");
-	}
+	else if (msgchg_grouping_append_info_list(pinfo_node))
+		return pinfo_node;
+	else
+		printf("[exchange_emsmdb]: duplicated "
+			"group_id 0x%x\n", pinfo_node->group_id);
 	return NULL;
 }
 
