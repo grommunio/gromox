@@ -44,6 +44,7 @@ static char g_password_buff[256];
 static char g_db_name[256];
 static std::mutex g_crypt_lock;
 static enum sql_schema_upgrade g_schema_upgrade;
+static bool g_enable_firsttimepw;
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
 
@@ -75,6 +76,7 @@ void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 	}
 	gx_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
 	g_schema_upgrade = parm.schema_upgrade;
+	g_enable_firsttimepw = parm.enable_firsttimepw;
 }
 
 static bool db_upgrade_check_2(MYSQL *conn)
@@ -327,7 +329,7 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
     int length)
 {
 	BOOL ret;
-	if (*encrypt_passwd == '\0')
+	if (g_enable_firsttimepw && *encrypt_passwd == '\0')
 		ret = firsttime_password(username, password, encrypt_passwd,
 		      reason, length);
 	else

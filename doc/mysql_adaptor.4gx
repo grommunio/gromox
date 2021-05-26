@@ -10,6 +10,14 @@ Number of SQL connections to keep active.
 .br
 Default: \fI8\fP
 .TP
+\fBenable_firsttimepw\fP
+This flag determines whether non-LDAP users with no recorded password
+(empty users.password SQL column) will have the account's password
+set to whatever credential was passed along in the first authentication
+request.
+.br
+Default: \fno\fP
+.TP
 \fBmysql_dbname\fP
 Default: \fIarchive\fP
 .TP

@@ -109,9 +109,12 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		} else if (str_value != nullptr && strcmp(str_value, "autoupgrade") == 0) {
 			upg = S_AUTOUP;
 		}
+
+		str_value = config_file_get_value(pfile, "enable_firsttime_password");
+		bool firsttimepw = str_value != nullptr && strcmp(str_value, "yes") == 0;
 		
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
-			db_name, mysql_port, conn_num, timeout, upg});
+			db_name, mysql_port, conn_num, timeout, upg, firsttimepw});
 		if (0 != mysql_adaptor_run()) {
 			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;

@@ -16,9 +16,10 @@ enum sql_schema_upgrade {
 };
 
 struct mysql_adaptor_init_param {
-	const char *host, *user, *pass, *dbname;
-	int port, conn_num, timeout;
-	enum sql_schema_upgrade schema_upgrade;
+	const char *host = nullptr, *user = nullptr, *pass = nullptr, *dbname = nullptr;
+	int port = 0, conn_num = 0, timeout = 0;
+	enum sql_schema_upgrade schema_upgrade = S_ABORT;
+	bool enable_firsttimepw = false;
 };
 
 struct sql_domain {
