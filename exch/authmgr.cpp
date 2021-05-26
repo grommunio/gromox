@@ -24,18 +24,18 @@ static unsigned int am_choice = A_MYSQL;
 static BOOL login_gen(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
-	char ep[40];
+	char ep[40]{};
 	uint8_t have_xid = 0xFF;
 	BOOL auth = false;
 	auto meta = fptr_mysql_meta(username, password, maildir, lang, reason,
 	            length, mode, ep, sizeof(ep), &have_xid);
-	if (am_choice == A_MYSQL)
+	if (!meta || have_xid == 0xFF)
+		sleep(1);
+	else if (am_choice == A_MYSQL)
 		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length);
 	else if (am_choice == A_LDAP)
 		auth = fptr_ldap_login(username, password);
-	else if (have_xid == 0xFF)
-		sleep(1);
 	else if (have_xid > 0)
 		auth = fptr_ldap_login(username, password);
 	else
