@@ -957,23 +957,10 @@ static char crypt_salt[65]=
 
 char *md5_crypt_wrapper(const char *pw)
 {
-	struct timeval tv;
-	char salt[10];
-	int i;
-
-	gettimeofday(&tv, NULL);
-
-	tv.tv_sec |= tv.tv_usec;
-	tv.tv_sec ^= getpid();
-
-	strcpy(salt, "$1$");
-
-	for (i=3; i<8; i++) {
-		salt[i]=crypt_salt[tv.tv_sec % 64];
-		tv.tv_sec /= 64;
-	}
-
-	strcpy(salt+i, "$");
+	char salt[16] = "$1$";
+	randstring_k(salt + 3, 8, crypt_salt);
+	salt[11] = '$';
+	salt[12] = '\0';
 	return crypt(pw, salt);
 }
 
