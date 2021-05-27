@@ -955,13 +955,18 @@ uint64_t atobyte(const char *string)
 static char crypt_salt[65]=
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
 
-char *md5_crypt_wrapper(const char *pw)
+const char *crypt_wrapper(const char *pw)
 {
-	char salt[16] = "$1$";
-	randstring_k(salt + 3, 8, crypt_salt);
-	salt[11] = '$';
-	salt[12] = '\0';
-	return crypt(pw, salt);
+	char salt[21] = "$6$";
+	randstring_k(salt + 3, 16, crypt_salt);
+	salt[19] = '$';
+	salt[20] = '\0';
+	auto ret = crypt(pw, salt);
+	if (ret != nullptr && ret[0] == '$')
+		return ret;
+	salt[1] = '1';
+	ret = crypt(pw, salt);
+	return ret != nullptr ? ret : "*0";
 }
 
 

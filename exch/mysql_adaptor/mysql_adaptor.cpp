@@ -238,7 +238,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 	pdomain++;
 
 	std::unique_lock cr_hold(g_crypt_lock);
-	gx_strlcpy(encrypt_passwd, md5_crypt_wrapper(password), encrypt_size);
+	gx_strlcpy(encrypt_passwd, crypt_wrapper(password), encrypt_size);
 	cr_hold.unlock();
 
 	char sql_string[1024], temp_name[UADDR_SIZE*2];
@@ -390,7 +390,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	pdomain ++;
 
 	cr_hold.lock();
-	gx_strlcpy(encrypt_passwd, md5_crypt_wrapper(new_password), GX_ARRAY_SIZE(encrypt_passwd));
+	gx_strlcpy(encrypt_passwd, crypt_wrapper(new_password), arsizeof(encrypt_passwd));
 	cr_hold.unlock();
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 			" WHERE username='%s'", encrypt_passwd, temp_name);

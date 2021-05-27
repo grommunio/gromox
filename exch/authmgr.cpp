@@ -24,7 +24,7 @@ static unsigned int am_choice = A_MYSQL;
 static BOOL login_gen(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
-	char ep[40]{};
+	char ep[107]{};
 	uint8_t have_xid = 0xFF;
 	BOOL auth = false;
 	auto meta = fptr_mysql_meta(username, password, maildir, lang, reason,

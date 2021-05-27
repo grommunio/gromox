@@ -31,7 +31,7 @@ char* itvltoa(long interval, char *string);
 long atoitvl(const char *string);
 char* bytetoa(uint64_t byte, char *string);
 uint64_t atobyte(const char *string);
-char* md5_crypt_wrapper(const char *pw);
+extern GX_EXPORT const char *crypt_wrapper(const char *);
 int wildcard_match(const char *data, const char *mask, BOOL icase);
 extern GX_EXPORT void randstring_k(char *out, int len, const char *pool);
 void randstring(char *buff, int length);
