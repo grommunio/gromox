@@ -227,7 +227,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 }
 
 static BOOL firsttime_password(const char *username, const char *password,
-    char *encrypt_passwd, char *reason, int length)
+    char *encrypt_passwd, size_t encrypt_size, char *reason, int length)
 {
 	const char *pdomain;
 	pdomain = strchr(username, '@');
@@ -238,7 +238,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 	pdomain++;
 
 	std::unique_lock cr_hold(g_crypt_lock);
-	strcpy(encrypt_passwd, md5_crypt_wrapper(password));
+	gx_strlcpy(encrypt_passwd, md5_crypt_wrapper(password), encrypt_size);
 	cr_hold.unlock();
 
 	char sql_string[1024], temp_name[UADDR_SIZE*2];
@@ -331,7 +331,7 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 	BOOL ret;
 	if (g_enable_firsttimepw && *encrypt_passwd == '\0')
 		ret = firsttime_password(username, password, encrypt_passwd,
-		      reason, length);
+		      encrypt_size, reason, length);
 	else
 		ret = verify_password(username, password, encrypt_passwd, reason,
 		      length);
