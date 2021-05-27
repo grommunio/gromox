@@ -313,15 +313,13 @@ static BOOL verify_password(const char *username, const char *password,
     const char *encrypt_passwd, char *reason, int length)
 {
 	std::unique_lock cr_hold(g_crypt_lock);
-		if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
-			return TRUE;
-		} else {
-			cr_hold.unlock();
-			snprintf(reason, length, "password error, please check it "
-				"and retry");
-			return FALSE;
-		}
-		return FALSE;
+	if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
+		return TRUE;
+	}
+	cr_hold.unlock();
+	snprintf(reason, length, "password error, please check it "
+	         "and retry");
+	return FALSE;
 }
 
 BOOL mysql_adaptor_login2(const char *username, const char *password,
