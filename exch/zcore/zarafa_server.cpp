@@ -599,34 +599,34 @@ static void zarafa_server_notification_proc(const char *dir,
 		pnode=double_list_get_after(&pinfo->sink_list, pnode)) {
 		psink_node = (SINK_NODE*)pnode->pdata;
 		for (i=0; i<psink_node->sink.count; i++) {
-			if (psink_node->sink.padvise[i].sub_id == notify_id
-				&& hstore == psink_node->sink.padvise[i].hstore) {
-				double_list_remove(&pinfo->sink_list, pnode);
-				response.call_id = zcore_callid::NOTIFDEQUEUE;
-				response.result = ecSuccess;
-				response.payload.notifdequeue.notifications.count = 1;
-				response.payload.notifdequeue.notifications.ppnotification =
-															&pnotification;
-				tv_msec = SOCKET_TIMEOUT * 1000;
-				fdpoll.fd = psink_node->clifd;
-				fdpoll.events = POLLOUT|POLLWRBAND;
-				if (FALSE == rpc_ext_push_response(
-					&response, &tmp_bin)) {
-					tmp_byte = zcore_response::PUSH_ERROR;
-					if (1 == poll(&fdpoll, 1, tv_msec)) {
-						write(psink_node->clifd, &tmp_byte, 1);
-					}
-				} else {
-					if (1 == poll(&fdpoll, 1, tv_msec)) {
-						write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
-					}
-					free(tmp_bin.pb);
+			if (psink_node->sink.padvise[i].sub_id != notify_id ||
+			    hstore != psink_node->sink.padvise[i].hstore)
+				continue;
+			double_list_remove(&pinfo->sink_list, pnode);
+			response.call_id = zcore_callid::NOTIFDEQUEUE;
+			response.result = ecSuccess;
+			response.payload.notifdequeue.notifications.count = 1;
+			response.payload.notifdequeue.notifications.ppnotification =
+				&pnotification;
+			tv_msec = SOCKET_TIMEOUT * 1000;
+			fdpoll.fd = psink_node->clifd;
+			fdpoll.events = POLLOUT | POLLWRBAND;
+			if (FALSE == rpc_ext_push_response(
+				&response, &tmp_bin)) {
+				tmp_byte = zcore_response::PUSH_ERROR;
+				if (1 == poll(&fdpoll, 1, tv_msec)) {
+					write(psink_node->clifd, &tmp_byte, 1);
 				}
-				close(psink_node->clifd);
-				free(psink_node->sink.padvise);
-				free(psink_node);
-				return;
+			} else {
+				if (1 == poll(&fdpoll, 1, tv_msec)) {
+					write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
+				}
+				free(tmp_bin.pb);
 			}
+			close(psink_node->clifd);
+			free(psink_node->sink.padvise);
+			free(psink_node);
+			return;
 		}
 	}
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
