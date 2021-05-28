@@ -2042,13 +2042,10 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			pvalue = common_util_get_propvals(
 				&tmp_propvals, PROP_TAG_READ);
-			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-				if (!exmdb_client::get_message_brief(
-					store_object_get_dir(pstore), pinfo->cpid,
-					ids.pids[i], &pbrief)) {
-					return ecError;
-				}
-			}
+			if ((pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0) &&
+			    !exmdb_client::get_message_brief(store_object_get_dir(pstore),
+			    pinfo->cpid, ids.pids[i], &pbrief))
+				return ecError;
 		}
 		ids1.pids[ids1.count] = ids.pids[i];
 		ids1.count ++;
