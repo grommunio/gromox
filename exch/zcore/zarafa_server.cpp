@@ -39,6 +39,8 @@
 #include <cstdio>
 #include <poll.h>
 
+using namespace gromox;
+
 namespace {
 
 struct NOTIFY_ITEM {
@@ -765,13 +767,9 @@ uint32_t zarafa_server_logon(const char *username,
 		return ecUnknownUser;
 	}
 	pdomain ++;
-	if (NULL != password) {
-		if (FALSE == system_services_auth_login(
-			username, password, maildir, lang,
-			reason, 256)) {
-			return ecLoginFailure;
-		}
-	}
+	if (password != nullptr && !system_services_auth_login(username,
+	    password, maildir, lang, reason, arsizeof(reason)))
+		return ecLoginFailure;
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);
@@ -795,14 +793,10 @@ uint32_t zarafa_server_logon(const char *username,
 		pdomain, &domain_id, &org_id)) {
 		return ecError;
 	}
-	if (NULL == password) {
-		if (FALSE == system_services_get_maildir(
-			username, maildir) ||
-			FALSE == system_services_get_user_lang(
-			username, lang)) {
-			return ecError;
-		}
-	}
+	if (password == nullptr &&
+	    (!system_services_get_maildir(username, maildir) ||
+	    !system_services_get_user_lang(username, lang)))
+		return ecError;
 	tmp_info.reference = 0;
 	tmp_info.hsession = guid_random_new();
 	memcpy(tmp_info.hsession.node, &user_id, sizeof(int));
