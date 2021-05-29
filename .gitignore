@@ -49,5 +49,6 @@ Makefile.in
 /system/*.service
 /tests/abktconv
 /tests/bodyconv
+/tests/cryptest
 /tests/icalparse
 /tests/zendfake
