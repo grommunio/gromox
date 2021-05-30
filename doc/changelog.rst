@@ -1,3 +1,28 @@
+0.24 (2021-05-31)
+=================
+
+Enhancements:
+
+* zcore: new config directive "zrpc_debug"
+* exchamge_emsmdb: new config directory "exrpc_debug"
+
+Fixes:
+
+* imap: fix standard folders' garbled name display (Sent Items, Junk, etc.)
+* authmgr: quench stray password resets to the SQL DB
+* pffimport: skip over nonsensical bytes in Unicode string properties
+* pffimport: skip over unknown nodes when doing tree-analyze (-t)
+* tools: fix crash when /etc/gromox is unreadable
+* Overquota events are now signalled with better error message
+  in grammm-web (MAPI_E_STORE_FULL rather than MAPI_E_DISK_FULL).
+
+Changes:
+
+* mysql_adaptor: first-time password functionality is now disabled by default;
+  new config directive "enable_firsttimepw".
+* mysql_adaptor: SHA512-crypt is now used.
+
+
 0.23 (2021-05-13)
 =================
 
