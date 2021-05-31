@@ -198,7 +198,7 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		break;
 	case MAPI_MAILUSER:
 	case MAPI_DISTLIST:
-		user_object_free(static_cast<USER_OBJECT *>(pobject));
+		delete static_cast<USER_OBJECT *>(pobject);
 		break;
 	case MAPI_PROFPROPERTY:
 		/* do not free TPROPVAL_ARRAY,

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include "system_services.h"
 #include "zarafa_server.h"
 #include "user_object.h"
@@ -7,10 +8,12 @@
 #include "ab_tree.h"
 #include <cstdio>
 
-USER_OBJECT* user_object_create(int base_id, uint32_t minid)
+std::unique_ptr<USER_OBJECT> user_object_create(int base_id, uint32_t minid)
 {
-	auto puser = me_alloc<USER_OBJECT>();
-	if (NULL == puser) {
+	std::unique_ptr<USER_OBJECT> puser;
+	try {
+		puser = std::make_unique<USER_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	puser->base_id = base_id;
@@ -34,11 +37,6 @@ BOOL user_object_check_valid(USER_OBJECT *puser)
 			return FALSE;
 	}
 	return TRUE;
-}
-
-void user_object_free(USER_OBJECT *puser)
-{
-	free(puser);
 }
 
 BOOL user_object_get_properties(USER_OBJECT *puser,

@@ -1199,6 +1199,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	GUID guid;
 	int user_id;
 	uint8_t type;
+	std::unique_ptr<USER_OBJECT> userobj;
 	void *pobject;
 	int domain_id;
 	uint32_t minid;
@@ -1316,14 +1317,12 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			base_id = -domain_id;
 		}
 		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
-		pobject = user_object_create(base_id, minid);
-		if (pobject == nullptr)
+		userobj = user_object_create(base_id, minid);
+		pobject = userobj.get();
+		if (userobj == nullptr)
 			return ecError;
-		if (!user_object_check_valid(static_cast<USER_OBJECT *>(pobject))) {
-			pinfo.reset();
-			user_object_free(static_cast<USER_OBJECT *>(pobject));
+		if (!user_object_check_valid(userobj.get()))
 			return ecNotFound;
-		}
 		*pmapi_type = address_type == ADDRESSBOOK_ENTRYID_TYPE_DLIST ?
 			      MAPI_DISTLIST : MAPI_MAILUSER;
 	} else {
@@ -1337,12 +1336,10 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		case MAPI_ABCONT:
 			container_object_free(static_cast<CONTAINER_OBJECT *>(pobject));
 			break;
-		case MAPI_MAILUSER:
-			user_object_free(static_cast<USER_OBJECT *>(pobject));
-			break;
 		}
 		return ecError;
 	}
+	userobj.release();
 	return ecSuccess;
 }
 
