@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/mapi_types.hpp>
 #define SPECIAL_CONTAINER_GAL					0
 #define SPECIAL_CONTAINER_PROVIDER				1
@@ -18,19 +19,19 @@ union CONTAINER_ID {
 };
 
 struct CONTAINER_OBJECT {
-	uint8_t type;
-	CONTAINER_ID id;
+	~CONTAINER_OBJECT();
+
+	uint8_t type = 0;
+	CONTAINER_ID id{};
 	union {
 		TARRAY_SET *prow_set;
 		LONG_ARRAY *pminid_array;
-	} contents;
+	} contents{};
 };
 
 BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue);
-CONTAINER_OBJECT* container_object_create(
-	uint8_t type, CONTAINER_ID id);
-void container_object_free(CONTAINER_OBJECT *pcontainer);
+extern std::unique_ptr<CONTAINER_OBJECT> container_object_create(uint8_t type, CONTAINER_ID);
 void container_object_clear(CONTAINER_OBJECT *pcontainer);
 BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);

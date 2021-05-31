@@ -1199,6 +1199,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	GUID guid;
 	int user_id;
 	uint8_t type;
+	std::unique_ptr<CONTAINER_OBJECT> contobj;
 	std::unique_ptr<USER_OBJECT> userobj;
 	void *pobject;
 	int domain_id;
@@ -1217,15 +1218,13 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	if (0 == entryid.cb) {
 		container_id.abtree_id.base_id = base_id;
 		container_id.abtree_id.minid = 0xFFFFFFFF;
-		pobject = container_object_create(
-			CONTAINER_TYPE_ABTREE, container_id);
-		if (pobject == nullptr)
+		contobj = container_object_create(CONTAINER_TYPE_ABTREE, container_id);
+		if (contobj == nullptr)
 			return ecError;
 		*pmapi_type = MAPI_ABCONT;
-		*phobject = object_tree_add_object_handle(
-			pinfo->ptree, ROOT_HANDLE, *pmapi_type, pobject);
+		*phobject = object_tree_add_object_handle(pinfo->ptree,
+		            ROOT_HANDLE, *pmapi_type, contobj.get());
 		if (INVALID_HANDLE == *phobject) {
-			container_object_free(static_cast<CONTAINER_OBJECT *>(pobject));
 			return ecError;
 		}
 		return ecSuccess;
@@ -1301,7 +1300,8 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = minid;
 		}
-		pobject = container_object_create(type, container_id);
+		contobj = container_object_create(type, container_id);
+		pobject = contobj.get();
 		if (pobject == nullptr)
 			return ecError;
 		*pmapi_type = MAPI_ABCONT;
@@ -1332,13 +1332,9 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 						ROOT_HANDLE, *pmapi_type, pobject);
 	pinfo.reset();
 	if (INVALID_HANDLE == *phobject) {
-		switch (*pmapi_type) {
-		case MAPI_ABCONT:
-			container_object_free(static_cast<CONTAINER_OBJECT *>(pobject));
-			break;
-		}
 		return ecError;
 	}
+	contobj.release();
 	userobj.release();
 	return ecSuccess;
 }

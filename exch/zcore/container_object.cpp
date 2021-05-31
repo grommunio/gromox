@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <memory>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include "container_object.h"
@@ -16,14 +17,15 @@
 #include <gromox/propval.hpp>
 #include <cstdio>
 
-CONTAINER_OBJECT* container_object_create(
+std::unique_ptr<CONTAINER_OBJECT> container_object_create(
 	uint8_t type, CONTAINER_ID id)
 {
-	auto pcontainer = me_alloc<CONTAINER_OBJECT>();
-	if (NULL == pcontainer) {
+	std::unique_ptr<CONTAINER_OBJECT> pcontainer;
+	try {
+		pcontainer = std::make_unique<CONTAINER_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	memset(pcontainer, 0, sizeof(CONTAINER_OBJECT));
 	pcontainer->type = type;
 	pcontainer->id = id;
 	return pcontainer;
@@ -49,10 +51,9 @@ void container_object_clear(
 	}
 }
 
-void container_object_free(CONTAINER_OBJECT *pcontainer)
+CONTAINER_OBJECT::~CONTAINER_OBJECT()
 {
-	container_object_clear(pcontainer);
-	free(pcontainer);
+	container_object_clear(this);
 }
 
 static BOOL container_object_match_contact_message(
