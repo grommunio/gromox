@@ -1648,21 +1648,20 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
-	case MAPI_FOLDER:
-		pstore = folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject));
+	case MAPI_FOLDER: {
+		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
+		pstore = folder_object_get_store(folder);
 		if (FALSE == store_object_check_owner_mode(pstore)) {
 			if (!exmdb_client::check_folder_permission(store_object_get_dir(pstore),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-			    pinfo->username, &permission)) {
+			    folder_object_get_id(folder), pinfo->username, &permission))
 				return ecNotFound;
-			}
 			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 				return ecNotFound;
 		}
-		ptable = table_object_create(
-		         folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject)),
-			pobject, CONTENT_TABLE, flags);
+		ptable = table_object_create(folder_object_get_store(folder),
+		         pobject, CONTENT_TABLE, flags);
 		break;
+	}
 	case MAPI_ABCONT:
 		ptable = table_object_create(NULL,
 				pobject, USER_TABLE, 0);
@@ -4260,7 +4259,6 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	void *pobject;
 	uint8_t mapi_type;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4279,19 +4277,20 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 		}
 		object_tree_touch_profile_sec(pinfo->ptree);
 		return ecSuccess;
-	case MAPI_STORE:
-		if (!store_object_check_owner_mode(static_cast<STORE_OBJECT *>(pobject))) {
+	case MAPI_STORE: {
+		auto store = static_cast<STORE_OBJECT *>(pobject);
+		if (!store_object_check_owner_mode(store))
 			return ecAccessDenied;
-		}
-		if (!store_object_set_properties(static_cast<STORE_OBJECT *>(pobject), ppropvals)) {
+		if (!store_object_set_properties(store, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_FOLDER:
-		pstore = folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject));
-		if (!store_object_check_owner_mode(static_cast<STORE_OBJECT *>(pstore))) {
+	}
+	case MAPI_FOLDER: {
+		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
+		auto pstore = folder_object_get_store(folder);
+		if (!store_object_check_owner_mode(pstore)) {
 			if (!exmdb_client::check_folder_permission(store_object_get_dir(pstore),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
+			    folder_object_get_id(folder),
 			    pinfo->username, &permission)) {
 				return ecError;
 			}
@@ -4299,26 +4298,26 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 				return ecAccessDenied;
 			}
 		}
-		if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pobject), ppropvals)) {
+		if (!folder_object_set_properties(folder, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_MESSAGE:
-		if (!message_object_check_writable(static_cast<MESSAGE_OBJECT *>(pobject))) {
+	}
+	case MAPI_MESSAGE: {
+		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		if (!message_object_check_writable(msg))
 			return ecAccessDenied;
-		}
-		if (!message_object_set_properties(static_cast<MESSAGE_OBJECT *>(pobject), ppropvals)) {
+		if (!message_object_set_properties(msg, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_ATTACHMENT:
-		if (!attachment_object_check_writable(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+	}
+	case MAPI_ATTACHMENT: {
+		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		if (!attachment_object_check_writable(atx))
 			return ecAccessDenied;
-		}
-		if (!attachment_object_set_properties(static_cast<ATTACHMENT_OBJECT *>(pobject), ppropvals)) {
+		if (!attachment_object_set_properties(atx, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
+	}
 	default:
 		return ecNotSupported;
 	}
@@ -4359,51 +4358,50 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 			}
 		}
 		return ecSuccess;
-	case MAPI_STORE:
+	case MAPI_STORE: {
+		auto store = static_cast<STORE_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!store_object_get_all_proptags(static_cast<STORE_OBJECT *>(pobject), &proptags)) {
+			if (!store_object_get_all_proptags(store, &proptags))
 				return ecError;
-			}
 			pproptags = &proptags;
 		}
-		if (!store_object_get_properties(static_cast<STORE_OBJECT *>(pobject), pproptags, ppropvals)) {
+		if (!store_object_get_properties(store, pproptags, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_FOLDER:
+	}
+	case MAPI_FOLDER: {
+		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!folder_object_get_all_proptags(static_cast<FOLDER_OBJECT *>(pobject), &proptags)) {
+			if (!folder_object_get_all_proptags(folder, &proptags))
 				return ecError;
-			}
 			pproptags = &proptags;
 		}
-		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pobject), pproptags, ppropvals)) {
+		if (!folder_object_get_properties(folder, pproptags, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_MESSAGE:
+	}
+	case MAPI_MESSAGE: {
+		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!message_object_get_all_proptags(static_cast<MESSAGE_OBJECT *>(pobject), &proptags)) {
+			if (!message_object_get_all_proptags(msg, &proptags))
 				return ecError;
-			}
 			pproptags = &proptags;
 		}
-		if (!message_object_get_properties(static_cast<MESSAGE_OBJECT *>(pobject), pproptags, ppropvals)) {
+		if (!message_object_get_properties(msg, pproptags, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_ATTACHMENT:
+	}
+	case MAPI_ATTACHMENT: {
+		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!attachment_object_get_all_proptags(static_cast<ATTACHMENT_OBJECT *>(pobject), &proptags)) {
+			if (!attachment_object_get_all_proptags(atx, &proptags))
 				return ecError;
-			}
 			pproptags = &proptags;
 		}
-		if (!attachment_object_get_properties(static_cast<ATTACHMENT_OBJECT *>(pobject),
-		    pproptags, ppropvals)) {
+		if (!attachment_object_get_properties(atx, pproptags, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
+	}
 	case MAPI_ABCONT:
 		if (NULL == pproptags) {
 			container_object_get_container_table_all_proptags(
@@ -4438,7 +4436,6 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	void *pobject;
 	uint8_t mapi_type;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4454,46 +4451,45 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 		}
 		object_tree_touch_profile_sec(pinfo->ptree);
 		return ecSuccess;
-	case MAPI_STORE:
-		if (!store_object_check_owner_mode(static_cast<STORE_OBJECT *>(pobject))) {
+	case MAPI_STORE: {
+		auto store = static_cast<STORE_OBJECT *>(pobject);
+		if (!store_object_check_owner_mode(store))
 			return ecAccessDenied;
-		}
-		if (!store_object_remove_properties(static_cast<STORE_OBJECT *>(pobject), pproptags)) {
+		if (!store_object_remove_properties(store, pproptags))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_FOLDER:
-		pstore = folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject));
+	}
+	case MAPI_FOLDER: {
+		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
+		auto pstore = folder_object_get_store(folder);
 		if (FALSE == store_object_check_owner_mode(pstore)) {
 			if (!exmdb_client::check_folder_permission(store_object_get_dir(pstore),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-			    pinfo->username, &permission)) {
+			    folder_object_get_id(folder), pinfo->username, &permission))
 				return ecError;
-			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
 			}
 		}
-		if (!folder_object_remove_properties(static_cast<FOLDER_OBJECT *>(pobject), pproptags)) {
+		if (!folder_object_remove_properties(folder, pproptags))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_MESSAGE:
-		if (!message_object_check_writable(static_cast<MESSAGE_OBJECT *>(pobject))) {
+	}
+	case MAPI_MESSAGE: {
+		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		if (!message_object_check_writable(msg))
 			return ecAccessDenied;
-		}
-		if (!message_object_remove_properties(static_cast<MESSAGE_OBJECT *>(pobject), pproptags)) {
+		if (!message_object_remove_properties(msg, pproptags))
 			return ecError;
-		}
 		return ecSuccess;
-	case MAPI_ATTACHMENT:
-		if (!attachment_object_check_writable(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+	}
+	case MAPI_ATTACHMENT: {
+		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		if (!attachment_object_check_writable(atx))
 			return ecAccessDenied;
-		}
-		if (!attachment_object_remove_properties(static_cast<ATTACHMENT_OBJECT *>(pobject), pproptags)) {
+		if (!attachment_object_remove_properties(atx, pproptags))
 			return ecError;
-		}
 		return ecSuccess;
+	}
 	default:
 		return ecNotSupported;
 	}
@@ -4649,7 +4645,6 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	void *pobject_dst;
 	uint32_t permission;
 	const char *username;
-	STORE_OBJECT *pstore;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
 	TPROPVAL_ARRAY propvals;
@@ -4672,20 +4667,19 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	BOOL b_force = (flags & COPY_FLAG_NOOVERWRITE) ? TRUE : false;
 	switch (mapi_type) {
 	case MAPI_FOLDER: {
-		pstore = folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject));
-		if (pstore != folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject_dst))) {
+		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
+		auto fdst = static_cast<FOLDER_OBJECT *>(pobject_dst);
+		auto pstore = folder_object_get_store(folder);
+		if (pstore != folder_object_get_store(fdst))
 			return ecNotSupported;
-		}
 		/* MS-OXCPRPT 3.2.5.8, public folder not supported */
 		if (FALSE == store_object_check_private(pstore)) {
 			return ecNotSupported;
 		}
 		if (FALSE == store_object_check_owner_mode(pstore)) {
 			if (!exmdb_client::check_folder_permission(store_object_get_dir(pstore),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-			    pinfo->username, &permission)) {
+			    folder_object_get_id(folder), pinfo->username, &permission))
 				return ecError;
-			}
 			if (permission & PERMISSION_FOLDEROWNER) {
 				username = NULL;
 			} else {
@@ -4695,10 +4689,8 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 				username = pinfo->username;
 			}
 			if (!exmdb_client::check_folder_permission(store_object_get_dir(pstore),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject_dst)),
-			    pinfo->username, &permission)) {
+			    folder_object_get_id(fdst), pinfo->username, &permission))
 				return ecError;
-			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
 			}
@@ -4709,10 +4701,9 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		if (common_util_index_proptags(pexclude_proptags,
 			PROP_TAG_CONTAINERHIERARCHY) < 0) {
 			if (!exmdb_client::check_folder_cycle(store_object_get_dir(pstore),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject_dst)), &b_cycle)) {
+			    folder_object_get_id(folder),
+			    folder_object_get_id(fdst), &b_cycle))
 				return ecError;
-			}
 			if (TRUE == b_cycle) {
 				return MAPI_E_FOLDER_CYCLE;
 			}
@@ -4731,13 +4722,11 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		if (tmp_proptags.pproptag == nullptr)
 			return ecError;
 		if (FALSE == b_force) {
-			if (!folder_object_get_all_proptags(static_cast<FOLDER_OBJECT *>(pobject_dst), &proptags1)) {
+			if (!folder_object_get_all_proptags(fdst, &proptags1))
 				return ecError;
-			}
 		}
 		for (i=0; i<proptags.count; i++) {
-			if (folder_object_check_readonly_property(static_cast<FOLDER_OBJECT *>(pobject_dst),
-			    proptags.pproptag[i]))
+			if (folder_object_check_readonly_property(fdst, proptags.pproptag[i]))
 				continue;
 			if (FALSE == b_force && common_util_index_proptags(
 				&proptags1, proptags.pproptag[i]) >= 0) {
@@ -4747,39 +4736,32 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 									proptags.pproptag[i];
 			tmp_proptags.count ++;
 		}
-		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pobject),
-		    &tmp_proptags, &propvals)) {
+		if (!folder_object_get_properties(folder, &tmp_proptags, &propvals))
 			return ecError;
-		}
 		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client::copy_folder_internal(store_object_get_dir(pstore),
 			    store_object_get_account_id(pstore), pinfo->cpid,
-			    b_guest, pinfo->username,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-			    b_normal, b_fai, b_sub,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject_dst)),
-			    &b_collid, &b_partial)) {
+			    b_guest, pinfo->username, folder_object_get_id(folder),
+			    b_normal, b_fai, b_sub, folder_object_get_id(fdst),
+			    &b_collid, &b_partial))
 				return ecError;
-			}
 			if (TRUE == b_collid) {
 				return ecDuplicateName;
 			}
-			if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pobject_dst), &propvals)) {
+			if (!folder_object_set_properties(fdst, &propvals))
 				return ecError;
-			}
 			return ecSuccess;
 		}
-		if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pobject_dst), &propvals)) {
+		if (!folder_object_set_properties(fdst, &propvals))
 			return ecError;
-		}
 		return ecSuccess;
 	}
-	case MAPI_MESSAGE:
-		if (!message_object_check_writable(static_cast<MESSAGE_OBJECT *>(pobject_dst))) {
+	case MAPI_MESSAGE: {
+		auto mdst = static_cast<MESSAGE_OBJECT *>(pobject_dst);
+		if (!message_object_check_writable(mdst))
 			return ecAccessDenied;
-		}
-		if (!message_object_copy_to(static_cast<MESSAGE_OBJECT *>(pobject_dst),
+		if (!message_object_copy_to(mdst,
 		    static_cast<MESSAGE_OBJECT *>(pobject), pexclude_proptags,
 		    b_force, &b_cycle)) {
 			return ecError;
@@ -4788,11 +4770,12 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecMsgCycle;
 		}
 		return ecSuccess;
-	case MAPI_ATTACHMENT:
-		if (!attachment_object_check_writable(static_cast<ATTACHMENT_OBJECT *>(pobject_dst))) {
+	}
+	case MAPI_ATTACHMENT: {
+		auto adst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
+		if (!attachment_object_check_writable(adst))
 			return ecAccessDenied;
-		}
-		if (!attachment_object_copy_properties(static_cast<ATTACHMENT_OBJECT *>(pobject_dst),
+		if (!attachment_object_copy_properties(adst,
 		    static_cast<ATTACHMENT_OBJECT *>(pobject),
 		    pexclude_proptags, b_force, &b_cycle)) {
 			return ecError;
@@ -4801,6 +4784,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecMsgCycle;
 		}
 		return ecSuccess;
+	}
 	default:
 		return ecNotSupported;
 	}
