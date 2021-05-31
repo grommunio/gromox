@@ -114,10 +114,7 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 
 BOOL message_object_check_importing(MESSAGE_OBJECT *pmessage)
 {
-	if (0 != pmessage->message_id && NULL != pmessage->pstate) {
-		return TRUE;
-	}
-	return FALSE;
+	return pmessage->message_id != 0 && pmessage->pstate != nullptr ? TRUE : false;
 }
 
 BOOL message_object_check_writable(MESSAGE_OBJECT *pmessage)

@@ -429,10 +429,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	if (NULL == pat) {
 		return FALSE;
 	}
-	if (0 != strncasecmp(username, plocal, pat - username)) {
-		return FALSE;
-	}
-	return TRUE;
+	return strncasecmp(username, plocal, pat - username) == 0 ? TRUE : false;
 }
 
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)

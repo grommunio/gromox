@@ -195,10 +195,7 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 {
 	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, minid));
-	if (NULL != ppnode) {
-		return *ppnode;
-	}
-	return NULL;
+	return ppnode != nullptr ? *ppnode : nullptr;
 }
 
 void ab_tree_init(const char *org_name, int base_size,
@@ -364,9 +361,7 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 		}
 	}
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
-	if (pabnode->d_info == nullptr)
-		return false;
-	return TRUE;
+	return pabnode->d_info != nullptr ? TRUE : false;
 }
 
 static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
@@ -382,9 +377,7 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 		}
 	}
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
-	if (pabnode->d_info == nullptr)
-		return false;
-	return TRUE;
+	return pabnode->d_info != nullptr ? TRUE : false;
 }
 
 static int ab_tree_cmpstring(const void *p1, const void *p2)
