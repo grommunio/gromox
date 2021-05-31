@@ -1123,7 +1123,6 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	const char *username;
 	
 	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
@@ -1155,18 +1154,18 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		username, b_depth, prow_count)) {
 		return ecError;
 	}
-	ptable = table_object_create(plogon, pfolder,
-	         table_flags, ropGetHierarchyTable, logon_id);
+	auto ptable = table_object_create(plogon, pfolder, table_flags,
+	              ropGetHierarchyTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {
-		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, hnd);
+	table_object_set_handle(ptable.get(), hnd);
+	ptable.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -1179,7 +1178,6 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	int object_type;
 	uint32_t permission;
 	BOOL b_conversation;
-	TABLE_OBJECT *ptable;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1240,18 +1238,18 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	} else {
 		*prow_count = 1; /* arbitrary value */
 	}
-	ptable = table_object_create(plogon, pfolder,
-	         table_flags, ropGetContentsTable, logon_id);
+	auto ptable = table_object_create(plogon, pfolder, table_flags,
+	              ropGetContentsTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {
-		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, hnd);
+	table_object_set_handle(ptable.get(), hnd);
+	ptable.release();
 	*phout = hnd;
 	return ecSuccess;
 }

@@ -79,7 +79,6 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 {
 	int object_type;
 	uint32_t permission;
-	TABLE_OBJECT *ptable;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -106,18 +105,18 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 			return ecAccessDenied;
 		}
 	}
-	ptable = table_object_create(plogon, pfolder, flags,
-	         ropGetPermissionsTable, logon_id);
+	auto ptable = table_object_create(plogon, pfolder, flags,
+	              ropGetPermissionsTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_TABLE, ptable);
+	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {
-		table_object_free(ptable);
 		return ecError;
 	}
-	table_object_set_handle(ptable, hnd);
+	table_object_set_handle(ptable.get(), hnd);
+	ptable.release();
 	*phout = hnd;
 	return ecSuccess;
 }

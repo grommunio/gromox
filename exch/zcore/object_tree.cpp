@@ -179,7 +179,7 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		object_tree_free_root(static_cast<ROOT_OBJECT *>(pobject));
 		break;
 	case MAPI_TABLE:
-		table_object_free(static_cast<TABLE_OBJECT *>(pobject));
+		delete static_cast<TABLE_OBJECT *>(pobject);
 		break;
 	case MAPI_MESSAGE:
 		delete static_cast<MESSAGE_OBJECT *>(pobject);

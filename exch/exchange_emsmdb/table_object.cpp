@@ -312,16 +312,17 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 	return total_rows;
 }
 
-TABLE_OBJECT* table_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *plogon,
 	void *pparent_obj, uint8_t table_flags,
 	uint8_t rop_id, uint8_t logon_id)
 {
-	auto ptable = me_alloc<TABLE_OBJECT>();
-	if (NULL == ptable) {
+	std::unique_ptr<TABLE_OBJECT> ptable;
+	try {
+		ptable = std::make_unique<TABLE_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	if (FALSE == emsmdb_interface_get_cxh(&ptable->cxh)) {
-		free(ptable);
 		return NULL;
 	}
 	ptable->plogon = plogon;
@@ -340,11 +341,11 @@ TABLE_OBJECT* table_object_create(LOGON_OBJECT *plogon,
 	return ptable;
 }
 
-void table_object_free(TABLE_OBJECT *ptable)
+TABLE_OBJECT::~TABLE_OBJECT()
 {
+	auto ptable = this;
 	table_object_reset(ptable);
 	double_list_free(&ptable->bookmark_list);
-	free(ptable);
 }
 
 BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)

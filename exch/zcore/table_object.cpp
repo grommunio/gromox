@@ -827,18 +827,19 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 	return total_rows;
 }
 
-TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
+std::unique_ptr<TABLE_OBJECT> table_object_create(STORE_OBJECT *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags)
 {
-	auto ptable = me_alloc<TABLE_OBJECT>();
-	if (NULL == ptable) {
+	std::unique_ptr<TABLE_OBJECT> ptable;
+	try {
+		ptable = std::make_unique<TABLE_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	ptable->pstore = pstore;
 	if (RULE_TABLE == table_type) {
 		ptable->pparent_obj = me_alloc<uint64_t>();
 		if (NULL == ptable->pparent_obj) {
-			free(ptable);
 			return NULL;
 		}
 		*(uint64_t*)ptable->pparent_obj = *(uint64_t*)pparent_obj;
@@ -857,14 +858,14 @@ TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	return ptable;
 }
 
-void table_object_free(TABLE_OBJECT *ptable)
+TABLE_OBJECT::~TABLE_OBJECT()
 {
+	auto ptable = this;
 	table_object_reset(ptable);
 	double_list_free(&ptable->bookmark_list);
 	if (RULE_TABLE == ptable->table_type) {
 		free(ptable->pparent_obj);
 	}
-	free(ptable);
 }
 
 BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)

@@ -1511,21 +1511,18 @@ uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
 uint32_t zarafa_server_loadstoretable(
 	GUID hsession, uint32_t *phobject)
 {
-	TABLE_OBJECT *ptable;
-	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	ptable = table_object_create(NULL, NULL, STORE_TABLE, 0);
+	auto ptable = table_object_create(nullptr, nullptr, STORE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, ROOT_HANDLE, MAPI_TABLE,
-		ptable);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, ROOT_HANDLE,
+	            MAPI_TABLE, ptable.get());
 	if (INVALID_HANDLE == *phobject) {
-		table_object_free(ptable);
 		return ecError;
 	}
+	ptable.release();
 	return ecSuccess;
 }
 
@@ -1611,7 +1608,7 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	void *pobject;
 	uint8_t mapi_type;
 	STORE_OBJECT *pstore;
-	TABLE_OBJECT *ptable;
+	std::unique_ptr<TABLE_OBJECT> ptable;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -1635,12 +1632,12 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hfolder, MAPI_TABLE, ptable);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hfolder,
+	            MAPI_TABLE, ptable.get());
 	if (INVALID_HANDLE == *phobject) {
-		table_object_free(ptable);
 		return ecError;
 	}
+	ptable.release();
 	return ecSuccess;
 }
 
@@ -1651,7 +1648,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	uint8_t mapi_type;
 	uint32_t permission;
 	STORE_OBJECT *pstore;
-	TABLE_OBJECT *ptable;
+	std::unique_ptr<TABLE_OBJECT> ptable;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -1685,12 +1682,12 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hfolder, MAPI_TABLE, ptable);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hfolder,
+	            MAPI_TABLE, ptable.get());
 	if (INVALID_HANDLE == *phobject) {
-		table_object_free(ptable);
 		return ecError;
 	}
+	ptable.release();
 	return ecSuccess;
 }
 
@@ -1698,7 +1695,6 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject)
 {
 	uint8_t mapi_type;
-	TABLE_OBJECT *ptable;
 	MESSAGE_OBJECT *pmessage;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -1711,17 +1707,16 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 	if (MAPI_MESSAGE != mapi_type) {
 		return ecNotSupported;
 	}
-	ptable = table_object_create(
-		message_object_get_store(pmessage),
-		pmessage, RECIPIENT_TABLE, 0);
+	auto ptable = table_object_create(message_object_get_store(pmessage),
+	              pmessage, RECIPIENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hmessage, MAPI_TABLE, ptable);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hmessage,
+	            MAPI_TABLE, ptable.get());
 	if (INVALID_HANDLE == *phobject) {
-		table_object_free(ptable);
 		return ecError;
 	}
+	ptable.release();
 	return ecSuccess;
 }
 
@@ -1730,7 +1725,6 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 {
 	uint8_t mapi_type;
 	uint64_t folder_id;
-	TABLE_OBJECT *ptable;
 	FOLDER_OBJECT *pfolder;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -1744,17 +1738,16 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 		return ecNotSupported;
 	}
 	folder_id = folder_object_get_id(pfolder);
-	ptable = table_object_create(
-		folder_object_get_store(pfolder),
-		&folder_id, RULE_TABLE, 0);
+	auto ptable = table_object_create(folder_object_get_store(pfolder),
+	              &folder_id, RULE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hfolder, MAPI_TABLE, ptable);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hfolder,
+	            MAPI_TABLE, ptable.get());
 	if (INVALID_HANDLE == *phobject) {
-		table_object_free(ptable);
 		return ecError;
 	}
+	ptable.release();
 	return ecSuccess;
 }
 
@@ -4149,7 +4142,6 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject)
 {
 	uint8_t mapi_type;
-	TABLE_OBJECT *ptable;
 	STORE_OBJECT *pstore;
 	MESSAGE_OBJECT *pmessage;
 	
@@ -4164,17 +4156,15 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 		return ecNotSupported;
 	}
 	pstore = message_object_get_store(pmessage);
-	ptable = table_object_create(pstore,
-		pmessage, ATTACHMENT_TABLE, 0);
+	auto ptable = table_object_create(pstore, pmessage, ATTACHMENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hmessage, MAPI_TABLE,
-			ptable);
+	*phobject = object_tree_add_object_handle(pinfo->ptree, hmessage,
+	            MAPI_TABLE, ptable.get());
 	if (INVALID_HANDLE == *phobject) {
-		table_object_free(ptable);
 		return ecError;
 	}
+	ptable.release();
 	return ecSuccess;
 }
 

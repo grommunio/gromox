@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include "store_object.h"
 #include <gromox/mapi_types.hpp>
 
@@ -15,23 +16,21 @@ enum zcore_table_type {
 };
 
 struct TABLE_OBJECT {
-	STORE_OBJECT *pstore;
-	uint32_t handle;
-	void *pparent_obj;
-	enum zcore_table_type table_type;
-	uint32_t table_flags;
-	PROPTAG_ARRAY *pcolumns;
-	SORTORDER_SET *psorts;
-	RESTRICTION *prestriction;
-	uint32_t position;
-	uint32_t table_id;
-	uint32_t bookmark_index;
-	DOUBLE_LIST bookmark_list;
+	~TABLE_OBJECT();
+
+	STORE_OBJECT *pstore = nullptr;
+	uint32_t handle = 0;
+	void *pparent_obj = nullptr;
+	enum zcore_table_type table_type{};
+	uint32_t table_flags = 0;
+	PROPTAG_ARRAY *pcolumns = nullptr;
+	SORTORDER_SET *psorts = nullptr;
+	RESTRICTION *prestriction = nullptr;
+	uint32_t position = 0, table_id = 0, bookmark_index = 0;
+	DOUBLE_LIST bookmark_list{};
 };
 
-TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
-	void *pparent_obj, uint8_t table_type, uint32_t table_flags);
-void table_object_free(TABLE_OBJECT *ptable);
+extern std::unique_ptr<TABLE_OBJECT> table_object_create(STORE_OBJECT *, void *parent, uint8_t table_type, uint32_t table_flags);
 const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable);
 BOOL table_object_set_columns(TABLE_OBJECT *ptable,
 	const PROPTAG_ARRAY *pcolumns);

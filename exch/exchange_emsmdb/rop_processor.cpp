@@ -110,7 +110,7 @@ static void rop_processor_free_object(void *pobject, int type)
 		delete static_cast<ATTACHMENT_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_TABLE:
-		table_object_free(static_cast<TABLE_OBJECT *>(pobject));
+		delete static_cast<TABLE_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_STREAM:
 		stream_object_free(static_cast<STREAM_OBJECT *>(pobject));

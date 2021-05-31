@@ -1,31 +1,28 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include "emsmdb_interface.h"
 #include "logon_object.h"
 #include <gromox/mapi_types.hpp>
 
 struct TABLE_OBJECT {
-	LOGON_OBJECT *plogon;
-	CXH cxh;
-	void *plogmap;
-	uint8_t logon_id;
-	uint32_t handle;
-	void *pparent_obj;
-	uint8_t rop_id;
-	uint8_t table_flags;
-	PROPTAG_ARRAY *pcolumns;
-	SORTORDER_SET *psorts;
-	RESTRICTION *prestriction;
-	uint32_t position;
-	uint32_t table_id;
-	uint32_t bookmark_index;
-	DOUBLE_LIST bookmark_list;
+	~TABLE_OBJECT();
+
+	LOGON_OBJECT *plogon = nullptr;
+	CXH cxh{};
+	void *plogmap = nullptr;
+	uint8_t logon_id = 0;
+	uint32_t handle = 0;
+	void *pparent_obj = nullptr;
+	uint8_t rop_id = 0, table_flags = 0;
+	PROPTAG_ARRAY *pcolumns = nullptr;
+	SORTORDER_SET *psorts = nullptr;
+	RESTRICTION *prestriction = nullptr;
+	uint32_t position = 0, table_id = 0, bookmark_index = 0;
+	DOUBLE_LIST bookmark_list{};
 };
 
-TABLE_OBJECT* table_object_create(LOGON_OBJECT *plogon,
-	void *pparent_obj, uint8_t table_flags,
-	uint8_t rop_id, uint8_t logon_id);
-void table_object_free(TABLE_OBJECT *ptable);
+extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
 const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable);
 BOOL table_object_set_columns(TABLE_OBJECT *ptable,
 	const PROPTAG_ARRAY *pcolumns);
