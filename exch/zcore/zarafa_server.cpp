@@ -1229,106 +1229,103 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		}
 		return ecSuccess;
 	}
-	if (common_util_parse_addressbook_entryid(entryid, &address_type,
+	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
 	    essdn, GX_ARRAY_SIZE(essdn))) {
-		if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
-			HX_strlower(essdn);
-			if ('\0' == essdn[0]) {
-				type = CONTAINER_TYPE_ABTREE;
-				container_id.abtree_id.base_id = base_id;
-				container_id.abtree_id.minid = 0xFFFFFFFF;;
-			} else if (0 == strcmp(essdn, "/")) {
-				type = CONTAINER_TYPE_ABTREE;
-				container_id.abtree_id.base_id = base_id;
-				container_id.abtree_id.minid = 0;
-			} else {
-				if (0 == strncmp(essdn, "/exmdb=", 7)) {
-					if (FALSE == common_util_exmdb_locinfo_from_string(
-						essdn + 7, &loc_type, &user_id,
-						&container_id.exmdb_id.folder_id) ||
-						LOC_TYPE_PRIVATE_FOLDER != loc_type) {
-						return ecNotFound;
-					}
-					container_id.exmdb_id.b_private = TRUE;
-					type = CONTAINER_TYPE_FOLDER;
-				} else {
-					if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
-						return ecNotFound;
-					}
-					memcpy(tmp_buff, essdn + 6, 8);
-					tmp_buff[8] = '\0';
-					guid.time_low = strtoll(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 14, 4);
-					tmp_buff[4] = '\0';
-					guid.time_mid = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 18, 4);
-					tmp_buff[4] = '\0';
-					guid.time_hi_and_version = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 22, 2);
-					tmp_buff[2] = '\0';
-					guid.clock_seq[0] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 24, 2);
-					tmp_buff[2] = '\0';
-					guid.clock_seq[1] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 26, 2);
-					tmp_buff[2] = '\0';
-					guid.node[0] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 28, 2);
-					tmp_buff[2] = '\0';
-					guid.node[1] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 30, 2);
-					tmp_buff[2] = '\0';
-					guid.node[2] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 32, 2);
-					tmp_buff[2] = '\0';
-					guid.node[3] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 34, 2);
-					tmp_buff[2] = '\0';
-					guid.node[4] = strtol(tmp_buff, NULL, 16);
-					memcpy(tmp_buff, essdn + 36, 2);
-					tmp_buff[2] = '\0';
-					guid.node[5] = strtol(tmp_buff, NULL, 16);
-					auto pbase = ab_tree_get_base(base_id);
-					if (pbase == nullptr)
-						return ecError;
-					pnode = ab_tree_guid_to_node(pbase.get(), guid);
-					if (pnode == nullptr)
-						return ecNotFound;
-					minid = ab_tree_get_node_minid(pnode);
-					type = CONTAINER_TYPE_ABTREE;
-					container_id.abtree_id.base_id = base_id;
-					container_id.abtree_id.minid = minid;
-				}
-			}
-			pobject = container_object_create(type, container_id);
-			if (pobject == nullptr)
-				return ecError;
-			*pmapi_type = MAPI_ABCONT;
-		} else if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type ||
-			ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER == address_type) {
-			if (FALSE == common_util_essdn_to_ids(
-				essdn, &domain_id, &user_id)) {
+		return ecInvalidParam;
+	}
+	if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
+		HX_strlower(essdn);
+		if ('\0' == essdn[0]) {
+			type = CONTAINER_TYPE_ABTREE;
+			container_id.abtree_id.base_id = base_id;
+			container_id.abtree_id.minid = 0xFFFFFFFF;;
+		} else if (0 == strcmp(essdn, "/")) {
+			type = CONTAINER_TYPE_ABTREE;
+			container_id.abtree_id.base_id = base_id;
+			container_id.abtree_id.minid = 0;
+		} else if (strncmp(essdn, "/exmdb=", 7) == 0) {
+			if (FALSE == common_util_exmdb_locinfo_from_string(
+			    essdn + 7, &loc_type, &user_id,
+			    &container_id.exmdb_id.folder_id) ||
+			    LOC_TYPE_PRIVATE_FOLDER != loc_type) {
 				return ecNotFound;
 			}
-			if (domain_id != pinfo->domain_id && FALSE ==
-				system_services_check_same_org(domain_id,
-				pinfo->domain_id)) {
-				base_id = -domain_id;
-			}
-			minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
-			pobject = user_object_create(base_id, minid);
-			if (pobject == nullptr)
-				return ecError;
-			if (!user_object_check_valid(static_cast<USER_OBJECT *>(pobject))) {
-				pinfo.reset();
-				user_object_free(static_cast<USER_OBJECT *>(pobject));
-				return ecNotFound;
-			}
-			*pmapi_type = address_type == ADDRESSBOOK_ENTRYID_TYPE_DLIST ?
-			              MAPI_DISTLIST : MAPI_MAILUSER;
+			container_id.exmdb_id.b_private = TRUE;
+			type = CONTAINER_TYPE_FOLDER;
 		} else {
-			return ecInvalidParam;
+			if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
+				return ecNotFound;
+			}
+			memcpy(tmp_buff, essdn + 6, 8);
+			tmp_buff[8] = '\0';
+			guid.time_low = strtoll(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 14, 4);
+			tmp_buff[4] = '\0';
+			guid.time_mid = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 18, 4);
+			tmp_buff[4] = '\0';
+			guid.time_hi_and_version = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 22, 2);
+			tmp_buff[2] = '\0';
+			guid.clock_seq[0] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 24, 2);
+			tmp_buff[2] = '\0';
+			guid.clock_seq[1] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 26, 2);
+			tmp_buff[2] = '\0';
+			guid.node[0] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 28, 2);
+			tmp_buff[2] = '\0';
+			guid.node[1] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 30, 2);
+			tmp_buff[2] = '\0';
+			guid.node[2] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 32, 2);
+			tmp_buff[2] = '\0';
+			guid.node[3] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 34, 2);
+			tmp_buff[2] = '\0';
+			guid.node[4] = strtol(tmp_buff, NULL, 16);
+			memcpy(tmp_buff, essdn + 36, 2);
+			tmp_buff[2] = '\0';
+			guid.node[5] = strtol(tmp_buff, NULL, 16);
+			auto pbase = ab_tree_get_base(base_id);
+			if (pbase == nullptr)
+				return ecError;
+			pnode = ab_tree_guid_to_node(pbase.get(), guid);
+			if (pnode == nullptr)
+				return ecNotFound;
+			minid = ab_tree_get_node_minid(pnode);
+			type = CONTAINER_TYPE_ABTREE;
+			container_id.abtree_id.base_id = base_id;
+			container_id.abtree_id.minid = minid;
 		}
+		pobject = container_object_create(type, container_id);
+		if (pobject == nullptr)
+			return ecError;
+		*pmapi_type = MAPI_ABCONT;
+	} else if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type ||
+	    ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER == address_type) {
+		if (FALSE == common_util_essdn_to_ids(
+		    essdn, &domain_id, &user_id)) {
+			return ecNotFound;
+		}
+		if (domain_id != pinfo->domain_id && FALSE ==
+		    system_services_check_same_org(domain_id,
+		    pinfo->domain_id)) {
+			base_id = -domain_id;
+		}
+		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
+		pobject = user_object_create(base_id, minid);
+		if (pobject == nullptr)
+			return ecError;
+		if (!user_object_check_valid(static_cast<USER_OBJECT *>(pobject))) {
+			pinfo.reset();
+			user_object_free(static_cast<USER_OBJECT *>(pobject));
+			return ecNotFound;
+		}
+		*pmapi_type = address_type == ADDRESSBOOK_ENTRYID_TYPE_DLIST ?
+			      MAPI_DISTLIST : MAPI_MAILUSER;
 	} else {
 		return ecInvalidParam;
 	}
