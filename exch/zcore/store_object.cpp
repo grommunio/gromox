@@ -175,7 +175,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-STORE_OBJECT* store_object_create(BOOL b_private,
+std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
 	void *pvalue;
@@ -196,8 +196,10 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	if (NULL == pvalue) {
 		return NULL;
 	}
-	auto pstore = me_alloc<STORE_OBJECT>();
-	if (NULL == pstore) {
+	std::unique_ptr<STORE_OBJECT> pstore;
+	try {
+		pstore = std::make_unique<STORE_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pstore->b_private = b_private;
@@ -212,12 +214,13 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	return pstore;
 }
 
-void store_object_free(STORE_OBJECT *pstore)
+STORE_OBJECT::~STORE_OBJECT()
 {
 	INT_HASH_ITER *piter;
 	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_NAME *ppropname;
-	
+
+	auto pstore = this;
 	if (NULL != pstore->pgpinfo) {
 		property_groupinfo_free(pstore->pgpinfo);
 	}
@@ -246,7 +249,6 @@ void store_object_free(STORE_OBJECT *pstore)
 	if (NULL != pstore->ppropname_hash) {
 		str_hash_free(pstore->ppropname_hash);
 	}
-	free(pstore);
 }
 
 BOOL store_object_check_private(STORE_OBJECT *pstore)

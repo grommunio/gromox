@@ -194,7 +194,7 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		delete static_cast<FOLDER_OBJECT *>(pobject);
 		break;
 	case MAPI_STORE:
-		store_object_free(static_cast<STORE_OBJECT *>(pobject));
+		delete static_cast<STORE_OBJECT *>(pobject);
 		break;
 	case MAPI_MAILUSER:
 	case MAPI_DISTLIST:
@@ -480,9 +480,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 {
 	char dir[256];
 	char *pdomain;
-	uint32_t handle;
 	char account[UADDR_SIZE];
-	STORE_OBJECT *pstore;
 	OBJECT_NODE *pobjnode;
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -526,15 +524,13 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 		pdomain ++;
 		gx_strlcpy(account, pdomain, GX_ARRAY_SIZE(account));
 	}
-	pstore = store_object_create(b_private,
-				account_id, account, dir);
+	auto pstore = store_object_create(b_private, account_id, account, dir);
 	if (NULL == pstore) {
 		return INVALID_HANDLE;
 	}
-	handle = object_tree_add_object_handle(pobjtree,
-					ROOT_HANDLE, MAPI_STORE, pstore);
-	if (INVALID_HANDLE == handle) {
-		store_object_free(pstore);
-	}
+	auto handle = object_tree_add_object_handle(pobjtree, ROOT_HANDLE,
+	              MAPI_STORE, pstore.get());
+	if (handle != INVALID_HANDLE)
+		pstore.release();
 	return handle;
 }

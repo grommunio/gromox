@@ -1,26 +1,27 @@
 #pragma once
+#include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/int_hash.hpp>
 
 struct STORE_OBJECT {
-	BOOL b_private;
-	int account_id;
-	char account[UADDR_SIZE];
-	char dir[256];
-	GUID mailbox_guid;
-	PROPERTY_GROUPINFO *pgpinfo;
-	INT_HASH_TABLE *ppropid_hash;
-	STR_HASH_TABLE *ppropname_hash;
-	DOUBLE_LIST group_list;
+	~STORE_OBJECT();
+
+	BOOL b_private = false;
+	int account_id = 0;
+	char account[UADDR_SIZE]{};
+	char dir[256]{};
+	GUID mailbox_guid{};
+	PROPERTY_GROUPINFO *pgpinfo = nullptr;
+	INT_HASH_TABLE *ppropid_hash = nullptr;
+	STR_HASH_TABLE *ppropname_hash = nullptr;
+	DOUBLE_LIST group_list{};
 };
 
 struct PERMISSION_SET;
 
-STORE_OBJECT* store_object_create(BOOL b_private,
-	int account_id, const char *account, const char *dir);
-void store_object_free(STORE_OBJECT *pstore);
+extern std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private, int account_id, const char *account, const char *dir);
 BOOL store_object_check_private(STORE_OBJECT *pstore);
 extern GUID store_object_guid(STORE_OBJECT *);
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore);
