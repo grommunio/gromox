@@ -27,7 +27,6 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	char maildir[256];
 	char username[UADDR_SIZE];
 	uint32_t permission;
-	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
@@ -134,18 +133,17 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 	*pstore_stat = 0;
 	
-	plogon = logon_object_create(logon_flags, open_flags,
-		logon_mode, user_id, username, maildir, *pmailbox_guid);
+	auto plogon = logon_object_create(logon_flags, open_flags, logon_mode,
+	              user_id, username, maildir, *pmailbox_guid);
 	if (NULL == plogon) {
 		return ecMAPIOOM;
 	}
 	/* create logon map and logon object */
-	handle = rop_processor_create_logon_item(
-					plogmap, logon_id, plogon);
+	handle = rop_processor_create_logon_item(plogmap, logon_id, plogon.get());
 	if (handle < 0) {
-		logon_object_free(plogon);
 		return ecError;
 	}
+	plogon.release();
 	*phout = handle;
 	return ecSuccess;
 }
@@ -165,7 +163,6 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	GUID mailbox_guid;
 	const char *pdomain;
 	const char *pdomain1;
-	LOGON_OBJECT *plogon;
 	
 	
 	if (0 == (open_flags & LOGON_OPEN_FLAG_PUBLIC) ||
@@ -239,19 +236,17 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecError;
 	}
 	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	plogon = logon_object_create(logon_flags, open_flags,
-				LOGON_MODE_GUEST, domain_id, pdomain,
-				homedir, mailbox_guid);
+	auto plogon = logon_object_create(logon_flags, open_flags,
+	              LOGON_MODE_GUEST, domain_id, pdomain, homedir, mailbox_guid);
 	if (NULL == plogon) {
 		return ecMAPIOOM;
 	}
 	/* create logon map and logon object */
-	handle = rop_processor_create_logon_item(
-					plogmap, logon_id, plogon);
+	handle = rop_processor_create_logon_item(plogmap, logon_id, plogon.get());
 	if (handle < 0) {
-		logon_object_free(plogon);
 		return ecError;
 	}
+	plogon.release();
 	*phout = handle;
 	return ecSuccess;
 }

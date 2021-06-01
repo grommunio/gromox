@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/str_hash.hpp>
@@ -9,23 +10,21 @@
 #define LOGON_MODE_GUEST				2
 
 struct LOGON_OBJECT {
-	uint8_t logon_flags;
-	uint32_t open_flags;
-	int logon_mode;
-	int account_id;
-	char account[UADDR_SIZE];
-	char dir[256];
-	GUID mailbox_guid;
-	PROPERTY_GROUPINFO *pgpinfo;
-	INT_HASH_TABLE *ppropid_hash;
-	STR_HASH_TABLE *ppropname_hash;
-	DOUBLE_LIST group_list;
+	~LOGON_OBJECT();
+
+	uint8_t logon_flags = 0;
+	uint32_t open_flags = 0;
+	int logon_mode = 0, account_id = 0;
+	char account[UADDR_SIZE]{};
+	char dir[256]{};
+	GUID mailbox_guid{};
+	PROPERTY_GROUPINFO *pgpinfo = nullptr;
+	INT_HASH_TABLE *ppropid_hash = nullptr;
+	STR_HASH_TABLE *ppropname_hash = nullptr;
+	DOUBLE_LIST group_list{};
 };
 
-LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
-	uint32_t open_flags, int logon_mode, int account_id,
-	const char *account, const char *dir, GUID mailbox_guid);
-void logon_object_free(LOGON_OBJECT *plogon);
+extern std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
 BOOL logon_object_check_private(LOGON_OBJECT *plogon);
 extern GUID logon_object_guid(LOGON_OBJECT *);
 int logon_object_get_mode(LOGON_OBJECT *plogon);

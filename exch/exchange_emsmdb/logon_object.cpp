@@ -147,12 +147,14 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
-LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
+std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
 {
-	auto plogon = me_alloc<LOGON_OBJECT>();
-	if (NULL == plogon) {
+	std::unique_ptr<LOGON_OBJECT> plogon;
+	try {
+		plogon = std::make_unique<LOGON_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	plogon->logon_flags = logon_flags;
@@ -169,12 +171,13 @@ LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
 	return plogon;
 }
 
-void logon_object_free(LOGON_OBJECT *plogon)
+LOGON_OBJECT::~LOGON_OBJECT()
 {
 	INT_HASH_ITER *piter;
 	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_NAME *ppropname;
-	
+
+	auto plogon = this;
 	if (NULL != plogon->pgpinfo) {
 		property_groupinfo_free(plogon->pgpinfo);
 	}
@@ -203,7 +206,6 @@ void logon_object_free(LOGON_OBJECT *plogon)
 	if (NULL != plogon->ppropname_hash) {
 		str_hash_free(plogon->ppropname_hash);
 	}
-	free(plogon);
 }
 
 BOOL logon_object_check_private(LOGON_OBJECT *plogon)

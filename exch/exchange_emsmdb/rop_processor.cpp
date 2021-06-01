@@ -98,7 +98,7 @@ static void rop_processor_free_object(void *pobject, int type)
 {
 	switch (type) {
 	case OBJECT_TYPE_LOGON:
-		logon_object_free(static_cast<LOGON_OBJECT *>(pobject));
+		delete static_cast<LOGON_OBJECT *>(pobject);
 		break;
 	case OBJECT_TYPE_FOLDER:
 		delete static_cast<FOLDER_OBJECT *>(pobject);
