@@ -5836,16 +5836,12 @@ uint32_t zarafa_server_setsearchcriteria(
 	FOLDER_OBJECT *pfolder;
 	LONGLONG_ARRAY folder_ids;
 	
-	if (0 == (flags & SEARCH_FLAG_RESTART) &&
-		0 == (flags & SEARCH_FLAG_STOP)) {
+	if (!(flags & (SEARCH_FLAG_RESTART | SEARCH_FLAG_STOP)))
 		/* make the default search_flags */
 		flags |= SEARCH_FLAG_RESTART;	
-	}
-	if (0 == (flags & SEARCH_FLAG_RECURSIVE) &&
-		0 == (flags & SEARCH_FLAG_SHALLOW)) {
+	if (!(flags & (SEARCH_FLAG_RECURSIVE | SEARCH_FLAG_SHALLOW)))
 		/* make the default search_flags */
 		flags |= SEARCH_FLAG_SHALLOW;
-	}
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;

@@ -2625,10 +2625,8 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 			username, &permission)) {
 			return GXERR_CALL_FAILED;
 		}
-		if (0 == (permission & PERMISSION_READANY) &&
-			0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 			return GXERR_CALL_FAILED;
-		}
 	} else {
 		username = NULL;
 	}

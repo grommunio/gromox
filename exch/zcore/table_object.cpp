@@ -98,10 +98,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 					pinfo->username, &permission)) {
 					return FALSE;	
 				}
-				if (0 == (permission & PERMISSION_READANY) &&
-					0 == (permission & PERMISSION_FOLDEROWNER)) {
+				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 					username = pinfo->username;
-				}
 			}
 		}
 		table_flags = TABLE_FLAG_NONOTIFICATIONS;
