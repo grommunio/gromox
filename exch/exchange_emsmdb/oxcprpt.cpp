@@ -1066,7 +1066,6 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	uint32_t max_length;
 	uint32_t tag_access;
 	uint32_t permission;
-	STREAM_OBJECT *pstream;
 	
 	/* MS-OXCPERM 3.1.4.1 */
 	if (PROP_TAG_SECURITYDESCRIPTORASXML == proptag) {
@@ -1132,23 +1131,21 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	default:
 		return ecNotSupported;
 	}
-	pstream = stream_object_create(pobject,
-		object_type, flags, proptag, max_length);
+	auto pstream = stream_object_create(pobject, object_type, flags,
+	               proptag, max_length);
 	if (NULL == pstream) {
 		return ecError;
 	}
-	if (FALSE == stream_object_check(pstream)) {
-		stream_object_free(pstream);
+	if (!stream_object_check(pstream.get()))
 		return ecNotFound;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_STREAM, pstream);
+	           logon_id, hin, OBJECT_TYPE_STREAM, pstream.get());
 	if (hnd < 0) {
-		stream_object_free(pstream);
 		return ecError;
 	}
 	*phout = hnd;
-	*pstream_size = stream_object_get_length(pstream);
+	*pstream_size = stream_object_get_length(pstream.get());
+	pstream.release();
 	return ecSuccess;
 }
 

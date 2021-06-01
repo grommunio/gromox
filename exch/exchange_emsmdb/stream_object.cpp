@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstdint>
+#include <memory>
 #include <gromox/util.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
@@ -15,7 +16,7 @@
 #include <cstring>
 #define STREAM_INIT_BUFFER_LENGTH						4096
 
-STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
+std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_type,
 	uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
 	int buff_len;
@@ -24,9 +25,11 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
-	
-	auto pstream = me_alloc<STREAM_OBJECT>();
-	if (NULL == pstream) {
+	std::unique_ptr<STREAM_OBJECT> pstream;
+
+	try {
+		pstream = std::make_unique<STREAM_OBJECT>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pstream->pparent = pparent;
@@ -44,14 +47,12 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		proptag_buff[1] = PROP_TAG_MESSAGESIZE;
 		if (!message_object_get_properties(static_cast<MESSAGE_OBJECT *>(pparent),
 		    0, &proptags, &propvals)) {
-			free(pstream);
 			return NULL;
 		}
 		psize = static_cast<uint32_t *>(common_util_get_propvals(
 		        &propvals, PROP_TAG_MESSAGESIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
-			free(pstream);
 			return NULL;
 		}
 		break;
@@ -62,14 +63,12 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		proptag_buff[1] = PROP_TAG_ATTACHSIZE;
 		if (!attachment_object_get_properties(static_cast<ATTACHMENT_OBJECT *>(pparent),
 		    0, &proptags, &propvals)) {
-			free(pstream);
 			return NULL;
 		}
 		psize = static_cast<uint32_t *>(common_util_get_propvals(
 		        &propvals, PROP_TAG_ATTACHSIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
-			free(pstream);
 			return NULL;
 		}
 		break;
@@ -78,12 +77,10 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		proptags.pproptag = &proptag;
 		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pparent),
 		    &proptags, &propvals)) {
-			free(pstream);
 			return NULL;
 		}
 		break;
 	default:
-		free(pstream);
 		return NULL;
 	}
 	auto pvalue = common_util_get_propvals(&propvals, proptag);
@@ -99,7 +96,6 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 			pstream->content_bin.pv =
 				malloc(STREAM_INIT_BUFFER_LENGTH);
 			if (pstream->content_bin.pv == nullptr) {
-				free(pstream);
 				return NULL;
 			}
 			return pstream;
@@ -112,7 +108,6 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		pstream->content_bin.cb = bv->cb;
 		pstream->content_bin.pv = malloc(bv->cb);
 		if (pstream->content_bin.pv == nullptr) {
-			free(pstream);
 			return NULL;
 		}
 		memcpy(pstream->content_bin.pv, bv->pv, bv->cb);
@@ -122,7 +117,6 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		pstream->content_bin.cb = strlen(static_cast<char *>(pvalue)) + 1;
 		pstream->content_bin.pv = malloc(pstream->content_bin.cb);
 		if (pstream->content_bin.pv == nullptr) {
-			free(pstream);
 			return NULL;
 		}
 		memcpy(pstream->content_bin.pv, static_cast<BINARY *>(pvalue)->pv,
@@ -132,7 +126,6 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		buff_len = 2 * strlen(static_cast<char *>(pvalue)) + 2;
 		pstream->content_bin.pv = malloc(buff_len);
 		if (pstream->content_bin.pv == nullptr) {
-			free(pstream);
 			return NULL;
 		}
 		utf16_len = utf8_to_utf16le(static_cast<char *>(pvalue),
@@ -145,7 +138,6 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		pstream->content_bin.cb = utf16_len;
 		return pstream;
 	default:
-		free(pstream);
 		return NULL;
 	}
 }
@@ -418,10 +410,10 @@ BOOL stream_object_commit(STREAM_OBJECT *pstream)
 	return TRUE;
 }
 
-void stream_object_free(STREAM_OBJECT *pstream)
+STREAM_OBJECT::~STREAM_OBJECT()
 {
+	auto pstream = this;
 	if (NULL == pstream->content_bin.pb) {
-		free(pstream);
 		return;
 	}
 	switch (pstream->object_type) {
@@ -442,5 +434,4 @@ void stream_object_free(STREAM_OBJECT *pstream)
 		break;
 	}
 	free(pstream->content_bin.pb);
-	free(pstream);
 }
