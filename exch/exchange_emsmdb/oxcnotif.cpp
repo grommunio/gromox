@@ -19,7 +19,6 @@ uint32_t rop_registernotification(
 	int object_type;
 	uint64_t folder_id;
 	uint64_t message_id;
-	SUBSCRIPTION_OBJECT *psub;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -38,18 +37,18 @@ uint32_t rop_registernotification(
 		folder_id = 0;
 		message_id = 0;
 	}
-	psub = subscription_object_create(plogon, logon_id,
-		notification_types, b_whole, folder_id, message_id);
+	auto psub = subscription_object_create(plogon, logon_id,
+	            notification_types, b_whole, folder_id, message_id);
 	if (NULL == psub) {
 		return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub);
+	           logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub.get());
 	if (hnd < 0) {
-		subscription_object_free(psub);
 		return ecError;
 	}
-	subscription_object_set_handle(psub, hnd);
+	subscription_object_set_handle(psub.get(), hnd);
+	psub.release();
 	*phout = hnd;
 	return ecSuccess;
 }
