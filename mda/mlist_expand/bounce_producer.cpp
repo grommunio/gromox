@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstring>
 #include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <typeinfo>
 #include <utility>
