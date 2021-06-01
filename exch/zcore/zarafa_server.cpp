@@ -886,10 +886,10 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		}
 		handle = object_tree_get_store_handle(
 			pinfo->ptree, b_private, account_id);
-		pinfo.reset();
 		if (INVALID_HANDLE == handle) {
 			return ecNullObject;
 		}
+		pinfo.reset();
 		return zarafa_server_openstoreentry(hsession,
 			handle, entryid, flags, pmapi_type, phobject);
 	case EITLT_PRIVATE_MESSAGE:
@@ -901,10 +901,10 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		}
 		handle = object_tree_get_store_handle(
 			pinfo->ptree, b_private, account_id);
-		pinfo.reset();
 		if (INVALID_HANDLE == handle) {
 			return ecNullObject;
 		}
+		pinfo.reset();
 		return zarafa_server_openstoreentry(hsession,
 			handle, entryid, flags, pmapi_type, phobject);
 	}
