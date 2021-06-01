@@ -1327,7 +1327,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	}
 	*phobject = object_tree_add_object_handle(pinfo->ptree,
 						ROOT_HANDLE, *pmapi_type, pobject);
-	pinfo.reset();
 	if (INVALID_HANDLE == *phobject) {
 		return ecError;
 	}
@@ -4800,7 +4799,6 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 		pinfo->ptree, hstore, MAPI_ICSDOWNCTX,
 	            pctx.get());
 	if (INVALID_HANDLE == *phobject) {
-		pctx.reset();
 		return ecError;
 	}
 	pctx.release();
@@ -4839,7 +4837,6 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 		pinfo->ptree, hstore, MAPI_ICSDOWNCTX,
 	            pctx.get());
 	if (INVALID_HANDLE == *phobject) {
-		pctx.reset();
 		return ecError;
 	}
 	pctx.release();
@@ -5026,7 +5023,6 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	*phobject = object_tree_add_object_handle(
 	            pinfo->ptree, hstore, MAPI_ICSUPCTX, pctx.get());
 	if (INVALID_HANDLE == *phobject) {
-		pctx.reset();
 		return ecError;
 	}
 	pctx.release();
@@ -5064,7 +5060,6 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 	*phobject = object_tree_add_object_handle(
 	            pinfo->ptree, hstore, MAPI_ICSUPCTX, pctx.get());
 	if (INVALID_HANDLE == *phobject) {
-		pctx.reset();
 		return ecError;
 	}
 	pctx.release();
