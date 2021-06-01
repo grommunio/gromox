@@ -234,20 +234,16 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 			}
 		}
 		idset_clear(pctx->pstate->pseen);
-		if (0 != pctx->last_changenum) {
-			if (FALSE == idset_append_range(pctx->pstate->pseen, 1,
-				1, rop_util_get_gc_value(pctx->last_changenum))) {
-				return nullptr;
-			}
-		}
+		if (pctx->last_changenum != 0 &&
+		    !idset_append_range(pctx->pstate->pseen, 1, 1,
+		     rop_util_get_gc_value(pctx->last_changenum)))
+			return nullptr;
 		if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
 			idset_clear(pctx->pstate->pseen_fai);
-			if (0 != pctx->last_changenum) {
-				if (FALSE == idset_append_range(pctx->pstate->pseen_fai,
-					1, 1, rop_util_get_gc_value(pctx->last_changenum))) {
-					return nullptr;
-				}
-			}
+			if (pctx->last_changenum != 0 &&
+			    !idset_append_range(pctx->pstate->pseen_fai, 1, 1,
+			    rop_util_get_gc_value(pctx->last_changenum)))
+				return nullptr;
 		}
 		pctx->last_changenum = 0;
 		eid_array_free(pctx->pgiven_eids);

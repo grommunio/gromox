@@ -1529,16 +1529,14 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 				PROP_TAG_READRECEIPTREQUESTED, &result)) {
 				return FALSE;	
 			}
-			if (TRUE == exmdb_client_get_message_property(
-				dir, username, 0, pmessage->message_id,
-				PROP_TAG_READRECEIPTREQUESTED, &pvalue) &&
-				NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-				if (FALSE == exmdb_client_remove_message_property(
-					dir, pmessage->cpid, pmessage->message_id,
-					PROP_TAG_READRECEIPTREQUESTED)) {
-					return FALSE;	
-				}
-			}
+			if (exmdb_client_get_message_property(dir, username, 0,
+			    pmessage->message_id, PROP_TAG_READRECEIPTREQUESTED,
+			    &pvalue) && pvalue != nullptr &&
+			    *static_cast<uint8_t *>(pvalue) != 0 &&
+			    !exmdb_client_remove_message_property(dir,
+			    pmessage->cpid, pmessage->message_id,
+			    PROP_TAG_READRECEIPTREQUESTED))
+				return FALSE;
 		}
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) {
 			if (FALSE == exmdb_client_remove_instance_property(
@@ -1546,16 +1544,13 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &result)) {
 				return FALSE;	
 			}
-			if (TRUE == exmdb_client_get_message_property(
-				dir, username, 0, pmessage->message_id,
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &pvalue)
-				&& NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-				if (FALSE == exmdb_client_remove_message_property(
-					dir, pmessage->cpid, pmessage->message_id,
-					PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED)) {
-					return FALSE;	
-				}
-			}
+			if (exmdb_client_get_message_property(dir, username, 0,
+			    pmessage->message_id, PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED,
+			    &pvalue) && pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+			    !exmdb_client_remove_message_property(dir,
+			    pmessage->cpid, pmessage->message_id,
+			    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED))
+				return FALSE;
 		}
 		if (FALSE == exmdb_client_get_instance_property(
 			dir, pmessage->instance_id, PROP_TAG_MESSAGEFLAGS,

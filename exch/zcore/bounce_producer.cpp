@@ -540,13 +540,10 @@ BOOL bounce_producer_make(const char *username,
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
 	pvalue = common_util_get_propvals(
 		&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
-	if (NULL != pvalue) {
-		if (0 == encode64(((BINARY*)pvalue)->pb,
-			((BINARY*)pvalue)->cb, tmp_buff,
-			sizeof(tmp_buff), &out_len)) {
-			mime_set_field(pmime, "Thread-Index", tmp_buff);
-		}
-	}
+	if (pvalue != nullptr && encode64(static_cast<BINARY *>(pvalue)->pb,
+	    static_cast<BINARY *>(pvalue)->cb, tmp_buff, sizeof(tmp_buff),
+	    &out_len) == 0)
+		mime_set_field(pmime, "Thread-Index", tmp_buff);
 	snprintf(tmp_buff, sizeof(tmp_buff), "\"%s\" <%s>", mime_from, username);
 	mime_set_field(pmime, "From", tmp_buff);
 	snprintf(tmp_buff, 256, "<%s>", username);

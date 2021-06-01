@@ -355,11 +355,9 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
 	((SIMPLE_TREE_NODE*)pabnode)->pdata = int_hash_query(
 							pbase->phash, pabnode->minid);
-	if (NULL == ((SIMPLE_TREE_NODE*)pabnode)->pdata) {
-		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-			return FALSE;
-		}
-	}
+	if (reinterpret_cast<SIMPLE_TREE_NODE *>(pabnode)->pdata == nullptr &&
+	    !ab_tree_cache_node(pbase, pabnode))
+		return FALSE;
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
 	return pabnode->d_info != nullptr ? TRUE : false;
 }
@@ -371,11 +369,9 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
 	((SIMPLE_TREE_NODE*)pabnode)->pdata = int_hash_query(
 							pbase->phash, pabnode->minid);
-	if (NULL == ((SIMPLE_TREE_NODE*)pabnode)->pdata) {
-		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-			return FALSE;
-		}
-	}
+	if (reinterpret_cast<SIMPLE_TREE_NODE *>(pabnode)->pdata == nullptr &&
+	    !ab_tree_cache_node(pbase, pabnode))
+		return FALSE;
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
 	return pabnode->d_info != nullptr ? TRUE : false;
 }
@@ -406,11 +402,9 @@ static BOOL ab_tree_load_class(
 		pabnode->node_type = NODE_TYPE_CLASS;
 		pabnode->id = cls.child_id;
 		pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, cls.child_id);
-		if (NULL == int_hash_query(pbase->phash, pabnode->minid)) {
-			if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-				return FALSE;
-			}
-		}
+		if (int_hash_query(pbase->phash, pabnode->minid) == nullptr &&
+		    !ab_tree_cache_node(pbase, pabnode))
+			return FALSE;
 		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 		if (pabnode->d_info == nullptr)
 			return false;
@@ -545,11 +539,10 @@ static BOOL ab_tree_load_tree(int domain_id,
 			pabnode->node_type = NODE_TYPE_CLASS;
 			pabnode->id = cls.child_id;
 			pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, cls.child_id);
-			if (NULL == int_hash_query(pbase->phash, pabnode->minid)) {
-				if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-					ab_tree_put_abnode(pabnode);
-					return FALSE;
-				}
+			if (int_hash_query(pbase->phash, pabnode->minid) == nullptr &&
+			    !ab_tree_cache_node(pbase, pabnode)) {
+				ab_tree_put_abnode(pabnode);
+				return FALSE;
 			}
 			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 			if (pabnode->d_info == nullptr)
@@ -2121,25 +2114,21 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if (TRUE == ab_tree_fetch_node_property(pnode,
-				codepage, PROP_TAG_ACCOUNT, &pvalue) &&
-				NULL != pvalue) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
+			if (ab_tree_fetch_node_property(pnode, codepage,
+			    PROP_TAG_ACCOUNT, &pvalue) && pvalue != nullptr &&
+			    strcasestr(static_cast<char *>(pvalue),
+			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+				return TRUE;
 			/* =SMTP:user@company.com */
 			ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
-			if (ptoken != nullptr && pvalue != nullptr)
-				if (strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
-					return TRUE;
-			if (TRUE == ab_tree_fetch_node_property(pnode,
-				codepage, PROP_TAG_DISPLAYNAME, &pvalue) &&
-				NULL != pvalue) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
+			if (ptoken != nullptr && pvalue != nullptr &&
+			    strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
+				return TRUE;
+			if (ab_tree_fetch_node_property(pnode, codepage,
+			    PROP_TAG_DISPLAYNAME, &pvalue) && pvalue != nullptr &&
+			    strcasestr(static_cast<char *>(pvalue),
+			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+				return TRUE;
 			return FALSE;
 		}
 		if (!ab_tree_fetch_node_property(pnode, codepage,

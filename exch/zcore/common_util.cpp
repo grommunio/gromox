@@ -2941,12 +2941,9 @@ MESSAGE_CONTENT* common_util_vcf_to_message(
 
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id)
 {
-	if (0 == (folder_id & 0xFF00000000000000ULL)) {
+	if (!(folder_id & 0xFF00000000000000ULL))
 		return rop_util_make_eid_ex(1, folder_id);
-	} else {
-		return rop_util_make_eid_ex(folder_id >> 48,
-				folder_id & 0x00FFFFFFFFFFFFFFULL);
-	}	
+	return rop_util_make_eid_ex(folder_id >> 48, folder_id & 0x00FFFFFFFFFFFFFFULL);
 }
 
 const char* common_util_i18n_to_lang(const char *i18n)

@@ -1030,16 +1030,12 @@ static BOOL container_object_query_folder_hierarchy(
 		NULL, &table_id, &row_num)) {
 		return FALSE;
 	}
-	if (0 == row_num) {
+	if (row_num == 0)
 		tmp_set.count = 0;
-	} else {
-		if (!exmdb_client::query_table(
-			pinfo->maildir, NULL, pinfo->cpid, table_id,
-			container_object_get_folder_proptags(), 0,
-			row_num, &tmp_set)) {
-			return FALSE;
-		}
-	}
+	else if (!exmdb_client::query_table(pinfo->maildir, nullptr,
+	    pinfo->cpid, table_id, container_object_get_folder_proptags(),
+	    0, row_num, &tmp_set))
+		return FALSE;
 	exmdb_client::unload_table(pinfo->maildir, table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pvalue = common_util_get_propvals(
@@ -1142,13 +1138,10 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			tmp_set.count ++;
-			if (TRUE == b_depth) {
-				if (FALSE == container_object_query_folder_hierarchy(
-					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-					pproptags, TRUE, &tmp_set)) {
-					return FALSE;	
-				}
-			}
+			if (b_depth && !container_object_query_folder_hierarchy(
+			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			    pproptags, TRUE, &tmp_set))
+				return FALSE;
 			for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
 				psnode=single_list_get_after(&pbase->list, psnode)) {
 				pdnode = (DOMAIN_NODE*)psnode->pdata;
