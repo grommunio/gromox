@@ -22,7 +22,10 @@
 #include <cstdarg>
 #include <cstdio>
 #include <openssl/err.h>
-
+#if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
+    (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
+#	define OLD_SSL 1
+#endif
 #define CALCULATE_INTERVAL(a, b) \
     (((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
     ((a).tv_sec - (b).tv_sec - 1))
@@ -78,7 +81,7 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	gx_strlcpy(g_cdn_path, cdn_path, GX_ARRAY_SIZE(g_cdn_path));
 }
 
-#if defined(LIBRESSL_VERSION_NUMBER) || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
+#ifdef OLD_SSL
 static void pop3_parser_ssl_locking(int mode,
 	int n, const char *file, int line)
 {
@@ -144,8 +147,10 @@ int pop3_parser_run()
 			printf("[pop3_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
+#ifdef OLD_SSL
 		CRYPTO_THREADID_set_callback(pop3_parser_ssl_id);
 		CRYPTO_set_locking_callback(pop3_parser_ssl_locking);
+#endif
 	}
 
 	try {

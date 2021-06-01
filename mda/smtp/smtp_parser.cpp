@@ -24,7 +24,10 @@
 #include <cstdarg>
 #include <cstdio>
 #include <openssl/err.h>
-
+#if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
+    (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
+#	define OLD_SSL 1
+#endif
 #define READ_BUFFER_SIZE    4096
 #define MAX_LINE_LENGTH     64*1024
 
@@ -131,7 +134,7 @@ void smtp_parser_init(unsigned int context_num, unsigned int threads_num,
 	}
 }
 
-#if defined(LIBRESSL_VERSION_NUMBER) || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
+#ifdef OLD_SSL
 static void smtp_parser_ssl_locking(int mode, int n, const char *file, int line)
 {
 	if (mode & CRYPTO_LOCK)
@@ -195,8 +198,10 @@ int smtp_parser_run()
 			printf("[smtp_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
+#ifdef OLD_SSL
 		CRYPTO_THREADID_set_callback(smtp_parser_ssl_id);
 		CRYPTO_set_locking_callback(smtp_parser_ssl_locking);
+#endif
 	}
 	try {
 		g_context_list.resize(g_context_num);

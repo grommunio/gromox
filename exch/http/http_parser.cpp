@@ -36,8 +36,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <openssl/err.h>
-
-
+#if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
+    (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
+#	define OLD_SSL 1
+#endif
 #define	MAX_RECLYING_REMAINING						0x4000000
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
@@ -121,7 +123,7 @@ void http_parser_init(size_t context_num, unsigned int timeout,
 	}
 }
 
-#if defined(LIBRESSL_VERSION_NUMBER) || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
+#ifdef OLD_SSL
 static void http_parser_ssl_locking(int mode, int n, const char *file, int line)
 {
 	if (mode & CRYPTO_LOCK)
@@ -187,8 +189,10 @@ int http_parser_run()
 			printf("[http_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
+#ifdef OLD_SSL
 		CRYPTO_THREADID_set_callback(http_parser_ssl_id);
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
+#endif
 	}
 	g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE,
 							g_context_num * 16, TRUE);
