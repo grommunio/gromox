@@ -1769,7 +1769,6 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 	char c = buf[0];
 	char *p = buf.get();
 	char *rp = rbuf.get();
-	char *tbuf = nullptr;
 	while (i < len) {
 		switch (c) {
 		case '\0':

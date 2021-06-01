@@ -858,7 +858,8 @@ static void *nspab_scanwork(void *param)
 	while (!g_notify_stop) {
 		pbase = NULL;
 		std::unique_lock bhold(g_base_lock);
-		for (auto &[_, base] : g_base_hash) {
+		for (auto &kvpair : g_base_hash) {
+			auto &base = kvpair.second;
 			if (base.status != BASE_STATUS_LIVING ||
 			    base.reference != 0 ||
 			    time(nullptr) - base.load_time < g_cache_interval)
@@ -1559,6 +1560,6 @@ void ab_tree_invalidate_cache()
 {
 	printf("[exchange_nsp]: Invalidating AB caches\n");
 	std::unique_lock bl_hold(g_base_lock);
-	for (auto &[_, base] : g_base_hash)
-		base.load_time = 0;
+	for (auto &kvpair : g_base_hash)
+		kvpair.second.load_time = 0;
 }
