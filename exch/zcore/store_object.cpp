@@ -265,9 +265,8 @@ GUID store_object_guid(STORE_OBJECT *s)
 
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
 {
-	if (FALSE == pstore->b_private) {
+	if (!pstore->b_private)
 		return FALSE;
-	}
 	auto pinfo = zarafa_server_get_info();
 	if (pinfo->user_id == pstore->account_id) {
 		return TRUE;
@@ -961,9 +960,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
-		if (FALSE == pstore->b_private) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_alloc(256);
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1083,9 +1081,8 @@ static BOOL store_object_get_calculated_property(
 						COMMON_UTIL_MAX_EXTRULE_LENGTH);
 		return TRUE;
 	case PROP_TAG_MAILBOXOWNERENTRYID:
-		if (FALSE == pstore->b_private) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_username_to_addressbook_entryid(
 												pstore->account);
 		if (NULL == *ppvalue) {
@@ -1093,9 +1090,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_MAILBOXOWNERNAME:
-		if (FALSE == pstore->b_private) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		if (FALSE == system_services_get_user_displayname(
 			pstore->account, temp_buff)) {
 			return FALSE;	
@@ -1606,9 +1602,8 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[5];
 	
-	if (FALSE == pstore->b_private) {
+	if (!pstore->b_private)
 		return FALSE;
-	}
 	folder_id = rop_util_make_eid_ex(1, fid_val);
 	tmp_propvals.ppropval = propval_buff;
 	tmp_propvals.count = 5;

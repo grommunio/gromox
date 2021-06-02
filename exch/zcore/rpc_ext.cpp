@@ -2767,9 +2767,8 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	default:
 		return FALSE;
 	}
-	if (FALSE == b_result) {
+	if (!b_result)
 		return FALSE;
-	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 1;
 	ext_buffer_push_uint32(&ext_push,

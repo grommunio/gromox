@@ -63,10 +63,8 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
-	
-	if (FALSE == pattachment->b_new) {
+	if (!pattachment->b_new)
 		return FALSE;
-	}
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5);
 	if (NULL == propvals.ppropval) {

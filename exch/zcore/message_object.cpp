@@ -66,9 +66,8 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 		/* cannot find embedded message in attachment, return
 			immediately to caller and the caller check the
 			result by calling message_object_get_instance_id */
-		if (FALSE == b_new && 0 == pmessage->instance_id) {
+		if (!b_new && pmessage->instance_id == 0)
 			return pmessage;
-		}
 	} else {
 		pmessage->folder_id = *(uint64_t*)pparent;
 		if (TRUE == store_object_check_private(pmessage->pstore)) {
@@ -179,10 +178,8 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
-	
-	if (FALSE == pmessage->b_new) {
+	if (!pmessage->b_new)
 		return FALSE;
-	}
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);
 	if (NULL == propvals.ppropval) {
@@ -468,9 +465,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			(void**)&pbin_pcl)) {
 			return GXERR_CALL_FAILED;
 		}
-		if (FALSE == pmessage->b_new && NULL == pbin_pcl) {
+		if (!pmessage->b_new && pbin_pcl == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 		tmp_xid.guid = store_object_guid(pmessage->pstore);
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
@@ -643,13 +639,12 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	}
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
-	if (TRUE == b_new && FALSE == b_fai && 0 != pmessage->message_id
-		&& FALSE == store_object_check_private(pmessage->pstore)) {
+	if (b_new && !b_fai && pmessage->message_id != 0 &&
+	    !store_object_check_private(pmessage->pstore))
 		exmdb_client::rule_new_message(dir, pinfo->username,
 			store_object_get_account(pmessage->pstore),
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
-	}
 	return GXERR_SUCCESS;
 }
 
@@ -661,12 +656,9 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	if (TRUE == pmessage->b_new) {
 		return TRUE;
 	}
-	if (!exmdb_client::reload_message_instance(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &b_result) ||
-		FALSE == b_result) {
+	if (!exmdb_client::reload_message_instance(store_object_get_dir(pmessage->pstore),
+	    pmessage->instance_id, &b_result) || !b_result)
 		return FALSE;	
-	}
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_touched = FALSE;
@@ -1156,9 +1148,8 @@ static BOOL message_object_set_properties_internal(
 	TPROPVAL_ARRAY tmp_propvals1;
 	TAGGED_PROPVAL propval_buff[3];
 	
-	if (FALSE == pmessage->b_writable) {
+	if (!pmessage->b_writable)
 		return FALSE;
-	}
 	problems.count = 0;
 	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == problems.pproblem) {
@@ -1314,9 +1305,8 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 	PROPTAG_ARRAY tmp_proptags;
 	uint16_t *poriginal_indices;
 	
-	if (FALSE == pmessage->b_writable) {
+	if (!pmessage->b_writable)
 		return FALSE;
-	}
 	problems.count = 0;
 	problems.pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == problems.pproblem) {

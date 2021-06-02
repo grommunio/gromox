@@ -1231,11 +1231,9 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_mapping_replid(
-			pinfo->homedir, tmp_entryid.database_guid,
-			&b_found, &replid) || FALSE == b_found) {
+		if (!exmdb_client::get_mapping_replid(pinfo->homedir,
+		    tmp_entryid.database_guid, &b_found, &replid) || !b_found)
 			return FALSE;
-		}
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
 		return TRUE;
@@ -1291,11 +1289,10 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_mapping_replid(
-			pinfo->homedir, tmp_entryid.folder_database_guid,
-			&b_found, &replid) || FALSE == b_found) {
+		if (!exmdb_client::get_mapping_replid(pinfo->homedir,
+		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
+		    !b_found)
 			return FALSE;
-		}
 		*pfolder_id = rop_util_make_eid(replid,
 			tmp_entryid.folder_global_counter);
 		*pmessage_id = rop_util_make_eid(replid,
@@ -1335,9 +1332,8 @@ BINARY* common_util_to_folder_entryid(
 				&b_found, &tmp_entryid.database_guid)) {
 				return NULL;	
 			}
-			if (FALSE == b_found) {
+			if (!b_found)
 				return NULL;
-			}
 		} else {
 			tmp_entryid.database_guid = rop_util_make_domain_guid(
 								store_object_get_account_id(pstore));
@@ -1393,9 +1389,8 @@ BINARY* common_util_calculate_folder_sourcekey(
 				replid, &b_found, &longid.guid)) {
 				return NULL;	
 			}
-			if (FALSE == b_found) {
+			if (!b_found)
 				return NULL;
-			}
 		}	
 	}
 	rop_util_get_gc_array(folder_id, longid.global_counter);
@@ -1437,9 +1432,8 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 				&b_found, &tmp_entryid.folder_database_guid)) {
 				return NULL;	
 			}
-			if (FALSE == b_found) {
+			if (!b_found)
 				return NULL;
-			}
 		} else {
 			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(
 								store_object_get_account_id(pstore));

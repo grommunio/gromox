@@ -1115,9 +1115,8 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			&b_exist)) {
 			return ecError;
 		}
-		if (FALSE == b_exist) {
+		if (!b_exist)
 			return ecNotFound;
-		}
 		if (FALSE == store_object_check_private(pstore)) {
 			if (!exmdb_client::check_folder_deleted(
 				store_object_get_dir(pstore), folder_id, &b_del)) {
@@ -1906,9 +1905,8 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 				username, &b_owner)) {
 				return ecError;
 			}
-			if (FALSE == b_owner) {
+			if (!b_owner)
 				continue;
-			}
 		}
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
@@ -2038,9 +2036,8 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 						pinfo->username, &b_owner)) {
 						return ecError;
 					}
-					if (FALSE == b_owner) {
+					if (!b_owner)
 						continue;
-					}
 				}
 				if (FALSE == exmdb_client_delete_message(
 					store_object_get_dir(pstore),
@@ -2479,9 +2476,8 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 		&b_exist)) {
 		return ecError;
 	}
-	if (FALSE == b_exist) {
+	if (!b_exist)
 		return ecSuccess;
-	}
 	BOOL b_normal = (flags & DELETE_FOLDER_FLAG_MESSAGES) ? TRUE : false;
 	BOOL b_fai = b_normal;
 	BOOL b_sub = (flags & DELETE_FOLDER_FLAG_FOLDERS) ? TRUE : false;
@@ -2593,10 +2589,8 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	if (psrc_parent == nullptr)
 		return ecNullObject;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
-	if (FOLDER_TYPE_SEARCH == folder_object_get_type(
-		psrc_parent) && FALSE == b_copy) {
+	if (folder_object_get_type(psrc_parent) == FOLDER_TYPE_SEARCH && !b_copy)
 		return ecNotSupported;
-	}
 	if (mapi_type != MAPI_FOLDER)
 		return ecNotSupported;
 	pstore = folder_object_get_store(psrc_parent);
@@ -2806,9 +2800,8 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			    tmp_xid.guid, &b_found, &replid)) {
 				return ecError;
 			}
-			if (FALSE == b_found) {
+			if (!b_found)
 				return ecNotFound;
-			}
 		}
 		folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
 	}
@@ -3245,9 +3238,8 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 			ptable, bookmark, &b_exist)) {
 			return ecError;
 		}
-		if (FALSE == b_exist) {
+		if (!b_exist)
 			return ecNotFound;
-		}
 		auto original_position1 = table_object_get_position(ptable);
 		if (seek_rows < 0) {
 			/* underflow safety check for s32t */
@@ -3659,9 +3651,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					break;
 				}
 			}
-			if (FALSE == b_found) {
+			if (!b_found)
 				return ecInvalidParam;
-			}
 		}
 		if (FALSE == message_object_set_rcpts(pmessage, prcpt_list)) {
 			return ecError;
@@ -3952,10 +3943,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			&b_marked)) {
 			return ecError;
 		}
-		if (FALSE == b_marked) {
+		if (!b_marked)
 			return ecAccessDenied;
-		}
-		
 		deferred_time = 0;
 		time(&cur_time);
 		submit_time = rop_util_unix_to_nttime(cur_time);
@@ -4022,11 +4011,10 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			b_unsent);
 		return ecError;
 	}
-	if (FALSE == b_delete) {
+	if (!b_delete)
 		message_object_reload(pmessage);
-	} else {
+	else
 		message_object_clear_unsent(pmessage);
-	}
 	return ecSuccess;
 }
 
@@ -4433,9 +4421,8 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		return ecNullObject;
 	b_writable = attachment_object_check_writable(pattachment);
 	tag_access = attachment_object_get_tag_access(pattachment);
-	if ((FLAG_CREATE & flags) && FALSE == b_writable) {
+	if ((flags & FLAG_CREATE) && !b_writable)
 		return ecAccessDenied;
-	}
 	auto pmessage = message_object_create(pstore,
 		FALSE, pinfo->cpid, 0, pattachment,
 		tag_access, b_writable, NULL);
@@ -4445,9 +4432,8 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		if (0 == (FLAG_CREATE & flags)) {
 			return ecNotFound;
 		}
-		if (FALSE == b_writable) {
+		if (!b_writable)
 			return ecAccessDenied;
-		}
 		auto pmessage = message_object_create(pstore, TRUE,
 			pinfo->cpid, 0, pattachment, tag_access,
 			TRUE, NULL);
@@ -4602,10 +4588,9 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		for (i=0; i<proptags.count; i++) {
 			if (folder_object_check_readonly_property(fdst, proptags.pproptag[i]))
 				continue;
-			if (FALSE == b_force && common_util_index_proptags(
-				&proptags1, proptags.pproptag[i]) >= 0) {
+			if (!b_force && common_util_index_proptags(&proptags1,
+			    proptags.pproptag[i]) >= 0)
 				continue;
-			}
 			tmp_proptags.pproptag[tmp_proptags.count] = 
 									proptags.pproptag[i];
 			tmp_proptags.count ++;
@@ -5092,9 +5077,8 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 			message_id, &b_exist)) {
 			return ecError;
 		}
-		if (FALSE == b_exist) {
+		if (!b_exist)
 			return ecNotFound;
-		}
 	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {
 		if (!exmdb_client::check_folder_permission(
@@ -5250,9 +5234,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			&b_exist)) {
 			return ecError;
 		}
-		if (FALSE == b_exist) {
+		if (!b_exist)
 			return SYNC_E_NO_PARENT;
-		}
 	} else {
 		pbin = static_cast<BINARY *>(pproplist->ppropval[0].pvalue);
 		if (pbin == nullptr || pbin->cb != 22) {
@@ -5314,9 +5297,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 				tmp_xid.guid, &b_found, &replid)) {
 				return ecError;
 			}
-			if (FALSE == b_found) {
+			if (!b_found)
 				return ecInvalidParam;
-			}
 			folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
 		} else {
 			folder_id = rop_util_make_eid(1, tmp_xid.local_id);
@@ -5571,9 +5553,8 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 						tmp_xid.guid, &b_found, &replid)) {
 						return ecError;
 					}
-					if (FALSE == b_found) {
+					if (!b_found)
 						return ecInvalidParam;
-					}
 					eid = rop_util_make_eid(replid, tmp_xid.local_id);
 				} else {
 					eid = rop_util_make_eid(1, tmp_xid.local_id);
@@ -5592,9 +5573,8 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 				return ecError;
 			}
 		}
-		if (FALSE == b_exist) {
+		if (!b_exist)
 			continue;
-		}
 		if (NULL != username) {
 			if (SYNC_TYPE_CONTENTS == sync_type) {
 				if (FALSE == exmdb_client_check_message_owner(
@@ -5602,9 +5582,8 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 					eid, username, &b_owner)) {
 					return ecError;
 				}
-				if (FALSE == b_owner) {
+				if (!b_owner)
 					return ecAccessDenied;
-				}
 			} else if (!exmdb_client::check_folder_permission(store_object_get_dir(pstore),
 			    eid, username, &permission) && !(permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
@@ -5631,11 +5610,9 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 			    &b_partial) || b_partial)
 				return ecError;
  DELETE_FOLDER:
-			if (!exmdb_client::delete_folder(
-				store_object_get_dir(pstore), pinfo->cpid,
-				eid, b_hard, &b_result) || FALSE == b_result) {
+			if (!exmdb_client::delete_folder(store_object_get_dir(pstore),
+			    pinfo->cpid, eid, b_hard, &b_result) || !b_result)
 				return ecError;
-			}
 		}
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
@@ -5707,9 +5684,8 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 				username, &b_owner)) {
 				return ecError;
 			}
-			if (FALSE == b_owner) {
+			if (!b_owner)
 				continue;
-			}
 		}
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
@@ -5869,10 +5845,8 @@ uint32_t zarafa_server_setsearchcriteria(
 			&db_id, &folder_ids.pll[i])) {
 			return ecError;
 		}
-		if (FALSE == b_private || db_id !=
-			store_object_get_account_id(pstore)) {
+		if (!b_private || db_id != store_object_get_account_id(pstore))
 			return ecSearchFolderScopeViolation;
-		}
 		if (FALSE == store_object_check_owner_mode(pstore)) {
 			if (!exmdb_client::check_folder_permission(
 				store_object_get_dir(pstore), folder_ids.pll[i],
