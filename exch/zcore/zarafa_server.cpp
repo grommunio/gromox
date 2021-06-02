@@ -289,9 +289,8 @@ static void zarafa_server_notification_proc(const char *dir,
 	NEWMAIL_ZNOTIFICATION *pnew_mail;
 	OBJECT_ZNOTIFICATION *pobj_notify;
 	
-	if (TRUE == b_table) {
+	if (b_table)
 		return;
-	}
 	sprintf(tmp_buff, "%u|%s", notify_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
 	pitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
@@ -1053,9 +1052,8 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			store_object_get_dir(pstore), message_id, &b_del)) {
 			return ecError;
 		}
-		if (TRUE == b_del && 0 == (flags & FLAG_SOFT_DELETE)) {
+		if (b_del && !(flags & FLAG_SOFT_DELETE))
 			return ecNotFound;
-		}
 		tag_access = 0;
 		if (TRUE == store_object_check_owner_mode(pstore)) {
 			tag_access = TAG_ACCESS_MODIFY|
@@ -1080,19 +1078,14 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			pinfo->username, &b_owner)) {
 			return ecError;
 		}
-		if (TRUE == b_owner || (permission & PERMISSION_READANY)) {
+		if (b_owner || (permission & PERMISSION_READANY))
 			tag_access |= TAG_ACCESS_READ;
-		}
-		if ((permission & PERMISSION_EDITANY)
-			|| (TRUE == b_owner &&
-			(permission & PERMISSION_EDITOWNED))) {
+		if ((permission & PERMISSION_EDITANY) ||
+		    (b_owner && (permission & PERMISSION_EDITOWNED)))
 			tag_access |= TAG_ACCESS_MODIFY;	
-		}
-		if ((permission & PERMISSION_DELETEANY)
-			|| (TRUE == b_owner &&
-			(permission & PERMISSION_DELETEOWNED))) {
+		if ((permission & PERMISSION_DELETEANY) ||
+		    (b_owner && (permission & PERMISSION_DELETEOWNED)))
 			tag_access |= TAG_ACCESS_DELETE;	
-		}
  PERMISSION_CHECK:
 		if (0 == (TAG_ACCESS_READ & tag_access)) {
 			return ecAccessDenied;
@@ -1122,9 +1115,8 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 				store_object_get_dir(pstore), folder_id, &b_del)) {
 				return ecError;
 			}
-			if (TRUE == b_del && 0 == (flags & FLAG_SOFT_DELETE)) {
+			if (b_del && !(flags & FLAG_SOFT_DELETE))
 				return ecNotFound;
-			}
 		}
 		if (FALSE == exmdb_client_get_folder_property(
 			store_object_get_dir(pstore), 0, folder_id,
@@ -2502,10 +2494,9 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 			&b_partial)) {
 			return ecError;
 		}
-		if (TRUE == b_partial) {
+		if (b_partial)
 			/* failure occurs, stop deleting folder */
 			return ecSuccess;
-		}
 	}
  DELETE_FOLDER:
 	return exmdb_client::delete_folder(store_object_get_dir(pstore),
@@ -2666,10 +2657,9 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 				FALSE, TRUE, TRUE, TRUE, &b_partial)) {
 				return ecError;
 			}
-			if (TRUE == b_partial) {
+			if (b_partial)
 				/* failure occurs, stop deleting folder */
 				return ecSuccess;
-			}
 			if (!exmdb_client::delete_folder(
 				store_object_get_dir(pstore),
 				pinfo->cpid, folder_id, FALSE,
@@ -2684,9 +2674,8 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		folder_object_get_id(pdst_folder), &b_cycle)) {
 		return ecError;
 	}
-	if (TRUE == b_cycle) {
+	if (b_cycle)
 		return MAPI_E_FOLDER_CYCLE;
-	}
 	if (!exmdb_client::movecopy_folder(
 		store_object_get_dir(pstore),
 		store_object_get_account_id(pstore),
@@ -3335,9 +3324,8 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 			}
 			type &= ~MV_INSTANCE;
 			/* MUST NOT contain more than one multivalue property! */
-			if (TRUE == b_multi_inst) {
+			if (b_multi_inst)
 				return ecInvalidParam;
-			}
 			b_multi_inst = TRUE;
 		}
 		switch (type) {
@@ -3375,9 +3363,8 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 			psortset->psort[i].table_sort ||
 			TABLE_SORT_MINIMUM_CATEGORY ==
 			psortset->psort[i].table_sort) {
-			if (TRUE == b_max || i != psortset->ccategories) {
+			if (b_max || i != psortset->ccategories)
 				return ecInvalidParam;
-			}
 			b_max = TRUE;
 		}
 	}
@@ -4566,9 +4553,8 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			    folder_object_get_id(folder),
 			    folder_object_get_id(fdst), &b_cycle))
 				return ecError;
-			if (TRUE == b_cycle) {
+			if (b_cycle)
 				return MAPI_E_FOLDER_CYCLE;
-			}
 			b_sub = TRUE;
 		} else {
 			b_sub = FALSE;
@@ -4605,9 +4591,8 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			    b_normal, b_fai, b_sub, folder_object_get_id(fdst),
 			    &b_collid, &b_partial))
 				return ecError;
-			if (TRUE == b_collid) {
+			if (b_collid)
 				return ecDuplicateName;
-			}
 			if (!folder_object_set_properties(fdst, &propvals))
 				return ecError;
 			return ecSuccess;
@@ -4663,9 +4648,8 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 		if (!message_object_check_orignal_touched(static_cast<MESSAGE_OBJECT *>(pobject), &b_touched)) {
 			return ecError;
 		}
-		if (TRUE == b_touched) {
+		if (b_touched)
 			return ecObjectModified;
-		}
 		gxerr_t err = message_object_save(static_cast<MESSAGE_OBJECT *>(pobject));
 		if (err != GXERR_SUCCESS) {
 			return gxerr_to_hresult(err);
@@ -5105,17 +5089,14 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 					pinfo->username, &b_owner)) {
 					return ecError;
 				}
-				if (TRUE == b_owner || (permission & PERMISSION_READANY)) {
+				if (b_owner || (permission & PERMISSION_READANY))
 					tag_access |= TAG_ACCESS_READ;
-				}
-				if ((permission & PERMISSION_EDITANY) || (TRUE ==
-					b_owner && (permission & PERMISSION_EDITOWNED))) {
+				if ((permission & PERMISSION_EDITANY) ||
+				    (b_owner && (permission & PERMISSION_EDITOWNED)))
 					tag_access |= TAG_ACCESS_MODIFY;	
-				}
-				if ((permission & PERMISSION_DELETEANY) || (TRUE ==
-					b_owner && (permission & PERMISSION_DELETEOWNED))) {
+				if ((permission & PERMISSION_DELETEANY) ||
+				    (b_owner && (permission & PERMISSION_DELETEOWNED)))
 					tag_access |= TAG_ACCESS_DELETE;	
-				}
 			}
 		}
 	} else {
@@ -5414,12 +5395,10 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		    &b_exist, &b_partial)) {
 			return ecError;
 		}
-		if (TRUE == b_exist) {
+		if (b_exist)
 			return ecDuplicateName;
-		}
-		if (TRUE == b_partial) {
+		if (b_partial)
 			return ecError;
-		}
 	}
 	if (!exmdb_client::allocate_cn(
 		store_object_get_dir(pstore), &change_num)) {

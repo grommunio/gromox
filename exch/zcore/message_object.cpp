@@ -536,10 +536,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		proptag_array_clear(pmessage->premoved_proptags);
 		return GXERR_SUCCESS;
 	}
-	
-	if (TRUE == b_new) {
+	if (b_new)
 		goto SAVE_FULL_CHANGE;
-	}
 	if (!exmdb_client::get_message_group_id(
 		dir, pmessage->message_id, &pgroup_id)) {
 		return GXERR_CALL_FAILED;
@@ -653,9 +651,8 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	BOOL b_result;
 	uint64_t *pchange_num;
 	
-	if (TRUE == pmessage->b_new) {
+	if (pmessage->b_new)
 		return TRUE;
-	}
 	if (!exmdb_client::reload_message_instance(store_object_get_dir(pmessage->pstore),
 	    pmessage->instance_id, &b_result) || !b_result)
 		return FALSE;	
@@ -762,9 +759,8 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 		return FALSE;	
 	}
 	pmessage->b_touched = TRUE;
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	proptag_array_append(pmessage->pchanged_proptags,
 						PROP_TAG_MESSAGERECIPIENTS);
 	return TRUE;
@@ -779,9 +775,8 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 		return FALSE;	
 	}
 	pmessage->b_touched = TRUE;
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	proptag_array_append(pmessage->pchanged_proptags,
 						PROP_TAG_MESSAGERECIPIENTS);
 	return TRUE;
@@ -804,9 +799,8 @@ BOOL message_object_delele_attachment(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	pmessage->b_touched = TRUE;
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	proptag_array_append(pmessage->pchanged_proptags,
 						PROP_TAG_MESSAGEATTACHMENTS);
 	return TRUE;
@@ -962,9 +956,8 @@ static BOOL message_object_check_readonly_property(
 	case PROP_TAG_LASTMODIFICATIONTIME:
 	case PROP_TAG_PREDECESSORCHANGELIST:
 	case PROP_TAG_SOURCEKEY:
-		if (TRUE == pmessage->b_new) {
+		if (pmessage->b_new)
 			return FALSE;
-		}
 		return TRUE;
 	case PROP_TAG_READ:
 		if (NULL == pmessage->pembedding) {
@@ -1237,9 +1230,8 @@ static BOOL message_object_set_properties_internal(
 			*sizeof(PROPERTY_PROBLEM));
 		problems.count += tmp_problems.count;
 	}
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	for (i=0; i<ppropvals->count; i++) {
 		for (j=0; j<problems.count; j++) {
 			if (i == problems.pproblem[j].index) {
@@ -1352,9 +1344,8 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 			sizeof(PROPERTY_PROBLEM));
 		problems.count += tmp_problems.count;
 	}
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		for (j=0; j<problems.count; j++) {
 			if (i == problems.pproblem[j].index) {
@@ -1390,9 +1381,8 @@ BOOL message_object_copy_to(
 		pb_cycle)) {
 		return FALSE;	
 	}
-	if (TRUE == *pb_cycle) {
+	if (*pb_cycle)
 		return TRUE;
-	}
 	if (!exmdb_client::read_message_instance(
 		store_object_get_dir(pmessage_src->pstore),
 		pmessage_src->instance_id, &msgctnt)) {
@@ -1424,9 +1414,8 @@ BOOL message_object_copy_to(
 		b_force, &proptags, &tmp_problems)) {
 		return FALSE;	
 	}
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	for (i=0; i<proptags.count; i++) {
 		proptag_array_append(pmessage->pchanged_proptags,
 			proptags.pproptag[i]);

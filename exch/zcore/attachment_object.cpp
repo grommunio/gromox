@@ -204,9 +204,8 @@ static BOOL attachment_object_check_readonly_property(
 	case PROP_TAG_ATTACHSIZE:
 	case PROP_TAG_CREATIONTIME:
 	case PROP_TAG_LASTMODIFICATIONTIME:
-		if (TRUE == pattachment->b_new) {
+		if (pattachment->b_new)
 			return FALSE;
-		}
 		return TRUE;
 	}
 	return FALSE;
@@ -388,9 +387,8 @@ BOOL attachment_object_copy_properties(
 		pb_cycle)) {
 		return FALSE;	
 	}
-	if (TRUE == *pb_cycle) {
+	if (*pb_cycle)
 		return TRUE;
-	}
 	if (!exmdb_client::read_attachment_instance(
 		store_object_get_dir(pattachment_src->pparent->pstore),
 		pattachment_src->instance_id, &attctnt)) {

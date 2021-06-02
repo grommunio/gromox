@@ -1747,10 +1747,9 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			}
 			break;
 		case PROP_TAG_ECUSERTIMEZONE:
-			if (TRUE == pstore->b_private) {
+			if (pstore->b_private)
 				system_services_set_timezone(pstore->account,
 					static_cast<char *>(ppropvals->ppropval[i].pvalue));
-			}
 			break;
 		case PROP_TAG_THUMBNAILPHOTO:
 			if (TRUE == pstore->b_private) {
