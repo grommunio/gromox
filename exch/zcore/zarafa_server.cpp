@@ -1210,7 +1210,10 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		*pmapi_type = MAPI_ABCONT;
 		*phobject = object_tree_add_object_handle(pinfo->ptree,
 		            ROOT_HANDLE, *pmapi_type, contobj.get());
-		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
+		if (*phobject == INVALID_HANDLE)
+			return ecError;
+		contobj.release();
+		return ecSuccess;
 	}
 	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
 	    essdn, GX_ARRAY_SIZE(essdn))) {
