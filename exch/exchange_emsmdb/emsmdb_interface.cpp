@@ -515,9 +515,10 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	AUX_CLIENT_CONTROL aux_control;
 	AUX_ENDPOINT_CAPABILITIES aux_cap;
 	uint16_t server_normal_version[4] = {15, 0, 847, 4040};
+	bool is_success = false;
 
 	auto cl_0 = make_scope_exit([&]() {
-		if (result == ecSuccess)
+		if (is_success)
 			return;
 		memset(pcxh, 0, sizeof(CXH));
 		*pmax_polls = 0;
@@ -637,7 +638,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		cpid, lcid_string, lcid_sort, pcxr, pcxh)) {
 		return result = ecLoginFailure;
 	}
-	return ecSuccess;
+	is_success = true;
+	return result = ecSuccess;
 }
 
 static uint32_t emsmdb_interface_get_interval(struct timeval first_time)
