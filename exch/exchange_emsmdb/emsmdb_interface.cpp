@@ -560,7 +560,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	DCERPC_INFO rpc_info;
 	if (!ext_buffer_push_init(&ext_push, pauxout, 0x1008, EXT_FLAG_UTF16)) {
 		double_list_free(&aux_out.aux_list);
-		return result = ecMAPIOOM;
+		return ecMAPIOOM;
 	}
 	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ? 0 : ext_push.offset;
 	double_list_free(&aux_out.aux_list);
@@ -568,7 +568,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	pdn_prefix[0] = '\0';
 	rpc_info = get_rpc_info();
 	if (flags & FLAG_PRIVILEGE_ADMIN) {
-		return result = ecLoginPerm;
+		return ecLoginPerm;
 	}
 	
 	*pmax_polls = EMSMDB_PCMSPOLLMAX;
@@ -576,21 +576,21 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	*pretry_delay = EMSMDB_PCRETRYDELAY;
 	
 	if ('\0' == puser_dn[0]) {
-		return result = ecAccessDenied;
+		return ecAccessDenied;
 	}
 	if (!common_util_essdn_to_username(puser_dn,
 	    username, GX_ARRAY_SIZE(username))) {
-		return result = ecRpcFailed;
+		return ecRpcFailed;
 	}
 	if (*username == '\0') {
-		return result = ecUnknownUser;
+		return ecUnknownUser;
 	}
 	if (0 != strcasecmp(username, rpc_info.username)) {
-		return result = ecAccessDenied;
+		return ecAccessDenied;
 	}
 	if (FALSE == common_util_get_user_displayname(username, temp_buff) ||
 		common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0) {
-		return result = ecRpcFailed;
+		return ecRpcFailed;
 	}
 	if ('\0' == pdisplayname[0]) {
 		strcpy(pdisplayname, rpc_info.username);
@@ -603,9 +603,9 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	pbest_vers[2] = pclient_vers[2];
 	
 	if (cb_auxin > 0 && cb_auxin < 0x8) {
-		return result = ecRpcFailed;
+		return ecRpcFailed;
 	} else if (cb_auxin > 0x1008) {
-		return result = RPC_X_BAD_STUB_DATA;
+		return RPC_X_BAD_STUB_DATA;
 	}
 	
 	client_mode = CLIENT_MODE_UNKNOWN;
@@ -636,10 +636,10 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (FALSE == emsmdb_interface_create_handle(
 		rpc_info.username, client_version, client_mode,
 		cpid, lcid_string, lcid_sort, pcxr, pcxh)) {
-		return result = ecLoginFailure;
+		return ecLoginFailure;
 	}
 	is_success = true;
-	return result = ecSuccess;
+	return ecSuccess;
 }
 
 static uint32_t emsmdb_interface_get_interval(struct timeval first_time)
