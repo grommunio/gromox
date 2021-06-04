@@ -216,8 +216,10 @@ int main(int argc, const char **argv)
 	auto cl_4 = make_scope_exit([&]() {
 		g_enqueue_waken_cond.notify_all();
 		g_dequeue_waken_cond.notify_all();
-		for (auto tid : tidlist)
+		for (auto tid : tidlist) {
+			pthread_kill(tid, SIGALRM);
 			pthread_join(tid, nullptr);
+		}
 	});
 	size_t i;
 	for (i=0; i<g_threads_num; i++) {
