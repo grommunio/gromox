@@ -115,8 +115,10 @@ int cmd_parser_run()
 	return 0;
 
  FAILURE_EXIT:
-	while (i > 0)
-		pthread_cancel(g_thread_ids[--i]);
+	while (i > 0) {
+		pthread_kill(g_thread_ids[--i], SIGALRM);
+		pthread_join(g_thread_ids[i], nullptr);
+	}
 	pthread_attr_destroy(&thr_attr);
 	return -1;
 }
