@@ -404,6 +404,8 @@ static void *ev_enqwork(void *param)
 	char temp_string[256];
 	
  NEXT_LOOP:
+	if (g_notify_stop)
+		return nullptr;
 	std::unique_lock cm_hold(g_enqueue_cond_mutex);
 	g_enqueue_waken_cond.wait(cm_hold);
 	cm_hold.unlock();
