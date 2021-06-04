@@ -38,7 +38,7 @@ struct WRITE_STAT {
 
 static char g_hqxheader[] = "(This file must be converted with BinHex 4.0)\r\n";
 
-static const char g_demap[256] = {
+static const int8_t g_demap[256] = {
    0,  0,  0,  0,  0,  0,  0,  0,
    0, -1, -1,  0,  0, -1,  0,  0,
    0,  0,  0,  0,  0,  0,  0,  0,
