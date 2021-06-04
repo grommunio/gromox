@@ -130,6 +130,7 @@ int asyncemsmdb_interface_stop()
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 		for (i=0; i<g_threads_num; i++) {
+			pthread_kill(g_thread_ids[i], SIGALRM);
 			pthread_join(g_thread_ids[i], NULL);
 		}
 	}
