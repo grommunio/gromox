@@ -468,7 +468,8 @@ int exmdb_client_stop()
 	}
 	g_notify_stop = true;
 	for (auto &ag : g_agent_list) {
-		pthread_cancel(ag.thr_id);
+		pthread_kill(ag.thr_id, SIGALRM);
+		pthread_join(ag.thr_id, nullptr);
 		if (ag.sockd != -1)
 			close(ag.sockd);
 	}

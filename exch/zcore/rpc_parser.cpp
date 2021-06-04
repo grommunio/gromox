@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
 #include <condition_variable>
+#include <csignal>
 #include <cstdint>
 #include <mutex>
 #include <gromox/defs.h>
@@ -795,7 +796,8 @@ int rpc_parser_run()
 	if (i < g_thread_num) {
 		g_notify_stop = true;
 		for (i=0; i<g_thread_num; i++) {
-			pthread_cancel(g_thread_ids[i]);
+			pthread_kill(g_thread_ids[i], SIGALRM);
+			pthread_join(g_thread_ids[i], nullptr);
 		}
 		free(g_thread_ids);
 		printf("[rpc_parser]: failed to create pool thread: %s\n", strerror(ret));
@@ -811,6 +813,7 @@ int rpc_parser_stop()
 	g_notify_stop = true;
 	g_waken_cond.notify_all();
 	for (i=0; i<g_thread_num; i++) {
+		pthread_kill(g_thread_ids[i], SIGALRM);
 		pthread_join(g_thread_ids[i], NULL);
 	}
 	free(g_thread_ids);
