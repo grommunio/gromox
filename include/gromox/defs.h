@@ -19,9 +19,9 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
 #	define le16_to_cpu(x) __builtin_bswap16(x)
 #	define le32_to_cpu(x) __builtin_bswap32(x)
 #	define le64_to_cpu(x) __builtin_bswap64(x)
-#	define be16_to_cpu(x) ((uint16_t)(x)
-#	define be32_to_cpu(x) ((uint32_t)(x)
-#	define be64_to_cpu(x) ((uint64_t)(x)
+#	define be16_to_cpu(x) static_cast<uint16_t>(x)
+#	define be32_to_cpu(x) static_cast<uint32_t>(x)
+#	define be64_to_cpu(x) static_cast<uint64_t>(x)
 #else
 #	define cpu_to_le16(x) (x)
 #	define cpu_to_le32(x) (x)
