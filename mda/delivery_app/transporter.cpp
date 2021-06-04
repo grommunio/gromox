@@ -527,7 +527,6 @@ static void *dxp_thrwork(void *arg)
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTEXT *pcontext;
 	
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	pthr_data = (THREAD_DATA*)arg;
 	pthread_setspecific(g_tls_key, (const void*) pthr_data);
 	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
