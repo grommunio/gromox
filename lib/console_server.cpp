@@ -473,11 +473,8 @@ void console_server_notify_main_stop()
 	std::unique_lock ll_hold(g_list_lock);
 	while ((pnode = double_list_pop_front(&g_console_list)) != nullptr) {
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
-		if (0 == pthread_equal(pthread_self(), pconsole->tid)) {
-			pthread_cancel(pconsole->tid);
-		} else {
+		if (pthread_equal(pthread_self(), pconsole->tid) != 0)
 			b_console = TRUE;
-		}
 		write(pconsole->client_fd, STOP_STRING, sizeof(STOP_STRING) - 1);
 		close(pconsole->client_fd);
 	}
