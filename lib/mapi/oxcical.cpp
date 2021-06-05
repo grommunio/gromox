@@ -1174,12 +1174,10 @@ static BOOL oxcical_parse_dtstamp(std::shared_ptr<ICAL_LINE> piline,
 	}
 	if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
 		return TRUE;
-	if (method != nullptr && (strcasecmp(method, "REPLY") == 0 ||
-	    strcasecmp(method, "COUNTER") == 0)) {
-		propname.plid = deconst(&PidLidAttendeeCriticalChange);
-	} else {
-		propname.plid = deconst(&PidLidOwnerCriticalChange);
-	}
+	propname.plid = (method != nullptr && (strcasecmp(method, "REPLY") == 0 ||
+	                strcasecmp(method, "COUNTER") == 0)) ?
+	                deconst(&PidLidAttendeeCriticalChange) :
+	                deconst(&PidLidOwnerCriticalChange);
 	propname.kind = MNID_ID;
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
@@ -1204,11 +1202,8 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 	
 	tmp_int64 = rop_util_unix_to_nttime(unix_time);
 	if (TRUE == b_proposal) {
-		if (TRUE == b_start) {
-			propname.plid = deconst(&PidLidAppointmentProposedStartWhole);
-		} else {
-			propname.plid = deconst(&PidLidAppointmentProposedEndWhole);
-		}
+		propname.plid = deconst(b_start ? &PidLidAppointmentProposedStartWhole :
+		                &PidLidAppointmentProposedEndWhole);
 		propname.kind = MNID_ID;
 		rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
@@ -1223,11 +1218,8 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 	if (FALSE == b_proposal ||
 	    (pmain_event->get_line("X-MS-OLK-ORIGINALEND") == nullptr &&
 	    pmain_event->get_line("X-MS-OLK-ORIGINALSTART") == nullptr)) {
-		if (TRUE == b_start) {
-			propname.plid = deconst(&PidLidAppointmentStartWhole);
-		} else {
-			propname.plid = deconst(&PidLidAppointmentEndWhole);
-		}
+		propname.plid = deconst(b_start ? &PidLidAppointmentStartWhole :
+		                &PidLidAppointmentEndWhole);
 		propname.kind = MNID_ID;
 		rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
@@ -4816,11 +4808,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	propname.kind = MNID_ID;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
-	if (TRUE == b_proposal) {
-		propname.plid = deconst(&PidLidAppointmentProposedStartWhole);
-	} else {
-		propname.plid = deconst(&PidLidAppointmentStartWhole);
-	}
+	propname.plid = deconst(b_proposal ? &PidLidAppointmentProposedStartWhole :
+	                &PidLidAppointmentStartWhole);
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
@@ -4834,11 +4823,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname.kind = MNID_ID;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
-	if (TRUE == b_proposal) {
-		propname.plid = deconst(&PidLidAppointmentProposedEndWhole);
-	} else {
-		propname.plid = deconst(&PidLidAppointmentEndWhole);
-	}
+	propname.plid = deconst(b_proposal ? &PidLidAppointmentProposedEndWhole :
+	                &PidLidAppointmentEndWhole);
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
@@ -5590,12 +5576,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname.kind = MNID_ID;
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
-	if (0 == strcmp(method, "REPLY") ||
-		0 == strcmp(method, "COUNTER")) {
-		propname.plid = deconst(&PidLidAttendeeCriticalChange);
-	} else {
-		propname.plid = deconst(&PidLidOwnerCriticalChange);
-	}
+	propname.plid = (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0) ?
+	                deconst(&PidLidAttendeeCriticalChange) :
+	                deconst(&PidLidOwnerCriticalChange);
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
