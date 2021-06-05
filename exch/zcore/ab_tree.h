@@ -46,12 +46,15 @@ struct DOMAIN_NODE {
 };
 
 struct AB_BASE {
-	std::atomic<int> status, reference;
-	time_t load_time;
-	int base_id;
-	SINGLE_LIST list;
-	SINGLE_LIST gal_list;
-	INT_HASH_TABLE *phash;
+	AB_BASE() = default;
+	~AB_BASE() { unload(); }
+	void unload();
+
+	std::atomic<int> status{0}, reference{0};
+	time_t load_time = 0;
+	int base_id = 0;
+	SINGLE_LIST list{}, gal_list{};
+	INT_HASH_TABLE *phash = nullptr;
 };
 
 struct ab_tree_del {
