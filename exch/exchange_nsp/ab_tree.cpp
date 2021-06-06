@@ -804,16 +804,16 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	if (it == g_base_hash.end()) {
 		if (g_base_hash.size() >= g_base_size) {
 			printf("[exchange_nsp]: W-1298: AB base hash is full\n");
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		}
 		decltype(g_base_hash.try_emplace(base_id)) xp;
 		try {
 			xp = g_base_hash.try_emplace(base_id);
 		} catch (const std::bad_alloc &) {
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		}
 		if (!xp.second)
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		pbase = &xp.first->second;
 		pbase->base_id = base_id;
 		pbase->status = BASE_STATUS_CONSTRUCTING;
@@ -825,7 +825,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			bhold.lock();
 			g_base_hash.erase(xp.first);
 			bhold.unlock();
-			return AB_BASE_REF(nullptr);
+			return nullptr;
 		}
 		time(&pbase->load_time);
 		bhold.lock();
@@ -836,7 +836,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			bhold.unlock();
 			count ++;
 			if (count > 60) {
-				return AB_BASE_REF(nullptr);
+				return nullptr;
 			}
 			sleep(1);
 			goto RETRY_LOAD_BASE;
