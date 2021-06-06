@@ -522,9 +522,9 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		libpff_error_ptr err;
 		size_t dsize2 = 0;
 		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize2, &unique_tie(err)) >= 1) {
-			++dsize;
-			buf = std::make_unique<uint8_t[]>(dsize);
-			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) < 1)
+			++dsize2;
+			buf = std::make_unique<uint8_t[]>(dsize2);
+			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize2, nullptr) < 1)
 				throw "PF-1036";
 		} else {
 			fprintf(stderr, "PF-1041: Garbage in Unicode string\n");
