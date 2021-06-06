@@ -39,7 +39,8 @@ struct DOMAIN_NODE {
 
 struct AB_BASE {
 	AB_BASE();
-	~AB_BASE();
+	~AB_BASE() { unload(); }
+	void unload();
 
 	GUID guid{};
 	std::atomic<int> status{0}, reference{0};

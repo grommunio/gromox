@@ -271,7 +271,7 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	simple_tree_free(ptree);
 }
 
-AB_BASE::~AB_BASE()
+void AB_BASE::unload()
 {
 	auto pbase = this;
 	SINGLE_LIST_NODE *pnode;
@@ -806,15 +806,15 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			printf("[exchange_nsp]: W-1298: AB base hash is full\n");
 			return nullptr;
 		}
-		decltype(g_base_hash.try_emplace(base_id)) xp;
 		try {
-			xp = g_base_hash.try_emplace(base_id);
+			auto xp = g_base_hash.try_emplace(base_id);
+			if (!xp.second)
+				return nullptr;
+			it = xp.first;
+			pbase = &xp.first->second;
 		} catch (const std::bad_alloc &) {
 			return nullptr;
 		}
-		if (!xp.second)
-			return nullptr;
-		pbase = &xp.first->second;
 		pbase->base_id = base_id;
 		pbase->status = BASE_STATUS_CONSTRUCTING;
 		pbase->guid = guid_random_new();
@@ -822,8 +822,9 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		pbase->phash = NULL;
 		bhold.unlock();
 		if (FALSE == ab_tree_load_base(pbase)) {
+			pbase->unload();
 			bhold.lock();
-			g_base_hash.erase(xp.first);
+			g_base_hash.erase(it);
 			bhold.unlock();
 			return nullptr;
 		}
@@ -890,6 +891,7 @@ static void *nspab_scanwork(void *param)
 			pbase->phash = NULL;
 		}
 		if (FALSE == ab_tree_load_base(pbase)) {
+			pbase->unload();
 			bhold.lock();
 			g_base_hash.erase(pbase->base_id);
 			bhold.unlock();
