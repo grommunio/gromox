@@ -934,7 +934,8 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
-	fprintf(stderr, "Transferring objects...\n");
+	if (g_wet_run)
+		fprintf(stderr, "Transferring objects...\n");
 	char timebuf[64];
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
