@@ -1,3 +1,13 @@
+0.25 (2021-05-09)
+=================
+
+Fixes:
+
+* http: fix a garbage return code in the emsmdb logon procedure
+* zcore: fix a use-after-free crash when opening the addressbook
+* event: speedier shutdown of service
+
+
 0.24 (2021-05-31)
 =================
 
