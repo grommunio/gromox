@@ -146,6 +146,15 @@ static void tlog(const char *fmt, ...)
 	va_end(args);
 }
 
+static int az_error(const char *prefix, const libpff_error_ptr &err)
+{
+	char buf[160];
+	buf[0] = '\0';
+	libpff_error_sprint(err.get(), buf, arsizeof(buf));
+	fprintf(stderr, "%s: %s\n", prefix, buf);
+	return 0;
+}
+
 static const char *az_item_type_to_str(uint8_t t)
 {
 	thread_local char buf[32];
@@ -270,13 +279,14 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 {
 	int atype = 0;
 	uint64_t asize = 0;
+	libpff_error_ptr err;
 
-	if (libpff_attachment_get_type(atx, &atype, nullptr) < 1)
-		throw "PF-1012";
+	if (libpff_attachment_get_type(atx, &atype, &unique_tie(err)) < 1)
+		return az_error("PF-1012: Attachment is corrupted", err);
 	tree(depth);
 	if (atype == LIBPFF_ATTACHMENT_TYPE_DATA) {
-		if (libpff_attachment_get_data_size(atx, &asize, nullptr) < 1)
-			throw "PF-1013";
+		if (libpff_attachment_get_data_size(atx, &asize, &unique_tie(err)) < 1)
+			return az_error("PF-1013: Attachment is corrupted", err);
 		/*
 		 * Data is in PROP_TAG_ATTACHDATABINARY, and so was
 		 * already spooled into atc->proplist by the caller.
@@ -284,8 +294,9 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 		tlog("[attachment type=%c size=%zu]\n", atype, asize);
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_ITEM) {
 		libpff_item_ptr emb_item;
-		if (libpff_attachment_get_item(atx, &unique_tie(emb_item), nullptr) < 1)
-			throw "PF-1014";
+		if (libpff_attachment_get_item(atx, &unique_tie(emb_item),
+		    &unique_tie(err)) < 1)
+			return az_error("PF-1014: Attachment is corrupted", err);
 		tlog("[attachment type=%c embedded_msg]\n", atype);
 		auto ret = do_item(depth + 1, parent_desc::as_attach(atc), emb_item.get());
 		if (ret < 0)
