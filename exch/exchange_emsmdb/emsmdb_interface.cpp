@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <csignal>
 #include <cstdint>
 #include <mutex>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
@@ -76,7 +76,7 @@ static constexpr size_t TAG_SIZE = 256;
 static time_t g_start_time;
 static pthread_t g_scan_id;
 static std::mutex g_lock, g_notify_lock;
-static std::atomic<bool> g_notify_stop{true};
+static gromox::atomic_bool g_notify_stop{true};
 static pthread_key_t g_handle_key;
 static STR_HASH_TABLE *g_user_hash;
 static STR_HASH_TABLE *g_handle_hash;

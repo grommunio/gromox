@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#include <atomic>
 #include <csignal>
 #include <cstdint>
 #include <cstring>
@@ -13,6 +12,7 @@
 #include <utility>
 #include <sys/wait.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -76,7 +76,7 @@ struct user_info_del {
 using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;
 
 static size_t g_table_size;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;

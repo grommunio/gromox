@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <csignal>
 #include <cstring>
 #include <mutex>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/threads_pool.hpp>
@@ -21,7 +21,7 @@ static int g_epoll_fd = -1;
 static pthread_t g_scan_id;
 static SCHEDULE_CONTEXT **g_context_list;
 static pthread_t g_thread_id;
-static std::atomic<bool> g_notify_stop{true};
+static gromox::atomic_bool g_notify_stop{true};
 static struct epoll_event *g_events;
 static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
 static std::mutex g_context_locks[CONTEXT_TYPES];

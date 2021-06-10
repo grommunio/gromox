@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
-#include <atomic>
 #include <cassert>
 #include <csignal>
 #include <cstdint>
 #include <deque>
 #include <mutex>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/msg_unit.hpp>
@@ -125,7 +125,7 @@ static BOOL check_full(const char *path);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static int g_conn_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;

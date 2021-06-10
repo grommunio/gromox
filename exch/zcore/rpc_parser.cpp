@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <condition_variable>
 #include <csignal>
 #include <cstdint>
 #include <mutex>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include <gromox/idset.hpp>
@@ -37,7 +37,7 @@ struct CLIENT_NODE {
 }
 
 static int g_thread_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t *g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;

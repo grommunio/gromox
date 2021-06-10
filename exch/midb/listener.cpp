@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include <gromox/common_types.hpp>
@@ -28,7 +28,7 @@ using namespace gromox;
 static uint16_t g_listen_port;
 static char g_listen_ip[40];
 static int g_listen_sockd;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static std::vector<std::string> g_acl_list;
 
 static void *midls_thrwork(void *);

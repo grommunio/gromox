@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
@@ -10,6 +9,7 @@
 #include <typeinfo>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
@@ -43,10 +43,10 @@
 
 using namespace gromox;
 
-std::atomic<bool> g_notify_stop{false};
+gromox::atomic_bool g_notify_stop{false};
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
-static std::atomic<bool> g_hup_signalled{false};
+static gromox::atomic_bool g_hup_signalled{false};
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},

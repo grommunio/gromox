@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -13,6 +12,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
@@ -68,7 +68,7 @@ struct DIRECTORY_NODE {
 }
 
 static int g_context_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t g_scan_tid;
 static DOUBLE_LIST g_item_list;
 static std::mutex g_hash_lock;

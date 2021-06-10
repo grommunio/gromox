@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
-#include <atomic>
 #include <csignal>
 #include <ctime>
 #include <memory>
@@ -16,6 +15,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
+#include <gromox/atomic.hpp>
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
@@ -152,7 +152,7 @@ private:
 	template<size_t RI, bool copystat = false>
 	ProcRes proxy(MhNspContext&);
 
-	std::atomic<bool> stop = false;
+	gromox::atomic_bool stop = false;
 	pthread_t scan;
 	std::mutex hashLock;
 	std::unordered_map<std::string, int> users;

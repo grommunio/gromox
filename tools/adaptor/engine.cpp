@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
+#include <gromox/atomic.hpp>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -21,7 +21,7 @@
 
 using namespace gromox;
 
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t g_thread_id1;
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];

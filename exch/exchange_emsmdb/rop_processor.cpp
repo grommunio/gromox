@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <csignal>
 #include <cstdint>
 #include <cstring>
 #include <mutex>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "subscription_object.h"
 #include "fastdownctx_object.h"
@@ -64,7 +64,7 @@ struct OBJECT_NODE {
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
-static std::atomic<bool> g_notify_stop{true};
+static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static STR_HASH_TABLE *g_logon_hash;
 static LIB_BUFFER *g_logmap_allocator;

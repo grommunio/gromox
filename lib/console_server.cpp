@@ -2,7 +2,6 @@
 /*
  *  the console server which communicate with the telnet clients
  */
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -11,6 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
@@ -54,8 +54,8 @@ struct CONSOLE_NODE {
 
 }
 
-extern std::atomic<bool> g_notify_stop;
-static std::atomic<bool> g_terminate{false};
+extern gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_terminate{false};
 static char g_listen_ip[40];
 static uint16_t g_listen_port;
 static pthread_t g_listening_tid;

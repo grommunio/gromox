@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -9,6 +8,7 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "cache_queue.h"
 #include "exmdb_local.h"
@@ -32,7 +32,7 @@ static int g_scan_interval;
 static int g_retrying_times;
 static pthread_t g_thread_id;
 static std::mutex g_id_lock;
-static std::atomic<bool> g_notify_stop{true};
+static gromox::atomic_bool g_notify_stop{true};
 
 static int cache_queue_retrieve_mess_ID();
 static int cache_queue_increase_mess_ID();

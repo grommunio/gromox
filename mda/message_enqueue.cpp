@@ -8,12 +8,12 @@
  *  message queue to indicate there's a new mail arrived!
  */
 #define DECLARE_API_STATIC
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
@@ -62,7 +62,7 @@ static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
 static char         g_path[256];
 static int			g_msg_id;
 static pthread_t    g_flushing_thread;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static int			g_last_flush_ID;
 static int			g_enqueued_num;
 static int			g_last_pos;

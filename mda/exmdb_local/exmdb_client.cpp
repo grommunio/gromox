@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
-#include <atomic>
 #include <csignal>
 #include <cstdint>
 #include <list>
@@ -11,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include "exmdb_client.h"
@@ -83,7 +83,7 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 }
 
 static int g_conn_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t g_scan_id;
 static std::list<REMOTE_CONN> g_lost_list;
 static std::list<REMOTE_SVR> g_server_list;

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
@@ -9,6 +8,7 @@
 #include <unistd.h>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "transporter.h"
@@ -124,7 +124,7 @@ static const char *const *g_plugin_names;
 static char				g_local_path[256];
 static HOOK_FUNCTION	g_local_hook;
 static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static BOOL             g_domainlist_valid;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;

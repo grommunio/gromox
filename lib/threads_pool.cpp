@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
 #include <mutex>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -30,7 +30,7 @@ struct THR_DATA {
 }
 
 static pthread_t g_scan_id;
-static std::atomic<bool> g_notify_stop{true};
+static gromox::atomic_bool g_notify_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num, g_threads_pool_cur_thr_num;
 static LIB_BUFFER* g_threads_data_buff;
 static DOUBLE_LIST g_threads_data_list;

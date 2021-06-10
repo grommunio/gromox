@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <climits>
 #include <condition_variable>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -29,7 +29,7 @@
 using namespace gromox;
 
 static size_t g_threads_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static int g_timeout_interval;
 static pthread_t *g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;

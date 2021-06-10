@@ -3,7 +3,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <condition_variable>
 #include <list>
@@ -12,6 +11,7 @@
 #include <vector>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
@@ -69,7 +69,7 @@ struct srcitem {
 
 }
 
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static size_t g_threads_num;
 static int g_last_tid;
 static int g_list_fd = -1;

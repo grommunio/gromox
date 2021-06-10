@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
-#include <atomic>
 #include <csignal>
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
@@ -39,7 +39,7 @@ struct BACK_CONN {
 
 typedef void (*EVENT_STUB_FUNC)(char *);
 
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static char g_event_ip[40];
 static uint16_t g_event_port;
 static DOUBLE_LIST g_back_list;

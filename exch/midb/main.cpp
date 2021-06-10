@@ -2,12 +2,12 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <atomic>
 #include <cerrno>
 #include <cstdlib>
 #include <memory>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
@@ -36,11 +36,11 @@
 
 using namespace gromox;
 
-std::atomic<bool> g_notify_stop{false};
+gromox::atomic_bool g_notify_stop{false};
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
-static std::atomic<bool> g_hup_signalled{false};
+static gromox::atomic_bool g_hup_signalled{false};
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},

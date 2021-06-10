@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
-#include <atomic>
 #include <csignal>
 #include <memory>
 #include <mutex>
@@ -12,6 +11,7 @@
 #include <vector>
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
@@ -88,7 +88,7 @@ struct SORT_ITEM {
 
 static size_t g_base_size;
 static int g_file_blocks, g_ab_cache_interval;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t g_scan_id;
 static char g_zcab_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;

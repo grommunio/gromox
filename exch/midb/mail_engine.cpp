@@ -4,7 +4,6 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <atomic>
 #include <chrono>
 #include <climits>
 #include <csignal>
@@ -14,6 +13,7 @@
 #include <unordered_map>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -204,7 +204,7 @@ static BOOL g_async;
 static int g_mime_num;
 static size_t g_table_size;
 static std::atomic<int> g_sequence_id{0};
-static std::atomic<bool> g_notify_stop{false}; /* stop signal for scaning thread */
+static gromox::atomic_bool g_notify_stop{false}; /* stop signal for scaning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */

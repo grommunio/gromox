@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
-#include <atomic>
 #include <csignal>
 #include <ctime>
 #include <memory>
@@ -17,6 +16,7 @@
 #include <unordered_map>
 #include <utility>
 #include <libHX/ctype_helper.h>
+#include <gromox/atomic.hpp>
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
@@ -221,7 +221,7 @@ private:
 	ProcRes execute(MhEmsmdbContext&);
 	ProcRes wait(MhEmsmdbContext&);
 
-	std::atomic<bool> stop = true;	///< Whether the scan thread is (to be) stopped
+	gromox::atomic_bool stop = true; ///< Whether the scan thread is (to be) stopped
 	pthread_t scan;
 
 	std::unordered_set<notification_ctx *> pending;

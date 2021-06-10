@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
-#include <atomic>
 #include <csignal>
 #include <cstdint>
 #include <list>
@@ -10,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
@@ -69,7 +69,7 @@ struct AGENT_THREAD {
 
 static int g_conn_num;
 static int g_threads_num;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static pthread_t g_scan_id;
 static std::list<REMOTE_CONN> g_lost_list;
 static std::list<AGENT_THREAD> g_agent_list;

@@ -2,7 +2,6 @@
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 
-#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -10,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
@@ -79,7 +79,7 @@ static int g_block_auth_fail;
 static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static std::vector<IMAP_CONTEXT> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static LIB_BUFFER *g_alloc_file;

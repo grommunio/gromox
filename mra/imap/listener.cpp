@@ -5,11 +5,11 @@
  *    connection is legal, construct a context to represent the connection and 
  *    throw it into contexts pool, or close the connection
  */
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include "listener.h"
@@ -34,7 +34,7 @@ static void *imls_thrwork(void *);
 static void *imls_thrworkssl(void *);
 
 static pthread_t g_thr_id;
-static std::atomic<bool> g_stop_accept{false};
+static gromox::atomic_bool g_stop_accept{false};
 static int g_listener_sock;
 static uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;

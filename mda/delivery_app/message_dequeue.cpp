@@ -9,13 +9,13 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <cstring>
 #include <mutex>
 #include <string>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include "message_dequeue.h"
@@ -62,7 +62,7 @@ static INT_HASH_TABLE	*g_mess_hash;
 static SINGLE_LIST				g_free_list;
 static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static int				g_dequeued_num;
 
 static BOOL message_dequeue_check();

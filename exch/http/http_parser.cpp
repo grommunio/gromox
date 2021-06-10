@@ -4,7 +4,6 @@
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
  */ 
-#include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <mutex>
@@ -13,6 +12,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
@@ -81,7 +81,7 @@ class VCONN_REF {
 }
 
 static size_t g_context_num;
-static std::atomic<bool> g_async_stop{false};
+static gromox::atomic_bool g_async_stop{false};
 static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;

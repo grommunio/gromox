@@ -2,12 +2,12 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <atomic>
 #include <cerrno>
 #include <string>
 #include <unistd.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -26,7 +26,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static std::atomic<bool> g_notify_stop{false}, g_hup_signalled{false};
+static gromox::atomic_bool g_notify_stop{false}, g_hup_signalled{false};
 static char *opt_config_file;
 static unsigned int opt_show_version;
 

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <pthread.h>
@@ -7,6 +6,7 @@
 #include <netinet/in.h>
 #include <sys/stat.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "listener.h"
 #include "rpc_parser.h"
@@ -18,7 +18,7 @@
 #include <cstring>
 #include <cstdio>
 
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 

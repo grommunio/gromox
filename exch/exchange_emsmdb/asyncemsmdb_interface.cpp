@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <atomic>
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
 #include <mutex>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
@@ -43,7 +43,7 @@ static constexpr size_t TAG_SIZE = UADDR_SIZE + 1 + HXSIZEOF_Z32;
 static int g_threads_num;
 static pthread_t g_scan_id;
 static pthread_t *g_thread_ids;
-static std::atomic<bool> g_notify_stop{true};
+static gromox::atomic_bool g_notify_stop{true};
 static DOUBLE_LIST g_wakeup_list;
 static STR_HASH_TABLE *g_tag_hash;
 static std::mutex g_list_lock, g_async_lock;

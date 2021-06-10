@@ -3,7 +3,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <condition_variable>
 #include <cstdint>
@@ -18,6 +17,7 @@
 #include <vector>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/paths.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
@@ -85,7 +85,7 @@ struct HOST_NODE {
 
 }
 
-static std::atomic<bool> g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop{false};
 static unsigned int g_threads_num;
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;
