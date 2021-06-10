@@ -3347,8 +3347,13 @@ static int connect_midb(const char *ip_addr, int port)
 
 	int sockd = gx_inet_connect(ip_addr, port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect midb_agent@[%s]:%hu: %s\n",
-		        ip_addr, port, strerror(-sockd));
+		static std::atomic<time_t> g_lastwarn_time;
+		auto prev = g_lastwarn_time.load();
+		auto next = prev + 60;
+		auto now = time(nullptr);
+		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
+			fprintf(stderr, "gx_inet_connect midb_agent@[%s]:%hu: %s\n",
+			        ip_addr, port, strerror(-sockd));
 		return -1;
 	}
 	tv_msec = SOCKET_TIMEOUT * 1000;
