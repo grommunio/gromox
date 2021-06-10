@@ -122,6 +122,7 @@ static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
