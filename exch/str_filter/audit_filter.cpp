@@ -126,9 +126,8 @@ BOOL audit_filter_judge(const char *str)
     STR_AUDIT *paudit, new_audit;
 	char temp_string[256];
 
-    if (NULL == g_audit_hash || NULL == str) {
-        return TRUE;
-    }
+	if (g_audit_num <= 0 || str == nullptr)
+		return TRUE;
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
@@ -187,9 +186,8 @@ BOOL audit_filter_query(const char *str)
     STR_AUDIT *paudit;
 	char temp_string[256];
 
-    if (NULL == g_audit_hash || NULL == str) {
-        return FALSE;
-    }
+	if (g_audit_num <= 0 || str == nullptr)
+		return FALSE;
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
@@ -253,10 +251,9 @@ BOOL audit_filter_echo(const char *str, time_t *pfirst_access,
 	struct timeval current_time;
 	char temp_string[256];
 	
-	if (NULL == g_audit_hash || NULL == str ||
-		NULL == pfirst_access || NULL == ptimes) {
+	if (g_audit_num <= 0 || str == nullptr || pfirst_access == nullptr ||
+	    ptimes == nullptr)
 		return FALSE;
-	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
@@ -290,9 +287,8 @@ BOOL audit_filter_remove_string(const char *str)
 {
 	char temp_string[256];
 	
-	if (NULL == g_audit_hash || NULL == str) {
+	if (g_audit_num <= 0 || str == nullptr)
 		return TRUE;
-	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
@@ -316,9 +312,8 @@ BOOL audit_filter_dump(const char *path)
 	struct tm time_buff;
 	struct timeval current_time;
 
-	if (NULL == g_audit_hash || NULL == path) {
+	if (g_audit_num <= 0 || path == nullptr)
 		return FALSE;
-	}
 	fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
 		return FALSE;
