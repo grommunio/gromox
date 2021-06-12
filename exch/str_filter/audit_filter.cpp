@@ -146,17 +146,14 @@ BOOL audit_filter_judge(const char *str)
             }
             paudit->times ++;
             paudit->last_time_stamp = current_time;
-        } else {
-            if (CALCULATE_INTERVAL(current_time, paudit->last_time_stamp) >
-				g_audit_interval) {
-                paudit->times = 1;
-                paudit->first_time_stamp = current_time;
-                paudit->last_time_stamp = current_time;
-            } else {
-				paudit->times ++;
-                paudit->last_time_stamp = current_time;
-                return FALSE;  
-            }
+		} else if (CALCULATE_INTERVAL(current_time, paudit->last_time_stamp) > g_audit_interval) {
+			paudit->times = 1;
+			paudit->first_time_stamp = current_time;
+			paudit->last_time_stamp = current_time;
+		} else {
+			paudit->times++;
+			paudit->last_time_stamp = current_time;
+			return FALSE;
         }
         return TRUE;
     }
@@ -164,15 +161,15 @@ BOOL audit_filter_judge(const char *str)
     new_audit.first_time_stamp  = current_time;
     new_audit.last_time_stamp   = current_time;
     new_audit.times = 1;
-    if (str_hash_add(g_audit_hash, temp_string, &new_audit) != 1) {
-        if (0 == audit_filter_collect_entry(&current_time)) {
-            /* still cannot find one unit for auditing, give up */
-            debug_info("[str_filter]: still cannot find one unit "
-                        "for auditing, give up");
-            return TRUE;
-        }
-        str_hash_add(g_audit_hash, temp_string, &new_audit);
-    }
+	if (str_hash_add(g_audit_hash, temp_string, &new_audit) == 1)
+		return TRUE;
+	if (0 == audit_filter_collect_entry(&current_time)) {
+		/* still cannot find one unit for auditing, give up */
+		debug_info("[str_filter]: still cannot find one unit "
+		           "for auditing, give up");
+		return TRUE;
+	}
+	str_hash_add(g_audit_hash, temp_string, &new_audit);
     return TRUE;
 }
 
@@ -204,16 +201,10 @@ BOOL audit_filter_query(const char *str)
 	if (NULL == paudit) {
 		return FALSE;
 	}
-    if (paudit->times < g_max_within_interval) {
+	if (paudit->times < g_max_within_interval)
 		return FALSE;
-	} else {
-        if (CALCULATE_INTERVAL(current_time, 
-            paudit->last_time_stamp) > g_audit_interval) {
-			return FALSE;
-		} else {
-			return TRUE;
-		}
-	}
+	return g_audit_interval <= CALCULATE_INTERVAL(current_time,
+	       paudit->last_time_stamp) ? TRUE : false;
 }
 
 /*
@@ -278,15 +269,13 @@ BOOL audit_filter_echo(const char *str, time_t *pfirst_access,
 	if (NULL == paudit) {
 		return FALSE;
 	}
-    if (paudit->times > g_max_within_interval && CALCULATE_INTERVAL(
-		current_time, paudit->last_time_stamp) <= g_audit_interval) {
-		*pfirst_access = paudit->first_time_stamp.tv_sec;
-		*plast_access = paudit->last_time_stamp.tv_sec;
-		*ptimes = paudit->times;
-		return TRUE;
-	} else {
-		return FALSE;
-	}
+	if (paudit->times <= g_max_within_interval ||
+	    CALCULATE_INTERVAL(current_time, paudit->last_time_stamp) > g_audit_interval)
+		return false;
+	*pfirst_access = paudit->first_time_stamp.tv_sec;
+	*plast_access = paudit->last_time_stamp.tv_sec;
+	*ptimes = paudit->times;
+	return TRUE;
 }
 
 /*
@@ -343,35 +332,33 @@ BOOL audit_filter_dump(const char *path)
         if (CALCULATE_INTERVAL(current_time, 
             iter_audit->last_time_stamp) > g_audit_interval) {
             str_hash_iter_remove(iter);
-        } else {
-			if (iter_audit->times > g_max_within_interval) {
-				len = strlen(temp_string);
-				temp_string[len] = '\t';
-				len ++;
-				len += strftime(temp_string + len, 512 - len,
-					"%Y/%m/%d %H:%M:%S",
-					localtime_r(&iter_audit->first_time_stamp.tv_sec,
-					&time_buff));
-				temp_string[len] = '\t';
-				len ++;
-				len += strftime(temp_string + len, 512 - len,
-					"%Y/%m/%d %H:%M:%S",
-					localtime_r(&iter_audit->last_time_stamp.tv_sec,
-					&time_buff));
-				temp_string[len] = '\t';
-				len ++;
-				itoa(iter_audit->times, temp_string + len, 10);
-				len += strlen(temp_string + len);
-				temp_string[len] = '\n';
-				len ++;
-				write(fd, temp_string, len);
-			}
-		}
+			continue;
+        }
+		if (iter_audit->times <= g_max_within_interval)
+			continue;
+		len = strlen(temp_string);
+		temp_string[len] = '\t';
+		len++;
+		len += strftime(temp_string + len, 512 - len,
+		       "%Y/%m/%d %H:%M:%S",
+		       localtime_r(&iter_audit->first_time_stamp.tv_sec,
+		       &time_buff));
+		temp_string[len] = '\t';
+		len++;
+		len += strftime(temp_string + len, 512 - len,
+		       "%Y/%m/%d %H:%M:%S",
+		       localtime_r(&iter_audit->last_time_stamp.tv_sec,
+		       &time_buff));
+		temp_string[len] = '\t';
+		len++;
+		itoa(iter_audit->times, temp_string + len, 10);
+		len += strlen(temp_string + len);
+		temp_string[len] = '\n';
+		len++;
+		write(fd, temp_string, len);
     }
     str_hash_iter_free(iter);
 	am_hold.unlock();
 	close(fd);
 	return TRUE;
 }
-
-
