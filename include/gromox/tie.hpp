@@ -18,7 +18,7 @@ template<typename T, typename D> class unique_proxy {
 	unique_proxy(std::unique_ptr<T, D> &a) : u(a), p(u.get()) {}
 	~unique_proxy() { u.reset(p); }
 	typename std::unique_ptr<T, D>::pointer *operator&() { return &p; }
-	unique_proxy &operator~() { u.reset(); return *this; }
+	unique_proxy &operator~() { u.reset(); p = nullptr; return *this; }
 	private:
 	std::unique_ptr<T, D> &u;
 	typename std::unique_ptr<T, D>::pointer p;
