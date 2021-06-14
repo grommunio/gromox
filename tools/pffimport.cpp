@@ -25,13 +25,13 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
-#include <gromox/memory.hpp>
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/tarray_set.hpp>
+#include <gromox/tie.hpp>
 #include <gromox/tpropval_array.hpp>
 
 #define E(a, b) static_assert(static_cast<unsigned int>(LIBPFF_VALUE_TYPE_ ## a) == static_cast<unsigned int>(PT_ ## b));
