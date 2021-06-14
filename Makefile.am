@@ -223,7 +223,7 @@ libgxs_textmaps_la_SOURCES = exch/textmapplug.cpp
 libgxs_textmaps_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_textmaps_la_LIBADD = ${HX_LIBS} libgromox_cplus.la
 EXTRA_libgxs_textmaps_la_DEPENDENCIES = ${default_sym}
-libgxs_user_filter_la_SOURCES = exch/str_filter/audit_filter.cpp exch/str_filter/grey_list.cpp exch/str_filter/main.cpp exch/str_filter/str_filter.cpp exch/str_filter/temp_list.cpp
+libgxs_user_filter_la_SOURCES = exch/user_filter/audit_filter.cpp exch/user_filter/grey_list.cpp exch/user_filter/main.cpp exch/user_filter/str_filter.cpp exch/user_filter/temp_list.cpp
 libgxs_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
@@ -299,7 +299,7 @@ man_MANS = \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
-	doc/str_filter.4gx doc/str_table.4gx doc/textmaps.4gx \
+	doc/str_table.4gx doc/textmaps.4gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
