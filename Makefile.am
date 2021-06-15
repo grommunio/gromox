@@ -289,7 +289,7 @@ man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 \
-	doc/gromox-dbop.8gx doc/gromox-mailq.8gx doc/gromox-pffimport.8 \
+	doc/gromox-dbop.8gx doc/gromox-mailq.8gx \
 	doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
@@ -301,6 +301,9 @@ man_MANS = \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
 	doc/str_table.4gx doc/textmaps.4gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
+if HAVE_PFF
+man_MANS += doc/gromox-pffimport.8gx
+endif
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
