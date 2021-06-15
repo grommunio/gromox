@@ -1000,6 +1000,22 @@ static int do_file(const char *filename) try
 	g_root_name = "Import of "s + HX_basename(filename) + timebuf;
 
 	libpff_item_ptr root;
+
+	if (libpff_file_get_message_store(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
+		fprintf(stderr, "PF-1042: %s contains no NID_MESSAGE_STORE\n", filename);
+		az_error("PF-1042", err);
+	} else if (root == nullptr) {
+		fprintf(stderr, "PF-1043: %s contains no NID_MESSAGE_STORE\n", filename);
+		az_error("PF-1043", err);
+	} else if (g_show_tree) {
+		fprintf(stderr, "%s: Contents of special section NID_MESSAGE_STORE:\n", filename);
+		auto saved_wet = g_wet_run;
+		g_wet_run = false;
+		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
+		g_wet_run = saved_wet;
+		fprintf(stderr, "%s: --- --- NID_MESSAGE_STORE analysis complete\n", filename);
+	}
+
 	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
 	return do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
