@@ -33,6 +33,7 @@
 #include <gromox/tarray_set.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/tpropval_array.hpp>
+#include <gromox/util.hpp>
 
 #define E(a, b) static_assert(static_cast<unsigned int>(LIBPFF_VALUE_TYPE_ ## a) == static_cast<unsigned int>(PT_ ## b));
 E(UNSPECIFIED, UNSPECIFIED)
@@ -117,9 +118,10 @@ using libpff_multi_value_ptr  = std::unique_ptr<libpff_multi_value_t, libpff_mul
 static char *g_username;
 static std::string g_storedir_s, g_root_name;
 static const char *g_storedir;
-static unsigned int g_wet_run = 1, g_show_tree, g_user_id;
+static unsigned int g_wet_run = 1, g_show_tree, g_user_id, g_show_props;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
+	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
@@ -228,34 +230,72 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 		throw "PF-1006";
 	if (libpff_record_entry_get_data_size(rent, &size, nullptr) < 1)
 		throw "PF-1007";
+	if (g_show_props)
+		tree(depth);
 	tlog("%08xh:", static_cast<unsigned int>((etype << 16) | vtype));
-	if (vtype == LIBPFF_VALUE_TYPE_INTEGER_32BIT_SIGNED) {
+	switch (vtype) {
+	case LIBPFF_VALUE_TYPE_INTEGER_32BIT_SIGNED: {
 		uint32_t v;
 		if (libpff_record_entry_get_data_as_32bit_integer(rent, &v, nullptr) < 1)
 			throw "PF-1008";
 		tlog("%u, ", v);
-	} else if (vtype == LIBPFF_VALUE_TYPE_BOOLEAN) {
+		break;
+	}
+	case LIBPFF_VALUE_TYPE_BOOLEAN: {
 		uint8_t v = 0;
 		if (libpff_record_entry_get_data_as_boolean(rent, &v, nullptr) < 1)
 			throw "PF-1009";
 		tlog("%u, ", v);
-	} else if (vtype == LIBPFF_VALUE_TYPE_STRING_ASCII) {
-		tlog("astr(%zu), ", size);
-	} else if (vtype == LIBPFF_VALUE_TYPE_STRING_UNICODE) {
-		tlog("wstr(%zu), ", size / 2);
-	} else if (vtype == LIBPFF_VALUE_TYPE_BINARY_DATA) {
-		tlog("bin(%zu), ", size);
-	} else if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
+		break;
+	}
+	case LIBPFF_VALUE_TYPE_STRING_ASCII: {
+		size_t dsize = 0;
+		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) >= 1) {
+			++dsize;
+			auto buf = std::make_unique<uint8_t[]>(dsize);
+			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
+				tlog("astr(%zu)=\"%s\", ", size, buf.get());
+		} else {
+			tlog("astr(%zu), ", size);
+		}
+		break;
+	}
+	case LIBPFF_VALUE_TYPE_STRING_UNICODE: {
+		size_t dsize = 0;
+		if (g_show_props &&
+		    libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) >= 1) {
+			++dsize;
+			auto buf = std::make_unique<uint8_t[]>(dsize);
+			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
+				tlog("wstr(%zu)=\"%s\", ", size / 2, buf.get());
+		} else {
+			tlog("wstr(%zu), ", size / 2);
+		}
+		break;
+	}
+	case LIBPFF_VALUE_TYPE_BINARY_DATA: {
+		auto buf = std::make_unique<uint8_t[]>(size);
+		if (g_show_props &&
+		    libpff_record_entry_get_data(rent, buf.get(), size, nullptr) >= 1)
+			tlog("bin(%zu)=%s", size, bin2hex(buf.get(), size).c_str());
+		else
+			tlog("bin(%zu)", size);
+		break;
+	}
+	case LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG: {
 		libpff_multi_value_ptr mv;
 		int numv = 0;
 		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
 			throw "PF-1038";
 		if (libpff_multi_value_get_number_of_values(mv.get(), &numv, nullptr) < 1)
 			throw "PF-1039";
-		tlog("mv[%d], ", numv);
-	} else {
-		tlog(", ");
+		tlog("mv[%d]", numv);
+		break;
 	}
+	default:
+		break;
+	}
+	tlog(g_show_props ? "\n" : ", ");
 }
 
 /* Pretty-print a libpff record set (property set) */
@@ -266,6 +306,8 @@ static void az_recordset(unsigned int depth, libpff_record_set_t *rset)
 		throw "PF-1010";
 	tree(depth);
 	tlog("props(%d): {", nent);
+	if (g_show_props)
+		tlog("\n");
 	for (int i = 0; i < nent; ++i) {
 		libpff_record_entry_ptr rent;
 
@@ -936,9 +978,12 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 
 static int do_file(const char *filename) try
 {
+	libpff_error_ptr err;
 	libpff_file_ptr file;
-	if (libpff_file_initialize(&unique_tie(file), nullptr) < 1)
-		throw "PF-1023";
+	if (libpff_file_initialize(&unique_tie(file), &unique_tie(err)) < 1) {
+		az_error("PF-1023", err);
+		return -EIO;
+	}
 	fprintf(stderr, "Reading %s...\n", filename);
 	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ, nullptr) < 1) {
 		int s = errno;
@@ -955,7 +1000,7 @@ static int do_file(const char *filename) try
 	g_root_name = "Import of "s + HX_basename(filename) + timebuf;
 
 	libpff_item_ptr root;
-	if (libpff_file_get_root_folder(file.get(), &unique_tie(root), nullptr) < 1)
+	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
 	return do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
 } catch (const char *e) {
