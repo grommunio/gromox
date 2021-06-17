@@ -175,39 +175,39 @@ static void object_tree_enum_objnode(
 static void object_tree_free_object(void *pobject, uint8_t type)
 {
 	switch (type) {
-	case MAPI_ROOT:
+	case ZMG_ROOT:
 		object_tree_free_root(static_cast<ROOT_OBJECT *>(pobject));
 		break;
-	case MAPI_TABLE:
+	case ZMG_TABLE:
 		delete static_cast<TABLE_OBJECT *>(pobject);
 		break;
-	case MAPI_MESSAGE:
+	case ZMG_MESSAGE:
 		delete static_cast<MESSAGE_OBJECT *>(pobject);
 		break;
-	case MAPI_ATTACHMENT:
+	case ZMG_ATTACH:
 		delete static_cast<ATTACHMENT_OBJECT *>(pobject);
 		break;
-	case MAPI_ABCONT:
+	case ZMG_ABCONT:
 		delete static_cast<CONTAINER_OBJECT *>(pobject);
 		break;
-	case MAPI_FOLDER:
+	case ZMG_FOLDER:
 		delete static_cast<FOLDER_OBJECT *>(pobject);
 		break;
-	case MAPI_STORE:
+	case ZMG_STORE:
 		delete static_cast<STORE_OBJECT *>(pobject);
 		break;
-	case MAPI_MAILUSER:
-	case MAPI_DISTLIST:
+	case ZMG_MAILUSER:
+	case ZMG_DISTLIST:
 		delete static_cast<USER_OBJECT *>(pobject);
 		break;
-	case MAPI_PROFPROPERTY:
+	case ZMG_PROFPROPERTY:
 		/* do not free TPROPVAL_ARRAY,
 		it's an element of pprof_set */
 		break;
-	case MAPI_ICSDOWNCTX:
+	case ZMG_ICSDOWNCTX:
 		delete static_cast<ICSDOWNCTX_OBJECT *>(pobject);
 		break;
-	case MAPI_ICSUPCTX:
+	case ZMG_ICSUPCTX:
 		delete static_cast<ICSUPCTX_OBJECT *>(pobject);
 		break;
 	}
@@ -332,8 +332,7 @@ OBJECT_TREE* object_tree_create(const char *maildir)
 		return NULL;
 	}
 	simple_tree_init(&pobjtree->tree);
-	handle = object_tree_add_object_handle(
-		pobjtree, -1, MAPI_ROOT, prootobj);
+	handle = object_tree_add_object_handle(pobjtree, -1, ZMG_ROOT, prootobj);
 	if (handle < 0) {
 		object_tree_free_root(prootobj);
 		int_hash_free(pobjtree->phash);
@@ -370,9 +369,8 @@ void object_tree_release_object_handle(
 	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
 	/* do not relase store object until
 	the whole object tree is unloaded */
-	if (NULL == ppobjnode || MAPI_STORE == (*ppobjnode)->type) {
+	if (ppobjnode == nullptr || (*ppobjnode)->type == ZMG_STORE)
 		return;
-	}
 	object_tree_release_objnode(pobjtree, *ppobjnode);
 }
 
@@ -492,7 +490,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	if (NULL != pnode) {
 		do {
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
-			if (pobjnode->type == MAPI_STORE &&
+			if (pobjnode->type == ZMG_STORE &&
 			    store_object_check_private(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == b_private &&
 			    store_object_get_account_id(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == account_id) {
 				return pobjnode->handle;	
@@ -529,7 +527,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 		return INVALID_HANDLE;
 	}
 	auto handle = object_tree_add_object_handle(pobjtree, ROOT_HANDLE,
-	              MAPI_STORE, pstore.get());
+	              ZMG_STORE, pstore.get());
 	if (handle != INVALID_HANDLE)
 		pstore.release();
 	return handle;

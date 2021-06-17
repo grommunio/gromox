@@ -199,9 +199,8 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		pinfo->ptree, TRUE, pinfo->user_id);
 	pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
 	         pinfo->ptree, handle, &mapi_type));
-	if (NULL == pstore || MAPI_STORE != mapi_type) {
+	if (pstore == nullptr || mapi_type != ZMG_STORE)
 		return FALSE;
-	}
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
 	/* PidLidEmail1DisplayName */
@@ -478,9 +477,8 @@ BOOL container_object_load_user_table(
 			pinfo->ptree, TRUE, pinfo->user_id);
 		pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
 		         pinfo->ptree, handle, &mapi_type));
-		if (NULL == pstore || MAPI_STORE != mapi_type) {
+		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			return FALSE;
-		}
 	} else {
 		tmp_set.count = 0;
 	}
