@@ -20,11 +20,6 @@
 #define FLAG_UNICODEPROPTYPES			0x80000000
 
 #define CODEPAGE_UNICODE				0x04B0
-
-#define OT_MAILUSER						0x00000006
-#define OT_DISTLIST						0x00000008
-#define OT_FOLDER						0x00000003
-
 #define DT_MAILUSER						0x0
 #define DT_DISTLIST						0x1
 #define DT_FORUM						0x2

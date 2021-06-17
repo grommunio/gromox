@@ -139,9 +139,9 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
 	case PR_OBJECT_TYPE:
-		pprop->value.l = node_type == NODE_TYPE_MLIST ? OT_DISTLIST :
-		                 node_type == NODE_TYPE_FOLDER ? OT_FOLDER :
-		                 OT_MAILUSER;
+		pprop->value.l = node_type == NODE_TYPE_MLIST ? MAPI_DISTLIST :
+		                 node_type == NODE_TYPE_FOLDER ? MAPI_FOLDER :
+		                 MAPI_MAILUSER;
 		return ecSuccess;
 	case PR_DISPLAY_TYPE:
 		pprop->value.l = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
@@ -2814,7 +2814,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		strcpy(pprop->value.pstr, paddress);
 		break;
 	case PR_OBJECT_TYPE:
-		pprop->value.l = OT_MAILUSER;
+		pprop->value.l = MAPI_MAILUSER;
 		break;
 	case PR_DISPLAY_TYPE:
 		pprop->value.l = DT_MAILUSER;
