@@ -370,6 +370,11 @@ static void *mdpeng_scanwork(void *param)
 		time(&now_time);
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 			auto pdb = &it->second;
+			if (double_list_get_nodes_num(&pdb->tables.table_list) > 0) {
+				/* emsmdb still references in-memory tables */
+				++it;
+				continue;
+			}
 			if (0 == pdb->reference && NULL == pdb->psqlite) {
 				it = g_hash_table.erase(it);
 				continue;
