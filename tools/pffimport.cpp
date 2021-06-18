@@ -1033,12 +1033,11 @@ static int do_file(const char *filename) try
 		fprintf(stderr, "PF-1043: %s contains no NID_MESSAGE_STORE\n", filename);
 		az_error("PF-1043", err);
 	} else if (g_show_tree) {
-		fprintf(stderr, "%s: Contents of special section NID_MESSAGE_STORE:\n", filename);
+		printf("%s: Special section NID_MESSAGE_STORE is available.\n", filename);
 		auto saved_wet = g_wet_run;
 		g_wet_run = false;
 		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
 		g_wet_run = saved_wet;
-		fprintf(stderr, "%s: --- --- NID_MESSAGE_STORE analysis complete\n", filename);
 	}
 
 	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
