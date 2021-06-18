@@ -255,14 +255,14 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 		uint32_t v;
 		if (libpff_record_entry_get_data_as_32bit_integer(rent, &v, nullptr) < 1)
 			throw "PF-1008";
-		tlog("%u, ", v);
+		tlog("%u", v);
 		break;
 	}
 	case LIBPFF_VALUE_TYPE_BOOLEAN: {
 		uint8_t v = 0;
 		if (libpff_record_entry_get_data_as_boolean(rent, &v, nullptr) < 1)
 			throw "PF-1009";
-		tlog("%u, ", v);
+		tlog("%u", v);
 		break;
 	}
 	case LIBPFF_VALUE_TYPE_STRING_ASCII: {
@@ -272,9 +272,9 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 			++dsize;
 			auto buf = std::make_unique<uint8_t[]>(dsize);
 			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
-				tlog("astr(%zu)=\"%s\", ", size, buf.get());
+				tlog("astr(%zu)=\"%s\"", size, buf.get());
 		} else {
-			tlog("astr(%zu), ", size);
+			tlog("astr(%zu)", size);
 		}
 		break;
 	}
@@ -285,9 +285,9 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 			++dsize;
 			auto buf = std::make_unique<uint8_t[]>(dsize);
 			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
-				tlog("wstr(%zu)=\"%s\", ", size / 2, buf.get());
+				tlog("wstr(%zu)=\"%s\"", size / 2, buf.get());
 		} else {
-			tlog("wstr(%zu), ", size / 2);
+			tlog("wstr(%zu)", size / 2);
 		}
 		break;
 	}
