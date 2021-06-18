@@ -74,6 +74,12 @@ struct libpff_record_set_del { void operator()(libpff_record_set_t *x) { libpff_
 struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) { libpff_record_entry_free(&x, nullptr); } };
 struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpff_multi_value_free(&x, nullptr); } };
 
+enum {
+	NID_TYPE_NORMAL_MESSAGE = 0x4,
+	NID_TYPE_ASSOC_MESSAGE = 0x8,
+	NID_TYPE_MASK = 0x1F,
+};
+
 struct parent_desc {
 	enum LIBPFF_ITEM_TYPES type;
 	union {
@@ -195,6 +201,17 @@ static bool az_item_get_record_entry_by_type(libpff_item_t *item, uint16_t propi
 	else if (ret == 0)
 		return false;
 	return true;
+}
+
+static bool is_mapi_message(uint32_t nid)
+{
+	/*
+	 * libpff_internal_item_determine_type just yolos it on the
+	 * presence of PR_MESSAGE_CLASS. Until someone starts having
+	 * a folder with PR_MESSAGE_CLASS, then that falls apart.
+	 */
+	nid &= NID_TYPE_MASK;
+	return nid == NID_TYPE_NORMAL_MESSAGE || nid == NID_TYPE_ASSOC_MESSAGE;
 }
 
 /* Obtain a string value from a libpff item's property */
@@ -779,7 +796,8 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 
 /* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
 static int do_item2(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item, unsigned int item_type, int nsets, uint64_t *new_fld_id)
+    libpff_item_t *item, unsigned int item_type, uint32_t ident,
+    int nsets, uint64_t *new_fld_id)
 {
 	std::unique_ptr<TPROPVAL_ARRAY, afree> props(tpropval_array_init());
 	if (props == nullptr) {
@@ -911,7 +929,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		printf("Processing folder \"%s\"...\n", name.c_str());
 	}
 
-	if (item_type != LIBPFF_ITEM_TYPE_EMAIL)
+	if (!is_mapi_message(ident))
 		return 0;
 	if (g_wet_run && parent.type == LIBPFF_ITEM_TYPE_FOLDER)
 		return exm_create_msg(parent.folder_id, ctnt.get());
@@ -949,7 +967,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	 * If message: collect props and recurse into recipient sets & attachments...
 	 */
 	uint64_t new_fld_id = 0;
-	auto ret = do_item2(depth, parent, item, item_type, nsets, &new_fld_id);
+	auto ret = do_item2(depth, parent, item, item_type, ident, nsets, &new_fld_id);
 	if (ret < 0)
 		return ret;
 	auto new_parent = parent;
