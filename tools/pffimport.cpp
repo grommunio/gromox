@@ -531,6 +531,11 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
+	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
+	if (dsize == 0)
+		buf[0] = '\0';
+	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, nullptr) < 1)
+		throw "PF-1033";
 	if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
 		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
 			throw "PF-1034";
@@ -542,11 +547,6 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 			return 0;
 		}
 	}
-	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
-	if (dsize == 0)
-		buf[0] = '\0';
-	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, nullptr) < 1)
-		throw "PF-1033";
 
 	union {
 		GUID guid;
