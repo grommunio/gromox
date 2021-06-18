@@ -267,7 +267,8 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 	}
 	case LIBPFF_VALUE_TYPE_STRING_ASCII: {
 		size_t dsize = 0;
-		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) >= 1) {
+		if (g_show_props &&
+		    libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) >= 1) {
 			++dsize;
 			auto buf = std::make_unique<uint8_t[]>(dsize);
 			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
