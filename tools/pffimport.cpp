@@ -81,7 +81,7 @@ enum {
 };
 
 struct parent_desc {
-	enum LIBPFF_ITEM_TYPES type;
+	enum mapi_object_type type;
 	union {
 		void *unknown = nullptr;
 		uint64_t folder_id;
@@ -91,19 +91,19 @@ struct parent_desc {
 
 	static inline parent_desc as_msg(MESSAGE_CONTENT *m)
 	{
-		parent_desc d{LIBPFF_ITEM_TYPE_EMAIL};
+		parent_desc d{MAPI_MESSAGE};
 		d.message = m;
 		return d;
 	}
 	static inline parent_desc as_attach(ATTACHMENT_CONTENT *a)
 	{
-		parent_desc d{LIBPFF_ITEM_TYPE_ATTACHMENT};
+		parent_desc d{MAPI_ATTACH};
 		d.attach = a;
 		return d;
 	}
 	static inline parent_desc as_folder(uint64_t id)
 	{
-		parent_desc d{LIBPFF_ITEM_TYPE_FOLDER};
+		parent_desc d{MAPI_FOLDER};
 		d.folder_id = id;
 		return d;
 	}
@@ -820,7 +820,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			continue;
 
 		/* Turn this property set into a "recipient". */
-		assert(parent.type == LIBPFF_ITEM_TYPE_EMAIL);
+		assert(parent.type == MAPI_MESSAGE);
 		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get())) {
 			fprintf(stderr, "tarray_set_append: ENOMEM\n");
 			return -ENOMEM;
@@ -844,7 +844,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			fprintf(stderr, "tpropval: ENOMEM\n");
 			return -ENOMEM;
 		}
-		assert(parent.type == item_type);
+		assert(parent.type == MAPI_FOLDER);
 		auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
 		if (ret < 0)
 			return ret;
@@ -859,7 +859,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		auto ret = do_attach(depth, atc.get(), item);
 		if (ret < 0)
 			return ret;
-		if (parent.type == LIBPFF_ITEM_TYPE_EMAIL) {
+		if (parent.type == MAPI_MESSAGE) {
 			if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get())) {
 				fprintf(stderr, "attachment_list_append_internal: ENOMEM\n");
 				return -ENOMEM;
@@ -931,9 +931,9 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 
 	if (!is_mapi_message(ident))
 		return 0;
-	if (g_wet_run && parent.type == LIBPFF_ITEM_TYPE_FOLDER)
+	if (g_wet_run && parent.type == MAPI_FOLDER)
 		return exm_create_msg(parent.folder_id, ctnt.get());
-	if (parent.type == LIBPFF_ITEM_TYPE_ATTACHMENT)
+	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
 	return 0;
 }
@@ -972,7 +972,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		return ret;
 	auto new_parent = parent;
 	if (new_fld_id != 0) {
-		new_parent.type = LIBPFF_ITEM_TYPE_FOLDER;
+		new_parent.type = MAPI_FOLDER;
 		new_parent.folder_id = new_fld_id;
 	}
 

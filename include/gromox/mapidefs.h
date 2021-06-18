@@ -214,7 +214,7 @@ enum {
 	EVENT_TYPE_SEARCHCOMPLETE = 1U << 7,
 };
 
-enum {
+enum mapi_object_type {
 	MAPI_STORE = 0x1,
 	MAPI_ADDRBOOK = 0x2,
 	MAPI_FOLDER = 0x3,
