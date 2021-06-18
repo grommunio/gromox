@@ -300,14 +300,19 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 			tlog("bin(%zu)", size);
 		break;
 	}
-	case LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG: {
+	case LIBPFF_VALUE_TYPE_MULTI_VALUE_INTEGER_16BIT_SIGNED ... LIBPFF_VALUE_TYPE_MULTI_VALUE_BINARY_DATA: {
 		libpff_multi_value_ptr mv;
 		int numv = 0;
 		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
 			throw "PF-1038";
 		if (libpff_multi_value_get_number_of_values(mv.get(), &numv, nullptr) < 1)
 			throw "PF-1039";
-		tlog("mv[%d]", numv);
+		auto buf = std::make_unique<uint8_t[]>(size);
+		if (g_show_props &&
+		    libpff_record_entry_get_data(rent, buf.get(), size, nullptr) >= 1)
+			tlog("mv[%d]-arb(%zu)=%s", numv, size, bin2hex(buf.get(), size).c_str());
+		else
+			tlog("mv[%d]-arb(%zu)", numv, size);
 		break;
 	}
 	default:
