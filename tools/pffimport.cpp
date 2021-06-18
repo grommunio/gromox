@@ -328,9 +328,8 @@ static void az_recordset(unsigned int depth, libpff_record_set_t *rset)
 	if (libpff_record_set_get_number_of_entries(rset, &nent, nullptr) < 1)
 		throw "PF-1010";
 	tree(depth);
-	tlog("props(%d): {", nent);
-	if (g_show_props)
-		tlog("\n");
+	tlog("props(%d):", nent);
+	tlog(g_show_props ? "\n" : " {");
 	for (int i = 0; i < nent; ++i) {
 		libpff_record_entry_ptr rent;
 
@@ -338,7 +337,8 @@ static void az_recordset(unsigned int depth, libpff_record_set_t *rset)
 			throw "PF-1011";
 		az_recordent(depth + 1, rent.get());
 	}
-	tlog("}\n");
+	if (!g_show_props)
+		tlog("}\n");
 }
 
 static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
