@@ -546,9 +546,10 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 			throw "PF-1034";
 		if (libpff_multi_value_get_number_of_values(mv.get(), &mvnum, nullptr) < 1)
 			throw "PF-1035";
-		if (mvnum == 0 && dsize != 0) {
-			fprintf(stderr, "Multivalue property %xh with 0 items, but still with size %zu. "
-			        "Broken PFF file/parser?\n", pv.proptag, dsize);
+		if (dsize > 4 && mvnum == 0) {
+			/* See also MS-PST 2.3.3.4.2 */
+			fprintf(stderr, "Broken PFF file: Multivalue property %xh with 0 items, but still with size %zu.\n",
+			        pv.proptag, dsize);
 			return 0;
 		}
 	}
