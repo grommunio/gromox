@@ -100,6 +100,20 @@ struct EVENT_NODE {
 
 using namespace gromox;
 
+static constexpr uint32_t
+	PidLidGlobalObjectId = 0x3,
+	PidLidBusyStatus = 0x8205,
+	PidLidLocation = 0x8208,
+	PidLidAppointmentStartWhole = 0x820D,
+	PidLidAppointmentEndWhole = 0x820E,
+	PidLidAppointmentSubType = 0x8215,
+	PidLidAppointmentRecur = 0x8216,
+	PidLidAppointmentStateFlags = 0x8217,
+	PidLidRecurring = 0x8223,
+	PidLidTimeZoneStruct = 0x8233,
+	PidLidClipEnd = 0x8236,
+	PidLidReminderSet = 0x8503,
+	PidLidPrivate = 0x8506;
 static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;
@@ -1422,69 +1436,56 @@ static BOOL get_freebusy(const char *dir)
 	end_nttime = rop_util_unix_to_nttime(g_end_time);
 	propnames.count = 13;
 	propnames.ppropname = tmp_propnames;
-	/* PidLidAppointmentStartWhole */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[0].guid);
-	lids[0] = 0x0000820D;
+	lids[0] = PidLidAppointmentStartWhole;
 	tmp_propnames[0].kind = MNID_ID;
 	tmp_propnames[0].plid = &lids[0];
-	/* PidLidAppointmentEndWhole */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[1].guid);
-	lids[1] = 0x0000820E;
+	lids[1] = PidLidAppointmentEndWhole;
 	tmp_propnames[1].kind = MNID_ID;
 	tmp_propnames[1].plid = &lids[1];
-	/* PidLidBusyStatus */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[2].guid);
-	lids[2] = 0x00008205;
+	lids[2] = PidLidBusyStatus;
 	tmp_propnames[2].kind = MNID_ID;
 	tmp_propnames[2].plid = &lids[2];
-	/* PidLidRecurring */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[3].guid);
-	lids[3] = 0x00008223;
+	lids[3] = PidLidRecurring;
 	tmp_propnames[3].kind = MNID_ID;
 	tmp_propnames[3].plid = &lids[3];
-	/* PidLidAppointmentRecur */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[4].guid);
-	lids[4] = 0x00008216;
+	lids[4] = PidLidAppointmentRecur;
 	tmp_propnames[4].kind = MNID_ID;
 	tmp_propnames[4].plid = &lids[4];
-	/* PidLidAppointmentSubType */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[5].guid);
-	lids[5] = 0x00008215;
+	lids[5] = PidLidAppointmentSubType;
 	tmp_propnames[5].kind = MNID_ID;
 	tmp_propnames[5].plid = &lids[5];
-	/* PidLidPrivate */
 	rop_util_get_common_pset(PSETID_COMMON, &tmp_propnames[6].guid);
-	lids[6] = 0x00008506;
+	lids[6] = PidLidPrivate;
 	tmp_propnames[6].kind = MNID_ID;
 	tmp_propnames[6].plid = &lids[6];
-	/* PidLidAppointmentStateFlags */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[7].guid);
-	lids[7] = 0x00008217;
+	lids[7] = PidLidAppointmentStateFlags;
 	tmp_propnames[7].kind = MNID_ID;
 	tmp_propnames[7].plid = &lids[7];
-	/* PidLidClipEnd */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[8].guid);
-	lids[8] = 0x00008236;
+	lids[8] = PidLidClipEnd;
 	tmp_propnames[8].kind = MNID_ID;
 	tmp_propnames[8].plid = &lids[8];
-	/* PidLidLocation */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[9].guid);
-	lids[9] = 0x00008208;
+	lids[9] = PidLidLocation;
 	tmp_propnames[9].kind = MNID_ID;
 	tmp_propnames[9].plid = &lids[9];
-	/* PidLidReminderSet */
 	rop_util_get_common_pset(PSETID_COMMON, &tmp_propnames[10].guid);
-	lids[10] = 0x00008503;
+	lids[10] = PidLidReminderSet;
 	tmp_propnames[10].kind = MNID_ID;
 	tmp_propnames[10].plid = &lids[10];
-	/* PidLidGlobalObjectId */
 	rop_util_get_common_pset(PSETID_MEETING, &tmp_propnames[11].guid);
-	lids[11] = 0x00000003;
+	lids[11] = PidLidGlobalObjectId;
 	tmp_propnames[11].kind = MNID_ID;
 	tmp_propnames[11].plid = &lids[11];
-	/* PidLidTimeZoneStruct */
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[12].guid);
-	lids[12] = 0x00008233;
+	lids[12] = PidLidTimeZoneStruct;
 	tmp_propnames[12].kind = MNID_ID;
 	tmp_propnames[12].plid = &lids[12];
 	
