@@ -922,7 +922,7 @@ BOOL message_object_get_attachments_num(
 			pmessage->instance_id, pnum);
 }
 
-BOOL message_object_delele_attachment(MESSAGE_OBJECT *pmessage,
+BOOL message_object_delete_attachment(MESSAGE_OBJECT *pmessage,
 	uint32_t attachment_num)
 {
 	if (FALSE == exmdb_client_delete_message_instance_attachment(

@@ -4101,7 +4101,7 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 	if (FALSE == message_object_check_writable(pmessage)) {
 		return ecAccessDenied;
 	}
-	return message_object_delele_attachment(pmessage, attach_id) ? ecSuccess : ecError;
+	return message_object_delete_attachment(pmessage, attach_id) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_setpropvals(GUID hsession,

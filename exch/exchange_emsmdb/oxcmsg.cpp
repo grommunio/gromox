@@ -957,10 +957,8 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
 		return ecAccessDenied;
 	}
-	if (FALSE == message_object_delele_attachment(
-		pmessage, attachment_id)) {
+	if (!message_object_delete_attachment(pmessage, attachment_id))
 		return ecError;
-	}
 	return ecSuccess;
 }
 

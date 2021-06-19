@@ -53,8 +53,7 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset);
 BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage);
 BOOL message_object_get_attachments_num(
 	MESSAGE_OBJECT *pmessage, uint16_t *pnum);
-BOOL message_object_delele_attachment(MESSAGE_OBJECT *pmessage,
-	uint32_t attachment_num);
+extern BOOL message_object_delete_attachment(MESSAGE_OBJECT *, uint32_t attachment_num);
 BOOL message_object_get_attachment_table_all_proptags(
 	MESSAGE_OBJECT *pmessage, PROPTAG_ARRAY *pproptags);
 BOOL message_object_query_attachment_table(
