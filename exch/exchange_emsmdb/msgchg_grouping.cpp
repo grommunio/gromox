@@ -72,9 +72,6 @@ static void msgchg_grouping_free_group_node(msg_group_node *pgp_node)
 		ptag_node = (TAG_NODE*)pnode->pdata;
 		if (0 == ptag_node->propid) {
 			switch (ptag_node->ppropname->kind) {
-			case MNID_ID:
-				free(ptag_node->ppropname->plid);
-				break;
 			case MNID_STRING:
 				free(ptag_node->ppropname->pname);
 				break;
@@ -302,21 +299,13 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 			}
 			if (0 == strncasecmp(ptoken, "LID=", 4)) {
 				ptag_node->ppropname->kind = MNID_ID;
-				ptag_node->ppropname->plid = me_alloc<uint32_t>();
-				if (NULL == ptag_node->ppropname->plid) {
-					free(ptag_node->ppropname);
-					free(ptag_node);
-					printf("[exchange_emsmdb]: out of memory "
-						"when loading property group info\n");
-					return NULL;
-				}
-				*ptag_node->ppropname->plid = atoi(ptoken + 4);
-				if (0 == *ptag_node->ppropname->plid) {
+				ptag_node->ppropname->lid = atoi(ptoken + 4);
+				if (ptag_node->ppropname->lid == 0) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
 					printf("[exchange_emsmdb]: lid \"%s\"/%u error "
 						"with guid \"%s\"\n", ptoken + 4,
-						*ptag_node->ppropname->plid, pline + 5);
+						ptag_node->ppropname->lid, pline + 5);
 					return NULL;
 				}
 				ptag_node->ppropname->pname = NULL;
@@ -341,7 +330,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 						"when loading property group info\n");
 					return NULL;
 				}
-				ptag_node->ppropname->plid = NULL;
+				ptag_node->ppropname->lid = 0;
 				double_list_append_as_tail(
 					&pgp_node->tag_list, &ptag_node->node);
 			} else {

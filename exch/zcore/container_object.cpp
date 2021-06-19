@@ -198,7 +198,6 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	uint32_t handle;
-	uint32_t lids[9];
 	uint8_t mapi_type;
 	STORE_OBJECT *pstore;
 	PROPID_ARRAY propids;
@@ -215,41 +214,32 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
-	lids[0] = PidLidEmail1DisplayName;
 	propname_buff[0].kind = MNID_ID;
-	propname_buff[0].plid = &lids[0];
+	propname_buff[0].lid = PidLidEmail1DisplayName;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
-	lids[1] = PidLidEmail1AddressType;
 	propname_buff[1].kind = MNID_ID;
-	propname_buff[1].plid = &lids[1];
+	propname_buff[1].lid = PidLidEmail1AddressType;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
-	lids[2] = PidLidEmail1EmailAddress;
 	propname_buff[2].kind = MNID_ID;
-	propname_buff[2].plid = &lids[2];
+	propname_buff[2].lid = PidLidEmail1EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[3].guid);
-	lids[3] = PidLidEmail2DisplayName;
 	propname_buff[3].kind = MNID_ID;
-	propname_buff[3].plid = &lids[3];
+	propname_buff[3].lid = PidLidEmail2DisplayName;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[4].guid);
-	lids[4] = PidLidEmail2AddressType;
 	propname_buff[4].kind = MNID_ID;
-	propname_buff[4].plid = &lids[4];
+	propname_buff[4].lid = PidLidEmail2AddressType;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[5].guid);
-	lids[5] = PidLidEmail2EmailAddress;
 	propname_buff[5].kind = MNID_ID;
-	propname_buff[5].plid = &lids[5];
+	propname_buff[5].lid = PidLidEmail2EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[6].guid);
-	lids[6] = PidLidEmail3DisplayName;
 	propname_buff[6].kind = MNID_ID;
-	propname_buff[6].plid = &lids[6];
+	propname_buff[6].lid = PidLidEmail3DisplayName;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[7].guid);
-	lids[7] = PidLidEmail3AddressType;
 	propname_buff[7].kind = MNID_ID;
-	propname_buff[7].plid = &lids[7];
+	propname_buff[7].lid = PidLidEmail3AddressType;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[8].guid);
-	lids[8] = PidLidEmail3EmailAddress;
 	propname_buff[8].kind = MNID_ID;
-	propname_buff[8].plid = &lids[8];
+	propname_buff[8].lid = PidLidEmail3EmailAddress;
 	if (FALSE == store_object_get_named_propids(
 		pstore, FALSE, &propnames, &propids) ||
 		9 != propids.count) {

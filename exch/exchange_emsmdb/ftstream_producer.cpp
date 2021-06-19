@@ -370,10 +370,8 @@ static BOOL ftstream_producer_write_propdef(
 	}
 	switch (propname.kind) {
 	case MNID_ID:
-		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-			&ext_push, *propname.plid)) {
+		if (ext_buffer_push_uint32(&ext_push, propname.lid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		break;
 	case MNID_STRING:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
@@ -861,10 +859,8 @@ static BOOL ftstream_producer_write_groupinfo(
 			}
 			switch (propname.kind) {
 			case MNID_ID:
-				if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-				    &ext_push, *propname.plid)) {
+				if (ext_buffer_push_uint32(&ext_push, propname.lid) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				break;
 			case MNID_STRING:
 				offset = ext_push.offset;

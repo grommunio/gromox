@@ -1037,14 +1037,10 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 	
 	TRY(ext_buffer_pull_uint8(pext, &r->kind));
 	TRY(ext_buffer_pull_guid(pext, &r->guid));
-	r->plid = NULL;
+	r->lid = 0;
 	r->pname = NULL;
 	if (r->kind == MNID_ID) {
-		r->plid = pext->anew<uint32_t>();
-		if (NULL == r->plid) {
-			return EXT_ERR_ALLOC;
-		}
-		TRY(ext_buffer_pull_uint32(pext, r->plid));
+		TRY(ext_buffer_pull_uint32(pext, &r->lid));
 	} else if (r->kind == MNID_STRING) {
 		TRY(ext_buffer_pull_uint8(pext, &name_size));
 		if (name_size < 2) {
@@ -2851,7 +2847,7 @@ int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	TRY(ext_buffer_push_uint8(pext, r->kind));
 	TRY(ext_buffer_push_guid(pext, &r->guid));
 	if (r->kind == MNID_ID) {
-		TRY(ext_buffer_push_uint32(pext, *r->plid));
+		TRY(ext_buffer_push_uint32(pext, r->lid));
 	} else if (r->kind == MNID_STRING) {
 		offset = pext->offset;
 		TRY(ext_buffer_push_advance(pext, sizeof(uint8_t)));

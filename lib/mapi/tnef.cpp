@@ -221,11 +221,7 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 	TRY(ext_buffer_pull_uint32(pext, &tmp_int));
 	if (0 == tmp_int) {
 		r->kind = MNID_ID;
-		r->plid = pext->anew<uint32_t>();
-		if (NULL == r->plid) {
-			return EXT_ERR_ALLOC;
-		}
-		return ext_buffer_pull_uint32(pext, r->plid);
+		return ext_buffer_pull_uint32(pext, &r->lid);
 	} else if (1 == tmp_int) {
 		r->kind = MNID_STRING;
 		TRY(ext_buffer_pull_uint32(pext, &tmp_int));
@@ -957,7 +953,7 @@ static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
 	
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	if (ppropname->kind == MNID_ID)
-		snprintf(tag_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
+		snprintf(tag_string, 256, "%s:lid:%u", tmp_guid, ppropname->lid);
 	else
 		snprintf(tag_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
 	HX_strlower(tag_string);
@@ -981,15 +977,11 @@ static BOOL tnef_convert_to_propname(char *tag_string,
 	if (0 == strncmp(ptr, "lid:", 4)) {
 		ppropname->kind = MNID_ID;
 		ppropname->pname = NULL;
-		ppropname->plid = static_cast<uint32_t *>(alloc(sizeof(uint32_t)));
-		if (NULL == ppropname->plid) {
-			return FALSE;
-		}
-		*ppropname->plid = atoi(ptr + 4);
+		ppropname->lid = atoi(ptr + 4);
 		return TRUE;
 	} else if (0 == strncmp(ptr, "name:", 5)) {
 		ppropname->kind = MNID_STRING;
-		ppropname->plid = NULL;
+		ppropname->lid = 0;
 		len = strlen(ptr + 5) + 1;
 		ppropname->pname = static_cast<char *>(alloc(len));
 		if (NULL == ppropname->pname) {
@@ -1881,7 +1873,7 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 		return EXT_ERR_FORMAT;
 	TRY(ext_buffer_push_uint32(pext, tmp_int));
 	if (0 == tmp_int) {
-		return ext_buffer_push_uint32(pext, *r->plid);
+		return ext_buffer_push_uint32(pext, r->lid);
 	} else if (1 == tmp_int) {
 		offset = pext->offset;
 		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));

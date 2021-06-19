@@ -467,7 +467,7 @@ struct PERMISSION_SET {
 struct PROPERTY_NAME {
 	uint8_t kind;
 	GUID guid;
-	uint32_t *plid;
+	uint32_t lid;
 	char *pname;
 };
 

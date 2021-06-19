@@ -363,7 +363,7 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
 		if (ppropnames->ppropname[i].kind == MNID_ID)
 			snprintf(tmp_string, 256, "GUID=%s,LID=%u",
-				tmp_guid, *ppropnames->ppropname[i].plid);
+			         tmp_guid, ppropnames->ppropname[i].lid);
 		else
 			snprintf(tmp_string, 256, "GUID=%s,NAME=%s",
 				tmp_guid, ppropnames->ppropname[i].pname);

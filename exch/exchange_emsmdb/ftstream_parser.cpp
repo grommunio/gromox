@@ -314,18 +314,12 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 		return NULL;
 	}
 	pstream->offset += sizeof(uint8_t);
-	pname->plid = NULL;
+	pname->lid = 0;
 	pname->pname = NULL;
 	switch (pname->kind) {
 	case MNID_ID:
-		pname->plid = cu_alloc<uint32_t>();
-		if (NULL == pname->plid) {
-			return NULL;
-		}
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, pname->plid)) {
+		if (!ftstream_parser_read_uint32(pstream, &pname->lid))
 			return nullptr;
-		}
 		return pname;
 	case MNID_STRING:
 		pname->pname = ftstream_parser_read_naked_wstring(pstream);

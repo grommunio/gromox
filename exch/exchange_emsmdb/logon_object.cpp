@@ -19,6 +19,8 @@
 
 #define HGROWING_SIZE									0x500
 
+using namespace gromox;
+
 static BOOL logon_object_enlarge_propid_hash(
 	LOGON_OBJECT *plogon)
 {
@@ -94,16 +96,12 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
-		tmp_name.plid = me_alloc<uint32_t>();
-		if (NULL == tmp_name.plid) {
-			return FALSE;
-		}
-		*tmp_name.plid = *ppropname->plid;
+		tmp_name.lid = ppropname->lid;
 		tmp_name.pname = NULL;
-		snprintf(tmp_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
+		snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u", tmp_guid, ppropname->lid);
 		break;
 	case MNID_STRING:
-		tmp_name.plid = NULL;
+		tmp_name.lid = 0;
 		tmp_name.pname = strdup(ppropname->pname);
 		if (NULL == tmp_name.pname) {
 			return FALSE;
@@ -117,9 +115,6 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 		if (1 != int_hash_add(plogon->ppropid_hash, propid, &tmp_name)) {
 			if (FALSE == logon_object_enlarge_propid_hash(plogon) ||
 				1 != int_hash_add(plogon->ppropid_hash, propid, &tmp_name)) {
-				if (NULL != tmp_name.plid) {
-					free(tmp_name.plid);
-				}
 				if (NULL != tmp_name.pname) {
 					free(tmp_name.pname);
 				}
@@ -127,9 +122,6 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 			}
 		}
 	} else {
-		if (NULL != tmp_name.plid) {
-			free(tmp_name.plid);
-		}
 		if (NULL != tmp_name.pname) {
 			free(tmp_name.pname);
 		}
@@ -192,9 +184,6 @@ LOGON_OBJECT::~LOGON_OBJECT()
 			int_hash_iter_forward(piter)) {
 			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
 			switch( ppropname->kind) {
-			case MNID_ID:
-				free(ppropname->plid);
-				break;
 			case MNID_STRING:
 				free(ppropname->pname);
 				break;
@@ -253,11 +242,7 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	if (propid < 0x8000) {
 		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
 		ppropname->kind = MNID_ID;
-		ppropname->plid = cu_alloc<uint32_t>();
-		if (NULL == ppropname->plid) {
-			return FALSE;
-		}
-		*ppropname->plid = propid;
+		ppropname->lid = propid;
 	}
 	if (NULL != plogon->ppropid_hash) {
 		pname = static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash, propid));
@@ -306,11 +291,7 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 			rop_util_get_common_pset(PS_MAPI,
 				&ppropnames->ppropname[i].guid);
 			ppropnames->ppropname[i].kind = MNID_ID;
-			ppropnames->ppropname[i].plid = cu_alloc<uint32_t>();
-			if (NULL == ppropnames->ppropname[i].plid) {
-				return FALSE;
-			}
-			*ppropnames->ppropname[i].plid = ppropids->ppropid[i];
+			ppropnames->ppropname[i].lid = ppropids->ppropid[i];
 			pindex_map[i] = i;
 			continue;
 		}
@@ -356,13 +337,13 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 	
 	rop_util_get_common_pset(PS_MAPI, &guid);
 	if (0 == guid_compare(&ppropname->guid, &guid)) {
-		*ppropid = ppropname->kind == MNID_ID ? *ppropname->plid : 0;
+		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
 		return TRUE;
 	}
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
-		snprintf(tmp_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
+		snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u", tmp_guid, ppropname->lid);
 		break;
 	case MNID_STRING:
 		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
@@ -424,7 +405,7 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 	for (i=0; i<ppropnames->count; i++) {
 		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
 			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
-					       *ppropnames->ppropname[i].plid : 0;
+					       ppropnames->ppropname[i].lid : 0;
 			pindex_map[i] = i;
 			continue;
 		}
@@ -432,7 +413,7 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 		switch (ppropnames->ppropname[i].kind) {
 		case MNID_ID:
 			snprintf(tmp_string, 256, "%s:lid:%u",
-				tmp_guid, *ppropnames->ppropname[i].plid);
+			         tmp_guid, ppropnames->ppropname[i].lid);
 			break;
 		case MNID_STRING:
 			snprintf(tmp_string, 256, "%s:name:%s",

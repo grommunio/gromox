@@ -496,7 +496,6 @@ static BOOL table_check_address_in_contact_folder(
 BOOL exmdb_server_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
-	uint32_t lids[3];
 	uint32_t proptags[3];
 	char sql_string[512];
 	PROPID_ARRAY propids;
@@ -509,17 +508,14 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
-	lids[0] = PidLidEmail1EmailAddress;
 	propname_buff[0].kind = MNID_ID;
-	propname_buff[0].plid = &lids[0];
+	propname_buff[0].lid = PidLidEmail1EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
-	lids[1] = PidLidEmail2EmailAddress;
 	propname_buff[1].kind = MNID_ID;
-	propname_buff[1].plid = &lids[1];
+	propname_buff[1].lid = PidLidEmail2EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
-	lids[2] = PidLidEmail3EmailAddress;
 	propname_buff[2].kind = MNID_ID;
-	propname_buff[2].plid = &lids[2];
+	propname_buff[2].lid = PidLidEmail3EmailAddress;
 	if (FALSE == common_util_get_named_propids(pdb->psqlite,
 		FALSE, &propnames, &propids) || 3 != propids.count) {
 		return FALSE;	

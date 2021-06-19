@@ -3776,8 +3776,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 			(char*)&propnames.ppropname[i].guid,
 			sizeof(GUID));
 		if (propnames.ppropname[i].kind == MNID_ID)
-			add_assoc_long(pzprop, "id",
-				*propnames.ppropname[i].plid);
+			add_assoc_long(pzprop, "id", propnames.ppropname[i].lid);
 		else
 			add_assoc_string(pzprop, "name",
 				propnames.ppropname[i].pname);

@@ -91,72 +91,55 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_workaddresspostofficebox;
-	
+	bf[z++].lid = g_kind_workaddresspostofficebox;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_workaddressstreet;
-	
+	bf[z++].lid = g_kind_workaddressstreet;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_workaddresscity;
-	
+	bf[z++].lid = g_kind_workaddresscity;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_workaddressstate;
-	
+	bf[z++].lid = g_kind_workaddressstate;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_workaddresspostalcode;
-	
+	bf[z++].lid = g_kind_workaddresspostalcode;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_workaddresscountry;
-	
+	bf[z++].lid = g_kind_workaddresscountry;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_email1address;
-	
+	bf[z++].lid = g_kind_email1address;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_email2address;
-	
+	bf[z++].lid = g_kind_email2address;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_email3address;
-	
+	bf[z++].lid = g_kind_email3address;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_imaddress;
-	
+	bf[z++].lid = g_kind_imaddress;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_categories;
-	
+	bf[z++].lid = g_kind_categories;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_bcdisplaydefinition;
-	
+	bf[z++].lid = g_kind_bcdisplaydefinition;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_contactuserfield1;
-	
+	bf[z++].lid = g_kind_contactuserfield1;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_contactuserfield2;
-	
+	bf[z++].lid = g_kind_contactuserfield2;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_contactuserfield3;
-	
+	bf[z++].lid = g_kind_contactuserfield3;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_contactuserfield4;
-
+	bf[z++].lid = g_kind_contactuserfield4;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].plid = &g_kind_freebusylocation;
-
+	bf[z++].lid = g_kind_freebusylocation;
 	rop_util_get_common_pset(PSETID_GROMOX, &bf[z].guid);
 	bf[z].kind = MNID_STRING;
 	bf[z++].pname = deconst("vcarduid");
