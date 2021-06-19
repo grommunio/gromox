@@ -68,8 +68,7 @@ SIMPLE_TREE_NODE* ab_tree_uid_to_node(AB_BASE *pbase, int user_id);
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid);
 uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode);
 uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
-void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, char *str_dname);
+extern void ab_tree_get_display_name(SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
 extern std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *, unsigned int type);
 extern void ab_tree_get_user_info(SIMPLE_TREE_NODE *, int type, char *value, size_t vsize);
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,

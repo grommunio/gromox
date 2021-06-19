@@ -237,7 +237,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
-		ab_tree_get_display_name(pnode, codepage, dn);
+		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -261,7 +261,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		[[fallthrough]];
 	case PR_DISPLAY_NAME_A:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
-		ab_tree_get_display_name(pnode, codepage, dn);
+		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -1125,7 +1125,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == pnode1) {
 				continue;
 			}
-			ab_tree_get_display_name(pnode1, pstat->codepage, temp_name);
+			ab_tree_get_display_name(pnode1, pstat->codepage, temp_name, arsizeof(temp_name));
 			if (strcasecmp(temp_name, ptarget->value.pstr) < 0) {
 				continue;
 			}
@@ -1187,7 +1187,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					continue;
 				}
 				ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
-					pstat->codepage, temp_name);
+					pstat->codepage, temp_name, arsizeof(temp_name));
 				if (strcasecmp(temp_name, ptarget->value.pstr) >= 0) {
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow ||
@@ -1219,8 +1219,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					row ++;
 					continue;
 				}
-				ab_tree_get_display_name(pnode1,
-					pstat->codepage, temp_name);
+				ab_tree_get_display_name(pnode1, pstat->codepage,
+					temp_name, arsizeof(temp_name));
 				if (strcasecmp(temp_name, ptarget->value.pstr) >= 0) {
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow ||
@@ -1816,7 +1816,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		if (pstat->cur_rec == pinmids->pproptag[i]) {
 			b_found = TRUE;
 		}
-		ab_tree_get_display_name(pnode, pstat->codepage, temp_buff);
+		ab_tree_get_display_name(pnode, pstat->codepage, temp_buff, arsizeof(temp_buff));
 		parray[count].strv = ndr_stack_alloc(
 			NDR_STACK_IN, strlen(temp_buff) + 1);
 		if (NULL == parray[count].string) {
@@ -2373,7 +2373,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	if (0 == container_id) {
 		return ecError;
 	}
-	ab_tree_get_display_name(pnode, codepage, str_dname);
+	ab_tree_get_display_name(pnode, codepage, str_dname, arsizeof(str_dname));
 	if (FALSE == nsp_interface_build_specialtable(
 		prow, b_unicode, codepage, has_child,
 		simple_tree_node_get_depth(pnode), container_id,
@@ -2716,7 +2716,7 @@ static BOOL nsp_interface_resolve_node(SIMPLE_TREE_NODE *pnode,
 {
 	char dn[1024];
 	
-	ab_tree_get_display_name(pnode, codepage, dn);
+	ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 	if (NULL != strcasestr(dn, pstr)) {
 		return TRUE;
 	}
