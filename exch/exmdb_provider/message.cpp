@@ -1851,7 +1851,6 @@ static BOOL message_rectify_message(const char *account,
 	char cid_string[256];
 	MESSAGE_CONTENT *pembedded;
 	static constexpr uint8_t fake_true = true;
-	static constexpr uint8_t fake_false = false;
 	static constexpr uint32_t fake_int32 = 0;
 	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by common_util_set_properties */
 	
@@ -1883,10 +1882,30 @@ static BOOL message_rectify_message(const char *account,
 	vc->pvalue = deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
 	++vc;
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS) == nullptr) {
+	auto msgfl = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
+	if (msgfl == nullptr) {
 		vc->proptag = PR_MESSAGE_FLAGS;
 		vc->pvalue = deconst(&fake_flags);
 		pmsgctnt1->proplist.count ++;
+		++vc;
+		if (common_util_get_propvals(&pmsgctnt->proplist, PR_READ) == nullptr) {
+			auto x = cu_alloc<uint8_t>();
+			if (x == nullptr)
+				return false;
+			*x = false;
+			vc->proptag = PR_READ;
+			vc->pvalue = x;
+			++pmsgctnt1->proplist.count;
+			++vc;
+		}
+	} else if (common_util_get_propvals(&pmsgctnt->proplist, PR_READ) == nullptr) {
+		auto x = cu_alloc<uint8_t>();
+		if (x == nullptr)
+			return false;
+		*x = *static_cast<uint32_t *>(msgfl) & MSGFLAG_READ;
+		vc->proptag = PR_READ;
+		vc->pvalue = x;
+		++pmsgctnt1->proplist.count;
 		++vc;
 	}
 	if (NULL == common_util_get_propvals(
@@ -1991,12 +2010,6 @@ static BOOL message_rectify_message(const char *account,
 			pmsgctnt1->proplist.count ++;
 			++vc;
 		}
-	}
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_READ) == nullptr) {
-		vc->proptag = PR_READ;
-		vc->pvalue = deconst(&fake_false);
-		pmsgctnt1->proplist.count ++;
-		++vc;
 	}
 	pbin1 = static_cast<BINARY *>(common_util_get_propvals(
 	        &pmsgctnt->proplist, PROP_TAG_CONVERSATIONINDEX));
