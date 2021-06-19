@@ -2062,16 +2062,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		mail_free(&imail);
 	}
 	(*puidnext) ++;
-	if (message_flags & MESSAGE_FLAG_UNSENT) {
-		b_unsent = 1;
-	} else {
-		b_unsent = 0;
-	}
-	if (message_flags & MESSAGE_FLAG_READ) {
-		b_read = 1;
-	} else {
-		b_read = 0;
-	}
+	b_unsent = !!(message_flags & MSGFLAG_UNSENT);
+	b_read   = !!(message_flags & MSGFLAG_READ);
 	mail_engine_extract_digest_fields(
 		temp_buff, subject, from, rcpt, &size);
 	sqlite3_reset(pstmt);
@@ -2100,16 +2092,8 @@ static void mail_engine_sync_message(IDB_ITEM *pidb,
 	char sql_string[256];
 	
 	if (NULL != mid_string || mod_time <= mod_time1) {
-		if (message_flags & MESSAGE_FLAG_UNSENT) {
-			b_unsent1 = 1;
-		} else {
-			b_unsent1 = 0;
-		}
-		if (message_flags & MESSAGE_FLAG_READ) {
-			b_read1 = 1;
-		} else {
-			b_read1 = 0;
-		}
+		b_unsent1 = !!(message_flags & MSGFLAG_UNSENT);
+		b_read1   = !!(message_flags & MSGFLAG_READ);
 		if (b_unsent != b_unsent1 || b_read != b_read1) {
 			sqlite3_reset(pstmt1);
 			sqlite3_bind_int64(pstmt1, 1, b_unsent1);
@@ -3382,7 +3366,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (0 != b_unsent) {
 		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = &tmp_flags;
-		tmp_flags = MESSAGE_FLAG_UNSENT;
+		tmp_flags = MSGFLAG_UNSENT;
 		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 			pidb.reset();
 			message_content_free(pmsgctnt);
@@ -3676,7 +3660,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (0 != b_unsent) {
 		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = &tmp_flags;
-		tmp_flags = MESSAGE_FLAG_UNSENT;
+		tmp_flags = MSGFLAG_UNSENT;
 		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
@@ -5055,8 +5039,8 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 			return 4;
 		}
 		message_flags = *(uint32_t*)propvals.ppropval[0].pvalue;
-		if (0 == (MESSAGE_FLAG_UNSENT & message_flags)) {
-			message_flags |= MESSAGE_FLAG_UNSENT;
+		if (!(message_flags & MSGFLAG_UNSENT)) {
+			message_flags |= MSGFLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
 			if (!exmdb_client::set_message_properties(argv[1],
 				NULL, 0, rop_util_make_eid_ex(1, message_id), &propvals,
@@ -5145,8 +5129,8 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 			return 4;
 		}
 		message_flags = *(uint32_t*)propvals.ppropval[0].pvalue;
-		if (MESSAGE_FLAG_UNSENT & message_flags) {
-			message_flags &= ~MESSAGE_FLAG_UNSENT;
+		if (message_flags & MSGFLAG_UNSENT) {
+			message_flags &= ~MSGFLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
 			if (!exmdb_client::set_message_properties(argv[1],
 				NULL, 0, rop_util_make_eid_ex(1, message_id), &propvals,
@@ -5910,16 +5894,8 @@ static void mail_engine_modify_notification_message(
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MIDSTRING);
 	if (NULL != pvalue) {
  UPDATE_MESSAGE_FLAGS:
-		if (message_flags & MESSAGE_FLAG_UNSENT) {
-			b_unsent = 1;
-		} else {
-			b_unsent = 0;
-		}
-		if (message_flags & MESSAGE_FLAG_READ) {
-			b_read = 1;
-		} else {
-			b_read = 0;
-		}
+		b_unsent = !!(message_flags & MSGFLAG_UNSENT);
+		b_read   = !!(message_flags & MSGFLAG_READ);
 		sprintf(sql_string, "UPDATE messages SET read=%d, unsent=%d"
 		        " WHERE message_id=%llu", b_read, b_unsent, LLU(message_id));
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);

@@ -1966,34 +1966,31 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 	pproplist = &pmsgctnt->proplist;
 	pvalue = tpropval_array_get_propval(pproplist, PR_MESSAGE_FLAGS);
 	uint32_t message_flags = pvalue == nullptr ? 0 : *static_cast<uint32_t *>(pvalue);
-	message_flags &= ~MESSAGE_FLAG_READ;
-	message_flags &= ~MESSAGE_FLAG_HASATTACH;
-	message_flags &= ~MESSAGE_FLAG_FROMME;
-	message_flags &= ~MESSAGE_FLAG_FAI;
-	message_flags &= ~MESSAGE_FLAG_NOTIFYREAD;
-	message_flags &= ~MESSAGE_FLAG_NOTIFYUNREAD;
+	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
+	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING |
+	                 MSGFLAG_NRN_PENDING);
 	pvalue = tpropval_array_get_propval(pproplist, PR_READ);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		message_flags |= MESSAGE_FLAG_READ;
+		message_flags |= MSGFLAG_READ;
 	}
 	if (NULL != pmsgctnt->children.pattachments &&
 		0 != pmsgctnt->children.pattachments->count) {
-		message_flags |= MESSAGE_FLAG_HASATTACH;
+		message_flags |= MSGFLAG_HASATTACH;
 	}
 	pvalue = tpropval_array_get_propval(
 		pproplist, PROP_TAG_ASSOCIATED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		message_flags |= MESSAGE_FLAG_FAI;
+		message_flags |= MSGFLAG_ASSOCIATED;
 	}
 	pvalue = tpropval_array_get_propval(
 		pproplist, PROP_TAG_READRECEIPTREQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		message_flags |= MESSAGE_FLAG_NOTIFYREAD;
+		message_flags |= MSGFLAG_RN_PENDING;
 	}
 	pvalue = tpropval_array_get_propval(pproplist,
 		PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		message_flags |= MESSAGE_FLAG_NOTIFYUNREAD;
+		message_flags |= MSGFLAG_NRN_PENDING;
 	}
 	return message_flags;
 }
@@ -2634,7 +2631,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					pvalue = tpropval_array_get_propval(
 					         &pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 					if (NULL != pvalue) {
-						*(uint32_t*)pvalue |= MESSAGE_FLAG_EVERREAD;
+						*static_cast<uint32_t *>(pvalue) |= MSGFLAG_EVERREAD;
 					}
 				}
 				break;
@@ -2652,7 +2649,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					continue;
 				}
 				message_flags = *(uint32_t*)pproperties->ppropval[i].pvalue;
-				if (message_flags & MESSAGE_FLAG_READ) {
+				if (message_flags & MSGFLAG_READ) {
 					propval.proptag = PR_READ;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
@@ -2660,7 +2657,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 						return FALSE;
 					}
 				}
-				if (message_flags & MESSAGE_FLAG_FAI) {
+				if (message_flags & MSGFLAG_ASSOCIATED) {
 					propval.proptag = PROP_TAG_ASSOCIATED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
@@ -2668,7 +2665,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 						return FALSE;
 					}	
 				}
-				if (message_flags & MESSAGE_FLAG_NOTIFYREAD) {
+				if (message_flags & MSGFLAG_RN_PENDING) {
 					propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
@@ -2676,7 +2673,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 						return FALSE;
 					}	
 				}
-				if (message_flags & MESSAGE_FLAG_NOTIFYUNREAD) {
+				if (message_flags & MSGFLAG_NRN_PENDING) {
 					propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
@@ -2684,13 +2681,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 						return FALSE;
 					}	
 				}
-				message_flags &= ~MESSAGE_FLAG_READ;
-				message_flags &= ~MESSAGE_FLAG_UNMODIFIED;
-				message_flags &= ~MESSAGE_FLAG_HASATTACH;
-				message_flags &= ~MESSAGE_FLAG_FROMME;
-				message_flags &= ~MESSAGE_FLAG_FAI;
-				message_flags &= ~MESSAGE_FLAG_NOTIFYREAD;
-				message_flags &= ~MESSAGE_FLAG_NOTIFYUNREAD;
+				message_flags &= ~(MSGFLAG_READ | MSGFLAG_UNMODIFIED |
+				                 MSGFLAG_HASATTACH | MSGFLAG_FROMME |
+				                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING |
+				                 MSGFLAG_NRN_PENDING);
 				*(uint32_t*)pproperties->ppropval[i].pvalue = message_flags;
 				break;
 			case PROP_TAG_SUBJECT:

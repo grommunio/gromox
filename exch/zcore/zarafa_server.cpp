@@ -3904,11 +3904,11 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		differently from exchange_emsmdb.
 		we always allow a submitted message
 		to be resubmitted */
-	BOOL b_unsent = (message_flags & MESSAGE_FLAG_UNSENT) ? TRUE : false;
+	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_DELETEAFTERSUBMIT);
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
-	if (0 == (MESSAGE_FLAG_SUBMITTED & message_flags)) {
+	if (!(message_flags & MSGFLAG_SUBMITTED)) {
 		if (!exmdb_client::try_mark_submit(
 			store_object_get_dir(pstore),
 			message_object_get_id(pmessage),
@@ -4996,7 +4996,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? TRUE : false;
 	} else {
 		pvalue = common_util_get_propvals(pproplist, PR_MESSAGE_FLAGS);
-		b_fai = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_FAI) ?
+		b_fai = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MSGFLAG_ASSOCIATED) ?
 		        TRUE : false;
 	}
 	/*
@@ -5630,7 +5630,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			continue;
 		}
 		message_id = rop_util_make_eid(1, tmp_xid.local_id);
-		bool mark_as_read = pstates->pstate[i].message_flags & MESSAGE_FLAG_READ;
+		bool mark_as_read = pstates->pstate[i].message_flags & MSGFLAG_READ;
 		if (NULL != username) {
 			if (FALSE == exmdb_client_check_message_owner(
 				store_object_get_dir(pstore), message_id,

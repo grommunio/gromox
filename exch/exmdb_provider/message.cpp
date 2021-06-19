@@ -1445,10 +1445,9 @@ BOOL exmdb_server_mark_modified(const char *dir, uint64_t message_id)
 		pdb->psqlite, mid_val, TRUE, &pmessage_flags)) {
 		return FALSE;
 	}
-	if (0 == (MESSAGE_FLAG_UNMODIFIED & (*pmessage_flags))) {
+	if (!(*pmessage_flags & MSGFLAG_UNMODIFIED))
 		return TRUE;
-	}
-	*pmessage_flags &= ~MESSAGE_FLAG_UNMODIFIED;
+	*pmessage_flags &= ~MSGFLAG_UNMODIFIED;
 	propval.proptag = PR_MESSAGE_FLAGS;
 	propval.pvalue = pmessage_flags;
 	if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
@@ -1458,8 +1457,8 @@ BOOL exmdb_server_mark_modified(const char *dir, uint64_t message_id)
 	return TRUE;
 }
 
-/* add MESSAGE_FLAG_SUBMITTED and clear
-	MESSAGE_FLAG_UNSENT in message_flags */
+/* add MSGFLAG_SUBMITTED and clear
+	MSGFLAG_UNSENT in message_flags */
 BOOL exmdb_server_try_mark_submit(const char *dir,
 	uint64_t message_id, BOOL *pb_marked)
 {
@@ -1475,12 +1474,12 @@ BOOL exmdb_server_try_mark_submit(const char *dir,
 		pdb->psqlite, mid_val, TRUE, &pmessage_flags)) {
 		return FALSE;
 	}
-	if (MESSAGE_FLAG_SUBMITTED & (*pmessage_flags)) {
+	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
 		*pb_marked = FALSE;
 		return TRUE;
 	}
-	*pmessage_flags |= MESSAGE_FLAG_SUBMITTED;
-	*pmessage_flags &= ~MESSAGE_FLAG_UNSENT;
+	*pmessage_flags |= MSGFLAG_SUBMITTED;
+	*pmessage_flags &= ~MSGFLAG_UNSENT;
 	propval.proptag = PR_MESSAGE_FLAGS;
 	propval.pvalue = pmessage_flags;
 	if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
@@ -1490,9 +1489,9 @@ BOOL exmdb_server_try_mark_submit(const char *dir,
 	return TRUE;
 }
 
-/* clear MESSAGE_FLAG_SUBMITTED set by
+/* clear MSGFLAG_SUBMITTED set by
 	exmdb_server_try_submit, clear timer_id,
-	set/clear MESSAGE_FLAG_UNSENT by b_unsent */
+	set/clear MSGFLAG_UNSENT by b_unsent */
 BOOL exmdb_server_clear_submit(const char *dir,
 	uint64_t message_id, BOOL b_unsent)
 {
@@ -1510,11 +1509,11 @@ BOOL exmdb_server_clear_submit(const char *dir,
 		pdb->psqlite, mid_val, TRUE, &pmessage_flags)) {
 		return FALSE;
 	}
-	*pmessage_flags &= ~MESSAGE_FLAG_SUBMITTED;
+	*pmessage_flags &= ~MSGFLAG_SUBMITTED;
 	if (TRUE == b_unsent) {
-		*pmessage_flags |= MESSAGE_FLAG_UNSENT;
+		*pmessage_flags |= MSGFLAG_UNSENT;
 	} else {
-		*pmessage_flags &= ~MESSAGE_FLAG_UNSENT;
+		*pmessage_flags &= ~MSGFLAG_UNSENT;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	propval.proptag = PR_MESSAGE_FLAGS;
@@ -1854,7 +1853,7 @@ static BOOL message_rectify_message(const char *account,
 	static constexpr uint8_t fake_true = true;
 	static constexpr uint8_t fake_false = false;
 	static constexpr uint32_t fake_int32 = 0;
-	static uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED; /* modified by common_util_set_properties */
+	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by common_util_set_properties */
 	
 	pmsgctnt1->proplist.count = 0;
 	auto *vc = pmsgctnt1->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);

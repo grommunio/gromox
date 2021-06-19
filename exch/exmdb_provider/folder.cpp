@@ -323,14 +323,11 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		sqlite3_bind_int64(pstmt1, 2, PR_MESSAGE_FLAGS);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			message_flags = sqlite3_column_int64(pstmt1, 0);
-			message_flags &= ~MESSAGE_FLAG_READ;
-			message_flags &= ~MESSAGE_FLAG_HASATTACH;
-			message_flags &= ~MESSAGE_FLAG_FROMME;
-			message_flags &= ~MESSAGE_FLAG_FAI;
-			message_flags &= ~MESSAGE_FLAG_NOTIFYREAD;
-			message_flags &= ~MESSAGE_FLAG_NOTIFYUNREAD;
+			message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH |
+			                 MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
+			                 MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 			if (0 != sqlite3_column_int64(pstmt, 1)) {
-				message_flags |= MESSAGE_FLAG_READ;
+				message_flags |= MSGFLAG_READ;
 			}
 			pv->proptag = PR_MESSAGE_FLAGS;
 			pv->pvalue = cu_alloc<uint32_t>();

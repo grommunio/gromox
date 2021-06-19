@@ -1453,31 +1453,27 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 2, PR_MESSAGE_FLAGS);
 	uint32_t message_flags = sqlite3_step(pstmt) == SQLITE_ROW ?
 	                         sqlite3_column_int64(pstmt, 0) : 0;
-	message_flags &= ~MESSAGE_FLAG_READ;
-	message_flags &= ~MESSAGE_FLAG_HASATTACH;
-	message_flags &= ~MESSAGE_FLAG_FROMME;
-	message_flags &= ~MESSAGE_FLAG_FAI;
-	message_flags &= ~MESSAGE_FLAG_NOTIFYREAD;
-	message_flags &= ~MESSAGE_FLAG_NOTIFYUNREAD;
+	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
+	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 	if (FALSE == b_native) {
 		if (TRUE == common_util_check_message_read(
 			psqlite, message_id)) {
-			message_flags |= MESSAGE_FLAG_READ;
+			message_flags |= MSGFLAG_READ;
 		}
 		if (TRUE == common_util_check_message_has_attachments(
 			psqlite, message_id)) {
-			message_flags |= MESSAGE_FLAG_HASATTACH;
+			message_flags |= MSGFLAG_HASATTACH;
 		}
 		if (TRUE == common_util_check_message_associated(
 			psqlite, message_id)) {
-			message_flags |= MESSAGE_FLAG_FAI;
+			message_flags |= MSGFLAG_ASSOCIATED;
 		}
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
 		sqlite3_bind_int64(pstmt, 2, PROP_TAG_READRECEIPTREQUESTED);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (0 != sqlite3_column_int64(pstmt, 0)) {
-				message_flags |= MESSAGE_FLAG_NOTIFYREAD;
+				message_flags |= MSGFLAG_RN_PENDING;
 			}
 		}
 		sqlite3_reset(pstmt);
@@ -1486,7 +1482,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 			PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (0 != sqlite3_column_int64(pstmt, 0)) {
-				message_flags |= MESSAGE_FLAG_NOTIFYUNREAD;
+				message_flags |= MSGFLAG_NRN_PENDING;
 			}
 		}
 	}
@@ -2718,12 +2714,12 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	if (0 != is_read) {
 		sprintf(sql_string, "UPDATE message_properties "
 			"SET propval=propval|%u WHERE message_id=%llu"
-			" AND proptag=%u", MESSAGE_FLAG_EVERREAD,
+			" AND proptag=%u", MSGFLAG_EVERREAD,
 		        LLU(message_id), PR_MESSAGE_FLAGS);
 	} else {
 		sprintf(sql_string, "UPDATE message_properties "
 			"SET propval=propval&(~%u) WHERE message_id=%llu"
-			" AND proptag=%u", MESSAGE_FLAG_EVERREAD,
+			" AND proptag=%u", MSGFLAG_EVERREAD,
 		        LLU(message_id), PR_MESSAGE_FLAGS);
 	}
 	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
@@ -3218,18 +3214,10 @@ BOOL common_util_set_properties(int table_type,
 				continue;
 			case PR_MESSAGE_FLAGS:
 				/* XXX: Why no SQL update? */
-				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
-											~MESSAGE_FLAG_READ;
-				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
-									~MESSAGE_FLAG_HASATTACH;
-				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
-										~MESSAGE_FLAG_FROMME;
-				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
-											~MESSAGE_FLAG_FAI;
-				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
-									~MESSAGE_FLAG_NOTIFYREAD;
-				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
-									~MESSAGE_FLAG_NOTIFYUNREAD;
+				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) &=
+					~(MSGFLAG_READ | MSGFLAG_HASATTACH |
+					MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
+					MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 				break;
 			case PROP_TAG_SUBJECT:
 			case PROP_TAG_SUBJECT_STRING8:

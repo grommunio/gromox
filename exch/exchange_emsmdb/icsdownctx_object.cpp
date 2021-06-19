@@ -1196,11 +1196,13 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
 			pvalue = common_util_get_propvals(&pembedded->proplist, PR_MESSAGE_FLAGS);
 			tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
-			tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYREAD) ?
+			tmp_propval.pvalue = pvalue != nullptr &&
+			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-			tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYUNREAD) ?
+			tmp_propval.pvalue = pvalue != nullptr &&
+			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			if (FALSE == ftstream_producer_write_messagechangefull(
@@ -1336,11 +1338,13 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
 		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 		tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
-		tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYREAD) ?
+		tmp_propval.pvalue = pvalue != nullptr &&
+		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
 		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
 		tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		tmp_propval.pvalue = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MESSAGE_FLAG_NOTIFYUNREAD) ?
+		tmp_propval.pvalue = pvalue != nullptr &&
+		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
 		if (FALSE == ftstream_producer_write_messagechangefull(

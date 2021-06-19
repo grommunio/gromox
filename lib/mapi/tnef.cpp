@@ -1384,9 +1384,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (b_embedded && bv->cb != 0) {
 				tmp_int32 = 0;
 				if (*bv->pb & FMS_LOCAL)
-					tmp_int32 |= MESSAGE_FLAG_UNSENT;
+					tmp_int32 |= MSGFLAG_UNSENT;
 				if (*bv->pb & FMS_SUBMITTED)
-					tmp_int32 |= MESSAGE_FLAG_SUBMITTED;
+					tmp_int32 |= MSGFLAG_SUBMITTED;
 				if (0 != tmp_int32) {
 					propval.proptag = PR_MESSAGE_FLAGS;
 					propval.pvalue = &tmp_int32;
@@ -2365,12 +2365,10 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_byte = 0;
 		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_FLAGS);
 		if (NULL != pvalue) {
-			if ((*(uint32_t*)pvalue) & MESSAGE_FLAG_UNSENT) {
+			if (*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNSENT)
 				tmp_byte |= FMS_LOCAL;
-			}
-			if ((*(uint32_t*)pvalue) & MESSAGE_FLAG_SUBMITTED) {
+			if (*static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
 				tmp_byte |= FMS_SUBMITTED;
-			}
 		}
 		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_READ);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {

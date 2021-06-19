@@ -304,7 +304,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)pvalue = MESSAGE_FLAG_UNSENT | MESSAGE_FLAG_UNMODIFIED;
+	*static_cast<uint32_t *>(pvalue) = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -1049,7 +1049,7 @@ BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
 	if (NULL == pmessage_flags) {
 		return TRUE;
 	}
-	*pmessage_flags &= ~MESSAGE_FLAG_UNSENT;
+	*pmessage_flags &= ~MSGFLAG_UNSENT;
 	tmp_propval.proptag = PR_MESSAGE_FLAGS;
 	tmp_propval.pvalue = pmessage_flags;
 	return exmdb_client_set_instance_property(
@@ -1453,9 +1453,9 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				propval_buff[2].proptag =
 					PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 				propval_buff[2].pvalue = &tmp_bytes[2];
-				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_READ);
-				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_NOTIFYREAD);
-				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MESSAGE_FLAG_NOTIFYUNREAD);
+				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
+				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
+				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_NRN_PENDING);
 				if (FALSE == exmdb_client_set_instance_properties(
 					logon_object_get_dir(pmessage->plogon),
 					pmessage->instance_id, &tmp_propvals1,
@@ -1816,8 +1816,8 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		    pmessage->instance_id, PR_MESSAGE_FLAGS, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		if (*(uint32_t*)pvalue & MESSAGE_FLAG_UNMODIFIED) {
-			*(uint32_t*)pvalue &= ~MESSAGE_FLAG_UNMODIFIED;
+		if (*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNMODIFIED) {
+			*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
 			propval.proptag = PR_MESSAGE_FLAGS;
 			propval.pvalue = pvalue;
 			if (FALSE == exmdb_client_set_instance_property(

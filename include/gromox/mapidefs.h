@@ -241,6 +241,24 @@ enum {
 	MODRECIP_REMOVE = 1U << 3,
 };
 
+enum {
+	MSGFLAG_READ               = 1U << 0,
+	MSGFLAG_UNMODIFIED         = 1U << 1,
+	MSGFLAG_SUBMITTED          = 1U << 2,
+	MSGFLAG_UNSENT             = 1U << 3,
+	MSGFLAG_HASATTACH          = 1U << 4,
+	MSGFLAG_FROMME             = 1U << 5,
+	MSGFLAG_ASSOCIATED         = 1U << 6,
+	MSGFLAG_RESEND             = 1U << 7,
+	MSGFLAG_RN_PENDING         = 1U << 8,
+	MSGFLAG_NRN_PENDING        = 1U << 9,
+	MSGFLAG_EVERREAD           = 1U << 10, /* non-standard; custom use by groupwares */
+	MSGFLAG_ORIGIN_X400        = 1U << 12,
+	MSGFLAG_ORIGIN_INTERNET    = 1U << 13,
+	MSGFLAG_ORIGIN_MISC_EXT    = 1U << 15,
+	MSGFLAG_OUTLOOK_NON_EMS_XP = 1U << 16,
+};
+
 enum relop {
 	RELOP_LT = 0x00,
 	RELOP_LE,

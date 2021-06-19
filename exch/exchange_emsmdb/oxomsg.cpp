@@ -336,10 +336,9 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecError;
 	}
 	message_flags = *(uint32_t*)pvalue;
-	if (MESSAGE_FLAG_SUBMITTED & message_flags) {
+	if (message_flags & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
-	}
-	BOOL b_unsent = (message_flags & MESSAGE_FLAG_UNSENT) ? TRUE : false;
+	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
 	pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_DELETEAFTERSUBMIT);
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
@@ -483,7 +482,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	if (NULL == pmessage_flags) {
 		return ecError;
 	}
-	if (*pmessage_flags & MESSAGE_FLAG_SUBMITTED) {
+	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
 		if (FALSE == exmdb_client_get_message_timer(
 			logon_object_get_dir(plogon), message_id, &ptimer_id)) {
 			return ecError;
@@ -682,10 +681,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	    nullptr, 0, message_object_get_id(pmessage), PR_MESSAGE_FLAGS,
 	    &pvalue))
 		return ecError;
-	if (NULL != pvalue && (*(uint32_t*)pvalue &
-		MESSAGE_FLAG_SUBMITTED)) {
+	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
-	}
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	account = logon_object_get_account(plogon);

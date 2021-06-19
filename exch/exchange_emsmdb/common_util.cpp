@@ -2246,7 +2246,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	message_flags = *(uint32_t*)pvalue;
-	BOOL b_resend = (message_flags & MESSAGE_FLAG_RESEND) ? TRUE : false;
+	BOOL b_resend = (message_flags & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		log_err("W-1286: Missing recipients for message mid:0x%llx", LLU(message_id));

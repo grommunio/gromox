@@ -579,8 +579,7 @@ BOOL icsdownctx_object_sync_readstates(
 				return FALSE;
 			}
 			pstates->pstate[pstates->count].source_key = *pbin;
-			pstates->pstate[pstates->count].message_flags =
-											MESSAGE_FLAG_READ;
+			pstates->pstate[pstates->count].message_flags = MSGFLAG_READ;
 			pstates->count ++;
 		}
 		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
