@@ -494,7 +494,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
 	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout)
 {
-	int result;
 	AUX_INFO aux_in;
 	AUX_INFO aux_out;
 	EXT_PULL ext_pull;

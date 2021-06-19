@@ -90,14 +90,13 @@ BOOL temp_list_add_string(const char *str, int interval)
 	if (NULL == g_string_hash || NULL == str) {
 		return FALSE;
 	}
-	if (GREY_LIST_NOT_FOUND != grey_list_query(temp_string, FALSE)) {
-		return FALSE;
-	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
 		HX_strlower(temp_string);
 	}
+	if (grey_list_query(temp_string, false) != GREY_LIST_NOT_FOUND)
+		return FALSE;
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	time(&current_time);

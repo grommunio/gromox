@@ -185,7 +185,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			pop3_parser_log_info(pcontext, 8, "midb return error result");
 			return DISPATCH_SHOULD_CLOSE;
 		}
-		if (pcontext->array.size() != pcontext->total_mail)
+		if (pcontext->total_mail < 0 ||
+		    pcontext->array.size() != static_cast<size_t>(pcontext->total_mail))
 			return 1722;
 		pcontext->is_login = TRUE;
 		pop3_parser_log_info(pcontext, 8, "login success");
