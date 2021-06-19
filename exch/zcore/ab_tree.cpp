@@ -73,6 +73,8 @@
 	CLASS: classname
 */
 
+using namespace gromox;
+
 namespace {
 
 struct AB_NODE {
@@ -112,8 +114,7 @@ static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
 									   0x2B, 0x2F, 0xE1, 0x82};
 
 static void *zcoreab_scanwork(void *);
-static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, char *str_dname);
+static void ab_tree_get_display_name(SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
 static void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_t vsize);
 
 uint32_t ab_tree_make_minid(uint8_t type, int value)
@@ -426,7 +427,7 @@ static BOOL ab_tree_load_class(
 			}
 		}
 		parray[i].pnode = (SIMPLE_TREE_NODE*)pabnode;
-		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff);
+		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff, arsizeof(temp_buff));
 		parray[i].string = strdup(temp_buff);
 		if (NULL == parray[i].string) {
 			ab_tree_put_abnode(pabnode);
@@ -566,7 +567,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 			parray[i].pnode = (SIMPLE_TREE_NODE*)pabnode;
 			char temp_buff[1024];
-			ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff);
+			ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff, arsizeof(temp_buff));
 			parray[i].string = strdup(temp_buff);
 			if (NULL == parray[i].string) {
 				ab_tree_put_abnode(pabnode);
@@ -614,7 +615,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		parray[i].pnode = (SIMPLE_TREE_NODE*)pabnode;
 		char temp_buff[1024];
-		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff);
+		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff, arsizeof(temp_buff));
 		parray[i].string = strdup(temp_buff);
 		if (NULL == parray[i].string) {
 			ab_tree_put_abnode(pabnode);
@@ -728,7 +729,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	i = 0;
 	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
-		ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), 1252, temp_buff);
+		ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), 1252, temp_buff, arsizeof(temp_buff));
 		parray[i].pnode = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
 		parray[i].string = strdup(temp_buff);
 		if (NULL == parray[i].string) {
@@ -1173,28 +1174,29 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 }
 
 static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, char *str_dname)
+    uint32_t codepage, char *str_dname, size_t dn_size)
 {
 	char *ptoken;
 	AB_NODE *pabnode;
 	char lang_string[256];
 	
 	pabnode = (AB_NODE*)pnode;
-	str_dname[0] = '\0';
+	if (dn_size > 0)
+		str_dname[0] = '\0';
 	switch (pabnode->node_type) {
 	case NODE_TYPE_DOMAIN: {
 		auto obj = static_cast<sql_domain *>(pabnode->d_info);
-		strcpy(str_dname, obj->title.c_str());
+		HX_strlcpy(str_dname, obj->title.c_str(), dn_size);
 		break;
 	}
 	case NODE_TYPE_GROUP: {
 		auto obj = static_cast<sql_group *>(pabnode->d_info);
-		strcpy(str_dname, obj->title.c_str());
+		HX_strlcpy(str_dname, obj->title.c_str(), dn_size);
 		break;
 	}
 	case NODE_TYPE_CLASS: {
 		auto obj = static_cast<sql_class *>(pabnode->d_info);
-		strcpy(str_dname, obj->name.c_str());
+		HX_strlcpy(str_dname, obj->name.c_str(), dn_size);
 		break;
 	}
 	case NODE_TYPE_PERSON:
@@ -1203,9 +1205,9 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
-			strcpy(str_dname, it->second.c_str());
+			HX_strlcpy(str_dname, it->second.c_str(), dn_size);
 		} else {
-			strcpy(str_dname, obj->username.c_str());
+			HX_strlcpy(str_dname, obj->username.c_str(), dn_size);
 			ptoken = strchr(str_dname, '@');
 			if (NULL != ptoken) {
 				*ptoken = '\0';
@@ -1220,27 +1222,26 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		case MLIST_TYPE_NORMAL:
 			if (!system_services_get_lang(codepage, "mlist0", lang_string, GX_ARRAY_SIZE(lang_string)))
 				strcpy(lang_string, "custom address list");
-			snprintf(str_dname, 256, "%s(%s)", obj->username.c_str(), lang_string);
+			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
 		case MLIST_TYPE_GROUP:
 			if (FALSE == system_services_get_lang(codepage, "mlist1", lang_string, 256)) {
 				strcpy(lang_string, "all users in department of %s");
 			}
-			snprintf(str_dname, 256, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
+			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		case MLIST_TYPE_DOMAIN:
-			if (FALSE == system_services_get_lang(codepage, "mlist2", str_dname, 256)) {
-				strcpy(str_dname, "all users in domain");
-			}
+			if (!system_services_get_lang(codepage, "mlist2", str_dname, dn_size))
+				HX_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
 		case MLIST_TYPE_CLASS:
 			if (FALSE == system_services_get_lang(codepage, "mlist3", lang_string, 256)) {
 				strcpy(lang_string, "all users in group of %s");
 			}
-			snprintf(str_dname, 256, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
+			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		default:
-			snprintf(str_dname, 256, "unknown address list type %u", obj->list_type);
+			snprintf(str_dname, dn_size, "unknown address list type %u", obj->list_type);
 		}
 		break;
 	}
@@ -1753,7 +1754,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
-		ab_tree_get_display_name(pnode, codepage, dn);
+		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1930,7 +1931,7 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 {
 	char dn[1024];
 	
-	ab_tree_get_display_name(pnode, codepage, dn);
+	ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 	if (NULL != strcasestr(dn, pstr)) {
 		return TRUE;
 	}
