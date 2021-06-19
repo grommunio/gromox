@@ -17,17 +17,6 @@
 #include <gromox/propval.hpp>
 #include <cstdio>
 
-static constexpr uint32_t
-	PidLidEmail1DisplayName = 0x8080,
-	PidLidEmail1AddressType = 0x8082,
-	PidLidEmail1EmailAddress = 0x8083,
-	PidLidEmail2DisplayName = 0x8090,
-	PidLidEmail2AddressType = 0x8092,
-	PidLidEmail2EmailAddress = 0x8093,
-	PidLidEmail3DisplayName = 0x80A0,
-	PidLidEmail3AddressType = 0x80A2,
-	PidLidEmail3EmailAddress = 0x80A3;
-
 std::unique_ptr<CONTAINER_OBJECT> container_object_create(
 	uint8_t type, CONTAINER_ID id)
 {

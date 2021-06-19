@@ -100,20 +100,6 @@ struct EVENT_NODE {
 
 using namespace gromox;
 
-static constexpr uint32_t
-	PidLidGlobalObjectId = 0x3,
-	PidLidBusyStatus = 0x8205,
-	PidLidLocation = 0x8208,
-	PidLidAppointmentStartWhole = 0x820D,
-	PidLidAppointmentEndWhole = 0x820E,
-	PidLidAppointmentSubType = 0x8215,
-	PidLidAppointmentRecur = 0x8216,
-	PidLidAppointmentStateFlags = 0x8217,
-	PidLidRecurring = 0x8223,
-	PidLidTimeZoneStruct = 0x8233,
-	PidLidClipEnd = 0x8236,
-	PidLidReminderSet = 0x8503,
-	PidLidPrivate = 0x8506;
 static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;

@@ -127,22 +127,6 @@ struct MIME_SKELETON {
 };
 }
 
-static constexpr uint32_t
-	PidLidTaskStatus = 0x8101,
-	PidLidPercentComplete = 0x8102,
-	PidLidTaskStartDate = 0x8104,
-	PidLidTaskDueDate = 0x8105,
-	PidLidTaskDateCompleted = 0x810F,
-	PidLidTaskComplete = 0x811C,
-	PidLidSmartNoAttach = 0x8514,
-	PidLidFlagRequest = 0x8530,
-	PidLidToDoTitle = 0x85A4,
-	PidLidInfoPathFromName = 0x85B1,
-	PidLidClassified = 0x85B5,
-	PidLidClassification = 0x85B6,
-	PidLidClassificationDescription = 0x85B7,
-	PidLidClassificationGuid = 0x85B8,
-	PidLidClassificationKeep = 0x85BA;
 static constexpr char
 	PidNameAttachmentMacContentType[] = "AttachmentMacContentType",
 	PidNameAttachmentMacInfo[] = "AttachmentMacInfo",

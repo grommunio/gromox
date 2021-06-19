@@ -28,11 +28,6 @@ struct dlgitem {
 };
 }
 
-static constexpr uint32_t
-	PidLidEmail1EmailAddress = 0x8083,
-	PidLidEmail2EmailAddress = 0x8093,
-	PidLidEmail3EmailAddress = 0x80A3;
-
 BOOL exmdb_server_ping_store(const char *dir)
 {
 	auto pdb = db_engine_get_db(dir);

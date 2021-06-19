@@ -34,38 +34,6 @@ struct UID_EVENTS {
 
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
 
-static constexpr uint32_t
-	PidLidAttendeeCriticalChange = 0x1,
-	PidLidGlobalObjectId = 0x3,
-	PidLidIsException = 0xA,
-	PidLidStartRecurrenceTime = 0xE,
-	PidLidOwnerCriticalChange = 0x1A,
-	PidLidCleanGlobalObjectId = 0x23,
-	PidLidAppointmentSequence = 0x8201,
-	PidLidBusyStatus = 0x8205,
-	PidLidLocation = 0x8208,
-	PidLidAppointmentStartWhole = 0x820D,
-	PidLidAppointmentEndWhole = 0x820E,
-	PidLidAppointmentDuration = 0x8213,
-	PidLidAppointmentSubType = 0x8215,
-	PidLidAppointmentRecur = 0x8216,
-	PidLidIntendedBusyStatus = 0x8224,
-	PidLidTimeZoneStruct = 0x8223,
-	PidLidExceptionReplaceTime = 0x8228,
-	PidLidTimeZoneDescription = 0x8234,
-	PidLidClipStart = 0x8235,
-	PidLidClipEnd = 0x8236,
-	PidLidAppointmentProposedStartWhole = 0x8250,
-	PidLidAppointmentProposedEndWhole = 0x8251,
-	PidLidAppointmentCounterProposal = 0x8257,
-	PidLidAppointmentNotAllowPropose = 0x825A,
-	PidLidAppointmentTimeZoneDefinitionStartDisplay = 0x825E,
-	PidLidAppointmentTimeZoneDefinitionEndDisplay = 0x825F,
-	PidLidAppointmentTimeZoneDefinitionRecur = 0x8260,
-	PidLidReminderDelta = 0x8501,
-	PidLidReminderTime = 0x8502,
-	PidLidReminderSet = 0x8503,
-	PidLidReminderSignalTime = 0x8560;
 static constexpr char
 	PidNameKeywords[] = "Keywords",
 	PidNameLocationUrl[] = "urn:schemas:calendar:locationurl";
