@@ -423,8 +423,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			alias_list = ab_tree_get_object_aliases(pnode, node_type);
 		} catch (...) {
 		}
-		pprop->value.string_array.cvalues = 1 + alias_list.size();
-		pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, pprop->value.string_array.cvalues);
+		pprop->value.string_array.count = 1 + alias_list.size();
+		pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, pprop->value.string_array.count);
 		if (NULL == pprop->value.string_array.ppstr) {
 			return ecMAPIOOM;
 		}
@@ -447,7 +447,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS_STRING8: {
 		auto rpc_info = get_rpc_info();
 		temp_len = strlen(rpc_info.ep_host);
-		pprop->value.string_array.cvalues = 2;
+		pprop->value.string_array.count = 2;
 		if (NULL == pbuff) {
 			pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, 2);
 			if (NULL == pprop->value.string_array.ppstr) {
@@ -1858,20 +1858,20 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	if (NULL == *ppoutmids) {
 		return ecMAPIOOM;
 	}
-	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->cvalues);
+	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
 		return ecMAPIOOM;
 	}
-	(*ppoutmids)->cvalues = pnames->cvalues;
-	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->cvalues);
+	(*ppoutmids)->cvalues = pnames->count;
+	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->count);
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check &&
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		*ppoutmids = NULL;
 		return ecError;
 	}
-	for (unsigned int i = 0; i < pnames->cvalues; ++i) {
+	for (size_t i = 0; i < pnames->count; ++i) {
 		if (pnames->ppstr[i] == nullptr)
 			continue;
 		ptnode = ab_tree_dn_to_node(pbase.get(), pnames->ppstr[i]);
@@ -2692,7 +2692,7 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 	char *pstr;
 	int temp_len;
 	
-	for (unsigned int i = 0; i < pstrs->cvalues; ++i) {
+	for (size_t i = 0; i < pstrs->count; ++i) {
 		if (pstrs->ppstr[i] == nullptr)
 			continue;
 		temp_len = 2 * strlen(pstrs->ppstr[i]) + 1;
@@ -2950,7 +2950,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	
 	if (0 == pstat->container_id) {
-		for (size_t i = 0; i < pstrs->cvalues; ++i) {
+		for (size_t i = 0; i < pstrs->count; ++i) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
@@ -3010,7 +3010,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		}
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &last_row, &total);
-		for (size_t i = 0; i < pstrs->cvalues; ++i) {
+		for (size_t i = 0; i < pstrs->count; ++i) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;

@@ -188,10 +188,9 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->cvalues));
-		if (r->cvalues > 100000) {
+		TRY(ndr_pull_uint32(pndr, &r->count));
+		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
@@ -202,9 +201,8 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 			return NDR_ERR_SUCCESS;
 		}
 		TRY(ndr_pull_ulong(pndr, &size));
-		if (size != r->cvalues) {
+		if (size != r->count)
 			return NDR_ERR_ARRAY_SIZE;
-		}
 		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (NULL == r->ppstr) {
 			return NDR_ERR_ALLOC;
@@ -236,22 +234,20 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 static int nsp_ndr_push_string_array(NDR_PUSH *pndr, int flag, const STRING_ARRAY *r)
 {
 	int length;
-	uint32_t cnt;
 	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
-		TRY(ndr_push_uint32(pndr, r->cvalues));
+		TRY(ndr_push_uint32(pndr, r->count));
 		TRY(ndr_push_unique_ptr(pndr, r->ppstr));
 		TRY(ndr_push_trailer_align(pndr, 5));
 	}
 	
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->ppstr) {
-			TRY(ndr_push_ulong(pndr, r->cvalues));
-			for (cnt=0; cnt<r->cvalues; cnt++) {
+			TRY(ndr_push_ulong(pndr, r->count));
+			for (size_t cnt = 0; cnt < r->count; ++cnt)
 				TRY(ndr_push_unique_ptr(pndr, r->ppstr[cnt]));
-			}
-			for (cnt=0; cnt<r->cvalues; cnt++) {
+			for (size_t cnt = 0; cnt < r->count; ++cnt) {
 				if (NULL != r->ppstr[cnt]) {
 					length = strlen(r->ppstr[cnt]) + 1;
 					TRY(ndr_push_ulong(pndr, length));
@@ -267,7 +263,6 @@ static int nsp_ndr_push_string_array(NDR_PUSH *pndr, int flag, const STRING_ARRA
 
 static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r)
 {
-	uint32_t cnt;
 	uint32_t ptr;
 	uint32_t size;
 	uint32_t size1;
@@ -277,15 +272,15 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_ulong(pndr, &size));
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->cvalues));
-		if (r->cvalues > 100000)
+		TRY(ndr_pull_uint32(pndr, &r->count));
+		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		if (r->cvalues != size)
+		if (r->count != size)
 			return NDR_ERR_ARRAY_SIZE;
 		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (r->ppstr == nullptr)
 			return NDR_ERR_ALLOC;
-		for (cnt=0; cnt<size; cnt++) {
+		for (size_t cnt = 0; cnt < size; ++cnt) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
@@ -293,7 +288,7 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		for (cnt = 0; cnt < r->cvalues; ++cnt) {
+		for (size_t cnt = 0; cnt < r->count; ++cnt) {
 			if (r->ppstr[cnt] != nullptr) {
 				TRY(ndr_pull_ulong(pndr, &size1));
 				TRY(ndr_pull_ulong(pndr, &offset));
@@ -324,10 +319,9 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->cvalues));
-		if (r->cvalues > 100000) {
+		TRY(ndr_pull_uint32(pndr, &r->count));
+		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
@@ -338,9 +332,8 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 			return NDR_ERR_SUCCESS;
 		}
 		TRY(ndr_pull_ulong(pndr, &size));
-		if (size != r->cvalues) {
+		if (size != r->count)
 			return NDR_ERR_ARRAY_SIZE;
-		}
 		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (NULL == r->ppstr) {
 			return NDR_ERR_ALLOC;
@@ -382,22 +375,20 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, int flag, const STRING_ARRAY *r)
 {
 	int length;
-	uint32_t cnt;
 	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
-		TRY(ndr_push_uint32(pndr, r->cvalues));
+		TRY(ndr_push_uint32(pndr, r->count));
 		TRY(ndr_push_unique_ptr(pndr, r->ppstr));
 		TRY(ndr_push_trailer_align(pndr, 5));
 	}
 	
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->ppstr) {
-			TRY(ndr_push_ulong(pndr, r->cvalues));
-			for (cnt=0; cnt<r->cvalues; cnt++) {
+			TRY(ndr_push_ulong(pndr, r->count));
+			for (size_t cnt = 0; cnt < r->count; ++cnt)
 				TRY(ndr_push_unique_ptr(pndr, r->ppstr[cnt]));
-			}
-			for (cnt=0; cnt<r->cvalues; cnt++) {
+			for (size_t cnt = 0; cnt < r->count; ++cnt) {
 				if (NULL != r->ppstr[cnt]) {
 					length = 2*strlen(r->ppstr[cnt]) + 2;
 					std::unique_ptr<char[]> pwstring;
@@ -424,7 +415,6 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, int flag, const STRING_ARR
 
 static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r)
 {
-	uint32_t cnt;
 	uint32_t ptr;
 	uint32_t size;
 	uint32_t size1;
@@ -434,21 +424,21 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_ulong(pndr, &size));
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->cvalues));
-		if (r->cvalues > 100000) {
-			r->cvalues = 0;
+		TRY(ndr_pull_uint32(pndr, &r->count));
+		if (r->count > 100000) {
+			r->count = 0;
 			return NDR_ERR_RANGE;
 		}
-		if (r->cvalues != size) {
-			r->cvalues = 0;
+		if (r->count != size) {
+			r->count = 0;
 			return NDR_ERR_ARRAY_SIZE;
 		}
 		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (r->ppstr == nullptr) {
-			r->cvalues = 0;
+			r->count = 0;
 			return NDR_ERR_ALLOC;
 		}
-		for (cnt=0; cnt<size; cnt++) {
+		for (size_t cnt = 0; cnt < size; ++cnt) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
@@ -456,7 +446,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		for (cnt = 0; cnt < r->cvalues; ++cnt) {
+		for (size_t cnt = 0; cnt < r->count; ++cnt) {
 			if (r->ppstr[cnt] != nullptr) {
 				TRY(ndr_pull_ulong(pndr, &size1));
 				TRY(ndr_pull_ulong(pndr, &offset));
@@ -562,10 +552,9 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, int flag, SHORT_ARRAY *r)
 	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->cvalues));
-		if (r->cvalues > 100000) {
+		TRY(ndr_pull_uint32(pndr, &r->count));
+		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		r->ps = ptr != 0 ? reinterpret_cast<uint16_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
@@ -574,9 +563,8 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, int flag, SHORT_ARRAY *r)
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->ps) {
 			TRY(ndr_pull_ulong(pndr, &size));
-			if (size != r->cvalues) {
+			if (size != r->count)
 				return NDR_ERR_ARRAY_SIZE;
-			}
 			r->ps = ndr_stack_anew<uint16_t>(NDR_STACK_IN, size);
 			if (NULL == r->ps) {
 				return NDR_ERR_ALLOC;
@@ -591,21 +579,18 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, int flag, SHORT_ARRAY *r)
 
 static int nsp_ndr_push_short_array(NDR_PUSH *pndr, int flag, const SHORT_ARRAY *r)
 {
-	uint32_t cnt;
-	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
-		TRY(ndr_push_uint32(pndr, r->cvalues));
+		TRY(ndr_push_uint32(pndr, r->count));
 		TRY(ndr_push_unique_ptr(pndr, r->ps));
 		TRY(ndr_push_trailer_align(pndr, 5));
 	}
 	
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->ps) {
-			TRY(ndr_push_ulong(pndr, r->cvalues));
-			for (cnt=0; cnt<r->cvalues; cnt++) {
+			TRY(ndr_push_ulong(pndr, r->count));
+			for (size_t cnt = 0; cnt < r->count; ++cnt)
 				TRY(ndr_push_uint16(pndr, r->ps[cnt]));
-			}
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -619,10 +604,9 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, int flag, LONG_ARRAY *r)
 	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_pull_align(pndr, 5));
-		TRY(ndr_pull_uint32(pndr, &r->cvalues));
-		if (r->cvalues > 100000) {
+		TRY(ndr_pull_uint32(pndr, &r->count));
+		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		}
 		TRY(ndr_pull_generic_ptr(pndr, &ptr));
 		r->pl = ptr != 0 ? reinterpret_cast<uint32_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(ndr_pull_trailer_align(pndr, 5));
@@ -631,9 +615,8 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, int flag, LONG_ARRAY *r)
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->pl) {
 			TRY(ndr_pull_ulong(pndr, &size));
-			if (size != r->cvalues) {
+			if (size != r->count)
 				return NDR_ERR_ARRAY_SIZE;
-			}
 			r->pl = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 			if (NULL == r->pl) {
 				return NDR_ERR_ALLOC;
@@ -648,21 +631,18 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, int flag, LONG_ARRAY *r)
 
 static int nsp_ndr_push_long_array(NDR_PUSH *pndr, int flag, const LONG_ARRAY *r)
 {
-	uint32_t cnt;
-	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
-		TRY(ndr_push_uint32(pndr, r->cvalues));
+		TRY(ndr_push_uint32(pndr, r->count));
 		TRY(ndr_push_unique_ptr(pndr, r->pl));
 		TRY(ndr_push_trailer_align(pndr, 5));
 	}
 	
 	if (flag & FLAG_CONTENT) {
 		if (NULL != r->pl) {
-			TRY(ndr_push_ulong(pndr, r->cvalues));
-			for (cnt=0; cnt<r->cvalues; cnt++) {
+			TRY(ndr_push_ulong(pndr, r->count));
+			for (size_t cnt = 0; cnt < r->count; ++cnt)
 				TRY(ndr_push_uint32(pndr, r->pl[cnt]));
-			}
 		}
 	}
 	

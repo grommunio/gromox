@@ -1545,7 +1545,7 @@ ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 	}
 	case PT_MV_UNICODE: {
 		auto &x = prop->value.string_array;
-		x.cvalues = 1;
+		x.count = 1;
 		x.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT);
 		if (x.ppstr == nullptr)
 			return ecMAPIOOM;

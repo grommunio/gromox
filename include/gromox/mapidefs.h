@@ -469,16 +469,12 @@ struct GUID_ARRAY {
 };
 
 struct LONG_ARRAY {
-	union {
-		uint32_t cvalues, count;
-	};
+	uint32_t count;
 	uint32_t *pl;
 };
 
 struct LONGLONG_ARRAY {
-	union {
-		uint32_t cvalues, count;
-	};
+	uint32_t count;
 	uint64_t *pll;
 };
 
@@ -548,9 +544,7 @@ struct PROPTAG_ARRAY {
 };
 
 struct SHORT_ARRAY {
-	union {
-		uint32_t cvalues, count;
-	};
+	uint32_t count;
 	uint16_t *ps;
 };
 
@@ -573,9 +567,7 @@ struct STATE_ARRAY {
 };
 
 struct STRING_ARRAY {
-	union {
-		uint32_t cvalues, count;
-	};
+	uint32_t count;
 	char **ppstr;
 };
 
