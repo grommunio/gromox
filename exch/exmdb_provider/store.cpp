@@ -28,6 +28,11 @@ struct dlgitem {
 };
 }
 
+static constexpr uint32_t
+	PidLidEmail1EmailAddress = 0x8083,
+	PidLidEmail2EmailAddress = 0x8093,
+	PidLidEmail3EmailAddress = 0x80A3;
+
 BOOL exmdb_server_ping_store(const char *dir)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -503,19 +508,16 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		return FALSE;
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
-	/* PidLidEmail1EmailAddress */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
-	lids[0] = 0x8083;
+	lids[0] = PidLidEmail1EmailAddress;
 	propname_buff[0].kind = MNID_ID;
 	propname_buff[0].plid = &lids[0];
-	/* PidLidEmail2EmailAddress */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
-	lids[1] = 0x8093;
+	lids[1] = PidLidEmail2EmailAddress;
 	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].plid = &lids[1];
-	/* PidLidEmail3EmailAddress */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
-	lids[2] = 0x80A3;
+	lids[2] = PidLidEmail3EmailAddress;
 	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].plid = &lids[2];
 	if (FALSE == common_util_get_named_propids(pdb->psqlite,

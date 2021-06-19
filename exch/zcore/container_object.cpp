@@ -17,6 +17,17 @@
 #include <gromox/propval.hpp>
 #include <cstdio>
 
+static constexpr uint32_t
+	PidLidEmail1DisplayName = 0x8080,
+	PidLidEmail1AddressType = 0x8082,
+	PidLidEmail1EmailAddress = 0x8083,
+	PidLidEmail2DisplayName = 0x8090,
+	PidLidEmail2AddressType = 0x8092,
+	PidLidEmail2EmailAddress = 0x8093,
+	PidLidEmail3DisplayName = 0x80A0,
+	PidLidEmail3AddressType = 0x80A2,
+	PidLidEmail3EmailAddress = 0x80A3;
+
 std::unique_ptr<CONTAINER_OBJECT> container_object_create(
 	uint8_t type, CONTAINER_ID id)
 {
@@ -203,49 +214,40 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
-	/* PidLidEmail1DisplayName */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
-	lids[0] = 0x8080;
+	lids[0] = PidLidEmail1DisplayName;
 	propname_buff[0].kind = MNID_ID;
 	propname_buff[0].plid = &lids[0];
-	/* PidLidEmail1AddressType */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
-	lids[1] = 0x8082;
+	lids[1] = PidLidEmail1AddressType;
 	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].plid = &lids[1];
-	/* PidLidEmail1EmailAddress */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
-	lids[2] = 0x8083;
+	lids[2] = PidLidEmail1EmailAddress;
 	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].plid = &lids[2];
-	/* PidLidEmail2DisplayName */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[3].guid);
-	lids[3] = 0x8090;
+	lids[3] = PidLidEmail2DisplayName;
 	propname_buff[3].kind = MNID_ID;
 	propname_buff[3].plid = &lids[3];
-	/* PidLidEmail2AddressType */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[4].guid);
-	lids[4] = 0x8092;
+	lids[4] = PidLidEmail2AddressType;
 	propname_buff[4].kind = MNID_ID;
 	propname_buff[4].plid = &lids[4];
-	/* PidLidEmail2EmailAddress */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[5].guid);
-	lids[5] = 0x8093;
+	lids[5] = PidLidEmail2EmailAddress;
 	propname_buff[5].kind = MNID_ID;
 	propname_buff[5].plid = &lids[5];
-	/* PidLidEmail3DisplayName */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[6].guid);
-	lids[6] = 0x80A0;
+	lids[6] = PidLidEmail3DisplayName;
 	propname_buff[6].kind = MNID_ID;
 	propname_buff[6].plid = &lids[6];
-	/* PidLidEmail3AddressType */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[7].guid);
-	lids[7] = 0x80A2;
+	lids[7] = PidLidEmail3AddressType;
 	propname_buff[7].kind = MNID_ID;
 	propname_buff[7].plid = &lids[7];
-	/* PidLidEmail3EmailAddress */
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[8].guid);
-	lids[8] = 0x80A3;
+	lids[8] = PidLidEmail3EmailAddress;
 	propname_buff[8].kind = MNID_ID;
 	propname_buff[8].plid = &lids[8];
 	if (FALSE == store_object_get_named_propids(
