@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <memory>
+#include <string>
 #include <gromox/mapi_types.hpp>
 #include <gromox/double_list.hpp>
 #include "logon_object.h"
@@ -12,22 +14,20 @@
 #define STRING_OPTION_FORCE_UNICODE				0x08
 
 struct FTSTREAM_PRODUCER {
-	int type;
-	int fd;
-	uint32_t offset;
-	char path[256];
-	uint8_t buffer[FTSTREAM_PRODUCER_BUFFER_LENGTH];
-	uint32_t buffer_offset;
-	uint32_t read_offset;
-	uint8_t string_option;
-	LOGON_OBJECT *plogon;	/* plogon is a protected member */
-	DOUBLE_LIST bp_list;
-	BOOL b_read;
+	~FTSTREAM_PRODUCER();
+
+	int type = 0, fd = -1;
+	uint32_t offset = 0;
+	std::string path;
+	uint8_t buffer[FTSTREAM_PRODUCER_BUFFER_LENGTH]{};
+	uint32_t buffer_offset = 0, read_offset = 0;
+	uint8_t string_option = 0;
+	LOGON_OBJECT *plogon = nullptr; /* plogon is a protected member */
+	DOUBLE_LIST bp_list{};
+	BOOL b_read = false;
 };
 
-FTSTREAM_PRODUCER* ftstream_producer_create(
-	LOGON_OBJECT *plogon, uint8_t string_option);
-void ftstream_producer_free(FTSTREAM_PRODUCER *pstream);
+extern std::unique_ptr<FTSTREAM_PRODUCER> ftstream_producer_create(LOGON_OBJECT *, uint8_t string_option);
 int ftstream_producer_total_length(FTSTREAM_PRODUCER *pstream);
 BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 	void *pbuff, uint16_t *plen, BOOL *pb_last);

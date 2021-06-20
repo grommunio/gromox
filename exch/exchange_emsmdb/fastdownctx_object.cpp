@@ -205,12 +205,11 @@ static BOOL fastdownctx_object_record_subfolder(
 BOOL fastdownctx_object_make_messagecontent(
 	FASTDOWNCTX_OBJECT *pctx, MESSAGE_CONTENT *pmsgctnt)
 {
-	if (FALSE == ftstream_producer_write_messagecontent(
-		pctx->pstream, FALSE, pmsgctnt)) {
+	if (!ftstream_producer_write_messagecontent(pctx->pstream.get(),
+	    false, pmsgctnt))
 		return FALSE;	
-	}
 	pctx->progress_steps = 0;
-	pctx->total_steps = ftstream_producer_total_length(pctx->pstream);
+	pctx->total_steps = ftstream_producer_total_length(pctx->pstream.get());
 	return TRUE;
 }
 
@@ -218,12 +217,11 @@ BOOL fastdownctx_object_make_attachmentcontent(
 	FASTDOWNCTX_OBJECT *pctx,
 	ATTACHMENT_CONTENT *pattachment)
 {
-	if (FALSE == ftstream_producer_write_attachmentcontent(
-		pctx->pstream, FALSE, pattachment)) {
+	if (!ftstream_producer_write_attachmentcontent(pctx->pstream.get(),
+	    false, pattachment))
 		return FALSE;	
-	}
 	pctx->progress_steps = 0;
-	pctx->total_steps = ftstream_producer_total_length(pctx->pstream);
+	pctx->total_steps = ftstream_producer_total_length(pctx->pstream.get());
 	return TRUE;
 }
 
@@ -236,14 +234,13 @@ BOOL fastdownctx_object_make_state(
 	if (NULL == pproplist) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_state(
-		pctx->pstream, pproplist)) {
+	if (!ftstream_producer_write_state(pctx->pstream.get(), pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;	
 	}
 	tpropval_array_free(pproplist);
 	pctx->progress_steps = 0;
-	pctx->total_steps = ftstream_producer_total_length(pctx->pstream);
+	pctx->total_steps = ftstream_producer_total_length(pctx->pstream.get());
 	return TRUE;
 }
 
@@ -359,22 +356,20 @@ static BOOL fastdownctx_object_get_buffer_internal(
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	if (0 == double_list_get_nodes_num(&pctx->flow_list)) {
-		if (FALSE == ftstream_producer_read_buffer(
-			pctx->pstream, pbuff, plen, pb_last)) {
+		if (!ftstream_producer_read_buffer(pctx->pstream.get(),
+		    pbuff, plen, pb_last))
 			return FALSE;	
-		}
 		if (NULL == pctx->pmsglst && NULL == pctx->pfldctnt) {
 			pctx->progress_steps += *plen;
 		}
 		return TRUE;
 	}
 	len = 0;
-	if (ftstream_producer_total_length(pctx->pstream) > 0) {
+	if (ftstream_producer_total_length(pctx->pstream.get()) > 0) {
 		len = *plen;
-		if (FALSE == ftstream_producer_read_buffer(
-			pctx->pstream, pbuff, &len, &b_last)) {
+		if (!ftstream_producer_read_buffer(pctx->pstream.get(),
+		    pbuff, &len, &b_last))
 			return FALSE;	
-		}
 		if (FALSE == b_last || *plen - len <
 			2*FTSTREAM_PRODUCER_POINT_LENGTH) {
 			*plen = len;
@@ -387,14 +382,14 @@ static BOOL fastdownctx_object_get_buffer_internal(
 		pflow = (FAST_FLOW_NODE*)pnode->pdata;
 		switch (pflow->func_id) {
 		case FUNC_ID_UINT32:
-			if (FALSE == ftstream_producer_write_uint32(pctx->pstream,
+			if (!ftstream_producer_write_uint32(pctx->pstream.get(),
 				(uint32_t)(unsigned long)pflow->pparam)) {
 				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
 		case FUNC_ID_PROPLIST:
-			if (!ftstream_producer_write_proplist(pctx->pstream,
+			if (!ftstream_producer_write_proplist(pctx->pstream.get(),
 			    static_cast<TPROPVAL_ARRAY *>(pflow->pparam))) {
 				free(pnode->pdata);
 				return FALSE;
@@ -444,8 +439,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			} else {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			}
-			if (FALSE == ftstream_producer_write_message(
-				pctx->pstream, pmsgctnt)) {
+			if (!ftstream_producer_write_message(pctx->pstream.get(), pmsgctnt)) {
 				free(pnode->pdata);
 				return FALSE;
 			}
@@ -457,12 +451,10 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			return FALSE;
 		}
 		free(pnode->pdata);
-		if (ftstream_producer_total_length(
-			pctx->pstream) > len1) {
+		if (ftstream_producer_total_length(pctx->pstream.get()) > len1)
 			break;
-		}
 	}
-	if (!ftstream_producer_read_buffer(pctx->pstream,
+	if (!ftstream_producer_read_buffer(pctx->pstream.get(),
 	    static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;
 	*plen = len + len1;
@@ -499,6 +491,7 @@ std::unique_ptr<FASTDOWNCTX_OBJECT> fastdownctx_object_create(
 	try {
 		pctx = std::make_unique<FASTDOWNCTX_OBJECT>();
 	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1453: ENOMEM\n");
 		return NULL;
 	}
 	pctx->pstream = ftstream_producer_create(
@@ -517,7 +510,6 @@ FASTDOWNCTX_OBJECT::~FASTDOWNCTX_OBJECT()
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	ftstream_producer_free(pctx->pstream);
 	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->flow_list);

@@ -7,7 +7,7 @@
 struct FASTDOWNCTX_OBJECT final {
 	~FASTDOWNCTX_OBJECT();
 
-	FTSTREAM_PRODUCER *pstream = nullptr;
+	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
 	BOOL b_back = false, b_last = false, b_chginfo = false;
 	EID_ARRAY *pmsglst = nullptr;
 	FOLDER_CONTENT *pfldctnt = nullptr;

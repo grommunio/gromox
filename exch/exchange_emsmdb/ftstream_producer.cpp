@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <memory>
+#include <string>
 #include <gromox/mapidefs.h>
 #include "ftstream_producer.h"
 #include "emsmdb_interface.h"
@@ -13,6 +15,8 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <cstdio>
+
+using namespace std::string_literals;
 
 enum {
 	POINT_TYPE_NORMAL_BREAK,
@@ -151,10 +155,11 @@ static BOOL ftstream_producer_write_internal(
 		|| FTSTREAM_PRODUCER_BUFFER_LENGTH -
 		pstream->buffer_offset < size) {
 		if (-1 == pstream->fd) {
-			pstream->fd = open(pstream->path,
+			pstream->fd = open(pstream->path.c_str(),
 				O_CREAT|O_RDWR|O_TRUNC, 0666);
 			if (-1 == pstream->fd) {
-				fprintf(stderr, "E-1429: open %s: %s\n", pstream->path, strerror(errno));
+				fprintf(stderr, "E-1429: open %s: %s\n",
+				        pstream->path.c_str(), strerror(errno));
 				return FALSE;
 			}
 		}
@@ -1160,29 +1165,25 @@ BOOL ftstream_producer_write_hierarchysync(
 	return TRUE;
 }
 
-FTSTREAM_PRODUCER* ftstream_producer_create(
-	LOGON_OBJECT *plogon, uint8_t string_option)
+std::unique_ptr<FTSTREAM_PRODUCER>
+ftstream_producer_create(LOGON_OBJECT *plogon, uint8_t string_option) try
 {
 	int stream_id;
-	char path[256];
 	
 	stream_id = common_util_get_ftstream_id();
 	auto rpc_info = get_rpc_info();
-	sprintf(path, "%s/tmp", rpc_info.maildir);
-	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1422: mkdir %s: %s\n", path, strerror(errno));
+	auto path = rpc_info.maildir + "/tmp"s;
+	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1422: mkdir %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
-	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1341: mkdir %s: %s\n", path, strerror(errno));
+	path = rpc_info.maildir + "/tmp/faststream"s;
+	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1341: mkdir %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	auto pstream = me_alloc<FTSTREAM_PRODUCER>();
-	if (NULL == pstream) {
-		return NULL;
-	}
-	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
+	auto pstream = std::make_unique<FTSTREAM_PRODUCER>();
+	pstream->path = path + "/"s + std::to_string(stream_id) + "." + get_host_ID();
 	pstream->fd = -1;
 	pstream->offset = 0;
 	pstream->buffer_offset = 0;
@@ -1192,23 +1193,24 @@ FTSTREAM_PRODUCER* ftstream_producer_create(
 	double_list_init(&pstream->bp_list);
 	pstream->b_read = FALSE;
 	return pstream;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1452: ENOMEM\n");
+	return nullptr;
 }
 
-void ftstream_producer_free(FTSTREAM_PRODUCER *pstream)
+FTSTREAM_PRODUCER::~FTSTREAM_PRODUCER()
 {
+	auto pstream = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (pstream == nullptr)
-		return;
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
-		if (remove(pstream->path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path, strerror(errno));
+		if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
 	}
 	while ((pnode = double_list_pop_front(&pstream->bp_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pstream->bp_list);
-	free(pstream);
 }
 
 int ftstream_producer_total_length(FTSTREAM_PRODUCER *pstream)
@@ -1318,8 +1320,9 @@ BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
 		pstream->fd = -1;
-		if (remove(pstream->path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1340: remove: %s: %s\n", pstream->path, strerror(errno));
+		if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1340: remove: %s: %s\n",
+			        pstream->path.c_str(), strerror(errno));
 	}
 	pstream->offset = 0;
 	pstream->buffer_offset = 0;

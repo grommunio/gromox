@@ -68,6 +68,7 @@ std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *plogon
 	try {
 		pctx = std::make_unique<ICSDOWNCTX_OBJECT>();
 	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1454: ENOMEM\n");
 		return NULL;
 	}
 	pctx->pstate = ics_state_create(plogon, state_type);
@@ -705,9 +706,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		}
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_hierarchysync(
-		pctx->pstream, &fldchgs, pproplist_deletions,
-		pproplist_state)) {
+	if (!ftstream_producer_write_hierarchysync(pctx->pstream.get(),
+	    &fldchgs, pproplist_deletions, pproplist_state)) {
 		tpropval_array_free(pproplist_state);
 		if (NULL != pproplist_deletions) {
 			rop_util_free_binary(pbin);
@@ -719,7 +719,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		rop_util_free_binary(pbin);
 	}
 	pctx->progress_steps = 0;
-	pctx->total_steps = ftstream_producer_total_length(pctx->pstream);
+	pctx->total_steps = ftstream_producer_total_length(pctx->pstream.get());
 	pctx->ratio = 1;
 	return TRUE;
 }
@@ -1184,12 +1184,9 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 				icsdownctx_object_adjust_msgctnt(
 					pembedded, pctx->pproptags, TRUE);
 			}
-			if (SYNC_FLAG_PROGRESS & pctx->sync_flags) {
-				if (FALSE == ftstream_producer_write_progresspermessage(
-					pctx->pstream, &progmsg)) {
-					return FALSE;
-				}
-			}
+			if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
+			    !ftstream_producer_write_progresspermessage(pctx->pstream.get(), &progmsg))
+				return FALSE;
 			common_util_remove_propvals(&pembedded->proplist, PR_READ);
 			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
 			common_util_remove_propvals(
@@ -1205,10 +1202,8 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			if (FALSE == ftstream_producer_write_messagechangefull(
-				pctx->pstream, &chgheader, pembedded)) {
+			if (!ftstream_producer_write_messagechangefull(pctx->pstream.get(), &chgheader, pembedded))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	}
@@ -1324,12 +1319,9 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			}
 		}
 	}
-	if (SYNC_FLAG_PROGRESS & pctx->sync_flags) {
-		if (FALSE == ftstream_producer_write_progresspermessage(
-			pctx->pstream, &progmsg)) {
-			return FALSE;
-		}
-	}
+	if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
+	    !ftstream_producer_write_progresspermessage(pctx->pstream.get(), &progmsg))
+		return FALSE;
 	pctx->next_progress_steps += progmsg.message_size;
 	if (TRUE == b_full) {
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
@@ -1347,15 +1339,11 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		if (FALSE == ftstream_producer_write_messagechangefull(
-			pctx->pstream, &chgheader, pmsgctnt)) {
+		if (!ftstream_producer_write_messagechangefull(pctx->pstream.get(), &chgheader, pmsgctnt))
 			return FALSE;
-		}
 	} else {
-		if (FALSE == ftstream_producer_write_messagechangepartial(
-			pctx->pstream, &chgheader, &msg_partial)) {
+		if (!ftstream_producer_write_messagechangepartial(pctx->pstream.get(), &chgheader, &msg_partial))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -1430,8 +1418,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 	if (0 == proplist.count) {
 		return TRUE;
 	}
-	if (FALSE == ftstream_producer_write_deletions(
-		pctx->pstream, &proplist)) {
+	if (!ftstream_producer_write_deletions(pctx->pstream.get(), &proplist)) {
 		if (NULL != pbin1) {
 			rop_util_free_binary(pbin1);
 		}
@@ -1519,8 +1506,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 	if (0 == proplist.count) {
 		return TRUE;
 	}
-	if (FALSE == ftstream_producer_write_readstatechanges(
-		pctx->pstream, &proplist)) {
+	if (!ftstream_producer_write_readstatechanges(pctx->pstream.get(), &proplist)) {
 		if (NULL != pbin1) {
 			rop_util_free_binary(pbin1);
 		}
@@ -1582,8 +1568,7 @@ static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
 	if (NULL == pproplist) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_state(
-		pctx->pstream, pproplist)) {
+	if (!ftstream_producer_write_state(pctx->pstream.get(), pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;
 	}
@@ -1604,22 +1589,18 @@ static BOOL icsdownctx_object_get_buffer_internal(
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 == double_list_get_nodes_num(&pctx->flow_list)) {
-		if (FALSE == ftstream_producer_read_buffer(
-			pctx->pstream, pbuff, plen, pb_last)) {
+		if (!ftstream_producer_read_buffer(pctx->pstream.get(), pbuff, plen, pb_last))
 			return FALSE;	
-		}
 		if (SYNC_TYPE_HIERARCHY == pctx->sync_type) {
 			pctx->progress_steps += *plen;
 		}
 		return TRUE;
 	}
 	len = 0;
-	if (ftstream_producer_total_length(pctx->pstream) > 0) {
+	if (ftstream_producer_total_length(pctx->pstream.get()) > 0) {
 		len = *plen;
-		if (FALSE == ftstream_producer_read_buffer(
-			pctx->pstream, pbuff, &len, &b_last)) {
+		if (!ftstream_producer_read_buffer(pctx->pstream.get(), pbuff, &len, &b_last))
 			return FALSE;	
-		}
 		if (FALSE == b_last || *plen - len <
 			2*FTSTREAM_PRODUCER_POINT_LENGTH) {
 			*plen = len;
@@ -1634,15 +1615,14 @@ static BOOL icsdownctx_object_get_buffer_internal(
 		pflow = (ICS_FLOW_NODE*)pnode->pdata;
 		switch (pflow->func_id) {
 		case FUNC_ID_UINT32:
-			if (FALSE == ftstream_producer_write_uint32(
-				pctx->pstream, (uint32_t)(unsigned long)pflow->pparam)) {
+			if (!ftstream_producer_write_uint32(pctx->pstream.get(),
+			    reinterpret_cast<uintptr_t>(pflow->pparam))) {
 				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
 		case FUNC_ID_PROGRESSTOTAL:
-			if (FALSE == ftstream_producer_write_progresstotal(
-				pctx->pstream, pctx->pprogtotal)) {
+			if (!ftstream_producer_write_progresstotal(pctx->pstream.get(), pctx->pprogtotal)) {
 				free(pnode->pdata);
 				return FALSE;
 			}
@@ -1686,11 +1666,10 @@ static BOOL icsdownctx_object_get_buffer_internal(
 			return FALSE;
 		}
 		free(pnode->pdata);
-		if (ftstream_producer_total_length(pctx->pstream) > len1) {
+		if (ftstream_producer_total_length(pctx->pstream.get()) > len1)
 			break;
-		}
 	}
-	if (!ftstream_producer_read_buffer(pctx->pstream,
+	if (!ftstream_producer_read_buffer(pctx->pstream.get(),
 	    static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;	
 	*plen = len + len1;
@@ -1722,7 +1701,6 @@ ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	ftstream_producer_free(pctx->pstream);
 	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->flow_list);

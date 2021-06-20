@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/mem_file.hpp>
 #include "ics_state.h"
 #include <gromox/mapi_types.hpp>
@@ -9,7 +10,7 @@
 struct ICSDOWNCTX_OBJECT final {
 	~ICSDOWNCTX_OBJECT();
 
-	FTSTREAM_PRODUCER *pstream = nullptr;
+	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
 	uint8_t sync_type = 0;
 	FOLDER_OBJECT *pfolder = nullptr;
 	ICS_STATE *pstate = nullptr; /* public member */
