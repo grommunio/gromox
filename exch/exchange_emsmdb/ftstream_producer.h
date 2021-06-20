@@ -17,6 +17,7 @@ struct FTSTREAM_PRODUCER {
 	~FTSTREAM_PRODUCER();
 	inline int total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
+	BOOL write_uint32(uint32_t);
 	BOOL write_proplist(const TPROPVAL_ARRAY *);
 	BOOL write_attachmentcontent(BOOL delprop, const ATTACHMENT_CONTENT *);
 	BOOL write_messagecontent(BOOL delprop, const MESSAGE_CONTENT *);
@@ -43,4 +44,3 @@ struct FTSTREAM_PRODUCER {
 using ftstream_producer = FTSTREAM_PRODUCER;
 
 extern std::unique_ptr<FTSTREAM_PRODUCER> ftstream_producer_create(LOGON_OBJECT *, uint8_t string_option);
-BOOL ftstream_producer_write_uint32(FTSTREAM_PRODUCER *pstream, uint32_t v);

@@ -378,8 +378,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 		pflow = (FAST_FLOW_NODE*)pnode->pdata;
 		switch (pflow->func_id) {
 		case FUNC_ID_UINT32:
-			if (!ftstream_producer_write_uint32(pctx->pstream.get(),
-				(uint32_t)(unsigned long)pflow->pparam)) {
+			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(pflow->pparam))) {
 				free(pnode->pdata);
 				return FALSE;
 			}

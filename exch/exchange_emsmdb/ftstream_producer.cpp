@@ -193,9 +193,9 @@ static BOOL ftstream_producer_write_uint16(
 	return TRUE;
 }
 
-BOOL ftstream_producer_write_uint32(
-	FTSTREAM_PRODUCER *pstream, uint32_t v)
+BOOL ftstream_producer::write_uint32(uint32_t v)
 {
+	auto pstream = this;
 	v = cpu_to_le32(v);
 	if (!ftstream_producer_write_internal(pstream, &v, sizeof(v)))
 		return FALSE;
@@ -252,8 +252,7 @@ static BOOL ftstream_producer_write_wstring(
 		pbuff[1] = '\0';
 		len = 2;
 	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, len)) {
+	if (!pstream->write_uint32(len)) {
 		free(pbuff);
 		return FALSE;
 	}
@@ -279,10 +278,8 @@ static BOOL ftstream_producer_write_string(
 	uint32_t position;
 	
 	len = strlen(pstr) + 1;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, len)) {
+	if (!pstream->write_uint32(len))
 		return FALSE;
-	}
 	position = pstream->offset;
 	if (FALSE == ftstream_producer_write_internal(
 		pstream, pstr, len)) {
@@ -318,10 +315,8 @@ static BOOL ftstream_producer_write_binary(
 {
 	uint32_t position;
 	
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, pbin->cb)) {
+	if (!pstream->write_uint32(pbin->cb))
 		return FALSE;
-	}
 	position = pstream->offset;
 	if (0 != pbin->cb && FALSE ==
 		ftstream_producer_write_internal(
@@ -470,8 +465,7 @@ static BOOL ftstream_producer_write_propvalue(
 						*(uint16_t*)ppropval->pvalue);
 	case PT_ERROR:
 	case PT_LONG:
-		return ftstream_producer_write_uint32(pstream,
-						*(uint32_t*)ppropval->pvalue);
+		return pstream->write_uint32(*static_cast<uint32_t *>(ppropval->pvalue));
 	case PT_FLOAT:
 		return ftstream_producer_write_float(pstream,
 						*(float*)ppropval->pvalue);
@@ -503,10 +497,8 @@ static BOOL ftstream_producer_write_propvalue(
 		return ftstream_producer_write_binary(pstream, static_cast<BINARY *>(ppropval->pvalue));
 	case PT_MV_SHORT:
 		count = ((SHORT_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_producer_write_uint16(pstream,
 				((SHORT_ARRAY*)ppropval->pvalue)->ps[i])) {
@@ -516,23 +508,17 @@ static BOOL ftstream_producer_write_propvalue(
 		return TRUE;
 	case PT_MV_LONG:
 		count = ((LONG_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_uint32(pstream,
-				((LONG_ARRAY*)ppropval->pvalue)->pl[i])) {
+			if (!pstream->write_uint32(static_cast<LONG_ARRAY *>(ppropval->pvalue)->pl[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PT_MV_I8:
 		count = ((LONGLONG_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_producer_write_uint64(pstream,
 				((LONGLONG_ARRAY*)ppropval->pvalue)->pll[i])) {
@@ -542,10 +528,8 @@ static BOOL ftstream_producer_write_propvalue(
 		return TRUE;
 	case PT_MV_STRING8:
 		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_producer_write_string(pstream,
 				((STRING_ARRAY*)ppropval->pvalue)->ppstr[i])) {
@@ -555,10 +539,8 @@ static BOOL ftstream_producer_write_propvalue(
 		return TRUE;
 	case PT_MV_UNICODE:
 		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_producer_write_wstring(pstream,
 				((STRING_ARRAY*)ppropval->pvalue)->ppstr[i])) {
@@ -568,10 +550,8 @@ static BOOL ftstream_producer_write_propvalue(
 		return TRUE;
 	case PT_MV_CLSID:
 		count = ((GUID_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_producer_write_guid(pstream,
 				((GUID_ARRAY*)ppropval->pvalue)->pguid + i)) {
@@ -581,10 +561,8 @@ static BOOL ftstream_producer_write_propvalue(
 		return TRUE;
 	case PT_MV_BINARY:
 		count = ((BINARY_ARRAY*)ppropval->pvalue)->count;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, count)) {
+		if (!pstream->write_uint32(count))
 			return FALSE;
-		}
 		for (size_t i = 0; i < count; ++i) {
 			if (FALSE == ftstream_producer_write_binary(pstream,
 				((BINARY_ARRAY*)ppropval->pvalue)->pbin + i)) {
@@ -617,17 +595,13 @@ static BOOL ftstream_producer_write_embeddedmessage(
 	uint32_t marker;
 	
 	marker = STARTEMBED;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;	
-	}
 	if (!pstream->write_messagecontent(b_delprop, pmessage))
 		return FALSE;	
 	marker = ENDEMBED;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;	
-	}
 	return TRUE;
 }
 
@@ -652,17 +626,13 @@ static BOOL ftstream_producer_write_recipient(
 	uint32_t marker;
 	
 	marker = STARTRECIP;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;
-	}
 	if (!pstream->write_proplist(prcpt))
 		return FALSE;
 	marker = ENDTORECIP;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -673,17 +643,13 @@ static BOOL ftstream_producer_write_attachment(
 	uint32_t marker;
 	
 	marker = NEWATTACH;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;
-	}
 	if (!pstream->write_attachmentcontent(b_delprop, pattachment))
 		return FALSE;	
 	marker = ENDATTACH;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -692,11 +658,9 @@ static BOOL ftstream_producer_write_messagechildren(
 	const MESSAGE_CHILDREN *pchildren)
 {
 	if (TRUE == b_delprop) {
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, META_TAG_FXDELPROP)) {
+		if (!pstream->write_uint32(META_TAG_FXDELPROP))
 			return FALSE;
-		}
-		if (!ftstream_producer_write_uint32(pstream, PR_MESSAGE_RECIPIENTS))
+		if (!pstream->write_uint32(PR_MESSAGE_RECIPIENTS))
 			return FALSE;
 	}
 	if (NULL != pchildren->prcpts) {
@@ -708,11 +672,9 @@ static BOOL ftstream_producer_write_messagechildren(
 		}
 	}
 	if (TRUE == b_delprop) {
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, META_TAG_FXDELPROP)) {
+		if (!pstream->write_uint32(META_TAG_FXDELPROP))
 			return FALSE;
-		}
-		if (!ftstream_producer_write_uint32(pstream, PR_MESSAGE_ATTACHMENTS))
+		if (!pstream->write_uint32(PR_MESSAGE_ATTACHMENTS))
 			return FALSE;
 	}
 	if (NULL != pchildren->pattachments) {
@@ -738,20 +700,15 @@ BOOL ftstream_producer::write_messagecontent(BOOL b_delprop,
 
 BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 {
-	auto pstream = this;
 	auto pbool = static_cast<uint8_t *>(common_util_get_propvals(&pmessage->proplist, PROP_TAG_ASSOCIATED));
 	uint32_t marker = pbool == nullptr || *pbool == 0 ? STARTMESSAGE : STARTFAIMSG;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	if (!write_messagecontent(false, pmessage))
 		return FALSE;	
 	marker = ENDMESSAGE;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	return TRUE;
 }	
 
@@ -769,17 +726,15 @@ BOOL ftstream_producer::write_messagechangefull(
 	uint32_t marker;
 	
 	marker = INCRSYNCCHG;
-	if (FALSE == ftstream_producer_write_uint32(pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	if (FALSE == ftstream_producer_write_messagechangeheader(
 		pstream, pchgheader)) {
 		return FALSE;	
 	}
 	marker = INCRSYNCMESSAGE;
-	if (FALSE == ftstream_producer_write_uint32(pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	if (!write_proplist(&pmessage->proplist))
 		return FALSE;	
 	return ftstream_producer_write_messagechildren(
@@ -799,12 +754,10 @@ static BOOL ftstream_producer_write_groupinfo(
 	PROPERTY_NAME propname;
 	
 	marker = INCRSYNCGROUPINFO;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;
-	}
 	/* 0x00000102 is the only proptag in proplist */
-	if (!ftstream_producer_write_uint32(pstream, PT_BINARY))
+	if (!pstream->write_uint32(PT_BINARY))
 		return FALSE;
 	if (FALSE == ext_buffer_push_init(
 		&ext_push, NULL, 0, EXT_FLAG_UTF16)) {
@@ -894,33 +847,23 @@ BOOL ftstream_producer::write_messagechangepartial(
 		return FALSE;
 	}
 	tag = META_TAG_INCRSYNCGROUPID;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, tag)) {
+	if (!write_uint32(tag))
 		return FALSE;
-	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, pmsg->group_id)) {
+	if (!write_uint32(pmsg->group_id))
 		return FALSE;	
-	}
 	tag = INCRSYNCCHGPARTIAL;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, tag)) {
+	if (!write_uint32(tag))
 		return FALSE;
-	}
 	if (FALSE == ftstream_producer_write_messagechangeheader(
 		pstream, pchgheader)) {
 		return FALSE;	
 	}
 	for (size_t i = 0; i < pmsg->count; ++i) {
 		tag = META_TAG_INCREMENTALSYNCMESSAGEPARTIAL;
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, tag)) {
+		if (!write_uint32(tag))
 			return FALSE;
-		}
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, pmsg->pchanges[i].index)) {
+		if (!write_uint32(pmsg->pchanges[i].index))
 			return FALSE;	
-		}
 		for (size_t j = 0; j < pmsg->pchanges[i].proplist.count; ++j) {
 			switch(pmsg->pchanges[i].proplist.ppropval[j].proptag) {
 			case PR_MESSAGE_RECIPIENTS:
@@ -928,15 +871,11 @@ BOOL ftstream_producer::write_messagechangepartial(
 					break;
 				}
 				tag = META_TAG_FXDELPROP;
-				if (FALSE == ftstream_producer_write_uint32(
-					pstream, tag)) {
+				if (!write_uint32(tag))
 					return FALSE;
-				}
 				tag = PR_MESSAGE_RECIPIENTS;
-				if (FALSE == ftstream_producer_write_uint32(
-					pstream, tag)) {
+				if (!write_uint32(tag))
 					return FALSE;
-				}
 				for (size_t k = 0; k < pmsg->children.prcpts->count; ++k) {
 					if (FALSE == ftstream_producer_write_recipient(
 						pstream, pmsg->children.prcpts->pparray[k])) {
@@ -949,15 +888,11 @@ BOOL ftstream_producer::write_messagechangepartial(
 					break;
 				}
 				tag = META_TAG_FXDELPROP;
-				if (FALSE == ftstream_producer_write_uint32(
-					pstream, tag)) {
+				if (!write_uint32(tag))
 					return FALSE;
-				}
 				tag = PR_MESSAGE_ATTACHMENTS;
-				if (FALSE == ftstream_producer_write_uint32(
-					pstream, tag)) {
+				if (!write_uint32(tag))
 					return FALSE;
-				}
 				for (size_t k = 0; k < pmsg->children.pattachments->count; ++k) {
 					if (FALSE == ftstream_producer_write_attachment(pstream,
 						TRUE, pmsg->children.pattachments->pplist[k])) {
@@ -984,43 +919,33 @@ static BOOL ftstream_producer_write_folderchange(
 	uint32_t marker;
 	
 	marker = INCRSYNCCHG;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!pstream->write_uint32(marker))
 		return FALSE;
-	}
 	return pstream->write_proplist(pproplist);
 }
 
 BOOL ftstream_producer::write_deletions(const TPROPVAL_ARRAY *pproplist)
 {
-	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCDEL;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	return write_proplist(pproplist);
 }
 
 BOOL ftstream_producer::write_state(const TPROPVAL_ARRAY *pproplist)
 {
-	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCSTATEBEGIN;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	if (!write_proplist(pproplist))
 		return FALSE;
 	marker = INCRSYNCSTATEEND;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1030,17 +955,13 @@ BOOL ftstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogms
 	uint32_t marker;
 	
 	marker = INCRSYNCPROGRESSPERMSG;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
-	if (!ftstream_producer_write_uint32(pstream, PT_LONG))
+	if (!write_uint32(PT_LONG))
 		return FALSE;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, pprogmsg->message_size)) {
+	if (!write_uint32(pprogmsg->message_size))
 		return FALSE;	
-	}
-	if (!ftstream_producer_write_uint32(pstream, PT_BOOLEAN))
+	if (!write_uint32(PT_BOOLEAN))
 		return FALSE;
 	uint16_t b_fai = !!pprogmsg->b_fai;
 	if (FALSE == ftstream_producer_write_uint16(
@@ -1056,17 +977,13 @@ BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 	uint32_t marker;
 	
 	marker = INCRSYNCPROGRESSMODE;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
-	if (!ftstream_producer_write_uint32(pstream, PT_BINARY))
+	if (!write_uint32(PT_BINARY))
 		return FALSE;
 	/* binary length */
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, 32)) {
+	if (!write_uint32(32))
 		return FALSE;
-	}
 	if (FALSE == ftstream_producer_write_uint16(
 		pstream, pprogtotal->version)) {
 		return FALSE;
@@ -1075,36 +992,27 @@ BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 		pstream, pprogtotal->padding1)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, pprogtotal->fai_count)) {
+	if (!write_uint32(pprogtotal->fai_count))
 		return FALSE;
-	}
 	if (FALSE == ftstream_producer_write_uint64(
 		pstream, pprogtotal->fai_size)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, pprogtotal->normal_count)) {
+	if (!write_uint32(pprogtotal->normal_count))
 		return FALSE;
-	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, pprogtotal->padding2)) {
+	if (!write_uint32(pprogtotal->padding2))
 		return FALSE;
-	}
 	return ftstream_producer_write_uint64(
 			pstream, pprogtotal->normal_size);
 }
 
 BOOL ftstream_producer::write_readstatechanges(const TPROPVAL_ARRAY *pproplist)
 {
-	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCREAD;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	return write_proplist(pproplist);
 }
 
@@ -1127,10 +1035,8 @@ BOOL ftstream_producer::write_hierarchysync(
 	if (!write_state(pstate))
 		return FALSE;
 	marker = INCRSYNCEND;
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, marker)) {
+	if (!write_uint32(marker))
 		return FALSE;
-	}
 	return TRUE;
 }
 
