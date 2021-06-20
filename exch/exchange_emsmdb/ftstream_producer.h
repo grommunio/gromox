@@ -15,12 +15,19 @@
 
 struct FTSTREAM_PRODUCER {
 	~FTSTREAM_PRODUCER();
+	inline int total_length() const { return offset; }
+	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
+	BOOL write_proplist(const TPROPVAL_ARRAY *);
+	BOOL write_attachmentcontent(BOOL delprop, const ATTACHMENT_CONTENT *);
+	BOOL write_messagecontent(BOOL delprop, const MESSAGE_CONTENT *);
 	BOOL write_message(const MESSAGE_CONTENT *);
 	BOOL write_progresstotal(const PROGRESS_INFORMATION *);
 	BOOL write_progresspermessage(const PROGRESS_MESSAGE *);
 	BOOL write_messagechangefull(const TPROPVAL_ARRAY *chgheader, MESSAGE_CONTENT *);
 	BOOL write_messagechangepartial(const TPROPVAL_ARRAY *chgheader, const MSGCHG_PARTIAL *msg);
+	BOOL write_deletions(const TPROPVAL_ARRAY *);
 	BOOL write_readstatechanges(const TPROPVAL_ARRAY *);
+	BOOL write_state(const TPROPVAL_ARRAY *);
 	BOOL write_hierarchysync(const FOLDER_CHANGES *fldchgs, const TPROPVAL_ARRAY *del, const TPROPVAL_ARRAY *state);
 
 	int type = 0, fd = -1;
@@ -36,22 +43,4 @@ struct FTSTREAM_PRODUCER {
 using ftstream_producer = FTSTREAM_PRODUCER;
 
 extern std::unique_ptr<FTSTREAM_PRODUCER> ftstream_producer_create(LOGON_OBJECT *, uint8_t string_option);
-int ftstream_producer_total_length(FTSTREAM_PRODUCER *pstream);
-BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
-	void *pbuff, uint16_t *plen, BOOL *pb_last);
-BOOL ftstream_producer_write_uint32(
-	FTSTREAM_PRODUCER *pstream, uint32_t v);
-BOOL ftstream_producer_write_proplist(FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist);
-BOOL ftstream_producer_write_attachmentcontent(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
-	const ATTACHMENT_CONTENT *pattachment);
-BOOL ftstream_producer_write_messagecontent(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
-	const MESSAGE_CONTENT *pmessage);
-BOOL ftstream_producer_write_deletions(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist);
-BOOL ftstream_producer_write_state(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist);
+BOOL ftstream_producer_write_uint32(FTSTREAM_PRODUCER *pstream, uint32_t v);

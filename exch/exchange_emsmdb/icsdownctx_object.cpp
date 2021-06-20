@@ -719,7 +719,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		rop_util_free_binary(pbin);
 	}
 	pctx->progress_steps = 0;
-	pctx->total_steps = ftstream_producer_total_length(pctx->pstream.get());
+	pctx->total_steps = pctx->pstream->total_length();
 	pctx->ratio = 1;
 	return TRUE;
 }
@@ -1418,7 +1418,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 	if (0 == proplist.count) {
 		return TRUE;
 	}
-	if (!ftstream_producer_write_deletions(pctx->pstream.get(), &proplist)) {
+	if (!pctx->pstream->write_deletions(&proplist)) {
 		if (NULL != pbin1) {
 			rop_util_free_binary(pbin1);
 		}
@@ -1568,7 +1568,7 @@ static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
 	if (NULL == pproplist) {
 		return FALSE;
 	}
-	if (!ftstream_producer_write_state(pctx->pstream.get(), pproplist)) {
+	if (!pctx->pstream->write_state(pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;
 	}
@@ -1589,7 +1589,7 @@ static BOOL icsdownctx_object_get_buffer_internal(
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 == double_list_get_nodes_num(&pctx->flow_list)) {
-		if (!ftstream_producer_read_buffer(pctx->pstream.get(), pbuff, plen, pb_last))
+		if (!pctx->pstream->read_buffer(pbuff, plen, pb_last))
 			return FALSE;	
 		if (SYNC_TYPE_HIERARCHY == pctx->sync_type) {
 			pctx->progress_steps += *plen;
@@ -1597,9 +1597,9 @@ static BOOL icsdownctx_object_get_buffer_internal(
 		return TRUE;
 	}
 	len = 0;
-	if (ftstream_producer_total_length(pctx->pstream.get()) > 0) {
+	if (pctx->pstream->total_length() > 0) {
 		len = *plen;
-		if (!ftstream_producer_read_buffer(pctx->pstream.get(), pbuff, &len, &b_last))
+		if (!pctx->pstream->read_buffer(pbuff, &len, &b_last))
 			return FALSE;	
 		if (FALSE == b_last || *plen - len <
 			2*FTSTREAM_PRODUCER_POINT_LENGTH) {
@@ -1666,11 +1666,10 @@ static BOOL icsdownctx_object_get_buffer_internal(
 			return FALSE;
 		}
 		free(pnode->pdata);
-		if (ftstream_producer_total_length(pctx->pstream.get()) > len1)
+		if (pctx->pstream->total_length() > len1)
 			break;
 	}
-	if (!ftstream_producer_read_buffer(pctx->pstream.get(),
-	    static_cast<char *>(pbuff) + len, &len1, &b_last))
+	if (!pctx->pstream->read_buffer(static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;	
 	*plen = len + len1;
 	*pb_last = double_list_get_nodes_num(&pctx->flow_list) == 0 && b_last ? TRUE : false;

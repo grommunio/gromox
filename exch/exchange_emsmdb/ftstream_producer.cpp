@@ -596,9 +596,9 @@ static BOOL ftstream_producer_write_propvalue(
 	return FALSE;
 }
 
-BOOL ftstream_producer_write_proplist(FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist)
+BOOL ftstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
 {
+	auto pstream = this;
 	int i;
 	
 	for (i=0; i<pproplist->count; i++) {
@@ -621,10 +621,8 @@ static BOOL ftstream_producer_write_embeddedmessage(
 		pstream, marker)) {
 		return FALSE;	
 	}
-	if (FALSE == ftstream_producer_write_messagecontent(
-		pstream, b_delprop, pmessage)) {
+	if (!pstream->write_messagecontent(b_delprop, pmessage))
 		return FALSE;	
-	}
 	marker = ENDEMBED;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
@@ -633,14 +631,12 @@ static BOOL ftstream_producer_write_embeddedmessage(
 	return TRUE;
 }
 
-BOOL ftstream_producer_write_attachmentcontent(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
+BOOL ftstream_producer::write_attachmentcontent(BOOL b_delprop,
 	const ATTACHMENT_CONTENT *pattachment)
 {
-	if (FALSE == ftstream_producer_write_proplist(
-		pstream, &pattachment->proplist)) {
+	auto pstream = this;
+	if (!write_proplist(&pattachment->proplist))
 		return FALSE;	
-	}
 	if (NULL != pattachment->pembedded) {
 		if (FALSE == ftstream_producer_write_embeddedmessage(
 			pstream, b_delprop, pattachment->pembedded)) {
@@ -660,10 +656,8 @@ static BOOL ftstream_producer_write_recipient(
 		pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_proplist(
-		pstream, prcpt)) {
+	if (!pstream->write_proplist(prcpt))
 		return FALSE;
-	}
 	marker = ENDTORECIP;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
@@ -683,10 +677,8 @@ static BOOL ftstream_producer_write_attachment(
 		pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_attachmentcontent(
-		pstream, b_delprop, pattachment)) {
+	if (!pstream->write_attachmentcontent(b_delprop, pattachment))
 		return FALSE;	
-	}
 	marker = ENDATTACH;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
@@ -734,14 +726,12 @@ static BOOL ftstream_producer_write_messagechildren(
 	return TRUE;
 }
 
-BOOL ftstream_producer_write_messagecontent(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
+BOOL ftstream_producer::write_messagecontent(BOOL b_delprop,
 	const MESSAGE_CONTENT *pmessage)
 {	
-	if (FALSE == ftstream_producer_write_proplist(
-		pstream, &pmessage->proplist)) {
+	auto pstream = this;
+	if (!write_proplist(&pmessage->proplist))
 		return FALSE;	
-	}
 	return ftstream_producer_write_messagechildren(
 			pstream, b_delprop, &pmessage->children);
 }
@@ -755,10 +745,8 @@ BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 		pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_messagecontent(
-		pstream, FALSE, pmessage)) {
+	if (!write_messagecontent(false, pmessage))
 		return FALSE;	
-	}
 	marker = ENDMESSAGE;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
@@ -770,7 +758,7 @@ BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 static BOOL ftstream_producer_write_messagechangeheader(
 	FTSTREAM_PRODUCER *pstream,	const TPROPVAL_ARRAY *pheader)
 {
-	return ftstream_producer_write_proplist(pstream, pheader);
+	return pstream->write_proplist(pheader);
 }
 
 BOOL ftstream_producer::write_messagechangefull(
@@ -792,10 +780,8 @@ BOOL ftstream_producer::write_messagechangefull(
 	if (FALSE == ftstream_producer_write_uint32(pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_proplist(
-		pstream, &pmessage->proplist)) {
+	if (!write_proplist(&pmessage->proplist))
 		return FALSE;	
-	}
 	return ftstream_producer_write_messagechildren(
 				pstream, TRUE, &pmessage->children);
 }
@@ -1002,14 +988,12 @@ static BOOL ftstream_producer_write_folderchange(
 		pstream, marker)) {
 		return FALSE;
 	}
-	return ftstream_producer_write_proplist(
-			pstream, pproplist);
+	return pstream->write_proplist(pproplist);
 }
 
-BOOL ftstream_producer_write_deletions(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist)
+BOOL ftstream_producer::write_deletions(const TPROPVAL_ARRAY *pproplist)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCDEL;
@@ -1017,14 +1001,12 @@ BOOL ftstream_producer_write_deletions(
 		pstream, marker)) {
 		return FALSE;
 	}
-	return ftstream_producer_write_proplist(
-			pstream, pproplist);
+	return write_proplist(pproplist);
 }
 
-BOOL ftstream_producer_write_state(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist)
+BOOL ftstream_producer::write_state(const TPROPVAL_ARRAY *pproplist)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCSTATEBEGIN;
@@ -1032,10 +1014,8 @@ BOOL ftstream_producer_write_state(
 		pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_proplist(
-		pstream, pproplist)) {
+	if (!write_proplist(pproplist))
 		return FALSE;
-	}
 	marker = INCRSYNCSTATEEND;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
@@ -1125,8 +1105,7 @@ BOOL ftstream_producer::write_readstatechanges(const TPROPVAL_ARRAY *pproplist)
 		pstream, marker)) {
 		return FALSE;
 	}
-	return ftstream_producer_write_proplist(
-			pstream, pproplist);
+	return write_proplist(pproplist);
 }
 
 BOOL ftstream_producer::write_hierarchysync(
@@ -1143,16 +1122,10 @@ BOOL ftstream_producer::write_hierarchysync(
 			return FALSE;
 		}
 	}
-	if (NULL != pdels) {
-		if (FALSE == ftstream_producer_write_deletions(
-			pstream, pdels)) {
-			return FALSE;
-		}
-	}
-	if (FALSE == ftstream_producer_write_state(
-		pstream, pstate)) {
+	if (pdels != nullptr && !write_deletions(pdels))
 		return FALSE;
-	}
+	if (!write_state(pstate))
+		return FALSE;
 	marker = INCRSYNCEND;
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, marker)) {
@@ -1209,14 +1182,9 @@ FTSTREAM_PRODUCER::~FTSTREAM_PRODUCER()
 	double_list_free(&pstream->bp_list);
 }
 
-int ftstream_producer_total_length(FTSTREAM_PRODUCER *pstream)
+BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
-	return pstream->offset;
-}
-
-BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
-	void *pbuff, uint16_t *plen, BOOL *pb_last)
-{
+	auto pstream = this;
 	POINT_NODE *ppoint;
 	POINT_NODE *ppoint1;
 	uint32_t cur_offset;
