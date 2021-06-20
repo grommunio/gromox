@@ -77,14 +77,41 @@ struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpf
 struct libpff_noop_del { void operator()(void *x) { } };
 
 enum {
+	NID_TYPE_HID = 0x0,
+	NID_TYPE_INTERNAL = 0x1,
 	NID_TYPE_NORMAL_FOLDER = 0x2,
+	NID_TYPE_SEARCH_FOLDER = 0x3,
 	NID_TYPE_NORMAL_MESSAGE = 0x4,
+	NID_TYPE_ATTACHMENT = 0x5,
+	NID_TYPE_SEARCH_UPDATE_QUEUE = 0x6,
+	NID_TYPE_SEARCH_CRITERIA_OBJECT = 0x7,
 	NID_TYPE_ASSOC_MESSAGE = 0x8,
+	NID_TYPE_CONTENTS_TABLE_INDEX = 0xA,
+	NID_TYPE_RECEIVE_FOLDER_TABLE = 0xB,
+	NID_TYPE_OUTGOING_QUEUE_TABLE = 0xC,
+	NID_TYPE_HIERARCHY_TABLE = 0xD,
+	NID_TYPE_CONTENTS_TABLE = 0xE,
+	NID_TYPE_ASSOC_CONTENTS_TABLE = 0xF,
+	NID_TYPE_SEARCH_CONTENTS_TABLE = 0x10,
+	NID_TYPE_ATTACHMENT_TABLE = 0x11,
+	NID_TYPE_RECIPIENT_TABLE = 0x12,
+	NID_TYPE_SEARCH_TABLE_INDEX = 0x13,
+	NID_TYPE_LTP = 0x1F,
 	NID_TYPE_MASK = 0x1F,
 };
 
 enum {
+	NID_MESSAGE_STORE = 0x20 | NID_TYPE_INTERNAL,
+	NID_NAME_TO_ID_MAP = 0x60 | NID_TYPE_INTERNAL,
+	NID_NORMAL_FOLDER_TEMPLATE = 0xA0 | NID_TYPE_INTERNAL,
+	NID_SEARCH_FOLDER_TEMPLATE = 0xC0 | NID_TYPE_INTERNAL,
 	NID_ROOT_FOLDER = 0x120 | NID_TYPE_NORMAL_FOLDER,
+	NID_SEARCH_MANAGEMENT_QUEUE = 0x1E0 | NID_TYPE_INTERNAL,
+	NID_SEARCH_ACTIVITY_LIST = 0x200 | NID_TYPE_INTERNAL,
+	NID_SEARCH_DOMAIN_OBJECT = 0x260 | NID_TYPE_INTERNAL,
+	NID_SEARCH_GATHERER_QUEUE = 0x280 | NID_TYPE_INTERNAL,
+	NID_SEARCH_GATHERER_DESCRIPTOR = 0x2A0 | NID_TYPE_INTERNAL,
+	NID_SEARCH_GATHERER_FOLDER_QUEUE = 0x320 | NID_TYPE_INTERNAL,
 };
 
 struct parent_desc {
@@ -138,7 +165,7 @@ using libpff_nti_entry_ptr    = std::unique_ptr<libpff_name_to_id_map_entry_t, l
 static std::unordered_map<uint32_t, tgt_folder> g_folder_map;
 static std::unordered_map<uint16_t, uint16_t> g_propname_cache;
 static char *g_username;
-static std::string g_storedir_s, g_root_name;
+static std::string g_storedir_s;
 static const char *g_storedir;
 static unsigned int g_wet_run = 1, g_show_tree, g_user_id, g_show_props;
 static const struct HXoption g_options_table[] = {
@@ -199,8 +226,28 @@ static const char *az_item_type_to_str(uint8_t t)
 	case LIBPFF_ITEM_TYPE_RSS_FEED: return "rss";
 	case LIBPFF_ITEM_TYPE_TASK: return "task";
 	case LIBPFF_ITEM_TYPE_RECIPIENTS: return "rcpts";
-	default: snprintf(buf, sizeof(buf), "u-%u", t); return buf;
+	case LIBPFF_ITEM_TYPE_UNDEFINED: return "undef";
+	default: snprintf(buf, sizeof(buf), "unknown-%u", t); return buf;
 	}
+}
+
+static const char *az_special_ident(uint32_t nid)
+{
+#define E(s) case s: return #s;
+	switch (nid) {
+	E(NID_MESSAGE_STORE)
+	E(NID_NAME_TO_ID_MAP)
+	E(NID_NORMAL_FOLDER_TEMPLATE)
+	E(NID_SEARCH_FOLDER_TEMPLATE)
+	E(NID_ROOT_FOLDER)
+	E(NID_SEARCH_MANAGEMENT_QUEUE)
+	E(NID_SEARCH_ACTIVITY_LIST)
+	E(NID_SEARCH_DOMAIN_OBJECT)
+	E(NID_SEARCH_GATHERER_QUEUE)
+	E(NID_SEARCH_GATHERER_DESCRIPTOR)
+	E(NID_SEARCH_GATHERER_FOLDER_QUEUE)
+	}
+	return "";
 }
 
 /* Lookup the pff record entry for the given propid */
@@ -1043,22 +1090,21 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
 {
 	uint32_t ident = 0, nent = 0;
-	uint8_t item_type = 0;
+	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	int nsets = 0;
 
 	if (libpff_item_get_identifier(item, &ident, nullptr) < 1)
 		throw "PF-1018";
-	if (libpff_item_get_type(item, &item_type, nullptr) < 1)
-		throw "PF-1019";
-	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) < 1)
-		throw "PF-1021";
-
+	libpff_item_get_type(item, &item_type, nullptr);
+	libpff_item_get_number_of_record_sets(item, &nsets, nullptr);
 	if (g_show_tree) {
-		if (libpff_item_get_number_of_entries(item, &nent, nullptr) < 1)
-			throw "PF-1020";
+		libpff_item_get_number_of_entries(item, &nent, nullptr);
 		tree(depth);
-		tlog("[id=%lxh type=%s nent=%lu nset=%d]\n",
-		        static_cast<unsigned long>(ident), az_item_type_to_str(item_type),
+		auto sp_nid = az_special_ident(ident);
+		tlog("[id=%lxh%s%s type=%s nent=%lu nset=%d]\n",
+		        static_cast<unsigned long>(ident),
+		        *sp_nid != '\0' ? " " : "", sp_nid,
+		        az_item_type_to_str(item_type),
 		        static_cast<unsigned long>(nent), nsets);
 	}
 
@@ -1113,6 +1159,7 @@ static int do_file(const char *filename) try
 	g_propname_cache.clear();
 	if (g_wet_run)
 		fprintf(stderr, "Transferring objects...\n");
+
 	char timebuf[64];
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
@@ -1123,35 +1170,7 @@ static int do_file(const char *filename) try
 		"Import of "s + HX_basename(filename) + timebuf});
 
 	libpff_item_ptr root;
-
-	if (libpff_file_get_message_store(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
-		fprintf(stderr, "PF-1042: %s contains no NID_MESSAGE_STORE\n", filename);
-		az_error("PF-1042", err);
-	} else if (root == nullptr) {
-		fprintf(stderr, "PF-1043: %s contains no NID_MESSAGE_STORE\n", filename);
-		az_error("PF-1043", err);
-	} else if (g_show_tree) {
-		printf("%s: Special section NID_MESSAGE_STORE is available.\n", filename);
-		auto saved_wet = g_wet_run;
-		g_wet_run = false;
-		do_item(0, {}, root.get());
-		g_wet_run = saved_wet;
-	}
-	if (libpff_file_get_name_to_id_map(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
-		printf("PF-1044: %s contains no NID_NAME_TO_ID_MAP\n", filename);
-		az_error("PF-1042", err);
-	} else if (root == nullptr) {
-		printf("PF-1045: %s contains no NID_NAME_TO_ID_MAP\n", filename);
-		az_error("PF-1043", err);
-	} else if (g_show_tree) {
-		printf("%s: Special section NID_NAME_TO_ID_MAP is available.\n", filename);
-		auto saved_wet = g_wet_run;
-		g_wet_run = false;
-		do_item(0, {}, root.get());
-		g_wet_run = saved_wet;
-	}
-
-	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
+	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
 	return do_item(0, {}, root.get());
 } catch (const char *e) {
