@@ -15,6 +15,13 @@
 
 struct FTSTREAM_PRODUCER {
 	~FTSTREAM_PRODUCER();
+	BOOL write_message(const MESSAGE_CONTENT *);
+	BOOL write_progresstotal(const PROGRESS_INFORMATION *);
+	BOOL write_progresspermessage(const PROGRESS_MESSAGE *);
+	BOOL write_messagechangefull(const TPROPVAL_ARRAY *chgheader, MESSAGE_CONTENT *);
+	BOOL write_messagechangepartial(const TPROPVAL_ARRAY *chgheader, const MSGCHG_PARTIAL *msg);
+	BOOL write_readstatechanges(const TPROPVAL_ARRAY *);
+	BOOL write_hierarchysync(const FOLDER_CHANGES *fldchgs, const TPROPVAL_ARRAY *del, const TPROPVAL_ARRAY *state);
 
 	int type = 0, fd = -1;
 	uint32_t offset = 0;
@@ -26,6 +33,7 @@ struct FTSTREAM_PRODUCER {
 	DOUBLE_LIST bp_list{};
 	BOOL b_read = false;
 };
+using ftstream_producer = FTSTREAM_PRODUCER;
 
 extern std::unique_ptr<FTSTREAM_PRODUCER> ftstream_producer_create(LOGON_OBJECT *, uint8_t string_option);
 int ftstream_producer_total_length(FTSTREAM_PRODUCER *pstream);
@@ -41,34 +49,9 @@ BOOL ftstream_producer_write_attachmentcontent(
 BOOL ftstream_producer_write_messagecontent(
 	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
 	const MESSAGE_CONTENT *pmessage);
-BOOL ftstream_producer_write_message(
-	FTSTREAM_PRODUCER *pstream,
-	const MESSAGE_CONTENT *pmessage);
-BOOL ftstream_producer_write_progresstotal(
-	FTSTREAM_PRODUCER *pstream,
-	const PROGRESS_INFORMATION *pprogtotal);
-BOOL ftstream_producer_write_progresspermessage(
-	FTSTREAM_PRODUCER *pstream,
-	const PROGRESS_MESSAGE *pprogmsg);
-BOOL ftstream_producer_write_messagechangefull(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pchgheader,
-	MESSAGE_CONTENT *pmessage);
-BOOL ftstream_producer_write_messagechangepartial(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pchgheader,
-	const MSGCHG_PARTIAL *pmsg);	
 BOOL ftstream_producer_write_deletions(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist);
-BOOL ftstream_producer_write_readstatechanges(
 	FTSTREAM_PRODUCER *pstream,
 	const TPROPVAL_ARRAY *pproplist);
 BOOL ftstream_producer_write_state(
 	FTSTREAM_PRODUCER *pstream,
 	const TPROPVAL_ARRAY *pproplist);
-BOOL ftstream_producer_write_hierarchysync(
-	FTSTREAM_PRODUCER *pstream,
-	const FOLDER_CHANGES *pfldchgs,
-	const TPROPVAL_ARRAY *pdels,
-	const TPROPVAL_ARRAY *pstate);

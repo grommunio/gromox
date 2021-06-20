@@ -706,8 +706,8 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		}
 		return FALSE;
 	}
-	if (!ftstream_producer_write_hierarchysync(pctx->pstream.get(),
-	    &fldchgs, pproplist_deletions, pproplist_state)) {
+	if (!pctx->pstream->write_hierarchysync(&fldchgs,
+	    pproplist_deletions, pproplist_state)) {
 		tpropval_array_free(pproplist_state);
 		if (NULL != pproplist_deletions) {
 			rop_util_free_binary(pbin);
@@ -1185,7 +1185,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 					pembedded, pctx->pproptags, TRUE);
 			}
 			if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
-			    !ftstream_producer_write_progresspermessage(pctx->pstream.get(), &progmsg))
+			    !pctx->pstream->write_progresspermessage(&progmsg))
 				return FALSE;
 			common_util_remove_propvals(&pembedded->proplist, PR_READ);
 			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
@@ -1202,7 +1202,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			if (!ftstream_producer_write_messagechangefull(pctx->pstream.get(), &chgheader, pembedded))
+			if (!pctx->pstream->write_messagechangefull(&chgheader, pembedded))
 				return FALSE;
 		}
 		return TRUE;
@@ -1320,7 +1320,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		}
 	}
 	if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
-	    !ftstream_producer_write_progresspermessage(pctx->pstream.get(), &progmsg))
+	    !pctx->pstream->write_progresspermessage(&progmsg))
 		return FALSE;
 	pctx->next_progress_steps += progmsg.message_size;
 	if (TRUE == b_full) {
@@ -1339,10 +1339,10 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		if (!ftstream_producer_write_messagechangefull(pctx->pstream.get(), &chgheader, pmsgctnt))
+		if (!pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt))
 			return FALSE;
 	} else {
-		if (!ftstream_producer_write_messagechangepartial(pctx->pstream.get(), &chgheader, &msg_partial))
+		if (!pctx->pstream->write_messagechangepartial(&chgheader, &msg_partial))
 			return FALSE;
 	}
 	return TRUE;
@@ -1506,7 +1506,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 	if (0 == proplist.count) {
 		return TRUE;
 	}
-	if (!ftstream_producer_write_readstatechanges(pctx->pstream.get(), &proplist)) {
+	if (!pctx->pstream->write_readstatechanges(&proplist)) {
 		if (NULL != pbin1) {
 			rop_util_free_binary(pbin1);
 		}
@@ -1622,7 +1622,7 @@ static BOOL icsdownctx_object_get_buffer_internal(
 			}
 			break;
 		case FUNC_ID_PROGRESSTOTAL:
-			if (!ftstream_producer_write_progresstotal(pctx->pstream.get(), pctx->pprogtotal)) {
+			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal)) {
 				free(pnode->pdata);
 				return FALSE;
 			}

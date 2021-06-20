@@ -439,7 +439,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			} else {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			}
-			if (!ftstream_producer_write_message(pctx->pstream.get(), pmsgctnt)) {
+			if (!pctx->pstream->write_message(pmsgctnt)) {
 				free(pnode->pdata);
 				return FALSE;
 			}

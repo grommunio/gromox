@@ -746,10 +746,9 @@ BOOL ftstream_producer_write_messagecontent(
 			pstream, b_delprop, &pmessage->children);
 }
 
-BOOL ftstream_producer_write_message(
-	FTSTREAM_PRODUCER *pstream,
-	const MESSAGE_CONTENT *pmessage)
+BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 {
+	auto pstream = this;
 	auto pbool = static_cast<uint8_t *>(common_util_get_propvals(&pmessage->proplist, PROP_TAG_ASSOCIATED));
 	uint32_t marker = pbool == nullptr || *pbool == 0 ? STARTMESSAGE : STARTFAIMSG;
 	if (FALSE == ftstream_producer_write_uint32(
@@ -774,11 +773,11 @@ static BOOL ftstream_producer_write_messagechangeheader(
 	return ftstream_producer_write_proplist(pstream, pheader);
 }
 
-BOOL ftstream_producer_write_messagechangefull(
-	FTSTREAM_PRODUCER *pstream,
+BOOL ftstream_producer::write_messagechangefull(
 	const TPROPVAL_ARRAY *pchgheader,
 	MESSAGE_CONTENT *pmessage)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCCHG;
@@ -897,11 +896,11 @@ static BOOL ftstream_producer_write_groupinfo(
 	return ftstream_producer_write_binary(pstream, &tmp_bin);
 }
 
-BOOL ftstream_producer_write_messagechangepartial(
-	FTSTREAM_PRODUCER *pstream,
+BOOL ftstream_producer::write_messagechangepartial(
 	const TPROPVAL_ARRAY *pchgheader,
 	const MSGCHG_PARTIAL *pmsg)
 {
+	auto pstream = this;
 	uint32_t tag;
 	
 	if (FALSE == ftstream_producer_write_groupinfo(
@@ -1045,10 +1044,9 @@ BOOL ftstream_producer_write_state(
 	return TRUE;
 }
 
-BOOL ftstream_producer_write_progresspermessage(
-	FTSTREAM_PRODUCER *pstream,
-	const PROGRESS_MESSAGE *pprogmsg)
+BOOL ftstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogmsg)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCPROGRESSPERMSG;
@@ -1072,10 +1070,9 @@ BOOL ftstream_producer_write_progresspermessage(
 	return TRUE;
 }
 
-BOOL ftstream_producer_write_progresstotal(
-	FTSTREAM_PRODUCER *pstream,
-	const PROGRESS_INFORMATION *pprogtotal)
+BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtotal)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCPROGRESSMODE;
@@ -1118,10 +1115,9 @@ BOOL ftstream_producer_write_progresstotal(
 			pstream, pprogtotal->normal_size);
 }
 
-BOOL ftstream_producer_write_readstatechanges(
-	FTSTREAM_PRODUCER *pstream,
-	const TPROPVAL_ARRAY *pproplist)
+BOOL ftstream_producer::write_readstatechanges(const TPROPVAL_ARRAY *pproplist)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	marker = INCRSYNCREAD;
@@ -1133,12 +1129,12 @@ BOOL ftstream_producer_write_readstatechanges(
 			pstream, pproplist);
 }
 
-BOOL ftstream_producer_write_hierarchysync(
-	FTSTREAM_PRODUCER *pstream,
+BOOL ftstream_producer::write_hierarchysync(
 	const FOLDER_CHANGES *pfldchgs,
 	const TPROPVAL_ARRAY *pdels,
 	const TPROPVAL_ARRAY *pstate)
 {
+	auto pstream = this;
 	uint32_t marker;
 	
 	for (size_t i = 0; i < pfldchgs->count; ++i) {
