@@ -32,6 +32,8 @@
 #define MAX_TIMES_NOT_SERVED	5
 #define THREAD_STACK_SIZE       0x400000
 
+using namespace gromox;
+
 namespace {
 
 struct CONTROL_INFO {
@@ -593,8 +595,8 @@ static void *dxp_thrwork(void *arg)
 			pcontext->pcontrol->bound_type = pmessage->bound_type;
 			pcontext->pcontrol->is_spam = pmessage->is_spam;
 			pcontext->pcontrol->need_bounce = TRUE;
-			gx_strlcpy(pcontext->pcontrol->from, pmessage->envelop_from, GX_ARRAY_SIZE(pcontext->pcontrol->from));
-			ptr = pmessage->envelop_rcpt;
+			gx_strlcpy(pcontext->pcontrol->from, pmessage->envelope_from, arsizeof(pcontext->pcontrol->from));
+			ptr = pmessage->envelope_rcpt;
 			while ((len = strlen(ptr)) != 0) {
 				len ++;
 				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);

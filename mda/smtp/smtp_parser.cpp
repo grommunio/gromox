@@ -533,7 +533,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 	}
 	/*========================================================================*/
-	/* envelop command is met */
+	/* envelope command is met */
  CMD_PROCESS:
 	if (T_DATA_CMD != pcontext->last_cmd) {    
 		stream_try_mark_line(&pcontext->stream);
@@ -545,7 +545,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			} else {
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 			}
-			smtp_parser_log_info(pcontext, 0, "envelop line too long");
+			smtp_parser_log_info(pcontext, 0, "envelope line too long");
 			if (NULL != pcontext->connection.ssl) {
 				SSL_shutdown(pcontext->connection.ssl);
 				SSL_free(pcontext->connection.ssl);
@@ -980,17 +980,16 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
  *    @param
  *        pcontext [in]    indicate the smtp context object
  */
-void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext)
+void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 {
-	if (TRUE == pcontext->mail.envelop.is_login) {
-		pcontext->mail.envelop.auth_times = 0;
-	}
+	if (pcontext->mail.envelope.is_login)
+		pcontext->mail.envelope.auth_times = 0;
 	/* prevent some client send reset after auth */
-	/* pcontext->mail.envelop.is_login = FALSE; */
-	pcontext->mail.envelop.from[0] = '\0';
-	/* pcontext->mail.envelop.username[0] = '\0'; */
-	strcpy(pcontext->mail.envelop.parsed_domain, "unknown");
-	mem_file_clear(&pcontext->mail.envelop.f_rcpt_to);
+	/* pcontext->mail.envelope.is_login = false; */
+	pcontext->mail.envelope.from[0] = '\0';
+	/* pcontext->mail.envelope.username[0] = '\0'; */
+	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
+	mem_file_clear(&pcontext->mail.envelope.f_rcpt_to);
 }
 
 /*
@@ -1007,7 +1006,7 @@ SMTP_CONTEXT::SMTP_CONTEXT()
 	palloc_file = files_allocator_get_allocator();
 	pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file);
-	mem_file_init(&pcontext->mail.envelop.f_rcpt_to, palloc_file);
+	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file);
 	mem_file_init(&pcontext->mail.head.f_mime_to, palloc_file);
 	mem_file_init(&pcontext->mail.head.f_mime_from, palloc_file);
 	mem_file_init(&pcontext->mail.head.f_mime_cc, palloc_file);
@@ -1037,9 +1036,9 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 		stream_free(&pcontext->stream_second);
 		pcontext->is_splitted = FALSE;
 	}
-	pcontext->mail.envelop.is_login = FALSE;
-	pcontext->mail.envelop.is_relay = FALSE;
-	memset(&pcontext->mail.envelop.username, 0, arsizeof(pcontext->mail.envelop.username));
+	pcontext->mail.envelope.is_login = false;
+	pcontext->mail.envelope.is_relay = false;
+	memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));
 	smtp_parser_reset_context_session(pcontext);    
 }
 
@@ -1067,18 +1066,17 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->pre_rstlen                   = 0;
 	pcontext->mail.head.x_priority         = 0;
 	pcontext->mail.head.mail_part          = 0;
-	pcontext->mail.envelop.auth_times      = 0;
+	pcontext->mail.envelope.auth_times     = 0;
 	pcontext->mail.body.mail_length        = 0;
 	pcontext->mail.body.parts_num          = 0;
 	stream_clear(&pcontext->stream);
 	mem_file_clear(&pcontext->block_info.f_last_blkmime);
-	strcpy(pcontext->mail.envelop.parsed_domain, "unknown");
-	memset(&pcontext->mail.envelop.hello_domain, 0, arsizeof(pcontext->mail.envelop.hello_domain));
-	memset(&pcontext->mail.envelop.from, 0, arsizeof(pcontext->mail.envelop.from));
-	if (FALSE == pcontext->mail.envelop.is_login) {
-		memset(&pcontext->mail.envelop.username, 0, arsizeof(pcontext->mail.envelop.username));
-	}
-	mem_file_clear(&pcontext->mail.envelop.f_rcpt_to);
+	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
+	memset(&pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));
+	memset(&pcontext->mail.envelope.from, 0, arsizeof(pcontext->mail.envelope.from));
+	if (!pcontext->mail.envelope.is_login)
+		memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));
+	mem_file_clear(&pcontext->mail.envelope.f_rcpt_to);
 	mem_file_clear(&pcontext->mail.head.f_mime_to);
 	mem_file_clear(&pcontext->mail.head.f_mime_from);
 	mem_file_clear(&pcontext->mail.head.f_mime_cc);
@@ -1102,7 +1100,7 @@ SMTP_CONTEXT::~SMTP_CONTEXT()
 {
 	auto pcontext = this;
 	mem_file_free(&pcontext->block_info.f_last_blkmime);
-	mem_file_free(&pcontext->mail.envelop.f_rcpt_to);
+	mem_file_free(&pcontext->mail.envelope.f_rcpt_to);
 	mem_file_free(&pcontext->mail.head.f_mime_to);
 	mem_file_free(&pcontext->mail.head.f_mime_from);
 	mem_file_free(&pcontext->mail.head.f_mime_cc);
@@ -1152,10 +1150,10 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	/* maximum record 8 rcpt to address */
-	mem_file_seek(&pcontext->mail.envelop.f_rcpt_to, MEM_FILE_READ_PTR, 0, 
+	mem_file_seek(&pcontext->mail.envelope.f_rcpt_to, MEM_FILE_READ_PTR, 0,
 				  MEM_FILE_SEEK_BEGIN);
 	for (i=0; i<8; i++) {
-		size_read = mem_file_readline(&pcontext->mail.envelop.f_rcpt_to,
+		size_read = mem_file_readline(&pcontext->mail.envelope.f_rcpt_to,
 					rcpt_buff + rcpt_len, 256);
 		if (size_read == MEM_END_OF_FILE) {
 			break;
@@ -1168,7 +1166,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	
 	system_services_log_info(level,"remote MTA IP: %s, FROM: %s, TO: %s %s",
 		pcontext->connection.client_ip,
-		pcontext->mail.envelop.from, rcpt_buff, log_buf);
+		pcontext->mail.envelope.from, rcpt_buff, log_buf);
 }
 
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)

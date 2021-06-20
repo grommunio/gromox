@@ -281,11 +281,11 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
         cur_time = time(NULL);
         strftime(time_buff, 128,"%a, %d %b %Y %H:%M:%S %z",
 			localtime_r(&cur_time, &tm_buff));
-        tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
-			"(helo %s)(%s@%s)\r\n\tby %s with SMTP; %s\r\n",
-        	pentity->pconnection->client_ip, pentity->penvelop->parsed_domain,
-        	pentity->penvelop->hello_domain, pentity->penvelop->parsed_domain,
-            pentity->pconnection->client_ip, get_host_ID(), time_buff);
+		tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
+		          "(helo %s)(%s@%s)\r\n\tby %s with SMTP; %s\r\n",
+		          pentity->pconnection->client_ip, pentity->penvelope->parsed_domain,
+		          pentity->penvelope->hello_domain, pentity->penvelope->parsed_domain,
+		          pentity->pconnection->client_ip, get_host_ID(), time_buff);
 		write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 		if (write_len != static_cast<size_t>(tmp_len))
 			goto REMOVE_MESS;
@@ -335,29 +335,23 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		goto REMOVE_MESS;
 	}
 	/* write bound type */
-	if (TRUE == pentity->penvelop->is_relay) {
-		smtp_type = SMTP_RELAY;
-	} else {
-		if (TRUE == pentity->penvelop->is_outbound) {
-			smtp_type = SMTP_OUT;
-		} else {
-			smtp_type = SMTP_IN;
-		}
-	}
+	smtp_type = pentity->penvelope->is_relay ? SMTP_RELAY :
+	            pentity->penvelope->is_outbound ? SMTP_OUT : SMTP_IN;
 	if (sizeof(int) != fwrite(&smtp_type, 1, sizeof(int), fp)) {
 		goto REMOVE_MESS;
 	}
 	if (sizeof(int) != fwrite(&pentity->is_spam, 1, sizeof(int), fp)) {
 		goto REMOVE_MESS;
 	}	
-	/* write envelop from */
-	utmp_len = strlen(pentity->penvelop->from) + 1;
-	if (fwrite(pentity->penvelop->from, 1, utmp_len, fp) != utmp_len)
+	/* write envelope from */
+	utmp_len = strlen(pentity->penvelope->from) + 1;
+	if (fwrite(pentity->penvelope->from, 1, utmp_len, fp) != utmp_len)
 		goto REMOVE_MESS;
-    /* write envelop rcpts */
-    mem_file_seek(&pentity->penvelop->f_rcpt_to, MEM_FILE_READ_PTR, 0,
+	/* write envelope rcpts */
+	mem_file_seek(&pentity->penvelope->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 		MEM_FILE_SEEK_BEGIN);
-	while ((utmp_len = mem_file_readline(&pentity->penvelop->f_rcpt_to, tmp_buff, 256)) != MEM_END_OF_FILE) {
+	while ((utmp_len = mem_file_readline(&pentity->penvelope->f_rcpt_to,
+	    tmp_buff, 256)) != MEM_END_OF_FILE) {
 		tmp_buff[utmp_len] = 0;
 		++utmp_len;
 		if (fwrite(tmp_buff, 1, utmp_len, fp) != utmp_len)

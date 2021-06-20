@@ -80,12 +80,12 @@ enum {
 };
 
 //////////////////////////////////////////////////////////////////////////
-struct ENVELOP_INFO {
+struct ENVELOPE_INFO {
     char        parsed_domain[256];/* parsed domain according connection*/
     char        hello_domain[256]; /* domain name after helo */
-	char from[UADDR_SIZE]; /* envelop's from message */
+	char from[UADDR_SIZE]; /* envelope's from message */
 	char username[UADDR_SIZE]; /* user name for login */
-    MEM_FILE    f_rcpt_to;         /* envelop's rcpt to message */
+	MEM_FILE f_rcpt_to; /* envelope's rcpt to message */
     BOOL        is_login;          /* user is logged in */
     BOOL        is_outbound;       /* in-bound or out-bound */
     BOOL        is_relay;           /* indicate whether this mail is relaying */
@@ -114,7 +114,7 @@ struct MAIL_BODY {
 };
 
 struct MAIL_INFO {
-    ENVELOP_INFO    envelop;
+	ENVELOPE_INFO envelope;
     MAIL_HEAD       head;
     MAIL_BODY       body;
 };
@@ -191,5 +191,5 @@ const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
 extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
-void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);
+extern void smtp_parser_reset_context_envelope(SMTP_CONTEXT *);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);

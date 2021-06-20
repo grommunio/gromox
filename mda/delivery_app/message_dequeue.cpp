@@ -302,10 +302,8 @@ static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
 	int z;
 	memcpy(&z, in_buff + sizeof(size_t) + 2 * sizeof(int) + pmessage->mail_length, sizeof(int));
 	pmessage->is_spam = z;
-	pmessage->envelop_from = deconst(in_buff) + sizeof(size_t) + 3*sizeof(int) +
-                         	 pmessage->mail_length;
-	pmessage->envelop_rcpt = pmessage->envelop_from +
-							 strlen(pmessage->envelop_from) + 1;
+	pmessage->envelope_from = deconst(in_buff) + sizeof(size_t) + 3*sizeof(int) + pmessage->mail_length;
+	pmessage->envelope_rcpt = pmessage->envelope_from + strlen(pmessage->envelope_from) + 1;
 }
 
 /*
@@ -347,8 +345,7 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 	pmessage->begin_address = NULL;
 	pmessage->mail_begin = NULL;
 	pmessage->mail_length = 0;
-	pmessage->envelop_from = NULL;
-	pmessage->envelop_rcpt = NULL;
+	pmessage->envelope_from = pmessage->envelope_rcpt = nullptr;
 	return pmessage;
 }
 
@@ -556,9 +553,9 @@ void message_dequeue_save(MESSAGE *pmessage)
 			return;
 		}
 		write(fd, pmessage->begin_address, pmessage->mail_length + 4*sizeof(int));
-		len = strlen(pmessage->envelop_from);
-		write(fd, pmessage->envelop_from, len + 1);
-		ptr = pmessage->envelop_rcpt;
+		len = strlen(pmessage->envelope_from);
+		write(fd, pmessage->envelope_from, len + 1);
+		ptr = pmessage->envelope_rcpt;
 		while ((len = strlen(ptr)) != 0) {
 			len ++;
 			write(fd, ptr, len);

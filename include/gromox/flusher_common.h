@@ -14,12 +14,12 @@
 #define FLUSH_TEMP_FAIL             2
 #define FLUSH_PERMANENT_FAIL        3
 
-struct ENVELOP_INFO {
+struct ENVELOPE_INFO {
     char        parsed_domain[256];/* parsed domain according connection*/
     char        hello_domain[256]; /* domain name after helo */
-	char from[UADDR_SIZE]; /* envelop's from message */
+	char from[UADDR_SIZE]; /* envelope's from message */
 	char username[UADDR_SIZE]; /* user name for login */
-    MEM_FILE    f_rcpt_to;         /* envelop's rcpt to message */
+	MEM_FILE f_rcpt_to; /* envelope's rcpt to message */
 	BOOL        is_login;          /* user is logged in */
     BOOL        is_outbound;       /* in-bound or out-bound */
     BOOL        is_relay;          /* indicate whether this mail is relaying */
@@ -45,7 +45,7 @@ struct FLUSH_ENTITY {
     STREAM           *pstream; 
     CONNECTION       *pconnection;
     FLUSH_INFO       *pflusher; /* the flusher for saving mail information */
-    ENVELOP_INFO     *penvelop;
+	ENVELOPE_INFO *penvelope;
     BOOL             is_spam;   /* whether the mail is spam */
     int              context_ID;
 };

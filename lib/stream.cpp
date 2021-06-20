@@ -63,7 +63,7 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
  *	  @param
  *		  pstream [in]	  indicate the stream object
  *	  @return
- *		  STREAM_LINE_FAIL		  mail envelop lines overflow the first buffer	
+ *		  STREAM_LINE_FAIL		  mail envelope lines overflow the first buffer	
  *								  of stream
  *		  STREAM_LINE_AVAILABLE	  line is available
  *		  STREAM_LINE_UNAVAILABLE no line is available

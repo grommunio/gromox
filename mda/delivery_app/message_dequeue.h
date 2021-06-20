@@ -33,8 +33,7 @@ struct MESSAGE {
 	size_t				size;				/* size of allocated buffer */
 	void				*mail_begin;		/* mail begin address */
 	size_t				mail_length;		/* mail length */
-	char				*envelop_from;		/* envelop mail from */
-	char				*envelop_rcpt;		/* envelop rcpt to */
+	char *envelope_from, *envelope_rcpt;
 };
 
 extern void message_dequeue_init(const char *path, size_t max_memory);

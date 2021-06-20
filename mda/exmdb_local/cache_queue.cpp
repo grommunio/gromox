@@ -172,7 +172,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 			fprintf(stderr, "W-1356: remove %s: %s\n", file_name, strerror(errno));
         return -1;
     }
-	/* write envelop from */
+	/* write envelope from */
     temp_len = strlen(pcontext->pcontrol->from);
     temp_len ++;
     if (temp_len != write(fd, pcontext->pcontrol->from, temp_len)) {
@@ -181,7 +181,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 			fprintf(stderr, "W-1357: remove %s: %s\n", file_name, strerror(errno));
         return -1;
     }
-	/* write envelop rcpt */
+	/* write envelope rcpt */
 	temp_len = strlen(rcpt_to) + 1;
 	if (temp_len != write(fd, rcpt_to, temp_len)) {
 		close(fd);

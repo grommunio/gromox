@@ -23,7 +23,7 @@ struct FLUSH_ENTITY {
 	CONNECTION       *pconn;
 	FLUSH_INFO       *pflusher;     /* the flusher for saving mail 
 										information */
-	ENVELOP_INFO     *penvelop;
+	ENVELOPE_INFO *penvelope;
 	BOOL             is_spam;       /* whether the mail is spam */
 	int              context_ID;
 	SMTP_CONTEXT     *pcontext;     /* put at the last of the structure */
@@ -178,7 +178,7 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext)
 	
 	pentity->is_spam        = pcontext->is_spam;
 	pentity->pconn          = &pcontext->connection;
-	pentity->penvelop       = &pcontext->mail.envelop;
+	pentity->penvelope      = &pcontext->mail.envelope;
 	pentity->pflusher       = &pcontext->flusher;
 	pentity->pstream        = &pcontext->stream;
 	pentity->context_ID     = pcontext->context_id;
@@ -223,7 +223,7 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 	}   
 	entity.is_spam      = pcontext->is_spam;
 	entity.pconn        = &pcontext->connection;
-	entity.penvelop     = &pcontext->mail.envelop;
+	entity.penvelope    = &pcontext->mail.envelope;
 	entity.pflusher     = &pcontext->flusher;
 	entity.pstream      = &pcontext->stream;
 
