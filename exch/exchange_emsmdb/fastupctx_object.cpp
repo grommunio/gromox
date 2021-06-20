@@ -38,6 +38,7 @@ std::unique_ptr<FASTUPCTX_OBJECT> fastupctx_object_create(
 	try {
 		pctx = std::make_unique<FASTUPCTX_OBJECT>();
 	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1451: ENOMEM\n");
 		return NULL;
 	}
 	pctx->pobject = pobject;
@@ -73,7 +74,6 @@ FASTUPCTX_OBJECT::~FASTUPCTX_OBJECT()
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	ftstream_parser_free(pctx->pstream);
 	if (NULL != pctx->pproplist) {
 		tpropval_array_free(pctx->pproplist);
 	}
@@ -1007,11 +1007,9 @@ gxerr_t fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
 	if (TRUE == pctx->b_ended) {
 		return GXERR_CALL_FAILED;
 	}
-	if (FALSE == ftstream_parser_write_buffer(
-		pctx->pstream, ptransfer_data)) {
+	if (!ftstream_parser_write_buffer(pctx->pstream.get(), ptransfer_data))
 		return GXERR_CALL_FAILED;
-	}
-	return ftstream_parser_process(pctx->pstream,
+	return ftstream_parser_process(pctx->pstream.get(),
 	       fastupctx_object_record_marker,
 	       fastupctx_object_record_propval, pctx);
 }

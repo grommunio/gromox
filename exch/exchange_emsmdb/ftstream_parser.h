@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 #include "logon_object.h"
@@ -8,15 +10,15 @@ typedef gxerr_t (*RECORD_MARKER)(FASTUPCTX_OBJECT *, uint32_t);
 typedef gxerr_t (*RECORD_PROPVAL)(FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
 
 struct FTSTREAM_PARSER {
-	int fd;
-	uint32_t offset;
-	uint32_t st_size;
-	char path[256];
-	LOGON_OBJECT *plogon;	/* plogon is a protected member */
+	~FTSTREAM_PARSER();
+
+	int fd = -1;
+	uint32_t offset = 0, st_size = 0;
+	std::string path;
+	LOGON_OBJECT *plogon = nullptr; /* plogon is a protected member */
 };
 
-FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon);
-void ftstream_parser_free(FTSTREAM_PARSER *pstream);
+extern std::unique_ptr<FTSTREAM_PARSER> ftstream_parser_create(LOGON_OBJECT *);
 BOOL ftstream_parser_write_buffer(
 	FTSTREAM_PARSER *pstream,
 	const BINARY *ptransfer_data);

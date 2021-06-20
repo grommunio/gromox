@@ -12,7 +12,7 @@
 struct FASTUPCTX_OBJECT final {
 	~FASTUPCTX_OBJECT();
 
-	FTSTREAM_PARSER *pstream = nullptr;
+	std::unique_ptr<FTSTREAM_PARSER> pstream;
 	void *pobject = nullptr;
 	BOOL b_ended = false;
 	int root_element = 0;

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
 #include "ftstream_parser.h"
 #include "rop_processor.h"
 #include <gromox/defs.h>
@@ -15,6 +18,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstdio>
+
+using namespace std::string_literals;
 
 enum {
 	FTSTREAM_PARSER_READ_FAIL = -1,
@@ -874,39 +879,37 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 	}
 }
 
-FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
+std::unique_ptr<FTSTREAM_PARSER> ftstream_parser_create(LOGON_OBJECT *plogon) try
 {
 	int stream_id;
-	char path[256];
 	
 	stream_id = common_util_get_ftstream_id();
 	auto rpc_info = get_rpc_info();
-	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
-	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1428: mkdir %s: %s\n", path, strerror(errno));
+	auto path = rpc_info.maildir + "/tmp/faststream"s;
+	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1428: mkdir %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	auto pstream = me_alloc<FTSTREAM_PARSER>();
-	if (NULL == pstream) {
-		return NULL;
-	}
+	auto pstream = std::make_unique<FTSTREAM_PARSER>();
 	pstream->offset = 0;
 	pstream->st_size = 0;
-	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
-	pstream->fd = open(pstream->path, O_CREAT | O_RDWR | O_TRUNC, 0666);
+	pstream->path = std::move(path) + "/" + std::to_string(stream_id) + "." + get_host_ID();
+	pstream->fd = open(pstream->path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
 	if (-1 == pstream->fd) {
-		fprintf(stderr, "E-1429: open %s: %s\n", pstream->path, strerror(errno));
-		free(pstream);
+		fprintf(stderr, "E-1429: open %s: %s\n", pstream->path.c_str(), strerror(errno));
 		return NULL;
 	}
 	pstream->plogon = plogon;
 	return pstream;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1450: ENOMEM\n");
+	return nullptr;
 }
 
-void ftstream_parser_free(FTSTREAM_PARSER *pstream)
+FTSTREAM_PARSER::~FTSTREAM_PARSER()
 {
+	auto pstream = this;
 	close(pstream->fd);
-	if (remove(pstream->path) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1392: remove %s: %s\n", pstream->path, strerror(errno));
-	free(pstream);
+	if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1392: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
 }
