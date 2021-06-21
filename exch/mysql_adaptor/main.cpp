@@ -47,7 +47,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 				config_file_set_value(pfile, "CONNECTION_NUM", "8");
 			}
 		}
-		printf("[mysql_adaptor]: mysql connection number is %d\n", conn_num);
 
 		str_value = config_file_get_value(pfile, "MYSQL_HOST");
 		if (NULL == str_value) {
@@ -68,8 +67,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 				config_file_set_value(pfile, "MYSQL_PORT", "3306");
 			}
 		}
-		printf("[mysql_adaptor]: mysql address is [%s]:%d\n",
-		       *mysql_host == '\0' ? "*" : mysql_host, mysql_port);
 
 		str_value = config_file_get_value(pfile, "MYSQL_USERNAME");
 		gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
@@ -81,7 +78,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		} else {
 			gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 		}
-		printf("[mysql_adaptor]: mysql database name is %s\n", db_name);
 
 		str_value = config_file_get_value(pfile, "MYSQL_RDWR_TIMEOUT");
 		if (NULL == str_value) {
@@ -92,10 +88,9 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 				timeout = 0;
 			}
 		}
-		if (timeout > 0) {
-			printf("[mysql_adaptor]: mysql read write timeout is %d\n",
-				timeout);
-		}
+		printf("[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
+		       *mysql_host == '\0' ? "*" : mysql_host, mysql_port,
+		       conn_num, timeout, db_name);
 
 		str_value = config_file_get_value(pfile, "schema_upgrades");
 		enum sql_schema_upgrade upg = S_SKIP;
