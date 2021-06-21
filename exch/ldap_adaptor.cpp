@@ -204,13 +204,10 @@ static bool ldap_adaptor_load()
 		if (conn_num == 0)
 			conn_num = 1;
 	}
-	printf("[ldap_adaptor]: using up to %d connections\n", 2 * conn_num);
 
 	val = config_file_get_value(pfile, "ldap_host");
 	g_ldap_host = val != nullptr ? val : "";
 	g_use_tls = parse_bool(config_file_get_value(pfile, "ldap_start_tls"));
-	printf("[ldap_adaptor]: hostlist is \"%s\"%s\n", g_ldap_host.c_str(),
-	       g_use_tls ? " (+STARTTLS)" : "");
 
 	val = config_file_get_value(pfile, "ldap_bind_user");
 	if (val != nullptr)
@@ -221,7 +218,12 @@ static bool ldap_adaptor_load()
 
 	val = config_file_get_value(pfile, "ldap_mail_attr");
 	g_mail_attr = val != nullptr ? val : "mail";
-	printf("[ldap_adaptor]: ldap mail attribute is \"%s\"\n", g_mail_attr.c_str());
+
+	val = config_file_get_value(pfile, "ldap_search_base");
+	g_search_base = val != nullptr ? val : "";
+	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
+	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
+	       g_search_base.c_str(), 2 * conn_num, g_mail_attr.c_str());
 
 	for (unsigned int i = 0; i < conn_num; ++i) {
 		twoconn ld;
@@ -235,8 +237,6 @@ static bool ldap_adaptor_load()
 	}
 	g_conn_pool.resize(conn_num);
 
-	val = config_file_get_value(pfile, "ldap_search_base");
-	g_search_base = val != nullptr ? val : "";
 	if (g_search_base.size() == 0 && !ldap_adaptor_load_base()) {
 		return false;
 	}
