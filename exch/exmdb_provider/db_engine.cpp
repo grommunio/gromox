@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
@@ -98,7 +99,7 @@ static std::atomic<bool> g_notify_stop{false}; /* stop signal for scaning thread
 static pthread_t g_scan_tid;
 static uint64_t g_mmap_size;
 static int g_cache_interval;	/* maximum living interval in table */
-static pthread_t *g_thread_ids;
+static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, DB_ITEM> g_hash_table;
@@ -755,6 +756,7 @@ void db_engine_init(size_t table_size, int cache_interval,
 	g_wal = b_wal;
 	g_mmap_size = mmap_size;
 	g_threads_num = threads_num;
+	g_thread_ids.reserve(g_threads_num);
 	double_list_init(&g_populating_list);
 	double_list_init(&g_populating_list1);
 }
@@ -763,12 +765,6 @@ int db_engine_run()
 {
 	int i;
 	
-	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
-	if (NULL == g_thread_ids) {
-		printf("[exmdb_provider]: Failed to allocate"
-			" populating thread id buffer\n");
-		return -1;
-	}
 	if (SQLITE_OK != sqlite3_config(SQLITE_CONFIG_MULTITHREAD)) {
 		printf("[exmdb_provider]: warning! fail to change"
 			" to multiple thread mode for sqlite engine\n");
@@ -793,6 +789,7 @@ int db_engine_run()
 		if (ret != 0) {
 			g_threads_num = i;
 			printf("[exmdb_provider]: E-1448: pthread_create: %s\n", strerror(ret));
+			db_engine_stop();
 			return -5;
 		}
 		char buf[32];
@@ -818,10 +815,7 @@ int db_engine_stop()
 			pthread_join(g_thread_ids[i], NULL);
 		}
 	}
-	if (NULL != g_thread_ids) {
-		free(g_thread_ids);
-		g_thread_ids = NULL;
-	}
+	g_thread_ids.clear();
 	g_hash_table.clear();
 	while ((pnode = double_list_pop_front(&g_populating_list)) != nullptr) {
 		psearch = (POPULATING_NODE*)pnode->pdata;
