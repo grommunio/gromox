@@ -278,30 +278,65 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exmdb_provider]: failed to run bounce producer\n");
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 		if (0 != db_engine_run()) {
 			printf("[exmdb_provider]: failed to run db engine\n");
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 		if (0 != exmdb_server_run()) {
 			printf("[exmdb_provider]: failed to run exmdb server\n");
+			db_engine_stop();
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 		if (exmdb_parser_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb parser\n");
+			exmdb_server_stop();
+			db_engine_stop();
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 		if (exmdb_listener_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb listener\n");
+			exmdb_parser_stop();
+			exmdb_server_stop();
+			db_engine_stop();
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 		if (0 != exmdb_listener_trigger_accept()) {
 			printf("[exmdb_provider]: fail to trigger exmdb listener\n");
+			exmdb_listener_stop();
+			exmdb_parser_stop();
+			exmdb_server_stop();
+			db_engine_stop();
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 		if (exmdb_client_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb client\n");
+			exmdb_listener_stop();
+			exmdb_parser_stop();
+			exmdb_server_stop();
+			db_engine_stop();
+			exmdb_server_free();
+			db_engine_free();
+			common_util_free();
 			return FALSE;
 		}
 
