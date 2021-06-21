@@ -103,8 +103,10 @@ int service_run()
 {
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = service_load_library(*i);
-		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK) {
+			service_stop();
 			return -1;
+		}
 	}
 	return 0;
 }
