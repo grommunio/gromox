@@ -30,16 +30,6 @@ void common_util_init()
 	pthread_key_create(&g_ctx_key, NULL);
 }
 
-int common_util_run()
-{
-	return 0;
-}
-
-int common_util_stop()
-{
-	return 0;
-}
-
 void common_util_free()
 {
 	pthread_key_delete(g_ctx_key);

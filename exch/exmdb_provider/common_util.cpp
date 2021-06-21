@@ -240,16 +240,6 @@ void common_util_init(const char *org_name, uint32_t max_msg,
 	pthread_key_create(&g_opt_key, NULL);
 }
 
-int common_util_run()
-{
-	return 0;
-}
-
-int common_util_stop()
-{
-	return 0;
-}
-
 void common_util_free()
 {
 	pthread_key_delete(g_var_key);

@@ -276,10 +276,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		exmdb_listener_init(listen_ip, listen_port);
 		exmdb_client_init(connection_num, threads_num);
 		
-		if (0 != common_util_run()) {
-			printf("[exmdb_provider]: failed to run common util\n");
-			return FALSE;
-		}
 		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exmdb_provider]: failed to run bounce producer\n");
 			return FALSE;
@@ -329,7 +325,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		exmdb_parser_stop();
 		exmdb_server_stop();
 		db_engine_stop();
-		common_util_stop();
 		exmdb_server_free();
 		db_engine_free();
 		common_util_free();

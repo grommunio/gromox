@@ -391,11 +391,6 @@ int main(int argc, const char **argv)
 		return 4;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
-	if (0 != common_util_run()) {
-		printf("[system]: failed to run common util\n");
-		return 5;
-	}
-	auto cl_2 = make_scope_exit(common_util_stop);
 	if (listener_run(config_path) != 0) {
 		printf("[system]: failed to run tcp listener\n");
 		return 6;

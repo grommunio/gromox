@@ -8,8 +8,6 @@
 #define MAX_DIGLEN											256*1024
 
 extern void common_util_init();
-extern int common_util_run();
-extern int common_util_stop();
 extern void common_util_free();
 BOOL common_util_build_environment(const char *maildir);
 extern void common_util_free_environment();
