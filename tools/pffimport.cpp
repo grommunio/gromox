@@ -77,13 +77,18 @@ struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpf
 struct libpff_noop_del { void operator()(void *x) { } };
 
 enum {
+	NID_TYPE_NORMAL_FOLDER = 0x2,
 	NID_TYPE_NORMAL_MESSAGE = 0x4,
 	NID_TYPE_ASSOC_MESSAGE = 0x8,
 	NID_TYPE_MASK = 0x1F,
 };
 
+enum {
+	NID_ROOT_FOLDER = 0x120 | NID_TYPE_NORMAL_FOLDER,
+};
+
 struct parent_desc {
-	enum mapi_object_type type;
+	enum mapi_object_type type = MAPI_STORE; /* here: pseudo-value for "unset" */
 	union {
 		void *unknown = nullptr;
 		uint64_t folder_id;
@@ -111,6 +116,12 @@ struct parent_desc {
 	}
 };
 
+struct tgt_folder {
+	bool create = false;
+	uint64_t fid_to = 0;
+	std::string create_name;
+};
+
 }
 
 using namespace std::string_literals;
@@ -124,6 +135,7 @@ using libpff_record_entry_ptr = std::unique_ptr<libpff_record_entry_t, libpff_re
 using libpff_multi_value_ptr  = std::unique_ptr<libpff_multi_value_t, libpff_multi_value_del>;
 using libpff_nti_entry_ptr    = std::unique_ptr<libpff_name_to_id_map_entry_t, libpff_noop_del>;
 
+static std::unordered_map<uint32_t, tgt_folder> g_folder_map;
 static std::unordered_map<uint16_t, uint16_t> g_propname_cache;
 static char *g_username;
 static std::string g_storedir_s, g_root_name;
@@ -875,8 +887,8 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 
 /* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
 static int do_item2(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item, unsigned int item_type, uint32_t ident,
-    int nsets, uint64_t *new_fld_id)
+    libpff_item_t *item, unsigned int item_type, uint32_t ident, int nsets,
+    uint64_t *new_fld_id)
 {
 	std::unique_ptr<TPROPVAL_ARRAY, afree> props(tpropval_array_init());
 	if (props == nullptr) {
@@ -913,20 +925,29 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	}
 
 	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_FOLDER) {
-		/*
-		 * @depth is the display depth/indent, not the folder nesting
-		 * level, hence testing for 1 (not 0).
-		 */
-		if (depth == 1 &&
-		    !tpropval_array_set_propval(props.get(),
-		    PR_DISPLAY_NAME, g_root_name.c_str())) {
-			fprintf(stderr, "tpropval: ENOMEM\n");
-			return -ENOMEM;
+		auto iter = g_folder_map.find(ident);
+		if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
+			/* PST folder with name -> new folder in store */
+			auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
+			if (ret < 0)
+				return ret;
+		} else if (iter == g_folder_map.end()) {
+			/* No @parent for writing the item anywhere, and no hints in map => do not create. */
+		} else if (!iter->second.create) {
+			/* Splice request (e.g. PST wastebox -> Store wastebox) */
+			*new_fld_id = iter->second.fid_to;
+		} else {
+			/* Create request (e.g. PST root without name -> new folder in store with name) */
+			if (!tpropval_array_set_propval(props.get(), PR_DISPLAY_NAME,
+			    iter->second.create_name.c_str())) {
+				fprintf(stderr, "tpropval: ENOMEM\n");
+				return -ENOMEM;
+			}
+			auto ret = exm_create_folder(depth, iter->second.fid_to,
+			           props.get(), new_fld_id);
+			if (ret < 0)
+				return ret;
 		}
-		assert(parent.type == MAPI_FOLDER);
-		auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
-		if (ret < 0)
-			return ret;
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		std::unique_ptr<ATTACHMENT_CONTENT, afree> atc(attachment_content_init());
 		if (atc == nullptr) {
@@ -1004,7 +1025,8 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			tree(depth);
 			tlog("filename=\"%s\"\n", name.c_str());
 		}
-	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER &&
+	    (parent.type == MAPI_FOLDER || *new_fld_id != 0)) {
 		printf("Processing folder \"%s\"...\n", name.c_str());
 	}
 
@@ -1095,7 +1117,10 @@ static int do_file(const char *filename) try
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
 	strftime(timebuf, GX_ARRAY_SIZE(timebuf), " @%FT%T", tm);
-	g_root_name = "Import of "s + HX_basename(filename) + timebuf;
+
+	g_folder_map.clear();
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+		"Import of "s + HX_basename(filename) + timebuf});
 
 	libpff_item_ptr root;
 
@@ -1109,7 +1134,7 @@ static int do_file(const char *filename) try
 		printf("%s: Special section NID_MESSAGE_STORE is available.\n", filename);
 		auto saved_wet = g_wet_run;
 		g_wet_run = false;
-		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
+		do_item(0, {}, root.get());
 		g_wet_run = saved_wet;
 	}
 	if (libpff_file_get_name_to_id_map(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
@@ -1122,13 +1147,13 @@ static int do_file(const char *filename) try
 		printf("%s: Special section NID_NAME_TO_ID_MAP is available.\n", filename);
 		auto saved_wet = g_wet_run;
 		g_wet_run = false;
-		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
+		do_item(0, {}, root.get());
 		g_wet_run = saved_wet;
 	}
 
 	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
-	return do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
+	return do_item(0, {}, root.get());
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);
 	return -ECANCELED;
