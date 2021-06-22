@@ -14,6 +14,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <libpff.h>
 #include <mysql.h>
@@ -73,6 +74,7 @@ struct libpff_item_del { void operator()(libpff_item_t *x) { libpff_item_free(&x
 struct libpff_record_set_del { void operator()(libpff_record_set_t *x) { libpff_record_set_free(&x, nullptr); } };
 struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) { libpff_record_entry_free(&x, nullptr); } };
 struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpff_multi_value_free(&x, nullptr); } };
+struct libpff_noop_del { void operator()(void *x) { } };
 
 enum {
 	NID_TYPE_NORMAL_MESSAGE = 0x4,
@@ -120,7 +122,9 @@ using libpff_item_ptr         = std::unique_ptr<libpff_item_t, libpff_item_del>;
 using libpff_record_set_ptr   = std::unique_ptr<libpff_record_set_t, libpff_record_set_del>;
 using libpff_record_entry_ptr = std::unique_ptr<libpff_record_entry_t, libpff_record_entry_del>;
 using libpff_multi_value_ptr  = std::unique_ptr<libpff_multi_value_t, libpff_multi_value_del>;
+using libpff_nti_entry_ptr    = std::unique_ptr<libpff_name_to_id_map_entry_t, libpff_noop_del>;
 
+static std::unordered_map<uint16_t, uint16_t> g_propname_cache;
 static char *g_username;
 static std::string g_storedir_s, g_root_name;
 static const char *g_storedir;
@@ -520,6 +524,71 @@ static int exm_connect(const char *dir)
 	return -1;
 }
 
+static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
+{
+	auto it = g_propname_cache.find(proptag);
+	if (it != g_propname_cache.end()) {
+		proptag = PROP_TAG(PROP_TYPE(proptag), it->second);
+		return 0;
+	}
+
+	libpff_nti_entry_ptr nti_entry;
+	uint8_t nti_type = 0;
+	if (libpff_record_entry_get_name_to_id_map_entry(rent, &unique_tie(nti_entry), nullptr) < 1)
+		return 0;
+	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
+		return 0;
+
+	std::unique_ptr<char[]> pnstr;
+	PROPERTY_NAME pn_req{};
+	PROPNAME_ARRAY pna_req;
+	pna_req.count = 1;
+	pna_req.ppropname = &pn_req;
+
+	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
+	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
+		return 0;
+
+	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
+		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
+			return -EIO;
+		pn_req.kind = MNID_ID;
+	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
+		size_t dsize = 0;
+		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
+			return 0;
+		try {
+			pnstr = std::make_unique<char[]>(dsize + 1);
+		} catch (const std::bad_alloc &) {
+			return -ENOMEM;
+		}
+		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
+			return -EIO;
+		pn_req.kind = MNID_STRING;
+		pn_req.pname = pnstr.get();
+	} else {
+		fprintf(stderr, "PF-1046: unable to handle libpff propname type %xh\n", nti_type);
+		return -EOPNOTSUPP;
+	}
+
+	PROPID_ARRAY pid_rsp{};
+	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp)) {
+		fprintf(stderr, "PF-1047: request to server for propname mapping failed\n");
+		return -EIO;
+	}
+	if (pid_rsp.count != 1) {
+		fprintf(stderr, "PF-1048\n");
+		return -EIO;
+	}
+	try {
+		g_propname_cache.emplace(PROP_ID(proptag), pid_rsp.ppropid[0]);
+	} catch (const std::bad_alloc &) {
+		return -ENOMEM;
+	}
+	proptag = PROP_TAG(PROP_TYPE(proptag), pid_rsp.ppropid[0]);
+	return 0;
+}
+
 static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
 {
 	libpff_multi_value_ptr mv;
@@ -536,6 +605,9 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
+	auto ret = az_resolve_inplace(rent, pv.proptag);
+	if (ret < 0)
+		return ret;
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
 	if (dsize == 0)
 		buf[0] = '\0';
@@ -1016,6 +1088,7 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
+	g_propname_cache.clear();
 	if (g_wet_run)
 		fprintf(stderr, "Transferring objects...\n");
 	char timebuf[64];
