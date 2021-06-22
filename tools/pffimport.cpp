@@ -1039,6 +1039,19 @@ static int do_file(const char *filename) try
 		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
 		g_wet_run = saved_wet;
 	}
+	if (libpff_file_get_name_to_id_map(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
+		printf("PF-1044: %s contains no NID_NAME_TO_ID_MAP\n", filename);
+		az_error("PF-1042", err);
+	} else if (root == nullptr) {
+		printf("PF-1045: %s contains no NID_NAME_TO_ID_MAP\n", filename);
+		az_error("PF-1043", err);
+	} else if (g_show_tree) {
+		printf("%s: Special section NID_NAME_TO_ID_MAP is available.\n", filename);
+		auto saved_wet = g_wet_run;
+		g_wet_run = false;
+		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
+		g_wet_run = saved_wet;
+	}
 
 	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
