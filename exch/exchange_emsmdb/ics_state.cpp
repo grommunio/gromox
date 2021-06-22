@@ -7,8 +7,9 @@
 #include <cstdlib>
 #include <cstring>
 
-static void ics_state_clear(ICS_STATE *pstate)
+ICS_STATE::~ICS_STATE()
 {
+	auto pstate = this;
 	if (NULL != pstate->pgiven) {
 		idset_free(pstate->pgiven);
 		pstate->pgiven = NULL;
@@ -27,101 +28,85 @@ static void ics_state_clear(ICS_STATE *pstate)
 	}
 }
 
-ICS_STATE* ics_state_create(LOGON_OBJECT *plogon, int type)
+std::unique_ptr<ICS_STATE> ics_state_create(LOGON_OBJECT *plogon, int type)
 {
+	std::unique_ptr<ICS_STATE> pstate;
 	BINARY tmp_bin;
-	
-	auto pstate = me_alloc<ICS_STATE>();
-	if (NULL == pstate) {
+	try {
+		pstate = std::make_unique<ICS_STATE>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	memset(pstate, 0, sizeof(ICS_STATE));
 	tmp_bin.cb = sizeof(void*);
 	tmp_bin.pv = &plogon;
 	pstate->pseen = idset_init(TRUE, REPL_TYPE_GUID);
 	if (NULL == pstate->pseen) {
-		ics_state_free(pstate);
 		return NULL;
 	}
 	if (FALSE == idset_register_mapping(pstate->pseen,
 		&tmp_bin, common_util_mapping_replica)) {
-		ics_state_free(pstate);
 		return NULL;
 	}
 	switch (type) {
 	case ICS_STATE_CONTENTS_DOWN:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pgiven,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pseen_fai,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pread,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		break;
 	case ICS_STATE_HIERARCHY_DOWN:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pgiven,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		break;
 	case ICS_STATE_CONTENTS_UP:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pgiven,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pseen_fai,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		if (FALSE == idset_register_mapping(pstate->pread,
 			&tmp_bin, common_util_mapping_replica)) {
-			ics_state_free(pstate);
 			return NULL;
 		}
 		break;
@@ -130,12 +115,6 @@ ICS_STATE* ics_state_create(LOGON_OBJECT *plogon, int type)
 	}
 	pstate->type = type;
 	return pstate;
-}
-
-void ics_state_free(ICS_STATE *pstate)
-{
-	ics_state_clear(pstate);
-	free(pstate);
 }
 
 BOOL ics_state_append_idset(ICS_STATE *pstate,

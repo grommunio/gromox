@@ -13,7 +13,7 @@ struct ICSDOWNCTX_OBJECT final {
 	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
 	uint8_t sync_type = 0;
 	FOLDER_OBJECT *pfolder = nullptr;
-	ICS_STATE *pstate = nullptr; /* public member */
+	std::unique_ptr<ICS_STATE> pstate; /* public member */
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;

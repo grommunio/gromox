@@ -699,7 +699,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			return FALSE;
 		}
 	}
-	pproplist_state = ics_state_serialize(pctx->pstate);
+	pproplist_state = ics_state_serialize(pctx->pstate.get());
 	if (NULL == pproplist_state) {
 		if (NULL != pproplist_deletions) {
 			rop_util_free_binary(pbin);
@@ -744,7 +744,7 @@ BOOL icsdownctx_object_make_sync(ICSDOWNCTX_OBJECT *pctx)
 
 ICS_STATE* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 {
-	return pctx->pstate;
+	return pctx->pstate.get();
 }
 
 static BOOL icsdownctx_object_extract_msgctntinfo(
@@ -1564,7 +1564,7 @@ static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
 			}
 		}
 	}
-	pproplist = ics_state_serialize(pctx->pstate);
+	pproplist = ics_state_serialize(pctx->pstate.get());
 	if (NULL == pproplist) {
 		return FALSE;
 	}
@@ -1723,9 +1723,6 @@ ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 	if (NULL != pctx->punread_messags) {
 		eid_array_free(pctx->punread_messags);
 	}
-	if (NULL != pctx->pstate) {
-		ics_state_free(pctx->pstate);
-	}
 	if (0 != pctx->state_property) {
 		mem_file_free(&pctx->f_state_stream);
 	}
@@ -1820,8 +1817,7 @@ BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx)
 		idset_free(pset);
 		return FALSE;
 	}
-	if (FALSE == ics_state_append_idset(
-		pctx->pstate, state_property, pset)) {
+	if (!ics_state_append_idset(pctx->pstate.get(), state_property, pset)) {
 		idset_free(pset);
 		return FALSE;
 	}
