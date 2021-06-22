@@ -142,7 +142,7 @@ BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx)
 		idset_free(pset);
 		return FALSE;
 	}
-	if (!ics_state_append_idset(pctx->pstate.get(), state_property, pset)) {
+	if (!pctx->pstate->append_idset(state_property, pset)) {
 		idset_free(pset);
 		return FALSE;
 	}

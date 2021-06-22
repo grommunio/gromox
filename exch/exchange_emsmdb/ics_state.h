@@ -12,6 +12,8 @@ enum {
 
 struct ICS_STATE {
 	~ICS_STATE();
+	BOOL append_idset(uint32_t state_property, IDSET *);
+	TPROPVAL_ARRAY *serialize();
 
 	int type = 0;
 	IDSET *pgiven = nullptr, *pseen = nullptr, *pseen_fai = nullptr;
@@ -19,6 +21,3 @@ struct ICS_STATE {
 };
 
 std::unique_ptr<ICS_STATE> ics_state_create(LOGON_OBJECT *, int type);
-BOOL ics_state_append_idset(ICS_STATE *pstate,
-	uint32_t state_property, IDSET *pset);
-TPROPVAL_ARRAY* ics_state_serialize(ICS_STATE *pstate);

@@ -117,9 +117,9 @@ std::unique_ptr<ICS_STATE> ics_state_create(LOGON_OBJECT *plogon, int type)
 	return pstate;
 }
 
-BOOL ics_state_append_idset(ICS_STATE *pstate,
-	uint32_t state_property, IDSET *pset)
+BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
 {
+	auto pstate = this;
 	switch (state_property) {
 	case META_TAG_IDSETGIVEN:
 	case META_TAG_IDSETGIVEN1:
@@ -169,8 +169,9 @@ BOOL ics_state_append_idset(ICS_STATE *pstate,
 	return FALSE;
 }
 
-TPROPVAL_ARRAY* ics_state_serialize(ICS_STATE *pstate)
+TPROPVAL_ARRAY *ICS_STATE::serialize()
 {
+	auto pstate = this;
 	BINARY *pbin;
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;

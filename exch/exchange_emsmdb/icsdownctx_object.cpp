@@ -330,7 +330,6 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	TPROPVAL_ARRAY tmp_proplist;
 	static constexpr uint8_t fake_byte = 0;
 	PERSISTDATA_ARRAY persistdatas;
-	TPROPVAL_ARRAY *pproplist_state;
 	TPROPVAL_ARRAY *pproplist_deletions;
 	
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
@@ -699,7 +698,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			return FALSE;
 		}
 	}
-	pproplist_state = ics_state_serialize(pctx->pstate.get());
+	auto pproplist_state = pctx->pstate->serialize();
 	if (NULL == pproplist_state) {
 		if (NULL != pproplist_deletions) {
 			rop_util_free_binary(pbin);
@@ -1527,8 +1526,6 @@ static BOOL icsdownctx_object_write_readstate_changes(
 /* only be called under content sync */
 static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
 {
-	TPROPVAL_ARRAY *pproplist;
-	
 	idset_clear(pctx->pstate->pseen);
 	if (pctx->sync_flags & SYNC_FLAG_NORMAL) {
 		if (0 != pctx->last_changenum) {
@@ -1564,7 +1561,7 @@ static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
 			}
 		}
 	}
-	pproplist = ics_state_serialize(pctx->pstate.get());
+	auto pproplist = pctx->pstate->serialize();
 	if (NULL == pproplist) {
 		return FALSE;
 	}
@@ -1817,7 +1814,7 @@ BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx)
 		idset_free(pset);
 		return FALSE;
 	}
-	if (!ics_state_append_idset(pctx->pstate.get(), state_property, pset)) {
+	if (!pctx->pstate->append_idset(state_property, pset)) {
 		idset_free(pset);
 		return FALSE;
 	}

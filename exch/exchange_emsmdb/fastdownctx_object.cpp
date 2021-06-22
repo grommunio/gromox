@@ -226,9 +226,7 @@ BOOL fastdownctx_object_make_attachmentcontent(
 BOOL fastdownctx_object_make_state(
 	FASTDOWNCTX_OBJECT *pctx, ICS_STATE *pstate)
 {
-	TPROPVAL_ARRAY *pproplist;
-	
-	pproplist = ics_state_serialize(pstate);
+	auto pproplist = pstate->serialize();
 	if (NULL == pproplist) {
 		return FALSE;
 	}
