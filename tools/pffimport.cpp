@@ -585,6 +585,8 @@ static int exm_connect(const char *dir)
 
 static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 {
+	if (!g_wet_run)
+		return 0;
 	auto it = g_propname_cache.find(proptag);
 	if (it != g_propname_cache.end()) {
 		proptag = PROP_TAG(PROP_TYPE(proptag), it->second);
