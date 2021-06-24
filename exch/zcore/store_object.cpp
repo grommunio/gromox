@@ -565,16 +565,16 @@ static BOOL store_object_check_readonly_property(
 	case PR_USER_ENTRYID:
 	case PROP_TAG_VALIDFOLDERMASK:
 	case PROP_TAG_HIERARCHYSERVER:
-	case PROP_TAG_FINDERENTRYID:
+	case PR_FINDER_ENTRYID:
 	case PR_IPM_FAVORITES_ENTRYID:
 	case PR_IPM_SUBTREE_ENTRYID:
 	case PR_IPM_OUTBOX_ENTRYID:
 	case PR_IPM_SENTMAIL_ENTRYID:
 	case PR_IPM_WASTEBASKET_ENTRYID:
-	case PROP_TGA_SCHEDULEFOLDERENTRYID:
+	case PR_SCHEDULE_FOLDER_ENTRYID:
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
-	case PROP_TAG_NONIPMSUBTREEENTRYID:
-	case PROP_TAG_EFORMSREGISTRYENTRYID:
+	case PR_NON_IPM_SUBTREE_ENTRYID:
+	case PR_EFORMS_REGISTRY_ENTRYID:
 		return TRUE;
 	}
 	return FALSE;
@@ -609,15 +609,11 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-						PROP_TAG_FINDERENTRYID;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TGA_SCHEDULEFOLDERENTRYID;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_SCHEDULE_FOLDER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_OOF_STATE;
 		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
 		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
@@ -632,11 +628,8 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 						PROP_TAG_HIERARCHYSERVER;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_NONIPMSUBTREEENTRYID;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-				PROP_TAG_EFORMSREGISTRYENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
 		pproptags->count ++;
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if the mail address of a public folder exists. */
@@ -1104,7 +1097,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	}
-	case PROP_TAG_FINDERENTRYID:
+	case PR_FINDER_ENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1165,7 +1158,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TGA_SCHEDULEFOLDERENTRYID:
+	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1175,7 +1168,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_COMMONVIEWSENTRYID:
+	case PR_COMMON_VIEWS_ENTRYID:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1186,7 +1179,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
-	case PROP_TAG_NONIPMSUBTREEENTRYID:
+	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (TRUE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
@@ -1196,7 +1189,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_EFORMSREGISTRYENTRYID:
+	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (TRUE == store_object_check_private(pstore)) {
 			return FALSE;
 		}

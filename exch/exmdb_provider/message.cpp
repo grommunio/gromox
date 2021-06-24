@@ -2897,7 +2897,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_DAMORIGINALENTRYID;
+	propval.proptag = PR_DAM_ORIGINAL_ENTRYID;
 	propval.pvalue = common_util_to_private_message_entryid(
 				psqlite, username, folder_id, message_id);
 	if (NULL == propval.pvalue) {
@@ -2908,7 +2908,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEFOLDERENTRYID;
+	propval.proptag = PR_RULE_FOLDER_ENTRYID;
 	propval.pvalue = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
 	if (NULL == propval.pvalue) {
@@ -3573,7 +3573,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_DAMORIGINALENTRYID;
+	propval.proptag = PR_DAM_ORIGINAL_ENTRYID;
 	propval.pvalue = common_util_to_private_message_entryid(
 					psqlite, username, folder_id, message_id);
 	if (NULL == propval.pvalue) {
@@ -3601,7 +3601,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEFOLDERENTRYID;
+	propval.proptag = PR_RULE_FOLDER_ENTRYID;
 	propval.pvalue = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
 	if (NULL == propval.pvalue) {
