@@ -314,8 +314,7 @@ static int bounce_producer_get_mail_parts(
 	offset = 0;
 	b_first = FALSE;
 	for (i=0; i<pattachments->count; i++) {
-		auto pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist,
-			PROP_TAG_ATTACHLONGFILENAME);
+		auto pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist, PR_ATTACH_LONG_FILENAME);
 		if (NULL == pvalue) {
 			continue;
 		}

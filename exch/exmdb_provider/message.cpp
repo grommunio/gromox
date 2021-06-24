@@ -921,7 +921,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	proptags.count = 1;
-	proptag_buff[0] = PROP_TAG_ATTACHLONGFILENAME;
+	proptag_buff[0] = PR_ATTACH_LONG_FILENAME;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		pattachment = cu_alloc<ATTACHMENT_CONTENT>();

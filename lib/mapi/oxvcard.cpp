@@ -334,12 +334,12 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = &tmp_bin;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			propval.proptag = PROP_TAG_ATTACHEXTENSION;
+			propval.proptag = PR_ATTACH_EXTENSION;
 			propval.pvalue = deconst(photo_type);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
 			sprintf(tmp_buff, "ContactPhoto.%s", photo_type);
-			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -994,7 +994,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		NULL != pmsg->children.pattachments) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
 			pattachment = pmsg->children.pattachments->pplist[i];
-			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHEXTENSION));
+			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_EXTENSION));
 			if (NULL == pvalue) {
 				continue;
 			}

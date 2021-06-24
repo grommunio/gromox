@@ -2201,7 +2201,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.pb = NULL;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHEXTENSION;
+			propval.proptag = PR_ATTACH_EXTENSION;
 			propval.pvalue  = deconst(".URL");
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
@@ -2210,7 +2210,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 				pvalue1 = pvalue;
 			}
 			snprintf(tmp_buff, 256, "%s.url", pvalue1);
-			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
@@ -2325,11 +2325,11 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (NULL == pvalue1) {
 			pvalue1 = ".dat";
 		}
-		propval.proptag = PROP_TAG_ATTACHEXTENSION;
+		propval.proptag = PR_ATTACH_EXTENSION;
 		propval.pvalue = deconst(pvalue1);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+		propval.proptag = PR_ATTACH_LONG_FILENAME;
 		propval.pvalue = deconst(pvalue);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
