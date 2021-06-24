@@ -251,14 +251,16 @@ static const char *az_special_ident(uint32_t nid)
 }
 
 /* Lookup the pff record entry for the given propid */
-static bool az_item_get_record_entry_by_type(libpff_item_t *item, uint16_t propid,
-    libpff_record_set_t **rset, libpff_record_entry_t **rent, uint8_t flags)
+static bool az_item_get_propv(libpff_item_t *item, uint32_t proptag,
+    libpff_record_set_t **rset, libpff_record_entry_t **rent)
 {
 	auto ret = libpff_item_get_record_set_by_index(item, 0, rset, nullptr);
 	if (ret <= 0)
 		return false;
-	ret = libpff_record_set_get_entry_by_type(*rset, propid, 0, rent,
-	      LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE, nullptr);
+	uint8_t flags = PROP_TYPE(proptag) == PT_UNSPECIFIED ?
+	                LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE : 0;
+	ret = libpff_record_set_get_entry_by_type(*rset, PROP_ID(proptag),
+	      PROP_TYPE(proptag), rent, flags, nullptr);
 	if (ret < 0)
 		throw "PF-1001";
 	else if (ret == 0)
@@ -283,9 +285,8 @@ static std::string az_item_get_string_by_propid(libpff_item_t *item, uint16_t pr
 	libpff_record_set_ptr rset;
 	libpff_record_entry_ptr rent;
 
-	auto ret = az_item_get_record_entry_by_type(item, propid,
-	           &unique_tie(rset), &unique_tie(rent),
-	           LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE);
+	auto ret = az_item_get_propv(item, PROP_TAG(PT_UNSPECIFIED, propid),
+	           &unique_tie(rset), &unique_tie(rent));
 	if (ret == 0)
 		return {};
 	size_t dsize = 0;
