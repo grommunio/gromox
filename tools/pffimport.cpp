@@ -280,12 +280,12 @@ static bool is_mapi_message(uint32_t nid)
 }
 
 /* Obtain a string value from a libpff item's property */
-static std::string az_item_get_string_by_propid(libpff_item_t *item, uint16_t propid)
+static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
 {
 	libpff_record_set_ptr rset;
 	libpff_record_entry_ptr rent;
 
-	auto ret = az_item_get_propv(item, PROP_TAG(PT_UNSPECIFIED, propid),
+	auto ret = az_item_get_propv(item, CHANGE_PROP_TYPE(proptag, PT_UNSPECIFIED),
 	           &unique_tie(rset), &unique_tie(rent));
 	if (ret == 0)
 		return {};
@@ -1059,18 +1059,18 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		}
 	}
 
-	auto name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_DISPLAY_NAME);
+	auto name = az_item_get_str(item, PR_DISPLAY_NAME);
 	if (g_show_tree) {
 		if (!name.empty()) {
 			tree(depth);
 			tlog("display_name=\"%s\"\n", name.c_str());
 		}
-		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_MESSAGE_SUBJECT);
+		name = az_item_get_str(item, PR_SUBJECT);
 		if (!name.empty()) {
 			tree(depth);
 			tlog("subject=\"%s\"\n", name.c_str());
 		}
-		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_ATTACHMENT_FILENAME_LONG);
+		name = az_item_get_str(item, PR_ATTACH_LONG_FILENAME);
 		if (!name.empty()) {
 			tree(depth);
 			tlog("filename=\"%s\"\n", name.c_str());
