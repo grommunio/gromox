@@ -961,7 +961,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 			return 0;	
 		break;
 	}
-	case RES_COMMENT: {
+	case RES_COMMENT:
+	case RES_ANNOTATION: {
 		pres->pres = emalloc(sizeof(RESTRICTION_COMMENT));
 		auto rcom = pres->comment;
 		if (rcom == nullptr)
@@ -1232,7 +1233,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		add_assoc_zval(&pzarray, key, &pzrestriction);
 		break;
 	}
-	case RES_COMMENT: {
+	case RES_COMMENT:
+	case RES_ANNOTATION: {
 		auto rcom = pres->comment;
 		tmp_propvals.count = rcom->count;
 		tmp_propvals.ppropval = rcom->ppropval;

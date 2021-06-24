@@ -1592,6 +1592,8 @@ enum res_type {
 	RES_SUBRESTRICTION = 0x09,
 	RES_COMMENT = 0x0a,
 	RES_COUNT = 0x0b,
+	/* https://docs.microsoft.com/en-us/archive/blogs/stephen_griffin/new-restriction-types-seen-in-wrapped-psts */
+	RES_ANNOTATION = 0x0c,
 	RES_NULL = 0xff,
 };
 

@@ -3994,7 +3994,8 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 			return FALSE;
 		return TRUE;
 	}
-	case RES_COMMENT: {
+	case RES_COMMENT:
+	case RES_ANNOTATION: {
 		auto rcom = pres->comment;
 		if (rcom->pres == nullptr)
 			return TRUE;
@@ -4071,6 +4072,7 @@ static bool cu_eval_subobj_restriction(sqlite3 *psqlite, uint32_t cpid,
 	case RES_SIZE:
 	case RES_EXIST:
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 	case RES_COUNT:
 		return cu_eval_msgsubs_restriction(
 				psqlite, cpid, message_id, proptag, pres);
@@ -4205,6 +4207,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 			return FALSE;
 		return TRUE;
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return cu_eval_folder_restriction(psqlite,
@@ -4366,6 +4369,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		return FALSE;
 	}
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return cu_eval_msg_restriction(psqlite, cpid,

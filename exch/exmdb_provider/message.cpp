@@ -2444,7 +2444,8 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 		    ppropname_info, &pres->sub->res))
 			return FALSE;
 		break;
-	case RES_COMMENT: {
+	case RES_COMMENT:
+	case RES_ANNOTATION: {
 		auto rcom = pres->comment;
 		for (size_t i = 0; i < rcom->count; ++i)
 			if (!message_get_real_propid(psqlite, ppropname_info,

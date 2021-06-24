@@ -1567,6 +1567,7 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 			return FALSE;
 		return TRUE;
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_evaluate_rule_restriction(psqlite, rule_id,
@@ -2457,6 +2458,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 			return FALSE;
 		return TRUE;
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_evaluate_row_restriction(pres->comment->pres,

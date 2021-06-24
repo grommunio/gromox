@@ -342,6 +342,7 @@ static void* restriction_dup_by_type(
 	case RES_SUBRESTRICTION:
 		return restriction_dup_subobj(static_cast<RESTRICTION_SUBOBJ *>(prestriction));
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		return restriction_dup_comment(static_cast<RESTRICTION_COMMENT *>(prestriction));
 	case RES_COUNT:
 		return restriction_dup_count(static_cast<RESTRICTION_COUNT *>(prestriction));
@@ -375,6 +376,7 @@ static void restriction_free_by_type(
 	case RES_SUBRESTRICTION:
 		return restriction_free_subobj(static_cast<RESTRICTION_SUBOBJ *>(prestriction));
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		return restriction_free_comment(static_cast<RESTRICTION_COMMENT *>(prestriction));
 	case RES_COUNT:
 		return restriction_free_count(static_cast<RESTRICTION_COUNT *>(prestriction));
@@ -509,6 +511,7 @@ uint32_t restriction_size(const RESTRICTION *r)
 	case RES_SUBRESTRICTION:
 		return restriction_size_subobj(r->sub) + sizeof(uint8_t);
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		return restriction_comment_size(r->comment) + sizeof(uint8_t);
 	case RES_COUNT:
 		return restriction_count_size(r->count) + sizeof(uint8_t);

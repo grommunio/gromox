@@ -67,6 +67,7 @@ std::string RESTRICTION::repr() const
 	case RES_SUBRESTRICTION: return sub->repr();
 	case RES_COMMENT:        return comment->repr();
 	case RES_COUNT:          return count->repr();
+	case RES_ANNOTATION:     return "RES_ANNOTATION{}";
 	case RES_NULL:           return "RES_NULL{}";
 	default:                 return "RES_??{}";
 	}

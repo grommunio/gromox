@@ -668,6 +668,7 @@ int EXT_PULL::g_restriction(RESTRICTION *r)
 			return EXT_ERR_ALLOC;
 		return ext_buffer_pull_restriction_subobj(this, r->sub);
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		r->pres = anew<RESTRICTION_COMMENT>();
 		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
@@ -2486,6 +2487,7 @@ int EXT_PUSH::p_restriction(const RESTRICTION &r)
 	case RES_SUBRESTRICTION:
 		return ext_buffer_push_restriction_subobj(this, r.sub);
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		return ext_buffer_push_restriction_comment(this, r.comment);
 	case RES_COUNT:
 		return ext_buffer_push_restriction_count(this, r.count);

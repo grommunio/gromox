@@ -986,6 +986,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 	case RES_EXIST:
 		return ppropvals->has(pres->exist->proptag);
 	case RES_COMMENT:
+	case RES_ANNOTATION:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
 		return table_object_evaluate_restriction(ppropvals, pres->comment->pres);

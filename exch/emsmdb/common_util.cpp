@@ -1421,7 +1421,8 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 		if (!common_util_convert_restriction(to_unicode, &pres->sub->res))
 			return FALSE;	
 		break;
-	case RES_COMMENT: {
+	case RES_COMMENT:
+	case RES_ANNOTATION: {
 		auto rcom = pres->comment;
 		for (size_t i = 0; i < rcom->count; ++i)
 			if (!common_util_convert_tagged_propval(to_unicode, &rcom->ppropval[i]))
