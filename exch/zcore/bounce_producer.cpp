@@ -462,8 +462,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			ptr += len;
 			break;
 		case TAG_SUBJECT:
-			pvalue = common_util_get_propvals(
-				&pbrief->proplist, PROP_TAG_SUBJECT);
+			pvalue = common_util_get_propvals(&pbrief->proplist, PR_SUBJECT);
 			if (NULL != pvalue) {
 				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);

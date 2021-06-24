@@ -1222,28 +1222,22 @@ BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
 	char *pnormalized_subject;
 	
 	/* seems some php-mapi users do not understand well
-		the relationship between PROP_TAG_SUBJECT and
-		PROP_TAG_NORMALIZEDSUBJECT, we try to resolve
+		the relationship between PR_SUBJECT and
+		PR_NORMALIZED_SUBJECT, we try to resolve
 		the conflict when there exist both of them */
-	psubject = static_cast<char *>(common_util_get_propvals(
-	           ppropvals, PROP_TAG_SUBJECT));
+	psubject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_SUBJECT));
 	if (NULL == psubject) {
-		psubject = static_cast<char *>(common_util_get_propvals(
-		           ppropvals, PROP_TAG_SUBJECT_STRING8));
+		psubject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_SUBJECT_A));
 	}
 	if (NULL != psubject) {
-		pnormalized_subject = static_cast<char *>(common_util_get_propvals(
-		                      ppropvals, PROP_TAG_NORMALIZEDSUBJECT));
+		pnormalized_subject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_NORMALIZED_SUBJECT));
 		if (NULL == pnormalized_subject) {
-			pnormalized_subject = static_cast<char *>(common_util_get_propvals(
-			                      ppropvals, PROP_TAG_NORMALIZEDSUBJECT_STRING8));
+			pnormalized_subject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_NORMALIZED_SUBJECT_A));
 		}
 		if (NULL != pnormalized_subject) {
 			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {
-				common_util_remove_propvals((TPROPVAL_ARRAY*)
-					ppropvals, PROP_TAG_NORMALIZEDSUBJECT);
-				common_util_remove_propvals((TPROPVAL_ARRAY*)
-					ppropvals, PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+				common_util_remove_propvals(const_cast<TPROPVAL_ARRAY *>(ppropvals), PR_NORMALIZED_SUBJECT);
+				common_util_remove_propvals(const_cast<TPROPVAL_ARRAY *>(ppropvals), PR_NORMALIZED_SUBJECT_A);
 			}
 		}
 	}

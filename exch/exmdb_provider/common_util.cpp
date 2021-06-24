@@ -699,18 +699,18 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		    proptags[i] == PR_MESSAGE_FLAGS)
 			continue;
 		if (MESSAGE_PROPERTIES_TABLE == table_type && FALSE == b_subject) {
-			if ((proptags[i] == PROP_TAG_NORMALIZEDSUBJECT ||
-			    proptags[i] == PROP_TAG_SUBJECTPREFIX) &&
+			if ((proptags[i] == PR_NORMALIZED_SUBJECT ||
+			    proptags[i] == PR_SUBJECT_PREFIX) &&
 			    i + 1 < GX_ARRAY_SIZE(proptags)) {
 				b_subject = TRUE;
 				i ++;
-				proptags[i] = PROP_TAG_SUBJECT;
-			} else if ((proptags[i] == PROP_TAG_NORMALIZEDSUBJECT_STRING8 ||
-			    proptags[i] == PROP_TAG_SUBJECTPREFIX_STRING8) &&
+				proptags[i] = PR_SUBJECT;
+			} else if ((proptags[i] == PR_NORMALIZED_SUBJECT_A ||
+			    proptags[i] == PR_SUBJECT_PREFIX_A) &&
 			    i + 1 < GX_ARRAY_SIZE(proptags)) {
 				b_subject = TRUE;
 				i ++;
-				proptags[i] = PROP_TAG_SUBJECT_STRING8;
+				proptags[i] = PR_SUBJECT_A;
 			}
 		}
 		i ++;
@@ -1525,7 +1525,7 @@ static BOOL common_util_get_message_subject(
 		pstmt = own_stmt;
 	}
 	sqlite3_bind_int64(pstmt, 1, message_id);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_NORMALIZEDSUBJECT);
+	sqlite3_bind_int64(pstmt, 2, PR_NORMALIZED_SUBJECT);
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		pnormalized_subject = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 		if (NULL == pnormalized_subject) {
@@ -1534,8 +1534,7 @@ static BOOL common_util_get_message_subject(
 	} else {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
-		sqlite3_bind_int64(pstmt, 2,
-			PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+		sqlite3_bind_int64(pstmt, 2, PR_NORMALIZED_SUBJECT_A);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			pnormalized_subject =
 				common_util_convert_copy(TRUE, cpid,
@@ -1544,7 +1543,7 @@ static BOOL common_util_get_message_subject(
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, message_id);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_SUBJECTPREFIX);
+	sqlite3_bind_int64(pstmt, 2, PR_SUBJECT_PREFIX);
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		psubject_prefix = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 		if (NULL == psubject_prefix) {
@@ -1553,8 +1552,7 @@ static BOOL common_util_get_message_subject(
 	} else {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
-		sqlite3_bind_int64(pstmt, 2, 
-			PROP_TAG_SUBJECTPREFIX_STRING8);
+		sqlite3_bind_int64(pstmt, 2, PR_SUBJECT_PREFIX_A);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			psubject_prefix =
 				common_util_convert_copy(TRUE, cpid,
@@ -2107,8 +2105,8 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PROP_TAG_SUBJECT:
-	case PROP_TAG_SUBJECT_STRING8:
+	case PR_SUBJECT:
+	case PR_SUBJECT_A:
 		if (!common_util_get_message_subject(db, cpid, id, tag, &pv.pvalue))
 			return GP_ERR;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
@@ -2765,8 +2763,8 @@ static BOOL common_util_set_message_subject(
 {
 	char *pstring;
 	
-	if (PROP_TAG_SUBJECT == ppropval->proptag) {
-		sqlite3_bind_int64(pstmt, 1, PROP_TAG_NORMALIZEDSUBJECT);
+	if (ppropval->proptag == PR_SUBJECT) {
+		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
 		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
 	} else {
 		if (0 != cpid) {
@@ -2774,10 +2772,10 @@ static BOOL common_util_set_message_subject(
 			if (NULL == pstring) {
 				return FALSE;
 			}
-			sqlite3_bind_int64(pstmt, 1, PROP_TAG_NORMALIZEDSUBJECT);
+			sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
 			sqlite3_bind_text(pstmt, 2, pstring, -1, SQLITE_STATIC);
 		} else {
-			sqlite3_bind_int64(pstmt, 1, PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+			sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT_A);
 			sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
 		}
 	}
@@ -3209,13 +3207,11 @@ BOOL common_util_set_properties(int table_type,
 					MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
 					MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 				break;
-			case PROP_TAG_SUBJECT:
-			case PROP_TAG_SUBJECT_STRING8:
-				if (FALSE == common_util_remove_property(
-					MESSAGE_PROPERTIES_TABLE, id,
-					psqlite, PROP_TAG_SUBJECTPREFIX)) {
+			case PR_SUBJECT:
+			case PR_SUBJECT_A:
+				if (!common_util_remove_property(MESSAGE_PROPERTIES_TABLE,
+				    id, psqlite, PR_SUBJECT_PREFIX))
 					return FALSE;	
-				}
 				if (FALSE == common_util_set_message_subject(
 					cpid, id, pstmt, ppropvals->ppropval + i)) {
 					return FALSE;	

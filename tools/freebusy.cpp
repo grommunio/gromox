@@ -1665,7 +1665,7 @@ static BOOL get_freebusy(const char *dir)
 	tmp_proptags[9] = pidlidreminderset;
 	tmp_proptags[10] = pidlidglobalobjectid;
 	tmp_proptags[11] = pidlidtimezonestruct;
-	tmp_proptags[12] = PROP_TAG_SUBJECT;
+	tmp_proptags[12] = PR_SUBJECT;
 	if (FALSE == exmdb_client_query_table(sockd, dir, NULL,
 		0, table_id, &proptags, 0, row_count, &tmp_set)) {
 		close(sockd);
@@ -1694,8 +1694,7 @@ static BOOL get_freebusy(const char *dir)
 			tmp_set.pparray[i], pidlidglobalobjectid);
 		if (!make_ical_uid(static_cast<BINARY *>(pvalue), uid_buff))
 			continue;
-		psubject = static_cast<char *>(tpropval_array_get_propval(
-		           tmp_set.pparray[i], PROP_TAG_SUBJECT));
+		psubject = static_cast<char *>(tpropval_array_get_propval(tmp_set.pparray[i], PR_SUBJECT));
 		plocation = static_cast<char *>(tpropval_array_get_propval(
 		            tmp_set.pparray[i], pidlidlocation));
 		pvalue = tpropval_array_get_propval(

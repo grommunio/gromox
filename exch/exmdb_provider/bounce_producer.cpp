@@ -435,11 +435,9 @@ BOOL bounce_producer_make_content(const char *from,
 			ptr += strlen(rcpt);
 			break;
 		case TAG_SUBJECT:
-			if (FALSE == common_util_get_property(
-				MESSAGE_PROPERTIES_TABLE, message_id, 0,
-				psqlite, PROP_TAG_SUBJECT, &pvalue)) {
+			if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+			    message_id, 0, psqlite, PR_SUBJECT, &pvalue))
 				return FALSE;
-			}
 			if (NULL != pvalue) {
 				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);

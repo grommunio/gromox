@@ -1345,7 +1345,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_SUBJECT:
-			propval.proptag = PROP_TAG_SUBJECT_STRING8;
+			propval.proptag = PR_SUBJECT_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
@@ -2449,7 +2449,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_SUBJECT */
 	if (FALSE == b_embedded) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SUBJECT_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SUBJECT_A);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_SUBJECT;
 			attribute.lvl = LVL_MESSAGE;
