@@ -252,14 +252,15 @@ static const char *az_special_ident(uint32_t nid)
 
 /* Lookup the pff record entry for the given propid */
 static bool az_item_get_propv(libpff_item_t *item, uint32_t proptag,
-    libpff_record_set_t **rset, libpff_record_entry_t **rent)
+    libpff_record_entry_t **rent)
 {
-	auto ret = libpff_item_get_record_set_by_index(item, 0, rset, nullptr);
+	libpff_record_set_ptr rset;
+	auto ret = libpff_item_get_record_set_by_index(item, 0, &unique_tie(rset), nullptr);
 	if (ret <= 0)
 		return false;
 	uint8_t flags = PROP_TYPE(proptag) == PT_UNSPECIFIED ?
 	                LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE : 0;
-	ret = libpff_record_set_get_entry_by_type(*rset, PROP_ID(proptag),
+	ret = libpff_record_set_get_entry_by_type(rset.get(), PROP_ID(proptag),
 	      PROP_TYPE(proptag), rent, flags, nullptr);
 	if (ret < 0)
 		throw "PF-1001";
@@ -282,11 +283,10 @@ static bool is_mapi_message(uint32_t nid)
 /* Obtain a string value from a libpff item's property */
 static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
 {
-	libpff_record_set_ptr rset;
 	libpff_record_entry_ptr rent;
 
 	auto ret = az_item_get_propv(item, CHANGE_PROP_TYPE(proptag, PT_UNSPECIFIED),
-	           &unique_tie(rset), &unique_tie(rent));
+	           &unique_tie(rent));
 	if (ret == 0)
 		return {};
 	size_t dsize = 0;
