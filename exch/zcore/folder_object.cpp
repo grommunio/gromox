@@ -39,11 +39,6 @@ std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
 	return pfolder;
 }
 
-STORE_OBJECT* folder_object_get_store(FOLDER_OBJECT *pfolder)
-{
-	return pfolder->pstore;
-}
-
 BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY *pproptags)
 {

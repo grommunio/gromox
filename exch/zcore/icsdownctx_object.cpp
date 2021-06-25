@@ -28,7 +28,7 @@ std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}
-	pctx->pstore = folder_object_get_store(pfolder);
+	pctx->pstore = pfolder->pstore;
 	pctx->folder_id = pfolder->folder_id;
 	pctx->sync_type = sync_type;
 	pctx->pgiven_eids = NULL;

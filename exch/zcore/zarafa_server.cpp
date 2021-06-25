@@ -1563,7 +1563,7 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 		return ecNullObject;
 	switch (mapi_type) {
 	case ZMG_FOLDER:
-		pstore = folder_object_get_store(static_cast<FOLDER_OBJECT *>(pobject));
+		pstore = static_cast<FOLDER_OBJECT *>(pobject)->pstore;
 		ptable = table_object_create(pstore,
 			pobject, HIERARCHY_TABLE, flags);
 		break;
@@ -1603,7 +1603,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	switch (mapi_type) {
 	case ZMG_FOLDER: {
 		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
-		pstore = folder_object_get_store(folder);
+		pstore = folder->pstore;
 		if (!pstore->check_owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
@@ -1611,7 +1611,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 				return ecNotFound;
 		}
-		ptable = table_object_create(folder_object_get_store(folder),
+		ptable = table_object_create(folder->pstore,
 		         pobject, CONTENT_TABLE, flags);
 		break;
 	}
@@ -1675,8 +1675,7 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
-	auto ptable = table_object_create(folder_object_get_store(pfolder),
-	              &folder_id, RULE_TABLE, 0);
+	auto ptable = table_object_create(pfolder->pstore, &folder_id, RULE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = object_tree_add_object_handle(pinfo->ptree, hfolder,
@@ -1696,7 +1695,6 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	uint32_t tag_access;
 	uint32_t permission;
 	uint64_t message_id;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -1712,7 +1710,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 	         pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
@@ -1794,7 +1792,6 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 	uint64_t folder_id;
 	uint32_t permission;
 	uint64_t message_id;
-	STORE_OBJECT *pstore;
 	const char *username;
 	FOLDER_OBJECT *pfolder;
 	MESSAGE_CONTENT *pbrief;
@@ -1812,7 +1809,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	if (!pstore->check_owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->username, &permission))
@@ -1906,8 +1903,6 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
-	STORE_OBJECT *pstore1;
 	FOLDER_OBJECT *psrc_folder;
 	FOLDER_OBJECT *pdst_folder;
 	
@@ -1923,14 +1918,14 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(psrc_folder);
+	auto pstore = psrc_folder->pstore;
 	pdst_folder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(
 	              pinfo->ptree, hdstfolder, &mapi_type));
 	if (pdst_folder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER || pdst_folder->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
-	pstore1 = folder_object_get_store(pdst_folder);
+	auto pstore1 = pdst_folder->pstore;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
 	if (pstore != pstore1) {
 		if (FALSE == b_copy) {
@@ -2039,7 +2034,6 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	TARRAY_SET tmp_set;
 	uint64_t message_id;
 	uint32_t tmp_proptag;
-	STORE_OBJECT *pstore;
 	BOOL b_notify = TRUE; /* TODO: Read from config or USER_INFO. */
 	BINARY_ARRAY tmp_bins;
 	PROPTAG_ARRAY proptags;
@@ -2061,7 +2055,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	auto username = pstore->check_owner_mode() ? nullptr : pinfo->username;
 	if (0 == pentryids->count) {
 		restriction.rt = RES_PROPERTY;
@@ -2177,7 +2171,6 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	uint64_t change_num;
 	uint32_t tag_access;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pparent;
 	TPROPVAL_ARRAY tmp_propvals;
 	PERMISSION_DATA permission_row;
@@ -2199,7 +2192,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	if (rop_util_get_replid(pparent->folder_id) != 1 ||
 	    pparent->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pparent);
+	auto pstore = pparent->pstore;
 	if (!pstore->b_private && folder_type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
 	if (!pstore->check_owner_mode()) {
@@ -2319,7 +2312,6 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	uint8_t mapi_type;
 	uint64_t folder_id;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	const char *username;
 	FOLDER_OBJECT *pfolder;
 	
@@ -2332,7 +2324,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	if (FALSE == common_util_from_folder_entryid(
 		entryid, &b_private, &account_id, &folder_id)) {
 		return ecError;
@@ -2397,7 +2389,6 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 	BOOL b_partial;
 	uint8_t mapi_type;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	const char *username;
 	FOLDER_OBJECT *pfolder;
 	
@@ -2410,7 +2401,7 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	if (!pstore->b_private)
 		return ecNotSupported;
 	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
@@ -2449,8 +2440,6 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	uint64_t folder_id;
 	uint32_t permission;
 	const char *username;
-	STORE_OBJECT *pstore;
-	STORE_OBJECT *pstore1;
 	FOLDER_OBJECT *psrc_parent;
 	FOLDER_OBJECT *pdst_folder;
 	
@@ -2466,7 +2455,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		return ecNotSupported;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(psrc_parent);
+	auto pstore = psrc_parent->pstore;
 	if (FALSE == common_util_from_folder_entryid(
 		entryid, &b_private, &account_id, &folder_id)) {
 		return ecError;
@@ -2479,7 +2468,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore1 = folder_object_get_store(pdst_folder);
+	auto pstore1 = pdst_folder->pstore;
 	if (pstore->b_private) {
 		if (PRIVATE_FID_ROOT == rop_util_get_gc_value(folder_id)) {
 			return ecAccessDenied;
@@ -3982,7 +3971,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	}
 	case ZMG_FOLDER: {
 		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
-		auto pstore = folder_object_get_store(folder);
+		auto pstore = folder->pstore;
 		if (!pstore->check_owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
@@ -4154,7 +4143,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	}
 	case ZMG_FOLDER: {
 		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
-		auto pstore = folder_object_get_store(folder);
+		auto pstore = folder->pstore;
 		if (!pstore->check_owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
@@ -4343,8 +4332,8 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	case ZMG_FOLDER: {
 		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
 		auto fdst = static_cast<FOLDER_OBJECT *>(pobject_dst);
-		auto pstore = folder_object_get_store(folder);
-		if (pstore != folder_object_get_store(fdst))
+		auto pstore = folder->pstore;
+		if (pstore != fdst->pstore)
 			return ecNotSupported;
 		/* MS-OXCPRPT 3.2.5.8, public folder not supported */
 		if (!pstore->b_private)
@@ -4497,7 +4486,6 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 {
 	uint32_t hstore;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -4509,7 +4497,7 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 	         pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
@@ -4705,7 +4693,6 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 {
 	uint32_t hstore;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -4717,7 +4704,7 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER || pfolder->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 	         pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
@@ -4738,7 +4725,6 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 {
 	uint32_t hstore;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -4750,7 +4736,7 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 	         pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
@@ -5448,7 +5434,6 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 {
 	BINARY *pbin;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
 	LONGLONG_ARRAY folder_ids;
 	
@@ -5461,7 +5446,7 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	if (pfolder->type != FOLDER_TYPE_SEARCH)
 		return ecNotSearchFolder;
 	if (!exmdb_client::get_search_criteria(pstore->get_dir(),
@@ -5495,7 +5480,6 @@ uint32_t zarafa_server_setsearchcriteria(
 	BOOL b_private;
 	uint8_t mapi_type;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	uint32_t search_status;
 	FOLDER_OBJECT *pfolder;
 	LONGLONG_ARRAY folder_ids;
@@ -5515,7 +5499,7 @@ uint32_t zarafa_server_setsearchcriteria(
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	if (!pstore->b_private)
 		return ecNotSupported;
 	if (!pstore->check_owner_mode()) {
