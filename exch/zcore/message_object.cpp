@@ -483,7 +483,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
-	    store_object_get_account(pmessage->pstore), &e_result) ||
+	    pmessage->pstore->get_account(), &e_result) ||
 	    e_result != GXERR_SUCCESS)
 		return e_result;
 
@@ -616,7 +616,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	if (b_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->pstore->b_private)
 		exmdb_client::rule_new_message(dir, pinfo->username,
-			store_object_get_account(pmessage->pstore),
+			pmessage->pstore->get_account(),
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
 	return GXERR_SUCCESS;
@@ -1464,8 +1464,8 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 			return FALSE;	
 		}
 		if (NULL != pbrief) {
-			common_util_notify_receipt(store_object_get_account(
-				pmessage->pstore), NOTIFY_RECEIPT_READ, pbrief);
+			common_util_notify_receipt(pmessage->pstore->get_account(),
+				NOTIFY_RECEIPT_READ, pbrief);
 		}
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;

@@ -236,7 +236,6 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	int32_t tmp_level;
 	BINARY search_bin;
 	BINARY search_bin1;
-	const char *account;
 	char essdn_buff[1024];
 	char tmp_display[256];
 	char essdn_buff1[1024];
@@ -246,7 +245,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[20];
 	
-	account = store_object_get_account(pmessage->pstore);
+	auto account = pmessage->pstore->get_account();
 	tmp_propvals.count = 15;
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_READ;
@@ -2017,8 +2016,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 			common_util_get_propids, common_util_get_propname)) {
 			return FALSE;	
 		}
-		if (FALSE == common_util_send_mail(&imail,
-			store_object_get_account(pstore), &temp_list)) {
+		if (!common_util_send_mail(&imail, pstore->get_account(), &temp_list)) {
 			mail_free(&imail);
 			return FALSE;
 		}
@@ -2211,8 +2209,8 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 			PROVIDER_UID_WRAPPED_PRIVATE,
 			store_entryid.wrapped_provider_uid);
 		store_entryid.wrapped_type = 0x0000000C;
-		store_entryid.pserver_name = deconst(store_object_get_account(pstore));
-		if (!common_util_username_to_essdn(store_object_get_account(pstore),
+		store_entryid.pserver_name = deconst(pstore->get_account());
+		if (!common_util_username_to_essdn(pstore->get_account(),
 		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
 	} else {
@@ -2381,7 +2379,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::write_message(pstore1->get_dir(),
-	    store_object_get_account(pstore1), pinfo->cpid, folder_id1,
+	    pstore1->get_account(), pinfo->cpid, folder_id1,
 	    pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	return GXERR_SUCCESS;

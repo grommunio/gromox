@@ -1892,8 +1892,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		ids1.pids[ids1.count] = ids.pids[i];
 		ids1.count ++;
 		if (pbrief != nullptr)
-			common_util_notify_receipt(
-				store_object_get_account(pstore),
+			common_util_notify_receipt(pstore->get_account(),
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 	}
 	return exmdb_client::delete_messages(pstore->get_dir(),
@@ -2165,8 +2164,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			    pinfo->cpid, message_id, &pbrief))
 				return ecError;
 			if (pbrief != nullptr)
-				common_util_notify_receipt(
-					store_object_get_account(pstore),
+				common_util_notify_receipt(pstore->get_account(),
 					NOTIFY_RECEIPT_READ, pbrief);
 			propvals.count = 2;
 			propvals.ppropval = propval_buff;
@@ -3680,7 +3678,6 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	uint8_t mapi_type;
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
-	const char *account;
 	uint32_t permission;
 	uint32_t mail_length;
 	STORE_OBJECT *pstore;
@@ -3742,7 +3739,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (!common_util_check_delegate(pmessage, username, GX_ARRAY_SIZE(username))) {
 		return ecError;
 	}
-	account = store_object_get_account(pstore);
+	auto account = pstore->get_account();
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else if (!common_util_check_delegate_permission_ex(account, username)) {
@@ -3852,7 +3849,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		if (deferred_time > 0) {
 			snprintf(command_buff, 1024, "%s %s %llu",
 				common_util_get_submit_command(),
-				store_object_get_account(pstore),
+			         pstore->get_account(),
 				static_cast<unsigned long long>(rop_util_get_gc_value(
 					message_object_get_id(pmessage))));
 			timer_id = system_services_add_timer(

@@ -243,11 +243,6 @@ BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
 	return FALSE;
 }
 
-const char* store_object_get_account(STORE_OBJECT *pstore)
-{
-	return pstore->account;
-}
-
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
