@@ -7,6 +7,7 @@
 
 struct STORE_OBJECT {
 	~STORE_OBJECT();
+	GUID guid() const;
 	const char *get_dir() const { return dir; }
 
 	BOOL b_private = false;
@@ -23,7 +24,6 @@ struct STORE_OBJECT {
 struct PERMISSION_SET;
 
 extern std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private, int account_id, const char *account, const char *dir);
-extern GUID store_object_guid(STORE_OBJECT *);
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore);
 const char* store_object_get_account(STORE_OBJECT *pstore);
 GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore);

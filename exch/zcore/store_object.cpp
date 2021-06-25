@@ -226,10 +226,10 @@ STORE_OBJECT::~STORE_OBJECT()
 	}
 }
 
-GUID store_object_guid(STORE_OBJECT *s)
+GUID STORE_OBJECT::guid() const
 {
-	return s->b_private ? rop_util_make_user_guid(s->account_id) :
-	       rop_util_make_domain_guid(s->account_id);
+	return b_private ? rop_util_make_user_guid(account_id) :
+	       rop_util_make_domain_guid(account_id);
 }
 
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)

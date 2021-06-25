@@ -633,7 +633,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	tmp_xid.guid = store_object_guid(pfolder->pstore);
+	tmp_xid.guid = pfolder->pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
@@ -708,7 +708,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	tmp_xid.guid = store_object_guid(pfolder->pstore);
+	tmp_xid.guid = pfolder->pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {

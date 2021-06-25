@@ -2274,7 +2274,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
-		tmp_xid.guid = store_object_guid(pstore);
+		tmp_xid.guid = pstore->guid();
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -4870,7 +4870,6 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	BOOL b_owner;
 	BINARY *pbin;
 	void *pvalue;
-	GUID tmp_guid;
 	uint8_t mapi_type;
 	uint64_t folder_id;
 	uint64_t message_id;
@@ -4916,7 +4915,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 			return ecError;
 		}
-		tmp_guid = store_object_guid(pstore);
+		auto tmp_guid = pstore->guid();
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			return ecInvalidParam;
 		}
@@ -5411,7 +5410,6 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 	XID tmp_xid;
 	BOOL b_owner;
 	void *pvalue;
-	GUID tmp_guid;
 	uint64_t read_cn;
 	uint8_t mapi_type;
 	uint64_t folder_id;
@@ -5452,7 +5450,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			&pstates->pstate[i].source_key, &tmp_xid)) {
 			return ecNotSupported;
 		}
-		tmp_guid = store_object_guid(pstore);
+		auto tmp_guid = pstore->guid();
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			continue;
 		}

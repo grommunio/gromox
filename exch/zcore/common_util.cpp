@@ -1465,7 +1465,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = store_object_guid(pstore);
+	longid.guid = pstore->guid();
 	rop_util_get_gc_array(message_id, longid.global_counter);
 	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
 		return nullptr;
@@ -2364,7 +2364,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	tmp_xid.guid = store_object_guid(pstore);
+	tmp_xid.guid = pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -2436,7 +2436,7 @@ static BOOL common_util_create_folder(
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
-	tmp_xid.guid = store_object_guid(pstore);
+	tmp_xid.guid = pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
