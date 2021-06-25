@@ -1314,7 +1314,7 @@ BINARY* common_util_to_folder_entryid(
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(
@@ -1375,7 +1375,7 @@ BINARY* common_util_calculate_folder_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		longid.guid = rop_util_make_user_guid(
 			store_object_get_account_id(pstore));
 	} else {
@@ -1414,7 +1414,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(
@@ -2237,7 +2237,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	store_entryid.flag = 0;
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		rop_util_get_provider_uid(
 			PROVIDER_UID_WRAPPED_PRIVATE,
 			store_entryid.wrapped_provider_uid);
@@ -2369,7 +2369,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zarafa_server_get_info();
-	auto username = store_object_check_private(pstore) ? nullptr : pinfo->username;
+	auto username = pstore->b_private ? nullptr : pinfo->username;
 	if (!exmdb_client::read_message(
 		store_object_get_dir(pstore), username,
 		pinfo->cpid, message_id, &pmsgctnt)) {

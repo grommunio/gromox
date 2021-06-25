@@ -226,15 +226,10 @@ STORE_OBJECT::~STORE_OBJECT()
 	}
 }
 
-BOOL store_object_check_private(STORE_OBJECT *pstore)
-{
-	return pstore->b_private;
-}
-
 GUID store_object_guid(STORE_OBJECT *s)
 {
 	auto id = store_object_get_account_id(s);
-	return store_object_check_private(s) ? rop_util_make_user_guid(id) :
+	return s->b_private ? rop_util_make_user_guid(id) :
 	       rop_util_make_domain_guid(id);
 }
 
@@ -596,7 +591,7 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		pproptags->pproptag[pproptags->count] =
 					PR_MAILBOX_OWNER_NAME;
 		pproptags->count ++;
@@ -1055,7 +1050,7 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_private(pstore)) {
+		if (pstore->b_private) {
 			if (TRUE == store_object_check_owner_mode(pstore)) {
 				*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OWNER;
 			} else {
@@ -1098,9 +1093,8 @@ static BOOL store_object_get_calculated_property(
 		return TRUE;
 	}
 	case PR_FINDER_ENTRYID:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
 		if (NULL == *ppvalue) {
@@ -1109,29 +1103,23 @@ static BOOL store_object_get_calculated_property(
 		return TRUE;
 	case PR_IPM_FAVORITES_ENTRYID:
 		*ppvalue = common_util_to_folder_entryid(pstore,
-		           rop_util_make_eid_ex(1, store_object_check_private(pstore) ?
+		           rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		return TRUE;
 	case PR_IPM_SUBTREE_ENTRYID:
-		if (TRUE == store_object_check_private(pstore)) {
-			*ppvalue = common_util_to_folder_entryid(pstore,
-				rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE));
-		} else {
-			/* different from native MAPI */
-			*ppvalue = common_util_to_folder_entryid(pstore,
-				rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE));
-		}
+		/* else case:: different from native MAPI */
+		*ppvalue = common_util_to_folder_entryid(pstore, rop_util_make_eid_ex(1,
+		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		return TRUE;
 	case PR_IPM_OUTBOX_ENTRYID:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX));
 		if (NULL == *ppvalue) {
@@ -1139,9 +1127,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_IPM_SENTMAIL_ENTRYID:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS));
 		if (NULL == *ppvalue) {
@@ -1149,9 +1136,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_IPM_WASTEBASKET_ENTRYID:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS));
 		if (NULL == *ppvalue) {
@@ -1159,9 +1145,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE));
 		if (NULL == *ppvalue) {
@@ -1169,9 +1154,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_COMMON_VIEWS_ENTRYID:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
 		if (NULL == *ppvalue) {
@@ -1180,9 +1164,8 @@ static BOOL store_object_get_calculated_property(
 		return TRUE;
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 	case PR_NON_IPM_SUBTREE_ENTRYID:
-		if (TRUE == store_object_check_private(pstore)) {
+		if (pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE));
 		if (NULL == *ppvalue) {
@@ -1190,9 +1173,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_EFORMS_REGISTRY_ENTRYID:
-		if (TRUE == store_object_check_private(pstore)) {
+		if (pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = common_util_to_folder_entryid(pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY));
 		if (NULL == *ppvalue) {
@@ -1211,9 +1193,8 @@ static BOOL store_object_get_calculated_property(
 	case PR_EC_EXTERNAL_AUDIENCE:
 	case PR_EC_EXTERNAL_REPLY:
 	case PR_EC_EXTERNAL_SUBJECT:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		*ppvalue = store_object_get_oof_property(
 			store_object_get_dir(pstore), proptag);
 		if (NULL == *ppvalue) {
@@ -1221,9 +1202,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ECUSERLANGUAGE:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		if (FALSE == system_services_get_user_lang(
 			pstore->account, temp_buff) ||
 			'\0' == temp_buff[0]) {
@@ -1233,9 +1213,8 @@ static BOOL store_object_get_calculated_property(
 		*ppvalue = common_util_dup(temp_buff);
 		return TRUE;
 	case PROP_TAG_ECUSERTIMEZONE:
-		if (FALSE == store_object_check_private(pstore)) {
+		if (!pstore->b_private)
 			return FALSE;
-		}
 		if (FALSE == system_services_get_timezone(
 			pstore->account, temp_buff) || '\0' ==
 			temp_buff[0]) {

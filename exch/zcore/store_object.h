@@ -22,7 +22,6 @@ struct STORE_OBJECT {
 struct PERMISSION_SET;
 
 extern std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private, int account_id, const char *account, const char *dir);
-BOOL store_object_check_private(STORE_OBJECT *pstore);
 extern GUID store_object_guid(STORE_OBJECT *);
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore);
 int store_object_get_account_id(STORE_OBJECT *pstore);

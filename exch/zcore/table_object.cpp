@@ -89,7 +89,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		auto pinfo = zarafa_server_get_info();
 		username = NULL;
 		if (TRUE != store_object_check_owner_mode(ptable->pstore)) {
-			if (FALSE == store_object_check_private(ptable->pstore)) {
+			if (!ptable->pstore->b_private) {
 				username = pinfo->username;
 			} else {
 				if (!exmdb_client::check_folder_permission(
@@ -506,8 +506,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		return TRUE;
 	}
-	auto username = !store_object_check_private(ptable->pstore) ?
-	                pinfo->username : nullptr;
+	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
 	if ((CONTENT_TABLE == ptable->table_type ||
 		HIERARCHY_TABLE == ptable->table_type)) {
 		idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
@@ -1198,8 +1197,7 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 		return FALSE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	auto username = !store_object_check_private(ptable->pstore) ?
-	                pinfo->username : nullptr;
+	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_INSTID;

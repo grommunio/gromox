@@ -70,7 +70,7 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 			return pmessage;
 	} else {
 		pmessage->folder_id = *(uint64_t*)pparent;
-		if (TRUE == store_object_check_private(pmessage->pstore)) {
+		if (pmessage->pstore->b_private) {
 			if (!exmdb_client::load_message_instance(
 				store_object_get_dir(pstore), NULL, cpid,
 				b_new, pmessage->folder_id, message_id,
@@ -628,7 +628,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (b_new && !b_fai && pmessage->message_id != 0 &&
-	    !store_object_check_private(pmessage->pstore))
+	    !pmessage->pstore->b_private)
 		exmdb_client::rule_new_message(dir, pinfo->username,
 			store_object_get_account(pmessage->pstore),
 			pmessage->cpid, pmessage->folder_id,
@@ -1399,7 +1399,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 				MSG_READ_FLAG_GENERATE_RECEIPT_ONLY|
 				MSG_READ_FLAG_CLEAR_NOTIFY_READ|
 				MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD;
-	if (TRUE == store_object_check_private(pmessage->pstore)) {
+	if (pmessage->pstore->b_private) {
 		username = NULL;
 	} else {
 		auto pinfo = zarafa_server_get_info();

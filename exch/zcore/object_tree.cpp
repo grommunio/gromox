@@ -491,7 +491,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 		do {
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
 			if (pobjnode->type == ZMG_STORE &&
-			    store_object_check_private(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == b_private &&
+			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->b_private == b_private &&
 			    store_object_get_account_id(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == account_id) {
 				return pobjnode->handle;	
 			}

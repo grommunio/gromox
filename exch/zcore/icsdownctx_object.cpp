@@ -75,7 +75,7 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
 	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
-	auto username = !store_object_check_private(pctx->pstore) ? pinfo->username : nullptr;
+	auto username = !pctx->pstore->b_private ? pinfo->username : nullptr;
 	if (!exmdb_client::get_content_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,
 		username, pctx->pstate->pgiven, pseen, pseen_fai,
