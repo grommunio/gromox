@@ -472,37 +472,27 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		common_util_remove_propvals(
 			(TPROPVAL_ARRAY*)pproperties, PROP_TAG_FOLDERID);
 	}
+	*pfolder_id = 0;
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_PARENTFOLDERID);
-	if (NULL == pvalue || 1 != rop_util_get_replid(*(uint64_t*)pvalue)) {
-		*pfolder_id = 0;
+	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1)
 		return TRUE;
-	} else {
-		parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	}
+	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
 	pname = static_cast<char *>(common_util_get_propvals(pproperties, PR_DISPLAY_NAME));
-	if (NULL == pname) {
-		*pfolder_id = 0;
+	if (pname == nullptr)
 		return TRUE;
-	}
 	if (exmdb_server_check_private() &&
-	    parent_id == PRIVATE_FID_IPMSUBTREE && special_name(pname)) {
-		*pfolder_id = 0;
+	    parent_id == PRIVATE_FID_IPMSUBTREE && special_name(pname))
 		return TRUE;	
-	}
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_CHANGENUMBER);
-	if (NULL == pvalue) {
-		*pfolder_id = 0;
+	if (pvalue == nullptr)
 		return TRUE;
-	}
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_CHANGENUMBER);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr) {
-		*pfolder_id = 0;
+	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr)
 		return TRUE;
-	}
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_FOLDERTYPE);
 	if (NULL == pvalue) {
 		type = FOLDER_TYPE_GENERIC;
@@ -512,13 +502,10 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		case FOLDER_TYPE_GENERIC:
 			break;
 		case FOLDER_TYPE_SEARCH:
-			if (FALSE == exmdb_server_check_private()) {
-				*pfolder_id = 0;
+			if (!exmdb_server_check_private())
 				return TRUE;
-			}
 			break;
 		default:
-			*pfolder_id = 0;
 			return TRUE;
 		}
 		common_util_remove_propvals((TPROPVAL_ARRAY*)
@@ -532,20 +519,16 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	if (SQLITE_ROW != sqlite3_step(pstmt) ||
-		MAXIMUM_STORE_FOLDERS < sqlite3_column_int64(pstmt, 0)) {
-		*pfolder_id = 0;
+	if (sqlite3_step(pstmt) != SQLITE_ROW ||
+	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_STORE_FOLDERS)
 		return TRUE;
-	}
 	pstmt.finalize();
 	if (FALSE == common_util_get_folder_type(
 		pdb->psqlite, parent_id, &parent_type)) {
 		return FALSE;
 	}
-	if (FOLDER_TYPE_SEARCH == parent_type) {
-		*pfolder_id = 0;
+	if (parent_type == FOLDER_TYPE_SEARCH)
 		return TRUE;
-	}
 	if (0 != tmp_fid) {
 		tmp_val = rop_util_get_gc_value(tmp_fid);
 		sprintf(sql_string, "SELECT folder_id FROM"
@@ -554,19 +537,15 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			*pfolder_id = 0;
+		if (sqlite3_step(pstmt) == SQLITE_ROW)
 			return TRUE;
-		}
 		pstmt.finalize();
 		if (FALSE == common_util_check_allocated_eid(
 			pdb->psqlite, tmp_val, &b_result)) {
 			return FALSE;
 		}
-		if (FALSE == b_result) {
-			*pfolder_id = 0;
+		if (!b_result)
 			return TRUE;
-		}
 	}
 	sprintf(sql_string, "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU(parent_id));
@@ -585,10 +564,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		tmp_val = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (strcasecmp(pname, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 0))) == 0) {
-				*pfolder_id = 0;
+			if (strcasecmp(pname, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 0))) == 0)
 				return TRUE;
-			}
 		}
 		sqlite3_reset(pstmt1);
 	}
