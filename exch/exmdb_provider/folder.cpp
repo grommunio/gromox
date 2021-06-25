@@ -426,6 +426,19 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
+static bool special_name(const char *s)
+{
+	static const char *const names[] = {
+		"Inbox", "Drafts", "Outbox", "Sent Items", "Deleted Items",
+		"Contacts", "Calendar", "Journal", "Notes", "Tasks",
+		"Junk E-mail", "Sync Issues"
+	};
+	for (size_t i = 0; i < arsizeof(names); ++i)
+		if (strcasecmp(s, names[i]) == 0)
+			return true;
+	return false;
+}
+
 BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
 	uint64_t *pfolder_id)
@@ -473,20 +486,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		*pfolder_id = 0;
 		return TRUE;
 	}
-	if (TRUE == exmdb_server_check_private() &&
-		PRIVATE_FID_IPMSUBTREE == parent_id &&
-		(0 == strcasecmp(pname, "Inbox") ||
-		0 == strcasecmp(pname, "Drafts") ||
-		0 == strcasecmp(pname, "Outbox") ||
-		0 == strcasecmp(pname, "Sent Items") ||
-		0 == strcasecmp(pname, "Deleted Items") ||
-		0 == strcasecmp(pname, "Contacts") ||
-		0 == strcasecmp(pname, "Calendar") ||
-		0 == strcasecmp(pname, "Journal") ||
-		0 == strcasecmp(pname, "Notes") ||
-		0 == strcasecmp(pname, "Tasks") ||
-		0 == strcasecmp(pname, "Junk E-mail") ||
-		0 == strcasecmp(pname, "Sync Issues"))) {
+	if (exmdb_server_check_private() &&
+	    parent_id == PRIVATE_FID_IPMSUBTREE && special_name(pname)) {
 		*pfolder_id = 0;
 		return TRUE;	
 	}
