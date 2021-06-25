@@ -1928,8 +1928,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	              pinfo->ptree, hdstfolder, &mapi_type));
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER ||
-	    folder_object_get_type(pdst_folder) == FOLDER_TYPE_SEARCH)
+	if (mapi_type != ZMG_FOLDER || pdst_folder->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
 	pstore1 = folder_object_get_store(pdst_folder);
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
@@ -2198,7 +2197,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	if (rop_util_get_replid(pparent->folder_id) != 1 ||
-	    folder_object_get_type(pparent) == FOLDER_TYPE_SEARCH)
+	    pparent->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
 	pstore = folder_object_get_store(pparent);
 	if (!pstore->b_private && folder_type == FOLDER_TYPE_SEARCH)
@@ -2463,7 +2462,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	if (psrc_parent == nullptr)
 		return ecNullObject;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
-	if (folder_object_get_type(psrc_parent) == FOLDER_TYPE_SEARCH && !b_copy)
+	if (psrc_parent->type == FOLDER_TYPE_SEARCH && !b_copy)
 		return ecNotSupported;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
@@ -4716,8 +4715,7 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	          pinfo->ptree, hfolder, &mapi_type));
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER ||
-	    folder_object_get_type(pfolder) == FOLDER_TYPE_SEARCH)
+	if (mapi_type != ZMG_FOLDER || pfolder->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
 	pstore = folder_object_get_store(pfolder);
 	hstore = object_tree_get_store_handle(pinfo->ptree,
@@ -5464,9 +5462,8 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	pstore = folder_object_get_store(pfolder);
-	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
+	if (pfolder->type != FOLDER_TYPE_SEARCH)
 		return ecNotSearchFolder;
-	}
 	if (!exmdb_client::get_search_criteria(pstore->get_dir(),
 	    pfolder->folder_id, psearch_stat, pprestriction, &folder_ids))
 		return ecError;

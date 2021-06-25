@@ -13,7 +13,6 @@ struct FOLDER_OBJECT {
 };
 
 extern std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
-uint8_t folder_object_get_type(FOLDER_OBJECT *pfolder);
 STORE_OBJECT* folder_object_get_store(FOLDER_OBJECT *pfolder);
 BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY *pproptags);
