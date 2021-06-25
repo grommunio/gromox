@@ -32,8 +32,7 @@ BOOL message_object_get_recipient_all_proptags(
 	MESSAGE_OBJECT *pmessage, PROPTAG_ARRAY *pproptags)
 {
 	return exmdb_client::get_message_instance_rcpts_all_proptags(
-						store_object_get_dir(pmessage->pstore),
-						pmessage->instance_id, pproptags);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
 }
 
 std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
@@ -57,12 +56,10 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 	pmessage->pstate = pstate;
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<ATTACHMENT_OBJECT *>(pparent);
-		if (!exmdb_client::load_embedded_instance(
-			store_object_get_dir(pstore), b_new,
-			((ATTACHMENT_OBJECT*)pparent)->instance_id,
-			&pmessage->instance_id)) {
+		if (!exmdb_client::load_embedded_instance(pstore->get_dir(),
+		    b_new, static_cast<ATTACHMENT_OBJECT *>(pparent)->instance_id,
+		    &pmessage->instance_id))
 			return NULL;
-		}
 		/* cannot find embedded message in attachment, return
 			immediately to caller and the caller check the
 			result by calling message_object_get_instance_id */
@@ -71,20 +68,16 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 	} else {
 		pmessage->folder_id = *(uint64_t*)pparent;
 		if (pmessage->pstore->b_private) {
-			if (!exmdb_client::load_message_instance(
-				store_object_get_dir(pstore), NULL, cpid,
-				b_new, pmessage->folder_id, message_id,
-				&pmessage->instance_id)) {
+			if (!exmdb_client::load_message_instance(pstore->get_dir(),
+			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
+			    &pmessage->instance_id))
 				return NULL;
-			}
 		} else {
 			auto pinfo = zarafa_server_get_info();
-			if (!exmdb_client::load_message_instance(
-				store_object_get_dir(pstore), pinfo->username,
-				cpid, b_new, pmessage->folder_id, message_id,
-				&pmessage->instance_id)) {
+			if (!exmdb_client::load_message_instance(pstore->get_dir(),
+			    pinfo->username, cpid, b_new, pmessage->folder_id,
+			    message_id, &pmessage->instance_id))
 				return NULL;
-			}
 		}
 	}
 	if (0 == pmessage->instance_id) {
@@ -99,11 +92,10 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 		return NULL;
 	}
 	if (FALSE == b_new) {
-		if (FALSE == exmdb_client_get_instance_property(
-			store_object_get_dir(pstore), pmessage->instance_id,
-			PROP_TAG_CHANGENUMBER, (void**)&pchange_num)) {
+		if (!exmdb_client_get_instance_property(pstore->get_dir(),
+		    pmessage->instance_id, PROP_TAG_CHANGENUMBER,
+		    reinterpret_cast<void **>(&pchange_num)))
 			return NULL;
-		}
 		if (NULL != pchange_num) {
 			pmessage->change_num = *pchange_num;
 		}
@@ -136,14 +128,12 @@ BOOL message_object_check_orignal_touched(
 		return TRUE;
 	}
 	if (0 != pmessage->message_id) {
-		if (FALSE == exmdb_client_get_message_property(
-			store_object_get_dir(pmessage->pstore), NULL,
-			0, pmessage->message_id, PROP_TAG_CHANGENUMBER,
-			(void**)&pchange_num)) {
+		if (!exmdb_client_get_message_property(pmessage->pstore->get_dir(),
+		    nullptr, 0, pmessage->message_id, PROP_TAG_CHANGENUMBER,
+		    reinterpret_cast<void **>(&pchange_num)))
 			return FALSE;
-		}
 	} else {
-		if (!exmdb_client::get_embedded_cn(store_object_get_dir(pmessage->pstore),
+		if (!exmdb_client::get_embedded_cn(pmessage->pstore->get_dir(),
 		    pmessage->instance_id, &pchange_num))
 			return FALSE;	
 	}
@@ -156,8 +146,7 @@ MESSAGE_OBJECT::~MESSAGE_OBJECT()
 {	
 	auto pmessage = this;
 	if (0 != pmessage->instance_id) { 
-		exmdb_client::unload_instance(
-			store_object_get_dir(pmessage->pstore),
+		exmdb_client::unload_instance(pmessage->pstore->get_dir(),
 			pmessage->instance_id);
 	}
 	if (NULL != pmessage->pchanged_proptags) {
@@ -347,11 +336,9 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue = id_string;
 	propvals.count ++;
 	
-	if (!exmdb_client::set_instance_properties(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &propvals, &problems)) {
+	if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, &propvals, &problems))
 		return FALSE;	
-	}
 	pmessage->b_touched = TRUE;
 	return TRUE;
 }
@@ -372,7 +359,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	BOOL b_new;
 	XID tmp_xid;
 	void *pvalue;
-	const char *dir;
 	uint32_t result;
 	BINARY *pbin_pcl;
 	uint32_t tmp_index;
@@ -390,7 +376,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		FALSE == pmessage->b_touched) {
 		return GXERR_SUCCESS;
 	}
-	dir = store_object_get_dir(pmessage->pstore);
+	auto dir = pmessage->pstore->get_dir();
 	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::allocate_cn(
 		dir, &pmessage->change_num)) {
@@ -643,7 +629,7 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	
 	if (pmessage->b_new)
 		return TRUE;
-	if (!exmdb_client::reload_message_instance(store_object_get_dir(pmessage->pstore),
+	if (!exmdb_client::reload_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &b_result) || !b_result)
 		return FALSE;	
 	proptag_array_clear(pmessage->pchanged_proptags);
@@ -651,12 +637,11 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	pmessage->b_touched = FALSE;
 	pmessage->change_num = 0;
 	if (FALSE == pmessage->b_new) {
-		if (FALSE == exmdb_client_get_instance_property(
-			store_object_get_dir(pmessage->pstore),
-			pmessage->instance_id, PROP_TAG_CHANGENUMBER,
-			(void**)&pchange_num) || NULL == pchange_num) {
+		if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
+		    pmessage->instance_id, PROP_TAG_CHANGENUMBER,
+		    reinterpret_cast<void **>(&pchange_num)) ||
+		    pchange_num == nullptr)
 			return FALSE;
-		}
 		pmessage->change_num = *pchange_num;
 	}
 	return TRUE;
@@ -685,17 +670,12 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 				sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
-	if (!exmdb_client::clear_message_instance(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id)) {
+	if (!exmdb_client::clear_message_instance(pmessage->pstore->get_dir(),
+	    pmessage->instance_id))
 		return FALSE;
-	}
-	if (!exmdb_client::write_message_instance(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &msgctnt,
-		TRUE, &proptags, &tmp_problems)) {
+	if (!exmdb_client::write_message_instance(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, &msgctnt, TRUE, &proptags, &tmp_problems))
 		return FALSE;	
-	}
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_new = TRUE;
@@ -706,8 +686,7 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
 {
-	return exmdb_client::get_message_instance_rcpts(
-		store_object_get_dir(pmessage->pstore),
+	return exmdb_client::get_message_instance_rcpts(pmessage->pstore->get_dir(),
 		pmessage->instance_id, row_id, need_count, pset);
 }
 
@@ -717,11 +696,9 @@ BOOL message_object_get_rowid_begin(
 	int last_rowid;
 	TARRAY_SET tmp_set;
 	
-	if (!exmdb_client::get_message_instance_rcpts(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, 0, 0xFFFF, &tmp_set)) {
+	if (!exmdb_client::get_message_instance_rcpts(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, 0, 0xFFFF, &tmp_set))
 		return FALSE;	
-	}
 	last_rowid = -1;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto prow_id = static_cast<int32_t *>(common_util_get_propvals(
@@ -737,17 +714,15 @@ BOOL message_object_get_rowid_begin(
 BOOL message_object_get_recipient_num(
 	MESSAGE_OBJECT *pmessage, uint16_t *pnum)
 {
-	return exmdb_client::get_message_instance_rcpts_num(
-			store_object_get_dir(pmessage->pstore),
+	return exmdb_client::get_message_instance_rcpts_num(pmessage->pstore->get_dir(),
 			pmessage->instance_id, pnum);
 }
 
 BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 {
-	if (!exmdb_client::empty_message_instance_rcpts(
-		store_object_get_dir(pmessage->pstore), pmessage->instance_id)) {
+	if (!exmdb_client::empty_message_instance_rcpts(pmessage->pstore->get_dir(),
+	    pmessage->instance_id))
 		return FALSE;	
-	}
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
@@ -758,11 +733,9 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 	const TARRAY_SET *pset)
 {
-	if (!exmdb_client::update_message_instance_rcpts(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, pset)) {
+	if (!exmdb_client::update_message_instance_rcpts(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, pset))
 		return FALSE;	
-	}
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
@@ -773,19 +746,16 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 BOOL message_object_get_attachments_num(
 	MESSAGE_OBJECT *pmessage, uint16_t *pnum)
 {
-	return exmdb_client::get_message_instance_attachments_num(
-						store_object_get_dir(pmessage->pstore),
-						pmessage->instance_id, pnum);
+	return exmdb_client::get_message_instance_attachments_num(pmessage->pstore->get_dir(),
+	       pmessage->instance_id, pnum);
 }
 
 BOOL message_object_delete_attachment(MESSAGE_OBJECT *pmessage,
 	uint32_t attachment_num)
 {
-	if (!exmdb_client::delete_message_instance_attachment(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, attachment_num)) {
+	if (!exmdb_client::delete_message_instance_attachment(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, attachment_num))
 		return FALSE;
-	}
 	pmessage->b_touched = TRUE;
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
@@ -797,8 +767,7 @@ BOOL message_object_get_attachment_table_all_proptags(
 	MESSAGE_OBJECT *pmessage, PROPTAG_ARRAY *pproptags)
 {
 	return exmdb_client::get_message_instance_attachment_table_all_proptags(
-			store_object_get_dir(pmessage->pstore),
-			pmessage->instance_id, pproptags);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
 }
 
 BOOL message_object_query_attachment_table(
@@ -806,9 +775,8 @@ BOOL message_object_query_attachment_table(
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	return exmdb_client::query_message_instance_attachment_table(
-						store_object_get_dir(pmessage->pstore),
-						pmessage->instance_id, pproptags,
-						start_pos, row_needed, pset);
+	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags,
+	       start_pos, row_needed, pset);
 }
 
 BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
@@ -820,7 +788,7 @@ BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
 	if (0 == pmessage->message_id) {
 		return FALSE;
 	}
-	if (!exmdb_client_get_instance_property(store_object_get_dir(pmessage->pstore),
+	if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, PR_MESSAGE_FLAGS, reinterpret_cast<void **>(&pmessage_flags)))
 		return FALSE;	
 	if (NULL == pmessage_flags) {
@@ -829,8 +797,7 @@ BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
 	*pmessage_flags &= ~MSGFLAG_UNSENT;
 	tmp_propval.proptag = PR_MESSAGE_FLAGS;
 	tmp_propval.pvalue = pmessage_flags;
-	return exmdb_client_set_instance_property(
-		store_object_get_dir(pmessage->pstore),
+	return exmdb_client_set_instance_property(pmessage->pstore->get_dir(),
 		pmessage->instance_id, &tmp_propval, &result);
 }
 
@@ -840,11 +807,9 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_instance_all_proptags(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &tmp_proptags)) {
+	if (!exmdb_client::get_instance_all_proptags(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, &tmp_proptags))
 		return FALSE;	
-	}
 	pproptags->count = 0;
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
 	if (NULL == pproptags->pproptag) {
@@ -1063,12 +1028,9 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::get_instance_properties(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->cpid, pmessage->instance_id,
-		&tmp_proptags, &tmp_propvals)) {
+	if (!exmdb_client::get_instance_properties(pmessage->pstore->get_dir(),
+	    pmessage->cpid, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	}
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval +
 			ppropvals->count, tmp_propvals.ppropval,
@@ -1131,12 +1093,9 @@ static BOOL message_object_set_properties_internal(
 				continue;
 			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
 				== ppropvals->ppropval[i].proptag) {
-				if (FALSE == exmdb_client_get_instance_property(
-					store_object_get_dir(pmessage->pstore),
-					pmessage->instance_id, PROP_TAG_ASSOCIATED,
-					&pvalue)) {
+				if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
+				    pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue))
 					return FALSE;	
-				}
 				if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 					problems.pproblem[problems.count].index = i;
 					problems.count ++;
@@ -1162,12 +1121,9 @@ static BOOL message_object_set_properties_internal(
 				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
 				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
 				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_NRN_PENDING);
-				if (!exmdb_client::set_instance_properties(
-					store_object_get_dir(pmessage->pstore),
-					pmessage->instance_id, &tmp_propvals1,
-					&tmp_problems)) {
+				if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),
+				    pmessage->instance_id, &tmp_propvals1, &tmp_problems))
 					return FALSE;	
-				}
 			}
 		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
@@ -1178,12 +1134,9 @@ static BOOL message_object_set_properties_internal(
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::set_instance_properties(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &tmp_propvals,
-		&tmp_problems)) {
+	if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	}
 	if (tmp_problems.count > 0) {
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index =
@@ -1286,12 +1239,9 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::remove_instance_properties(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &tmp_proptags,
-		&tmp_problems)) {
+	if (!exmdb_client::remove_instance_properties(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
-	}
 	if (tmp_problems.count > 0) {
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index =
@@ -1333,19 +1283,14 @@ BOOL message_object_copy_to(
 	MESSAGE_CONTENT msgctnt;
 	PROBLEM_ARRAY tmp_problems;
 	
-	if (!exmdb_client::check_instance_cycle(
-		store_object_get_dir(pmessage->pstore),
-		pmessage_src->instance_id, pmessage->instance_id,
-		pb_cycle)) {
+	if (!exmdb_client::check_instance_cycle(pmessage->pstore->get_dir(),
+	    pmessage_src->instance_id, pmessage->instance_id, pb_cycle))
 		return FALSE;	
-	}
 	if (*pb_cycle)
 		return TRUE;
-	if (!exmdb_client::read_message_instance(
-		store_object_get_dir(pmessage_src->pstore),
-		pmessage_src->instance_id, &msgctnt)) {
+	if (!exmdb_client::read_message_instance(pmessage_src->pstore->get_dir(),
+	    pmessage_src->instance_id, &msgctnt))
 		return FALSE;
-	}
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	i = 0;
@@ -1362,12 +1307,9 @@ BOOL message_object_copy_to(
 		msgctnt.children.prcpts = NULL;
 	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_ATTACHMENTS) >= 0)
 		msgctnt.children.pattachments = NULL;
-	if (!exmdb_client::write_message_instance(
-		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, &msgctnt,
-		b_force, &proptags, &tmp_problems)) {
+	if (!exmdb_client::write_message_instance(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, &msgctnt, b_force, &proptags, &tmp_problems))
 		return FALSE;	
-	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
 	for (i=0; i<proptags.count; i++) {
@@ -1382,7 +1324,6 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 {
 	void *pvalue;
 	BOOL b_notify;
-	const char *dir;
 	uint32_t result;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
@@ -1407,7 +1348,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	}
 	b_notify = FALSE;
 	*pb_changed = FALSE;
-	dir = store_object_get_dir(pmessage->pstore);
+	auto dir = pmessage->pstore->get_dir();
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:

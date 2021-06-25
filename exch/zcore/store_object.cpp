@@ -254,11 +254,6 @@ const char* store_object_get_account(STORE_OBJECT *pstore)
 	return pstore->account;
 }
 
-const char* store_object_get_dir(STORE_OBJECT *pstore)
-{
-	return pstore->dir;
-}
-
 GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore)
 {
 	return pstore->mailbox_guid;
@@ -1195,8 +1190,7 @@ static BOOL store_object_get_calculated_property(
 	case PR_EC_EXTERNAL_SUBJECT:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = store_object_get_oof_property(
-			store_object_get_dir(pstore), proptag);
+		*ppvalue = store_object_get_oof_property(pstore->get_dir(), proptag);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1550,12 +1544,10 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 		case PR_EC_EXTERNAL_AUDIENCE:
 		case PR_EC_EXTERNAL_SUBJECT:
 		case PR_EC_EXTERNAL_REPLY:
-			if (FALSE == store_object_set_oof_property(
-				store_object_get_dir(pstore),
-				ppropvals->ppropval[i].proptag,
-				ppropvals->ppropval[i].pvalue)) {
+			if (!store_object_set_oof_property(pstore->get_dir(),
+			    ppropvals->ppropval[i].proptag,
+			    ppropvals->ppropval[i].pvalue))
 				return FALSE;	
-			}
 			break;
 		case PROP_TAG_ECUSERLANGUAGE:
 			/*

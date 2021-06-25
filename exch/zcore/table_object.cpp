@@ -37,9 +37,7 @@ static void table_object_set_table_id(
 	TABLE_OBJECT *ptable, uint32_t table_id)
 {
 	if (0 != ptable->table_id) {
-		exmdb_client::unload_table(
-			store_object_get_dir(ptable->pstore),
-			ptable->table_id);
+		exmdb_client::unload_table(ptable->pstore->get_dir(), ptable->table_id);
 	}
 	ptable->table_id = table_id;
 }
@@ -76,8 +74,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		if (ptable->table_flags & FLAG_CONVENIENT_DEPTH) {
 			table_flags |= TABLE_FLAG_DEPTH;
 		}
-		if (!exmdb_client::load_hierarchy_table(
-			store_object_get_dir(ptable->pstore),
+		if (!exmdb_client::load_hierarchy_table(ptable->pstore->get_dir(),
 		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
 			username, table_flags, ptable->prestriction,
 			&table_id, &row_num)) {
@@ -92,8 +89,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			if (!ptable->pstore->b_private) {
 				username = pinfo->username;
 			} else {
-				if (!exmdb_client::check_folder_permission(
-					store_object_get_dir(ptable->pstore),
+				if (!exmdb_client::check_folder_permission(ptable->pstore->get_dir(),
 				    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
 					pinfo->username, &permission)) {
 					return FALSE;	
@@ -109,8 +105,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		if (ptable->table_flags & FLAG_ASSOCIATED) {
 			table_flags |= TABLE_FLAG_ASSOCIATED;
 		}
-		if (!exmdb_client::load_content_table(
-			store_object_get_dir(ptable->pstore), pinfo->cpid,
+		if (!exmdb_client::load_content_table(ptable->pstore->get_dir(), pinfo->cpid,
 		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
 			username, table_flags, ptable->prestriction,
 			ptable->psorts, &table_id, &row_num)) {
@@ -119,13 +114,10 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		break;
 	}
 	case RULE_TABLE:
-		if (!exmdb_client::load_rule_table(
-			store_object_get_dir(ptable->pstore),
-			*(uint64_t*)ptable->pparent_obj, 0,
-			ptable->prestriction,
-			&table_id, &row_num)) {
+		if (!exmdb_client::load_rule_table(ptable->pstore->get_dir(),
+		    *static_cast<uint64_t *>(ptable->pparent_obj), 0,
+		    ptable->prestriction, &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	default:
 		fprintf(stderr, "%s - not calling table_object_set_table_id\n", __func__);
@@ -226,9 +218,8 @@ static BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 	} else if (STORE_TABLE == ptable->table_type) {
 		return table_object_get_store_table_all_proptags(pcolumns);
 	}
-	return exmdb_client::get_table_all_proptags(
-			store_object_get_dir(ptable->pstore),
-			ptable->table_id, pcolumns);
+	return exmdb_client::get_table_all_proptags(ptable->pstore->get_dir(),
+	       ptable->table_id, pcolumns);
 }
 
 static uint32_t table_object_get_folder_tag_access(
@@ -242,11 +233,9 @@ static uint32_t table_object_get_folder_tag_access(
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
 	} else {
-		if (!exmdb_client::check_folder_permission(
-			store_object_get_dir(pstore), folder_id, username,
-			&permission)) {
+		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+		    folder_id, username, &permission))
 			return 0;
-		}
 		tag_access = TAG_ACCESS_READ;
 		if (permission & PERMISSION_FOLDEROWNER) {
 			tag_access = TAG_ACCESS_MODIFY |TAG_ACCESS_DELETE |
@@ -277,11 +266,9 @@ static uint32_t table_object_get_folder_permission_rights(
 				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
 				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
 	} else {
-		if (!exmdb_client::check_folder_permission(
-			store_object_get_dir(pstore), folder_id, username,
-			&permission)) {
+		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+		    folder_id, username, &permission))
 			return 0;
-		}
 	}
 	return permission;
 }
@@ -417,13 +404,10 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, ptable->position, row_needed, pset);
 	} else if (RULE_TABLE == ptable->table_type) {
-		if (!exmdb_client::query_table(
-			store_object_get_dir(ptable->pstore),
-			NULL, pinfo->cpid, ptable->table_id,
-			pcolumns, ptable->position, row_needed,
-			pset)) {
+		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
+		    nullptr, pinfo->cpid, ptable->table_id, pcolumns,
+		    ptable->position, row_needed, pset))
 			return FALSE;
-		}
 		for (size_t i = 0; i < pset->count; ++i) {
 			if (FALSE == common_util_convert_to_zrule_data(
 				ptable->pstore, pset->pparray[i])) {
@@ -535,12 +519,10 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (idx2 >= 0) {
 				tmp_columns.pproptag[idx2] = PROP_TAG_FOLDERID;
 			}
-			if (!exmdb_client::query_table(
-				store_object_get_dir(ptable->pstore), username,
-				pinfo->cpid, ptable->table_id, &tmp_columns,
-				ptable->position, row_needed, &temp_set)) {
+			if (!exmdb_client::query_table(ptable->pstore->get_dir(),
+			    username, pinfo->cpid, ptable->table_id, &tmp_columns,
+			    ptable->position, row_needed, &temp_set))
 				return FALSE;	
-			}
 			if (CONTENT_TABLE == ptable->table_type) {
 				for (size_t i = 0; i < temp_set.count; ++i) {
 					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -627,13 +609,10 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				}
 			}
 		} else {
-			if (!exmdb_client::query_table(
-				store_object_get_dir(ptable->pstore),
-				username, pinfo->cpid, ptable->table_id,
-				pcolumns, ptable->position, row_needed,
-				&temp_set)) {
+			if (!exmdb_client::query_table(ptable->pstore->get_dir(),
+			    username, pinfo->cpid, ptable->table_id,
+			    pcolumns, ptable->position, row_needed, &temp_set))
 				return FALSE;	
-			}
 		}
 		if (common_util_index_proptags(pcolumns, PR_STORE_ENTRYID) >= 0) {
 			pentryid = common_util_to_store_entryid(ptable->pstore);
@@ -661,8 +640,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		*pset = temp_set;
 		return TRUE;
 	}
-	return exmdb_client::query_table(
-		store_object_get_dir(ptable->pstore),
+	return exmdb_client::query_table(ptable->pstore->get_dir(),
 		username, pinfo->cpid, ptable->table_id,
 		pcolumns, ptable->position, row_needed, pset);
 }
@@ -802,8 +780,7 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 	} else if (STORE_TABLE == ptable->table_type) {
 		return 2;
 	}
-	exmdb_client::sum_table(
-		store_object_get_dir(ptable->pstore),
+	exmdb_client::sum_table(ptable->pstore->get_dir(),
 		ptable->table_id, &total_rows);
 	return total_rows;
 }
@@ -858,12 +835,9 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 	if (0 == ptable->table_id) {
 		return FALSE;
 	}
-	if (!exmdb_client::mark_table(
-		store_object_get_dir(ptable->pstore),
-		ptable->table_id, ptable->position,
-		&inst_id, &inst_num, &row_type)) {
+	if (!exmdb_client::mark_table(ptable->pstore->get_dir(),
+	    ptable->table_id, ptable->position, &inst_id, &inst_num, &row_type))
 		return FALSE;
-	}
 	auto pbookmark = me_alloc<BOOKMARK_NODE>();
 	if (NULL == pbookmark) {
 		return FALSE;
@@ -909,12 +883,9 @@ BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
 	if (NULL == pnode) {
 		return FALSE;
 	}
-	if (!exmdb_client::locate_table(
-		store_object_get_dir(ptable->pstore),
-		ptable->table_id, inst_id, inst_num,
-		&tmp_position, &tmp_type)) {
+	if (!exmdb_client::locate_table(ptable->pstore->get_dir(),
+	    ptable->table_id, inst_id, inst_num, &tmp_position, &tmp_type))
 		return FALSE;
-	}
 	*pb_exist = FALSE;
 	if (tmp_position >= 0) {
 		if (tmp_type == row_type) {
@@ -1202,8 +1173,7 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_INSTID;
 	proptag_buff[1] = PROP_TAG_INSTANCENUM;
-	return exmdb_client::match_table(
-		store_object_get_dir(ptable->pstore), username,
+	return exmdb_client::match_table(ptable->pstore->get_dir(), username,
 		pinfo->cpid, ptable->table_id, b_forward,
 		ptable->position, pres, &proptags, pposition,
 		&tmp_propvals);
