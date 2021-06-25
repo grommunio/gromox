@@ -492,9 +492,8 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
 			if (pobjnode->type == ZMG_STORE &&
 			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->b_private == b_private &&
-			    store_object_get_account_id(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == account_id) {
+			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->account_id == account_id)
 				return pobjnode->handle;	
-			}
 		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 	auto pinfo = zarafa_server_get_info();

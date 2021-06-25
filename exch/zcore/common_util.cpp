@@ -1319,8 +1319,7 @@ BINARY* common_util_to_folder_entryid(
 		tmp_bin.pb = tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(
 			store_object_get_mailbox_guid(pstore), &tmp_bin);
-		tmp_entryid.database_guid = rop_util_make_user_guid(
-						store_object_get_account_id(pstore));
+		tmp_entryid.database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
 		rop_util_get_provider_uid(PROVIDER_UID_PUBLIC,
@@ -1333,8 +1332,7 @@ BINARY* common_util_to_folder_entryid(
 			if (!b_found)
 				return NULL;
 		} else {
-			tmp_entryid.database_guid = rop_util_make_domain_guid(
-								store_object_get_account_id(pstore));
+			tmp_entryid.database_guid = rop_util_make_domain_guid(pstore->account_id);
 		}
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
@@ -1374,13 +1372,11 @@ BINARY* common_util_calculate_folder_sourcekey(
 	if (pbin->pv == nullptr)
 		return NULL;
 	if (pstore->b_private) {
-		longid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pstore));
+		longid.guid = rop_util_make_user_guid(pstore->account_id);
 	} else {
 		replid = rop_util_get_replid(folder_id);
 		if (1 == replid) {
-			longid.guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pstore));
+			longid.guid = rop_util_make_domain_guid(pstore->account_id);
 		} else {
 			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
 			    replid, &b_found, &longid.guid))
@@ -1415,8 +1411,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 		tmp_bin.pb = tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(
 			store_object_get_mailbox_guid(pstore), &tmp_bin);
-		tmp_entryid.folder_database_guid = rop_util_make_user_guid(
-						store_object_get_account_id(pstore));
+		tmp_entryid.folder_database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
 		rop_util_get_provider_uid(PROVIDER_UID_PUBLIC,
@@ -1429,8 +1424,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 			if (!b_found)
 				return NULL;
 		} else {
-			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(
-								store_object_get_account_id(pstore));
+			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(pstore->account_id);
 		}
 		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
 	}
@@ -2050,23 +2044,20 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
 		if (!exmdb_client::movecopy_message(pstore->get_dir(),
-			store_object_get_account_id(pstore),
-			cpid, message_id, folder_id, new_id,
-			TRUE, &b_result)) {
+		    pstore->account_id, cpid, message_id, folder_id, new_id,
+		    TRUE, &b_result))
 			return FALSE;
-		}
 	} else if (TRUE == b_delete) {
 		exmdb_client_delete_message(pstore->get_dir(),
-			store_object_get_account_id(pstore),
-			cpid, parent_id, message_id, TRUE, &b_result);
+			pstore->account_id, cpid, parent_id, message_id,
+			TRUE, &b_result);
 	} else {
 		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
 		ids.count = 1;
 		ids.pids = &message_id;
 		return exmdb_client::movecopy_messages(pstore->get_dir(),
-			store_object_get_account_id(pstore),
-			cpid, FALSE, NULL, parent_id,
+		       pstore->account_id, cpid, false, nullptr, parent_id,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
 			FALSE, &ids, &b_partial);
 	}

@@ -228,9 +228,8 @@ STORE_OBJECT::~STORE_OBJECT()
 
 GUID store_object_guid(STORE_OBJECT *s)
 {
-	auto id = store_object_get_account_id(s);
-	return s->b_private ? rop_util_make_user_guid(id) :
-	       rop_util_make_domain_guid(id);
+	return s->b_private ? rop_util_make_user_guid(s->account_id) :
+	       rop_util_make_domain_guid(s->account_id);
 }
 
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
@@ -242,11 +241,6 @@ BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
 		return TRUE;
 	}
 	return FALSE;
-}
-
-int store_object_get_account_id(STORE_OBJECT *pstore)
-{
-	return pstore->account_id;
 }
 
 const char* store_object_get_account(STORE_OBJECT *pstore)
