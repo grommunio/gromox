@@ -107,19 +107,19 @@ static ldap_ptr make_conn()
 
 template<typename F, typename... Args>
 static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
-    decltype(func(nullptr, args...))
+    decltype(func(nullptr, std::forward<Args>(args)...))
 {
 	if (ld == nullptr)
 		ld = make_conn();
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
-	auto ret = func(ld.get(), args...);
+	auto ret = func(ld.get(), std::forward<Args>(args)...);
 	if (ret != LDAP_SERVER_DOWN)
 		return ret;
 	ld = make_conn();
 	if (ld == nullptr)
 		return ret;
-	return func(ld.get(), args...);
+	return func(ld.get(), std::forward<Args>(args)...);
 }
 
 BOOL ldap_adaptor_login2(const char *username, const char *password)
