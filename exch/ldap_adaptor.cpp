@@ -46,7 +46,7 @@ enum {
 
 static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
-static bool g_use_tls;
+static bool g_use_tls, g_persistent_authconn;
 static resource_pool<twoconn> g_conn_pool;
 
 static constexpr const char *no_attrs[] = {nullptr};
@@ -70,7 +70,7 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 
 static constexpr const char *zero_attrs[] = {nullptr};
 
-static ldap_ptr make_conn()
+static ldap_ptr make_conn(bool perform_bind)
 {
 	ldap_ptr ld;
 	auto host = g_ldap_host.c_str();
@@ -91,6 +91,8 @@ static ldap_ptr make_conn()
 			return {};
 		}
 	}
+	if (!perform_bind)
+		return ld;
 
 	struct berval cred;
 	cred.bv_val = deconst(g_bind_pass.c_str());
@@ -105,21 +107,30 @@ static ldap_ptr make_conn()
 	return ld;
 }
 
+static constexpr bool AVOID_BIND = false, DO_BIND = true;
+
 template<typename F, typename... Args>
-static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
+static auto gx_auto_retry_2(F &&func, ldap_ptr &ld, bool perform_bind, Args &&...args) ->
     decltype(func(nullptr, std::forward<Args>(args)...))
 {
 	if (ld == nullptr)
-		ld = make_conn();
+		ld = make_conn(perform_bind);
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = func(ld.get(), std::forward<Args>(args)...);
 	if (ret != LDAP_SERVER_DOWN)
 		return ret;
-	ld = make_conn();
+	ld = make_conn(perform_bind);
 	if (ld == nullptr)
 		return ret;
 	return func(ld.get(), std::forward<Args>(args)...);
+}
+
+template<typename F, typename... Args>
+static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
+    decltype(func(nullptr, std::forward<Args>(args)...))
+{
+	return gx_auto_retry_2(func, ld, DO_BIND, std::forward<Args>(args)...);
 }
 
 BOOL ldap_adaptor_login2(const char *username, const char *password)
@@ -154,8 +165,10 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	struct berval bv;
 	bv.bv_val = deconst(password != nullptr ? password : "");
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = gx_auto_retry(ldap_sasl_bind_s, tok.res.bind, dn,
+	ret = gx_auto_retry_2(ldap_sasl_bind_s, tok.res.bind, AVOID_BIND, dn,
 	      LDAP_SASL_SIMPLE, &bv, nullptr, nullptr, nullptr);
+	if (!g_persistent_authconn)
+		tok.res.bind.reset();
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
 	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
@@ -221,16 +234,19 @@ static bool ldap_adaptor_load()
 
 	val = config_file_get_value(pfile, "ldap_search_base");
 	g_search_base = val != nullptr ? val : "";
-	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
+	val = config_file_get_value(pfile, "ldap_persistent_authconn");
+	g_persistent_authconn = val == nullptr || strcmp(val, "no") != 0;
+	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d%s, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
-	       g_search_base.c_str(), 2 * conn_num, g_mail_attr.c_str());
+	       g_search_base.c_str(), 2 * conn_num,
+	       g_persistent_authconn ? " +PAC" : "", g_mail_attr.c_str());
 
 	for (unsigned int i = 0; i < conn_num; ++i) {
 		twoconn ld;
-		ld.meta = make_conn();
+		ld.meta = make_conn(DO_BIND);
 		if (ld.meta == nullptr)
 			break;
-		ld.bind = make_conn();
+		ld.bind = make_conn(g_persistent_authconn);
 		if (ld.bind == nullptr)
 			break;
 		g_conn_pool.put(std::move(ld));

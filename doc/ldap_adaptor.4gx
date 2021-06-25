@@ -38,6 +38,13 @@ Default: (libldap default, see ldap.conf(5))
 \fBldap_mail_attr\fP
 Default: \fImail\fP
 .TP
+\fBldap_persistent_authconn\fP
+This directive is provided to control whether authentication connections should
+be persistent for diagnostic purposes. If set to \fIno\fP, each authentication
+request will create a new LDAP connection.
+.br
+Default: \fIyes\fP
+.TP
 \fBldap_search_base\fP
 Default: (libldap default)
 .TP
