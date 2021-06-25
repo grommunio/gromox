@@ -8,6 +8,7 @@
 struct STORE_OBJECT {
 	~STORE_OBJECT();
 	GUID guid() const;
+	BOOL check_owner_mode() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
 
@@ -25,7 +26,6 @@ struct STORE_OBJECT {
 struct PERMISSION_SET;
 
 extern std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private, int account_id, const char *account, const char *dir);
-BOOL store_object_check_owner_mode(STORE_OBJECT *pstore);
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
 BOOL store_object_get_named_propids(STORE_OBJECT *pstore,

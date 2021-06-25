@@ -232,8 +232,9 @@ GUID STORE_OBJECT::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
+BOOL STORE_OBJECT::check_owner_mode() const
 {
+	auto pstore = this;
 	if (!pstore->b_private)
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
@@ -820,7 +821,7 @@ static BOOL store_object_get_calculated_property(
 		((BINARY*)*ppvalue)->cb = 16;
 		static_cast<BINARY *>(*ppvalue)->pb = deconst(
 			!pstore->b_private ? public_uid :
-			store_object_check_owner_mode(pstore) ?
+			pstore->check_owner_mode() ?
 			private_uid : share_uid);
 		return TRUE;
 	case PR_DISPLAY_NAME:
@@ -861,14 +862,14 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint8_t *>(*ppvalue) = !!store_object_check_owner_mode(pstore);
+		*static_cast<uint8_t *>(*ppvalue) = !!pstore->check_owner_mode();
 		return TRUE;
 	case PR_ACCESS:
 		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_owner_mode(pstore)) {
+		if (pstore->check_owner_mode()) {
 			*(uint32_t*)*ppvalue =
 				TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
@@ -908,7 +909,7 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_owner_mode(pstore)) {
+		if (pstore->check_owner_mode()) {
 			*(uint32_t*)(*ppvalue) =
 					PERMISSION_READANY|PERMISSION_CREATE|
 					PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
@@ -1010,12 +1011,11 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_owner_mode(pstore)) {
+		if (pstore->check_owner_mode())
 			*(uint32_t*)(*ppvalue) = STATUS_PRIMARY_IDENTITY|
 					STATUS_DEFAULT_STORE|STATUS_PRIMARY_STORE;
-		} else {
+		else
 			*(uint32_t*)(*ppvalue) = STATUS_NO_DEFAULT_STORE;
-		}
 		return TRUE;
 	case PR_RESOURCE_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -1030,7 +1030,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		if (pstore->b_private) {
-			if (TRUE == store_object_check_owner_mode(pstore)) {
+			if (pstore->check_owner_mode()) {
 				*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OWNER;
 			} else {
 				*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OTHER;

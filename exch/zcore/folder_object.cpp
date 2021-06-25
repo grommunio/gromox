@@ -216,7 +216,7 @@ static BOOL folder_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_owner_mode(pfolder->pstore)) {
+		if (pfolder->pstore->check_owner_mode()) {
 			*(uint32_t*)(*ppvalue) =
 				PERMISSION_READANY|PERMISSION_CREATE|
 				PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|

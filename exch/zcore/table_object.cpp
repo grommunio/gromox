@@ -66,7 +66,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	switch (ptable->table_type) {
 	case HIERARCHY_TABLE: {
 		auto pinfo = zarafa_server_get_info();
-		username = store_object_check_owner_mode(ptable->pstore) ? nullptr : pinfo->username;
+		username = ptable->pstore->check_owner_mode() ? nullptr : pinfo->username;
 		table_flags = TABLE_FLAG_NONOTIFICATIONS;
 		if (ptable->table_flags & FLAG_SOFT_DELETE) {
 			table_flags |= TABLE_FLAG_SOFTDELETES;
@@ -85,7 +85,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	case CONTENT_TABLE: {
 		auto pinfo = zarafa_server_get_info();
 		username = NULL;
-		if (TRUE != store_object_check_owner_mode(ptable->pstore)) {
+		if (!ptable->pstore->check_owner_mode()) {
 			if (!ptable->pstore->b_private) {
 				username = pinfo->username;
 			} else {
@@ -228,7 +228,7 @@ static uint32_t table_object_get_folder_tag_access(
 	uint32_t tag_access;
 	uint32_t permission;
 	
-	if (TRUE == store_object_check_owner_mode(pstore)) {
+	if (pstore->check_owner_mode()) {
 		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
@@ -259,7 +259,7 @@ static uint32_t table_object_get_folder_permission_rights(
 {
 	uint32_t permission;
 	
-	if (TRUE == store_object_check_owner_mode(pstore)) {
+	if (pstore->check_owner_mode()) {
 		permission = PERMISSION_READANY|PERMISSION_CREATE|
 				PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
 				PERMISSION_EDITANY|PERMISSION_DELETEANY|

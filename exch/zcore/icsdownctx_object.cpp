@@ -172,7 +172,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	auto username = store_object_check_owner_mode(pctx->pstore) ? nullptr : pinfo->username;
+	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->username;
 	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven,
 	    pctx->pstate->pseen, &fldchgs, &pctx->last_changenum,

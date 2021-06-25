@@ -2452,7 +2452,7 @@ static BOOL common_util_create_folder(
 	if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	if (FALSE == store_object_check_owner_mode(pstore)) {
+	if (!pstore->check_owner_mode()) {
 		pentryid = common_util_username_to_addressbook_entryid(
 												pinfo->username);
 		if (NULL != pentryid) {
@@ -2553,7 +2553,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	}
 	auto pinfo = zarafa_server_get_info();
-	if (FALSE == store_object_check_owner_mode(pstore)) {
+	if (!pstore->check_owner_mode()) {
 		username = pinfo->username;
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, username, &permission))
@@ -2574,7 +2574,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		if (err != GXERR_SUCCESS)
 			return err;
 	}
-	username = !store_object_check_owner_mode(pstore) ? pinfo->username : nullptr;
+	username = pstore->check_owner_mode() ? nullptr : pinfo->username;
 	if (!exmdb_client::load_hierarchy_table(pstore->get_dir(), folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
