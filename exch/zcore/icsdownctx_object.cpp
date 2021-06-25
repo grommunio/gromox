@@ -29,7 +29,7 @@ std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(
 		return NULL;
 	}
 	pctx->pstore = folder_object_get_store(pfolder);
-	pctx->folder_id = folder_object_get_id(pfolder);
+	pctx->folder_id = pfolder->folder_id;
 	pctx->sync_type = sync_type;
 	pctx->pgiven_eids = NULL;
 	pctx->pchg_eids = NULL;

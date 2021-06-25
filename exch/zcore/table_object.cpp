@@ -75,11 +75,9 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			table_flags |= TABLE_FLAG_DEPTH;
 		}
 		if (!exmdb_client::load_hierarchy_table(ptable->pstore->get_dir(),
-		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
-			username, table_flags, ptable->prestriction,
-			&table_id, &row_num)) {
+		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    username, table_flags, ptable->prestriction, &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	}
 	case CONTENT_TABLE: {
@@ -90,10 +88,9 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 				username = pinfo->username;
 			} else {
 				if (!exmdb_client::check_folder_permission(ptable->pstore->get_dir(),
-				    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
-					pinfo->username, &permission)) {
+				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+				    pinfo->username, &permission))
 					return FALSE;	
-				}
 				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 					username = pinfo->username;
 			}
@@ -106,11 +103,10 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			table_flags |= TABLE_FLAG_ASSOCIATED;
 		}
 		if (!exmdb_client::load_content_table(ptable->pstore->get_dir(), pinfo->cpid,
-		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
-			username, table_flags, ptable->prestriction,
-			ptable->psorts, &table_id, &row_num)) {
+		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    username, table_flags, ptable->prestriction, ptable->psorts,
+		    &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	}
 	case RULE_TABLE:

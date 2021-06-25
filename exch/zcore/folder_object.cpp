@@ -39,11 +39,6 @@ std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
 	return pfolder;
 }
 
-uint64_t folder_object_get_id(FOLDER_OBJECT *pfolder)
-{
-	return pfolder->folder_id;
-}
-
 uint8_t folder_object_get_type(FOLDER_OBJECT *pfolder)
 {
 	return pfolder->type;
