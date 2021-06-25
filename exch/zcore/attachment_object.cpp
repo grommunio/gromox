@@ -216,9 +216,7 @@ static BOOL attachment_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = OBJECT_ATTACHMENT;
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-		*ppvalue = common_util_guid_to_binary(
-					store_object_get_mailbox_guid(
-					pattachment->pparent->pstore));
+		*ppvalue = common_util_guid_to_binary(pattachment->pparent->pstore->mailbox_guid);
 		return TRUE;
 	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(

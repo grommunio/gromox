@@ -1317,8 +1317,7 @@ BINARY* common_util_to_folder_entryid(
 	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(
-			store_object_get_mailbox_guid(pstore), &tmp_bin);
+		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
 		tmp_entryid.database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
@@ -1409,8 +1408,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(
-			store_object_get_mailbox_guid(pstore), &tmp_bin);
+		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
 		tmp_entryid.folder_database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {

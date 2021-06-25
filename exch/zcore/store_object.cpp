@@ -248,11 +248,6 @@ const char* store_object_get_account(STORE_OBJECT *pstore)
 	return pstore->account;
 }
 
-GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore)
-{
-	return pstore->mailbox_guid;
-}
-
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {

@@ -26,7 +26,6 @@ struct PERMISSION_SET;
 extern std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private, int account_id, const char *account, const char *dir);
 BOOL store_object_check_owner_mode(STORE_OBJECT *pstore);
 const char* store_object_get_account(STORE_OBJECT *pstore);
-GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore);
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
 BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
