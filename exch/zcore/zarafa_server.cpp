@@ -1388,9 +1388,8 @@ uint32_t zarafa_server_getpermissions(GUID hsession,
 			return ecError;
 		break;
 	case ZMG_FOLDER:
-		if (!folder_object_get_permissions(static_cast<FOLDER_OBJECT *>(pobject), pperm_set)) {
+		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_permissions(pperm_set))
 			return ecError;
-		}
 		break;
 	default:
 		return ecNotSupported;
@@ -1413,7 +1412,7 @@ uint32_t zarafa_server_modifypermissions(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	return folder_object_set_permissions(pfolder, pset) ? ecSuccess : ecError;
+	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_modifyrules(GUID hsession,
@@ -1439,7 +1438,7 @@ uint32_t zarafa_server_modifyrules(GUID hsession,
 			}
 		}
 	}
-	return folder_object_updaterules(pfolder, flags, plist) ? ecSuccess : ecError;
+	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
@@ -3980,7 +3979,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 				return ecAccessDenied;
 			}
 		}
-		if (!folder_object_set_properties(folder, ppropvals))
+		if (!folder->set_properties(ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4054,11 +4053,11 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 	case ZMG_FOLDER: {
 		auto folder = static_cast<FOLDER_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!folder_object_get_all_proptags(folder, &proptags))
+			if (!folder->get_all_proptags(&proptags))
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!folder_object_get_properties(folder, pproptags, ppropvals))
+		if (!folder->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4152,7 +4151,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 				return ecAccessDenied;
 			}
 		}
-		if (!folder_object_remove_properties(folder, pproptags))
+		if (!folder->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4373,18 +4372,17 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		BOOL b_normal = common_util_index_proptags(pexclude_proptags, PROP_TAG_CONTAINERCONTENTS) < 0 ? TRUE : false;
 		BOOL b_fai    = common_util_index_proptags(pexclude_proptags, PROP_TAG_FOLDERASSOCIATEDCONTENTS) < 0 ? TRUE : false;
-		if (!folder_object_get_all_proptags(static_cast<FOLDER_OBJECT *>(pobject), &proptags)) {
+		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
-		}
 		common_util_reduce_proptags(&proptags, pexclude_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
 			return ecError;
-		if (!b_force && !folder_object_get_all_proptags(fdst, &proptags1))
+		if (!b_force && !fdst->get_all_proptags(&proptags1))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (folder_object_check_readonly_property(fdst, proptags.pproptag[i]))
+			if (fdst->check_readonly_property(proptags.pproptag[i]))
 				continue;
 			if (!b_force && common_util_index_proptags(&proptags1,
 			    proptags.pproptag[i]) >= 0)
@@ -4393,7 +4391,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 									proptags.pproptag[i];
 			tmp_proptags.count ++;
 		}
-		if (!folder_object_get_properties(folder, &tmp_proptags, &propvals))
+		if (!folder->get_properties(&tmp_proptags, &propvals))
 			return ecError;
 		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 			BOOL b_guest = username == nullptr ? false : TRUE;
@@ -4405,11 +4403,11 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 				return ecError;
 			if (b_collid)
 				return ecDuplicateName;
-			if (!folder_object_set_properties(fdst, &propvals))
+			if (!fdst->set_properties(&propvals))
 				return ecError;
 			return ecSuccess;
 		}
-		if (!folder_object_set_properties(fdst, &propvals))
+		if (!fdst->set_properties(&propvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4518,7 +4516,6 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 {
 	uint32_t hstore;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	FOLDER_OBJECT *pfolder;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -4530,7 +4527,7 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	pstore = folder_object_get_store(pfolder);
+	auto pstore = pfolder->pstore;
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 	         pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)

@@ -39,9 +39,9 @@ std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
 	return pfolder;
 }
 
-BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
-	PROPTAG_ARRAY *pproptags)
+BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
+	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_folder_all_proptags(pfolder->pstore->get_dir(),
@@ -96,9 +96,9 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_check_readonly_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag)
+BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag) const
 {
+	auto pfolder = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
@@ -532,8 +532,8 @@ static BOOL folder_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	void *pvalue;
@@ -550,6 +550,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	ppropvals->count = 0;
+	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
 		if (TRUE == folder_object_get_calculated_property(
 			pfolder, pproptags->pproptag[i], &pvalue)) {
@@ -582,8 +583,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	return TRUE;	
 }
 
-BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
-	const TPROPVAL_ARRAY *ppropvals)
+BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	XID tmp_xid;
 	uint16_t count;
@@ -604,6 +604,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	memcpy(tmp_propvals.ppropval, ppropvals->ppropval,
 			sizeof(TAGGED_PROPVAL)*ppropvals->count);
 	tmp_propvals.count = ppropvals->count;
+	auto pfolder = this;
 	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return FALSE;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
@@ -646,8 +647,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags)
+BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	XID tmp_xid;
@@ -665,11 +665,10 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
+	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == folder_object_check_readonly_property(
-			pfolder, pproptags->pproptag[i])) {
+		if (pfolder->check_readonly_property(pproptags->pproptag[i]))
 			continue;
-		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
 							pproptags->pproptag[i];
 		tmp_proptags.count ++;
@@ -713,8 +712,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
-	PERMISSION_SET *pperm_set)
+BOOL FOLDER_OBJECT::get_permissions(PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
 	uint32_t *prights;
@@ -727,6 +725,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 		PROP_TAG_MEMBERRIGHTS
 	};
 	
+	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
 	uint32_t flags = !pfolder->pstore->b_private &&
 	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
@@ -769,8 +768,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
-	const PERMISSION_SET *pperm_set)
+BOOL FOLDER_OBJECT::set_permissions(const PERMISSION_SET *pperm_set)
 {
 	BINARY *pentryid;
 	uint32_t row_num;
@@ -784,6 +782,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		PROP_TAG_MEMBERID
 	};
 	
+	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
 	if (!exmdb_client::load_permission_table(dir,
 		pfolder->folder_id, 0, &table_id, &row_num)) {
@@ -948,8 +947,7 @@ static BOOL folder_object_flush_delegates(int fd,
 }
 
 
-BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
-	uint32_t flags, const RULE_LIST *plist)
+BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 {
 	int i, fd;
 	BOOL b_exceed;
@@ -957,6 +955,7 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 	char *pprovider;
 	char temp_path[256];
 	RULE_ACTIONS *pactions = nullptr;
+	auto pfolder = this;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE &&
 	    !exmdb_client::empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
