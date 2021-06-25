@@ -1384,9 +1384,8 @@ uint32_t zarafa_server_getpermissions(GUID hsession,
 	}
 	switch (mapi_type) {
 	case ZMG_STORE:
-		if (!store_object_get_permissions(static_cast<STORE_OBJECT *>(pobject), pperm_set)) {
+		if (!static_cast<STORE_OBJECT *>(pobject)->get_permissions(pperm_set))
 			return ecError;
-		}
 		break;
 	case ZMG_FOLDER:
 		if (!folder_object_get_permissions(static_cast<FOLDER_OBJECT *>(pobject), pperm_set)) {
@@ -1739,10 +1738,8 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
 	proptag_buff[2] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
-	if (FALSE == store_object_get_properties(
-		pstore, &tmp_proptags, &tmp_propvals)) {
+	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 	pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
 	int64_t max_quota = pvalue == nullptr ? -1 : static_cast<int64_t>(*static_cast<uint32_t *>(pvalue)) * 1024;
 	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
@@ -3754,10 +3751,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
 	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
-	if (FALSE == store_object_get_properties(
-		pstore, &tmp_proptags, &tmp_propvals)) {
+	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 
 	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
 	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
@@ -4023,7 +4018,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 		auto store = static_cast<STORE_OBJECT *>(pobject);
 		if (!store->check_owner_mode())
 			return ecAccessDenied;
-		if (!store_object_set_properties(store, ppropvals))
+		if (!store->set_properties(ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4103,11 +4098,11 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 	case ZMG_STORE: {
 		auto store = static_cast<STORE_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!store_object_get_all_proptags(store, &proptags))
+			if (!store->get_all_proptags(&proptags))
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!store_object_get_properties(store, pproptags, ppropvals))
+		if (!store->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4197,7 +4192,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 		auto store = static_cast<STORE_OBJECT *>(pobject);
 		if (!store->check_owner_mode())
 			return ecAccessDenied;
-		if (!store_object_remove_properties(store, pproptags))
+		if (!store->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -4331,8 +4326,8 @@ uint32_t zarafa_server_getnamedpropids(GUID hsession, uint32_t hstore,
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
 		return ecNotSupported;
-	return store_object_get_named_propids(pstore, TRUE, ppropnames,
-	       ppropids) ? ecSuccess : ecError;
+	return pstore->get_named_propids(TRUE, ppropnames, ppropids) ?
+	       ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_getpropnames(GUID hsession, uint32_t hstore,
@@ -4350,7 +4345,7 @@ uint32_t zarafa_server_getpropnames(GUID hsession, uint32_t hstore,
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
 		return ecNotSupported;
-	return store_object_get_named_propnames(pstore, ppropids, ppropnames) ?
+	return pstore->get_named_propnames(ppropids, ppropnames) ?
 	       ecSuccess : ecError;
 }
 

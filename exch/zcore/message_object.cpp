@@ -519,8 +519,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		return GXERR_CALL_FAILED;
 	}
 	if (NULL == pgroup_id) {
-		pgpinfo = store_object_get_last_property_groupinfo(
-											pmessage->pstore);
+		pgpinfo = pmessage->pstore->get_last_property_groupinfo();
 		if (NULL == pgpinfo) {
 			return GXERR_CALL_FAILED;
 		}
@@ -529,8 +528,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			return GXERR_CALL_FAILED;
 		}
 	}  else {
-		pgpinfo = store_object_get_property_groupinfo(
-						pmessage->pstore, *pgroup_id);
+		pgpinfo = pmessage->pstore->get_property_groupinfo(*pgroup_id);
 		if (NULL == pgpinfo) {
 			return GXERR_CALL_FAILED;
 		}

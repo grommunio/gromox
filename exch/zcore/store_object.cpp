@@ -244,8 +244,7 @@ BOOL STORE_OBJECT::check_owner_mode() const
 	return FALSE;
 }
 
-BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+BOOL STORE_OBJECT::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	int i;
 	PROPERTY_NAME *pname;
@@ -270,6 +269,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	if (NULL == tmp_propids.ppropid) {
 		return FALSE;
 	}
+	auto pstore = this;
 	for (i=0; i<ppropids->count; i++) {
 		if (ppropids->ppropid[i] < 0x8000) {
 			rop_util_get_common_pset(PS_MAPI,
@@ -355,9 +355,8 @@ static BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
-	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids)
+BOOL STORE_OBJECT::get_named_propids(BOOL b_create,
+    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
 	int i;
 	GUID guid;
@@ -386,6 +385,7 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 	if (NULL == tmp_propnames.ppropname) {
 		return FALSE;
 	}
+	auto pstore = this;
 	for (i=0; i<ppropnames->count; i++) {
 		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
 			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
@@ -445,9 +445,9 @@ static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t 
 	return store_object_get_named_propid(static_cast<STORE_OBJECT *>(store), create, pn, pid);
 }
 
-PROPERTY_GROUPINFO* store_object_get_last_property_groupinfo(
-	STORE_OBJECT *pstore)
+PROPERTY_GROUPINFO *STORE_OBJECT::get_last_property_groupinfo()
 {
+	auto pstore = this;
 	if (NULL == pstore->pgpinfo) {
 		pstore->pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
 		                  pstore, msgchg_grouping_get_last_group_id());
@@ -455,13 +455,13 @@ PROPERTY_GROUPINFO* store_object_get_last_property_groupinfo(
 	return pstore->pgpinfo;
 }
 
-PROPERTY_GROUPINFO* store_object_get_property_groupinfo(
-	STORE_OBJECT *pstore, uint32_t group_id)
+PROPERTY_GROUPINFO *STORE_OBJECT::get_property_groupinfo(uint32_t group_id)
 {
+	auto pstore = this;
 	PROPERTY_GROUPINFO *pgpinfo;
 	
 	if (group_id == msgchg_grouping_get_last_group_id()) {
-		return store_object_get_last_property_groupinfo(pstore);
+		return get_last_property_groupinfo();
 	}
 	for (auto pnode = double_list_get_head(&pstore->group_list); pnode != nullptr;
 	     pnode = double_list_get_after(&pstore->group_list, pnode)) {
@@ -555,9 +555,9 @@ static BOOL store_object_check_readonly_property(
 	return FALSE;
 }
 
-BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
-	PROPTAG_ARRAY *pproptags)
+BOOL STORE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
+	auto pstore = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_store_all_proptags(
@@ -1208,8 +1208,8 @@ static BOOL store_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL store_object_get_properties(STORE_OBJECT *pstore,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL STORE_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	void *pvalue;
@@ -1226,9 +1226,10 @@ BOOL store_object_get_properties(STORE_OBJECT *pstore,
 		return FALSE;
 	}
 	ppropvals->count = 0;
+	auto pstore = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == store_object_get_calculated_property(
-			pstore, pproptags->pproptag[i], &pvalue)) {
+		if (store_object_get_calculated_property(this,
+		    pproptags->pproptag[i], &pvalue)) {
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -1500,8 +1501,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 		&tmp_problems);
 }
 
-BOOL store_object_set_properties(STORE_OBJECT *pstore,
-	const TPROPVAL_ARRAY *ppropvals)
+BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	int i, fd;
 	const char *plang;
@@ -1509,6 +1509,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	char *folder_lang[RES_TOTAL_NUM];
 	
 	auto pinfo = zarafa_server_get_info();
+	auto pstore = this;
 	if (FALSE == pstore->b_private ||
 		pinfo->user_id != pstore->account_id) {
 		return TRUE;
@@ -1631,9 +1632,9 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-BOOL store_object_remove_properties(STORE_OBJECT *pstore,
-	const PROPTAG_ARRAY *pproptags)
+BOOL STORE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
+	auto pstore = this;
 	int i;
 	auto pinfo = zarafa_server_get_info();
 	if (FALSE == pstore->b_private ||
@@ -1727,9 +1728,9 @@ static BOOL store_object_get_folder_permissions(
 	return TRUE;
 }
 
-BOOL store_object_get_permissions(STORE_OBJECT *pstore,
-	PERMISSION_SET *pperm_set)
+BOOL STORE_OBJECT::get_permissions(PERMISSION_SET *pperm_set)
 {
+	auto pstore = this;
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
@@ -1756,11 +1757,9 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 		if (0 == tmp_set.pparray[i]->count) {
 			continue;
 		}
-		if (FALSE == store_object_get_folder_permissions(pstore,
-			*(uint64_t*)tmp_set.pparray[i]->ppropval[0].pvalue,
-			pperm_set)) {
+		if (!store_object_get_folder_permissions(this,
+		    *static_cast<uint64_t *>(tmp_set.pparray[i]->ppropval[0].pvalue), pperm_set))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }

@@ -445,10 +445,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				         pinfo->ptree, handle, &mapi_type));
 				if (pstore == nullptr || mapi_type != ZMG_STORE)
 					return FALSE;
-				if (FALSE == store_object_get_properties(pstore,
-					pcolumns, pset->pparray[pset->count])) {
+				if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
 					return FALSE;	
-				}
 				pset->count ++;
 			}
 		} else {
@@ -481,10 +479,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				         pinfo->ptree, handle, &mapi_type));
 				if (pstore == nullptr || mapi_type != ZMG_STORE)
 					return FALSE;
-				if (FALSE == store_object_get_properties(pstore,
-					pcolumns, pset->pparray[pset->count])) {
+				if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
 					return FALSE;	
-				}
 				pset->count ++;
 			}
 		}

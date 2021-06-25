@@ -229,11 +229,9 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[8].guid);
 	propname_buff[8].kind = MNID_ID;
 	propname_buff[8].lid = PidLidEmail3EmailAddress;
-	if (FALSE == store_object_get_named_propids(
-		pstore, FALSE, &propnames, &propids) ||
-		9 != propids.count) {
+	if (!pstore->get_named_propids(false, &propnames, &propids) ||
+	    propids.count != 9)
 		return FALSE;
-	}
 	for (i=0; i<9; i++) {
 		pproptags->pproptag[i] = PROP_TAG(PT_UNICODE, propids.ppropid[i]);
 	}
