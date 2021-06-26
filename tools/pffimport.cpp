@@ -168,9 +168,11 @@ static char *g_username;
 static std::string g_storedir_s;
 static const char *g_storedir;
 static unsigned int g_wet_run = 1, g_show_tree, g_user_id, g_show_props;
+static unsigned int g_splice;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
@@ -863,14 +865,24 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 		fprintf(stderr, "tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
+	auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
+	if (g_splice && dn != nullptr) {
+		if (!exmdb_client::get_folder_by_name(g_storedir,
+		    parent_fld, dn, new_fld_id)) {
+			fprintf(stderr, "get_folder_by_name \"%s\" RPC/network failed\n", dn);
+			return -EIO;
+		}
+		if (*new_fld_id != 0)
+			return 0;
+	}
+	if (dn == nullptr)
+		dn = "";
 	if (!exmdb_client::create_folder_by_properties(g_storedir, 0, props, new_fld_id)) {
-		fprintf(stderr, "create_folder_by_properties RPC failed\n");
+		fprintf(stderr, "create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
 	}
 	if (*new_fld_id == 0) {
-		auto dn = tpropval_array_get_propval(props, PR_DISPLAY_NAME);
-		fprintf(stderr, "createfolder: folder \"%s\" already existed\n",
-		       dn != nullptr ? static_cast<char *>(dn) : "<ERROR>");
+		fprintf(stderr, "createfolder: folder \"%s\" already existed or some other problem\n", dn);
 		return -EEXIST;
 	}
 	return 0;
@@ -1144,6 +1156,46 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	return 0;
 }
 
+static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
+{
+	libpff_record_entry_ptr rent;
+	if (az_item_get_propv(item, proptag, &~unique_tie(rent)) < 1)
+		return 0;
+	char eid[24];
+	uint32_t nid;
+	if (libpff_record_entry_get_data(rent.get(),
+	    reinterpret_cast<uint8_t *>(eid), arsizeof(eid), nullptr) < 1)
+		return 0;
+	memcpy(&nid, &eid[20], sizeof(nid));
+	return le32_to_cpu(nid);
+}
+
+static void az_lookup_specials(libpff_file_t *file)
+{
+	libpff_item_ptr mst;
+
+	if (libpff_file_get_message_store(file, &~unique_tie(mst), nullptr) < 1)
+		return;
+	auto nid = az_nid_from_mst(mst.get(), PR_IPM_SUBTREE_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE), "FID_IPMSUBTREE"});
+	nid = az_nid_from_mst(mst.get(), PR_IPM_OUTBOX_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX), "FID_OUTBOX"});
+	nid = az_nid_from_mst(mst.get(), PR_IPM_WASTEBASKET_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS), "FID_DELETED_ITEMS"});
+	nid = az_nid_from_mst(mst.get(), PR_IPM_SENTMAIL_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS), "FID_SENT_ITEMS"});
+	nid = az_nid_from_mst(mst.get(), PR_COMMON_VIEWS_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS), "FID_COMMON_VIEWS"});
+	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
+}
+
 static int do_file(const char *filename) try
 {
 	libpff_error_ptr err;
@@ -1159,18 +1211,27 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
+	g_folder_map.clear();
 	g_propname_cache.clear();
 	if (g_wet_run)
 		fprintf(stderr, "Transferring objects...\n");
-
-	char timebuf[64];
-	time_t now = time(nullptr);
-	auto tm = localtime(&now);
-	strftime(timebuf, GX_ARRAY_SIZE(timebuf), " @%FT%T", tm);
-
-	g_folder_map.clear();
-	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-		"Import of "s + HX_basename(filename) + timebuf});
+	if (!g_splice) {
+		char timebuf[64];
+		time_t now = time(nullptr);
+		auto tm = localtime(&now);
+		strftime(timebuf, GX_ARRAY_SIZE(timebuf), " @%FT%T", tm);
+		g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			"Import of "s + HX_basename(filename) + timebuf});
+	} else {
+		g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
+		az_lookup_specials(file.get());
+	}
+	if (g_show_props) {
+		printf("Folder map:\n");
+		for (const auto &pair : g_folder_map)
+			printf("\t%xh -> %s%s\n", pair.first, pair.second.create_name.c_str(),
+			       pair.second.create ? " (create)" : "");
+	}
 
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), nullptr) < 1)

@@ -14,6 +14,10 @@ PAB (Personal Address Book)
 PST (Personal Storage Table)
 .IP \(bu 4
 OST (Offline Storage Table)
+.PP
+By default, pffimport creates a new folder "Import of <xyz.pst> on <date>"
+within IPM_SUBTREE ("Top of Information Store") and places all PFF objects into
+that new subfolder.
 .SH Options
 .TP
 \fB\-n\fP
@@ -21,6 +25,12 @@ Dry run, do not contact server.
 .TP
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP).
+.TP
+\fB\-s\fP
+Splice objects from the PFF into existing folders. Specifically, the PFF root
+is mapped to the store root, and special folders (Sent Items, Deleted Items,
+etc.) are mapped to special folders in the store if the PFF has the necessary
+information.
 .TP
 \fB\-t\fP
 Output tree analysis of the PFF file.
