@@ -3236,13 +3236,13 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PROP_TAG_ATTACHEXTENSION;
+			propval.proptag = PR_ATTACH_EXTENSION;
 			propval.pvalue = deconst(pext);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = picture_name;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);

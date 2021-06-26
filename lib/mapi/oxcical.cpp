@@ -1819,7 +1819,7 @@ static BOOL oxcical_parse_summary(
 			tmp_len --;
 		}
 	}
-	propval.proptag = PROP_TAG_SUBJECT;
+	propval.proptag = PR_SUBJECT;
 	propval.pvalue = tmp_buff;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
@@ -2096,8 +2096,7 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	propval.proptag = PR_DISPLAY_NAME;
-	propval.pvalue = tpropval_array_get_propval(
-		&pattachment->pembedded->proplist, PROP_TAG_SUBJECT);
+	propval.pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_SUBJECT);
 	if (NULL != propval.pvalue) {
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
@@ -2201,7 +2200,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.pb = NULL;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHEXTENSION;
+			propval.proptag = PR_ATTACH_EXTENSION;
 			propval.pvalue  = deconst(".URL");
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
@@ -2210,7 +2209,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 				pvalue1 = pvalue;
 			}
 			snprintf(tmp_buff, 256, "%s.url", pvalue1);
-			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
@@ -2325,11 +2324,11 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (NULL == pvalue1) {
 			pvalue1 = ".dat";
 		}
-		propval.proptag = PROP_TAG_ATTACHEXTENSION;
+		propval.proptag = PR_ATTACH_EXTENSION;
 		propval.pvalue = deconst(pvalue1);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+		propval.proptag = PR_ATTACH_LONG_FILENAME;
 		propval.pvalue = deconst(pvalue);
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
@@ -5247,8 +5246,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SUBJECT);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SUBJECT);
 	if (NULL != pvalue) {
 		piline = ical_new_simple_line("SUMMARY", static_cast<char *>(pvalue));
 		if (NULL == piline) {

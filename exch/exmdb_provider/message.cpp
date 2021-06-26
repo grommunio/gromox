@@ -876,7 +876,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	}
 	proptags.count = 9;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_SUBJECT;
+	proptag_buff[0] = PR_SUBJECT;
 	proptag_buff[1] = PROP_TAG_SENTREPRESENTINGNAME;
 	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	proptag_buff[3] = PROP_TAG_CLIENTSUBMITTIME;
@@ -921,7 +921,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	proptags.count = 1;
-	proptag_buff[0] = PROP_TAG_ATTACHLONGFILENAME;
+	proptag_buff[0] = PR_ATTACH_LONG_FILENAME;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
@@ -1865,14 +1865,11 @@ static BOOL message_rectify_message(const char *account,
 		case PROP_TAG_CHANGENUMBER:
 		case PROP_TAG_MESSAGESTATUS:
 			continue;
-		case PROP_TAG_SUBJECT:
-		case PROP_TAG_SUBJECT_STRING8:
-			if (NULL != common_util_get_propvals(&pmsgctnt->proplist,
-				PROP_TAG_NORMALIZEDSUBJECT) ||
-				NULL != common_util_get_propvals(&pmsgctnt->proplist,
-				PROP_TAG_NORMALIZEDSUBJECT_STRING8)) {
+		case PR_SUBJECT:
+		case PR_SUBJECT_A:
+			if (common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT) != nullptr ||
+			    common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT_A) != nullptr)
 				continue;	
-			}
 			break;
 		}
 		*vc++ = pmsgctnt->proplist.ppropval[i];
@@ -2073,11 +2070,9 @@ static BOOL message_rectify_message(const char *account,
 						PROP_TAG_CONVERSATIONTOPIC_STRING8);
 	}
 	if (NULL == pvalue) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_NORMALIZEDSUBJECT);
+		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-							PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+			pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT_A);
 			if (NULL != pvalue) {
 				vc->proptag = PROP_TAG_CONVERSATIONTOPIC_STRING8;
 				vc->pvalue = pvalue;
@@ -2902,7 +2897,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_DAMORIGINALENTRYID;
+	propval.proptag = PR_DAM_ORIGINAL_ENTRYID;
 	propval.pvalue = common_util_to_private_message_entryid(
 				psqlite, username, folder_id, message_id);
 	if (NULL == propval.pvalue) {
@@ -2913,7 +2908,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEFOLDERENTRYID;
+	propval.proptag = PR_RULE_FOLDER_ENTRYID;
 	propval.pvalue = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
 	if (NULL == propval.pvalue) {
@@ -3578,7 +3573,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_DAMORIGINALENTRYID;
+	propval.proptag = PR_DAM_ORIGINAL_ENTRYID;
 	propval.pvalue = common_util_to_private_message_entryid(
 					psqlite, username, folder_id, message_id);
 	if (NULL == propval.pvalue) {
@@ -3606,7 +3601,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEFOLDERENTRYID;
+	propval.proptag = PR_RULE_FOLDER_ENTRYID;
 	propval.pvalue = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
 	if (NULL == propval.pvalue) {

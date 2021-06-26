@@ -328,11 +328,9 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 		return 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
-		if (FALSE == common_util_get_property(
-			ATTACHMENT_PROPERTIES_TABLE, attachment_id, 0,
-			psqlite,PROP_TAG_ATTACHLONGFILENAME, &pvalue)) {
+		if (!common_util_get_property(ATTACHMENT_PROPERTIES_TABLE,
+		    attachment_id, 0, psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
 			return 0;
-		}
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -437,11 +435,9 @@ BOOL bounce_producer_make_content(const char *from,
 			ptr += strlen(rcpt);
 			break;
 		case TAG_SUBJECT:
-			if (FALSE == common_util_get_property(
-				MESSAGE_PROPERTIES_TABLE, message_id, 0,
-				psqlite, PROP_TAG_SUBJECT, &pvalue)) {
+			if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+			    message_id, 0, psqlite, PR_SUBJECT, &pvalue))
 				return FALSE;
-			}
 			if (NULL != pvalue) {
 				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);

@@ -77,13 +77,45 @@ struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpf
 struct libpff_noop_del { void operator()(void *x) { } };
 
 enum {
+	NID_TYPE_HID = 0x0,
+	NID_TYPE_INTERNAL = 0x1,
+	NID_TYPE_NORMAL_FOLDER = 0x2,
+	NID_TYPE_SEARCH_FOLDER = 0x3,
 	NID_TYPE_NORMAL_MESSAGE = 0x4,
+	NID_TYPE_ATTACHMENT = 0x5,
+	NID_TYPE_SEARCH_UPDATE_QUEUE = 0x6,
+	NID_TYPE_SEARCH_CRITERIA_OBJECT = 0x7,
 	NID_TYPE_ASSOC_MESSAGE = 0x8,
+	NID_TYPE_CONTENTS_TABLE_INDEX = 0xA,
+	NID_TYPE_RECEIVE_FOLDER_TABLE = 0xB,
+	NID_TYPE_OUTGOING_QUEUE_TABLE = 0xC,
+	NID_TYPE_HIERARCHY_TABLE = 0xD,
+	NID_TYPE_CONTENTS_TABLE = 0xE,
+	NID_TYPE_ASSOC_CONTENTS_TABLE = 0xF,
+	NID_TYPE_SEARCH_CONTENTS_TABLE = 0x10,
+	NID_TYPE_ATTACHMENT_TABLE = 0x11,
+	NID_TYPE_RECIPIENT_TABLE = 0x12,
+	NID_TYPE_SEARCH_TABLE_INDEX = 0x13,
+	NID_TYPE_LTP = 0x1F,
 	NID_TYPE_MASK = 0x1F,
 };
 
+enum {
+	NID_MESSAGE_STORE = 0x20 | NID_TYPE_INTERNAL,
+	NID_NAME_TO_ID_MAP = 0x60 | NID_TYPE_INTERNAL,
+	NID_NORMAL_FOLDER_TEMPLATE = 0xA0 | NID_TYPE_INTERNAL,
+	NID_SEARCH_FOLDER_TEMPLATE = 0xC0 | NID_TYPE_INTERNAL,
+	NID_ROOT_FOLDER = 0x120 | NID_TYPE_NORMAL_FOLDER,
+	NID_SEARCH_MANAGEMENT_QUEUE = 0x1E0 | NID_TYPE_INTERNAL,
+	NID_SEARCH_ACTIVITY_LIST = 0x200 | NID_TYPE_INTERNAL,
+	NID_SEARCH_DOMAIN_OBJECT = 0x260 | NID_TYPE_INTERNAL,
+	NID_SEARCH_GATHERER_QUEUE = 0x280 | NID_TYPE_INTERNAL,
+	NID_SEARCH_GATHERER_DESCRIPTOR = 0x2A0 | NID_TYPE_INTERNAL,
+	NID_SEARCH_GATHERER_FOLDER_QUEUE = 0x320 | NID_TYPE_INTERNAL,
+};
+
 struct parent_desc {
-	enum mapi_object_type type;
+	enum mapi_object_type type = MAPI_STORE; /* here: pseudo-value for "unset" */
 	union {
 		void *unknown = nullptr;
 		uint64_t folder_id;
@@ -111,6 +143,12 @@ struct parent_desc {
 	}
 };
 
+struct tgt_folder {
+	bool create = false;
+	uint64_t fid_to = 0;
+	std::string create_name;
+};
+
 }
 
 using namespace std::string_literals;
@@ -124,14 +162,17 @@ using libpff_record_entry_ptr = std::unique_ptr<libpff_record_entry_t, libpff_re
 using libpff_multi_value_ptr  = std::unique_ptr<libpff_multi_value_t, libpff_multi_value_del>;
 using libpff_nti_entry_ptr    = std::unique_ptr<libpff_name_to_id_map_entry_t, libpff_noop_del>;
 
+static std::unordered_map<uint32_t, tgt_folder> g_folder_map;
 static std::unordered_map<uint16_t, uint16_t> g_propname_cache;
 static char *g_username;
-static std::string g_storedir_s, g_root_name;
+static std::string g_storedir_s;
 static const char *g_storedir;
 static unsigned int g_wet_run = 1, g_show_tree, g_user_id, g_show_props;
+static unsigned int g_splice;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
@@ -187,19 +228,42 @@ static const char *az_item_type_to_str(uint8_t t)
 	case LIBPFF_ITEM_TYPE_RSS_FEED: return "rss";
 	case LIBPFF_ITEM_TYPE_TASK: return "task";
 	case LIBPFF_ITEM_TYPE_RECIPIENTS: return "rcpts";
-	default: snprintf(buf, sizeof(buf), "u-%u", t); return buf;
+	case LIBPFF_ITEM_TYPE_UNDEFINED: return "undef";
+	default: snprintf(buf, sizeof(buf), "unknown-%u", t); return buf;
 	}
 }
 
-/* Lookup the pff record entry for the given propid */
-static bool az_item_get_record_entry_by_type(libpff_item_t *item, uint16_t propid,
-    libpff_record_set_t **rset, libpff_record_entry_t **rent, uint8_t flags)
+static const char *az_special_ident(uint32_t nid)
 {
-	auto ret = libpff_item_get_record_set_by_index(item, 0, rset, nullptr);
+#define E(s) case s: return #s;
+	switch (nid) {
+	E(NID_MESSAGE_STORE)
+	E(NID_NAME_TO_ID_MAP)
+	E(NID_NORMAL_FOLDER_TEMPLATE)
+	E(NID_SEARCH_FOLDER_TEMPLATE)
+	E(NID_ROOT_FOLDER)
+	E(NID_SEARCH_MANAGEMENT_QUEUE)
+	E(NID_SEARCH_ACTIVITY_LIST)
+	E(NID_SEARCH_DOMAIN_OBJECT)
+	E(NID_SEARCH_GATHERER_QUEUE)
+	E(NID_SEARCH_GATHERER_DESCRIPTOR)
+	E(NID_SEARCH_GATHERER_FOLDER_QUEUE)
+	}
+	return "";
+}
+
+/* Lookup the pff record entry for the given propid */
+static bool az_item_get_propv(libpff_item_t *item, uint32_t proptag,
+    libpff_record_entry_t **rent)
+{
+	libpff_record_set_ptr rset;
+	auto ret = libpff_item_get_record_set_by_index(item, 0, &unique_tie(rset), nullptr);
 	if (ret <= 0)
 		return false;
-	ret = libpff_record_set_get_entry_by_type(*rset, propid, 0, rent,
-	      LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE, nullptr);
+	uint8_t flags = PROP_TYPE(proptag) == PT_UNSPECIFIED ?
+	                LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE : 0;
+	ret = libpff_record_set_get_entry_by_type(rset.get(), PROP_ID(proptag),
+	      PROP_TYPE(proptag), rent, flags, nullptr);
 	if (ret < 0)
 		throw "PF-1001";
 	else if (ret == 0)
@@ -219,14 +283,12 @@ static bool is_mapi_message(uint32_t nid)
 }
 
 /* Obtain a string value from a libpff item's property */
-static std::string az_item_get_string_by_propid(libpff_item_t *item, uint16_t propid)
+static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
 {
-	libpff_record_set_ptr rset;
 	libpff_record_entry_ptr rent;
 
-	auto ret = az_item_get_record_entry_by_type(item, propid,
-	           &unique_tie(rset), &unique_tie(rent),
-	           LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE);
+	auto ret = az_item_get_propv(item, CHANGE_PROP_TYPE(proptag, PT_UNSPECIFIED),
+	           &unique_tie(rent));
 	if (ret == 0)
 		return {};
 	size_t dsize = 0;
@@ -526,6 +588,8 @@ static int exm_connect(const char *dir)
 
 static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 {
+	if (!g_wet_run)
+		return 0;
 	auto it = g_propname_cache.find(proptag);
 	if (it != g_propname_cache.end()) {
 		proptag = PROP_TAG(PROP_TYPE(proptag), it->second);
@@ -801,14 +865,24 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 		fprintf(stderr, "tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
+	auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
+	if (g_splice && dn != nullptr) {
+		if (!exmdb_client::get_folder_by_name(g_storedir,
+		    parent_fld, dn, new_fld_id)) {
+			fprintf(stderr, "get_folder_by_name \"%s\" RPC/network failed\n", dn);
+			return -EIO;
+		}
+		if (*new_fld_id != 0)
+			return 0;
+	}
+	if (dn == nullptr)
+		dn = "";
 	if (!exmdb_client::create_folder_by_properties(g_storedir, 0, props, new_fld_id)) {
-		fprintf(stderr, "create_folder_by_properties RPC failed\n");
+		fprintf(stderr, "create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
 	}
 	if (*new_fld_id == 0) {
-		auto dn = tpropval_array_get_propval(props, PR_DISPLAY_NAME);
-		fprintf(stderr, "createfolder: folder \"%s\" already existed\n",
-		       dn != nullptr ? static_cast<char *>(dn) : "<ERROR>");
+		fprintf(stderr, "createfolder: folder \"%s\" already existed or some other problem\n", dn);
 		return -EEXIST;
 	}
 	return 0;
@@ -875,8 +949,8 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 
 /* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
 static int do_item2(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item, unsigned int item_type, uint32_t ident,
-    int nsets, uint64_t *new_fld_id)
+    libpff_item_t *item, unsigned int item_type, uint32_t ident, int nsets,
+    uint64_t *new_fld_id)
 {
 	std::unique_ptr<TPROPVAL_ARRAY, afree> props(tpropval_array_init());
 	if (props == nullptr) {
@@ -913,20 +987,29 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	}
 
 	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_FOLDER) {
-		/*
-		 * @depth is the display depth/indent, not the folder nesting
-		 * level, hence testing for 1 (not 0).
-		 */
-		if (depth == 1 &&
-		    !tpropval_array_set_propval(props.get(),
-		    PR_DISPLAY_NAME, g_root_name.c_str())) {
-			fprintf(stderr, "tpropval: ENOMEM\n");
-			return -ENOMEM;
+		auto iter = g_folder_map.find(ident);
+		if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
+			/* PST folder with name -> new folder in store */
+			auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
+			if (ret < 0)
+				return ret;
+		} else if (iter == g_folder_map.end()) {
+			/* No @parent for writing the item anywhere, and no hints in map => do not create. */
+		} else if (!iter->second.create) {
+			/* Splice request (e.g. PST wastebox -> Store wastebox) */
+			*new_fld_id = iter->second.fid_to;
+		} else {
+			/* Create request (e.g. PST root without name -> new folder in store with name) */
+			if (!tpropval_array_set_propval(props.get(), PR_DISPLAY_NAME,
+			    iter->second.create_name.c_str())) {
+				fprintf(stderr, "tpropval: ENOMEM\n");
+				return -ENOMEM;
+			}
+			auto ret = exm_create_folder(depth, iter->second.fid_to,
+			           props.get(), new_fld_id);
+			if (ret < 0)
+				return ret;
 		}
-		assert(parent.type == MAPI_FOLDER);
-		auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
-		if (ret < 0)
-			return ret;
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		std::unique_ptr<ATTACHMENT_CONTENT, afree> atc(attachment_content_init());
 		if (atc == nullptr) {
@@ -988,23 +1071,24 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		}
 	}
 
-	auto name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_DISPLAY_NAME);
+	auto name = az_item_get_str(item, PR_DISPLAY_NAME);
 	if (g_show_tree) {
 		if (!name.empty()) {
 			tree(depth);
 			tlog("display_name=\"%s\"\n", name.c_str());
 		}
-		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_MESSAGE_SUBJECT);
+		name = az_item_get_str(item, PR_SUBJECT);
 		if (!name.empty()) {
 			tree(depth);
 			tlog("subject=\"%s\"\n", name.c_str());
 		}
-		name = az_item_get_string_by_propid(item, LIBPFF_ENTRY_TYPE_ATTACHMENT_FILENAME_LONG);
+		name = az_item_get_str(item, PR_ATTACH_LONG_FILENAME);
 		if (!name.empty()) {
 			tree(depth);
 			tlog("filename=\"%s\"\n", name.c_str());
 		}
-	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER &&
+	    (parent.type == MAPI_FOLDER || *new_fld_id != 0)) {
 		printf("Processing folder \"%s\"...\n", name.c_str());
 	}
 
@@ -1021,22 +1105,21 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
 {
 	uint32_t ident = 0, nent = 0;
-	uint8_t item_type = 0;
+	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	int nsets = 0;
 
 	if (libpff_item_get_identifier(item, &ident, nullptr) < 1)
 		throw "PF-1018";
-	if (libpff_item_get_type(item, &item_type, nullptr) < 1)
-		throw "PF-1019";
-	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) < 1)
-		throw "PF-1021";
-
+	libpff_item_get_type(item, &item_type, nullptr);
+	libpff_item_get_number_of_record_sets(item, &nsets, nullptr);
 	if (g_show_tree) {
-		if (libpff_item_get_number_of_entries(item, &nent, nullptr) < 1)
-			throw "PF-1020";
+		libpff_item_get_number_of_entries(item, &nent, nullptr);
 		tree(depth);
-		tlog("[id=%lxh type=%s nent=%lu nset=%d]\n",
-		        static_cast<unsigned long>(ident), az_item_type_to_str(item_type),
+		auto sp_nid = az_special_ident(ident);
+		tlog("[id=%lxh%s%s type=%s nent=%lu nset=%d]\n",
+		        static_cast<unsigned long>(ident),
+		        *sp_nid != '\0' ? " " : "", sp_nid,
+		        az_item_type_to_str(item_type),
 		        static_cast<unsigned long>(nent), nsets);
 	}
 
@@ -1073,6 +1156,46 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	return 0;
 }
 
+static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
+{
+	libpff_record_entry_ptr rent;
+	if (az_item_get_propv(item, proptag, &~unique_tie(rent)) < 1)
+		return 0;
+	char eid[24];
+	uint32_t nid;
+	if (libpff_record_entry_get_data(rent.get(),
+	    reinterpret_cast<uint8_t *>(eid), arsizeof(eid), nullptr) < 1)
+		return 0;
+	memcpy(&nid, &eid[20], sizeof(nid));
+	return le32_to_cpu(nid);
+}
+
+static void az_lookup_specials(libpff_file_t *file)
+{
+	libpff_item_ptr mst;
+
+	if (libpff_file_get_message_store(file, &~unique_tie(mst), nullptr) < 1)
+		return;
+	auto nid = az_nid_from_mst(mst.get(), PR_IPM_SUBTREE_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE), "FID_IPMSUBTREE"});
+	nid = az_nid_from_mst(mst.get(), PR_IPM_OUTBOX_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX), "FID_OUTBOX"});
+	nid = az_nid_from_mst(mst.get(), PR_IPM_WASTEBASKET_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS), "FID_DELETED_ITEMS"});
+	nid = az_nid_from_mst(mst.get(), PR_IPM_SENTMAIL_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS), "FID_SENT_ITEMS"});
+	nid = az_nid_from_mst(mst.get(), PR_COMMON_VIEWS_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS), "FID_COMMON_VIEWS"});
+	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
+	if (nid != 0)
+		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
+}
+
 static int do_file(const char *filename) try
 {
 	libpff_error_ptr err;
@@ -1088,47 +1211,32 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
+	g_folder_map.clear();
 	g_propname_cache.clear();
 	if (g_wet_run)
 		fprintf(stderr, "Transferring objects...\n");
-	char timebuf[64];
-	time_t now = time(nullptr);
-	auto tm = localtime(&now);
-	strftime(timebuf, GX_ARRAY_SIZE(timebuf), " @%FT%T", tm);
-	g_root_name = "Import of "s + HX_basename(filename) + timebuf;
+	if (!g_splice) {
+		char timebuf[64];
+		time_t now = time(nullptr);
+		auto tm = localtime(&now);
+		strftime(timebuf, GX_ARRAY_SIZE(timebuf), " @%FT%T", tm);
+		g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			"Import of "s + HX_basename(filename) + timebuf});
+	} else {
+		g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
+		az_lookup_specials(file.get());
+	}
+	if (g_show_props) {
+		printf("Folder map:\n");
+		for (const auto &pair : g_folder_map)
+			printf("\t%xh -> %s%s\n", pair.first, pair.second.create_name.c_str(),
+			       pair.second.create ? " (create)" : "");
+	}
 
 	libpff_item_ptr root;
-
-	if (libpff_file_get_message_store(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
-		fprintf(stderr, "PF-1042: %s contains no NID_MESSAGE_STORE\n", filename);
-		az_error("PF-1042", err);
-	} else if (root == nullptr) {
-		fprintf(stderr, "PF-1043: %s contains no NID_MESSAGE_STORE\n", filename);
-		az_error("PF-1043", err);
-	} else if (g_show_tree) {
-		printf("%s: Special section NID_MESSAGE_STORE is available.\n", filename);
-		auto saved_wet = g_wet_run;
-		g_wet_run = false;
-		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
-		g_wet_run = saved_wet;
-	}
-	if (libpff_file_get_name_to_id_map(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1) {
-		printf("PF-1044: %s contains no NID_NAME_TO_ID_MAP\n", filename);
-		az_error("PF-1042", err);
-	} else if (root == nullptr) {
-		printf("PF-1045: %s contains no NID_NAME_TO_ID_MAP\n", filename);
-		az_error("PF-1043", err);
-	} else if (g_show_tree) {
-		printf("%s: Special section NID_NAME_TO_ID_MAP is available.\n", filename);
-		auto saved_wet = g_wet_run;
-		g_wet_run = false;
-		do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
-		g_wet_run = saved_wet;
-	}
-
-	if (libpff_file_get_root_folder(file.get(), &~unique_tie(root), nullptr) < 1)
+	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), nullptr) < 1)
 		throw "PF-1025";
-	return do_item(0, parent_desc::as_folder(rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)), root.get());
+	return do_item(0, {}, root.get());
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);
 	return -ECANCELED;

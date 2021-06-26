@@ -105,7 +105,7 @@ BOOL folder_object_check_readonly_property(
 		return TRUE;
 	switch (proptag) {
 	case PR_ACCESS:
-	case PROP_TAG_ADDRESSBOOKENTRYID:
+	case PR_ADDRESS_BOOK_ENTRYID:
 	case PROP_TAG_ARTICLENUMBERNEXT:
 	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
 	case PROP_TAG_ATTRIBUTEREADONLY:

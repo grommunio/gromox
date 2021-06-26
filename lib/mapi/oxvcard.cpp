@@ -226,7 +226,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = deconst(pstring);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			propval.proptag = PROP_TAG_NORMALIZEDSUBJECT;
+			propval.proptag = PR_NORMALIZED_SUBJECT;
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -334,12 +334,12 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = &tmp_bin;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			propval.proptag = PROP_TAG_ATTACHEXTENSION;
+			propval.proptag = PR_ATTACH_EXTENSION;
 			propval.pvalue = deconst(photo_type);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
 			sprintf(tmp_buff, "ContactPhoto.%s", photo_type);
-			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
+			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -918,7 +918,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	vcard_append_line(pvcard, pvline);
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_DISPLAY_NAME));
 	if (NULL == pvalue) {
-		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_NORMALIZEDSUBJECT));
+		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_NORMALIZED_SUBJECT));
 	}
 	if (NULL != pvalue) {
 		pvline = vcard_new_simple_line("FN", pvalue);
@@ -994,7 +994,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		NULL != pmsg->children.pattachments) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
 			pattachment = pmsg->children.pattachments->pplist[i];
-			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHEXTENSION));
+			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_EXTENSION));
 			if (NULL == pvalue) {
 				continue;
 			}

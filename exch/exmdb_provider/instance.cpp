@@ -95,8 +95,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC:
 		case PR_DISPLAY_BCC_A:
-		case PROP_TAG_SUBJECT:
-		case PROP_TAG_SUBJECT_STRING8:
+		case PR_SUBJECT:
+		case PR_SUBJECT_A:
 		case PR_MESSAGE_SIZE:
 		case PROP_TAG_HASATTACHMENTS:
 			continue;
@@ -881,20 +881,22 @@ static BOOL instance_read_message(
 		}
 	}
 	pnormalized_subject = static_cast<char *>(tpropval_array_get_propval(
-		reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1), PROP_TAG_NORMALIZEDSUBJECT));
+	                      reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1),
+	                      PR_NORMALIZED_SUBJECT));
 	if (NULL == pnormalized_subject) {
 		pnormalized_subject = static_cast<char *>(tpropval_array_get_propval(
-			reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1), PROP_TAG_NORMALIZEDSUBJECT_STRING8));
+		                      reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1),
+		                      PR_NORMALIZED_SUBJECT_A));
 		if (NULL != pnormalized_subject) {
 			psubject_prefix = static_cast<char *>(tpropval_array_get_propval(
-				reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1), PROP_TAG_SUBJECTPREFIX_STRING8));
+			                  reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1),
+			                  PR_SUBJECT_PREFIX_A));
 			if (NULL == psubject_prefix) {
 				psubject_prefix = "";
 			}
 			length = strlen(pnormalized_subject)
 					+ strlen(psubject_prefix) + 1;
-			pmsgctnt->proplist.ppropval[i].proptag =
-							PROP_TAG_SUBJECT_STRING8;
+			pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT_A;
 			pmsgctnt->proplist.ppropval[i].pvalue =
 						common_util_alloc(length);
 			if (NULL == pmsgctnt->proplist.ppropval[i].pvalue) {
@@ -905,20 +907,20 @@ static BOOL instance_read_message(
 			pmsgctnt->proplist.count ++;
 		} else {
 			psubject_prefix = static_cast<char *>(tpropval_array_get_propval(
-				reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1), PROP_TAG_SUBJECTPREFIX));
+			                  reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1),
+			                  PR_SUBJECT_PREFIX));
 			if (NULL == psubject_prefix) {
 				psubject_prefix = static_cast<char *>(tpropval_array_get_propval(
-					reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1), PROP_TAG_SUBJECTPREFIX_STRING8));
+				                  reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1),
+				                  PR_SUBJECT_PREFIX_A));
 				if (NULL != psubject_prefix) {
-					pmsgctnt->proplist.ppropval[i].proptag =
-									PROP_TAG_SUBJECT_STRING8;
+					pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT_A;
 					pmsgctnt->proplist.ppropval[i].pvalue =
 						deconst(psubject_prefix);
 					pmsgctnt->proplist.count ++;
 				}
 			} else {
-				pmsgctnt->proplist.ppropval[i].proptag =
-										PROP_TAG_SUBJECT;
+				pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT;
 				pmsgctnt->proplist.ppropval[i].pvalue =
 					deconst(psubject_prefix);
 				pmsgctnt->proplist.count ++;
@@ -926,14 +928,14 @@ static BOOL instance_read_message(
 		}
 	} else {
 		psubject_prefix = static_cast<char *>(tpropval_array_get_propval(
-			reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1), PROP_TAG_SUBJECTPREFIX));
+		                  reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1),
+		                  PR_SUBJECT_PREFIX));
 		if (NULL == psubject_prefix) {
 			psubject_prefix = "";
 		}
 		length = strlen(pnormalized_subject)
 					+ strlen(psubject_prefix) + 1;
-		pmsgctnt->proplist.ppropval[i].proptag =
-								PROP_TAG_SUBJECT;
+		pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT;
 		pmsgctnt->proplist.ppropval[i].pvalue =
 					common_util_alloc(length);
 		if (NULL == pmsgctnt->proplist.ppropval[i].pvalue) {
@@ -2004,21 +2006,19 @@ static BOOL instance_get_message_subject(
 	
 	psubject_prefix = NULL;
 	pnormalized_subject = NULL;
-	pnormalized_subject = static_cast<char *>(tpropval_array_get_propval(
-		pproplist, PROP_TAG_NORMALIZEDSUBJECT));
+	pnormalized_subject = static_cast<char *>(tpropval_array_get_propval(pproplist, PR_NORMALIZED_SUBJECT));
 	if (NULL == pnormalized_subject) {
-		pvalue = static_cast<char *>(tpropval_array_get_propval(pproplist,
-		         PROP_TAG_NORMALIZEDSUBJECT_STRING8));
+		pvalue = static_cast<char *>(tpropval_array_get_propval(pproplist, PR_NORMALIZED_SUBJECT_A));
 		if (NULL != pvalue) {
 			pnormalized_subject =
 				common_util_convert_copy(TRUE, cpid, pvalue);
 		}
 	}
 	psubject_prefix = static_cast<char *>(tpropval_array_get_propval(
-	                  pproplist, PROP_TAG_SUBJECTPREFIX));
+	                  pproplist, PR_SUBJECT_PREFIX));
 	if (NULL == psubject_prefix) {
 		pvalue = static_cast<char *>(tpropval_array_get_propval(pproplist,
-		         PROP_TAG_SUBJECTPREFIX_STRING8));
+		         PR_SUBJECT_PREFIX_A));
 		if (NULL != pvalue) {
 			psubject_prefix =
 				common_util_convert_copy(TRUE, cpid, pvalue);
@@ -2420,8 +2420,8 @@ BOOL exmdb_server_get_instance_properties(
 				}
 			}
 			break;
-		case PROP_TAG_SUBJECT:
-		case PROP_TAG_SUBJECT_STRING8:
+		case PR_SUBJECT:
+		case PR_SUBJECT_A:
 			if (FALSE == instance_get_message_subject(
 				&pmsgctnt->proplist, pinstance->cpid,
 				pproptags->pproptag[i], &pvalue)) {
@@ -2687,18 +2687,14 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				                 MSGFLAG_NRN_PENDING);
 				*(uint32_t*)pproperties->ppropval[i].pvalue = message_flags;
 				break;
-			case PROP_TAG_SUBJECT:
-			case PROP_TAG_SUBJECT_STRING8:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-										PROP_TAG_SUBJECTPREFIX);
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-								PROP_TAG_SUBJECTPREFIX_STRING8);
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-									PROP_TAG_NORMALIZEDSUBJECT);
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-								PROP_TAG_NORMALIZEDSUBJECT_STRING8);
-				propval.proptag = PROP_TAG_NORMALIZEDSUBJECT;
-				if (PROP_TAG_SUBJECT == pproperties->ppropval[i].proptag) {
+			case PR_SUBJECT:
+			case PR_SUBJECT_A:
+				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_SUBJECT_PREFIX);
+				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_SUBJECT_PREFIX_A);
+				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT);
+				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT_A);
+				propval.proptag = PR_NORMALIZED_SUBJECT;
+				if (pproperties->ppropval[i].proptag == PR_SUBJECT) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
 					propval.pvalue = common_util_convert_copy(TRUE,

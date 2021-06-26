@@ -317,9 +317,7 @@ static int bounce_producer_get_mail_parts(
 	offset = 0;
 	b_first = FALSE;
 	for (i=0; i<pattachments->count; i++) {
-		pvalue = common_util_get_propvals(
-			&pattachments->pplist[i]->proplist,
-			PROP_TAG_ATTACHLONGFILENAME);
+		pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist, PR_ATTACH_LONG_FILENAME);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -464,8 +462,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			ptr += len;
 			break;
 		case TAG_SUBJECT:
-			pvalue = common_util_get_propvals(
-				&pbrief->proplist, PROP_TAG_SUBJECT);
+			pvalue = common_util_get_propvals(&pbrief->proplist, PR_SUBJECT);
 			if (NULL != pvalue) {
 				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);

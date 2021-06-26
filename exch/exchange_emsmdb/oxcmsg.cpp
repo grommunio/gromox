@@ -142,15 +142,14 @@ uint32_t rop_openmessage(uint16_t cpid,
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_HASNAMEDPROPERTIES;
-	proptag_buff[1] = PROP_TAG_SUBJECTPREFIX;
-	proptag_buff[2] = PROP_TAG_NORMALIZEDSUBJECT;
+	proptag_buff[1] = PR_SUBJECT_PREFIX;
+	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!message_object_get_properties(pmessage.get(), 0, &proptags, &propvals))
 		return ecError;
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
-	pvalue = common_util_get_propvals(&propvals,
-						PROP_TAG_SUBJECTPREFIX);
+	pvalue = common_util_get_propvals(&propvals, PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -158,8 +157,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
 		psubject_prefix->pstring = static_cast<char *>(pvalue);
 	}
-	pvalue = common_util_get_propvals(&propvals,
-					PROP_TAG_NORMALIZEDSUBJECT);
+	pvalue = common_util_get_propvals(&propvals, PR_NORMALIZED_SUBJECT);
 	if (NULL == pvalue) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
@@ -531,8 +529,8 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_HASNAMEDPROPERTIES;
-	proptag_buff[1] = PROP_TAG_SUBJECTPREFIX;
-	proptag_buff[2] = PROP_TAG_NORMALIZEDSUBJECT;
+	proptag_buff[1] = PR_SUBJECT_PREFIX;
+	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (FALSE == message_object_get_properties(
 		pmessage, 0, &proptags, &propvals)) {
 		return ecError;
@@ -540,8 +538,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	auto pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
-	pvalue = common_util_get_propvals(&propvals,
-						PROP_TAG_SUBJECTPREFIX);
+	pvalue = common_util_get_propvals(&propvals, PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -549,8 +546,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
 		psubject_prefix->pstring = static_cast<char *>(pvalue);
 	}
-	pvalue = common_util_get_propvals(&propvals,
-					PROP_TAG_NORMALIZEDSUBJECT);
+	pvalue = common_util_get_propvals(&propvals, PR_NORMALIZED_SUBJECT);
 	if (NULL == pvalue) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
@@ -1107,8 +1103,8 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MID;
 	proptag_buff[1] = PROP_TAG_HASNAMEDPROPERTIES;
-	proptag_buff[2] = PROP_TAG_SUBJECTPREFIX;
-	proptag_buff[3] = PROP_TAG_NORMALIZEDSUBJECT;
+	proptag_buff[2] = PR_SUBJECT_PREFIX;
+	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
 	if (!message_object_get_properties(pmessage.get(), 0, &proptags, &propvals))
 		return ecError;
 	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
@@ -1119,8 +1115,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
-	pvalue = common_util_get_propvals(&propvals,
-						PROP_TAG_SUBJECTPREFIX);
+	pvalue = common_util_get_propvals(&propvals, PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -1128,8 +1123,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
 		psubject_prefix->pstring = static_cast<char *>(pvalue);
 	}
-	pvalue = common_util_get_propvals(&propvals,
-					PROP_TAG_NORMALIZEDSUBJECT);
+	pvalue = common_util_get_propvals(&propvals, PR_NORMALIZED_SUBJECT);
 	if (NULL == pvalue) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
