@@ -170,7 +170,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
             T_END_MAIL == pcontext->last_cmd) {
             pcontext->last_cmd = T_MAIL_CMD;
 		    pcontext->mail.envelope.is_outbound = FALSE;
-			snprintf(pcontext->mail.envelope.from, 256, "%s@%s",
+			snprintf(pcontext->mail.envelope.from, arsizeof(pcontext->mail.envelope.from), "%s@%s",
                 email_addr.local_part, email_addr.domain);
             /* 250 OK */
 			return 205;
@@ -244,7 +244,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 		if (!pcontext->mail.envelope.is_outbound &&
 		    !pcontext->mail.envelope.is_relay &&
             NULL != system_services_check_user) {
-            snprintf(buff, 256, "%s@%s", email_addr.local_part,
+			snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
                     email_addr.domain);
 			if (FALSE == system_services_check_user(buff, path)) {
                 /* 550 invalid user - <email_addr> */
@@ -284,7 +284,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 		}
         pcontext->last_cmd = T_RCPT_CMD;
         /* everything is OK */
-        snprintf(buff, 256, "%s@%s", email_addr.local_part,
+		snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
             email_addr.domain);
 		mem_file_writeline(&pcontext->mail.envelope.f_rcpt_to, buff);
         /* 250 OK */

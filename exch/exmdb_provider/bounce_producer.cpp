@@ -54,7 +54,7 @@ struct FORMAT_DATA {
  */
 struct RESOURCE_NODE {
 	char				charset[32];
-	char				from[BOUNCE_TOTAL_NUM][256];
+	char from[BOUNCE_TOTAL_NUM][UADDR_SIZE];
 	char				subject[BOUNCE_TOTAL_NUM][256];
 	char				content_type[BOUNCE_TOTAL_NUM][256];
 	std::unique_ptr<char[]> content[BOUNCE_TOTAL_NUM];
@@ -479,7 +479,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	time_t cur_time;
 	char subject[1024];
 	struct tm time_buff;
-	char mime_from[256];
+	char mime_from[UADDR_SIZE];
 	char tmp_buff[1024];
 	char date_buff[128];
 	char content_type[128];
@@ -501,7 +501,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", mime_from);
-	snprintf(tmp_buff, 256, "<%s>", from);
+	snprintf(tmp_buff, UADDR_SIZE + 2, "<%s>", from);
 	mime_set_field(pmime, "To", tmp_buff);
 	mime_set_field(pmime, "MIME-Version", "1.0");
 	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");

@@ -493,10 +493,9 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	int address_type;
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
-	char username[UADDR_SIZE];
+	char username[UADDR_SIZE], display_name[UADDR_SIZE];
 	char tmp_buff[1280];
 	char utf8_field[512];
-	char display_name[256];
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
 	
@@ -539,7 +538,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		}
 		propval.proptag = PR_DISPLAY_NAME;
 		if (0 == tmp_len) {
-			snprintf(display_name, 256, "%s@%s",
+			snprintf(display_name, arsizeof(display_name), "%s@%s",
 				paddr->local_part, paddr->domain);
 			propval.pvalue = display_name;
 		} else {
@@ -809,7 +808,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	uint8_t pad_len;
 	EXT_PUSH ext_push;
 	char *ptoken_prev;
-	char tmp_buff[256];
+	char tmp_buff[UADDR_SIZE];
 	char utf8_field[512];
 	EMAIL_ADDR email_addr;
 	TAGGED_PROPVAL propval;

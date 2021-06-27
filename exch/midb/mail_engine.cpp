@@ -1945,7 +1945,7 @@ static void mail_engine_extract_digest_fields(const char *digest,
 			temp_buff1, &out_len)) {
 			memset(&temp_address, 0, sizeof(temp_address));
 			parse_email_addr(&temp_address, temp_buff1);
-			snprintf(from, 256, "%s@%s",
+			snprintf(from, UADDR_SIZE, "%s@%s",
 				temp_address.local_part, temp_address.domain);
 		}
 	}
@@ -1963,7 +1963,7 @@ static void mail_engine_extract_digest_fields(const char *digest,
 			HX_strrtrim(temp_buff1);
 			memset(&temp_address, 0, sizeof(temp_address));
 			parse_email_addr(&temp_address, temp_buff1);
-			snprintf(rcpt, 256, "%s@%s",
+			snprintf(rcpt, UADDR_SIZE, "%s@%s",
 				temp_address.local_part, temp_address.domain);
 		}
 	}
@@ -1980,8 +1980,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	MAIL imail;
 	size_t size;
 	int tmp_len;
-	char from[256];
-	char rcpt[256];
+	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
 	uint8_t b_read;
 	const char *dir;
 	uint8_t b_unsent;
