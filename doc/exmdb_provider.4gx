@@ -1,8 +1,10 @@
 .TH exmdb_provider 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
-exmdb_provider is a service plugin for http(8gx). It listens on (by default)
-port 5000 for exmdb RPCs, a Gromox-specific protocol.
+exmdb_provider is a service plugin for http(8gx). It offers a plethora
+of individual functions (124 of them) for operating on mailbox stores.
+In addition, this functionality is also exposed by way of a Gromox-specific
+network protocol on port 5000.
 .SH Configuration file directives
 .TP
 \fBcache_interval\fP

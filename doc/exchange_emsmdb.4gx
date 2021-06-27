@@ -3,8 +3,16 @@
 .PP
 exchange_emsmdb is a processing plugin for http(8gx) which handles the remote
 procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, as well as
-the remote operations (ROPs) as issued by the EcDoRpcExt2 call or the MAPIHTTP
-EXECUTE call.
+OXCROPS as issued by the EcDoRpcExt2 call or the MAPIHTTP EXECUTE call.
+.PP
+EMSMDB is a DCE/RPC interface with just a few RPC calls (6 are still used
+today). ecDoRpcExt2, a call offered by that interface, takes an opaque byte
+buffer argument not interprted by DCE/RPC. That byte buffer contains another
+protocol, "Remote Operation(s) Encoding Protocol" [OXCROPS]. No reason for this
+wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
+the extra EMSMDB framing.
+.PP
+OXCROPS consists of 130 calls that make up the mailbox protocol.
 .SH Config file directives
 .TP
 \fBasync_threads_num\fP
@@ -58,8 +66,14 @@ delivered
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH Normative references
+.IP \(bu 4
+DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open
+Group, 1997
 .PP
-MS-OXCRPC: Wire Format Protocol
+MS-OXCRPC: Wire Format Protocol. This is the document for the EMSMDB RPC
+interface.
+.PP
+MS-OXCROPS: Remote Operations List and Encoding Protocol.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)
