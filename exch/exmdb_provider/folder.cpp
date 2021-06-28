@@ -1018,156 +1018,154 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				return FALSE;
 			}
 		}
-	} else {
-		if (TRUE == b_normal || TRUE == b_fai) {
-			bool is_associated = !b_normal;
-			sprintf(sql_string, "SELECT message_id,"
-				" message_size, is_deleted FROM messages "
-				"WHERE parent_fid=%llu AND is_associated=%d",
-				LLU(fid_val), is_associated);
-			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt == nullptr)
-				return FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
-				if (!b_hard && is_deleted)
+	} else if (b_normal || b_fai) {
+		bool is_associated = !b_normal;
+		sprintf(sql_string, "SELECT message_id,"
+			" message_size, is_deleted FROM messages "
+			"WHERE parent_fid=%llu AND is_associated=%d",
+			LLU(fid_val), is_associated);
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		if (pstmt == nullptr)
+			return FALSE;
+		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
+			if (!b_hard && is_deleted)
+				continue;
+			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
+			if (TRUE == b_check) {
+				if (FALSE == common_util_check_message_owner(
+					pdb->psqlite, message_id, username, &b_owner)) {
+					return FALSE;
+				}
+				if (FALSE == b_owner) {
+					*pb_partial = TRUE;
 					continue;
-				uint64_t message_id = sqlite3_column_int64(pstmt, 0);
-				if (TRUE == b_check) {
-					if (FALSE == common_util_check_message_owner(
-						pdb->psqlite, message_id, username, &b_owner)) {
-						return FALSE;
-					}
-					if (FALSE == b_owner) {
-						*pb_partial = TRUE;
-						continue;
-					}
-				}
-				if (NULL != pmessage_count) {
-					(*pmessage_count) ++;
-				}
-				if (b_hard && is_associated && pfai_size != nullptr)
-					*pfai_size += sqlite3_column_int64(pstmt, 1);
-				else if (b_hard && !is_associated && pnormal_size != nullptr)
-					*pnormal_size += sqlite3_column_int64(pstmt, 1);
-				if (0 == is_deleted) {
-					db_engine_proc_dynamic_event(pdb, cpid,
-						DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
-						message_id, 0);
-					db_engine_notify_message_deletion(
-						pdb, fid_val, message_id);
-				}
-				if (TRUE == b_check) {
-					if (TRUE == b_hard) {
-						sprintf(sql_string, "DELETE FROM messages "
-						        "WHERE message_id=%llu", LLU(message_id));
-					} else {
-						sprintf(sql_string, "UPDATE messages SET "
-							"is_deleted=1 WHERE message_id=%llu",
-							LLU(message_id));
-					}
-					if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-						sql_string, NULL, NULL, NULL)) {
-						return FALSE;
-					}
-				}
-				if (FALSE == b_hard) {
-					sprintf(sql_string, "DELETE FROM read_states"
-					        " WHERE message_id=%llu", LLU(message_id));
-					if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-						sql_string, NULL, NULL, NULL)) {
-						return FALSE;
-					}
 				}
 			}
-			pstmt.finalize();
-			if (FALSE == b_check) {
+			if (NULL != pmessage_count) {
+				(*pmessage_count) ++;
+			}
+			if (b_hard && is_associated && pfai_size != nullptr)
+				*pfai_size += sqlite3_column_int64(pstmt, 1);
+			else if (b_hard && !is_associated && pnormal_size != nullptr)
+				*pnormal_size += sqlite3_column_int64(pstmt, 1);
+			if (0 == is_deleted) {
+				db_engine_proc_dynamic_event(pdb, cpid,
+					DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
+					message_id, 0);
+				db_engine_notify_message_deletion(
+					pdb, fid_val, message_id);
+			}
+			if (TRUE == b_check) {
 				if (TRUE == b_hard) {
-					sprintf(sql_string, "DELETE FROM messages WHERE"
-							" parent_fid=%llu AND is_associated=%d",
-							LLU(fid_val), is_associated);
+					sprintf(sql_string, "DELETE FROM messages "
+						"WHERE message_id=%llu", LLU(message_id));
 				} else {
-					sprintf(sql_string, "UPDATE messages SET is_deleted=1"
-							" WHERE parent_fid=%llu AND is_associated=%d",
-							LLU(fid_val), is_associated);
+					sprintf(sql_string, "UPDATE messages SET "
+						"is_deleted=1 WHERE message_id=%llu",
+						LLU(message_id));
 				}
 				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 					sql_string, NULL, NULL, NULL)) {
 					return FALSE;
 				}
+			}
+			if (FALSE == b_hard) {
+				sprintf(sql_string, "DELETE FROM read_states"
+					" WHERE message_id=%llu", LLU(message_id));
+				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
+					sql_string, NULL, NULL, NULL)) {
+					return FALSE;
+				}
+			}
+		}
+		pstmt.finalize();
+		if (FALSE == b_check) {
+			if (TRUE == b_hard) {
+				sprintf(sql_string, "DELETE FROM messages WHERE"
+						" parent_fid=%llu AND is_associated=%d",
+						LLU(fid_val), is_associated);
+			} else {
+				sprintf(sql_string, "UPDATE messages SET is_deleted=1"
+						" WHERE parent_fid=%llu AND is_associated=%d",
+						LLU(fid_val), is_associated);
+			}
+			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
+				sql_string, NULL, NULL, NULL)) {
+				return FALSE;
 			}
 		}
 	}
-		if (TRUE == b_sub) {
-			if (TRUE == b_private) {
-				sprintf(sql_string, "SELECT folder_id "
-				          "FROM folders WHERE parent_id=%llu", LLU(fid_val));
-			} else {
-				sprintf(sql_string, "SELECT folder_id,"
-							" is_deleted FROM folders WHERE "
-							"parent_fid=%llu", LLU(fid_val));
-			}
-			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt == nullptr)
+	if (!b_sub)
+		return TRUE;
+	if (TRUE == b_private) {
+		sprintf(sql_string, "SELECT folder_id "
+			  "FROM folders WHERE parent_id=%llu", LLU(fid_val));
+	} else {
+		sprintf(sql_string, "SELECT folder_id,"
+					" is_deleted FROM folders WHERE "
+					"parent_fid=%llu", LLU(fid_val));
+	}
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	if (pstmt == nullptr)
+		return FALSE;
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
+		if ((TRUE == b_private && fid_val < PRIVATE_FID_CUSTOM) ||
+			(FALSE == b_private && fid_val < PUBLIC_FID_CUSTOM)) {
+			*pb_partial = TRUE;
+			continue;
+		}
+		bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
+		if (!b_hard && is_deleted)
+			continue;
+		if (NULL != username) {
+			uint32_t permission = 0;
+			if (FALSE == common_util_check_folder_permission(
+				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
-				if ((TRUE == b_private && fid_val < PRIVATE_FID_CUSTOM) ||
-					(FALSE == b_private && fid_val < PUBLIC_FID_CUSTOM)) {
-					*pb_partial = TRUE;
-					continue;
-				}
-				bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
-				if (!b_hard && is_deleted)
-					continue;
-				if (NULL != username) {
-					uint32_t permission = 0;
-					if (FALSE == common_util_check_folder_permission(
-						pdb->psqlite, fid_val, username, &permission)) {
-						return FALSE;
-					}
-					if (0 == (permission & PERMISSION_FOLDEROWNER)) {
-						*pb_partial = TRUE;
-						continue;
-					}
-				}
-				if (FALSE == folder_empty_folder(pdb, cpid, username,
-					fid_val, b_hard, TRUE, TRUE, FALSE, &b_partial,
-					pnormal_size, pfai_size, NULL, NULL)) {
-					return FALSE;
-				}
-				if (TRUE == b_partial) {
-					*pb_partial = TRUE;
-					continue;
-				}
-				if (FALSE == folder_empty_folder(pdb, cpid, username,
-					fid_val, b_hard, FALSE, FALSE, TRUE, &b_partial,
-					pnormal_size, pfai_size, NULL, NULL)) {
-					return FALSE;
-				}
-				if (TRUE == b_partial) {
-					*pb_partial = TRUE;
-					continue;
-				}
-				if (NULL != pfolder_count && TRUE == b_hard) {
-					(*pfolder_count) ++;
-				}
-				if (TRUE == b_hard) {
-					sprintf(sql_string, "DELETE FROM folders "
-					        "WHERE folder_id=%llu", LLU(fid_val));
-				} else {
-					sprintf(sql_string, "UPDATE folders SET "
-						"is_deleted=1 WHERE folder_id=%llu",
-						LLU(fid_val));
-				}
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
-					return FALSE;
-				}
-				db_engine_notify_folder_deletion(
-						pdb, folder_id, fid_val);
+			}
+			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+				*pb_partial = TRUE;
+				continue;
 			}
 		}
+		if (FALSE == folder_empty_folder(pdb, cpid, username,
+			fid_val, b_hard, TRUE, TRUE, FALSE, &b_partial,
+			pnormal_size, pfai_size, NULL, NULL)) {
+			return FALSE;
+		}
+		if (TRUE == b_partial) {
+			*pb_partial = TRUE;
+			continue;
+		}
+		if (FALSE == folder_empty_folder(pdb, cpid, username,
+			fid_val, b_hard, FALSE, FALSE, TRUE, &b_partial,
+			pnormal_size, pfai_size, NULL, NULL)) {
+			return FALSE;
+		}
+		if (TRUE == b_partial) {
+			*pb_partial = TRUE;
+			continue;
+		}
+		if (NULL != pfolder_count && TRUE == b_hard) {
+			(*pfolder_count) ++;
+		}
+		if (TRUE == b_hard) {
+			sprintf(sql_string, "DELETE FROM folders "
+				"WHERE folder_id=%llu", LLU(fid_val));
+		} else {
+			sprintf(sql_string, "UPDATE folders SET "
+				"is_deleted=1 WHERE folder_id=%llu",
+				LLU(fid_val));
+		}
+		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
+			sql_string, NULL, NULL, NULL)) {
+			return FALSE;
+		}
+		db_engine_notify_folder_deletion(
+				pdb, folder_id, fid_val);
+	}
 	return TRUE;
 }
 
