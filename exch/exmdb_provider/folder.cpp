@@ -842,19 +842,13 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	uint64_t *pnormal_size, uint64_t *pfai_size,
 	uint32_t *pmessage_count, uint32_t *pfolder_count)
 {
-	BOOL b_check = true, b_owner, b_private, b_partial;
-	int is_deleted;
-	uint64_t fid_val;
-	int is_associated;
-	uint64_t message_id;
-	uint32_t permission;
-	uint64_t parent_fid;
+	BOOL b_check = true, b_owner, b_partial;
 	uint32_t folder_type;
 	char sql_string[256];
 	
 	*pb_partial = FALSE;
-	fid_val = folder_id;
-	b_private = exmdb_server_check_private();
+	uint64_t fid_val = folder_id;
+	auto b_private = exmdb_server_check_private();
 	if (TRUE == b_private) {
 		b_hard = TRUE;
 	}
@@ -875,7 +869,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			if (pstmt == nullptr)
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				is_associated = sqlite3_column_int64(pstmt, 3);
+				bool is_associated = sqlite3_column_int64(pstmt, 3);
 				if (0 == is_associated) {
 					if (FALSE == b_normal) {
 						continue;
@@ -885,9 +879,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						continue;
 					}
 				}
-				message_id = sqlite3_column_int64(pstmt, 0);
-				parent_fid = sqlite3_column_int64(pstmt, 1);
+				uint64_t message_id = sqlite3_column_int64(pstmt, 0);
+				uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
 				if (NULL != username) {
+					uint32_t permission;
 					if (FALSE == common_util_check_folder_permission(
 						pdb->psqlite, parent_fid, username, &permission)) {
 						return FALSE;
@@ -945,6 +940,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		if (NULL == username) {
 			b_check = FALSE;
 		} else {
+			uint32_t permission = 0;
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
@@ -973,12 +969,12 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt == nullptr)
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 3);
+			bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 3);
 			if (FALSE == b_hard && 0 != is_deleted) {
 				continue;
 			}
-			message_id = sqlite3_column_int64(pstmt, 0);
-			is_associated = sqlite3_column_int64(pstmt, 2);
+			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
+			bool is_associated = sqlite3_column_int64(pstmt, 2);
 			if (TRUE == b_check) {
 				if (FALSE == common_util_check_message_owner(
 					pdb->psqlite, message_id, username, &b_owner)) {
@@ -1047,7 +1043,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	} else {
 		if (TRUE == b_normal || TRUE == b_fai) {
-			is_associated = !b_normal ? TRUE : false;
+			int is_associated = !b_normal ? TRUE : false;
 			if (TRUE == b_private) {
 				sprintf(sql_string, "SELECT message_id,"
 						" message_size FROM messages WHERE "
@@ -1063,11 +1059,11 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			if (pstmt == nullptr)
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
+				bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
 				if (FALSE == b_hard && 0 != is_deleted) {
 					continue;
 				}
-				message_id = sqlite3_column_int64(pstmt, 0);
+				uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 				if (TRUE == b_check) {
 					if (FALSE == common_util_check_message_owner(
 						pdb->psqlite, message_id, username, &b_owner)) {
@@ -1150,17 +1146,18 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			if (pstmt == nullptr)
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				fid_val = sqlite3_column_int64(pstmt, 0);
+				uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
 				if ((TRUE == b_private && fid_val < PRIVATE_FID_CUSTOM) ||
 					(FALSE == b_private && fid_val < PUBLIC_FID_CUSTOM)) {
 					*pb_partial = TRUE;
 					continue;
 				}
-				is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
+				bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
 				if (FALSE == b_hard && 0 != is_deleted) {
 					continue;
 				}
 				if (NULL != username) {
+					uint32_t permission = 0;
 					if (FALSE == common_util_check_folder_permission(
 						pdb->psqlite, fid_val, username, &permission)) {
 						return FALSE;
