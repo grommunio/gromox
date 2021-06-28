@@ -605,8 +605,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_movecopy_messages(plogon->get_dir(),
-		logon_object_get_account_id(plogon),
-		pinfo->cpid, b_guest, rpc_info.username,
+	    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
 		folder_object_get_id(psrc_folder),
 		folder_object_get_id(pdst_folder),
 		b_copy, &ids, &b_partial)) {
@@ -724,8 +723,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_movecopy_folder(plogon->get_dir(),
-		logon_object_get_account_id(plogon),
-		pinfo->cpid, b_guest, rpc_info.username,
+	    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
 		folder_object_get_id(psrc_parent),
 		folder_id, folder_object_get_id(pdst_folder),
 		new_name, FALSE, &b_exist, &b_partial)) {
@@ -836,8 +834,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_movecopy_folder(plogon->get_dir(),
-		logon_object_get_account_id(plogon),
-		pinfo->cpid, b_guest, rpc_info.username,
+	    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
 		folder_object_get_id(psrc_parent), folder_id,
 		folder_object_get_id(pdst_folder), new_name,
 		TRUE, &b_exist, &b_partial)) {
@@ -972,11 +969,9 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		ids.count = pmessage_ids->count;
 		ids.pids = pmessage_ids->pll;
 		if (!exmdb_client_delete_messages(plogon->get_dir(),
-			logon_object_get_account_id(plogon), pinfo->cpid,
-			username, folder_object_get_id(pfolder), &ids,
-			b_hard, &b_partial)) {
+		    plogon->account_id, pinfo->cpid, username,
+		    folder_object_get_id(pfolder), &ids, b_hard, &b_partial))
 			return ecError;
-		}
 		*ppartial_completion = !!b_partial;
 		return ecSuccess;
 	}
@@ -1021,8 +1016,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 		}
 	}
-	if (!exmdb_client_delete_messages(plogon->get_dir(),
-		logon_object_get_account_id(plogon),
+	if (!exmdb_client_delete_messages(plogon->get_dir(), plogon->account_id,
 		pinfo->cpid, username, folder_object_get_id(pfolder),
 		&ids, b_hard, &b_partial1)) {
 		return ecError;

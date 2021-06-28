@@ -411,8 +411,7 @@ BINARY* common_util_to_folder_entryid(
 		tmp_bin.pb = tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(
 			logon_object_get_mailbox_guid(plogon), &tmp_bin);
-		tmp_entryid.database_guid = rop_util_make_user_guid(
-						logon_object_get_account_id(plogon));
+		tmp_entryid.database_guid = rop_util_make_user_guid(plogon->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
 		rop_util_get_provider_uid(PROVIDER_UID_PUBLIC,
@@ -426,8 +425,7 @@ BINARY* common_util_to_folder_entryid(
 				return NULL;
 			}
 		} else {
-			tmp_entryid.database_guid = rop_util_make_domain_guid(
-								logon_object_get_account_id(plogon));
+			tmp_entryid.database_guid = rop_util_make_domain_guid(plogon->account_id);
 		}
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
@@ -463,13 +461,11 @@ BINARY* common_util_calculate_folder_sourcekey(
 	if (pbin->pv == nullptr)
 		return NULL;
 	if (TRUE == logon_object_check_private(plogon)) {
-		longid.guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
+		longid.guid = rop_util_make_user_guid(plogon->account_id);
 	} else {
 		replid = rop_util_get_replid(folder_id);
 		if (1 == replid) {
-			longid.guid = rop_util_make_domain_guid(
-				logon_object_get_account_id(plogon));
+			longid.guid = rop_util_make_domain_guid(plogon->account_id);
 		} else {
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &longid.guid))
@@ -502,8 +498,7 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 		tmp_bin.pb = tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(
 			logon_object_get_mailbox_guid(plogon), &tmp_bin);
-		tmp_entryid.folder_database_guid = rop_util_make_user_guid(
-						logon_object_get_account_id(plogon));
+		tmp_entryid.folder_database_guid = rop_util_make_user_guid(plogon->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
 		rop_util_get_provider_uid(PROVIDER_UID_PUBLIC,
@@ -517,8 +512,7 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 				return NULL;
 			}
 		} else {
-			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(
-								logon_object_get_account_id(plogon));
+			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(plogon->account_id);
 		}
 		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
 	}
@@ -568,7 +562,6 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 	BINARY *pbin, uint64_t *pfolder_id)
 {
 	BOOL b_found;
-	GUID tmp_guid;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
@@ -580,12 +573,11 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 		return FALSE;	
 	}
 	switch (tmp_entryid.folder_type) {
-	case EITLT_PRIVATE_FOLDER:
+	case EITLT_PRIVATE_FOLDER: {
 		if (FALSE == logon_object_check_private(plogon)) {
 			return FALSE;
 		}
-		tmp_guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
+		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_entryid.database_guid,
 			&tmp_guid, sizeof(GUID))) {
 			return FALSE;	
@@ -593,12 +585,12 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 		*pfolder_id = rop_util_make_eid(1,
 				tmp_entryid.global_counter);
 		return TRUE;
-	case EITLT_PUBLIC_FOLDER:
+	}
+	case EITLT_PUBLIC_FOLDER: {
 		if (TRUE == logon_object_check_private(plogon)) {
 			return FALSE;
 		}
-		tmp_guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
+		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (0 == memcmp(&tmp_entryid.database_guid,
 			&tmp_guid, sizeof(GUID))) {
 			*pfolder_id = rop_util_make_eid(1,
@@ -612,6 +604,7 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
 		return TRUE;
+	}
 	default:
 		return FALSE;
 	}
@@ -621,7 +614,6 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 	BINARY *pbin, uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	BOOL b_found;
-	GUID tmp_guid;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
@@ -637,12 +629,11 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	switch (tmp_entryid.message_type) {
-	case EITLT_PRIVATE_MESSAGE:
+	case EITLT_PRIVATE_MESSAGE: {
 		if (FALSE == logon_object_check_private(plogon)) {
 			return FALSE;
 		}
-		tmp_guid = rop_util_make_user_guid(
-			logon_object_get_account_id(plogon));
+		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_entryid.folder_database_guid,
 			&tmp_guid, sizeof(GUID))) {
 			return FALSE;	
@@ -652,12 +643,12 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 		*pmessage_id = rop_util_make_eid(1,
 			tmp_entryid.message_global_counter);
 		return TRUE;
-	case EITLT_PUBLIC_MESSAGE:
+	}
+	case EITLT_PUBLIC_MESSAGE: {
 		if (TRUE == logon_object_check_private(plogon)) {
 			return FALSE;
 		}
-		tmp_guid = rop_util_make_domain_guid(
-			logon_object_get_account_id(plogon));
+		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (0 == memcmp(&tmp_entryid.folder_database_guid,
 			&tmp_guid, sizeof(GUID))) {
 			*pfolder_id = rop_util_make_eid(1,
@@ -675,6 +666,7 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 		*pmessage_id = rop_util_make_eid(replid,
 			tmp_entryid.message_global_counter);
 		return TRUE;
+	}
 	default:
 		return FALSE;
 	}
@@ -908,7 +900,6 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid)
 {
 	BOOL b_found;
-	GUID tmp_guid;
 	LOGON_OBJECT *plogon;
 	
 	plogon = *(LOGON_OBJECT**)pparam;
@@ -917,12 +908,10 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 			if (1 != *preplid) {
 				return FALSE;
 			}
-			*pguid = rop_util_make_user_guid(
-				logon_object_get_account_id(plogon));
+			*pguid = rop_util_make_user_guid(plogon->account_id);
 		} else {
 			if (1 == *preplid) {
-				*pguid = rop_util_make_domain_guid(
-					logon_object_get_account_id(plogon));
+				*pguid = rop_util_make_domain_guid(plogon->account_id);
 			} else if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    *preplid, &b_found, pguid) || !b_found) {
 				return FALSE;
@@ -930,15 +919,13 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 		}
 	} else {
 		if (TRUE == logon_object_check_private(plogon)) {
-			tmp_guid = rop_util_make_user_guid(
-				logon_object_get_account_id(plogon));
+			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (0 != memcmp(pguid, &tmp_guid, sizeof(GUID))) {
 				return FALSE;
 			}
 			*preplid = 1;
 		} else {
-			tmp_guid = rop_util_make_domain_guid(
-				logon_object_get_account_id(plogon));
+			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (memcmp(pguid, &tmp_guid, sizeof(GUID)) == 0)
 				*preplid = 1;
 			else if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
@@ -2309,16 +2296,15 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			return FALSE;
 		}
 		if (!exmdb_client_movecopy_message(plogon->get_dir(),
-			logon_object_get_account_id(plogon),
-			cpid, message_id, folder_id, new_id,
-			TRUE, &b_result)) {
+		    plogon->account_id, cpid, message_id, folder_id,
+		    new_id, TRUE, &b_result)) {
 			log_err("W-1277: Failed to move to target folder while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
 	} else if (TRUE == b_delete) {
 		exmdb_client_delete_message(plogon->get_dir(),
-			logon_object_get_account_id(plogon),
-			cpid, parent_id, message_id, TRUE, &b_result);
+			plogon->account_id, cpid, parent_id, message_id,
+			TRUE, &b_result);
 	} else {
 		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
 			log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
@@ -2327,10 +2313,9 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		ids.count = 1;
 		ids.pids = &message_id;
 		if (!exmdb_client_movecopy_messages(plogon->get_dir(),
-			logon_object_get_account_id(plogon),
-			cpid, FALSE, NULL, parent_id,
-			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
-			FALSE, &ids, &b_partial)) {
+		    plogon->account_id, cpid, false, nullptr, parent_id,
+		    rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
+		    false, &ids, &b_partial)) {
 			log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:0x%llx", LLU(message_id));
 			return FALSE;	
 		}

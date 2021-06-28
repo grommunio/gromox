@@ -994,8 +994,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client_copy_folder_internal(plogon->get_dir(),
-			    logon_object_get_account_id(plogon), pinfo->cpid,
-			    b_guest, rpc_info.username, folder_object_get_id(fldsrc),
+			    plogon->account_id, pinfo->cpid, b_guest,
+			    rpc_info.username, folder_object_get_id(fldsrc),
 			    b_normal, b_fai, b_sub, folder_object_get_id(flddst),
 			    &b_collid, &b_partial))
 				return ecError;

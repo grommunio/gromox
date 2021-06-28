@@ -30,7 +30,6 @@ extern std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags, ui
 BOOL logon_object_check_private(LOGON_OBJECT *plogon);
 extern GUID logon_object_guid(LOGON_OBJECT *);
 int logon_object_get_mode(LOGON_OBJECT *plogon);
-int logon_object_get_account_id(LOGON_OBJECT *plogon);
 GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon);
 BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	uint16_t propid, PROPERTY_NAME *ppropname);

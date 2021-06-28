@@ -414,14 +414,11 @@ uint32_t rop_getowningservers(
 		if (-1 == domain_id) {
 			return ecNotFound;
 		}
-		if (domain_id != logon_object_get_account_id(plogon)) {
-			if (FALSE == common_util_check_same_org(domain_id,
-				logon_object_get_account_id(plogon))) {
-				return ecNotFound;
-			}
-		}
+		if (domain_id != plogon->account_id &&
+		    !common_util_check_same_org(domain_id, plogon->account_id))
+			return ecNotFound;
 	} else {
-		// domain_id = logon_object_get_account_id(plogon);
+		// domain_id = plogon->account_id;
 	}
 	static constexpr size_t dnmax = 256;
 	pghost->ppservers[0] = cu_alloc<char>(dnmax);
@@ -483,13 +480,11 @@ uint32_t rop_longtermidfromid(uint64_t id,
 		if (1 != rop_util_get_replid(id)) {
 			return ecInvalidParam;
 		}
-		plong_term_id->guid = rop_util_make_user_guid(
-					logon_object_get_account_id(plogon));
+		plong_term_id->guid = rop_util_make_user_guid(plogon->account_id);
 	} else {
 		replid = rop_util_get_replid(id);
 		if (1 == replid) {
-			plong_term_id->guid = rop_util_make_domain_guid(
-						logon_object_get_account_id(plogon));
+			plong_term_id->guid = rop_util_make_domain_guid(plogon->account_id);
 		} else {
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &plong_term_id->guid))
@@ -509,7 +504,6 @@ uint32_t rop_idfromlongtermid(
 {
 	BOOL b_found;
 	int domain_id;
-	GUID tmp_guid;
 	int object_type;
 	uint16_t replid;
 	
@@ -521,8 +515,7 @@ uint32_t rop_idfromlongtermid(
 		return ecNotSupported;
 	}
 	if (TRUE == logon_object_check_private(plogon)) {
-		tmp_guid = rop_util_make_user_guid(
-					logon_object_get_account_id(plogon));
+		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_guid, &plong_term_id->guid, sizeof(GUID))) {
 			return ecInvalidParam;
 		}
@@ -532,13 +525,11 @@ uint32_t rop_idfromlongtermid(
 		if (-1 == domain_id) {
 			return ecInvalidParam;
 		}
-		if (domain_id == logon_object_get_account_id(plogon)) {
+		if (domain_id == plogon->account_id) {
 			replid = 1;
 		} else {
-			if (FALSE == common_util_check_same_org(
-				domain_id, logon_object_get_account_id(plogon))) {
+			if (!common_util_check_same_org(domain_id, plogon->account_id))
 				return ecInvalidParam;
-			}
 			if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
 			    plong_term_id->guid, &b_found, &replid))
 				return ecError;

@@ -204,7 +204,7 @@ BOOL logon_object_check_private(LOGON_OBJECT *plogon)
 
 GUID logon_object_guid(LOGON_OBJECT *l)
 {
-	auto id = logon_object_get_account_id(l);
+	auto id = l->account_id;
 	return logon_object_check_private(l) ? rop_util_make_user_guid(id) :
 	       rop_util_make_domain_guid(id);
 }
@@ -212,11 +212,6 @@ GUID logon_object_guid(LOGON_OBJECT *l)
 int logon_object_get_mode(LOGON_OBJECT *plogon)
 {
 	return plogon->logon_mode;
-}
-
-int logon_object_get_account_id(LOGON_OBJECT *plogon)
-{
-	return plogon->account_id;
 }
 
 GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon)

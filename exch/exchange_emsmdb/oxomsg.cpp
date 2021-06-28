@@ -605,14 +605,12 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 			return ecError;
 		}
 		if (!exmdb_client_movecopy_message(plogon->get_dir(),
-			logon_object_get_account_id(plogon),
-			pinfo->cpid, message_id, folder_id,
-			new_id, b_delete, &b_result)) {
+		    plogon->account_id, pinfo->cpid, message_id, folder_id,
+		    new_id, b_delete, &b_result))
 			return ecError;
-		}
 	} else if (TRUE == b_delete) {
 		exmdb_client_delete_message(plogon->get_dir(),
-			logon_object_get_account_id(plogon), pinfo->cpid,
+			plogon->account_id, pinfo->cpid,
 			parent_id, message_id, TRUE, &b_result);
 	}
 	return ecSuccess;
