@@ -2463,10 +2463,10 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	}
 	if (!b_exist)
 		return ecSuccess;
-	BOOL b_normal = (flags & DELETE_FOLDER_FLAG_MESSAGES) ? TRUE : false;
+	BOOL b_normal = (flags & DEL_MESSAGES) ? TRUE : false;
 	BOOL b_fai = b_normal;
-	BOOL b_sub = (flags & DELETE_FOLDER_FLAG_FOLDERS) ? TRUE : false;
-	BOOL b_hard = (flags & DELETE_FOLDER_FLAG_HARD_DELETE) ? TRUE : false;
+	BOOL b_sub = (flags & DEL_FOLDERS) ? TRUE : false;
+	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (TRUE == store_object_check_private(pstore)) {
 		if (FALSE == exmdb_client_get_folder_property(
 			store_object_get_dir(pstore), 0, folder_id,

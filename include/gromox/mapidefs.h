@@ -412,6 +412,13 @@ enum BOOKMARK {
 };
 
 enum {
+	DEL_MESSAGES = 1U << 0,
+	DEL_FOLDERS = 1U << 2,
+	DEL_ASSOCIATED = 1U << 3, /* MAPI only, not used in OXCROPS. */
+	DELETE_HARD_DELETE = 1U << 4, /* undocumented on MSDN */
+};
+
+enum {
 	FL_FULLSTRING = 0,
 	FL_SUBSTRING,
 	FL_PREFIX,
