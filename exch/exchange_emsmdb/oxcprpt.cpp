@@ -45,7 +45,7 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 		return ecNotSupported;
 	}
 	if (PROPIDS_FROM_NAMES_FLAG_GETORCREATE == flags) {
-		b_create = logon_object_check_private(plogon) &&
+		b_create = plogon->check_private() &&
 		           logon_object_get_mode(plogon) == LOGON_MODE_GUEST ? false : TRUE;
 	} else if (PROPIDS_FROM_NAMES_FLAG_GETONLY == flags) {
 		b_create = FALSE;
@@ -924,9 +924,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		auto fldsrc = static_cast<FOLDER_OBJECT *>(pobject);
 		auto flddst = static_cast<FOLDER_OBJECT *>(pobject_dst);
 		/* MS-OXCPRPT 3.2.5.8, public folder not supported */
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return ecNotSupported;
-		}
 		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -1078,10 +1077,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	BOOL b_write = flags == OPENSTREAM_FLAG_CREATE || flags == OPENSTREAM_FLAG_READWRITE ? TRUE : false;
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER:
-		if (FALSE == logon_object_check_private(plogon) &&
-			OPENSTREAM_FLAG_READONLY != flags) {
+		if (!plogon->check_private() && flags != OPENSTREAM_FLAG_READONLY)
 			return ecNotSupported;
-		}
 		if (PROP_TYPE(proptag) != PT_BINARY)
 			return ecNotSupported;
 		if (TRUE == b_write) {

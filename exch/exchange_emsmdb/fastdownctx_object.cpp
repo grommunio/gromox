@@ -389,8 +389,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			break;
 		case FUNC_ID_MESSAGE: {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
-			if (TRUE == logon_object_check_private(
-				pctx->pstream->plogon)) {
+			if (pctx->pstream->plogon->check_private()) {
 				if (!exmdb_client_read_message(pctx->pstream->plogon->get_dir(),
 				    nullptr, pinfo->cpid,
 				    *static_cast<uint64_t *>(pflow->pparam), &pmsgctnt)) {

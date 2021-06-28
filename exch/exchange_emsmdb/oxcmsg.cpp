@@ -655,7 +655,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	
 	auto rpc_info = get_rpc_info();
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	auto username = logon_object_check_private(plogon) ? nullptr : rpc_info.username;
+	auto username = plogon->check_private() ? nullptr : rpc_info.username;
 	b_notify = FALSE;
 	b_changed = FALSE;
 	switch (read_flag) {

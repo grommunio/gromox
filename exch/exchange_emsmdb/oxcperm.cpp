@@ -37,9 +37,8 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	b_freebusy = FALSE;
 	folder_id = folder_object_get_id(pfolder);
 	if (flags & MODIFY_PERMISSIONS_FLAG_INCLUDEFREEBUSY) {
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return ecNotSupported;
-		}
 		if (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR)) {
 			b_freebusy = TRUE;
 		}

@@ -1213,7 +1213,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 				continue;
 			}
 		}
-		if (TRUE == logon_object_check_private(plogon)) {
+		if (plogon->check_private()) {
 			if (!exmdb_client_set_message_read_state(plogon->get_dir(),
 			    nullptr, message_id, pread_stat[i].mark_as_read, &read_cn))
 				return ecError;
@@ -1298,7 +1298,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 			return ecError;
 		}
-		if (TRUE == logon_object_check_private(plogon)) {
+		if (plogon->check_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 				return ecInvalidParam;
@@ -1327,7 +1327,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return ecError;
 	}
-	if (TRUE == logon_object_check_private(plogon)) {
+	if (plogon->check_private()) {
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			return ecInvalidParam;
@@ -1439,9 +1439,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (parent_id != parent_id1) {
 		/* MS-OXCFXICS 3.3.5.8.8 move folders
 		within public mailbox is not supported */
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return ecNotSupported;
-		}
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
 		}
@@ -1578,7 +1577,7 @@ uint32_t rop_syncimportdeletes(
 			pbins->pbin + i, &tmp_xid)) {
 			return ecError;
 		}
-		if (TRUE == logon_object_check_private(plogon)) {
+		if (plogon->check_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 				return ecInvalidParam;
@@ -1641,7 +1640,7 @@ uint32_t rop_syncimportdeletes(
 			message_ids.pids[message_ids.count] = eid;
 			message_ids.count ++;
 		} else {
-			if (TRUE == logon_object_check_private(plogon)) {
+			if (plogon->check_private()) {
 				if (!exmdb_client_get_folder_property(plogon->get_dir(),
 				    0, eid, PROP_TAG_FOLDERTYPE, &pvalue))
 					return ecError;

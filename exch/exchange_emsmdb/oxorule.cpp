@@ -139,9 +139,8 @@ uint32_t rop_updatedeferredactionmessages(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (FALSE == logon_object_check_private(plogon)) {
+	if (!plogon->check_private())
 		return ecNotSupported;
-	}
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
 	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {

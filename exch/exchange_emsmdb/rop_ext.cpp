@@ -2074,7 +2074,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		}
 		return rop_ext_pull_writeperuserinformation_request(pext,
 		       static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r->ppayload),
-		       logon_object_check_private(plogon));
+		       plogon->check_private());
 	}
 	case ropOpenFolder:
 		r->ppayload = pext->anew<OPENFOLDER_REQUEST>();
@@ -2359,7 +2359,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		}
 		return rop_ext_pull_setmessagereadflag_request(pext,
 		       static_cast<SETMESSAGEREADFLAG_REQUEST *>(r->ppayload),
-		       logon_object_check_private(plogon));
+		       plogon->check_private());
 	}
 	case ropOpenAttachment:
 		r->ppayload = pext->anew<OPENATTACHMENT_REQUEST>();
@@ -2862,13 +2862,12 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 		if (NULL == plogon) {
 			return EXT_ERR_INVALID_OBJECT;
 		}
-		if (TRUE == logon_object_check_private(plogon)) {
+		if (plogon->check_private())
 			return rop_ext_push_logon_pmb_response(pext,
 			       static_cast<LOGON_PMB_RESPONSE *>(r->ppayload));
-		} else {
+		else
 			return rop_ext_push_logon_pf_response(pext,
 			       static_cast<LOGON_PF_RESPONSE *>(r->ppayload));
-		}
 	}
 	case ropGetReceiveFolder:
 		return rop_ext_push_getreceivefolder_response(pext,

@@ -91,7 +91,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		}
 		username = NULL;
 		if (LOGON_MODE_OWNER != logon_object_get_mode(ptable->plogon)) {
-			if (FALSE == logon_object_check_private(ptable->plogon)) {
+			if (!ptable->plogon->check_private()) {
 				username = rpc_info.username;
 			} else {
 				if (!exmdb_client_check_folder_permission(
@@ -165,7 +165,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
 		       ptable->pcolumns, ptable->position, row_needed, pset);
 	}
-	if (FALSE == logon_object_check_private(ptable->plogon)) {
+	if (!ptable->plogon->check_private()) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	} else {
@@ -475,7 +475,7 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 		return FALSE;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (FALSE == logon_object_check_private(ptable->plogon)) {
+	if (!ptable->plogon->check_private()) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	} else {
@@ -497,7 +497,7 @@ BOOL table_object_read_row(TABLE_OBJECT *ptable,
 		return FALSE;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (FALSE == logon_object_check_private(ptable->plogon)) {
+	if (!ptable->plogon->check_private()) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	} else {

@@ -197,15 +197,15 @@ LOGON_OBJECT::~LOGON_OBJECT()
 	}
 }
 
-BOOL logon_object_check_private(LOGON_OBJECT *plogon)
+BOOL LOGON_OBJECT::check_private() const
 {
-	return (plogon->logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false;
+	return (logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false;
 }
 
 GUID logon_object_guid(LOGON_OBJECT *l)
 {
 	auto id = l->account_id;
-	return logon_object_check_private(l) ? rop_util_make_user_guid(id) :
+	return l->check_private() ? rop_util_make_user_guid(id) :
 	       rop_util_make_domain_guid(id);
 }
 
@@ -502,7 +502,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	if (TRUE == logon_object_check_private(plogon)) {
+	if (plogon->check_private()) {
 		pproptags->pproptag[pproptags->count] =
 					PR_MAILBOX_OWNER_NAME;
 		pproptags->count ++;
@@ -657,9 +657,8 @@ static BOOL logon_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return FALSE;
-		}
 		*ppvalue = common_util_alloc(256);
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -693,7 +692,7 @@ static BOOL logon_object_get_calculated_property(
 		return TRUE;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A:
-		if (TRUE == logon_object_check_private(plogon)) {
+		if (plogon->check_private()) {
 			if (!common_util_username_to_essdn(plogon->account,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
 				return FALSE;	
@@ -717,9 +716,8 @@ static BOOL logon_object_get_calculated_property(
 						COMMON_UTIL_MAX_EXTRULE_LENGTH);
 		return TRUE;
 	case PROP_TAG_HIERARCHYSERVER:
-		if (TRUE == logon_object_check_private(plogon)) {
+		if (plogon->check_private())
 			return FALSE;
-		}
 		common_util_get_domain_server(plogon->account, temp_buff);
 		*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
 		if (NULL == *ppvalue) {
@@ -733,9 +731,8 @@ static BOOL logon_object_get_calculated_property(
 		return TRUE;
 	}
 	case PR_MAILBOX_OWNER_ENTRYID:
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return FALSE;
-		}
 		*ppvalue = common_util_username_to_addressbook_entryid(
 												plogon->account);
 		if (NULL == *ppvalue) {
@@ -743,9 +740,8 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PR_MAILBOX_OWNER_NAME:
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return FALSE;
-		}
 		if (FALSE == common_util_get_user_displayname(
 			plogon->account, temp_buff)) {
 			return FALSE;	
@@ -765,9 +761,8 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
-		if (FALSE == logon_object_check_private(plogon)) {
+		if (!plogon->check_private())
 			return FALSE;
-		}
 		if (FALSE == common_util_get_user_displayname(
 			plogon->account, temp_buff)) {
 			return FALSE;	

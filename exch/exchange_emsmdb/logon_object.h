@@ -11,6 +11,7 @@
 
 struct LOGON_OBJECT {
 	~LOGON_OBJECT();
+	BOOL check_private() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
 
@@ -27,7 +28,6 @@ struct LOGON_OBJECT {
 };
 
 extern std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
-BOOL logon_object_check_private(LOGON_OBJECT *plogon);
 extern GUID logon_object_guid(LOGON_OBJECT *);
 int logon_object_get_mode(LOGON_OBJECT *plogon);
 GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon);

@@ -141,7 +141,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	auto pseen_fai = (pctx->sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
 	auto pseen     = (pctx->sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
 	BOOL b_ordered = (pctx->extra_flags & SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME) ? TRUE : false;
-	if (FALSE == logon_object_check_private(pctx->pstream->plogon)) {
+	if (!pctx->pstream->plogon->check_private()) {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	} else {
@@ -468,9 +468,9 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (TRUE == logon_object_check_private(pctx->pstream->plogon) &&
-			(folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
-			folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))) {
+		if (pctx->pstream->plogon->check_private() &&
+		    (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
+		    folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))) {
 			ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
 			if (NULL == ppropval) {
 				return FALSE;
@@ -1082,7 +1082,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	static constexpr uint8_t fake_false = 0;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (TRUE == logon_object_check_private(pctx->pstream->plogon)) {
+	if (pctx->pstream->plogon->check_private()) {
 		if (!exmdb_client_read_message(pctx->pstream->plogon->get_dir(),
 		    nullptr, pinfo->cpid, message_id, &pmsgctnt))
 			return FALSE;
