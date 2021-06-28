@@ -346,27 +346,22 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 #if 0
 	/* check if it is alread in spooler queue */
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (FALSE == exmdb_client_check_message(
-		logon_object_get_dir(plogon), fid_spooler,
-		message_object_get_id(pmessage), &b_exist)) {
+	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
+	    message_object_get_id(pmessage), &b_exist))
 		return ecError;
-	}
 	if (TRUE == b_exist) {
 		return ecAccessDenied;
 	}
 	if (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) {
-		if (FALSE == exmdb_client_link_message(
-			logon_object_get_dir(plogon), pinfo->cpid,
-			fid_spooler, message_object_get_id(pmessage),
-			&b_result) || FALSE == b_result) {
+		if (!exmdb_client_link_message(plogon->get_dir(), pinfo->cpid,
+		    fid_spooler, message_object_get_id(pmessage), &b_result) ||
+		    !b_result)
 			return ecError;
-		}
 		return ecSuccess;
 	}
 #endif
 	
-	if (FALSE == exmdb_client_try_mark_submit(
-		logon_object_get_dir(plogon),
+	if (!exmdb_client_try_mark_submit(plogon->get_dir(),
 		message_object_get_id(pmessage), &b_marked)) {
 		return ecError;
 	}
@@ -421,8 +416,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		if (0 == timer_id) {
 			goto SUBMIT_FAIL;
 		}
-		exmdb_client_set_message_timer(
-			logon_object_get_dir(plogon),
+		exmdb_client_set_message_timer(plogon->get_dir(),
 			message_object_get_id(pmessage), timer_id);
 		message_object_reload(pmessage);
 		return ecSuccess;
@@ -440,7 +434,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	return ecSuccess;
 
  SUBMIT_FAIL:
-	exmdb_client_clear_submit(logon_object_get_dir(plogon),
+	exmdb_client_clear_submit(plogon->get_dir(),
 				message_object_get_id(pmessage), b_unsent);
 	return ecError;
 }
@@ -467,15 +461,13 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
 		return ecAccessDenied;
 	}
-	if (FALSE == exmdb_client_check_message(
-		logon_object_get_dir(plogon),
-		folder_id, message_id, &b_exist)) {
+	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
+	    message_id, &b_exist))
 		return ecError;
-	}
 	if (FALSE == b_exist) {
 		return ecNotFound;
 	}
-	if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+	if (!exmdb_client_get_message_property(plogon->get_dir(),
 	    nullptr, 0, message_id, PR_MESSAGE_FLAGS,
 	    reinterpret_cast<void **>(&pmessage_flags)))
 		return ecError;
@@ -483,19 +475,16 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecError;
 	}
 	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
-		if (FALSE == exmdb_client_get_message_timer(
-			logon_object_get_dir(plogon), message_id, &ptimer_id)) {
+		if (!exmdb_client_get_message_timer(plogon->get_dir(),
+		    message_id, &ptimer_id))
 			return ecError;
-		}
 		if (NULL != ptimer_id) {
 			if (FALSE == common_util_cancel_timer(*ptimer_id)) {
 				return ecUnableToAbort;
 			}
 		}
-		if (FALSE == exmdb_client_clear_submit(
-			logon_object_get_dir(plogon), message_id, TRUE)) {
+		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
-		}
 		if (FALSE == common_util_save_message_ics(
 			plogon, message_id, NULL)) {
 			return ecError;
@@ -503,20 +492,16 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (FALSE == exmdb_client_check_message(
-		logon_object_get_dir(plogon),
-		fid_spooler, message_id, &b_exist)) {
+	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
+	    message_id, &b_exist))
 		return ecError;
-	}
 	if (FALSE == b_exist) {
 		return ecNotInQueue;
 	}
 	/* unlink the message in spooler queue */
-	if (FALSE == exmdb_client_unlink_message(
-		logon_object_get_dir(plogon), pinfo->cpid,
-		fid_spooler, message_id)) {
+	if (!exmdb_client_unlink_message(plogon->get_dir(), pinfo->cpid,
+	    fid_spooler, message_id))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -582,30 +567,24 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (FALSE == exmdb_client_check_message(
-		logon_object_get_dir(plogon),
-		fid_spooler, message_id, &b_exist)) {
+	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
+	    message_id, &b_exist))
 		return ecError;
-	}
 	if (FALSE == b_exist) {
 		return ecNotInQueue;
 	}
 	/* unlink the message in spooler queue */
-	if (FALSE == exmdb_client_unlink_message(
-		logon_object_get_dir(plogon), pinfo->cpid,
-		fid_spooler, message_id)) {
+	if (!exmdb_client_unlink_message(plogon->get_dir(), pinfo->cpid,
+	    fid_spooler, message_id))
 		return ecError;
-	}
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_DELETEAFTERSUBMIT;
 	proptag_buff[1] = PROP_TAG_TARGETENTRYID;
 	proptag_buff[2] = PR_PARENT_ENTRYID;
-	if (FALSE == exmdb_client_get_message_properties(
-		logon_object_get_dir(plogon), NULL, 0,
-		message_id, &tmp_proptags, &tmp_propvals)) {
+	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
+	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 	auto pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_DELETEAFTERSUBMIT);
 	b_delete = FALSE;
@@ -627,15 +606,14 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 			plogon, ptarget, &folder_id, &new_id)) {
 			return ecError;
 		}
-		if (FALSE == exmdb_client_movecopy_message(
-			logon_object_get_dir(plogon),
+		if (!exmdb_client_movecopy_message(plogon->get_dir(),
 			logon_object_get_account_id(plogon),
 			pinfo->cpid, message_id, folder_id,
 			new_id, b_delete, &b_result)) {
 			return ecError;
 		}
 	} else if (TRUE == b_delete) {
-		exmdb_client_delete_message(logon_object_get_dir(plogon),
+		exmdb_client_delete_message(plogon->get_dir(),
 			logon_object_get_account_id(plogon), pinfo->cpid,
 			parent_id, message_id, TRUE, &b_result);
 	}
@@ -677,9 +655,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	if (TRUE == message_object_check_importing(pmessage)) {
 		return ecAccessDenied;
 	}
-	if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
-	    nullptr, 0, message_object_get_id(pmessage), PR_MESSAGE_FLAGS,
-	    &pvalue))
+	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
+	    message_object_get_id(pmessage), PR_MESSAGE_FLAGS, &pvalue))
 		return ecError;
 	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
@@ -737,11 +714,9 @@ uint32_t rop_transportnewmail(uint64_t message_id,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (FALSE == exmdb_client_transport_new_mail(
-		logon_object_get_dir(plogon), message_id,
-		folder_id, message_flags, pstr_class)) {
+	if (!exmdb_client_transport_new_mail(plogon->get_dir(), message_id,
+	    folder_id, message_flags, pstr_class))
 		return ecError;
-	}
 	return ecSuccess;
 }
 

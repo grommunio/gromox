@@ -54,10 +54,8 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 	}
 	if (0 == ppropnames->count &&
 		OBJECT_TYPE_LOGON == object_type) {
-		if (FALSE == exmdb_client_get_all_named_propids(
-			logon_object_get_dir(plogon), ppropids)) {
+		if (!exmdb_client_get_all_named_propids(plogon->get_dir(), ppropids))
 			return ecError;
-		}
 		return ecSuccess;
 	}
 	if (FALSE == logon_object_get_named_propids(
@@ -383,7 +381,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		auto fld = static_cast<FOLDER_OBJECT *>(pobject);
 		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-			if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    folder_object_get_id(fld), rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
@@ -458,7 +456,7 @@ uint32_t rop_deleteproperties(
 		auto fld = static_cast<FOLDER_OBJECT *>(pobject);
 		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-			if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    folder_object_get_id(fld), rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
@@ -670,7 +668,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		auto flddst = static_cast<FOLDER_OBJECT *>(pobject_dst);
 		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-			if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    folder_object_get_id(flddst), rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
@@ -931,7 +929,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		}
 		auto rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-			if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    folder_object_get_id(fldsrc), rpc_info.username, &permission))
 				return ecError;
 			if (permission & PERMISSION_FOLDEROWNER) {
@@ -942,7 +940,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 				}
 				username = rpc_info.username;
 			}
-			if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    folder_object_get_id(flddst), rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
@@ -954,8 +952,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		}
 		if (common_util_index_proptags(pexcluded_proptags,
 			PROP_TAG_CONTAINERHIERARCHY) < 0) {
-			if (FALSE == exmdb_client_check_folder_cycle(
-				logon_object_get_dir(plogon),
+			if (!exmdb_client_check_folder_cycle(plogon->get_dir(),
 			    folder_object_get_id(fldsrc),
 			    folder_object_get_id(flddst), &b_cycle))
 				return ecError;
@@ -996,7 +993,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			BOOL b_guest = username == nullptr ? false : TRUE;
-			if (!exmdb_client_copy_folder_internal(logon_object_get_dir(plogon),
+			if (!exmdb_client_copy_folder_internal(plogon->get_dir(),
 			    logon_object_get_account_id(plogon), pinfo->cpid,
 			    b_guest, rpc_info.username, folder_object_get_id(fldsrc),
 			    b_normal, b_fai, b_sub, folder_object_get_id(flddst),
@@ -1090,7 +1087,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		if (TRUE == b_write) {
 			auto rpc_info = get_rpc_info();
 			if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-				if (!exmdb_client_check_folder_permission(logon_object_get_dir(plogon),
+				if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 				    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
 				    rpc_info.username, &permission))
 					return ecError;

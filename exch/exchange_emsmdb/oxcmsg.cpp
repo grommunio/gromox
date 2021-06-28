@@ -61,25 +61,18 @@ uint32_t rop_openmessage(uint16_t cpid,
 		OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == exmdb_client_check_message(
-		logon_object_get_dir(plogon), folder_id,
-		message_id, &b_exist)) {
+	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
+	    message_id, &b_exist))
 		return ecError;
-	}
 	if (FALSE == b_exist) {
 		return ecNotFound;
 	}
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0,
-		message_id, PROP_TAG_FOLDERID, &pvalue) ||
-		NULL == pvalue) {
+	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
+	    message_id, PROP_TAG_FOLDERID, &pvalue) || pvalue == nullptr)
 		return ecError;
-	}
 	folder_id = *(uint64_t*)pvalue;
-	if (FALSE == exmdb_client_check_message_deleted(
-		logon_object_get_dir(plogon), message_id, &b_del)) {
+	if (!exmdb_client_check_message_deleted(plogon->get_dir(), message_id, &b_del))
 		return ecError;
-	}
 	if (TRUE == b_del && 0 == (open_mode_flags &
 		OPEN_MODE_FLAG_OPENSOFTDELETE)) {
 		return ecNotFound;
@@ -91,11 +84,9 @@ uint32_t rop_openmessage(uint16_t cpid,
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (FALSE == exmdb_client_check_folder_permission(
-		logon_object_get_dir(plogon), folder_id,
-		rpc_info.username, &permission)) {
+	if (!exmdb_client_check_folder_permission(plogon->get_dir(), folder_id,
+	    rpc_info.username, &permission))
 		return ecError;
-	}
 	if (!(permission & (PERMISSION_READANY |
 	    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 		return ecAccessDenied;
@@ -103,11 +94,9 @@ uint32_t rop_openmessage(uint16_t cpid,
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (FALSE == exmdb_client_check_message_owner(
-		logon_object_get_dir(plogon), message_id,
-		rpc_info.username, &b_owner)) {
+	if (!exmdb_client_check_message_owner(plogon->get_dir(), message_id,
+	    rpc_info.username, &b_owner))
 		return ecError;
-	}
 	if (TRUE == b_owner || (permission & PERMISSION_READANY)) {
 		tag_access |= TAG_ACCESS_READ;
 	}
@@ -232,11 +221,9 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	auto rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-		if (FALSE == exmdb_client_check_folder_permission(
-			logon_object_get_dir(plogon), folder_id,
-			rpc_info.username, &permission)) {
+		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
+		    folder_id, rpc_info.username, &permission))
 			return ecError;
-		}
 		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATE)))
 			return ecAccessDenied;
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
@@ -281,11 +268,9 @@ uint32_t rop_createmessage(uint16_t cpid,
 	if (NULL == *ppmessage_id) {
 		return ecMAPIOOM;
 	}
-	if (FALSE == exmdb_client_allocate_message_id(
-		logon_object_get_dir(plogon), folder_id,
-		*ppmessage_id)) {
+	if (!exmdb_client_allocate_message_id(plogon->get_dir(),
+	    folder_id, *ppmessage_id))
 		return ecError;
-	}
 	auto pmessage = message_object_create(plogon, TRUE, cpid,
 				**ppmessage_id, &folder_id, tag_access,
 				OPEN_MODE_FLAG_READWRITE, NULL);
@@ -605,11 +590,9 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	/* we do not check permission because it's maybe
 		not an important property for the message.
 		also, we don't know the message location */
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0,
-		message_id, PROP_TAG_MESSAGESTATUS, &pvalue)) {
+	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
+	    message_id, PROP_TAG_MESSAGESTATUS, &pvalue))
 		return ecError;
-	}
 	if (NULL == pvalue) {
 		return ecNotFound;
 	}
@@ -622,11 +605,9 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	*pmessage_status = new_status;
 	propval.proptag = PROP_TAG_MESSAGESTATUS;
 	propval.pvalue = &new_status;
-	if (FALSE == exmdb_client_set_message_property(
-		logon_object_get_dir(plogon), NULL, 0, message_id,
-		&propval, &result)) {
+	if (!exmdb_client_set_message_property(plogon->get_dir(), nullptr, 0,
+	    message_id, &propval, &result))
 		return ecError;
-	}
 	return result;
 }
 
@@ -648,11 +629,9 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0,
-		message_id, PROP_TAG_MESSAGESTATUS, &pvalue)) {
+	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
+	    message_id, PROP_TAG_MESSAGESTATUS, &pvalue))
 		return ecError;
-	}
 	if (NULL == pvalue) {
 		return ecNotFound;
 	}
@@ -682,19 +661,17 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
-		if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			tmp_byte = 1;
 			b_changed = TRUE;
 			if (MSG_READ_FLAG_DEFAULT == read_flag) {
-				if (FALSE == exmdb_client_get_message_property(
-					logon_object_get_dir(plogon), username, 0,
-					message_id, PROP_TAG_READRECEIPTREQUESTED,
-					&pvalue)) {
+				if (!exmdb_client_get_message_property(plogon->get_dir(),
+				    username, 0, message_id,
+				    PROP_TAG_READRECEIPTREQUESTED, &pvalue))
 					return FALSE;
-				}
 				if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 					b_notify = TRUE;
 				}
@@ -702,7 +679,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
-		if (!exmdb_client_get_message_property(logon_object_get_dir(plogon),
+		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -711,12 +688,10 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		}
 		break;
 	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
-		if (FALSE == exmdb_client_get_message_property(
-			logon_object_get_dir(plogon), username, 0,
-			message_id, PROP_TAG_READRECEIPTREQUESTED,
-			&pvalue)) {
+		if (!exmdb_client_get_message_property(plogon->get_dir(),
+		    username, 0, message_id, PROP_TAG_READRECEIPTREQUESTED,
+		    &pvalue))
 			return FALSE;
-		}
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			b_notify = TRUE;
 		}
@@ -726,48 +701,36 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ |
 		MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
 		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) &&
-			TRUE == exmdb_client_get_message_property(
-			logon_object_get_dir(plogon), username, 0,
-			message_id, PROP_TAG_READRECEIPTREQUESTED, &pvalue)
-			&& NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			if (FALSE == exmdb_client_remove_message_property(
-				logon_object_get_dir(plogon), pinfo->cpid,
-				message_id, PROP_TAG_READRECEIPTREQUESTED)) {
-				return FALSE;	
-			}
-		}
+		    exmdb_client_get_message_property(plogon->get_dir(),
+		    username, 0, message_id,
+		    PROP_TAG_READRECEIPTREQUESTED, &pvalue) &&
+		    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+		    !exmdb_client_remove_message_property(plogon->get_dir(),
+		     pinfo->cpid, message_id, PROP_TAG_READRECEIPTREQUESTED))
+			return FALSE;
 		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) &&
-			TRUE == exmdb_client_get_message_property(
-			logon_object_get_dir(plogon), username, 0,
-			message_id, PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED,
-			&pvalue) && NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			if (FALSE == exmdb_client_remove_message_property(
-				logon_object_get_dir(plogon), pinfo->cpid, message_id,
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED)) {
-				return FALSE;	
-			}
-		}
-		if (FALSE == exmdb_client_mark_modified(
-			logon_object_get_dir(plogon), message_id)) {
+		    exmdb_client_get_message_property(plogon->get_dir(),
+		    username, 0, message_id,
+		    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &pvalue) &&
+		    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+		    !exmdb_client_remove_message_property(plogon->get_dir(),
+		    pinfo->cpid, message_id, PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED))
+			return FALSE;
+		if (!exmdb_client_mark_modified(plogon->get_dir(), message_id))
 			return FALSE;	
-		}
 		return TRUE;
 	default:
 		return TRUE;
 	}
 	if (TRUE == b_changed) {
-		if (FALSE == exmdb_client_set_message_read_state(
-			logon_object_get_dir(plogon), username,
-			message_id, tmp_byte, &read_cn)) {
+		if (!exmdb_client_set_message_read_state(plogon->get_dir(),
+		    username, message_id, tmp_byte, &read_cn))
 			return FALSE;
-		}
 	}
 	if (TRUE == b_notify) {
-		if (FALSE == exmdb_client_get_message_brief(
-			logon_object_get_dir(plogon), pinfo->cpid,
-			message_id, &pbrief)) {
+		if (!exmdb_client_get_message_brief(plogon->get_dir(),
+		    pinfo->cpid, message_id, &pbrief))
 			return FALSE;	
-		}
 		if (NULL != pbrief) {
 			common_util_notify_receipt(
 				logon_object_get_account(plogon),
@@ -779,8 +742,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		propval_buff[0].pvalue = deconst(&fake_false);
 		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 		propval_buff[1].pvalue = deconst(&fake_false);
-		exmdb_client_set_message_properties(
-			logon_object_get_dir(plogon), username,
+		exmdb_client_set_message_properties(plogon->get_dir(), username,
 			0, message_id, &propvals, &problems);
 	}
 	return TRUE;

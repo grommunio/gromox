@@ -272,11 +272,9 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	if (NULL == *ppstr_explicit) {
 		return ecMAPIOOM;
 	}
-	if (FALSE == exmdb_client_get_folder_by_class(
-		logon_object_get_dir(plogon), pstr_class,
-		pfolder_id, *ppstr_explicit)) {
+	if (!exmdb_client_get_folder_by_class(plogon->get_dir(), pstr_class,
+	    pfolder_id, *ppstr_explicit))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -309,11 +307,9 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		return ecNotSupported;
 	}
 	if (0 != folder_id) {
-		if (FALSE == exmdb_client_get_folder_property(
-			logon_object_get_dir(plogon), 0, folder_id,
-			PROP_TAG_FOLDERTYPE, &pvalue)) {
+		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
+		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue))
 			return ecError;
-		}
 		if (NULL == pvalue) {
 			return ecNotFound;
 		}
@@ -324,11 +320,9 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		return ecAccessDenied;
 	}
-	if (FALSE == exmdb_client_set_folder_by_class(
-		logon_object_get_dir(plogon),
-		folder_id, pstr_class, &b_result)) {
+	if (!exmdb_client_set_folder_by_class(plogon->get_dir(),
+	    folder_id, pstr_class, &b_result))
 		return ecError;
-	}
 	if (FALSE == b_result) {
 		return ecNotFound;
 	}
@@ -355,10 +349,8 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	if (FALSE == logon_object_check_private(plogon)) {
 		return ecNotSupported;
 	}
-	if (FALSE == exmdb_client_get_folder_class_table(
-		logon_object_get_dir(plogon), &class_table)) {
+	if (!exmdb_client_get_folder_class_table(plogon->get_dir(), &class_table))
 		return ecError;
-	}
 	if (0 == class_table.count) {
 		return ecNoReceiveFolder;
 	}
@@ -412,11 +404,9 @@ uint32_t rop_getowningservers(
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {
-		if (FALSE == exmdb_client_get_mapping_guid(
-			logon_object_get_dir(plogon), replid,
-			&b_found, &guid)) {
+		if (!exmdb_client_get_mapping_guid(plogon->get_dir(), replid,
+		    &b_found, &guid))
 			return ecError;
-		}
 		if (FALSE == b_found) {
 			return ecNotFound;
 		}
@@ -502,11 +492,9 @@ uint32_t rop_longtermidfromid(uint64_t id,
 			plong_term_id->guid = rop_util_make_domain_guid(
 						logon_object_get_account_id(plogon));
 		} else {
-			if (FALSE == exmdb_client_get_mapping_guid(
-				logon_object_get_dir(plogon), replid,
-				&b_found, &plong_term_id->guid)) {
+			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
+			    replid, &b_found, &plong_term_id->guid))
 				return ecError;
-			}
 			if (FALSE == b_found) {
 				return ecNotFound;
 			}
@@ -552,11 +540,9 @@ uint32_t rop_idfromlongtermid(
 				domain_id, logon_object_get_account_id(plogon))) {
 				return ecInvalidParam;
 			}
-			if (FALSE == exmdb_client_get_mapping_replid(
-				logon_object_get_dir(plogon),
-				plong_term_id->guid, &b_found, &replid)) {
+			if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+			    plong_term_id->guid, &b_found, &replid))
 				return ecError;
-			}
 			if (FALSE == b_found) {
 				return ecNotFound;
 			}
