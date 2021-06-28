@@ -224,11 +224,6 @@ const char* logon_object_get_account(LOGON_OBJECT *plogon)
 	return plogon->account;
 }
 
-const char* logon_object_get_dir(LOGON_OBJECT *plogon)
-{
-	return plogon->dir;
-}
-
 GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon)
 {
 	return plogon->mailbox_guid;

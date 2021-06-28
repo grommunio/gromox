@@ -148,8 +148,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 		username = NULL;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (FALSE == exmdb_client_get_content_sync(
-		logon_object_get_dir(pctx->pstream->plogon),
+	if (!exmdb_client_get_content_sync(pctx->pstream->plogon->get_dir(),
 		folder_object_get_id(pctx->pfolder), username,
 		pctx->pstate->pgiven, pseen, pseen_fai, pread,
 		pinfo->cpid, pctx->prestriction, b_ordered,
@@ -342,8 +341,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	}
-	if (FALSE == exmdb_client_get_hierarchy_sync(
-		logon_object_get_dir(pctx->pstream->plogon),
+	if (!exmdb_client_get_hierarchy_sync(pctx->pstream->plogon->get_dir(),
 		folder_object_get_id(pctx->pfolder), username,
 		pctx->pstate->pgiven, pctx->pstate->pseen,
 		&fldchgs, &last_changenum, &given_folders,
@@ -452,7 +450,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
 			} else {
-				if (!exmdb_client_get_folder_property(logon_object_get_dir(pctx->pstream->plogon),
+				if (!exmdb_client_get_folder_property(pctx->pstream->plogon->get_dir(),
 				    0, parent_fid, PR_SOURCE_KEY, &pvalue))
 					return FALSE;	
 				if (NULL == pvalue) {
@@ -1085,19 +1083,14 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (TRUE == logon_object_check_private(pctx->pstream->plogon)) {
-		if (FALSE == exmdb_client_read_message(
-			logon_object_get_dir(pctx->pstream->plogon),
-			NULL, pinfo->cpid, message_id, &pmsgctnt)) {
+		if (!exmdb_client_read_message(pctx->pstream->plogon->get_dir(),
+		    nullptr, pinfo->cpid, message_id, &pmsgctnt))
 			return FALSE;
-		}
 	} else {
 		auto rpc_info = get_rpc_info();
-		if (FALSE == exmdb_client_read_message(
-			logon_object_get_dir(pctx->pstream->plogon),
-			rpc_info.username, pinfo->cpid, message_id,
-			&pmsgctnt)) {
+		if (!exmdb_client_read_message(pctx->pstream->plogon->get_dir(),
+		    rpc_info.username, pinfo->cpid, message_id, &pmsgctnt))
 			return FALSE;
-		}
 	}
 	if (NULL == pmsgctnt) {
 		idset_remove(pctx->pstate->pgiven, message_id);
@@ -1122,7 +1115,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	}
 	if (*pstatus & MESSAGE_STATUS_IN_CONFLICT) {
 		if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
-			if (!exmdb_client_get_folder_property(logon_object_get_dir(pctx->pstream->plogon),
+			if (!exmdb_client_get_folder_property(pctx->pstream->plogon->get_dir(),
 			    0, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
 			if (NULL == pvalue) {
@@ -1212,7 +1205,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	pmsgctnt->proplist.ppropval = ppropval;
 	if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
-		if (!exmdb_client_get_folder_property(logon_object_get_dir(pctx->pstream->plogon),
+		if (!exmdb_client_get_folder_property(pctx->pstream->plogon->get_dir(),
 		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
@@ -1274,11 +1267,9 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	if (FALSE == b_downloaded || TRUE == progmsg.b_fai) {
 		b_full = TRUE;
 	} else {
-		if (FALSE == exmdb_client_get_message_group_id(
-			logon_object_get_dir(pctx->pstream->plogon),
-			message_id, &pgroup_id)) {
+		if (!exmdb_client_get_message_group_id(pctx->pstream->plogon->get_dir(),
+		    message_id, &pgroup_id))
 			return FALSE;
-		}
 		if (0 == (pctx->send_options & SEND_OPTIONS_PARTIAL) ||
 			 TRUE == progmsg.b_fai || NULL == pgroup_id ||
 			 *ppartial_count > MAX_PARTIAL_ON_ROP) {
@@ -1295,11 +1286,9 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 					return FALSE;	
 				}
 			}
-			if (FALSE == exmdb_client_get_change_indices(
-				logon_object_get_dir(pctx->pstream->plogon),
-				message_id, last_cn, &indices, &proptags)) {
+			if (!exmdb_client_get_change_indices(pctx->pstream->plogon->get_dir(),
+			    message_id, last_cn, &indices, &proptags))
 				return FALSE;	
-			}
 			if (0 == indices.count && 0 == proptags.count) {
 				b_full = TRUE;
 			} else {

@@ -419,11 +419,9 @@ BINARY* common_util_to_folder_entryid(
 							tmp_entryid.provider_uid);
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
-			if (FALSE == exmdb_client_get_mapping_guid(
-				logon_object_get_dir(plogon), replid,
-				&b_found, &tmp_entryid.database_guid)) {
+			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
+			    replid, &b_found, &tmp_entryid.database_guid))
 				return NULL;	
-			}
 			if (FALSE == b_found) {
 				return NULL;
 			}
@@ -473,11 +471,9 @@ BINARY* common_util_calculate_folder_sourcekey(
 			longid.guid = rop_util_make_domain_guid(
 				logon_object_get_account_id(plogon));
 		} else {
-			if (FALSE == exmdb_client_get_mapping_guid(
-				logon_object_get_dir(plogon),
-				replid, &b_found, &longid.guid)) {
+			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
+			    replid, &b_found, &longid.guid))
 				return NULL;	
-			}
 			if (FALSE == b_found) {
 				return NULL;
 			}
@@ -514,11 +510,9 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 							tmp_entryid.provider_uid);
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
-			if (FALSE == exmdb_client_get_mapping_guid(
-				logon_object_get_dir(plogon), replid,
-				&b_found, &tmp_entryid.folder_database_guid)) {
+			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
+			    replid, &b_found, &tmp_entryid.folder_database_guid))
 				return NULL;	
-			}
 			if (FALSE == b_found) {
 				return NULL;
 			}
@@ -611,11 +605,10 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 					tmp_entryid.global_counter);
 			return TRUE;
 		}
-		if (FALSE == exmdb_client_get_mapping_replid(
-			logon_object_get_dir(plogon), tmp_entryid.database_guid,
-			&b_found, &replid) || FALSE == b_found) {
+		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+		    tmp_entryid.database_guid, &b_found, &replid) ||
+		    !b_found)
 			return FALSE;
-		}
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
 		return TRUE;
@@ -673,12 +666,10 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 				tmp_entryid.message_global_counter);
 			return TRUE;
 		}
-		if (FALSE == exmdb_client_get_mapping_replid(
-			logon_object_get_dir(plogon),
-			tmp_entryid.folder_database_guid,
-			&b_found, &replid) || FALSE == b_found) {
+		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
+		    !b_found)
 			return FALSE;
-		}
 		*pfolder_id = rop_util_make_eid(replid,
 			tmp_entryid.folder_global_counter);
 		*pmessage_id = rop_util_make_eid(replid,
@@ -932,12 +923,9 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 			if (1 == *preplid) {
 				*pguid = rop_util_make_domain_guid(
 					logon_object_get_account_id(plogon));
-			} else {
-				if (FALSE == exmdb_client_get_mapping_guid(
-					logon_object_get_dir(plogon), *preplid,
-					&b_found, pguid) || FALSE == b_found) {
-					return FALSE;
-				}
+			} else if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
+			    *preplid, &b_found, pguid) || !b_found) {
+				return FALSE;
 			}
 		}
 	} else {
@@ -951,15 +939,11 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 		} else {
 			tmp_guid = rop_util_make_domain_guid(
 				logon_object_get_account_id(plogon));
-			if (0 == memcmp(pguid, &tmp_guid, sizeof(GUID))) {
+			if (memcmp(pguid, &tmp_guid, sizeof(GUID)) == 0)
 				*preplid = 1;
-			} else {
-				if (FALSE == exmdb_client_get_mapping_replid(
-					logon_object_get_dir(plogon), *pguid,
-					&b_found, preplid) || FALSE == b_found) {
-					return FALSE;
-				}
-			}
+			else if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+			    *pguid, &b_found, preplid) || !b_found)
+				return FALSE;
 		}
 	}
 	return TRUE;
@@ -1786,10 +1770,8 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 	TAGGED_PROPVAL propval_buff[2];
 	PROPTAG_ARRAY *pungroup_proptags;
 	
-	if (FALSE == exmdb_client_allocate_cn(
-		logon_object_get_dir(plogon), &change_num)) {
+	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return FALSE;	
-	}
 	tmp_xid.guid = logon_object_guid(plogon);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	tmp_propvals.count = 2;
@@ -1801,26 +1783,20 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 	if (NULL == propval_buff[1].pvalue) {
 		return FALSE;
 	}
-	if (FALSE == exmdb_client_set_message_properties(
-		logon_object_get_dir(plogon), NULL, 0, message_id,
-		&tmp_propvals, &tmp_problems)) {
+	if (!exmdb_client_set_message_properties(plogon->get_dir(), nullptr, 0,
+	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	}
-	if (FALSE == exmdb_client_get_message_group_id(
-		logon_object_get_dir(plogon),
-		message_id, &pgroup_id)) {
+	if (!exmdb_client_get_message_group_id(plogon->get_dir(),
+	    message_id, &pgroup_id))
 		return FALSE;	
-	}
 	if (NULL == pgroup_id) {
 		pgpinfo = logon_object_get_last_property_groupinfo(plogon);
 		if (NULL == pgpinfo) {
 			return FALSE;
 		}
-		if (FALSE == exmdb_client_set_message_group_id(
-			logon_object_get_dir(plogon), message_id,
-			pgpinfo->group_id)) {
+		if (!exmdb_client_set_message_group_id(plogon->get_dir(),
+		    message_id, pgpinfo->group_id))
 			return FALSE;	
-		}
 	}  else {
 		pgpinfo = logon_object_get_property_groupinfo(plogon, *pgroup_id);
 		if (NULL == pgpinfo) {
@@ -1870,9 +1846,8 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 		}
 		
 	}
-	if (FALSE == exmdb_client_save_change_indices(
-		logon_object_get_dir(plogon), message_id,
-		change_num, pindices, pungroup_proptags)) {
+	if (!exmdb_client_save_change_indices(plogon->get_dir(), message_id,
+	    change_num, pindices, pungroup_proptags)) {
 		proptag_array_free(pindices);
 		proptag_array_free(pungroup_proptags);
 		return FALSE;
@@ -2170,17 +2145,14 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (FALSE == exmdb_client_get_message_property(
-		logon_object_get_dir(plogon), NULL, 0,
-		message_id, PROP_TAG_PARENTFOLDERID,
-		&pvalue) || NULL == pvalue) {
+	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
+	    message_id, PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr) {
 		log_err("W-1289: Cannot get parent folder_id of mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
 	parent_id = *(uint64_t*)pvalue;
-	if (FALSE == exmdb_client_read_message(
-		logon_object_get_dir(plogon), NULL, cpid,
-		message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!exmdb_client_read_message(plogon->get_dir(), nullptr, cpid,
+	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
 		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU(message_id));
 		return FALSE;
 	}
@@ -2302,7 +2274,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			body_type = OXCMAIL_BODY_PLAIN_ONLY;
 		}
 	}
-	common_util_set_dir(logon_object_get_dir(plogon));
+	common_util_set_dir(plogon->get_dir());
 	/* try to avoid TNEF message */
 	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 		body_type, g_mime_pool, &imail, common_util_alloc,
@@ -2333,14 +2305,11 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU(message_id));
 			return FALSE;	
 		}
-		if (FALSE == exmdb_client_clear_submit(
-			logon_object_get_dir(plogon),
-			message_id, FALSE)) {
+		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
 			log_err("W-1278: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
-		if (FALSE == exmdb_client_movecopy_message(
-			logon_object_get_dir(plogon),
+		if (!exmdb_client_movecopy_message(plogon->get_dir(),
 			logon_object_get_account_id(plogon),
 			cpid, message_id, folder_id, new_id,
 			TRUE, &b_result)) {
@@ -2348,21 +2317,17 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 			return FALSE;
 		}
 	} else if (TRUE == b_delete) {
-		exmdb_client_delete_message(
-			logon_object_get_dir(plogon),
+		exmdb_client_delete_message(plogon->get_dir(),
 			logon_object_get_account_id(plogon),
 			cpid, parent_id, message_id, TRUE, &b_result);
 	} else {
-		if (FALSE == exmdb_client_clear_submit(
-			logon_object_get_dir(plogon),
-			message_id, FALSE)) {
+		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
 			log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
 		ids.count = 1;
 		ids.pids = &message_id;
-		if (FALSE == exmdb_client_movecopy_messages(
-			logon_object_get_dir(plogon),
+		if (!exmdb_client_movecopy_messages(plogon->get_dir(),
 			logon_object_get_account_id(plogon),
 			cpid, FALSE, NULL, parent_id,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
