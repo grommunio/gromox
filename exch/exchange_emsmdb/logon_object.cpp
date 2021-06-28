@@ -219,11 +219,6 @@ int logon_object_get_account_id(LOGON_OBJECT *plogon)
 	return plogon->account_id;
 }
 
-const char* logon_object_get_account(LOGON_OBJECT *plogon)
-{
-	return plogon->account;
-}
-
 GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon)
 {
 	return plogon->mailbox_guid;

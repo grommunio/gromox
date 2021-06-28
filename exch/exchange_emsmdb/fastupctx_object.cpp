@@ -301,7 +301,7 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client_write_message(pctx->pstream->plogon->get_dir(),
-	    logon_object_get_account(pctx->pstream->plogon), pinfo->cpid,
+	    pctx->pstream->plogon->get_account(), pinfo->cpid,
 	    folder_id, pctx->pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	return GXERR_SUCCESS;

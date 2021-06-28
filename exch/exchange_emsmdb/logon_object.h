@@ -11,6 +11,7 @@
 
 struct LOGON_OBJECT {
 	~LOGON_OBJECT();
+	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
 
 	uint8_t logon_flags = 0;
@@ -30,7 +31,6 @@ BOOL logon_object_check_private(LOGON_OBJECT *plogon);
 extern GUID logon_object_guid(LOGON_OBJECT *);
 int logon_object_get_mode(LOGON_OBJECT *plogon);
 int logon_object_get_account_id(LOGON_OBJECT *plogon);
-const char* logon_object_get_account(LOGON_OBJECT *plogon);
 GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon);
 BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	uint16_t propid, PROPERTY_NAME *ppropname);

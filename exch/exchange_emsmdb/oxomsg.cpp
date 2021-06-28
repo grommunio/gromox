@@ -23,7 +23,6 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	int32_t tmp_level;
 	BINARY search_bin;
 	BINARY search_bin1;
-	const char *account;
 	char essdn_buff[1024];
 	char tmp_display[256];
 	char essdn_buff1[1024];
@@ -34,7 +33,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[20];
 	
-	account = logon_object_get_account(pmessage->plogon);
+	auto account = pmessage->plogon->get_dir();
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	tmp_propvals.count = 16;
 	tmp_propvals.ppropval = propval_buff;
@@ -206,7 +205,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
 	int32_t max_length;
-	const char *account;
 	uint32_t tag_access;
 	uint32_t mail_length;
 	uint64_t submit_time;
@@ -278,7 +276,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
-	account = logon_object_get_account(plogon);
+	auto account = plogon->get_dir();
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else {
@@ -407,8 +405,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	
 	if (deferred_time > 0) {
 		snprintf(command_buff, 1024, "%s %s %llu",
-			common_util_get_submit_command(),
-			logon_object_get_account(plogon),
+		         common_util_get_submit_command(),
+		         plogon->get_account(),
 			static_cast<unsigned long long>(rop_util_get_gc_value(
 				message_object_get_id(pmessage))));
 		timer_id = common_util_add_timer(
@@ -626,7 +624,6 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	void *pvalue;
 	int object_type;
 	char username[UADDR_SIZE];
-	const char *account;
 	PROPTAG_ARRAY proptags;
 	TAGGED_PROPVAL propval;
 	uint32_t proptag_buff[7];
@@ -662,7 +659,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecAccessDenied;
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
-	account = logon_object_get_account(plogon);
+	auto account = plogon->get_account();
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else {

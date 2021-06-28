@@ -428,8 +428,7 @@ uint32_t rop_getowningservers(
 	if (NULL == pghost->ppservers[0]) {
 		return ecMAPIOOM;
 	}
-	common_util_domain_to_essdn(logon_object_get_account(plogon),
-		pghost->ppservers[0], dnmax);
+	common_util_domain_to_essdn(plogon->get_dir(), pghost->ppservers[0], dnmax);
 	return ecSuccess;
 }
 

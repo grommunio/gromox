@@ -626,7 +626,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client_flush_instance(pmessage->plogon->get_dir(),
-	    pmessage->instance_id, logon_object_get_account(pmessage->plogon),
+	    pmessage->instance_id, pmessage->plogon->get_account(),
 	    &e_result) || e_result != GXERR_CALL_FAILED)
 		return e_result;
 	b_new = pmessage->b_new;
@@ -747,9 +747,9 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	if (TRUE == b_new && FALSE == b_fai && 0 != pmessage->message_id
 		&& FALSE == logon_object_check_private(pmessage->plogon)) {
 		exmdb_client_rule_new_message(pmessage->plogon->get_dir(),
-			rpc_info.username,
-			logon_object_get_account(pmessage->plogon), pmessage->cpid,
-			pmessage->folder_id, pmessage->message_id);
+			rpc_info.username, pmessage->plogon->get_account(),
+			pmessage->cpid, pmessage->folder_id,
+			pmessage->message_id);
 	}
 	return GXERR_SUCCESS;
 }
@@ -1745,8 +1745,8 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		    pmessage->cpid, pmessage->message_id, &pbrief))
 			return FALSE;	
 		if (NULL != pbrief) {
-			common_util_notify_receipt(logon_object_get_account(
-				pmessage->plogon), NOTIFY_RECEIPT_READ, pbrief);
+			common_util_notify_receipt(pmessage->plogon->get_account(),
+				NOTIFY_RECEIPT_READ, pbrief);
 		}
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;

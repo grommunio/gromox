@@ -2282,8 +2282,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:0x%llx", LLU(message_id));
 		return FALSE;	
 	}
-	if (FALSE == common_util_send_mail(&imail,
-		logon_object_get_account(plogon), &temp_list)) {
+	if (!common_util_send_mail(&imail, plogon->get_account(), &temp_list)) {
 		mail_free(&imail);
 		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU(message_id));
 		return FALSE;

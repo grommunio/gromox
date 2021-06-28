@@ -1017,8 +1017,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		ids.pids[ids.count] = pmessage_ids->pll[i];
 		ids.count ++;
 		if (NULL != pbrief) {
-			common_util_notify_receipt(
-				logon_object_get_account(plogon),
+			common_util_notify_receipt(plogon->get_dir(),
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 		}
 	}
