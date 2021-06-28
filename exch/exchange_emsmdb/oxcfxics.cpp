@@ -958,7 +958,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	BOOL b_exist;
 	BOOL b_owner;
 	void *pvalue;
-	GUID tmp_guid;
 	uint32_t result;
 	int object_type;
 	uint64_t folder_id;
@@ -1004,7 +1003,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return ecError;
 	}
-	tmp_guid = logon_object_guid(plogon);
+	auto tmp_guid = plogon->guid();
 	if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 		return ecInvalidParam;
 	}
@@ -1133,7 +1132,6 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	XID tmp_xid;
 	BOOL b_owner;
 	void *pvalue;
-	GUID tmp_guid;
 	int object_type;
 	uint64_t read_cn;
 	uint64_t folder_id;
@@ -1178,7 +1176,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 			&pread_stat[i].message_xid, &tmp_xid)) {
 			return ecError;
 		}
-		tmp_guid = logon_object_guid(plogon);
+		auto tmp_guid = plogon->guid();
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			continue;
 		}
@@ -1682,7 +1680,6 @@ uint32_t rop_syncimportmessagemove(
 	BOOL b_exist;
 	BOOL b_owner;
 	BOOL b_result;
-	GUID tmp_guid;
 	uint32_t result;
 	int object_type;
 	uint64_t src_fid;
@@ -1727,7 +1724,7 @@ uint32_t rop_syncimportmessagemove(
 		pdst_message_id, &xid_dst)) {
 		return ecError;
 	}
-	tmp_guid = logon_object_guid(plogon);
+	auto tmp_guid = plogon->guid();
 	if (0 != guid_compare(&tmp_guid, &xid_fsrc.guid) ||
 		0 != guid_compare(&tmp_guid, &xid_src.guid) ||
 		0 != guid_compare(&tmp_guid, &xid_dst.guid)) {
@@ -1975,7 +1972,7 @@ uint32_t rop_getlocalreplicaids(uint32_t count,
 	if (0 == begin_eid) {
 		return ecError;
 	}
-	*pguid = logon_object_guid(plogon);
+	*pguid = plogon->guid();
 	rop_util_get_gc_array(begin_eid, pglobal_count);
 	return ecSuccess;
 }

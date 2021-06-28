@@ -590,7 +590,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propvals.count ++;
 	
 	if (0 != pmessage->message_id && NULL == pmessage->pstate) {
-		tmp_xid.guid = logon_object_guid(pmessage->plogon);
+		tmp_xid.guid = pmessage->plogon->guid();
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 		pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);

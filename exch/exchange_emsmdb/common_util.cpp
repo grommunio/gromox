@@ -549,7 +549,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = logon_object_guid(plogon);
+	longid.guid = plogon->guid();
 	rop_util_get_gc_array(message_id, longid.global_counter);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
@@ -1755,7 +1755,7 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 	
 	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return FALSE;	
-	tmp_xid.guid = logon_object_guid(plogon);
+	tmp_xid.guid = plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	tmp_propvals.count = 2;
 	tmp_propvals.ppropval = propval_buff;

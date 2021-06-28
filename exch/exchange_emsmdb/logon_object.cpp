@@ -202,11 +202,10 @@ BOOL LOGON_OBJECT::check_private() const
 	return (logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false;
 }
 
-GUID logon_object_guid(LOGON_OBJECT *l)
+GUID LOGON_OBJECT::guid() const
 {
-	auto id = l->account_id;
-	return l->check_private() ? rop_util_make_user_guid(id) :
-	       rop_util_make_domain_guid(id);
+	return check_private() ? rop_util_make_user_guid(account_id) :
+	       rop_util_make_domain_guid(account_id);
 }
 
 int logon_object_get_mode(LOGON_OBJECT *plogon)

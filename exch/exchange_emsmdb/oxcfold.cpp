@@ -250,7 +250,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
-		tmp_xid.guid = logon_object_guid(plogon);
+		tmp_xid.guid = plogon->guid();
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
@@ -707,7 +707,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return ecError;
-	tmp_xid.guid = logon_object_guid(plogon);
+	tmp_xid.guid = plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {

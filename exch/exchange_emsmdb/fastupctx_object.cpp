@@ -177,7 +177,7 @@ static BOOL fastupctx_object_create_folder(
 	propval.pvalue = &change_num;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	tmp_xid.guid = logon_object_guid(pctx->pstream->plogon);
+	tmp_xid.guid = pctx->pstream->plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -279,7 +279,7 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	propval.pvalue = &change_num;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return GXERR_CALL_FAILED;
-	tmp_xid.guid = logon_object_guid(pctx->pstream->plogon);
+	tmp_xid.guid = pctx->pstream->plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
