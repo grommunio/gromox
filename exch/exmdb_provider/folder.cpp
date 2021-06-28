@@ -870,15 +870,9 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
 				bool is_associated = sqlite3_column_int64(pstmt, 3);
-				if (0 == is_associated) {
-					if (FALSE == b_normal) {
-						continue;
-					}
-				} else {
-					if (FALSE == b_fai) {
-						continue;
-					}
-				}
+				if ((is_associated && !b_fai) ||
+				    (!is_associated && !b_normal))
+					continue;
 				uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 				uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
 				if (NULL != username) {
@@ -907,15 +901,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				if (NULL != pmessage_count) {
 					(*pmessage_count) ++;
 				}
-				if (0 == is_associated) {
-					if (NULL != pnormal_size) {
-						*pnormal_size += sqlite3_column_int64(pstmt, 2);
-					}
-				} else {
-					if (NULL != pfai_size) {
-						*pfai_size += sqlite3_column_int64(pstmt, 2);
-					}
-				}
+				if (is_associated && pfai_size != nullptr)
+					*pfai_size += sqlite3_column_int64(pstmt, 2);
+				else if (!is_associated && pnormal_size != nullptr)
+					*pnormal_size += sqlite3_column_int64(pstmt, 2);
 				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_DELETE_MESSAGE,
 					fid_val, message_id, 0);
@@ -956,23 +945,16 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	}
 	if (TRUE == b_normal && TRUE == b_fai) {
-		if (TRUE == b_private) {
-			sprintf(sql_string, "SELECT message_id,"
-				" message_size, is_associated FROM messages "
-				"WHERE parent_fid=%llu", LLU(fid_val));
-		} else {
-			sprintf(sql_string, "SELECT message_id,"
-				" message_size, is_associated, is_deleted FROM"
-				" messages WHERE parent_fid=%llu", LLU(fid_val));
-		}
+		sprintf(sql_string, "SELECT message_id,"
+			" message_size, is_associated, is_deleted FROM"
+			" messages WHERE parent_fid=%llu", LLU(fid_val));
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 3);
-			if (FALSE == b_hard && 0 != is_deleted) {
+			if (!b_hard && is_deleted)
 				continue;
-			}
 			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 			bool is_associated = sqlite3_column_int64(pstmt, 2);
 			if (TRUE == b_check) {
@@ -988,15 +970,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			if (NULL != pmessage_count && TRUE == b_hard) {
 				(*pmessage_count) ++;
 			}
-			if (0 == is_associated) {
-				if (NULL != pnormal_size && TRUE == b_hard) {
-					*pnormal_size += sqlite3_column_int64(pstmt, 1);
-				}
-			} else {
-				if (NULL != pfai_size && TRUE == b_hard) {
-					*pfai_size += sqlite3_column_int64(pstmt, 1);
-				}
-			}
+			if (b_hard && is_associated && pfai_size != nullptr)
+				*pfai_size += sqlite3_column_int64(pstmt, 1);
+			else if (b_hard && !is_associated && pnormal_size != nullptr)
+				*pnormal_size += sqlite3_column_int64(pstmt, 1);
 			if (0 == is_deleted) {
 				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
@@ -1043,26 +1020,18 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	} else {
 		if (TRUE == b_normal || TRUE == b_fai) {
-			int is_associated = !b_normal ? TRUE : false;
-			if (TRUE == b_private) {
-				sprintf(sql_string, "SELECT message_id,"
-						" message_size FROM messages WHERE "
-						"parent_fid=%llu AND is_associated=%d",
-						LLU(fid_val), is_associated);
-			} else {
-				sprintf(sql_string, "SELECT message_id,"
-						" message_size, is_deleted FROM messages "
-						"WHERE parent_fid=%llu AND is_associated=%d",
-						LLU(fid_val), is_associated);
-			}
+			bool is_associated = !b_normal;
+			sprintf(sql_string, "SELECT message_id,"
+				" message_size, is_deleted FROM messages "
+				"WHERE parent_fid=%llu AND is_associated=%d",
+				LLU(fid_val), is_associated);
 			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt == nullptr)
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
 				bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
-				if (FALSE == b_hard && 0 != is_deleted) {
+				if (!b_hard && is_deleted)
 					continue;
-				}
 				uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 				if (TRUE == b_check) {
 					if (FALSE == common_util_check_message_owner(
@@ -1077,15 +1046,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				if (NULL != pmessage_count) {
 					(*pmessage_count) ++;
 				}
-				if (0 == is_associated) {
-					if (NULL != pnormal_size && TRUE == b_hard) {
-						*pnormal_size += sqlite3_column_int64(pstmt, 1);
-					}
-				} else {
-					if (NULL != pfai_size && TRUE == b_hard) {
-						*pfai_size += sqlite3_column_int64(pstmt, 1);
-					}
-				}
+				if (b_hard && is_associated && pfai_size != nullptr)
+					*pfai_size += sqlite3_column_int64(pstmt, 1);
+				else if (b_hard && !is_associated && pnormal_size != nullptr)
+					*pnormal_size += sqlite3_column_int64(pstmt, 1);
 				if (0 == is_deleted) {
 					db_engine_proc_dynamic_event(pdb, cpid,
 						DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
@@ -1153,9 +1117,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 					continue;
 				}
 				bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
-				if (FALSE == b_hard && 0 != is_deleted) {
+				if (!b_hard && is_deleted)
 					continue;
-				}
 				if (NULL != username) {
 					uint32_t permission = 0;
 					if (FALSE == common_util_check_folder_permission(
