@@ -29,7 +29,6 @@ struct LOGON_OBJECT {
 };
 
 extern std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
-int logon_object_get_mode(LOGON_OBJECT *plogon);
 BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	uint16_t propid, PROPERTY_NAME *ppropname);
 BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,

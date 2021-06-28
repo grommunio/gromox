@@ -100,8 +100,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	TPROPVAL_ARRAY tmp_propvals;
 	FOLDER_CONTENT *psubfldctnt;
 	
-	
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		username = rpc_info.username;
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -183,7 +182,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	}
 	if (TRUE == b_sub) {
 		DCERPC_INFO rpc_info;
-		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			rpc_info = get_rpc_info();
 			username = rpc_info.username;
 		} else {
@@ -519,7 +518,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			folder_object_get_id(pfolder),
@@ -919,7 +918,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		return ecNullObject;
 	}
 	if (SYNC_TYPE_CONTENTS == SYNC_TYPE_CONTENTS) {
-		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			auto rpc_info = get_rpc_info();
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 				folder_object_get_id(pfolder),
@@ -1012,7 +1011,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	    message_id, &b_exist))
 		return ecError;
 	*pmessage_id = message_id;
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
@@ -1161,7 +1160,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	icsupctx_object_mark_started(pctx);
 	username = NULL;
 	auto rpc_info = get_rpc_info();
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		pfolder = icsupctx_object_get_parent_object(pctx);
 		folder_id = folder_object_get_id(pfolder);
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -1355,7 +1354,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return ecError;
 	*pfolder_id = 0;
 	if (FALSE == b_exist) {
-		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    parent_id1, rpc_info.username, &permission))
 				return ecError;
@@ -1422,7 +1421,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (PCL_INCLUDE & result) {
 		return SYNC_E_IGNORE;
 	}
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
@@ -1442,7 +1441,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
 		}
-		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    parent_id1, rpc_info.username, &permission))
 				return ecError;
@@ -1548,7 +1547,7 @@ uint32_t rop_syncimportdeletes(
 	folder_id = folder_object_get_id(pfolder);
 	auto rpc_info = get_rpc_info();
 	username = rpc_info.username;
-	if (LOGON_MODE_OWNER == logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode == LOGON_MODE_OWNER) {
 		username = NULL;
 	} else if (sync_type == SYNC_TYPE_CONTENTS &&
 	    !exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -1740,7 +1739,7 @@ uint32_t rop_syncimportmessagemove(
 		return ecNotFound;
 	}
 	auto rpc_info = get_rpc_info();
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    src_fid, rpc_info.username, &permission))
 			return ecError;

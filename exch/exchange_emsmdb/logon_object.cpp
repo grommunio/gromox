@@ -208,11 +208,6 @@ GUID LOGON_OBJECT::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-int logon_object_get_mode(LOGON_OBJECT *plogon)
-{
-	return plogon->logon_mode;
-}
-
 BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	uint16_t propid, PROPERTY_NAME *ppropname)
 {

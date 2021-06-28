@@ -61,7 +61,6 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t permission;
-	const char *username;
 	
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
@@ -71,11 +70,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {
 		auto rpc_info = get_rpc_info();
-		if (LOGON_MODE_OWNER == logon_object_get_mode(ptable->plogon)) {
-			username = NULL;
-		} else {
-			username = rpc_info.username;
-		}
+		auto username = ptable->plogon->logon_mode == LOGON_MODE_OWNER ?
+		                nullptr : rpc_info.username;
 		if (!exmdb_client_load_hierarchy_table(ptable->plogon->get_dir(),
 		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
 		    username, ptable->table_flags, ptable->prestriction,
@@ -89,8 +85,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		if (NULL == pinfo) {
 			return FALSE;
 		}
-		username = NULL;
-		if (LOGON_MODE_OWNER != logon_object_get_mode(ptable->plogon)) {
+		const char *username = nullptr;
+		if (ptable->plogon != LOGON_MODE_OWNER) {
 			if (!ptable->plogon->check_private()) {
 				username = rpc_info.username;
 			} else {

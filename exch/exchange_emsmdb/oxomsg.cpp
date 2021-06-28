@@ -225,10 +225,9 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	if (!plogon->check_private())
 		return ecNotSupported;
-	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
-	}
-	
+
 	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
 	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {
@@ -452,9 +451,8 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	}
 	if (!plogon->check_private())
 		return ecNotSupported;
-	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
-	}
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
@@ -551,9 +549,8 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	}
 	if (!plogon->check_private())
 		return ecNotSupported;
-	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
-	}
 	if (LOCK_STAT_1STFINISHED != lock_stat) {
 		return ecSuccess;
 	}
@@ -625,9 +622,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	}
 	if (!plogon->check_private())
 		return ecNotSupported;
-	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
-	}
 	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
 	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {

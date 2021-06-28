@@ -226,7 +226,7 @@ static BOOL folder_object_get_calculated_property(
 		*outvalue = cu_alloc<uint32_t>();
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (LOGON_MODE_OWNER == logon_object_get_mode(pfolder->plogon)) {
+		if (pfolder->plogon->logon_mode == LOGON_MODE_OWNER) {
 			*static_cast<uint32_t *>(*outvalue) = PERMISSION_READANY | PERMISSION_CREATE |
 									PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
 									PERMISSION_EDITANY|PERMISSION_DELETEANY|

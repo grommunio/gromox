@@ -334,8 +334,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
 		return FALSE;
 	}
-	if (LOGON_MODE_OWNER == logon_object_get_mode(
-		pctx->pstream->plogon)) {
+	if (pctx->pstream->plogon->logon_mode == LOGON_MODE_OWNER) {
 		username = NULL;
 	} else {
 		rpc_info = get_rpc_info();

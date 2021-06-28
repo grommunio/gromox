@@ -315,9 +315,8 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 			return ecNotSupported;
 		}
 	}
-	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
+	if (plogon->logon_mode != LOGON_MODE_OWNER)
 		return ecAccessDenied;
-	}
 	if (!exmdb_client_set_folder_by_class(plogon->get_dir(),
 	    folder_id, pstr_class, &b_result))
 		return ecError;

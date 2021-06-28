@@ -200,8 +200,7 @@ static BOOL fastupctx_object_create_folder(
 	if (!exmdb_client_create_folder_by_properties(pctx->pstream->plogon->get_dir(),
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	if (LOGON_MODE_OWNER != logon_object_get_mode(
-		pctx->pstream->plogon)) {
+	if (pctx->pstream->plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		pentryid = common_util_username_to_addressbook_entryid(
 											rpc_info.username);
@@ -235,8 +234,7 @@ static BOOL fastupctx_object_empty_folder(
 	const char *username;
 	DCERPC_INFO rpc_info;
 	
-	if (LOGON_MODE_OWNER == logon_object_get_mode(
-		pctx->pstream->plogon)) {
+	if (pctx->pstream->plogon->logon_mode == LOGON_MODE_OWNER) {
 		username = NULL;	
 	} else {
 		rpc_info = get_rpc_info();
