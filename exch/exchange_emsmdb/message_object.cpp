@@ -31,11 +31,9 @@ static BOOL message_object_get_recipient_all_proptags(
 	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (FALSE == exmdb_client_get_message_instance_rcpts_all_proptags(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &tmp_proptags)) {
+	if (!exmdb_client_get_message_instance_rcpts_all_proptags(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &tmp_proptags))
 		return FALSE;
-	}
 	pproptags->count = 0;
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count);
 	if (NULL == pproptags->pproptag) {
@@ -107,12 +105,10 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *plogon,
 	double_list_init(&pmessage->stream_list);
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<ATTACHMENT_OBJECT *>(pparent);
-		if (FALSE == exmdb_client_load_embedded_instance(
-			logon_object_get_dir(plogon), b_new,
-			((ATTACHMENT_OBJECT*)pparent)->instance_id,
-			&pmessage->instance_id)) {
+		if (!exmdb_client_load_embedded_instance(plogon->get_dir(),
+		    b_new, static_cast<ATTACHMENT_OBJECT *>(pparent)->instance_id,
+		    &pmessage->instance_id))
 			return NULL;
-		}
 		/* cannot find embedded message in attachment, return
 			immediately to caller and the caller check the
 			result by calling message_object_get_instance_id */
@@ -122,20 +118,16 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *plogon,
 	} else {
 		pmessage->folder_id = *(uint64_t*)pparent;
 		if (TRUE == logon_object_check_private(pmessage->plogon)) {
-			if (FALSE == exmdb_client_load_message_instance(
-				logon_object_get_dir(plogon), NULL, cpid,
-				b_new, pmessage->folder_id, message_id,
-				&pmessage->instance_id)) {
+			if (!exmdb_client_load_message_instance(plogon->get_dir(),
+			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
+			    &pmessage->instance_id))
 				return NULL;
-			}
 		} else {
 			auto rpc_info = get_rpc_info();
-			if (FALSE == exmdb_client_load_message_instance(
-				logon_object_get_dir(plogon), rpc_info.username,
-				cpid, b_new, pmessage->folder_id, message_id,
-				&pmessage->instance_id)) {
+			if (!exmdb_client_load_message_instance(plogon->get_dir(),
+			    rpc_info.username, cpid, b_new, pmessage->folder_id,
+			    message_id, &pmessage->instance_id))
 				return NULL;
-			}
 		}
 	}
 	if (0 == pmessage->instance_id) {
@@ -150,11 +142,10 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *plogon,
 		return NULL;
 	}
 	if (FALSE == b_new) {
-		if (FALSE == exmdb_client_get_instance_property(
-			logon_object_get_dir(plogon), pmessage->instance_id,
-			PROP_TAG_CHANGENUMBER, (void**)&pchange_num)) {
+		if (!exmdb_client_get_instance_property(plogon->get_dir(),
+		    pmessage->instance_id, PROP_TAG_CHANGENUMBER,
+		    reinterpret_cast<void **>(&pchange_num)))
 			return NULL;
-		}
 		if (NULL != pchange_num) {
 			pmessage->change_num = *pchange_num;
 		}
@@ -191,14 +182,12 @@ BOOL message_object_check_orignal_touched(
 		return TRUE;
 	}
 	if (0 != pmessage->message_id) {
-		if (FALSE == exmdb_client_get_message_property(
-			logon_object_get_dir(pmessage->plogon), NULL,
-			0, pmessage->message_id, PROP_TAG_CHANGENUMBER,
-			(void**)&pchange_num)) {
+		if (!exmdb_client_get_message_property(pmessage->plogon->get_dir(),
+		    nullptr, 0, pmessage->message_id, PROP_TAG_CHANGENUMBER,
+		    reinterpret_cast<void **>(&pchange_num)))
 			return FALSE;
-		}
 	} else {
-		if (!exmdb_client_get_embedded_cn(logon_object_get_dir(pmessage->plogon),
+		if (!exmdb_client_get_embedded_cn(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &pchange_num))
 			return FALSE;	
 	}
@@ -213,8 +202,7 @@ MESSAGE_OBJECT::~MESSAGE_OBJECT()
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 != pmessage->instance_id) { 
-		exmdb_client_unload_instance(
-			logon_object_get_dir(pmessage->plogon),
+		exmdb_client_unload_instance(pmessage->plogon->get_dir(),
 			pmessage->instance_id);
 	}
 	if (NULL != pmessage->precipient_columns) {
@@ -404,11 +392,9 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	propvals.ppropval[propvals.count].pvalue = id_string;
 	propvals.count ++;
 	
-	if (FALSE == exmdb_client_set_instance_properties(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &propvals, &problems)) {
+	if (!exmdb_client_set_instance_properties(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &propvals, &problems))
 		return FALSE;	
-	}
 	pmessage->b_touched = TRUE;
 	return TRUE;
 }
@@ -467,26 +453,21 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		return GXERR_SUCCESS;
 	}
 	auto rpc_info = get_rpc_info();
-	if (FALSE == exmdb_client_allocate_cn(
-		logon_object_get_dir(pmessage->plogon),
-		&pmessage->change_num)) {
+	if (!exmdb_client_allocate_cn(pmessage->plogon->get_dir(), &pmessage->change_num))
 		return GXERR_CALL_FAILED;
-	}
-	
-	if (FALSE == exmdb_client_get_instance_property(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue)) {
+	if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue))
 		return GXERR_CALL_FAILED;
-	}
+
 	BOOL b_fai = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (FALSE == pmessage->b_new) {
-			if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+			if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 			    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 			    reinterpret_cast<void **>(&pbin_pcl)) ||
 			    pbin_pcl == nullptr)
 				return GXERR_CALL_FAILED;
-			if (!exmdb_client_get_message_property(logon_object_get_dir(pmessage->plogon),
+			if (!exmdb_client_get_message_property(pmessage->plogon->get_dir(),
 			    nullptr, 0, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
 			    reinterpret_cast<void **>(&pbin_pcl1)) ||
 			    pbin_pcl1 == nullptr)
@@ -496,29 +477,22 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 				return GXERR_CALL_FAILED;
 			}
 			if (PCL_CONFLICT == result) {
-				if (FALSE == exmdb_client_get_folder_property(
-					logon_object_get_dir(pmessage->plogon), 0,
-					pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &pvalue)) {
+				if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
+				    0, pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &pvalue))
 					return GXERR_CALL_FAILED;
-				}
 				uint32_t resolve_method = pvalue == nullptr ? RESOLVE_METHOD_DEFAULT :
 				                          *static_cast<uint32_t *>(pvalue);
 				if (FALSE == b_fai &&
 					RESOLVE_METHOD_DEFAULT == resolve_method) {
 					if (TRUE == logon_object_check_private(pmessage->plogon)) {
-						if (FALSE == exmdb_client_read_message(
-							logon_object_get_dir(pmessage->plogon),
-							NULL, pmessage->cpid, pmessage->message_id,
-							&pmsgctnt)) {
+						if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
+						    nullptr, pmessage->cpid,
+						    pmessage->message_id, &pmsgctnt))
 							return GXERR_CALL_FAILED;
-						}
-					} else {
-						if (FALSE == exmdb_client_read_message(
-							logon_object_get_dir(pmessage->plogon),
-							rpc_info.username, pmessage->cpid, 
-							pmessage->message_id, &pmsgctnt)) {
-							return GXERR_CALL_FAILED;
-						}
+					} else if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
+					    rpc_info.username, pmessage->cpid,
+					    pmessage->message_id, &pmsgctnt)) {
+						return GXERR_CALL_FAILED;
 					}
 					if (NULL != pmsgctnt) {
 						pvalue = common_util_get_propvals(
@@ -527,12 +501,10 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 							return GXERR_CALL_FAILED;
 						}
 						tmp_status = *(uint32_t*)pvalue;
-						if (FALSE ==
-							exmdb_client_set_message_instance_conflict(
-							logon_object_get_dir(pmessage->plogon),
-							pmessage->instance_id, pmsgctnt)) {
+						if (!exmdb_client_set_message_instance_conflict(
+						    pmessage->plogon->get_dir(),
+						    pmessage->instance_id, pmsgctnt))
 							return GXERR_CALL_FAILED;
-						}
 						tmp_propvals.count = 1;
 						tmp_propvals.ppropval = &tmp_propval;
 						tmp_propval.proptag = PROP_TAG_MESSAGESTATUS;
@@ -557,7 +529,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			}
 		}
 	} else if (0 != pmessage->message_id) {
-		if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 		    reinterpret_cast<void **>(&pbin_pcl)))
 			return GXERR_CALL_FAILED;
@@ -648,14 +620,12 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	*/
 	tmp_propval.proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propval.pvalue = &pmessage->change_num;
-	if (FALSE == exmdb_client_set_instance_property(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &tmp_propval, &result)) {
+	if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &tmp_propval, &result))
 		return GXERR_CALL_FAILED;
-	}
 	
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client_flush_instance(logon_object_get_dir(pmessage->plogon),
+	if (!exmdb_client_flush_instance(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, logon_object_get_account(pmessage->plogon),
 	    &e_result) || e_result != GXERR_CALL_FAILED)
 		return e_result;
@@ -681,22 +651,18 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	if (TRUE == b_new || NULL != pmessage->pstate) {
 		goto SAVE_FULL_CHANGE;
 	}
-	if (FALSE == exmdb_client_get_message_group_id(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->message_id, &pgroup_id)) {
+	if (!exmdb_client_get_message_group_id(pmessage->plogon->get_dir(),
+	    pmessage->message_id, &pgroup_id))
 		return GXERR_CALL_FAILED;
-	}
 	if (NULL == pgroup_id) {
 		pgpinfo = logon_object_get_last_property_groupinfo(
 											pmessage->plogon);
 		if (NULL == pgpinfo) {
 			return GXERR_CALL_FAILED;
 		}
-		if (FALSE == exmdb_client_set_message_group_id(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->message_id, pgpinfo->group_id)) {
+		if (!exmdb_client_set_message_group_id(pmessage->plogon->get_dir(),
+		    pmessage->message_id, pgpinfo->group_id))
 			return GXERR_CALL_FAILED;
-		}
 	}  else {
 		pgpinfo = logon_object_get_property_groupinfo(
 						pmessage->plogon, *pgroup_id);
@@ -705,11 +671,9 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		}
 	}
 	
-	if (FALSE == exmdb_client_mark_modified(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->message_id)) {
+	if (!exmdb_client_mark_modified(pmessage->plogon->get_dir(),
+	    pmessage->message_id))
 		return GXERR_CALL_FAILED;
-	}
 	
 	pindices = proptag_array_init();
 	if (NULL == pindices) {
@@ -757,10 +721,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			}
 		}
 	}
-	if (FALSE == exmdb_client_save_change_indices(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->message_id, pmessage->change_num,
-		pindices, pungroup_proptags)) {
+	if (!exmdb_client_save_change_indices(pmessage->plogon->get_dir(),
+	    pmessage->message_id, pmessage->change_num, pindices, pungroup_proptags)) {
 		proptag_array_free(pindices);
 		proptag_array_free(pungroup_proptags);
 		return GXERR_CALL_FAILED;
@@ -776,18 +738,16 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	proptag_array_clear(pmessage->premoved_proptags);
 	tmp_indices.count = 0;
 	tmp_indices.pproptag = NULL;
-	if (FALSE == exmdb_client_save_change_indices(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->message_id, pmessage->change_num,
-		&tmp_indices, (PROPTAG_ARRAY*)&tmp_indices)) {
+	if (!exmdb_client_save_change_indices(pmessage->plogon->get_dir(),
+	    pmessage->message_id, pmessage->change_num, &tmp_indices,
+	    static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
 		return GXERR_CALL_FAILED;
-	}
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (TRUE == b_new && FALSE == b_fai && 0 != pmessage->message_id
 		&& FALSE == logon_object_check_private(pmessage->plogon)) {
-		exmdb_client_rule_new_message(
-			logon_object_get_dir(pmessage->plogon), rpc_info.username,
+		exmdb_client_rule_new_message(pmessage->plogon->get_dir(),
+			rpc_info.username,
 			logon_object_get_account(pmessage->plogon), pmessage->cpid,
 			pmessage->folder_id, pmessage->message_id);
 	}
@@ -805,11 +765,9 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	if (TRUE == pmessage->b_new) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_reload_message_instance(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &b_result)) {
+	if (!exmdb_client_reload_message_instance(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &b_result))
 		return FALSE;	
-	}
 	if (FALSE == b_result) {
 		return FALSE;
 	}
@@ -830,12 +788,11 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 		free(pnode);
 	pmessage->change_num = 0;
 	if (FALSE == pmessage->b_new) {
-		if (FALSE == exmdb_client_get_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, PROP_TAG_CHANGENUMBER,
-			(void**)&pchange_num) || NULL == pchange_num) {
+		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
+		    pmessage->instance_id, PROP_TAG_CHANGENUMBER,
+		    reinterpret_cast<void **>(&pchange_num)) ||
+		    pchange_num == nullptr)
 			return FALSE;
-		}
 		pmessage->change_num = *pchange_num;
 	}
 	return TRUE;
@@ -849,25 +806,22 @@ PROPTAG_ARRAY* message_object_get_rcpt_columns(MESSAGE_OBJECT *pmessage)
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
 {
-	return exmdb_client_get_message_instance_rcpts(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, row_id, need_count, pset);
+	return exmdb_client_get_message_instance_rcpts(pmessage->plogon->get_dir(),
+	       pmessage->instance_id, row_id, need_count, pset);
 }
 
 BOOL message_object_get_recipient_num(
 	MESSAGE_OBJECT *pmessage, uint16_t *pnum)
 {
-	return exmdb_client_get_message_instance_rcpts_num(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, pnum);
+	return exmdb_client_get_message_instance_rcpts_num(pmessage->plogon->get_dir(),
+	       pmessage->instance_id, pnum);
 }
 
 BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 {
-	if (FALSE == exmdb_client_empty_message_instance_rcpts(
-		logon_object_get_dir(pmessage->plogon), pmessage->instance_id)) {
+	if (!exmdb_client_empty_message_instance_rcpts(pmessage->plogon->get_dir(),
+	    pmessage->instance_id))
 		return FALSE;	
-	}
 	pmessage->b_touched = TRUE;
 	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
 		return TRUE;
@@ -878,11 +832,9 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 
 BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset)
 {
-	if (FALSE == exmdb_client_update_message_instance_rcpts(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, pset)) {
+	if (!exmdb_client_update_message_instance_rcpts(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, pset))
 		return FALSE;	
-	}
 	for (size_t i = 0; i < pset->count; ++i) {
 		for (size_t j = 0; j < pset->pparray[i]->count; ++j) {
 			switch (pset->pparray[i]->ppropval[j].proptag) {
@@ -918,18 +870,15 @@ BOOL message_object_get_attachments_num(
 	MESSAGE_OBJECT *pmessage, uint16_t *pnum)
 {
 	return exmdb_client_get_message_instance_attachments_num(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, pnum);
+	       pmessage->plogon->get_dir(), pmessage->instance_id, pnum);
 }
 
 BOOL message_object_delete_attachment(MESSAGE_OBJECT *pmessage,
 	uint32_t attachment_num)
 {
-	if (FALSE == exmdb_client_delete_message_instance_attachment(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, attachment_num)) {
+	if (!exmdb_client_delete_message_instance_attachment(
+	    pmessage->plogon->get_dir(), pmessage->instance_id, attachment_num))
 		return FALSE;
-	}
 	pmessage->b_touched = TRUE;
 	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
 		return TRUE;
@@ -942,8 +891,7 @@ BOOL message_object_get_attachment_table_all_proptags(
 	MESSAGE_OBJECT *pmessage, PROPTAG_ARRAY *pproptags)
 {
 	return exmdb_client_get_message_instance_attachment_table_all_proptags(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, pproptags);
+	       pmessage->plogon->get_dir(), pmessage->instance_id, pproptags);
 }
 
 BOOL message_object_query_attachment_table(
@@ -951,9 +899,8 @@ BOOL message_object_query_attachment_table(
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	return exmdb_client_query_message_instance_attachment_table(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, pproptags,
-			start_pos, row_needed, pset);
+	       pmessage->plogon->get_dir(), pmessage->instance_id, pproptags,
+	       start_pos, row_needed, pset);
 }
 
 BOOL message_object_append_stream_object(
@@ -1001,11 +948,9 @@ BOOL message_object_commit_stream_object(
 			free(pnode);
 			tmp_propval.proptag = stream_object_get_proptag(pstream);
 			tmp_propval.pvalue = stream_object_get_content(pstream);
-			if (FALSE == exmdb_client_set_instance_property(
-				logon_object_get_dir(pmessage->plogon),
-				pmessage->instance_id, &tmp_propval, &result)) {
+			if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
+			    pmessage->instance_id, &tmp_propval, &result))
 				return FALSE;
-			}
 			return TRUE;
 		}
 	}
@@ -1023,9 +968,8 @@ BOOL message_object_flush_streams(MESSAGE_OBJECT *pmessage)
 		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
 		tmp_propval.proptag = stream_object_get_proptag(pstream);
 		tmp_propval.pvalue = stream_object_get_content(pstream);
-		if (FALSE == exmdb_client_set_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, &tmp_propval, &result)) {
+		if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
+		    pmessage->instance_id, &tmp_propval, &result)) {
 			double_list_insert_as_head(&pmessage->stream_list, pnode);
 			return FALSE;
 		}
@@ -1043,7 +987,7 @@ BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
 	if (0 == pmessage->message_id) {
 		return FALSE;
 	}
-	if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+	if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, PR_MESSAGE_FLAGS, reinterpret_cast<void **>(&pmessage_flags)))
 		return FALSE;	
 	if (NULL == pmessage_flags) {
@@ -1052,9 +996,8 @@ BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage)
 	*pmessage_flags &= ~MSGFLAG_UNSENT;
 	tmp_propval.proptag = PR_MESSAGE_FLAGS;
 	tmp_propval.pvalue = pmessage_flags;
-	return exmdb_client_set_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, &tmp_propval, &result);
+	return exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
+	       pmessage->instance_id, &tmp_propval, &result);
 }
 
 BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
@@ -1066,11 +1009,9 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (FALSE == exmdb_client_get_instance_all_proptags(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &tmp_proptags)) {
+	if (!exmdb_client_get_instance_all_proptags(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &tmp_proptags))
 		return FALSE;	
-	}
 	nodes_num = double_list_get_nodes_num(&pmessage->stream_list);
 	nodes_num += 10;
 	pproptags->count = 0;
@@ -1216,7 +1157,7 @@ static BOOL message_object_get_calculated_property(
 		*ppvalue = &pmessage->folder_id;
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
-		if (!exmdb_client_get_folder_property(logon_object_get_dir(pmessage->plogon),
+		if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
 		    0, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
 			return FALSE;	
 		if (NULL == *ppvalue) {
@@ -1313,11 +1254,9 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_instance_properties(
-		logon_object_get_dir(pmessage->plogon), size_limit,
-		pmessage->instance_id, &tmp_proptags, &tmp_propvals)) {
+	if (!exmdb_client_get_instance_properties(pmessage->plogon->get_dir(),
+	    size_limit, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	}
 	
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval +
@@ -1340,15 +1279,12 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
-		if (TRUE == exmdb_client_get_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, PROP_TAG_INTERNETCODEPAGE,
-			&pvalue) && NULL != pvalue && pinfo->cpid ==
-			*(uint32_t*)pvalue) {
+		if (exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
+		    pmessage->instance_id, PROP_TAG_INTERNETCODEPAGE, &pvalue) &&
+		    pvalue != nullptr && pinfo->cpid == *static_cast<uint32_t *>(pvalue))
 			pv.pvalue = &pinfo->lcid_string;
-		} else {
+		else
 			pv.pvalue = deconst(&lcid_default);
-		}
 		ppropvals->count ++;
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
@@ -1420,11 +1356,9 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				continue;
 			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
 				==  ppropvals->ppropval[i].proptag) {
-				if (FALSE == exmdb_client_get_instance_property(
-					logon_object_get_dir(pmessage->plogon),
-					pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue)) {
+				if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
+				    pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue))
 					return FALSE;	
-				}
 				if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
@@ -1456,12 +1390,11 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
 				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
 				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_NRN_PENDING);
-				if (FALSE == exmdb_client_set_instance_properties(
-					logon_object_get_dir(pmessage->plogon),
-					pmessage->instance_id, &tmp_propvals1,
-					&tmp_problems)) {
+				if (!exmdb_client_set_instance_properties(
+				    pmessage->plogon->get_dir(),
+				    pmessage->instance_id, &tmp_propvals1,
+				    &tmp_problems))
 					return FALSE;	
-				}
 			}
 		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
@@ -1472,12 +1405,9 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_set_instance_properties(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &tmp_propvals,
-		&tmp_problems)) {
+	if (!exmdb_client_set_instance_properties(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	}
 	if (tmp_problems.count > 0) {
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index =
@@ -1566,12 +1496,9 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_remove_instance_properties(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &tmp_proptags,
-		&tmp_problems)) {
+	if (!exmdb_client_remove_instance_properties(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
-	}
 	if (tmp_problems.count > 0) {
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index =
@@ -1617,23 +1544,18 @@ BOOL message_object_copy_to(
 	PROPTAG_ARRAY *pcolumns;
 	MESSAGE_CONTENT msgctnt;
 	
-	if (FALSE == exmdb_client_check_instance_cycle(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage_src->instance_id, pmessage->instance_id,
-		pb_cycle)) {
+	if (!exmdb_client_check_instance_cycle(pmessage->plogon->get_dir(),
+	    pmessage_src->instance_id, pmessage->instance_id, pb_cycle))
 		return FALSE;	
-	}
 	if (TRUE == *pb_cycle) {
 		return TRUE;
 	}
 	if (FALSE == message_object_flush_streams(pmessage_src)) {
 		return FALSE;
 	}
-	if (FALSE == exmdb_client_read_message_instance(
-		logon_object_get_dir(pmessage_src->plogon),
-		pmessage_src->instance_id, &msgctnt)) {
+	if (!exmdb_client_read_message_instance(pmessage_src->plogon->get_dir(),
+	    pmessage_src->instance_id, &msgctnt))
 		return FALSE;
-	}
 	static constexpr uint32_t tags[] = {
 		PROP_TAG_MID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
@@ -1657,12 +1579,9 @@ BOOL message_object_copy_to(
 		msgctnt.children.prcpts = NULL;
 	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_ATTACHMENTS) >= 0)
 		msgctnt.children.pattachments = NULL;
-	if (FALSE == exmdb_client_write_message_instance(
-		logon_object_get_dir(pmessage->plogon),
-		pmessage->instance_id, &msgctnt,
-		b_force, &proptags, pproblems)) {
+	if (!exmdb_client_write_message_instance(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, &msgctnt, b_force, &proptags, pproblems))
 		return FALSE;	
-	}
 	pcolumns = proptag_array_dup(pmessage_src->precipient_columns);
 	if (NULL != pcolumns) {
 		proptag_array_free(pmessage->precipient_columns);
@@ -1681,12 +1600,9 @@ BOOL message_object_copy_to(
 BOOL message_object_copy_rcpts(MESSAGE_OBJECT *pmessage,
 	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result)
 {
-	if (FALSE == exmdb_client_copy_instance_rcpts(
-		logon_object_get_dir(pmessage->plogon), b_force,
-		pmessage_src->instance_id, pmessage->instance_id,
-		pb_result)) {
+	if (!exmdb_client_copy_instance_rcpts(pmessage->plogon->get_dir(),
+	    b_force, pmessage_src->instance_id, pmessage->instance_id, pb_result))
 		return FALSE;	
-	}
 	if (TRUE == *pb_result) {
 		proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
 	}
@@ -1696,12 +1612,9 @@ BOOL message_object_copy_rcpts(MESSAGE_OBJECT *pmessage,
 BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
 	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result)
 {
-	if (FALSE == exmdb_client_copy_instance_attachments(
-		logon_object_get_dir(pmessage->plogon), b_force,
-		pmessage_src->instance_id, pmessage->instance_id,
-		pb_result)) {
+	if (!exmdb_client_copy_instance_attachments(pmessage->plogon->get_dir(),
+	    b_force, pmessage_src->instance_id, pmessage->instance_id, pb_result))
 		return FALSE;	
-	}
 	if (TRUE == *pb_result) {
 		proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
 	}
@@ -1731,19 +1644,17 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
-		if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			tmp_byte = 1;
 			*pb_changed = TRUE;
 			if (MSG_READ_FLAG_DEFAULT == read_flag) {
-				if (FALSE == exmdb_client_get_instance_property(
-					logon_object_get_dir(pmessage->plogon),
-					pmessage->instance_id, PROP_TAG_READRECEIPTREQUESTED,
-					&pvalue)) {
+				if (!exmdb_client_get_instance_property(
+				    pmessage->plogon->get_dir(), pmessage->instance_id,
+				    PROP_TAG_READRECEIPTREQUESTED, &pvalue))
 					return FALSE;
-				}
 				if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 					b_notify = TRUE;
 				}
@@ -1751,7 +1662,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
-		if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -1760,12 +1671,9 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		}
 		break;
 	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
-		if (FALSE == exmdb_client_get_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, PROP_TAG_READRECEIPTREQUESTED,
-			&pvalue)) {
+		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
+		    pmessage->instance_id, PROP_TAG_READRECEIPTREQUESTED, &pvalue))
 			return FALSE;
-		}
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			b_notify = TRUE;
 		}
@@ -1775,44 +1683,32 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ |
 		MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) {
-			if (FALSE == exmdb_client_remove_instance_property(
-				logon_object_get_dir(pmessage->plogon),
-				pmessage->instance_id,
-				PROP_TAG_READRECEIPTREQUESTED, &result)) {
+			if (!exmdb_client_remove_instance_property(pmessage->plogon->get_dir(),
+			    pmessage->instance_id, PROP_TAG_READRECEIPTREQUESTED, &result))
 				return FALSE;	
-			}
-			if (TRUE == exmdb_client_get_message_property(
-				logon_object_get_dir(pmessage->plogon), username, 0,
-				pmessage->message_id, PROP_TAG_READRECEIPTREQUESTED,
-				&pvalue) && NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-				if (FALSE == exmdb_client_remove_message_property(
-					logon_object_get_dir(pmessage->plogon), pmessage->cpid,
-					pmessage->message_id, PROP_TAG_READRECEIPTREQUESTED)) {
-					return FALSE;	
-				}
-			}
+			if (exmdb_client_get_message_property(pmessage->plogon->get_dir(),
+			    username, 0, pmessage->message_id,
+			    PROP_TAG_READRECEIPTREQUESTED, &pvalue) &&
+			    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+			    !exmdb_client_remove_message_property(pmessage->plogon->get_dir(),
+			    pmessage->cpid, pmessage->message_id, PROP_TAG_READRECEIPTREQUESTED))
+				return FALSE;
 		}
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) {
-			if (FALSE == exmdb_client_remove_instance_property(
-				logon_object_get_dir(pmessage->plogon),
-				pmessage->instance_id,
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &result)) {
+			if (!exmdb_client_remove_instance_property(pmessage->plogon->get_dir(),
+			    pmessage->instance_id, PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED,
+			    &result))
 				return FALSE;	
-			}
-			if (TRUE == exmdb_client_get_message_property(
-				logon_object_get_dir(pmessage->plogon),
-				username, 0, pmessage->message_id,
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &pvalue)
-				&& NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-				if (FALSE == exmdb_client_remove_message_property(
-					logon_object_get_dir(pmessage->plogon),
-					pmessage->cpid, pmessage->message_id,
-					PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED)) {
+			if (exmdb_client_get_message_property(pmessage->plogon->get_dir(),
+			    username, 0, pmessage->message_id,
+			    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &pvalue) &&
+			    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+			    !exmdb_client_remove_message_property(pmessage->plogon->get_dir(),
+			    pmessage->cpid, pmessage->message_id,
+			    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED))
 					return FALSE;	
-				}
-			}
 		}
-		if (!exmdb_client_get_instance_property(logon_object_get_dir(pmessage->plogon),
+		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_MESSAGE_FLAGS, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
@@ -1820,45 +1716,34 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 			*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
 			propval.proptag = PR_MESSAGE_FLAGS;
 			propval.pvalue = pvalue;
-			if (FALSE == exmdb_client_set_instance_property(
-				logon_object_get_dir(pmessage->plogon),
-				pmessage->instance_id, &propval, &result)) {
+			if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
+			    pmessage->instance_id, &propval, &result))
 				return FALSE;
-			}
-			if (FALSE == exmdb_client_mark_modified(
-				logon_object_get_dir(pmessage->plogon),
-				pmessage->message_id)) {
+			if (!exmdb_client_mark_modified(pmessage->plogon->get_dir(),
+			    pmessage->message_id))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	default:
 		return TRUE;
 	}
 	if (TRUE == *pb_changed) {
-		if (FALSE == exmdb_client_set_message_read_state(
-			logon_object_get_dir(pmessage->plogon),
-			username, pmessage->message_id, tmp_byte,
-			&read_cn)) {
+		if (!exmdb_client_set_message_read_state(pmessage->plogon->get_dir(),
+		    username, pmessage->message_id, tmp_byte, &read_cn))
 			return FALSE;
-		}
 		propval.proptag = PR_READ;
 		propval.pvalue = &tmp_byte;
-		if (FALSE == exmdb_client_set_instance_property(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, &propval, &result)) {
+		if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
+		    pmessage->instance_id, &propval, &result))
 			return FALSE;	
-		}
 		if (0 != result) {
 			return TRUE;
 		}
 	}
 	if (TRUE == b_notify) {
-		if (FALSE == exmdb_client_get_message_brief(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->cpid, pmessage->message_id, &pbrief)) {
+		if (!exmdb_client_get_message_brief(pmessage->plogon->get_dir(),
+		    pmessage->cpid, pmessage->message_id, &pbrief))
 			return FALSE;	
-		}
 		if (NULL != pbrief) {
 			common_util_notify_receipt(logon_object_get_account(
 				pmessage->plogon), NOTIFY_RECEIPT_READ, pbrief);
@@ -1869,12 +1754,10 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		propval_buff[0].pvalue  = deconst(&fake_false);
 		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 		propval_buff[1].pvalue  = deconst(&fake_false);
-		exmdb_client_set_instance_properties(
-			logon_object_get_dir(pmessage->plogon),
+		exmdb_client_set_instance_properties(pmessage->plogon->get_dir(),
 			pmessage->instance_id, &propvals, &problems);
-		exmdb_client_set_message_properties(
-			logon_object_get_dir(pmessage->plogon), username,
-			0, pmessage->message_id, &propvals, &problems);
+		exmdb_client_set_message_properties(pmessage->plogon->get_dir(),
+			username, 0, pmessage->message_id, &propvals, &problems);
 	}
 	return TRUE;
 }
