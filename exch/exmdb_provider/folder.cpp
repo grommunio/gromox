@@ -1097,6 +1097,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				}
 			}
 		}
+	}
 		if (TRUE == b_sub) {
 			if (TRUE == b_private) {
 				sprintf(sql_string, "SELECT folder_id "
@@ -1167,7 +1168,6 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						pdb, folder_id, fid_val);
 			}
 		}
-	}
 	return TRUE;
 }
 
