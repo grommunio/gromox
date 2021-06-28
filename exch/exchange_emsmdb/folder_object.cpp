@@ -284,9 +284,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:
-		*outvalue = common_util_guid_to_binary(
-					logon_object_get_mailbox_guid(
-					pfolder->plogon));
+		*outvalue = common_util_guid_to_binary(pfolder->plogon->mailbox_guid);
 		return TRUE;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like exchange 2013, alway return 0 */

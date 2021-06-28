@@ -1182,9 +1182,7 @@ static BOOL message_object_get_calculated_property(
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:
-		*ppvalue = common_util_guid_to_binary(
-					logon_object_get_mailbox_guid(
-					pmessage->plogon));
+		*ppvalue = common_util_guid_to_binary(pmessage->plogon->mailbox_guid);
 		return TRUE;
 	}
 	return FALSE;

@@ -213,11 +213,6 @@ int logon_object_get_mode(LOGON_OBJECT *plogon)
 	return plogon->logon_mode;
 }
 
-GUID logon_object_get_mailbox_guid(LOGON_OBJECT *plogon)
-{
-	return plogon->mailbox_guid;
-}
-
 BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	uint16_t propid, PROPERTY_NAME *ppropname)
 {

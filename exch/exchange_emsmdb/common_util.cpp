@@ -409,8 +409,7 @@ BINARY* common_util_to_folder_entryid(
 	if (plogon->check_private()) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(
-			logon_object_get_mailbox_guid(plogon), &tmp_bin);
+		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
 		tmp_entryid.database_guid = rop_util_make_user_guid(plogon->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
@@ -496,8 +495,7 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 	if (plogon->check_private()) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(
-			logon_object_get_mailbox_guid(plogon), &tmp_bin);
+		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
 		tmp_entryid.folder_database_guid = rop_util_make_user_guid(plogon->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
