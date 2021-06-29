@@ -26,6 +26,14 @@ struct TABLE_OBJECT {
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks();
 	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
+	void reset();
+	BOOL get_all_columns(PROPTAG_ARRAY *cols);
+	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pposition, TPROPVAL_ARRAY *);
+	BOOL read_row(uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *);
+	BOOL expand(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count);
+	BOOL collapse(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count);
+	BOOL store_state(uint64_t inst_id, uint32_t inst_num, uint32_t *state_id);
+	BOOL restore_state(uint32_t state_id, uint32_t *index);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -42,20 +50,3 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-void table_object_reset(TABLE_OBJECT *ptable);
-BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
-	PROPTAG_ARRAY *pcolumns);
-BOOL table_object_match_row(TABLE_OBJECT *ptable,
-	BOOL b_forward, const RESTRICTION *pres,
-	int32_t *pposition, TPROPVAL_ARRAY *ppropvals);
-BOOL table_object_read_row(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num,
-	TPROPVAL_ARRAY *ppropvals);
-BOOL table_object_expand(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count);
-BOOL table_object_collapse(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count);
-BOOL table_object_store_state(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num, uint32_t *pstate_id);
-BOOL table_object_restore_state(TABLE_OBJECT *ptable,
-	uint32_t state_id, uint32_t *pindex);

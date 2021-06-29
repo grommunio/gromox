@@ -656,15 +656,13 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 					goto NEXT_NOTIFY;
 				if (pnotify->notification_data.notification_flags
 					&NOTIFICATION_FLAG_MOST_MESSAGE) {
-					if (!table_object_read_row(tbl,
-					    *pnotify->notification_data.prow_message_id,
+					if (!tbl->read_row(*pnotify->notification_data.prow_message_id,
 					    *pnotify->notification_data.prow_instance,
 					    &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 					
 				} else {
-					if (!table_object_read_row(tbl,
-					    *pnotify->notification_data.prow_folder_id,
+					if (!tbl->read_row(*pnotify->notification_data.prow_folder_id,
 					    0, &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 				}

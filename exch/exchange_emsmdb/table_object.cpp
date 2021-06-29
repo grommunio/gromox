@@ -301,7 +301,7 @@ std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *plogon,
 TABLE_OBJECT::~TABLE_OBJECT()
 {
 	auto ptable = this;
-	table_object_reset(ptable);
+	ptable->reset();
 	double_list_free(&ptable->bookmark_list);
 }
 
@@ -397,8 +397,9 @@ void TABLE_OBJECT::clear_bookmarks()
 		free(pnode->pdata);
 }
 
-void table_object_reset(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::reset()
 {
+	auto ptable = this;
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
 		ptable->pcolumns = NULL;
@@ -416,9 +417,9 @@ void table_object_reset(TABLE_OBJECT *ptable)
 	ptable->clear_bookmarks();
 }
 
-BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
-	PROPTAG_ARRAY *pcolumns)
+BOOL TABLE_OBJECT::get_all_columns(PROPTAG_ARRAY *pcolumns)
 {
+	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return message_object_get_attachment_table_all_proptags(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), pcolumns);
@@ -426,10 +427,10 @@ BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 	       ptable->table_id, pcolumns);
 }
 
-BOOL table_object_match_row(TABLE_OBJECT *ptable,
-	BOOL b_forward, const RESTRICTION *pres,
+BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
+	auto ptable = this;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
@@ -448,10 +449,10 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	       pres, ptable->pcolumns, pposition, ppropvals);
 }
 
-BOOL table_object_read_row(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num,
+BOOL TABLE_OBJECT::read_row(uint64_t inst_id, uint32_t inst_num,
 	TPROPVAL_ARRAY *ppropvals)
 {
+	auto ptable = this;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
@@ -470,35 +471,35 @@ BOOL table_object_read_row(TABLE_OBJECT *ptable,
 	       inst_id, inst_num, ppropvals);
 }
 
-BOOL table_object_expand(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count)
+BOOL TABLE_OBJECT::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
+    uint32_t *prow_count)
 {
-	return exmdb_client_expand_table(ptable->plogon->get_dir(),
-	       ptable->table_id, inst_id, pb_found, pposition, prow_count);
+	return exmdb_client_expand_table(plogon->get_dir(),
+	       table_id, inst_id, pb_found, pposition, prow_count);
 }
 
-BOOL table_object_collapse(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count)
+BOOL TABLE_OBJECT::collapse(uint64_t inst_id, BOOL *pb_found,
+    int32_t *pposition, uint32_t *prow_count)
 {
-	return exmdb_client_collapse_table(ptable->plogon->get_dir(),
-	       ptable->table_id, inst_id, pb_found, pposition, prow_count);
+	return exmdb_client_collapse_table(plogon->get_dir(),
+	       table_id, inst_id, pb_found, pposition, prow_count);
 }
 
-BOOL table_object_store_state(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num, uint32_t *pstate_id)
+BOOL TABLE_OBJECT::store_state(uint64_t inst_id, uint32_t inst_num,
+    uint32_t *pstate_id)
 {
-	return exmdb_client_store_table_state(ptable->plogon->get_dir(),
-	       ptable->table_id, inst_id, inst_num, pstate_id);
+	return exmdb_client_store_table_state(plogon->get_dir(),
+	       table_id, inst_id, inst_num, pstate_id);
 }
 
-BOOL table_object_restore_state(TABLE_OBJECT *ptable,
-	uint32_t state_id, uint32_t *pindex)
+BOOL TABLE_OBJECT::restore_state(uint32_t state_id, uint32_t *pindex)
 {
 	int32_t position;
 	uint64_t inst_id;
 	uint32_t inst_num;
 	uint32_t tmp_type;
 	uint32_t new_position;
+	auto ptable = this;
 	
 	if (!exmdb_client_mark_table(ptable->plogon->get_dir(),
 	    ptable->table_id, ptable->position, &inst_id, &inst_num, &tmp_type))

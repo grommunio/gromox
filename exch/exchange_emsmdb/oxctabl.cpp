@@ -575,9 +575,8 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags,
 	}
 	if (!ptable->check_to_load())
 		return ecError;
-	if (FALSE == table_object_get_all_columns(ptable, pproptags)) {
+	if (!ptable->get_all_columns(pproptags))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -645,10 +644,8 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 			return ecError;
 		}
 	}
-	if (FALSE == table_object_match_row(ptable,
-		b_forward, pres, &position, &propvals)) {
+	if (!ptable->match_row(b_forward, pres, &position, &propvals))
 		return ecError;
-	}
 	*ppcolumns = deconst(ptable->get_columns());
 	if (position < 0) {
 		return ecNotFound;
@@ -707,7 +704,7 @@ uint32_t rop_resettable(void *plogmap, uint8_t logon_id, uint32_t hin)
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	table_object_reset(ptable);
+	ptable->reset();
 	return ecSuccess;
 }
 
@@ -738,10 +735,8 @@ uint32_t rop_expandrow(uint16_t max_count,
 		return ecNullObject;
 	if (!ptable->check_to_load())
 		return ecError;
-	if (FALSE == table_object_expand(ptable, category_id,
-		&b_found, &position, pexpanded_count)) {
+	if (!ptable->expand(category_id, &b_found, &position, pexpanded_count))
 		return ecError;
-	}
 	if (FALSE == b_found) {
 		return ecNotFound;
 	} else if (position < 0) {
@@ -797,10 +792,8 @@ uint32_t rop_collapserow(uint64_t category_id,
 		return ecNullObject;
 	if (!ptable->check_to_load())
 		return ecError;
-	if (FALSE == table_object_collapse(ptable, category_id,
-		&b_found, &position, pcollapsed_count)) {
+	if (!ptable->collapse(category_id, &b_found, &position, pcollapsed_count))
 		return ecError;
-	}
 	if (FALSE == b_found) {
 		return ecNotFound;
 	} else if (position < 0) {
@@ -840,7 +833,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	pcollapse_state->pv = cu_alloc<uint32_t>();
 	if (pcollapse_state->pv == nullptr)
 		return ecMAPIOOM;
-	if (!table_object_store_state(ptable, row_id, row_instance,
+	if (!ptable->store_state(row_id, row_instance,
 	    static_cast<uint32_t *>(pcollapse_state->pv)))
 		return ecError;
 	return ecSuccess;
@@ -873,8 +866,7 @@ uint32_t rop_setcollapsestate(
 	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pv == nullptr)
 		return ecMAPIOOM;
-	if (!table_object_restore_state(ptable,
-	    *static_cast<uint32_t *>(pcollapse_state->pv),
+	if (!ptable->restore_state(*static_cast<uint32_t *>(pcollapse_state->pv),
 	    static_cast<uint32_t *>(pbookmark->pv)))
 		return ecError;
 	return ecSuccess;
