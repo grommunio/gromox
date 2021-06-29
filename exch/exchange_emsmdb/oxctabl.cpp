@@ -330,14 +330,11 @@ uint32_t rop_queryrows(uint8_t flags,
 	}
 	*pseek_pos = BOOKMARK_CURRENT;
 	if (TRUE == b_forward) {
-		if (table_object_get_position(ptable) >=
-			table_object_get_total(ptable)) {
+		if (ptable->get_position() >= table_object_get_total(ptable))
 			*pseek_pos = BOOKMARK_END;
-		}
 	} else {
-		if (0 == table_object_get_position(ptable)) {
+		if (ptable->get_position() == 0)
 			*pseek_pos = BOOKMARK_BEGINNING;
-		}
 	}
 	return ecSuccess;
 }
@@ -391,7 +388,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 	}
 	if (!ptable->check_to_load())
 		return ecError;
-	*pnumerator = table_object_get_position(ptable);
+	*pnumerator = ptable->get_position();
 	*pdenominator = table_object_get_total(ptable);
 	return ecSuccess;
 }
@@ -421,7 +418,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		}
 		original_position = 0;
 		*phas_soughtless = static_cast<uint32_t>(offset) > table_object_get_total(ptable);
-		table_object_set_position(ptable, offset);
+		ptable->set_position(offset);
 		break;
 	case BOOKMARK_END: {
 		if (offset > 0) {
@@ -432,38 +429,37 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		uint32_t dwoff = offset != INT32_MIN ? -offset :
 		                 static_cast<uint32_t>(INT32_MIN) + 1;
 		*phas_soughtless = dwoff > original_position;
-		table_object_set_position(ptable, *phas_soughtless ? 0 : original_position - dwoff);
+		ptable->set_position(*phas_soughtless ? 0 : original_position - dwoff);
 		break;
 	}
 	case BOOKMARK_CURRENT: {
-		original_position = table_object_get_position(ptable);
+		original_position = ptable->get_position();
 		if (offset < 0) {
 			/* underflow safety check for s32t */
 			uint32_t dwoff = offset != INT32_MIN ? -offset :
 			                 static_cast<uint32_t>(INT32_MIN) + 1;
 			*phas_soughtless = dwoff > original_position;
-			table_object_set_position(ptable, *phas_soughtless ? 0 : original_position - dwoff);
+			ptable->set_position(*phas_soughtless ? 0 : original_position - dwoff);
 			break;
 		}
 		auto upoff = static_cast<uint32_t>(offset);
 		if (original_position > static_cast<uint32_t>(UINT32_MAX) - upoff) {
 			/* overflow safety check for u32t+u32t */
 			*phas_soughtless = 1;
-			table_object_set_position(ptable, UINT32_MAX);
+			ptable->set_position(UINT32_MAX);
 		} else if (original_position + upoff > table_object_get_total(ptable)) {
 			*phas_soughtless = 1;
-			table_object_set_position(ptable, original_position + upoff);
+			ptable->set_position(original_position + upoff);
 		} else {
 			*phas_soughtless = 0;
-			table_object_set_position(ptable, original_position + upoff);
+			ptable->set_position(original_position + upoff);
 		}
 		break;
 	}
 	default:
 		return ecInvalidParam;
 	}
-	*poffset_sought = table_object_get_position(ptable)
-									- original_position;
+	*poffset_sought = ptable->get_position() - original_position;
 	return ecSuccess;
 }
 
@@ -528,7 +524,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 	if (!ptable->check_to_load())
 		return ecError;
 	position = numerator * table_object_get_total(ptable) / denominator;
-	table_object_set_position(ptable, position);
+	ptable->set_position(position);
 	return ecSuccess;
 }
 
@@ -634,11 +630,10 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 			return result;
 		break;
 	case BOOKMARK_BEGINNING:
-		table_object_set_position(ptable, 0);
+		ptable->set_position(0);
 		break;
 	case BOOKMARK_END:
-		table_object_set_position(ptable,
-			table_object_get_total(ptable));
+		ptable->set_position(table_object_get_total(ptable));
 		break;
 	case BOOKMARK_CURRENT:
 		break;
@@ -659,7 +654,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	if (position < 0) {
 		return ecNotFound;
 	}
-	table_object_set_position(ptable, position);
+	ptable->set_position(position);
 	*pprow = cu_alloc<PROPERTY_ROW>();
 	if (NULL == *pprow) {
 		return ecMAPIOOM;
@@ -727,7 +722,6 @@ uint32_t rop_expandrow(uint16_t max_count,
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
 	uint32_t last_offset;
-	uint32_t old_position;
 	
 	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
 	              logon_id, hin, &object_type));
@@ -759,13 +753,13 @@ uint32_t rop_expandrow(uint16_t max_count,
 	if (max_count > *pexpanded_count) {
 		max_count = *pexpanded_count;
 	}
-	old_position = table_object_get_position(ptable);
-	table_object_set_position(ptable, position + 1);
+	auto old_position = ptable->get_position();
+	ptable->set_position(position + 1);
 	if (!ptable->query_rows(TRUE, max_count, &tmp_set)) {
-		table_object_set_position(ptable, old_position);
+		ptable->set_position(old_position);
 		return ecError;
 	}
-	table_object_set_position(ptable, old_position);
+	ptable->set_position(old_position);
 	for (i = 0; i < tmp_set.count; ++i) {
 		if (!common_util_propvals_to_row(tmp_set.pparray[i],
 		    ptable->get_columns(), &tmp_row))
@@ -787,7 +781,6 @@ uint32_t rop_collapserow(uint64_t category_id,
 	BOOL b_found;
 	int object_type;
 	int32_t position;
-	uint32_t table_position;
 	
 	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
 	              logon_id, hin, &object_type));
@@ -814,10 +807,10 @@ uint32_t rop_collapserow(uint64_t category_id,
 	} else if (0 == *pcollapsed_count) {
 		return ecSuccess;
 	}
-	table_position = table_object_get_position(ptable);
+	auto table_position = ptable->get_position();
 	if (table_position > static_cast<uint32_t>(position)) {
 		table_position -= *pcollapsed_count;
-		table_object_set_position(ptable, table_position);	
+		ptable->set_position(table_position);	
 	}
 	return ecSuccess;
 }

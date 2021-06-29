@@ -103,7 +103,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	if (hnd < 0) {
 		return ecError;
 	}
-	table_object_set_handle(ptable.get(), hnd);
+	ptable->set_handle(hnd);
 	ptable.release();
 	*phout = hnd;
 	return ecSuccess;

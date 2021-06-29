@@ -17,6 +17,9 @@ struct TABLE_OBJECT {
 	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint16_t row_count);
+	void set_handle(uint32_t h) { handle = h; }
+	uint32_t get_position() const { return position; }
+	void set_position(uint32_t position);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -33,9 +36,6 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle);
-uint32_t table_object_get_position(TABLE_OBJECT *ptable);
-void table_object_set_position(TABLE_OBJECT *ptable, uint32_t position);
 void table_object_clear_position(TABLE_OBJECT *ptable);
 uint32_t table_object_get_total(TABLE_OBJECT *ptable);
 BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex);

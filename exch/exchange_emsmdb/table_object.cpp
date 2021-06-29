@@ -194,11 +194,6 @@ void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 	}
 }
 
-void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle)
-{
-	ptable->handle = handle;
-}
-
 BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *pcolumns)
 {
 	auto ptable = this;
@@ -250,13 +245,9 @@ BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
 	return TRUE;
 }
 
-uint32_t table_object_get_position(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::set_position(uint32_t position)
 {
-	return ptable->position;
-}
-
-void table_object_set_position(TABLE_OBJECT *ptable, uint32_t position)
-{
+	auto ptable = this;
 	uint32_t total_rows;
 	
 	total_rows = table_object_get_total(ptable);

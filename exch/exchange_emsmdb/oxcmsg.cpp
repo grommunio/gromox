@@ -1145,7 +1145,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	if (hnd < 0) {
 		return ecError;
 	}
-	table_object_set_handle(ptable.get(), hnd);
+	ptable->set_handle(hnd);
 	ptable.release();
 	*phout = hnd;
 	return ecSuccess;
