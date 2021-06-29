@@ -31,11 +31,6 @@ std::unique_ptr<FOLDER_OBJECT> folder_object_create(LOGON_OBJECT *plogon,
 	return pfolder;
 }
 
-uint32_t folder_object_get_tag_access(FOLDER_OBJECT *pfolder)
-{
-	return pfolder->tag_access;
-}
-
 BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY *pproptags)
 {
