@@ -46,7 +46,6 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 	int i;
 	uint16_t type;
 	int object_type;
-	const SORTORDER_SET *psorts;
 	
 	if (0 == pproptags->count) {
 		return ecInvalidParam;
@@ -100,16 +99,15 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 			return ecInvalidParam;
 		}
 	}
-	psorts = table_object_get_sorts(ptable);
+	auto psorts = ptable->get_sorts();
 	if (NULL != psorts) {
 		if (FALSE == oxctable_verify_columns_and_sorts(
 			pproptags, psorts)) {
 			return ecNotSupported;
 		}
 	}
-	if (FALSE == table_object_set_columns(ptable, pproptags)) {
+	if (!ptable->set_columns(pproptags))
 		return ecMAPIOOM;
-	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	return ecSuccess;
 }
@@ -124,7 +122,6 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	int object_type;
 	BOOL b_multi_inst;
 	uint32_t tmp_proptag;
-	const PROPTAG_ARRAY *pcolumns;
 	
 	if (psort_criteria->count > MAXIMUM_SORT_COUNT) {
 		return ecTooComplex;
@@ -228,16 +225,15 @@ uint32_t rop_sorttable(uint8_t table_flags,
 			b_max = TRUE;
 		}
 	}
-	pcolumns = table_object_get_columns(ptable);
+	auto pcolumns = ptable->get_columns();
 	if (TRUE == b_multi_inst && NULL != pcolumns) {
 		if (FALSE == oxctable_verify_columns_and_sorts(
 			pcolumns, psort_criteria)) {
 			return ecNotSupported;
 		}
 	}
-	if (FALSE == table_object_set_sorts(ptable, psort_criteria)) {
+	if (!ptable->set_sorts(psort_criteria))
 		return ecMAPIOOM;
-	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	table_object_unload(ptable);
 	/* MS-OXCTABL 3.2.5.3 */
@@ -303,9 +299,8 @@ uint32_t rop_queryrows(uint8_t flags,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
@@ -324,12 +319,11 @@ uint32_t rop_queryrows(uint8_t flags,
 	} else {
 		size_t i;
 		for (i=0; i<tmp_set.count; i++) {
-			if (FALSE == common_util_propvals_to_row(tmp_set.pparray[i],
-				table_object_get_columns(ptable), &tmp_row)) {
+			if (!common_util_propvals_to_row(tmp_set.pparray[i],
+			    ptable->get_columns(), &tmp_row))
 				return ecMAPIOOM;
-			}
 			last_offset = pext->offset;
-			if (pext->p_proprow(table_object_get_columns(ptable), &tmp_row) != EXT_ERR_SUCCESS) {
+			if (pext->p_proprow(ptable->get_columns(), &tmp_row) != EXT_ERR_SUCCESS) {
 				pext->offset = last_offset;
 				break;
 			}
@@ -510,9 +504,8 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 	default:
 		return ecNotSupported;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_loaded(ptable)) {
 		return ecInvalidBookmark;
 	}
@@ -571,9 +564,8 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	default:
 		return ecNotSupported;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
@@ -637,9 +629,8 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	default:
 		return ecNotSupported;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
@@ -679,7 +670,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		b_forward, pres, &position, &propvals)) {
 		return ecError;
 	}
-	*ppcolumns = (PROPTAG_ARRAY*)table_object_get_columns(ptable);
+	*ppcolumns = deconst(ptable->get_columns());
 	if (position < 0) {
 		return ecNotFound;
 	}
@@ -718,9 +709,8 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 	default:
 		return ecNotSupported;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	table_object_remove_bookmark(ptable, *(uint32_t*)pbookmark->pb);
 	return ecSuccess;
 }
@@ -764,9 +754,8 @@ uint32_t rop_expandrow(uint16_t max_count,
 	}
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return ecNotSupported;
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
@@ -794,12 +783,11 @@ uint32_t rop_expandrow(uint16_t max_count,
 	}
 	table_object_set_position(ptable, old_position);
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (FALSE == common_util_propvals_to_row(tmp_set.pparray[i],
-			table_object_get_columns(ptable), &tmp_row)) {
+		if (!common_util_propvals_to_row(tmp_set.pparray[i],
+		    ptable->get_columns(), &tmp_row))
 			return ecMAPIOOM;
-		}
 		last_offset = pext->offset;
-		if (pext->p_proprow(table_object_get_columns(ptable), &tmp_row) != EXT_ERR_SUCCESS) {
+		if (pext->p_proprow(ptable->get_columns(), &tmp_row) != EXT_ERR_SUCCESS) {
 			pext->offset = last_offset;
 			break;
 		}
@@ -827,9 +815,8 @@ uint32_t rop_collapserow(uint64_t category_id,
 	}
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return ecNotSupported;
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
@@ -870,9 +857,8 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 		table_object_get_rop_id(ptable)) {
 		return ecNotSupported;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}
@@ -907,9 +893,8 @@ uint32_t rop_setcollapsestate(
 	if (sizeof(uint32_t) != pcollapse_state->cb) {
 		return ecInvalidParam;
 	}
-	if (NULL == table_object_get_columns(ptable)) {
+	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
 	}

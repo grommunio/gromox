@@ -207,14 +207,9 @@ void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle)
 	ptable->handle = handle;
 }
 
-const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable)
+BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *pcolumns)
 {
-	return ptable->pcolumns;
-}
-
-BOOL table_object_set_columns(TABLE_OBJECT *ptable,
-	const PROPTAG_ARRAY *pcolumns)
-{
+	auto ptable = this;
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
 	}
@@ -229,14 +224,9 @@ BOOL table_object_set_columns(TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-const SORTORDER_SET* table_object_get_sorts(TABLE_OBJECT *ptable)
+BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *psorts)
 {
-	return ptable->psorts;
-}
-
-BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
-	const SORTORDER_SET *psorts)
-{
+	auto ptable = this;
 	if (NULL != ptable->psorts) {
 		sortorder_set_free(ptable->psorts);
 	}

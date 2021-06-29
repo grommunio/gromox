@@ -533,8 +533,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	EMSMDB_INFO *pemsmdb_info;
 	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
-	const PROPTAG_ARRAY *pcolumns;
-	
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
 	if (*pbuff_len > 0x8000) {
@@ -653,7 +651,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				TABLE_EVENT_ROW_MODIFIED ==
 				*pnotify->notification_data.ptable_event)) {
 				auto tbl = static_cast<TABLE_OBJECT *>(pobject);
-				pcolumns = table_object_get_columns(tbl);
+				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1, sizeof(ext_buff1), EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;
 				if (pnotify->notification_data.notification_flags

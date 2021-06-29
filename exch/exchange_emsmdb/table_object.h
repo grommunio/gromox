@@ -7,6 +7,10 @@
 
 struct TABLE_OBJECT {
 	~TABLE_OBJECT();
+	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
+	BOOL set_columns(const PROPTAG_ARRAY *);
+	const SORTORDER_SET *get_sorts() const { return psorts; }
+	BOOL set_sorts(const SORTORDER_SET *);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -23,12 +27,6 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable);
-BOOL table_object_set_columns(TABLE_OBJECT *ptable,
-	const PROPTAG_ARRAY *pcolumns);
-const SORTORDER_SET* table_object_get_sorts(TABLE_OBJECT *ptable);
-BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
-	const SORTORDER_SET *psorts);
 BOOL table_object_check_loaded(TABLE_OBJECT *ptable);
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable);
 void table_object_unload(TABLE_OBJECT *ptable);
