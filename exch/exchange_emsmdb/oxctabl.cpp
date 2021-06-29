@@ -235,7 +235,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	if (!ptable->set_sorts(psort_criteria))
 		return ecMAPIOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
-	table_object_unload(ptable);
+	ptable->unload();
 	/* MS-OXCTABL 3.2.5.3 */
 	table_object_clear_bookmarks(ptable);
 	table_object_clear_position(ptable);
@@ -270,11 +270,10 @@ uint32_t rop_restrict(uint8_t res_flags,
 			return ecError;
 		}
 	}
-	if (FALSE == table_object_set_restriction(ptable, pres)) {
+	if (!ptable->set_restriction(pres))
 		return ecMAPIOOM;
-	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
-	table_object_unload(ptable);
+	ptable->unload();
 	/* MS-OXCTABL 3.2.5.4 */
 	table_object_clear_bookmarks(ptable);
 	table_object_clear_position(ptable);
@@ -301,19 +300,16 @@ uint32_t rop_queryrows(uint8_t flags,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	BOOL b_forward = forward_read == 0 ? false : TRUE;
 	if (table_object_get_rop_id(ptable)
 		== ropGetContentsTable &&
 		row_count > MAXIMUM_CONTENT_ROWS) {
 		row_count = MAXIMUM_CONTENT_ROWS;
 	}
-	if (FALSE == table_object_query_rows(ptable,
-		b_forward, row_count, &tmp_set)) {
+	if (!ptable->query_rows(b_forward, row_count, &tmp_set))
 		return ecError;
-	}
 	if (0 == tmp_set.count) {
 		*pcount = 0;
 	} else {
@@ -334,7 +330,7 @@ uint32_t rop_queryrows(uint8_t flags,
 		*pcount = i;
 	}
 	if (0 == (QUERY_ROWS_FLAGS_NOADVANCE & flags)) {
-		table_object_seek_current(ptable, b_forward, *pcount);
+		ptable->seek_current(b_forward, *pcount);
 	}
 	*pseek_pos = BOOKMARK_CURRENT;
 	if (TRUE == b_forward) {
@@ -397,9 +393,8 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	*pnumerator = table_object_get_position(ptable);
 	*pdenominator = table_object_get_total(ptable);
 	return ecSuccess;
@@ -421,9 +416,8 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	switch (seek_pos) {
 	case BOOKMARK_BEGINNING:
 		if (offset < 0) {
@@ -506,9 +500,8 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_loaded(ptable)) {
+	if (!ptable->check_loaded())
 		return ecInvalidBookmark;
-	}
 	if (FALSE == table_object_retrieve_bookmark(
 		ptable, *(uint32_t*)pbookmark->pb, &b_exist)) {
 		return ecInvalidBookmark;
@@ -536,9 +529,8 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	position = numerator * table_object_get_total(ptable) / denominator;
 	table_object_set_position(ptable, position);
 	return ecSuccess;
@@ -566,9 +558,8 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pb == nullptr)
@@ -591,9 +582,8 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	if (FALSE == table_object_get_all_columns(ptable, pproptags)) {
 		return ecError;
 	}
@@ -631,9 +621,8 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	BOOL b_forward = (flags & FIND_ROW_FLAG_BACKWARD) ? false : TRUE;
 	*pbookmark_invisible = 0;
 	switch (seek_pos) {
@@ -756,9 +745,8 @@ uint32_t rop_expandrow(uint16_t max_count,
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	if (FALSE == table_object_expand(ptable, category_id,
 		&b_found, &position, pexpanded_count)) {
 		return ecError;
@@ -777,7 +765,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	}
 	old_position = table_object_get_position(ptable);
 	table_object_set_position(ptable, position + 1);
-	if (FALSE == table_object_query_rows(ptable, TRUE, max_count, &tmp_set)) {
+	if (!ptable->query_rows(TRUE, max_count, &tmp_set)) {
 		table_object_set_position(ptable, old_position);
 		return ecError;
 	}
@@ -817,9 +805,8 @@ uint32_t rop_collapserow(uint64_t category_id,
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	if (FALSE == table_object_collapse(ptable, category_id,
 		&b_found, &position, pcollapsed_count)) {
 		return ecError;
@@ -859,9 +846,8 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	pcollapse_state->cb = sizeof(uint32_t);
 	pcollapse_state->pv = cu_alloc<uint32_t>();
 	if (pcollapse_state->pv == nullptr)
@@ -895,9 +881,8 @@ uint32_t rop_setcollapsestate(
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pv == nullptr)

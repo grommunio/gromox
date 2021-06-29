@@ -49,15 +49,17 @@ static void table_object_set_table_id(
 	ptable->table_id = table_id;
 }
 
-BOOL table_object_check_loaded(TABLE_OBJECT *ptable)
+BOOL TABLE_OBJECT::check_loaded()
 {
+	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
 	return ptable->table_id == 0 ? false : TRUE;
 }
 
-BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
+BOOL TABLE_OBJECT::check_to_load()
 {
+	auto ptable = this;
 	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t permission;
@@ -128,14 +130,14 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	return TRUE;
 }
 
-void table_object_unload(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::unload()
 {
-	table_object_set_table_id(ptable, 0);
+	table_object_set_table_id(this, 0);
 }
 
-BOOL table_object_query_rows(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
+BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
 {
+	auto ptable = this;
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
@@ -172,9 +174,9 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	       ptable->position, row_needed, pset);
 }
 
-void table_object_seek_current(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count)
+void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 {
+	auto ptable = this;
 	uint32_t total_rows;
 	
 	if (TRUE == b_forward) {
@@ -241,9 +243,9 @@ BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *psorts)
 	return TRUE;
 }
 
-BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
-	const RESTRICTION *prestriction)
+BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
 {
+	auto ptable = this;
 	if (NULL != ptable->prestriction) {
 		restriction_free(ptable->prestriction);
 	}

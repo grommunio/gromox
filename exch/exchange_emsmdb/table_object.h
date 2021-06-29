@@ -11,6 +11,12 @@ struct TABLE_OBJECT {
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	const SORTORDER_SET *get_sorts() const { return psorts; }
 	BOOL set_sorts(const SORTORDER_SET *);
+	BOOL check_loaded();
+	BOOL check_to_load();
+	void unload();
+	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
+	BOOL set_restriction(const RESTRICTION *);
+	void seek_current(BOOL forward, uint16_t row_count);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -27,15 +33,6 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-BOOL table_object_check_loaded(TABLE_OBJECT *ptable);
-BOOL table_object_check_to_load(TABLE_OBJECT *ptable);
-void table_object_unload(TABLE_OBJECT *ptable);
-BOOL table_object_query_rows(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count, TARRAY_SET *pset);
-BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
-	const RESTRICTION *prestriction);
-void table_object_seek_current(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count);
 uint8_t table_object_get_rop_id(TABLE_OBJECT *ptable);
 uint32_t table_object_get_table_id(TABLE_OBJECT *ptable);
 void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle);
