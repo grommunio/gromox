@@ -69,30 +69,29 @@ BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
-	if (pfolder->pstore->b_private) {
-		if (pfolder->folder_id == rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) || pfolder->folder_id ==
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
-		}
-	}
+	if (!pfolder->pstore->b_private)
+		return TRUE;
+	if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
+	    pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))
+		return TRUE;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
+	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
+	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 	return TRUE;
 }
 
@@ -177,18 +176,18 @@ static BOOL folder_object_get_calculated_property(
 	case PR_ACCESS:
 		*ppvalue = &pfolder->tag_access;
 		return TRUE;
-	case PROP_TAG_CONTENTUNREADCOUNT:
-		if (!pfolder->pstore->b_private) {
-			*ppvalue = cu_alloc<uint32_t>();
-			if (NULL == *ppvalue) {
-				return FALSE;
-			}
-			auto pinfo = zarafa_server_get_info();
-			return exmdb_client::get_public_folder_unread_count(pfolder->pstore->get_dir(),
-			       pinfo->username, pfolder->folder_id,
-			       static_cast<uint32_t *>(*ppvalue));
+	case PROP_TAG_CONTENTUNREADCOUNT: {
+		if (pfolder->pstore->b_private)
+			return false;
+		*ppvalue = cu_alloc<uint32_t>();
+		if (NULL == *ppvalue) {
+			return FALSE;
 		}
-		return FALSE;
+		auto pinfo = zarafa_server_get_info();
+		return exmdb_client::get_public_folder_unread_count(pfolder->pstore->get_dir(),
+		       pinfo->username, pfolder->folder_id,
+		       static_cast<uint32_t *>(*ppvalue));
+	}
 	case PROP_TAG_FOLDERID:
 		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
@@ -196,7 +195,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
 		return TRUE;
-	case PR_RIGHTS:
+	case PR_RIGHTS: {
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -208,15 +207,13 @@ static BOOL folder_object_get_calculated_property(
 				PERMISSION_EDITANY|PERMISSION_DELETEANY|
 				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
 				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
-		} else {
-			auto pinfo = zarafa_server_get_info();
-			if (!exmdb_client::check_folder_permission(pfolder->pstore->get_dir(),
-			    pfolder->folder_id, pinfo->username,
-			    static_cast<uint32_t *>(*ppvalue))) {
-				return FALSE;
-			}
+			return TRUE;
 		}
-		return TRUE;
+		auto pinfo = zarafa_server_get_info();
+		return exmdb_client::check_folder_permission(pfolder->pstore->get_dir(),
+		       pfolder->folder_id, pinfo->username,
+		       static_cast<uint32_t *>(*ppvalue));
+	}
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 		*ppvalue = common_util_to_folder_entryid(
@@ -261,10 +258,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pfolder->pstore);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		return TRUE;
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like exchange 2013, alway return 0 */
 		*ppvalue = deconst(&fake_del);
@@ -571,12 +565,12 @@ BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (!exmdb_client::get_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;
-	if (tmp_propvals.count > 0) {
-		memcpy(ppropvals->ppropval + ppropvals->count,
-			tmp_propvals.ppropval,
-			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
-		ppropvals->count += tmp_propvals.count;
-	}
+	if (tmp_propvals.count == 0)
+		return TRUE;
+	memcpy(ppropvals->ppropval + ppropvals->count,
+	       tmp_propvals.ppropval,
+	       sizeof(TAGGED_PROPVAL) * tmp_propvals.count);
+	ppropvals->count += tmp_propvals.count;
 	return TRUE;	
 }
 
@@ -987,12 +981,10 @@ BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 		if (-1 != fd) {
 			if (TRUE == b_delegate) {
 				for (i=0; i<pactions->count; i++) {
-					if (pactions->pblock[i].type == OP_DELEGATE) {
-						if (!folder_object_flush_delegates(
-						    fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
-							close(fd);
-							return FALSE;
-						}
+					if (pactions->pblock[i].type == OP_DELEGATE &&
+					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
+						close(fd);
+						return FALSE;
 					}
 				}
 			}
