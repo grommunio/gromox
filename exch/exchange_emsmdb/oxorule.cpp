@@ -42,10 +42,8 @@ uint32_t rop_modifyrules(uint8_t flags,
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			folder_object_get_id(pfolder),
-			rpc_info.username, &permission)) {
+		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return ecAccessDenied;
 		}
@@ -57,9 +55,8 @@ uint32_t rop_modifyrules(uint8_t flags,
 			}
 		}
 		if (!exmdb_client_empty_folder_rule(plogon->get_dir(),
-			folder_object_get_id(pfolder))) {
+		    pfolder->folder_id))
 			return ecError;
-		}
 	}
 	for (i=0; i<count; i++) {
 		for (j=0; j<prow[i].propvals.count; j++) {
@@ -70,10 +67,8 @@ uint32_t rop_modifyrules(uint8_t flags,
 		}
 	}
 	if (!exmdb_client_update_folder_rule(plogon->get_dir(),
-		folder_object_get_id(pfolder),
-		count, prow, &b_exceed)) {
+	    pfolder->folder_id, count, prow, &b_exceed))
 		return ecError;
-	}
 	if (TRUE == b_exceed) {
 		return ecMAPIOOM;
 	}

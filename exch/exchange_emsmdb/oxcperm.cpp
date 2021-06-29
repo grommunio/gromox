@@ -19,7 +19,6 @@ uint32_t rop_modifypermissions(uint8_t flags,
 {
 	BOOL b_freebusy;
 	int object_type;
-	uint64_t folder_id;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -35,7 +34,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 		return ecNotSupported;
 	}
 	b_freebusy = FALSE;
-	folder_id = folder_object_get_id(pfolder);
+	auto folder_id = pfolder->folder_id;
 	if (flags & MODIFY_PERMISSIONS_FLAG_INCLUDEFREEBUSY) {
 		if (!plogon->check_private())
 			return ecNotSupported;
@@ -46,19 +45,16 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			folder_object_get_id(pfolder),
-			rpc_info.username, &permission)) {
+		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return ecAccessDenied;
 		}
 	}
 	if (MODIFY_PERMISSIONS_FLAG_REPLACEROWS & flags) {
 		if (!exmdb_client_empty_folder_permission(plogon->get_dir(),
-			folder_object_get_id(pfolder))) {
+		    pfolder->folder_id))
 			return ecError;
-		}
 	}
 	if (0 == count) {
 		return ecSuccess;
@@ -90,10 +86,8 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			folder_object_get_id(pfolder),
-			rpc_info.username, &permission)) {
+		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_FOLDERVISIBLE)) {
 			return ecAccessDenied;

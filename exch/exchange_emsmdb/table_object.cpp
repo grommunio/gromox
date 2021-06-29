@@ -73,7 +73,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		auto username = ptable->plogon->logon_mode == LOGON_MODE_OWNER ?
 		                nullptr : rpc_info.username;
 		if (!exmdb_client_load_hierarchy_table(ptable->plogon->get_dir(),
-		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, ptable->prestriction,
 		    &table_id, &row_num))
 			return FALSE;
@@ -92,7 +92,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			} else {
 				if (!exmdb_client_check_folder_permission(
 				    ptable->plogon->get_dir(),
-				    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 				    rpc_info.username, &permission))
 					return FALSE;	
 				if (0 == (permission & PERMISSION_READANY) &&
@@ -102,7 +102,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			}
 		}
 		if (!exmdb_client_load_content_table(ptable->plogon->get_dir(),
-		    pinfo->cpid, folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    pinfo->cpid, static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, ptable->prestriction,
 		    ptable->psorts, &table_id, &row_num))
 			return FALSE;
@@ -110,13 +110,13 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	}
 	case ropGetPermissionsTable:
 		if (!exmdb_client_load_permission_table(ptable->plogon->get_dir(),
-		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags, &table_id, &row_num))
 			return FALSE;
 		break;
 	case ropGetRulesTable:
 		if (!exmdb_client_load_rule_table(ptable->plogon->get_dir(),
-		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags, ptable->prestriction, &table_id, &row_num))
 			return FALSE;
 		break;

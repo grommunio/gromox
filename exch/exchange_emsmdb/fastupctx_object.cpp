@@ -96,8 +96,7 @@ static uint64_t fastupctx_object_get_last_folder(
 			return ((MARKER_NODE*)pnode->pdata)->data.folder_id;
 		}
 	}
-	return folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject));
-	;
+	return static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id;
 }
 
 static uint32_t fastupctx_object_get_last_attachment_instance(
@@ -336,7 +335,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		pnode1 = double_list_get_before(&pctx->marker_stack, pnode);
 		uint64_t parent_id = pnode1 == nullptr ?
-		                     folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)) :
+		                     static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id :
 		                     static_cast<MARKER_NODE *>(pnode1->pdata)->data.folder_id;
 		if (FALSE == fastupctx_object_create_folder(pctx,
 			parent_id, pctx->pproplist, &folder_id)) {
@@ -822,7 +821,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)),
+			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
 			    TRUE, FALSE, FALSE))
 				return FALSE;	
 		}
@@ -834,7 +833,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (fastupctx_object_empty_folder(pctx,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)),
+			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
 			    FALSE, TRUE, FALSE))
 				return FALSE;	
 		}
@@ -846,7 +845,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)),
+			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
 			    FALSE, FALSE, TRUE))
 				return FALSE;	
 		}

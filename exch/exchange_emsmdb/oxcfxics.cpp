@@ -455,9 +455,8 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		flags & FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS) {
 		b_sub = TRUE;
 	}
-	pfldctnt = oxcfxics_load_folder_content(plogon,
-				folder_object_get_id(pfolder),
-				TRUE, TRUE, b_sub);
+	pfldctnt = oxcfxics_load_folder_content(plogon, pfolder->folder_id,
+	           TRUE, TRUE, b_sub);
 	if (NULL == pfldctnt) {
 		return ecError;
 	}
@@ -519,10 +518,8 @@ uint32_t rop_fasttransfersourcecopymessages(
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			folder_object_get_id(pfolder),
-			rpc_info.username, &permission)) {
+		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		}
 		if (0 == (PERMISSION_READANY & permission) &&
 			0 == (PERMISSION_FOLDEROWNER & permission)) {
 			for (size_t i = 0; i < pmessage_ids->count; ++i) {
@@ -638,8 +635,8 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			b_normal = FALSE;
 		}
 		pfldctnt = oxcfxics_load_folder_content(plogon,
-		           folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-					b_fai, b_normal, b_sub);
+		           static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
+		           b_fai, b_normal, b_sub);
 		if (NULL == pfldctnt) {
 			return ecError;
 		}
@@ -788,8 +785,8 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			b_normal = FALSE;
 		}
 		pfldctnt = oxcfxics_load_folder_content(plogon,
-		           folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
-					b_fai, b_normal, b_sub);
+		           static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
+		           b_fai, b_normal, b_sub);
 		if (NULL == pfldctnt) {
 			return ecError;
 		}
@@ -919,10 +916,8 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			auto rpc_info = get_rpc_info();
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-				folder_object_get_id(pfolder),
-				rpc_info.username, &permission)) {
+			    pfolder->folder_id, rpc_info.username, &permission))
 				return ecError;
-			}
 			if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)))
 				return ecAccessDenied;
 		}
@@ -957,7 +952,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	void *pvalue;
 	uint32_t result;
 	int object_type;
-	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission, tag_access = 0;
 	uint32_t tmp_proptag;
@@ -993,7 +987,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
-	folder_id = folder_object_get_id(pfolder);
+	auto folder_id = pfolder->folder_id;
 	auto pbin = static_cast<BINARY *>(ppropvals->ppropval[0].pvalue);
 	if (pbin == nullptr || pbin->cb != 22)
 		return ecInvalidParam;
@@ -1160,7 +1154,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		pfolder = icsupctx_object_get_parent_object(pctx);
-		folder_id = folder_object_get_id(pfolder);
+		folder_id = pfolder->folder_id;
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
@@ -1279,7 +1273,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	auto rpc_info = get_rpc_info();
 	if (0 == ((BINARY*)phichyvals->ppropval[0].pvalue)->cb) {
 		parent_type = folder_object_get_type(pfolder);
-		parent_id1 = folder_object_get_id(pfolder);
+		parent_id1 = pfolder->folder_id;
 		if (!exmdb_client_check_folder_id(plogon->get_dir(),
 		    parent_id1, &b_exist))
 			return ecError;
@@ -1512,7 +1506,6 @@ uint32_t rop_syncimportdeletes(
 	int object_type;
 	uint16_t replid;
 	uint8_t sync_type;
-	uint64_t folder_id;
 	uint32_t permission;
 	const char *username;
 	EID_ARRAY message_ids;
@@ -1542,7 +1535,7 @@ uint32_t rop_syncimportdeletes(
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
-	folder_id = folder_object_get_id(pfolder);
+	auto folder_id = pfolder->folder_id;
 	auto rpc_info = get_rpc_info();
 	username = rpc_info.username;
 	if (plogon->logon_mode == LOGON_MODE_OWNER) {
@@ -1682,7 +1675,6 @@ uint32_t rop_syncimportmessagemove(
 	uint64_t src_fid;
 	uint64_t src_mid;
 	uint64_t dst_mid;
-	uint64_t folder_id;
 	uint32_t permission;
 	FOLDER_OBJECT *pfolder;
 	TAGGED_PROPVAL tmp_propval;
@@ -1712,7 +1704,7 @@ uint32_t rop_syncimportmessagemove(
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
-	folder_id = folder_object_get_id(pfolder);
+	auto folder_id = pfolder->folder_id;
 	if (FALSE == common_util_binary_to_xid(
 		psrc_folder_id, &xid_fsrc) ||
 		FALSE == common_util_binary_to_xid(

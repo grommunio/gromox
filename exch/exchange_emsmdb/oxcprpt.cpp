@@ -376,7 +376,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    folder_object_get_id(fld), rpc_info.username, &permission))
+			    fld->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
@@ -449,7 +449,7 @@ uint32_t rop_deleteproperties(
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    folder_object_get_id(fld), rpc_info.username, &permission))
+			    fld->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
@@ -659,7 +659,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    folder_object_get_id(flddst), rpc_info.username, &permission))
+			    flddst->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
@@ -919,7 +919,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    folder_object_get_id(fldsrc), rpc_info.username, &permission))
+			    fldsrc->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (permission & PERMISSION_FOLDEROWNER) {
 				username = NULL;
@@ -930,7 +930,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 				username = rpc_info.username;
 			}
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    folder_object_get_id(flddst), rpc_info.username, &permission))
+			    flddst->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				return ecAccessDenied;
@@ -942,8 +942,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		if (common_util_index_proptags(pexcluded_proptags,
 			PROP_TAG_CONTAINERHIERARCHY) < 0) {
 			if (!exmdb_client_check_folder_cycle(plogon->get_dir(),
-			    folder_object_get_id(fldsrc),
-			    folder_object_get_id(flddst), &b_cycle))
+			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
 			if (TRUE == b_cycle) {
 				return MAPI_E_FOLDER_CYCLE;
@@ -984,8 +983,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client_copy_folder_internal(plogon->get_dir(),
 			    plogon->account_id, pinfo->cpid, b_guest,
-			    rpc_info.username, folder_object_get_id(fldsrc),
-			    b_normal, b_fai, b_sub, folder_object_get_id(flddst),
+			    rpc_info.username, fldsrc->folder_id,
+			    b_normal, b_fai, b_sub, flddst->folder_id,
 			    &b_collid, &b_partial))
 				return ecError;
 			if (TRUE == b_collid) {
@@ -1075,7 +1074,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			auto rpc_info = get_rpc_info();
 			if (plogon->logon_mode != LOGON_MODE_OWNER) {
 				if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-				    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pobject)),
+				    static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
 				    rpc_info.username, &permission))
 					return ecError;
 				if (0 == (permission & PERMISSION_FOLDEROWNER)) {

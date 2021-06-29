@@ -149,15 +149,14 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_get_content_sync(pctx->pstream->plogon->get_dir(),
-		folder_object_get_id(pctx->pfolder), username,
-		pctx->pstate->pgiven, pseen, pseen_fai, pread,
-		pinfo->cpid, pctx->prestriction, b_ordered,
-		&count_fai, &total_fai, &count_normal, &total_normal,
-		&updated_messages, &chg_messages, &pctx->last_changenum,
-		&given_messages, &deleted_messages, &nolonger_messages,
-		&read_messags, &unread_messags, &pctx->last_readcn)) {
+	    pctx->pfolder->folder_id, username,
+	    pctx->pstate->pgiven, pseen, pseen_fai, pread,
+	    pinfo->cpid, pctx->prestriction, b_ordered,
+	    &count_fai, &total_fai, &count_normal, &total_normal,
+	    &updated_messages, &chg_messages, &pctx->last_changenum,
+	    &given_messages, &deleted_messages, &nolonger_messages,
+	    &read_messags, &unread_messags, &pctx->last_readcn))
 		return FALSE;
-	}
 	
 	idset_clear(pctx->pstate->pgiven);
 	for (size_t i = 0; i < given_messages.count; ++i) {
@@ -341,12 +340,10 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		username = rpc_info.username;
 	}
 	if (!exmdb_client_get_hierarchy_sync(pctx->pstream->plogon->get_dir(),
-		folder_object_get_id(pctx->pfolder), username,
-		pctx->pstate->pgiven, pctx->pstate->pseen,
-		&fldchgs, &last_changenum, &given_folders,
-		&deleted_folders)) {
+	    pctx->pfolder->folder_id, username, pctx->pstate->pgiven,
+	    pctx->pstate->pseen, &fldchgs, &last_changenum, &given_folders,
+	    &deleted_folders))
 		return FALSE;
-	}
 	idset_clear(pctx->pstate->pgiven);
 	for (size_t i = 0; i < given_folders.count; ++i) {
 		if (FALSE == idset_append(pctx->pstate->pgiven,
@@ -417,7 +414,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			if (folder_object_get_id(pctx->pfolder) == parent_fid) {
+			if (pctx->pfolder->folder_id == parent_fid) {
 				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 				tmp_propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 0;
@@ -443,7 +440,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				}
 				common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 			}
-			if (folder_object_get_id(pctx->pfolder) == parent_fid) {
+			if (pctx->pfolder->folder_id == parent_fid) {
 				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 				tmp_propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 0;
@@ -1064,7 +1061,6 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	void *pvalue;
 	uint64_t last_cn;
 	uint32_t *pstatus;
-	uint64_t folder_id;
 	INDEX_ARRAY indices;
 	uint32_t *pgroup_id;
 	PROPTAG_ARRAY proptags;
@@ -1104,7 +1100,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		return TRUE;
 	}
 	icsdownctx_object_trim_report_recipients(pmsgctnt);
-	folder_id = folder_object_get_id(pctx->pfolder);
+	auto folder_id = pctx->pfolder->folder_id;
 	pstatus = static_cast<uint32_t *>(common_util_get_propvals(
 	          &pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS));
 	if (NULL == pstatus) {
