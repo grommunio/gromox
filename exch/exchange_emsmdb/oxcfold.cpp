@@ -180,9 +180,8 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	}
 	if (rop_util_get_replid(pparent->folder_id) != 1)
 		return ecAccessDenied;
-	if (FOLDER_TYPE_SEARCH == folder_object_get_type(pparent)) {
+	if (pparent->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
@@ -434,9 +433,8 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
+	if (pfolder->type != FOLDER_TYPE_SEARCH)
 		return ecNotSearchFolder;
-	}
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -510,9 +508,8 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	if (NULL == pfolder || OBJECT_TYPE_FOLDER != object_type) {
 		return ecNullObject;
 	}
-	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
+	if (pfolder->type != FOLDER_TYPE_SEARCH)
 		return ecNotSearchFolder;
-	}
 	if (0 == include_restriction) {
 		*ppres = NULL;
 		ppres = NULL;
@@ -564,9 +561,8 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (FOLDER_TYPE_SEARCH == folder_object_get_type(pdst_folder)) {
+	if (pdst_folder->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;

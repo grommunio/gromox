@@ -1272,7 +1272,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	pfolder = icsupctx_object_get_parent_object(pctx);
 	auto rpc_info = get_rpc_info();
 	if (0 == ((BINARY*)phichyvals->ppropval[0].pvalue)->cb) {
-		parent_type = folder_object_get_type(pfolder);
+		parent_type = pfolder->type;
 		parent_id1 = pfolder->folder_id;
 		if (!exmdb_client_check_folder_id(plogon->get_dir(),
 		    parent_id1, &b_exist))
