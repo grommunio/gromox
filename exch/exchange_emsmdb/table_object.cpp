@@ -152,8 +152,7 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 		pset->count = 0;
 		return TRUE;
 	}
-	if (ptable->position >= table_object_get_total(ptable) &&
-		TRUE == b_forward) {
+	if (ptable->position >= ptable->get_total() && b_forward) {
 		pset->count = 0;
 		return TRUE;
 	}
@@ -177,11 +176,10 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 {
 	auto ptable = this;
-	uint32_t total_rows;
 	
 	if (TRUE == b_forward) {
 		ptable->position += row_count;
-		total_rows = table_object_get_total(ptable);
+		auto total_rows = ptable->get_total();
 		if (ptable->position > total_rows) {
 			ptable->position = total_rows;
 		}
@@ -248,22 +246,16 @@ BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
 void TABLE_OBJECT::set_position(uint32_t position)
 {
 	auto ptable = this;
-	uint32_t total_rows;
-	
-	total_rows = table_object_get_total(ptable);
+	auto total_rows = ptable->get_total();
 	if (position > total_rows) {
 		position = total_rows;
 	}
 	ptable->position = position;
 }
 
-void table_object_clear_position(TABLE_OBJECT *ptable)
+uint32_t TABLE_OBJECT::get_total() const
 {
-	ptable->position = 0;
-}
-
-uint32_t table_object_get_total(TABLE_OBJECT *ptable)
-{
+	auto ptable = this;
 	uint16_t num;
 	uint32_t total_rows;
 	
@@ -313,8 +305,9 @@ TABLE_OBJECT::~TABLE_OBJECT()
 	double_list_free(&ptable->bookmark_list);
 }
 
-BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
+BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
 {
+	auto ptable = this;
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
@@ -338,15 +331,14 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 	return TRUE;
 }
 
-BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
-	uint32_t index, BOOL *pb_exist)
+BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
+	auto ptable = this;
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
 	uint32_t position;
 	uint32_t tmp_type;
-	uint32_t total_rows;
 	int32_t tmp_position;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -375,15 +367,16 @@ BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
 	} else {
 		ptable->position = position;
 	}
-	total_rows = table_object_get_total(ptable);
+	auto total_rows = ptable->get_total();
 	if (ptable->position > total_rows) {
 		ptable->position = total_rows;
 	}
 	return TRUE;
 }
 
-void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index)
+void TABLE_OBJECT::remove_bookmark(uint32_t index)
 {
+	auto ptable = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
@@ -396,11 +389,11 @@ void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index)
 	}
 }
 
-void table_object_clear_bookmarks(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::clear_bookmarks()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(&ptable->bookmark_list)) != nullptr)
+	while ((pnode = double_list_pop_front(&bookmark_list)) != nullptr)
 		free(pnode->pdata);
 }
 
@@ -420,7 +413,7 @@ void table_object_reset(TABLE_OBJECT *ptable)
 	}
 	ptable->position = 0;
 	table_object_set_table_id(ptable, 0);
-	table_object_clear_bookmarks(ptable);
+	ptable->clear_bookmarks();
 }
 
 BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
@@ -524,7 +517,7 @@ BOOL table_object_restore_state(TABLE_OBJECT *ptable,
 		return TRUE;
 	}
 	ptable->position = position;
-	if (FALSE == table_object_create_bookmark(ptable, pindex)) {
+	if (!ptable->create_bookmark(pindex)) {
 		ptable->position = new_position;
 		return FALSE;
 	}

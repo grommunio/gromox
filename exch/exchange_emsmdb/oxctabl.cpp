@@ -235,8 +235,8 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	ptable->unload();
 	/* MS-OXCTABL 3.2.5.3 */
-	table_object_clear_bookmarks(ptable);
-	table_object_clear_position(ptable);
+	ptable->clear_bookmarks();
+	ptable->clear_position();
 	return ecSuccess;
 }
 
@@ -273,8 +273,8 @@ uint32_t rop_restrict(uint8_t res_flags,
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	ptable->unload();
 	/* MS-OXCTABL 3.2.5.4 */
-	table_object_clear_bookmarks(ptable);
-	table_object_clear_position(ptable);
+	ptable->clear_bookmarks();
+	ptable->clear_position();
 	return ecSuccess;
 }
 
@@ -330,7 +330,7 @@ uint32_t rop_queryrows(uint8_t flags,
 	}
 	*pseek_pos = BOOKMARK_CURRENT;
 	if (TRUE == b_forward) {
-		if (ptable->get_position() >= table_object_get_total(ptable))
+		if (ptable->get_position() >= ptable->get_total())
 			*pseek_pos = BOOKMARK_END;
 	} else {
 		if (ptable->get_position() == 0)
@@ -389,7 +389,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 	if (!ptable->check_to_load())
 		return ecError;
 	*pnumerator = ptable->get_position();
-	*pdenominator = table_object_get_total(ptable);
+	*pdenominator = ptable->get_total();
 	return ecSuccess;
 }
 
@@ -417,14 +417,14 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 			return ecInvalidParam;
 		}
 		original_position = 0;
-		*phas_soughtless = static_cast<uint32_t>(offset) > table_object_get_total(ptable);
+		*phas_soughtless = static_cast<uint32_t>(offset) > ptable->get_total();
 		ptable->set_position(offset);
 		break;
 	case BOOKMARK_END: {
 		if (offset > 0) {
 			return ecInvalidParam;
 		}
-		original_position = table_object_get_total(ptable);
+		original_position = ptable->get_total();
 		/* underflow safety check for s32t */
 		uint32_t dwoff = offset != INT32_MIN ? -offset :
 		                 static_cast<uint32_t>(INT32_MIN) + 1;
@@ -447,7 +447,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 			/* overflow safety check for u32t+u32t */
 			*phas_soughtless = 1;
 			ptable->set_position(UINT32_MAX);
-		} else if (original_position + upoff > table_object_get_total(ptable)) {
+		} else if (original_position + upoff > ptable->get_total()) {
 			*phas_soughtless = 1;
 			ptable->set_position(original_position + upoff);
 		} else {
@@ -494,10 +494,10 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		return ecNullObject;
 	if (!ptable->check_loaded())
 		return ecInvalidBookmark;
-	if (FALSE == table_object_retrieve_bookmark(
-		ptable, *(uint32_t*)pbookmark->pb, &b_exist)) {
+	uint32_t bm = 0;
+	memcpy(&bm, pbookmark->pb, sizeof(bm));
+	if (!ptable->retrieve_bookmark(bm, &b_exist))
 		return ecInvalidBookmark;
-	}
 	*prow_invisible = !b_exist;
 	return rop_seekrow(BOOKMARK_CURRENT, offset, want_moved_count,
 	       phas_soughtless, reinterpret_cast<int32_t *>(poffset_sought), plogmap, logon_id, hin);
@@ -508,7 +508,6 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 	uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	uint32_t position;
 	
 	if (0 == denominator) {
 		return ecInvalidBookmark;
@@ -523,7 +522,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 	}
 	if (!ptable->check_to_load())
 		return ecError;
-	position = numerator * table_object_get_total(ptable) / denominator;
+	auto position = numerator * ptable->get_total() / denominator;
 	ptable->set_position(position);
 	return ecSuccess;
 }
@@ -556,7 +555,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pb == nullptr)
 		return ecMAPIOOM;
-	if (!table_object_create_bookmark(ptable, static_cast<uint32_t *>(pbookmark->pv)))
+	if (!ptable->create_bookmark(static_cast<uint32_t *>(pbookmark->pv)))
 		return ecError;
 	return ecSuccess;
 }
@@ -633,7 +632,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		ptable->set_position(0);
 		break;
 	case BOOKMARK_END:
-		ptable->set_position(table_object_get_total(ptable));
+		ptable->set_position(ptable->get_total());
 		break;
 	case BOOKMARK_CURRENT:
 		break;
@@ -691,7 +690,9 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	table_object_remove_bookmark(ptable, *(uint32_t*)pbookmark->pb);
+	uint32_t bm = 0;
+	memcpy(&bm, pbookmark->pb, sizeof(bm));
+	ptable->remove_bookmark(bm);
 	return ecSuccess;
 }
 

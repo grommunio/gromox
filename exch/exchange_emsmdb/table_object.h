@@ -20,6 +20,12 @@ struct TABLE_OBJECT {
 	void set_handle(uint32_t h) { handle = h; }
 	uint32_t get_position() const { return position; }
 	void set_position(uint32_t position);
+	void clear_position() { position = 0; }
+	uint32_t get_total() const;
+	BOOL create_bookmark(uint32_t *pindex);
+	void remove_bookmark(uint32_t index);
+	void clear_bookmarks();
+	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -36,13 +42,6 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-void table_object_clear_position(TABLE_OBJECT *ptable);
-uint32_t table_object_get_total(TABLE_OBJECT *ptable);
-BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex);
-void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index);
-void table_object_clear_bookmarks(TABLE_OBJECT *ptable);
-BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
-	uint32_t index, BOOL *pb_exist);
 void table_object_reset(TABLE_OBJECT *ptable);
 BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 	PROPTAG_ARRAY *pcolumns);
