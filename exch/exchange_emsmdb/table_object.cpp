@@ -194,11 +194,6 @@ void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 	}
 }
 
-uint32_t table_object_get_table_id(TABLE_OBJECT *ptable)
-{
-	return ptable->table_id;
-}
-
 void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle)
 {
 	ptable->handle = handle;
