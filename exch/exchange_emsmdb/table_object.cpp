@@ -194,11 +194,6 @@ void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 	}
 }
 
-uint8_t table_object_get_rop_id(TABLE_OBJECT *ptable)
-{
-	return ptable->rop_id;
-}
-
 uint32_t table_object_get_table_id(TABLE_OBJECT *ptable)
 {
 	return ptable->table_id;

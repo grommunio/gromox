@@ -33,7 +33,6 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-uint8_t table_object_get_rop_id(TABLE_OBJECT *ptable);
 uint32_t table_object_get_table_id(TABLE_OBJECT *ptable);
 void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle);
 uint32_t table_object_get_position(TABLE_OBJECT *ptable);
