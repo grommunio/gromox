@@ -31,9 +31,9 @@ std::unique_ptr<FOLDER_OBJECT> folder_object_create(LOGON_OBJECT *plogon,
 	return pfolder;
 }
 
-BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
-	PROPTAG_ARRAY *pproptags)
+BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
+	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client_get_folder_all_proptags(pfolder->plogon->get_dir(),
@@ -81,8 +81,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_check_readonly_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag)
+BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -130,7 +129,8 @@ BOOL folder_object_check_readonly_property(
 	case PR_IPM_APPOINTMENT_ENTRYID:
 	case PR_IPM_JOURNAL_ENTRYID:
 	case PR_IPM_NOTE_ENTRYID:
-	case PR_IPM_TASK_ENTRYID:
+	case PR_IPM_TASK_ENTRYID: {
+		auto pfolder = this;
 		if (!pfolder->plogon->check_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
@@ -138,6 +138,7 @@ BOOL folder_object_check_readonly_property(
 			return FALSE;	
 		}
 		return TRUE;
+	}
 	}
 	return FALSE;
 }
@@ -503,8 +504,8 @@ static BOOL folder_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	void *pvalue;
@@ -526,6 +527,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	ppropvals->count = 0;
+	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (TRUE == folder_object_get_calculated_property(
@@ -568,8 +570,8 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	return TRUE;	
 }
 
-BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
+BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
+    PROBLEM_ARRAY *pproblems)
 {
 	int i;
 	XID tmp_xid;
@@ -601,9 +603,9 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
+	auto pfolder = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (TRUE == folder_object_check_readonly_property(
-			pfolder, ppropvals->ppropval[i].proptag)) {
+		if (pfolder->check_readonly_property(ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
@@ -670,8 +672,8 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
+    PROBLEM_ARRAY *pproblems)
 {
 	int i;
 	XID tmp_xid;
@@ -694,9 +696,9 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
+	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == folder_object_check_readonly_property(
-			pfolder, pproptags->pproptag[i])) {
+		if (pfolder->check_readonly_property(pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];

@@ -74,10 +74,8 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 	case OBJECT_TYPE_FOLDER:
 		proptags.count = 1;
 		proptags.pproptag = &proptag;
-		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pparent),
-		    &proptags, &propvals)) {
+		if (!static_cast<FOLDER_OBJECT *>(pparent)->get_properties(&proptags, &propvals))
 			return NULL;
-		}
 		break;
 	default:
 		return NULL;
@@ -402,8 +400,8 @@ BOOL stream_object_commit(STREAM_OBJECT *pstream)
 	if (NULL == propval.pvalue) {
 		return FALSE;
 	}
-	if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pstream->pparent),
-	    &propvals, &problems) || problems.count > 0)
+	if (!static_cast<FOLDER_OBJECT *>(pstream->pparent)->set_properties(&propvals, &problems) ||
+	    problems.count > 0)
 		return FALSE;
 	pstream->b_touched = FALSE;
 	return TRUE;

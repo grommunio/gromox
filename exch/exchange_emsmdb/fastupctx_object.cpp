@@ -351,8 +351,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 			break;
 		}
 		if (pctx->pproplist->count > 0) {
-			if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pctx->pobject),
-			    pctx->pproplist, &tmp_problems))
+			if (!static_cast<FOLDER_OBJECT *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
 				return GXERR_CALL_FAILED;
 		}
 		tpropval_array_free(pctx->pproplist);
@@ -364,8 +363,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				break;
 			}
 			if (pctx->pproplist->count > 0) {
-				if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pctx->pobject),
-				    pctx->pproplist, &tmp_problems))
+				if (!static_cast<FOLDER_OBJECT *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
 					return GXERR_CALL_FAILED;
 			}
 			tpropval_array_free(pctx->pproplist);

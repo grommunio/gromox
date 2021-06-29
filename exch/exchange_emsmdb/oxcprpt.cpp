@@ -128,8 +128,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		break;
 	}
 	case OBJECT_TYPE_FOLDER: {
-		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pobject),
-		    ptmp_proptags, &propvals))
+		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_properties(ptmp_proptags, &propvals))
 			return ecError;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
@@ -246,13 +245,13 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	}
 	case OBJECT_TYPE_FOLDER: {
 		auto fld = static_cast<FOLDER_OBJECT *>(pobject);
-		if (!folder_object_get_all_proptags(fld, &proptags))
+		if (!fld->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
 			return ecMAPIOOM;
 		}
-		if (!folder_object_get_properties(fld, ptmp_proptags, ppropvals))
+		if (!fld->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
@@ -330,7 +329,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER:
-		if (!folder_object_get_all_proptags(static_cast<FOLDER_OBJECT *>(pobject), pproptags))
+		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
@@ -382,7 +381,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 				return ecAccessDenied;
 			}
 		}
-		if (!folder_object_set_properties(fld, ppropvals, pproblems))
+		if (!fld->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -455,7 +454,7 @@ uint32_t rop_deleteproperties(
 				return ecAccessDenied;
 			}
 		}
-		if (!folder_object_remove_properties(fld, pproptags, pproblems))
+		if (!fld->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -527,7 +526,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 			return ecError;
 		break;
 	case OBJECT_TYPE_FOLDER:
-		if (!folder_object_get_all_proptags(static_cast<FOLDER_OBJECT *>(pobject), &proptags))
+		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	case OBJECT_TYPE_MESSAGE:
@@ -666,11 +665,11 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			}
 		}
 		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
-			if (!folder_object_get_all_proptags(flddst, &proptags1))
+			if (!flddst->get_all_proptags(&proptags1))
 				return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
-			if (folder_object_check_readonly_property(flddst, pproptags->pproptag[i])) {
+			if (flddst->check_readonly_property(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
@@ -688,7 +687,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			poriginal_indices[proptags.count] = i;
 			proptags.count ++;
 		}
-		if (!folder_object_get_properties(fldsrc, &proptags, &propvals))
+		if (!fldsrc->get_properties(&proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
 			if (NULL == common_util_get_propvals(
@@ -701,7 +700,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				pproblems->count ++;
 			}
 		}
-		if (!folder_object_set_properties(flddst, &propvals, &tmp_problems))
+		if (!flddst->set_properties(&propvals, &tmp_problems))
 			return ecError;
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index = common_util_index_proptags(
@@ -953,7 +952,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		}
 		BOOL b_normal = common_util_index_proptags(pexcluded_proptags, PROP_TAG_CONTAINERCONTENTS) < 0 ? TRUE : false;
 		BOOL b_fai    = common_util_index_proptags(pexcluded_proptags, PROP_TAG_FOLDERASSOCIATEDCONTENTS) < 0 ? TRUE : false;
-		if (!folder_object_get_all_proptags(fldsrc, &proptags))
+		if (!fldsrc->get_all_proptags(&proptags))
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);
 		tmp_proptags.count = 0;
@@ -962,11 +961,11 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			return ecMAPIOOM;
 		}
 		if (FALSE == b_force) {
-			if (!folder_object_get_all_proptags(flddst, &proptags1))
+			if (!flddst->get_all_proptags(&proptags1))
 				return ecError;
 		}
 		for (i=0; i<proptags.count; i++) {
-			if (folder_object_check_readonly_property(flddst, proptags.pproptag[i]))
+			if (flddst->check_readonly_property(proptags.pproptag[i]))
 				continue;
 			if (FALSE == b_force && common_util_index_proptags(
 				&proptags1, proptags.pproptag[i]) >= 0) {
@@ -976,7 +975,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 									proptags.pproptag[i];
 			tmp_proptags.count ++;
 		}
-		if (!folder_object_get_properties(fldsrc, &tmp_proptags, &propvals))
+		if (!fldsrc->get_properties(&tmp_proptags, &propvals))
 			return ecError;
 		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -990,11 +989,11 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			if (TRUE == b_collid) {
 				return ecDuplicateName;
 			}
-			if (!folder_object_set_properties(flddst, &propvals, pproblems))
+			if (!flddst->set_properties(&propvals, pproblems))
 				return ecError;
 			return ecSuccess;
 		}
-		if (!folder_object_set_properties(flddst, &propvals, pproblems))
+		if (!flddst->set_properties(&propvals, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
