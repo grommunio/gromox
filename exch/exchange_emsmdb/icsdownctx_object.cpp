@@ -889,11 +889,9 @@ static BOOL icsdownctx_object_get_changepartial(
 	ics_group_node *pgpnode = nullptr;
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY *pchangetags;
-	PROPERTY_GROUPINFO *pgpinfo;
 	static constexpr BINARY fake_bin{};
 	
-	pgpinfo = logon_object_get_property_groupinfo(
-				pctx->pstream->plogon, group_id);
+	auto pgpinfo = pctx->pstream->plogon->get_property_groupinfo(group_id);
 	if (NULL == pgpinfo) {
 		return FALSE;
 	}

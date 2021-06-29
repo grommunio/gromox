@@ -293,10 +293,8 @@ uint32_t rop_fasttransferdestconfigure(
 		proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
 		proptag_buff[2] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 		proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
-		if (FALSE == logon_object_get_properties(
-			plogon, &tmp_proptags, &tmp_propvals)) {
+		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
-		}
 		pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
 		uint64_t max_quota = ULLONG_MAX;
 		if (pvalue != nullptr) {

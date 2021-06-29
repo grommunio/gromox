@@ -208,8 +208,7 @@ GUID LOGON_OBJECT::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
-	uint16_t propid, PROPERTY_NAME *ppropname)
+BOOL LOGON_OBJECT::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
 {
 	PROPERTY_NAME *pname;
 	
@@ -218,6 +217,7 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 		ppropname->kind = MNID_ID;
 		ppropname->lid = propid;
 	}
+	auto plogon = this;
 	if (NULL != plogon->ppropid_hash) {
 		pname = static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash, propid));
 		if (NULL != pname) {
@@ -234,8 +234,8 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
-BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+BOOL LOGON_OBJECT::get_named_propnames(const PROPID_ARRAY *ppropids,
+    PROPNAME_ARRAY *ppropnames)
 {
 	int i;
 	PROPERTY_NAME *pname;
@@ -260,6 +260,7 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 	if (NULL == tmp_propids.ppropid) {
 		return FALSE;
 	}
+	auto plogon = this;
 	for (i=0; i<ppropids->count; i++) {
 		if (ppropids->ppropid[i] < 0x8000) {
 			rop_util_get_common_pset(PS_MAPI,
@@ -300,9 +301,8 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
-BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid)
+BOOL LOGON_OBJECT::get_named_propid(BOOL b_create,
+    const PROPERTY_NAME *ppropname, uint16_t *ppropid)
 {
 	GUID guid;
 	uint16_t *pid;
@@ -327,6 +327,7 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 		*ppropid = 0;
 		return TRUE;
 	}
+	auto plogon = this;
 	if (NULL != plogon->ppropname_hash) {
 		pid = static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
 		if (NULL != pid) {
@@ -345,9 +346,8 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
-BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
-	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids)
+BOOL LOGON_OBJECT::get_named_propids(BOOL b_create,
+    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
 	int i;
 	GUID guid;
@@ -376,6 +376,7 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 	if (NULL == tmp_propnames.ppropname) {
 		return FALSE;
 	}
+	auto plogon = this;
 	for (i=0; i<ppropnames->count; i++) {
 		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
 			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
@@ -432,12 +433,12 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 
 static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
 {
-	return logon_object_get_named_propid(static_cast<LOGON_OBJECT *>(obj), create, pn, pid);
+	return static_cast<LOGON_OBJECT *>(obj)->get_named_propid(create, pn, pid);
 }
 
-PROPERTY_GROUPINFO* logon_object_get_last_property_groupinfo(
-	LOGON_OBJECT *plogon)
+PROPERTY_GROUPINFO *LOGON_OBJECT::get_last_property_groupinfo()
 {
+	auto plogon = this;
 	if (NULL == plogon->pgpinfo) {
 		plogon->pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
 		                  plogon, msgchg_grouping_get_last_group_id());
@@ -445,14 +446,14 @@ PROPERTY_GROUPINFO* logon_object_get_last_property_groupinfo(
 	return plogon->pgpinfo;
 }
 
-PROPERTY_GROUPINFO* logon_object_get_property_groupinfo(
-	LOGON_OBJECT *plogon, uint32_t group_id)
+PROPERTY_GROUPINFO *LOGON_OBJECT::get_property_groupinfo(uint32_t group_id)
 {
+	auto plogon = this;
 	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_GROUPINFO *pgpinfo;
 	
 	if (group_id == msgchg_grouping_get_last_group_id()) {
-		return logon_object_get_last_property_groupinfo(plogon);
+		return get_last_property_groupinfo();
 	}
 	for (pnode=double_list_get_head(&plogon->group_list); NULL!=pnode;
 		pnode=double_list_get_after(&plogon->group_list, pnode)) {
@@ -475,9 +476,9 @@ PROPERTY_GROUPINFO* logon_object_get_property_groupinfo(
 	return pgpinfo;
 }
 
-BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
-	PROPTAG_ARRAY *pproptags)
+BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
+	auto plogon = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (FALSE == exmdb_client_get_store_all_proptags(
@@ -806,8 +807,8 @@ static BOOL logon_object_get_calculated_property(
  *
  * The output order is not necessarily the same as the input order.
  */
-BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL LOGON_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	void *pvalue;
@@ -829,6 +830,7 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	ppropvals->count = 0;
+	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (TRUE == logon_object_get_calculated_property(
@@ -864,8 +866,8 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 	return TRUE;	
 }
 
-BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
+BOOL LOGON_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
+    PROBLEM_ARRAY *pproblems)
 {
 	int i;
 	PROBLEM_ARRAY tmp_problems;
@@ -890,6 +892,7 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
+	auto plogon = this;
 	for (i=0; i<ppropvals->count; i++) {
 		if (TRUE == logon_object_check_readonly_property(
 			plogon, ppropvals->ppropval[i].proptag)) {
@@ -928,8 +931,8 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
-BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
-	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+BOOL LOGON_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
+    PROBLEM_ARRAY *pproblems)
 {
 	int i;
 	PROPTAG_ARRAY tmp_proptags;
@@ -944,6 +947,7 @@ BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
+	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
 		if (TRUE == logon_object_check_readonly_property(
 			plogon, pproptags->pproptag[i])) {

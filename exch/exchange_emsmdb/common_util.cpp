@@ -1771,7 +1771,7 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 	    message_id, &pgroup_id))
 		return FALSE;	
 	if (NULL == pgroup_id) {
-		pgpinfo = logon_object_get_last_property_groupinfo(plogon);
+		pgpinfo = plogon->get_last_property_groupinfo();
 		if (NULL == pgpinfo) {
 			return FALSE;
 		}
@@ -1779,7 +1779,7 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 		    message_id, pgpinfo->group_id))
 			return FALSE;	
 	}  else {
-		pgpinfo = logon_object_get_property_groupinfo(plogon, *pgroup_id);
+		pgpinfo = plogon->get_property_groupinfo(*pgroup_id);
 		if (NULL == pgpinfo) {
 			return FALSE;
 		}

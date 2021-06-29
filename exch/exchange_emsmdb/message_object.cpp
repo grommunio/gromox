@@ -655,8 +655,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	    pmessage->message_id, &pgroup_id))
 		return GXERR_CALL_FAILED;
 	if (NULL == pgroup_id) {
-		pgpinfo = logon_object_get_last_property_groupinfo(
-											pmessage->plogon);
+		pgpinfo = pmessage->plogon->get_last_property_groupinfo();
 		if (NULL == pgpinfo) {
 			return GXERR_CALL_FAILED;
 		}
@@ -664,8 +663,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		    pmessage->message_id, pgpinfo->group_id))
 			return GXERR_CALL_FAILED;
 	}  else {
-		pgpinfo = logon_object_get_property_groupinfo(
-						pmessage->plogon, *pgroup_id);
+		pgpinfo = pmessage->plogon->get_property_groupinfo(*pgroup_id);
 		if (NULL == pgpinfo) {
 			return GXERR_CALL_FAILED;
 		}

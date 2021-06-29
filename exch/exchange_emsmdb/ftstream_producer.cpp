@@ -354,10 +354,8 @@ static BOOL ftstream_producer_write_propdef(
 		ftstream_producer_try_recode_nbp(pstream);
 		return TRUE;
 	}
-	if (FALSE == logon_object_get_named_propname(
-		pstream->plogon, propid, &propname)) {
+	if (!pstream->plogon->get_named_propname(propid, &propname))
 		return FALSE;
-	}
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16) ||
 	    ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
@@ -745,10 +743,8 @@ static BOOL ftstream_producer_write_groupinfo(
 				return FALSE;
 			if (!(propid & 0x8000))
 				continue;
-			if (FALSE == logon_object_get_named_propname(
-			    pstream->plogon, propid, &propname)) {
+			if (!pstream->plogon->get_named_propname(propid, &propname))
 				return FALSE;
-			}
 			if (ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
 			    ext_push.p_uint32(propname.kind) != EXT_ERR_SUCCESS)
 				return FALSE;

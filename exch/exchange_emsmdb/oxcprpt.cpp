@@ -58,10 +58,8 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 			return ecError;
 		return ecSuccess;
 	}
-	if (FALSE == logon_object_get_named_propids(
-		plogon, b_create, ppropnames, ppropids)) {
+	if (!plogon->get_named_propids(b_create, ppropnames, ppropids))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -83,10 +81,8 @@ uint32_t rop_getnamesfrompropertyids(
 	case OBJECT_TYPE_FOLDER:
 	case OBJECT_TYPE_MESSAGE:
 	case OBJECT_TYPE_ATTACHMENT:
-		if (FALSE == logon_object_get_named_propnames(
-			plogon, ppropids, ppropnames)) {
+		if (!plogon->get_named_propnames(ppropids, ppropnames))
 			return ecError;
-		}
 		return ecSuccess;
 	default:
 		return ecNotSupported;
@@ -122,8 +118,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON: {
-		if (!logon_object_get_properties(static_cast<LOGON_OBJECT *>(pobject),
-		    ptmp_proptags, &propvals))
+		if (!static_cast<LOGON_OBJECT *>(pobject)->get_properties(ptmp_proptags, &propvals))
 			return ecError;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
@@ -223,13 +218,13 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON: {
 		auto xlog = static_cast<LOGON_OBJECT *>(pobject);
-		if (!logon_object_get_all_proptags(xlog, &proptags))
+		if (!xlog->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
 			return ecMAPIOOM;
 		}
-		if (!logon_object_get_properties(xlog, ptmp_proptags, ppropvals))
+		if (!xlog->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
@@ -331,7 +326,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
-		if (!logon_object_get_all_proptags(static_cast<LOGON_OBJECT *>(pobject), pproptags))
+		if (!static_cast<LOGON_OBJECT *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER:
@@ -373,7 +368,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	case OBJECT_TYPE_LOGON:
 		if (plogon->logon_mode == LOGON_MODE_GUEST)
 			return ecAccessDenied;
-		if (!logon_object_set_properties(static_cast<LOGON_OBJECT *>(pobject), ppropvals, pproblems))
+		if (!static_cast<LOGON_OBJECT *>(pobject)->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER: {
@@ -446,8 +441,7 @@ uint32_t rop_deleteproperties(
 	case OBJECT_TYPE_LOGON:
 		if (plogon->logon_mode == LOGON_MODE_GUEST)
 			return ecAccessDenied;
-		if (!logon_object_remove_properties(static_cast<LOGON_OBJECT *>(pobject),
-		    pproptags, pproblems))
+		if (!static_cast<LOGON_OBJECT *>(pobject)->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER: {
@@ -529,7 +523,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
-		if (!logon_object_get_all_proptags(static_cast<LOGON_OBJECT *>(pobject), &proptags))
+		if (!static_cast<LOGON_OBJECT *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	case OBJECT_TYPE_FOLDER:
@@ -574,10 +568,8 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	if (NULL == ppropidnames->ppropid) {
 		return ecMAPIOOM;
 	}
-	if (FALSE == logon_object_get_named_propnames(
-		plogon, &propids, &propnames)) {
+	if (!plogon->get_named_propnames(&propids, &propnames))
 		return ecError;
-	}
 	for (i=0; i<propids.count; i++) {
 		if (KIND_NONE == propnames.ppropname[i].kind) {
 			continue;

@@ -15,6 +15,22 @@ struct LOGON_OBJECT {
 	GUID guid() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
+	BOOL get_named_propname(uint16_t propid, PROPERTY_NAME *);
+	BOOL get_named_propnames(const PROPID_ARRAY *, PROPNAME_ARRAY *);
+	BOOL get_named_propid(BOOL create, const PROPERTY_NAME *, uint16_t *propid);
+	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
+	/*
+	 * Used for message partial change information when saving 
+	 * message, the return value is maintained by logon object,
+	 * do not free it outside.
+	 */
+	PROPERTY_GROUPINFO *get_last_property_groupinfo();
+	/* same as logon_object_get_last_property_groupinfo, do not free it outside */
+	PROPERTY_GROUPINFO *get_property_groupinfo(uint32_t group_id);
+	BOOL get_all_proptags(PROPTAG_ARRAY *);
+	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
+	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);
 
 	uint8_t logon_flags = 0;
 	uint32_t open_flags = 0;
@@ -29,30 +45,3 @@ struct LOGON_OBJECT {
 };
 
 extern std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
-BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
-	uint16_t propid, PROPERTY_NAME *ppropname);
-BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
-BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid);
-BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
-	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids);
-/* used for message partial change information when saving 
-	message, the return value is maintained by logon object,
-	do not free it outside */
-PROPERTY_GROUPINFO* logon_object_get_last_property_groupinfo(
-	LOGON_OBJECT *plogon);
-/* same as logon_object_get_last_property_groupinfo,
-	do not free it outside */
-PROPERTY_GROUPINFO* logon_object_get_property_groupinfo(
-	LOGON_OBJECT *plogon, uint32_t group_id);
-BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
-	PROPTAG_ARRAY *pproptags);
-BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);
-BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
-	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
