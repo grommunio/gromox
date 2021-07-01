@@ -89,15 +89,11 @@ static BOOL authmgr_init()
 		return false;
 	}
 	if (am_choice >= A_LDAP) {
-		bool (*fload)();
-		query_service2("ldap_adaptor_load", fload);
 		query_service2("ldap_auth_login2", fptr_ldap_login);
-		if (fload == nullptr || fptr_ldap_login == nullptr) {
+		if (fptr_ldap_login == nullptr) {
 			printf("[authmgr]: ldap_adaptor plugin not loaded yet\n");
 			return false;
 		}
-		if (!fload())
-			return false;
 	}
 	query_service2("mysql_auth_login2", fptr_mysql_login);
 	if (fptr_mysql_login == nullptr) {

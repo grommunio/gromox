@@ -235,8 +235,9 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 		return TRUE;
 
 	LINK_API(ppdata);
-	if (!register_service("ldap_adaptor_load", ldap_adaptor_load) ||
-	    !register_service("ldap_auth_login2", ldap_adaptor_login2)) {
+	if (!ldap_adaptor_load())
+		return false;
+	if (!register_service("ldap_auth_login2", ldap_adaptor_login2)) {
 		printf("[ldap_adaptor]: failed to register services\n");
 		return false;
 	}
