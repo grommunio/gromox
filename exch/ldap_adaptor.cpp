@@ -147,7 +147,8 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
 	auto ret = gx_auto_retry(ldap_search_ext_s, tok.res.meta,
-	           g_search_base.c_str(), LDAP_SCOPE_SUBTREE, filter.c_str(),
+	           g_search_base.size() != 0 ? g_search_base.c_str() : nullptr,
+	           LDAP_SCOPE_SUBTREE, filter.c_str(),
 	           const_cast<char **>(no_attrs), true, nullptr, nullptr,
 	           nullptr, 2, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
@@ -176,32 +177,6 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 		return TRUE;
 	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
 	return FALSE;
-}
-
-static bool ldap_adaptor_load_base()
-{
-	auto tok = g_conn_pool.get_wait();
-	ldap_msg msg;
-	auto ret = gx_auto_retry(ldap_search_ext_s, tok.res.meta, nullptr,
-	           LDAP_SCOPE_BASE, nullptr, const_cast<char **>(zero_attrs),
-	           true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
-	if (ret != LDAP_SUCCESS) {
-		printf("[ldap_adaptor]: base lookup: %s\n", ldap_err2string(ret));
-		return false;
-	}
-	if (!validate_response(tok.res.meta.get(), msg.get())) {
-		printf("[ldap_adaptor]: base lookup: no good result\n");
-		return false;
-	}
-	auto firstmsg = ldap_first_message(tok.res.meta.get(), msg.get());
-	if (firstmsg == nullptr)
-		return false;
-	auto dn = ldap_get_dn(tok.res.meta.get(), firstmsg);
-	if (dn == nullptr)
-		return false;
-	g_search_base = dn;
-	printf("[ldap_adaptor]: discovered base \"%s\"\n", g_search_base.c_str());
-	return true;
 }
 
 static bool ldap_adaptor_load() try
@@ -241,8 +216,6 @@ static bool ldap_adaptor_load() try
 	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());
 	g_conn_pool.resize(g_dataconn_num);
 	g_conn_pool.bump();
-	if (g_search_base.size() == 0 && !ldap_adaptor_load_base())
-		return false;
 	return true;
 } catch (const std::bad_alloc &) {
 	printf("[ldap_adaptor]: E-1455: ENOMEM\n");
