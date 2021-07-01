@@ -94,11 +94,15 @@ static ldap_ptr make_conn(bool perform_bind)
 	if (!perform_bind)
 		return ld;
 
-	struct berval cred;
-	cred.bv_val = deconst(g_bind_pass.c_str());
-	cred.bv_len = g_bind_pass.size();
-	ret = ldap_sasl_bind_s(ld.get(), g_bind_user.size() == 0 ? nullptr : g_bind_user.c_str(),
-	      LDAP_SASL_SIMPLE, &cred, nullptr, nullptr, nullptr);
+	struct berval cred{};
+	const char *binduser = nullptr;
+	if (g_bind_user.size() != 0) {
+		cred.bv_val = deconst(g_bind_pass.c_str());
+		cred.bv_len = g_bind_pass.size();
+		binduser = g_bind_user.c_str();
+	}
+	ret = ldap_sasl_bind_s(ld.get(), binduser, LDAP_SASL_SIMPLE, &cred,
+	      nullptr, nullptr, nullptr);
 	if (ret != LDAP_SUCCESS) {
 		printf("[ldap_adaptor]: bind as \"%s\": %s\n",
 		       g_bind_user.c_str(), ldap_err2string(ret));
