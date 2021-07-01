@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
+#include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -265,5 +270,52 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return userlist_parse(conn.res, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
 	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
+}
+
+bool mysql_adaptor_reload_config(const char *path,
+    const char *host_id, const char *prog_id) try
+{
+	mysql_adaptor_init_param par;
+	auto pfile = config_file_initd("mysql_adaptor.cfg", path);
+	if (pfile == nullptr) {
+		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		       strerror(errno));
+		return false;
+	}
+	auto v = config_file_get_value(pfile, "connection_num");
+	par.conn_num = v != nullptr ? strtoul(v, nullptr, 0) : 8;
+	v = config_file_get_value(pfile, "mysql_host");
+	par.host = v != nullptr ? v : "";
+	v = config_file_get_value(pfile, "mysql_port");
+	par.port = v != nullptr ? strtoul(v, nullptr, 0) : 3306;
+	v = config_file_get_value(pfile, "mysql_username");
+	par.user = v != nullptr ? v : "root";
+	v = config_file_get_value(pfile, "mysql_password");
+	par.pass = v != nullptr ? v : "";
+	v = config_file_get_value(pfile, "mysql_dbname");
+	par.dbname = v != nullptr ? v : "email";
+	v = config_file_get_value(pfile, "mysql_rdwr_timeout");
+	par.timeout = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	printf("[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
+	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
+	       par.conn_num, par.timeout, par.dbname.c_str());
+	v = config_file_get_value(pfile, "schema_upgrades");
+	par.schema_upgrade = S_SKIP;
+	if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
+	    prog_id != nullptr && strcmp(prog_id, "http") == 0 &&
+	    strcmp(v + 5, host_id) == 0) {
+		par.schema_upgrade = S_AUTOUP;
+	} else if (v != nullptr && strcmp(v, "skip") == 0) {
+		par.schema_upgrade = S_SKIP;
+	} else if (v != nullptr && strcmp(v, "autoupgrade") == 0) {
+		par.schema_upgrade = S_AUTOUP;
+	}
+
+	v = config_file_get_value(pfile, "enable_firsttime_password");
+	par.enable_firsttimepw = v != nullptr && strcmp(v, "yes") == 0;
+	mysql_adaptor_init(std::move(par));
+	return true;
+} catch (const std::bad_alloc &) {
 	return false;
 }

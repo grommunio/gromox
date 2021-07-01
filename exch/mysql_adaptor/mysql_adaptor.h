@@ -16,7 +16,7 @@ enum sql_schema_upgrade {
 };
 
 struct mysql_adaptor_init_param {
-	const char *host = nullptr, *user = nullptr, *pass = nullptr, *dbname = nullptr;
+	std::string host, user, pass, dbname;
 	int port = 0, conn_num = 0, timeout = 0;
 	enum sql_schema_upgrade schema_upgrade = S_ABORT;
 	bool enable_firsttimepw = false;
@@ -43,7 +43,7 @@ struct sql_class {
 	std::string name;
 };
 
-extern void mysql_adaptor_init(const struct mysql_adaptor_init_param &);
+extern void mysql_adaptor_init(mysql_adaptor_init_param &&);
 extern int mysql_adaptor_run();
 extern int mysql_adaptor_stop();
 extern BOOL mysql_adaptor_meta(const char *username, const char *password, char *maildir, char *lang, char *reason, int length, unsigned int mode, char *encrypted_passwd, size_t enc_size, uint8_t *externid_present);

@@ -34,17 +34,8 @@
 
 using namespace gromox;
 
-static int g_conn_num;
-static int g_port;
-static int g_timeout;
-static char g_host[256];
-static char g_user[256];
-static char *g_password;
-static char g_password_buff[256];
-static char g_db_name[256];
+static mysql_adaptor_init_param g_parm;
 static std::mutex g_crypt_lock;
-static enum sql_schema_upgrade g_schema_upgrade;
-static bool g_enable_firsttimepw;
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
 
@@ -61,22 +52,9 @@ sqlconn &sqlconn::operator=(sqlconn &&o)
 	return *this;
 }
 
-void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
+void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 {
-	g_conn_num = parm.conn_num;
-	gx_strlcpy(g_host, parm.host, sizeof(g_host));
-	g_port = parm.port;
-	g_timeout = parm.timeout;
-	gx_strlcpy(g_user, parm.user, sizeof(g_user));
-	if (parm.pass == nullptr || *parm.pass == '\0') {
-		g_password = NULL;
-	} else {
-		gx_strlcpy(g_password_buff, parm.pass, sizeof(g_password_buff));
-		g_password = g_password_buff;
-	}
-	gx_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
-	g_schema_upgrade = parm.schema_upgrade;
-	g_enable_firsttimepw = parm.enable_firsttimepw;
+	g_parm = std::move(parm);
 }
 
 static bool db_upgrade_check_2(MYSQL *conn)
@@ -90,11 +68,11 @@ static bool db_upgrade_check_2(MYSQL *conn)
 	static constexpr const char *msg =
 		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
 		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
-	if (g_schema_upgrade == S_SKIP) {
+	if (g_parm.schema_upgrade == S_SKIP) {
 		printf("skip.\n");
 		puts(msg);
 		return true;
-	} else if (g_schema_upgrade != S_AUTOUP) {
+	} else if (g_parm.schema_upgrade != S_AUTOUP) {
 		printf("abort.\n");
 		puts(msg);
 		return false;
@@ -116,15 +94,14 @@ MYSQL *sql_make_conn()
 	MYSQL *conn = mysql_init(nullptr);
 	if (conn == nullptr)
 		return nullptr;
-	if (g_timeout > 0) {
-		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT,
-			&g_timeout);
-		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT,
-			&g_timeout);
+	if (g_parm.timeout > 0) {
+		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
+		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
 	}
 	mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-	if (mysql_real_connect(conn, g_host, g_user, g_password,
-	    g_db_name, g_port, nullptr, 0) != nullptr)
+	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
+	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
+	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) != nullptr)
 		return conn;
 	printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
 	       mysql_error(conn));
@@ -142,7 +119,7 @@ resource_pool<sqlconn>::token sqlconnpool::get_wait()
 
 int mysql_adaptor_run()
 {
-	for (int i = 0; i < g_conn_num; ++i) {
+	for (int i = 0; i < g_parm.conn_num; ++i) {
 		auto conn = sql_make_conn();
 		if (conn == nullptr)
 			break;
@@ -150,7 +127,7 @@ int mysql_adaptor_run()
 	}
 	if (!db_upgrade_check())
 		return -1;
-	g_sqlconn_pool.resize(g_conn_num);
+	g_sqlconn_pool.resize(g_parm.conn_num);
 	return 0;
 }
 
@@ -326,7 +303,7 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
     int length)
 {
 	BOOL ret;
-	if (g_enable_firsttimepw && *encrypt_passwd == '\0')
+	if (g_parm.enable_firsttimepw && *encrypt_passwd == '\0')
 		ret = firsttime_password(username, password, encrypt_passwd,
 		      encrypt_size, reason, length);
 	else
