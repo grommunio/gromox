@@ -219,7 +219,6 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line
 {
 	char temp_buf[MAX_LINE_LEN];
 	char *equal_ptr = NULL;
-	char *sharp_ptr = NULL;
 	char *cr_ptr	= NULL;
 	char *lf_ptr	= NULL;
 	size_t index;
@@ -242,15 +241,8 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line
 	HX_strrtrim(temp_buf);
 	HX_strltrim(temp_buf);
 	equal_ptr = strchr(temp_buf, '=');
-	sharp_ptr = strchr(temp_buf, '#');
 	if (NULL == equal_ptr) {
 		return;
-	}
-	if (NULL != sharp_ptr && sharp_ptr < equal_ptr) {
-		return;
-	}
-	if (NULL != sharp_ptr) {
-		*sharp_ptr = '\0';
 	}
 	*equal_ptr = '\0';
 	equal_ptr ++;
