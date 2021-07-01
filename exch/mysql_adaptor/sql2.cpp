@@ -44,6 +44,8 @@ static bool db_upgrade_check_2(MYSQL *conn)
 {
 	auto recent = dbop_mysql_recentversion();
 	auto current = dbop_mysql_schemaversion(conn);
+	if (current < 0)
+		return false;
 	if (current >= recent)
 		return true;
 	printf("[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",

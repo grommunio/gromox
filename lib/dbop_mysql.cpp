@@ -527,8 +527,11 @@ int dbop_mysql_create_top(MYSQL *conn)
 int dbop_mysql_schemaversion(MYSQL *conn)
 {
 	const char q[] = "SELECT `value` FROM `options` WHERE `key`='schemaversion'";
-	if (mysql_real_query(conn, q, strlen(q)) != 0)
-		return 0;
+	if (mysql_real_query(conn, q, strlen(q)) != 0) {
+		fprintf(stderr, "dbop: Query \"%s\": %s\n",
+		        q, mysql_error(conn));
+		return -1;
+	}
 	DB_RESULT res(mysql_store_result(conn));
 	if (res == nullptr)
 		return -1;
