@@ -23,6 +23,11 @@ using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
 using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::string>>;
 struct sqlconnpool g_sqlconn_pool;
 
+static inline const char *z_null(const char *s)
+{
+	return s != nullptr ? s : "";
+}
+
 static bool connection_severed(int e)
 {
 #ifdef ER_CONNECTION_KILLED
