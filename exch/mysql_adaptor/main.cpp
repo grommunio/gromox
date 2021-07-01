@@ -12,6 +12,9 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 	if (reason == PLUGIN_FREE) {
 		mysql_adaptor_stop();
 		return TRUE;
+	} else if (reason == PLUGIN_RELOAD) {
+		mysql_adaptor_reload_config(get_config_path(),
+			get_host_ID(), get_prog_id());
 	}
 	if (reason != PLUGIN_INIT)
 		return TRUE;
