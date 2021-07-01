@@ -204,7 +204,7 @@ static bool ldap_adaptor_load_base()
 	return true;
 }
 
-static bool ldap_adaptor_load()
+static bool ldap_adaptor_load() try
 {
 	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path());
 	if (pfile == nullptr) {
@@ -244,6 +244,9 @@ static bool ldap_adaptor_load()
 	if (g_search_base.size() == 0 && !ldap_adaptor_load_base())
 		return false;
 	return true;
+} catch (const std::bad_alloc &) {
+	printf("[ldap_adaptor]: E-1455: ENOMEM\n");
+	return false;
 }
 
 static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
