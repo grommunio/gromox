@@ -11,9 +11,13 @@
 namespace gromox {
 
 /*
- * Your Tp should be modeled such that a default-constructed Tp counts as
- * "unset". This makes resource_pool<unique_ptr<X>> work, but
- * resource_pool<int> (file descriptors) not so much.
+ * Trivial resource pool. One can add slots with preexisting objects (put), or
+ * without (put_slot), in which case the object will be created just in time
+ * (in get_wait).
+ *
+ * Your Tp should be modeled such that a zero-initialized Tp counts as
+ * "unset". This means you can't have file descriptors per resource_pool<int>,
+ * since zero is a valid fd.
  */
 template<typename Tp> class resource_pool {
 	public:
@@ -23,25 +27,26 @@ template<typename Tp> class resource_pool {
 		token(resource_pool &pool, Tp &&r) :
 			m_pool(pool), res(std::move(r)) {}
 		token(token &&o) :
-			m_pool(o.m_pool), res(std::move(o.res)), m_done(o.m_done)
+			m_pool(o.m_pool), m_done(o.m_done),
+			res(std::move(o.res))
 		{
 			o.m_done = true;
 		}
 		~token() { if (!m_done) finish(); }
-		void finish() {
+		void operator=(token &&) = delete;
+		void finish() noexcept {
 			try {
 				m_pool.put(std::move(res));
 			} catch (...) {
 				m_pool.put_slot();
 			}
 			m_done = true;
-			res = Tp();
 		}
 		protected:
 		resource_pool &m_pool;
-		public:
-		Tp res;
 		bool m_done = false;
+		public:
+		Tp res{};
 	};
 
 	token get_wait() {
@@ -55,7 +60,7 @@ template<typename Tp> class resource_pool {
 		}
 		return {*this, std::move(c)};
 	}
-	void put_slot() {
+	void put_slot() noexcept {
 		++m_numslots;
 		m_cv.notify_one();
 	}
