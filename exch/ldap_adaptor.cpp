@@ -46,7 +46,7 @@ enum {
 
 static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
-static bool g_use_tls, g_persistent_authconn;
+static bool g_use_tls;
 static resource_pool<twoconn> g_conn_pool;
 
 static constexpr const char *no_attrs[] = {nullptr};
@@ -167,8 +167,6 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
 	ret = gx_auto_retry_2(ldap_sasl_bind_s, tok.res.bind, AVOID_BIND, dn,
 	      LDAP_SASL_SIMPLE, &bv, nullptr, nullptr, nullptr);
-	if (!g_persistent_authconn)
-		tok.res.bind.reset();
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
 	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
@@ -234,19 +232,16 @@ static bool ldap_adaptor_load()
 
 	val = config_file_get_value(pfile, "ldap_search_base");
 	g_search_base = val != nullptr ? val : "";
-	val = config_file_get_value(pfile, "ldap_persistent_authconn");
-	g_persistent_authconn = val == nullptr || strcmp(val, "no") != 0;
-	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d%s, mailattr=%s\n",
+	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
-	       g_search_base.c_str(), 2 * conn_num,
-	       g_persistent_authconn ? " +PAC" : "", g_mail_attr.c_str());
+	       g_search_base.c_str(), 2 * conn_num, g_mail_attr.c_str());
 
 	for (unsigned int i = 0; i < conn_num; ++i) {
 		twoconn ld;
 		ld.meta = make_conn(DO_BIND);
 		if (ld.meta == nullptr)
 			break;
-		ld.bind = make_conn(g_persistent_authconn);
+		ld.bind = make_conn(AVOID_BIND);
 		if (ld.bind == nullptr)
 			break;
 		g_conn_pool.put(std::move(ld));
