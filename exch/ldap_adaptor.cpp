@@ -47,6 +47,7 @@ enum {
 static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
 static bool g_use_tls;
+static unsigned int g_dataconn_num = 4;
 static resource_pool<twoconn> g_conn_pool;
 
 static constexpr const char *no_attrs[] = {nullptr};
@@ -212,12 +213,11 @@ static bool ldap_adaptor_load()
 		return false;
 	}
 
-	unsigned int conn_num = 4;
 	auto val = config_file_get_value(pfile, "data_connections");
 	if (val != nullptr) {
-		conn_num = strtoul(val, nullptr, 0);
-		if (conn_num == 0)
-			conn_num = 1;
+		g_dataconn_num = strtoul(val, nullptr, 0);
+		if (g_dataconn_num == 0)
+			g_dataconn_num = 1;
 	}
 
 	val = config_file_get_value(pfile, "ldap_host");
@@ -238,12 +238,11 @@ static bool ldap_adaptor_load()
 	g_search_base = val != nullptr ? val : "";
 	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
-	       g_search_base.c_str(), 2 * conn_num, g_mail_attr.c_str());
-	g_conn_pool.resize(conn_num);
-
-	if (g_search_base.size() == 0 && !ldap_adaptor_load_base()) {
+	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());
+	g_conn_pool.resize(g_dataconn_num);
+	g_conn_pool.bump();
+	if (g_search_base.size() == 0 && !ldap_adaptor_load_base())
 		return false;
-	}
 	return true;
 }
 
@@ -251,6 +250,9 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 {
 	if (reason == PLUGIN_FREE) {
 		g_conn_pool.clear();
+		return TRUE;
+	} else if (reason == PLUGIN_RELOAD) {
+		ldap_adaptor_load();
 		return TRUE;
 	}
 	if (reason != PLUGIN_INIT)
