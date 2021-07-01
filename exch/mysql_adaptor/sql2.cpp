@@ -11,6 +11,7 @@
 #include <vector>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
+#include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <mysql.h>
@@ -21,6 +22,7 @@
 using namespace gromox;
 using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
 using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::string>>;
+mysql_adaptor_init_param g_parm;
 struct sqlconnpool g_sqlconn_pool;
 
 static inline const char *z_null(const char *s)
@@ -36,6 +38,66 @@ static bool connection_severed(int e)
 		return true;
 #endif
 	return e == CR_SERVER_LOST || e == CR_SERVER_GONE_ERROR;
+}
+
+static bool db_upgrade_check_2(MYSQL *conn)
+{
+	auto recent = dbop_mysql_recentversion();
+	auto current = dbop_mysql_schemaversion(conn);
+	if (current >= recent)
+		return true;
+	printf("[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
+	       current, recent);
+	static constexpr const char *msg =
+		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
+		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
+	if (g_parm.schema_upgrade == S_SKIP) {
+		printf("skip.\n");
+		puts(msg);
+		return true;
+	} else if (g_parm.schema_upgrade != S_AUTOUP) {
+		printf("abort.\n");
+		puts(msg);
+		return false;
+	}
+	printf("autoupgrade (now).\n");
+	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
+}
+
+bool db_upgrade_check()
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	return db_upgrade_check_2(conn.res.get());
+}
+
+MYSQL *sql_make_conn()
+{
+	MYSQL *conn = mysql_init(nullptr);
+	if (conn == nullptr)
+		return nullptr;
+	if (g_parm.timeout > 0) {
+		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
+		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
+	}
+	mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
+	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
+	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) != nullptr)
+		return conn;
+	printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
+	       mysql_error(conn));
+	mysql_close(conn);
+	return nullptr;
+}
+
+sqlconn &sqlconn::operator=(sqlconn &&o)
+{
+	mysql_close(m_conn);
+	m_conn = o.m_conn;
+	o.m_conn = nullptr;
+	return *this;
 }
 
 bool sqlconn::query(const char *q)
@@ -69,6 +131,14 @@ bool sqlconn::query(const char *q)
 		return true;
 	fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
 	return false;
+}
+
+resource_pool<sqlconn>::token sqlconnpool::get_wait()
+{
+	auto c = resource_pool::get_wait();
+	if (c.res == nullptr)
+		c.res = sql_make_conn();
+	return c;
 }
 
 static std::vector<std::string>
@@ -323,4 +393,9 @@ bool mysql_adaptor_reload_config(const char *path,
 	return true;
 } catch (const std::bad_alloc &) {
 	return false;
+}
+
+void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
+{
+	g_parm = std::move(parm);
 }

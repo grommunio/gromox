@@ -3,6 +3,7 @@
 #include <string>
 #include <mysql.h>
 #include <gromox/resource_pool.hpp>
+#include "mysql_adaptor.h"
 
 enum {
 	ADDRESS_TYPE_NORMAL = 0,
@@ -55,5 +56,7 @@ struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
 };
 
 extern bool mysql_adaptor_reload_config(const char *path, const char *hostid, const char *progid);
+extern bool db_upgrade_check();
 extern MYSQL *sql_make_conn();
+extern struct mysql_adaptor_init_param g_parm;
 extern sqlconnpool g_sqlconn_pool;
