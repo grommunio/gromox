@@ -39,19 +39,15 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		auto str_value = config_file_get_value(pfile, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			conn_num = 8;
-			config_file_set_value(pfile, "CONNECTION_NUM", "8");
 		} else {
 			conn_num = atoi(str_value);
-			if (conn_num < 0) {
+			if (conn_num < 0)
 				conn_num = 8;
-				config_file_set_value(pfile, "CONNECTION_NUM", "8");
-			}
 		}
 
 		str_value = config_file_get_value(pfile, "MYSQL_HOST");
 		if (NULL == str_value) {
 			strcpy(mysql_host, "localhost");
-			config_file_set_value(pfile, "MYSQL_HOST", "localhost");
 		} else {
 			gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 		}
@@ -59,12 +55,10 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		str_value = config_file_get_value(pfile, "MYSQL_PORT");
 		if (NULL == str_value) {
 			mysql_port = 3306;
-			config_file_set_value(pfile, "MYSQL_PORT", "3306");
 		} else {
 			mysql_port = atoi(str_value);
 			if (mysql_port <= 0) {
 				mysql_port = 3306;
-				config_file_set_value(pfile, "MYSQL_PORT", "3306");
 			}
 		}
 
@@ -74,7 +68,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 		str_value = config_file_get_value(pfile, "MYSQL_DBNAME");
 		if (NULL == str_value) {
 			strcpy(db_name, "email");
-			config_file_set_value(pfile, "MYSQL_DBNAME", "email");
 		} else {
 			gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 		}
