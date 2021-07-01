@@ -235,17 +235,6 @@ static bool ldap_adaptor_load()
 	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_search_base.c_str(), 2 * conn_num, g_mail_attr.c_str());
-
-	for (unsigned int i = 0; i < conn_num; ++i) {
-		twoconn ld;
-		ld.meta = make_conn(DO_BIND);
-		if (ld.meta == nullptr)
-			break;
-		ld.bind = make_conn(AVOID_BIND);
-		if (ld.bind == nullptr)
-			break;
-		g_conn_pool.put(std::move(ld));
-	}
 	g_conn_pool.resize(conn_num);
 
 	if (g_search_base.size() == 0 && !ldap_adaptor_load_base()) {
