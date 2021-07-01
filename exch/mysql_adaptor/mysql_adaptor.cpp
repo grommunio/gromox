@@ -39,11 +39,6 @@ static std::mutex g_crypt_lock;
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
 
-static inline size_t z_strlen(const char *s)
-{
-	return s != nullptr ? strlen(s) : 0;
-}
-
 sqlconn &sqlconn::operator=(sqlconn &&o)
 {
 	mysql_close(m_conn);
