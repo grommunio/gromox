@@ -398,4 +398,6 @@ bool mysql_adaptor_reload_config(const char *path,
 void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 {
 	g_parm = std::move(parm);
+	g_sqlconn_pool.resize(g_parm.conn_num);
+	g_sqlconn_pool.bump();
 }

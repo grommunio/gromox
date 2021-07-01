@@ -39,15 +39,8 @@ static void mysql_adaptor_encode_squote(const char *in, char *out);
 
 int mysql_adaptor_run()
 {
-	for (int i = 0; i < g_parm.conn_num; ++i) {
-		auto conn = sql_make_conn();
-		if (conn == nullptr)
-			break;
-		g_sqlconn_pool.put(std::move(conn));
-	}
 	if (!db_upgrade_check())
 		return -1;
-	g_sqlconn_pool.resize(g_parm.conn_num);
 	return 0;
 }
 
