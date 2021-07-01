@@ -24,10 +24,10 @@ template<typename Tp> class resource_pool {
 	class token {
 		/* automatically return connection back to pool when going out of scope */
 		public:
-		token(resource_pool &pool, Tp &&r) :
-			m_pool(pool), res(std::move(r)) {}
+		token(resource_pool &pool, Tp &&r, unsigned int gen) :
+			m_pool(pool), m_gen(gen), res(std::move(r)) {}
 		token(token &&o) :
-			m_pool(o.m_pool), m_done(o.m_done),
+			m_pool(o.m_pool), m_gen(o.m_gen), m_done(o.m_done),
 			res(std::move(o.res))
 		{
 			o.m_done = true;
@@ -36,7 +36,7 @@ template<typename Tp> class resource_pool {
 		void operator=(token &&) = delete;
 		void finish() noexcept {
 			try {
-				m_pool.put(std::move(res));
+				m_pool.put(std::move(res), m_gen);
 			} catch (...) {
 				m_pool.put_slot();
 			}
@@ -44,6 +44,7 @@ template<typename Tp> class resource_pool {
 		}
 		protected:
 		resource_pool &m_pool;
+		unsigned int m_gen = 0;
 		bool m_done = false;
 		public:
 		Tp res{};
@@ -58,7 +59,7 @@ template<typename Tp> class resource_pool {
 			c = std::move(*m_list.begin());
 			m_list.pop_front();
 		}
-		return {*this, std::move(c)};
+		return {*this, std::move(c), m_gen};
 	}
 	void put_slot() noexcept {
 		++m_numslots;
@@ -71,18 +72,32 @@ template<typename Tp> class resource_pool {
 		lk.unlock();
 		m_cv.notify_one();
 	}
+	void put(Tp &&x, unsigned int gen) {
+		std::unique_lock<std::mutex> lk(m_mtx);
+		if (m_gen == gen)
+			m_list.push_back(std::move(x));
+		++m_numslots;
+		lk.unlock();
+		m_cv.notify_one();
+	}
 	void resize(size_t n) {
 		if (m_numslots < n)
 			m_numslots = n;
 	}
 	void clear() { m_list.clear(); }
 	size_t size() const { return m_list.size(); }
+	void bump() {
+		std::unique_lock lk(m_mtx);
+		m_list.clear();
+		++m_gen;
+	}
 
 	private:
 	std::atomic<size_t> m_numslots{0};
 	std::mutex m_mtx;
 	std::condition_variable m_cv;
 	std::list<Tp> m_list;
+	unsigned int m_gen = 0;
 };
 
 }
