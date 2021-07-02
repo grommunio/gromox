@@ -104,26 +104,20 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "AVERAGE_HANDLES");
 		if (NULL == str_value) {
 			average_handles = 1000;
-			config_file_set_value(pfile, "AVERAGE_HANDLES", "1000");
 		} else {
 			average_handles = atoi(str_value);
-			if (average_handles < 100) {
+			if (average_handles < 100)
 				average_handles = 100;
-				config_file_set_value(pfile, "AVERAGE_HANDLES", "100");
-			}
 		}
 		printf("[exchange_emsmdb]: average handles number "
 			"per context is %d\n", average_handles);
 		str_value = config_file_get_value(pfile, "AVERAGE_MEM");
 		if (NULL == str_value) {
 			average_blocks = 16;
-			config_file_set_value(pfile, "AVERAGE_MEM", "4K");
 		} else {
 			average_blocks = atobyte(str_value);
-			if (average_blocks < 256*16) {
+			if (average_blocks < 256*16)
 				average_blocks = 256*16;
-				config_file_set_value(pfile, "AVERAGE_MEM", "4K");
-			}
 			average_blocks /= 256;
 		}
 		printf("[exchange_emsmdb]: average memory per"
@@ -131,63 +125,48 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "MAX_RCPT_NUM");
 		if (NULL == str_value) {
 			max_rcpt = 256;
-			config_file_set_value(pfile, "MAX_RCPT_NUM", "256");
 		} else {
 			max_rcpt = atoi(str_value);
-			if (max_rcpt <= 0) {
+			if (max_rcpt <= 0)
 				max_rcpt = 256;
-				config_file_set_value(pfile, "MAX_RCPT_NUM", "256");
-			}
 		}
 		printf("[exchange_emsmdb]: maximum rcpt number is %d\n", max_rcpt);
 		str_value = config_file_get_value(pfile, "MAX_MAIL_NUM");
 		if (NULL == str_value) {
 			max_mail = 1000000;
-			config_file_set_value(pfile, "MAX_MAIL_NUM", "1000000");
 		} else {
 			max_mail = atoi(str_value);
-			if (max_mail <= 0) {
+			if (max_mail <= 0)
 				max_mail = 1000000;
-				config_file_set_value(pfile, "MAX_MAIL_NUM", "1000000");
-			}
 		}
 		printf("[exchange_emsmdb]: maximum mail number is %d\n", max_mail);
 		str_value = config_file_get_value(pfile, "MAIL_MAX_LENGTH");
 		if (NULL == str_value) {
 			max_length = 64*1024*1024;
-			config_file_set_value(pfile, "MAIL_MAX_LENGTH", "64M");
 		} else {
 			max_length = atobyte(str_value);
-			if (max_length <= 0) {
+			if (max_length <= 0)
 				max_length = 64*1024*1024;
-				config_file_set_value(pfile, "MAIL_MAX_LENGTH", "64M");
-			}
 		}
 		bytetoa(max_length, size_buff);
 		printf("[exchange_emsmdb]: maximum mail length is %s\n", size_buff);
 		str_value = config_file_get_value(pfile, "MAX_EXT_RULE_LENGTH");
 		if (NULL == str_value) {
 			max_rule_len = 510*1024;
-			config_file_set_value(pfile, "MAX_EXT_RULE_LENGTH", "510K");
 		} else {
 			max_rule_len = atobyte(str_value);
-			if (max_rule_len <= 0) {
+			if (max_rule_len <= 0)
 				max_rule_len = 510*1024;
-				config_file_set_value(pfile, "MAX_EXT_RULE_LENGTH", "510K");
-			}
 		}
 		bytetoa(max_rule_len, size_buff);
 		printf("[exchange_emsmdb]: maximum extended rule length is %s\n", size_buff);
 		str_value = config_file_get_value(pfile, "MAILBOX_PING_INTERVAL");
 		if (NULL == str_value) {
 			ping_interval = 300;
-			config_file_set_value(pfile, "MAILBOX_PING_INTERVAL", "5minutes");
 		} else {
 			ping_interval = atoitvl(str_value);
-			if (ping_interval > 3600 || ping_interval < 60) {
+			if (ping_interval > 3600 || ping_interval < 60)
 				ping_interval = 300;
-				config_file_set_value(pfile, "MAILBOX_PING_INTERVAL", "5minutes");
-			}
 		}
 		itvltoa(ping_interval, temp_buff);
 		printf("[exchange_emsmdb]: mailbox ping interval is %s\n",
@@ -198,13 +177,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "SMTP_SERVER_PORT");
 		if (NULL == str_value) {
 			smtp_port = 25;
-			config_file_set_value(pfile, "SMTP_SERVER_PORT", "25");
 		} else {
 			smtp_port = atoi(str_value);
-			if (smtp_port <= 0) {
+			if (smtp_port <= 0)
 				smtp_port = 25;
-				config_file_set_value(pfile, "SMTP_SERVER_PORT", "25");
-			}
 		}
 		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
@@ -214,13 +190,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "ASYNC_THREADS_NUM");
 		if (NULL == str_value) {
 			async_num = 4;
-			config_file_set_value(pfile, "ASYNC_THREADS_NUM", "4");
 		} else {
 			async_num = atoi(str_value);
-			if (async_num <= 0 || async_num > 20) {
+			if (async_num <= 0 || async_num > 20)
 				async_num = 4;
-				config_file_set_value(pfile, "ASYNC_THREADS_NUM", "4");
-			}
 		}
 		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
 		

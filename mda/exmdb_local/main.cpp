@@ -59,7 +59,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
 		if (NULL == str_value) {
 			gx_strlcpy(org_name, "Gromox default", sizeof(org_name));
-			config_file_set_value(pfile, "X500_ORG_NAME", org_name);
 		} else {
 			gx_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
 		}
@@ -68,7 +67,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "DEFAULT_CHARSET");
 		if (NULL == str_value) {
 			strcpy(charset, "windows-1252");
-			config_file_set_value(pfile, "DEFAULT_CHARSET", charset);
 		} else {
 			gx_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
 		}
@@ -77,7 +75,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "DEFAULT_TIMEZONE");
 		if (NULL == str_value) {
 			strcpy(timezone, "Asia/Shanghai");
-			config_file_set_value(pfile, "DEFAULT_TIMEZONE", timezone);
 		} else {
 			gx_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
 		}
@@ -86,26 +83,20 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "EXMDB_CONNECTION_NUM");
 		if (NULL == str_value) {
 			conn_num = 5;
-			config_file_set_value(pfile, "EXMDB_CONNECTION_NUM", "5");
 		} else {
 			conn_num = atoi(str_value);
-			if (conn_num < 2 || conn_num > 100) {
+			if (conn_num < 2 || conn_num > 100)
 				conn_num = 5;
-				config_file_set_value(pfile, "EXMDB_CONNECTION_NUM", "5");
-			}
 		}
 		printf("[exmdb_local]: exmdb connection number is %d\n", conn_num);
 		
 		str_value = config_file_get_value(pfile, "CACHE_SCAN_INTERVAL");
 		if (NULL == str_value) {
 			cache_interval = 180;
-			config_file_set_value(pfile, "CACHE_SCAN_INTERVAL", "3minutes");
 		} else {
 			cache_interval = atoitvl(str_value);
-			if (cache_interval <= 0) {
+			if (cache_interval <= 0)
 				cache_interval = 180;
-				config_file_set_value(pfile, "CACHE_SCAN_INTERVAL", "3minutes");
-			}
 		}
 		itvltoa(cache_interval, temp_buff);
 		printf("[exmdb_local]: cache scanning interval is %s\n", temp_buff);
@@ -113,13 +104,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "RETRYING_TIMES");
 		if (NULL == str_value) {
 			retrying_times = 30;
-			config_file_set_value(pfile, "RETRYING_TIMES", "30");
 		} else {
 			retrying_times = atoi(str_value);
-			if (retrying_times <= 0) {
+			if (retrying_times <= 0)
 				retrying_times = 30;
-				config_file_set_value(pfile, "RETRYING_TIMES", "30");
-			}
 		}
 		printf("[exmdb_local]: retrying times on temporary failure is %d\n",
 			retrying_times);
@@ -127,13 +115,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "FAILURE_TIMES_FOR_ALARM");
 		if (NULL == str_value) {
 			times = 10;
-			config_file_set_value(pfile, "FAILURE_TIMES_FOR_ALARM", "10");
 		} else {
 			times = atoi(str_value);
-			if (times <= 0) {
+			if (times <= 0)
 				times = 10;
-				config_file_set_value(pfile, "FAILURE_TIMES_FOR_ALARM", "10");
-			}
 		}
 		printf("[exmdb_local]: failure times for alarm is %d\n", times);
 
@@ -141,15 +126,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 				"INTERVAL_FOR_FAILURE_STATISTIC");
 		if (NULL == str_value) {
 			interval = 3600;
-			config_file_set_value(pfile, "INTERVAL_FOR_FAILURE_STATISTIC",
-							        "1hour");
 		} else {
 			interval = atoitvl(str_value);
-			if (interval <= 0) {
+			if (interval <= 0)
 				interval = 3600;
-				config_file_set_value(pfile, "INTERVAL_FOR_FAILURE_STATISTIC",
-					"1hour");
-			}
 		}
 		itvltoa(interval, temp_buff);
 		printf("[exmdb_local]: interval for failure alarm is %s\n", temp_buff);
@@ -157,13 +137,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "ALARM_INTERVAL");
 		if (NULL == str_value) {
 			alarm_interval = 1800;
-			config_file_set_value(pfile, "ALARM_INTERVAL", "30minutes");
 		} else {
 			alarm_interval = atoitvl(str_value);
-			if (alarm_interval <= 0) {
+			if (alarm_interval <= 0)
 				alarm_interval = 1800;
-				config_file_set_value(pfile, "ALARM_INTERVAL", "30minutes");
-			}
 		}
 		itvltoa(alarm_interval, temp_buff);
 		printf("[exmdb_local]: alarms interval is %s\n", temp_buff);
@@ -171,13 +148,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "RESPONSE_AUDIT_CAPACITY");
 		if (NULL == str_value) {
 			response_capacity = 1000;
-			config_file_set_value(pfile, "RESPONSE_AUDIT_CAPACITY", "1000");
 		} else {
 			response_capacity = atoi(str_value);
-			if (response_capacity < 0) {
+			if (response_capacity < 0)
 				response_capacity = 1000;
-				config_file_set_value(pfile, "RESPONSE_AUDIT_CAPACITY", "1000");
-			}
 		}
 		printf("[exmdb_local]: auto response audit capacity is %d\n",
 			response_capacity);
@@ -185,13 +159,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "RESPONSE_INTERVAL");
 		if (NULL == str_value) {
 			response_interval = 180;
-			config_file_set_value(pfile, "RESPONSE_INTERVAL", "3minutes");
 		} else {
 			response_interval = atoitvl(str_value);
-			if (response_interval <= 0) {
+			if (response_interval <= 0)
 				response_interval = 180;
-				config_file_set_value(pfile, "RESPONSE_INTERVAL", "3minutes");
-			}
 		}
 		itvltoa(response_interval, temp_buff);
 		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);

@@ -84,13 +84,10 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		auto str_value = config_file_get_value(pfile, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			conn_num = 8;
-			config_file_set_value(pfile, "CONNECTION_NUM", "8");
 		} else {
 			conn_num = atoi(str_value);
-			if (conn_num < 0) {
+			if (conn_num < 0)
 				conn_num = 8;
-				config_file_set_value(pfile, "CONNECTION_NUM", "8");
-			}
 		}
 		printf("[event_proxy]: event connection number is %d\n", conn_num);
 
@@ -100,13 +97,10 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "EVENT_PORT");
 		if (NULL == str_value) {
 			g_event_port = 33333;
-			config_file_set_value(pfile, "EVENT_PORT", "33333");
 		} else {
 			g_event_port = atoi(str_value);
-			if (g_event_port <= 0) {
+			if (g_event_port <= 0)
 				g_event_port = 33333;
-				config_file_set_value(pfile, "EVENT_PORT", "33333");
-			}
 		}
 		printf("[event_proxy]: event address is [%s]:%d\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);

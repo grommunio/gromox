@@ -83,25 +83,19 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		auto str_value = config_file_get_value(pfile, "HASH_TABLE_SIZE");
 		if (NULL == str_value) {
 			table_size = 3000;
-			config_file_set_value(pfile, "HASH_TABLE_SIZE", "3000");
 		} else {
 			table_size = atoi(str_value);
-			if (table_size <= 0) {
+			if (table_size <= 0)
 				table_size = 3000;
-				config_file_set_value(pfile, "HASH_TABLE_SIZE", "3000");
-			}
 		}
 		printf("[exchange_nsp]: hash table size is %d\n", table_size);
 		str_value = config_file_get_value(pfile, "CACHE_INTERVAL");
 		if (NULL == str_value) {
 			cache_interval = 300;
-			config_file_set_value(pfile, "CACHE_INTERVAL", "5minutes");
 		} else {
 			cache_interval = atoitvl(str_value);
-			if (cache_interval > 24*3600 || cache_interval < 60) {
+			if (cache_interval > 24 * 3600 || cache_interval < 60)
 				cache_interval = 300;
-				config_file_set_value(pfile, "CACHE_INTERVAL", "5minutes");
-			}
 		}
 		itvltoa(cache_interval, temp_buff);
 		printf("[exchange_nsp]: address book tree item"
@@ -109,13 +103,10 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "MAX_ITEM_NUM");
 		if (NULL == str_value) {
 			max_item_num = 100000;
-			config_file_set_value(pfile, "MAX_ITEM_NUM", "100000");
 		} else {
 			max_item_num = atoi(str_value);
-			if (max_item_num <= 0) {
+			if (max_item_num <= 0)
 				max_item_num = 100000;
-				config_file_set_value(pfile, "MAX_ITEM_NUM", "100000");
-			}
 		}
 		printf("[exchange_nsp]: maximum item number is %d\n", max_item_num);
 		str_value = config_file_get_value(pfile, "SESSION_CHECK");

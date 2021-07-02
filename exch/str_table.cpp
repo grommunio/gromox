@@ -421,19 +421,15 @@ static BOOL svc_str_table(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "GROWING_NUM");
 		if (str_value == nullptr) {
 			growing_num = 100;
-			config_file_set_value(pfile, "GROWING_NUM", "100");
 		} else {
 			growing_num = atoi(str_value);
-			if (growing_num <= 0) {
+			if (growing_num <= 0)
 				growing_num = 100;
-				config_file_set_value(pfile, "GROWING_NUM", "100");
-			}
 		}
 		printf("[%s]: table growing number is %d\n", file_name, growing_num);
 		str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
 		if (str_value == nullptr) {
 			case_sensitive = FALSE;
-			config_file_set_value(pfile, "IS_CASE_SENSITIVE", "FALSE");
 			printf("[%s]: case-insensitive\n", file_name);
 		} else {
 			if (strcasecmp(str_value, "FALSE") == 0) {
@@ -444,7 +440,6 @@ static BOOL svc_str_table(int reason, void **ppdata)
 				printf("[%s]: case-sensitive\n", file_name);
 			} else {
 				case_sensitive = FALSE;
-				config_file_set_value(pfile, "IS_CASE_SENSITIVE", "FALSE");
 				printf("[%s]: case-insensitive\n", file_name);
 			}
 		}

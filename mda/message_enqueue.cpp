@@ -442,10 +442,8 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 			return false;
 		}
 		queue_path = config_file_get_value(pfile, "ENQUEUE_PATH");
-		if (queue_path == nullptr) {
+		if (queue_path == nullptr)
 			queue_path = PKGSTATEQUEUEDIR;
-			config_file_set_value(pfile, "ENQUEUE_PATH", queue_path);
-		}
 		printf("[message_enqueue]: enqueue path is %s\n", queue_path);
 
 		message_enqueue_init(queue_path);

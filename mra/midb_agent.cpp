@@ -226,13 +226,10 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		auto str_value = config_file_get_value(pconfig, "CONNECTION_NUM");
 		if (NULL == str_value) {
 			g_conn_num = 5;
-			config_file_set_value(pconfig, "CONNECTION_NUM", "5");
 		} else {
 			g_conn_num = atoi(str_value);
-			if (g_conn_num < 2 || g_conn_num > 100) {
+			if (g_conn_num < 2 || g_conn_num > 100)
 				g_conn_num = 5;
-				config_file_set_value(pconfig, "CONNECTION_NUM", "5");
-			}
 		}
 		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
 		

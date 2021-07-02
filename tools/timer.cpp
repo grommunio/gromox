@@ -225,13 +225,10 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_PORT");
 	if (NULL == str_value) {
 		listen_port = 6666;
-		config_file_set_value(pconfig, "TIMER_LISTEN_PORT", "6666");
 	} else {
 		listen_port = atoi(str_value);
-		if (listen_port <= 0) {
+		if (listen_port <= 0)
 			listen_port = 6666;
-			config_file_set_value(pconfig, "TIMER_LISTEN_PORT", "6666");
-		}
 	}
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
@@ -239,17 +236,12 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "TIMER_THREADS_NUM");
 	if (NULL == str_value) {
 		g_threads_num = 50;
-		config_file_set_value(pconfig, "TIMER_THREADS_NUM", "50");
 	} else {
 		g_threads_num = atoi(str_value);
-		if (g_threads_num < 5) {
+		if (g_threads_num < 5)
 			g_threads_num = 5;
-			config_file_set_value(pconfig, "TIMER_THREADS_NUM", "5");
-		}
-		if (g_threads_num > 50) {
+		if (g_threads_num > 50)
 			g_threads_num = 50;
-			config_file_set_value(pconfig, "TIMER_THREADS_NUM", "50");
-		}
 	}
 
 	printf("[system]: processing threads number is %zu\n", g_threads_num);
