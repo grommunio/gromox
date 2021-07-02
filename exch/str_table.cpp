@@ -419,13 +419,9 @@ static BOOL svc_str_table(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "REMOVE_SERVICE_NAME");
 		std::string remove_name = str_value != nullptr ? str_value : file_name + "_remove"s;
 		str_value = config_file_get_value(pfile, "GROWING_NUM");
-		if (str_value == nullptr) {
+		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 100;
+		if (growing_num <= 0)
 			growing_num = 100;
-		} else {
-			growing_num = atoi(str_value);
-			if (growing_num <= 0)
-				growing_num = 100;
-		}
 		printf("[%s]: table growing number is %d\n", file_name, growing_num);
 		str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
 		if (str_value == nullptr) {

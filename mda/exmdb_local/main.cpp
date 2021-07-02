@@ -14,6 +14,8 @@
 #include <gromox/util.hpp>
 #include <cstdio>
 
+using namespace gromox;
+
 DECLARE_API();
 
 static BOOL hook_exmdb_local(int reason, void **ppdata)
@@ -57,37 +59,21 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		sprintf(cache_path, "%s/cache", get_queue_path());
 		
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
-		if (NULL == str_value) {
-			gx_strlcpy(org_name, "Gromox default", sizeof(org_name));
-		} else {
-			gx_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
-		}
+		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", arsizeof(org_name));
 		printf("[exmdb_local]: x500 org name is \"%s\"\n", org_name);
 		
 		str_value = config_file_get_value(pfile, "DEFAULT_CHARSET");
-		if (NULL == str_value) {
-			strcpy(charset, "windows-1252");
-		} else {
-			gx_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
-		}
+		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", arsizeof(charset));
 		printf("[exmdb_local]: default charset is \"%s\"\n", charset);
 		
 		str_value = config_file_get_value(pfile, "DEFAULT_TIMEZONE");
-		if (NULL == str_value) {
-			strcpy(timezone, "Asia/Shanghai");
-		} else {
-			gx_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
-		}
+		gx_strlcpy(timezone, str_value != nullptr ? str_value : "Asia/Shanghai", arsizeof(timezone));
 		printf("[exmdb_local]: default timezone is \"%s\"\n", timezone);
 		
 		str_value = config_file_get_value(pfile, "EXMDB_CONNECTION_NUM");
-		if (NULL == str_value) {
+		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5;
+		if (conn_num < 2 || conn_num > 100)
 			conn_num = 5;
-		} else {
-			conn_num = atoi(str_value);
-			if (conn_num < 2 || conn_num > 100)
-				conn_num = 5;
-		}
 		printf("[exmdb_local]: exmdb connection number is %d\n", conn_num);
 		
 		str_value = config_file_get_value(pfile, "CACHE_SCAN_INTERVAL");
@@ -102,24 +88,16 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		printf("[exmdb_local]: cache scanning interval is %s\n", temp_buff);
 
 		str_value = config_file_get_value(pfile, "RETRYING_TIMES");
-		if (NULL == str_value) {
+		retrying_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 30;
+		if (retrying_times <= 0)
 			retrying_times = 30;
-		} else {
-			retrying_times = atoi(str_value);
-			if (retrying_times <= 0)
-				retrying_times = 30;
-		}
 		printf("[exmdb_local]: retrying times on temporary failure is %d\n",
 			retrying_times);
 		
 		str_value = config_file_get_value(pfile, "FAILURE_TIMES_FOR_ALARM");
-		if (NULL == str_value) {
+		times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
+		if (times <= 0)
 			times = 10;
-		} else {
-			times = atoi(str_value);
-			if (times <= 0)
-				times = 10;
-		}
 		printf("[exmdb_local]: failure times for alarm is %d\n", times);
 
 		str_value = config_file_get_value(pfile,
@@ -146,13 +124,9 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		printf("[exmdb_local]: alarms interval is %s\n", temp_buff);
 
 		str_value = config_file_get_value(pfile, "RESPONSE_AUDIT_CAPACITY");
-		if (NULL == str_value) {
+		response_capacity = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000;
+		if (response_capacity < 0)
 			response_capacity = 1000;
-		} else {
-			response_capacity = atoi(str_value);
-			if (response_capacity < 0)
-				response_capacity = 1000;
-		}
 		printf("[exmdb_local]: auto response audit capacity is %d\n",
 			response_capacity);
 

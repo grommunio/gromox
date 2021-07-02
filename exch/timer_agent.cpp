@@ -83,26 +83,18 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 		}
 
 		auto str_value = config_file_get_value(pfile, "CONNECTION_NUM");
-		if (NULL == str_value) {
+		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 8;
+		if (conn_num < 0)
 			conn_num = 8;
-		} else {
-			conn_num = atoi(str_value);
-			if (conn_num < 0)
-				conn_num = 8;
-		}
 		printf("[timer_agent]: timer connection number is %d\n", conn_num);
 
 		str_value = config_file_get_value(pfile, "TIMER_HOST");
 		gx_strlcpy(g_timer_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(g_timer_ip));
 		str_value = config_file_get_value(pfile, "TIMER_PORT");
-		if (NULL == str_value) {
+		g_timer_port = str_value != nullptr ? strtol(str_value, nullptr, 0) : 6666;
+		if (g_timer_port <= 0)
 			g_timer_port = 6666;
-		} else {
-			g_timer_port = atoi(str_value);
-			if (g_timer_port <= 0)
-				g_timer_port = 6666;
-		}
 		printf("[timer_agent]: timer address is [%s]:%d\n",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
