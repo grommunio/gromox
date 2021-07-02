@@ -26,7 +26,7 @@ struct stdlib_free { void operator()(void *x) { free(x); } };
 
 static void help()
 {
-	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtftohtml|htmltotext}" << std::endl;
+	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcptortf|rtftohtml|htmltotext}" << std::endl;
 	std::cout << "       Will read from stdin and output to stdout" << std::endl;
 }
 
