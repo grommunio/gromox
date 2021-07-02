@@ -369,6 +369,7 @@ static const char tbl_domains_top[] =
 "  `tel` varchar(64) NOT NULL DEFAULT '',"
 "  `end_day` date NOT NULL,"
 "  `domain_status` tinyint(4) NOT NULL DEFAULT 0,"
+"  `sync_policy` text CHARACTER SET ascii DEFAULT NULL,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `domainname` (`domainname`),"
 "  KEY `homedir` (`homedir`),"
@@ -465,6 +466,7 @@ static const char tbl_users_top[] =
 "  `address_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  `externid` varbinary(64) DEFAULT NULL,"
+"  `sync_policy` text CHARACTER SET ascii DEFAULT NULL,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `username` (`username`),"
 "  UNIQUE KEY `domain_id_2` (`domain_id`,`username`),"
@@ -627,6 +629,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{73, "ALTER TABLE `orgs` ADD COLUMN `name` varchar(32) NOT NULL"},
 	{74, "ALTER TABLE `orgs` ADD COLUMN `description` varchar(128)"},
 	{75, tbl_fetchmail_75},
+	{76, "ALTER TABLE `users` ADD COLUMN `sync_policy` text CHARACTER SET ascii DEFAULT NULL"},
+	{77, "ALTER TABLE `domains` ADD COLUMN `sync_policy` text CHARACTER SET ascii DEFAULT NULL"},
 	{0, nullptr},
 };
 
