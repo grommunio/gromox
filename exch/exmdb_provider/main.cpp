@@ -68,6 +68,20 @@ static void console_talk(int argc, char **argv, char *result, int length)
     return;
 }
 
+static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
+{
+	if (pconfig == nullptr)
+		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path());
+	if (pconfig == nullptr) {
+		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
+		       strerror(errno));
+		return false;
+	}
+	auto v = config_file_get_value(pconfig, "exrpc_debug");
+	g_exrpc_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	return true;
+}
+
 static BOOL svc_exmdb_provider(int reason, void **ppdata)
 {
 	BOOL b_wal;
@@ -89,6 +103,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	char config_path[256];
 
 	switch(reason) {
+	case PLUGIN_RELOAD:
+		exmdb_provider_reload(nullptr);
+		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		exmdb_rpc_alloc = common_util_alloc;
@@ -109,9 +126,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		
 		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 		gx_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
-		str_value = config_file_get_value(pconfig, "exrpc_debug");
-		if (str_value != nullptr)
-			g_exrpc_debug = strtoul(str_value, nullptr, 0);
 		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
@@ -216,6 +230,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			populating_num = 10;
 		printf("[exmdb_provider]: populating threads"
 				" number is %d\n", populating_num);
+		if (!exmdb_provider_reload(pconfig))
+			return false;
 		
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
 		bounce_producer_init(separator);
