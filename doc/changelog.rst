@@ -1,3 +1,28 @@
+0.26 (2021-07-03)
+=================
+
+Fixes:
+
+* exmdb_provider: cure "SELECT count(idx) ..." error messages
+* exmdb_provider: fix nonfunctional recursive deletion of folders
+
+Changes:
+
+* config parser: reduce potency of the '#' character in config files /
+  '#' only introduces a comment if it is at the start of line now.
+  This allows for using '#' in the credentials for MySQL/LDAP.
+
+Enhancements:
+
+* pffimport: skip over broken attachments rather than abort
+* pffimport: new -p option to dump properties in more detail
+* pffimport: translation of named properties is now implemented
+* pffimport: contacts, notes, tasks are now handled
+* pffimport: new -s option to splice PFF folders into existing mailbox
+* exmdb_provider: requests to set the read flag are now honored
+* authmgr, ldap_adaptor, mysql_adaptor: config is now reloaded on SIGHUP
+
+
 0.25 (2021-05-09)
 =================
 
