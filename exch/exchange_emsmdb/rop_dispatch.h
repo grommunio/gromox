@@ -5,3 +5,5 @@
 int rop_dispatch(ROP_REQUEST *prequest,
 	ROP_RESPONSE **ppresponse,
 	uint32_t *phandles, uint8_t hnum);
+
+extern unsigned int g_rop_debug;

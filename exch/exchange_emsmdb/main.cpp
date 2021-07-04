@@ -23,6 +23,7 @@
 #include "asyncemsmdb_interface.h"
 #include <cstring>
 #include <cstdio>
+#include "rop_dispatch.h"
 
 enum {
 	ecDoDisconnect = 1,
@@ -55,6 +56,20 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 DECLARE_API();
 
+static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
+{
+	if (pconfig == nullptr)
+		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path());
+	if (pconfig == nullptr) {
+		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
+		       strerror(errno));
+		return false;
+	}
+	auto v = config_file_get_value(pconfig, "rop_debug");
+	g_rop_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	return true;
+}
+
 static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 {
 	int max_mail;
@@ -80,6 +95,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	
 	/* path contains the config files directory */
 	switch (reason) {
+	case PLUGIN_RELOAD:
+		exch_emsmdb_reload(nullptr);
+		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
@@ -172,6 +190,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		if (async_num <= 0 || async_num > 20)
 			async_num = 4;
 		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
+		if (!exch_emsmdb_reload(pfile))
+			return false;
 		
 #define regsvr(f) register_service(#f, f)
 		if (!regsvr(asyncemsmdb_interface_async_wait) ||
