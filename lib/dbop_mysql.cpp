@@ -579,14 +579,14 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	/* Domain aliases, with no @, might have been stored in this table too(?) */
 	{24, "DELETE FROM `aliases` WHERE aliasname NOT LIKE '%@%'"},
 	{25, tbl_uprops_25},
-	{26, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 979173407, `homeaddress` FROM `users` WHERE `homeaddress`!=''"}, /* pidTagHomeAddressStreet */
-	{27, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 978255903, `nickname` FROM `users` WHERE `nickname`!=''"}, /* pidTagNickname */
-	{28, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 973602847, `tel` FROM `users` WHERE `tel`!=''"}, /* pidTagBusinessTelephoneNumber */
-	{29, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974782495, `tel` FROM `users` WHERE `tel`!=''"}, /* pidTagPrimaryTelephoneNumber */
-	{30, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974913567, `cell` FROM `users` WHERE `cell`!=''"}, /* pidTagMobileTelephoneNumber */
-	{31, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805568543, `memo` FROM `users` WHERE `memo`!=''"}, /* pidTagComment */
-	{32, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974585887, `title` FROM `users` WHERE `title`!=''"}, /* pidTagTitle */
-	{33, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805371935, `real_name` FROM `users` WHERE `real_name`!=''"}, /* pidTagDisplayName */
+	{26, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 979173407, `homeaddress` FROM `users` WHERE `homeaddress`!=''"}, /* PidTagHomeAddressStreet */
+	{27, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 978255903, `nickname` FROM `users` WHERE `nickname`!=''"}, /* PidTagNickname */
+	{28, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 973602847, `tel` FROM `users` WHERE `tel`!=''"}, /* PidTagBusinessTelephoneNumber */
+	{29, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974782495, `tel` FROM `users` WHERE `tel`!=''"}, /* PidTagPrimaryTelephoneNumber */
+	{30, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974913567, `cell` FROM `users` WHERE `cell`!=''"}, /* PidTagMobileTelephoneNumber */
+	{31, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805568543, `memo` FROM `users` WHERE `memo`!=''"}, /* PidTagComment */
+	{32, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974585887, `title` FROM `users` WHERE `title`!=''"}, /* PidTagTitle */
+	{33, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805371935, `real_name` FROM `users` WHERE `real_name`!=''"}, /* PidTagDisplayName */
 	{34, "ALTER TABLE `users` DROP COLUMN `homeaddress`"},
 	{35, "ALTER TABLE `users` DROP COLUMN `nickname`"},
 	{36, "ALTER TABLE `users` DROP COLUMN `tel`"},

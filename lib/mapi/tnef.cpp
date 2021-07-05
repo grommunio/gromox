@@ -186,12 +186,9 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	}
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = deconst(username);
-	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
+	    ext_push.p_oneoff_eid(&tmp_entry) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_oneoff_entryid(
-		&ext_push, &tmp_entry)) {
-		return FALSE;
-	}
 	pbin->cb = ext_push.offset;
 	return TRUE;
 }
@@ -1864,27 +1861,26 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	uint32_t offset1;
 	uint32_t tmp_int;
 	
-	TRY(ext_buffer_push_guid(pext, &r->guid));
+	TRY(pext->p_guid(&r->guid));
 	if (r->kind == MNID_ID)
 		tmp_int = 0;
 	else if (r->kind == MNID_STRING)
 		tmp_int = 1;
 	else
 		return EXT_ERR_FORMAT;
-	TRY(ext_buffer_push_uint32(pext, tmp_int));
+	TRY(pext->p_uint32(tmp_int));
 	if (0 == tmp_int) {
-		return ext_buffer_push_uint32(pext, r->lid);
+		return pext->p_uint32(r->lid);
 	} else if (1 == tmp_int) {
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
-		TRY(ext_buffer_push_wstring(pext, r->pname));
+		TRY(pext->advance(sizeof(uint32_t)));
+		TRY(pext->p_wstr(r->pname));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
 		pext->offset = offset;
-		TRY(ext_buffer_push_uint32(pext, tmp_int));
+		TRY(pext->p_uint32(tmp_int));
 		pext->offset = offset1;
-		return ext_buffer_push_bytes(pext,
-			g_pad_bytes, tnef_align(tmp_int));
+		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1896,159 +1892,156 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	uint32_t offset1;
 	uint32_t tmp_int;
 	
-	TRY(ext_buffer_push_uint16(pext, r->proptype));
-	TRY(ext_buffer_push_uint16(pext, r->propid));
+	TRY(pext->p_uint16(r->proptype));
+	TRY(pext->p_uint16(r->propid));
 	if (NULL != r->ppropname) {
 		TRY(tnef_push_property_name(pext, r->ppropname));
 	}
 	switch (r->proptype) {
 	case PT_SHORT:
-		TRY(ext_buffer_push_uint16(pext, *static_cast<uint16_t *>(r->pvalue)));
-		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
+		TRY(pext->p_uint16(*static_cast<uint16_t *>(r->pvalue)));
+		return pext->p_bytes(g_pad_bytes, 2);
 	case PT_ERROR:
 	case PT_LONG:
-		return ext_buffer_push_uint32(pext, *(uint32_t*)r->pvalue);
+		return pext->p_uint32(*static_cast<uint32_t *>(r->pvalue));
 	case PT_FLOAT:
-		return ext_buffer_push_float(pext, *(float*)r->pvalue);
+		return pext->p_float(*static_cast<float *>(r->pvalue));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		return ext_buffer_push_double(pext, *(double*)r->pvalue);
+		return pext->p_double(*static_cast<double *>(r->pvalue));
 	case PT_BOOLEAN:
-		TRY(ext_buffer_push_uint16(pext, *static_cast<uint8_t *>(r->pvalue)));
-		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
+		TRY(pext->p_uint16(*static_cast<uint8_t *>(r->pvalue)));
+		return pext->p_bytes(g_pad_bytes, 2);
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		return ext_buffer_push_uint64(pext, *(uint64_t*)r->pvalue);
+		return pext->p_uint64(*static_cast<uint64_t *>(r->pvalue));
 	case PT_STRING8:
-		TRY(ext_buffer_push_uint32(pext, 1));
+		TRY(pext->p_uint32(1));
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
-		TRY(ext_buffer_push_string(pext, static_cast<char *>(r->pvalue)));
+		TRY(pext->advance(sizeof(uint32_t)));
+		TRY(pext->p_str(static_cast<char *>(r->pvalue)));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
 		pext->offset = offset;
-		TRY(ext_buffer_push_uint32(pext, tmp_int));
+		TRY(pext->p_uint32(tmp_int));
 		pext->offset = offset1;
-		return ext_buffer_push_bytes(pext,
-			g_pad_bytes, tnef_align(tmp_int));
+		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	case PT_UNICODE:
-		TRY(ext_buffer_push_uint32(pext, 1));
+		TRY(pext->p_uint32(1));
 		offset = pext->offset;
-		TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
-		TRY(ext_buffer_push_wstring(pext, static_cast<char *>(r->pvalue)));
+		TRY(pext->advance(sizeof(uint32_t)));
+		TRY(pext->p_wstr(static_cast<char *>(r->pvalue)));
 		offset1 = pext->offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
 		pext->offset = offset;
-		TRY(ext_buffer_push_uint32(pext, tmp_int));
+		TRY(pext->p_uint32(tmp_int));
 		pext->offset = offset1;
-		return ext_buffer_push_bytes(pext,
-			g_pad_bytes, tnef_align(tmp_int));
+		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	case PT_CLSID:
-		return ext_buffer_push_guid(pext, static_cast<GUID *>(r->pvalue));
+		return pext->p_guid(static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
-		return ext_buffer_push_svreid(pext, static_cast<SVREID *>(r->pvalue));
+		return pext->p_svreid(static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
-		TRY(ext_buffer_push_uint32(pext, 1));
+		TRY(pext->p_uint32(1));
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		if (bv->cb != 0xFFFFFFFF) {
-			TRY(ext_buffer_push_uint32(pext, bv->cb + 16));
-			TRY(ext_buffer_push_bytes(pext, IID_IStorage, 16));
-			TRY(ext_buffer_push_bytes(pext, bv->pb, bv->cb));
-			return ext_buffer_push_bytes(pext, g_pad_bytes,
+			TRY(pext->p_uint32(bv->cb + 16));
+			TRY(pext->p_bytes(IID_IStorage, 16));
+			TRY(pext->p_bytes(bv->pb, bv->cb));
+			return pext->p_bytes(g_pad_bytes,
 			       tnef_align(bv->cb + 16));
 		} else {
 			offset = pext->offset;
-			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
-			TRY(ext_buffer_push_bytes(pext, IID_IMessage, 16));
+			TRY(pext->advance(sizeof(uint32_t)));
+			TRY(pext->p_bytes(IID_IMessage, 16));
 			if (FALSE == tnef_serialize_internal(pext, TRUE,
 			    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
 				return EXT_ERR_FORMAT;
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
-			TRY(ext_buffer_push_uint32(pext, tmp_int));
+			TRY(pext->p_uint32(tmp_int));
 			pext->offset = offset1;
-			return ext_buffer_push_bytes(pext,
-				g_pad_bytes, tnef_align(tmp_int));
+			return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 		}
 	}
 	case PT_BINARY: {
-		TRY(ext_buffer_push_uint32(pext, 1));
+		TRY(pext->p_uint32(1));
 		auto bv = static_cast<BINARY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, bv->cb));
-		TRY(ext_buffer_push_bytes(pext, bv->pb, bv->cb));
-		return ext_buffer_push_bytes(pext, g_pad_bytes, tnef_align(bv->cb));
+		TRY(pext->p_uint32(bv->cb));
+		TRY(pext->p_bytes(bv->pb, bv->cb));
+		return pext->p_bytes(g_pad_bytes, tnef_align(bv->cb));
 	}
 	case PT_MV_SHORT: {
 		auto sa = static_cast<SHORT_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, sa->count));
+		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
-			TRY(ext_buffer_push_uint16(pext, sa->ps[i]));
-			TRY(ext_buffer_push_bytes(pext, g_pad_bytes, 2));
+			TRY(pext->p_uint16(sa->ps[i]));
+			TRY(pext->p_bytes(g_pad_bytes, 2));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_LONG: {
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, la->count));
+		TRY(pext->p_uint32(la->count));
 		for (size_t i = 0; i < la->count; ++i)
-			TRY(ext_buffer_push_uint32(pext, la->pl[i]));
+			TRY(pext->p_uint32(la->pl[i]));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_I8: {
 		auto la = static_cast<LONGLONG_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, la->count));
+		TRY(pext->p_uint32(la->count));
 		for (size_t i = 0; i < la->count; ++i)
-			TRY(ext_buffer_push_uint64(pext, la->pll[i]));
+			TRY(pext->p_uint64(la->pll[i]));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_STRING8: {
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, sa->count));
+		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
-			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
-			TRY(ext_buffer_push_string(pext, sa->ppstr[i]));
+			TRY(pext->advance(sizeof(uint32_t)));
+			TRY(pext->p_str(sa->ppstr[i]));
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
-			TRY(ext_buffer_push_uint32(pext, tmp_int));
+			TRY(pext->p_uint32(tmp_int));
 			pext->offset = offset1;
-			TRY(ext_buffer_push_bytes(pext,g_pad_bytes, tnef_align(tmp_int)));
+			TRY(pext->p_bytes(g_pad_bytes, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_UNICODE: {
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, sa->count));
+		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
-			TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
-			TRY(ext_buffer_push_wstring(pext, sa->ppstr[i]));
+			TRY(pext->advance(sizeof(uint32_t)));
+			TRY(pext->p_wstr(sa->ppstr[i]));
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
-			TRY(ext_buffer_push_uint32(pext, tmp_int));
+			TRY(pext->p_uint32(tmp_int));
 			pext->offset = offset1;
-			TRY(ext_buffer_push_bytes(pext,g_pad_bytes, tnef_align(tmp_int)));
+			TRY(pext->p_bytes(g_pad_bytes, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_CLSID: {
 		auto ga = static_cast<GUID_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, ga->count));
+		TRY(pext->p_uint32(ga->count));
 		for (size_t i = 0; i < ga->count; ++i)
-			TRY(ext_buffer_push_guid(pext, ga->pguid + i));
+			TRY(pext->p_guid(ga->pguid + i));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {
 		auto ba = static_cast<BINARY_ARRAY *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, ba->count));
+		TRY(pext->p_uint32(ba->count));
 		for (size_t i = 0; i < ba->count; ++i) {
-			TRY(ext_buffer_push_uint32(pext, ba->pbin[i].cb));
-			TRY(ext_buffer_push_bytes(pext, ba->pbin[i].pb, ba->pbin[i].cb));
-			TRY(ext_buffer_push_bytes(pext, g_pad_bytes,tnef_align(ba->pbin[i].cb)));
+			TRY(pext->p_uint32(ba->pbin[i].cb));
+			TRY(pext->p_bytes(ba->pbin[i].pb, ba->pbin[i].cb));
+			TRY(pext->p_bytes(g_pad_bytes,tnef_align(ba->pbin[i].cb)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -2069,23 +2062,23 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	TRP_HEADER header;
 	static uint8_t empty_bytes[8];
 
-	TRY(ext_buffer_push_uint8(pext, r->lvl));
-	TRY(ext_buffer_push_uint32(pext, r->attr_id));
+	TRY(pext->p_uint8(r->lvl));
+	TRY(pext->p_uint32(r->attr_id));
 	offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, sizeof(uint32_t)));
+	TRY(pext->advance(sizeof(uint32_t)));
 	switch (r->attr_id) {
 	case ATTRIBUTE_ID_FROM:
-		TRY(ext_buffer_push_uint16(pext, 0x0004));
+		TRY(pext->p_uint16(0x0004));
 		header.displayname_len =
 			strlen(((ATTR_ADDR*)r->pvalue)->displayname) + 1;
 		header.address_len = strlen(((ATTR_ADDR*)r->pvalue)->address) + 1;
 		header.total_len = header.displayname_len + header.address_len + 16;
-		TRY(ext_buffer_push_uint16(pext, header.total_len));
-		TRY(ext_buffer_push_uint16(pext, header.displayname_len));
-		TRY(ext_buffer_push_uint16(pext, header.address_len));
-		TRY(ext_buffer_push_string(pext, static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
-		TRY(ext_buffer_push_string(pext, static_cast<ATTR_ADDR *>(r->pvalue)->address));
-		TRY(ext_buffer_push_bytes(pext, empty_bytes, 8));
+		TRY(pext->p_uint16(header.total_len));
+		TRY(pext->p_uint16(header.displayname_len));
+		TRY(pext->p_uint16(header.address_len));
+		TRY(pext->p_str(static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
+		TRY(pext->p_str(static_cast<ATTR_ADDR *>(r->pvalue)->address));
+		TRY(pext->p_bytes(empty_bytes, 8));
 		break;
 	case ATTRIBUTE_ID_SUBJECT:
 	case ATTRIBUTE_ID_MESSAGEID:
@@ -2093,7 +2086,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	case ATTRIBUTE_ID_ORIGNINALMESSAGECLASS:
 	case ATTRIBUTE_ID_MESSAGECLASS:
 	case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
-		TRY(ext_buffer_push_string(pext, static_cast<char *>(r->pvalue)));
+		TRY(pext->p_str(static_cast<char *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_DATESTART:
 	case ATTRIBUTE_ID_DATEEND:
@@ -2111,37 +2104,37 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 		tmp_dtr.month = tmp_tm.tm_mon + 1;
 		tmp_dtr.year = tmp_tm.tm_year + 1900;
 		tmp_dtr.dow = tmp_tm.tm_wday + 1;
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.year));
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.month));
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.day));
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.hour));
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.min));
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.sec));
-		TRY(ext_buffer_push_uint16(pext, tmp_dtr.dow));
+		TRY(pext->p_uint16(tmp_dtr.year));
+		TRY(pext->p_uint16(tmp_dtr.month));
+		TRY(pext->p_uint16(tmp_dtr.day));
+		TRY(pext->p_uint16(tmp_dtr.hour));
+		TRY(pext->p_uint16(tmp_dtr.min));
+		TRY(pext->p_uint16(tmp_dtr.sec));
+		TRY(pext->p_uint16(tmp_dtr.dow));
 		break;
 	case ATTRIBUTE_ID_REQUESTRES:
 	case ATTRIBUTE_ID_PRIORITY:
-		TRY(ext_buffer_push_uint16(pext, *static_cast<uint16_t *>(r->pvalue)));
+		TRY(pext->p_uint16(*static_cast<uint16_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_AIDOWNER:
-		TRY(ext_buffer_push_uint32(pext, *static_cast<uint32_t *>(r->pvalue)));
+		TRY(pext->p_uint32(*static_cast<uint32_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_BODY:
-		TRY(ext_buffer_push_bytes(pext, static_cast<char *>(r->pvalue), strlen(static_cast<char *>(r->pvalue))));
+		TRY(pext->p_bytes(static_cast<char *>(r->pvalue), strlen(static_cast<char *>(r->pvalue))));
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
 	case ATTRIBUTE_ID_ATTACHMENT: {
 		auto tf = static_cast<TNEF_PROPLIST *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, tf->count));
+		TRY(pext->p_uint32(tf->count));
 		for (size_t i = 0; i < tf->count; ++i)
 			TRY(tnef_push_propval(pext, &tf->ppropval[i], alloc, get_propname));
 		break;
 	}
 	case ATTRIBUTE_ID_RECIPTABLE: {
 		auto tf = static_cast<TNEF_PROPSET *>(r->pvalue);
-		TRY(ext_buffer_push_uint32(pext, tf->count));
+		TRY(pext->p_uint32(tf->count));
 		for (size_t i = 0; i < tf->count; ++i) {
-			TRY(ext_buffer_push_uint32(pext, tf->pplist[i]->count));
+			TRY(pext->p_uint32(tf->pplist[i]->count));
 			for (size_t j = 0; j < tf->pplist[i]->count; ++j)
 				TRY(tnef_push_propval(pext, tf->pplist[i]->ppropval + j, alloc, get_propname));
 		}
@@ -2151,33 +2144,33 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	case ATTRIBUTE_ID_SENTFOR: {
 		auto aa = static_cast<ATTR_ADDR *>(r->pvalue);
 		tmp_len = strlen(aa->displayname) + 1;
-		TRY(ext_buffer_push_uint16(pext, tmp_len));
-		TRY(ext_buffer_push_string(pext, aa->displayname));
+		TRY(pext->p_uint16(tmp_len));
+		TRY(pext->p_str(aa->displayname));
 		tmp_len = strlen(aa->address) + 1;
-		TRY(ext_buffer_push_uint16(pext, tmp_len));
-		TRY(ext_buffer_push_string(pext, aa->address));
+		TRY(pext->p_uint16(tmp_len));
+		TRY(pext->p_str(aa->address));
 		break;
 	}
 	case ATTRIBUTE_ID_ATTACHRENDDATA: {
 		auto rd = static_cast<REND_DATA *>(r->pvalue);
-		TRY(ext_buffer_push_uint16(pext, rd->attach_type));
-		TRY(ext_buffer_push_uint32(pext, rd->attach_position));
-		TRY(ext_buffer_push_uint16(pext, rd->render_width));
-		TRY(ext_buffer_push_uint16(pext, rd->render_height));
-		TRY(ext_buffer_push_uint32(pext, rd->data_flags));
+		TRY(pext->p_uint16(rd->attach_type));
+		TRY(pext->p_uint32(rd->attach_position));
+		TRY(pext->p_uint16(rd->render_width));
+		TRY(pext->p_uint16(rd->render_height));
+		TRY(pext->p_uint32(rd->data_flags));
 		break;
 	}
 	case ATTRIBUTE_ID_DELEGATE:
 	case ATTRIBUTE_ID_ATTACHDATA:
 	case ATTRIBUTE_ID_ATTACHMETAFILE:
 	case ATTRIBUTE_ID_MESSAGESTATUS:
-		TRY(ext_buffer_push_bytes(pext, static_cast<BINARY *>(r->pvalue)->pb, static_cast<BINARY *>(r->pvalue)->cb));
+		TRY(pext->p_bytes(static_cast<BINARY *>(r->pvalue)->pb, static_cast<BINARY *>(r->pvalue)->cb));
 		break;
 	case ATTRIBUTE_ID_TNEFVERSION:
 	case ATTRIBUTE_ID_OEMCODEPAGE: {
 		auto la = static_cast<LONG_ARRAY *>(r->pvalue);
 		for (size_t i = 0; i < la->count; ++i)
-			TRY(ext_buffer_push_uint32(pext, la->pl[i]));
+			TRY(pext->p_uint32(la->pl[i]));
 		break;
 	}
 	default:
@@ -2186,11 +2179,11 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	offset1 = pext->offset;
 	tmp_len = offset1 - (offset + sizeof(uint32_t));
 	pext->offset = offset;
-	TRY(ext_buffer_push_uint32(pext, tmp_len));
+	TRY(pext->p_uint32(tmp_len));
 	pext->offset = offset1;
 	offset += sizeof(uint32_t);
 	checksum = tnef_generate_checksum(pext->data + offset, tmp_len);
-	return ext_buffer_push_uint16(pext, checksum);
+	return pext->p_uint16(checksum);
 }
 
 static const char* tnef_from_msgclass(const char *str_class)
@@ -2318,12 +2311,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = proptag_buff;
 	
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(pext, 0x223e9f78)) {
+	if (pext->p_uint32(0x223e9f78) != EXT_ERR_SUCCESS ||
+	    pext->p_uint16(TNEF_LEGACY) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint16(pext, TNEF_LEGACY)) {
-		return FALSE;
-	}
 	/* ATTRIBUTE_ID_TNEFVERSION */
 	attribute.attr_id = ATTRIBUTE_ID_TNEFVERSION;
 	attribute.lvl = LVL_MESSAGE;
@@ -2996,10 +2986,8 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 {
 	EXT_PUSH ext_push;
 	
-	if (FALSE == ext_buffer_push_init(&ext_push,
-		NULL, 0, EXT_FLAG_UTF16)) {
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16))
 		return NULL;
-	}
 	if (FALSE == tnef_serialize_internal(&ext_push, FALSE,
 		pmsg, alloc, get_propname)) {
 		return NULL;
@@ -3009,7 +2997,7 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 

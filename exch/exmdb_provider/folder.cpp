@@ -426,6 +426,19 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
+static bool special_name(const char *s)
+{
+	static const char *const names[] = {
+		"Inbox", "Drafts", "Outbox", "Sent Items", "Deleted Items",
+		"Contacts", "Calendar", "Journal", "Notes", "Tasks",
+		"Junk E-mail", "Sync Issues"
+	};
+	for (size_t i = 0; i < arsizeof(names); ++i)
+		if (strcasecmp(s, names[i]) == 0)
+			return true;
+	return false;
+}
+
 BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
 	uint64_t *pfolder_id)
@@ -459,49 +472,27 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		common_util_remove_propvals(
 			(TPROPVAL_ARRAY*)pproperties, PROP_TAG_FOLDERID);
 	}
+	*pfolder_id = 0;
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_PARENTFOLDERID);
-	if (NULL == pvalue || 1 != rop_util_get_replid(*(uint64_t*)pvalue)) {
-		*pfolder_id = 0;
+	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1)
 		return TRUE;
-	} else {
-		parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	}
+	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
 	pname = static_cast<char *>(common_util_get_propvals(pproperties, PR_DISPLAY_NAME));
-	if (NULL == pname) {
-		*pfolder_id = 0;
+	if (pname == nullptr)
 		return TRUE;
-	}
-	if (TRUE == exmdb_server_check_private() &&
-		PRIVATE_FID_IPMSUBTREE == parent_id &&
-		(0 == strcasecmp(pname, "Inbox") ||
-		0 == strcasecmp(pname, "Drafts") ||
-		0 == strcasecmp(pname, "Outbox") ||
-		0 == strcasecmp(pname, "Sent Items") ||
-		0 == strcasecmp(pname, "Deleted Items") ||
-		0 == strcasecmp(pname, "Contacts") ||
-		0 == strcasecmp(pname, "Calendar") ||
-		0 == strcasecmp(pname, "Journal") ||
-		0 == strcasecmp(pname, "Notes") ||
-		0 == strcasecmp(pname, "Tasks") ||
-		0 == strcasecmp(pname, "Junk E-mail") ||
-		0 == strcasecmp(pname, "Sync Issues"))) {
-		*pfolder_id = 0;
+	if (exmdb_server_check_private() &&
+	    parent_id == PRIVATE_FID_IPMSUBTREE && special_name(pname))
 		return TRUE;	
-	}
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_CHANGENUMBER);
-	if (NULL == pvalue) {
-		*pfolder_id = 0;
+	if (pvalue == nullptr)
 		return TRUE;
-	}
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_CHANGENUMBER);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr) {
-		*pfolder_id = 0;
+	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr)
 		return TRUE;
-	}
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_FOLDERTYPE);
 	if (NULL == pvalue) {
 		type = FOLDER_TYPE_GENERIC;
@@ -511,13 +502,10 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		case FOLDER_TYPE_GENERIC:
 			break;
 		case FOLDER_TYPE_SEARCH:
-			if (FALSE == exmdb_server_check_private()) {
-				*pfolder_id = 0;
+			if (!exmdb_server_check_private())
 				return TRUE;
-			}
 			break;
 		default:
-			*pfolder_id = 0;
 			return TRUE;
 		}
 		common_util_remove_propvals((TPROPVAL_ARRAY*)
@@ -531,20 +519,16 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	if (SQLITE_ROW != sqlite3_step(pstmt) ||
-		MAXIMUM_STORE_FOLDERS < sqlite3_column_int64(pstmt, 0)) {
-		*pfolder_id = 0;
+	if (sqlite3_step(pstmt) != SQLITE_ROW ||
+	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_STORE_FOLDERS)
 		return TRUE;
-	}
 	pstmt.finalize();
 	if (FALSE == common_util_get_folder_type(
 		pdb->psqlite, parent_id, &parent_type)) {
 		return FALSE;
 	}
-	if (FOLDER_TYPE_SEARCH == parent_type) {
-		*pfolder_id = 0;
+	if (parent_type == FOLDER_TYPE_SEARCH)
 		return TRUE;
-	}
 	if (0 != tmp_fid) {
 		tmp_val = rop_util_get_gc_value(tmp_fid);
 		sprintf(sql_string, "SELECT folder_id FROM"
@@ -553,19 +537,15 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			*pfolder_id = 0;
+		if (sqlite3_step(pstmt) == SQLITE_ROW)
 			return TRUE;
-		}
 		pstmt.finalize();
 		if (FALSE == common_util_check_allocated_eid(
 			pdb->psqlite, tmp_val, &b_result)) {
 			return FALSE;
 		}
-		if (FALSE == b_result) {
-			*pfolder_id = 0;
+		if (!b_result)
 			return TRUE;
-		}
 	}
 	sprintf(sql_string, "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU(parent_id));
@@ -584,10 +564,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		tmp_val = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (strcasecmp(pname, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 0))) == 0) {
-				*pfolder_id = 0;
+			if (strcasecmp(pname, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 0))) == 0)
 				return TRUE;
-			}
 		}
 		sqlite3_reset(pstmt1);
 	}
@@ -2402,12 +2380,9 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		goto CRITERIA_FAILURE;
 	}
 	if (NULL != prestriction) {
-		if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_restriction(prestriction) != EXT_ERR_SUCCESS)
 			goto CRITERIA_FAILURE;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
-			&ext_push, prestriction)) {
-			goto CRITERIA_FAILURE;
-		}
 		sprintf(sql_string, "UPDATE folders SET "
 		          "search_criteria=? WHERE folder_id=%llu", LLU(fid_val));
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -2911,24 +2886,18 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (NULL == pcondition) {
 				continue;
 			}
-			if (!ext_buffer_push_init(&ext_push, condition_buff, sizeof(condition_buff), 0))
+			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
+			    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
-				&ext_push, pcondition)) {
-				goto RULE_FAILURE;
-			}
 			condition_len = ext_push.offset;
 			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL == paction) {
 				continue;
 			}
-			if (!ext_buffer_push_init(&ext_push, action_buff, sizeof(action_buff), 0))
+			if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
+			    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
-				&ext_push, paction)) {
-				goto RULE_FAILURE;
-			}
 			action_len = ext_push.offset;
 			if (NULL == pstmt) {
 				sprintf(sql_string, "INSERT INTO rules "
@@ -3058,12 +3027,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
 			             &prow[i].propvals, PROP_TAG_RULECONDITION));
 			if (NULL != pcondition) {
-				if (!ext_buffer_push_init(&ext_push, condition_buff, sizeof(condition_buff), 0))
+				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
+				    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 					goto RULE_FAILURE;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
-					&ext_push, pcondition)) {
-					goto RULE_FAILURE;
-				}
 				condition_len = ext_push.offset;
 				sprintf(sql_string, "UPDATE rules SET "
 				          "condition=? WHERE rule_id=%llu", LLU(rule_id));
@@ -3081,12 +3047,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL != paction) {
-				if (!ext_buffer_push_init(&ext_push, action_buff, sizeof(action_buff), 0))
+				if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
+				    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
 					goto RULE_FAILURE;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_rule_actions(
-					&ext_push, paction)) {
-					goto RULE_FAILURE;
-				}
 				action_len = ext_push.offset;
 				sprintf(sql_string, "UPDATE rules SET "
 				          "actions=? WHERE rule_id=%llu", LLU(rule_id));

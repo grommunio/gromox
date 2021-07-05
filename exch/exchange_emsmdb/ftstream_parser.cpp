@@ -398,10 +398,8 @@ static int ftstream_parser_read_element(
 		if (NULL == ppropname) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
-		if (FALSE == logon_object_get_named_propid(
-			pstream->plogon, TRUE, ppropname, &propid)) {
+		if (!pstream->plogon->get_named_propid(TRUE, ppropname, &propid))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 	}
 	if (pstream->st_size == pstream->offset) {
 		goto CONTINUE_WAITING;

@@ -306,12 +306,12 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	}
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = (char*)username;
-	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_buffer_push_oneoff_entryid(&ext_push, &tmp_entry);
+	status = ext_push.p_oneoff_eid(&tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
-		status = ext_buffer_push_oneoff_entryid(&ext_push, &tmp_entry);
+		status = ext_push.p_oneoff_eid(&tmp_entry);
 	}
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;
@@ -331,12 +331,9 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = (char*)pessdn;
-	if (!ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return FALSE;
-	}
 	pbin->cb = ext_push.offset;
 	return TRUE;
 }
@@ -842,17 +839,13 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	len ++;
 	ptoken_prev = field;
 	count = 0;
-	if (!ext_buffer_push_init(&ext_push, bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
+	if (!ext_push.init(bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-		&ext_push, sizeof(uint32_t))) {
+	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	offset = ext_push.offset;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-		&ext_push, sizeof(uint32_t))) {
+	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	str_offset = 0;
 	tmp_entry.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
@@ -898,20 +891,16 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 			    oxcmail_check_ascii(email_addr.local_part) &&
 			    oxcmail_check_ascii(email_addr.domain)) {
 				offset1 = ext_push.offset;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_advance(
-					&ext_push, sizeof(uint32_t))) {
+				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				sprintf(tmp_buff, "%s@%s",
 					email_addr.local_part, email_addr.domain);
 				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
-				status = ext_buffer_push_oneoff_entryid(
-								&ext_push, &tmp_entry);
+				status = ext_push.p_oneoff_eid(&tmp_entry);
 				if (EXT_ERR_CHARCNV == status) {
 					ext_push.offset = offset1 + sizeof(uint32_t);
 					tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
-					status = ext_buffer_push_oneoff_entryid(
-									&ext_push, &tmp_entry);
+					status = ext_push.p_oneoff_eid(&tmp_entry);
 				}
 				if (EXT_ERR_SUCCESS != status) {
 					return FALSE;
@@ -919,16 +908,12 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 				offset2 = ext_push.offset;
 				bytes = offset2 - (offset1 + sizeof(uint32_t));
 				ext_push.offset = offset1;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-					&ext_push, bytes)) {
+				if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				ext_push.offset = offset2;
 				pad_len = ((bytes + 3) & ~3) - bytes;
-				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-					&ext_push, pad_bytes, pad_len)) {
+				if (ext_push.p_bytes(pad_bytes, pad_len) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				count ++;
 			}
 			ptoken_prev = ptoken + 1;
@@ -940,13 +925,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		tmp_bin.pb = bin_buff;
 		bytes = ext_push.offset - (offset + sizeof(uint32_t));
 		ext_push.offset = 0;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(&ext_push, count)) {
+		if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		ext_push.offset = offset;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(&ext_push, bytes)) {
+		if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_REPLYRECIPIENTENTRIES;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))

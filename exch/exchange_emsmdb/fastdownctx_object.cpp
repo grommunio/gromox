@@ -389,21 +389,18 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			break;
 		case FUNC_ID_MESSAGE: {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
-			if (TRUE == logon_object_check_private(
-				pctx->pstream->plogon)) {
-				if (FALSE == exmdb_client_read_message(
-					logon_object_get_dir(pctx->pstream->plogon),
-					NULL, pinfo->cpid, *(uint64_t*)pflow->pparam,
-					&pmsgctnt)) {
+			if (pctx->pstream->plogon->check_private()) {
+				if (!exmdb_client_read_message(pctx->pstream->plogon->get_dir(),
+				    nullptr, pinfo->cpid,
+				    *static_cast<uint64_t *>(pflow->pparam), &pmsgctnt)) {
 					free(pnode->pdata);
 					return FALSE;
 				}
 			} else {
 				auto rpc_info = get_rpc_info();
-				if (FALSE == exmdb_client_read_message(
-					logon_object_get_dir(pctx->pstream->plogon),
-					rpc_info.username, pinfo->cpid,
-					*(uint64_t*)pflow->pparam, &pmsgctnt)) {
+				if (!exmdb_client_read_message(pctx->pstream->plogon->get_dir(),
+				    rpc_info.username, pinfo->cpid,
+				    *static_cast<uint64_t *>(pflow->pparam), &pmsgctnt)) {
 					free(pnode->pdata);
 					return FALSE;
 				}

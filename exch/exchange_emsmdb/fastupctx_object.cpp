@@ -96,8 +96,7 @@ static uint64_t fastupctx_object_get_last_folder(
 			return ((MARKER_NODE*)pnode->pdata)->data.folder_id;
 		}
 	}
-	return folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject));
-	;
+	return static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id;
 }
 
 static uint32_t fastupctx_object_get_last_attachment_instance(
@@ -171,16 +170,13 @@ static BOOL fastupctx_object_create_folder(
 	propval.pvalue = &parent_id;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	if (FALSE == exmdb_client_allocate_cn(
-		logon_object_get_dir(pctx->pstream->plogon),
-		&change_num)) {
+	if (!exmdb_client_allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	tmp_xid.guid = logon_object_guid(pctx->pstream->plogon);
+	tmp_xid.guid = pctx->pstream->plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -200,14 +196,10 @@ static BOOL fastupctx_object_create_folder(
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (FALSE == exmdb_client_create_folder_by_properties(
-		logon_object_get_dir(pctx->pstream->plogon),
-		pinfo->cpid, pproplist, pfolder_id) ||
-		0 == *pfolder_id) {
+	if (!exmdb_client_create_folder_by_properties(pctx->pstream->plogon->get_dir(),
+	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	}
-	if (LOGON_MODE_OWNER != logon_object_get_mode(
-		pctx->pstream->plogon)) {
+	if (pctx->pstream->plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		pentryid = common_util_username_to_addressbook_entryid(
 											rpc_info.username);
@@ -226,8 +218,7 @@ static BOOL fastupctx_object_create_folder(
 			propval_buff[1].pvalue = &tmp_id;
 			propval_buff[2].proptag = PROP_TAG_MEMBERRIGHTS;
 			propval_buff[2].pvalue = &permission;
-			exmdb_client_update_folder_permission(
-				logon_object_get_dir(pctx->pstream->plogon),
+			exmdb_client_update_folder_permission(pctx->pstream->plogon->get_dir(),
 				*pfolder_id, FALSE, 1, &permission_row);
 		}
 	}
@@ -242,19 +233,17 @@ static BOOL fastupctx_object_empty_folder(
 	const char *username;
 	DCERPC_INFO rpc_info;
 	
-	if (LOGON_MODE_OWNER == logon_object_get_mode(
-		pctx->pstream->plogon)) {
+	if (pctx->pstream->plogon->logon_mode == LOGON_MODE_OWNER) {
 		username = NULL;	
 	} else {
 		rpc_info = get_rpc_info();
 		username = rpc_info.username;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (FALSE == exmdb_client_empty_folder(logon_object_get_dir(
-		pctx->pstream->plogon), pinfo->cpid, username, folder_id,
-		TRUE, b_normal, b_fai, b_sub, &b_partial)) {
+	if (!exmdb_client_empty_folder(pctx->pstream->plogon->get_dir(),
+	    pinfo->cpid, username, folder_id, TRUE, b_normal, b_fai,
+	    b_sub, &b_partial))
 		return FALSE;	
-	}
 	if (TRUE == b_partial) {
 		return FALSE;
 	}
@@ -281,16 +270,13 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	};
 	for (auto t : tags)
 		tpropval_array_remove_propval(pproplist, t);
-	if (FALSE == exmdb_client_allocate_cn(
-		logon_object_get_dir(pctx->pstream->plogon),
-		&change_num)) {
+	if (!exmdb_client_allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
 		return GXERR_CALL_FAILED;
-	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return GXERR_CALL_FAILED;
-	tmp_xid.guid = logon_object_guid(pctx->pstream->plogon);
+	tmp_xid.guid = pctx->pstream->plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -311,8 +297,8 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 		return GXERR_CALL_FAILED;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client_write_message(logon_object_get_dir(pctx->pstream->plogon),
-	    logon_object_get_account(pctx->pstream->plogon), pinfo->cpid,
+	if (!exmdb_client_write_message(pctx->pstream->plogon->get_dir(),
+	    pctx->pstream->plogon->get_account(), pinfo->cpid,
 	    folder_id, pctx->pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	return GXERR_SUCCESS;
@@ -349,7 +335,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		pnode1 = double_list_get_before(&pctx->marker_stack, pnode);
 		uint64_t parent_id = pnode1 == nullptr ?
-		                     folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)) :
+		                     static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id :
 		                     static_cast<MARKER_NODE *>(pnode1->pdata)->data.folder_id;
 		if (FALSE == fastupctx_object_create_folder(pctx,
 			parent_id, pctx->pproplist, &folder_id)) {
@@ -365,8 +351,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 			break;
 		}
 		if (pctx->pproplist->count > 0) {
-			if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pctx->pobject),
-			    pctx->pproplist, &tmp_problems))
+			if (!static_cast<FOLDER_OBJECT *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
 				return GXERR_CALL_FAILED;
 		}
 		tpropval_array_free(pctx->pproplist);
@@ -378,8 +363,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				break;
 			}
 			if (pctx->pproplist->count > 0) {
-				if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pctx->pobject),
-				    pctx->pproplist, &tmp_problems))
+				if (!static_cast<FOLDER_OBJECT *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
 					return GXERR_CALL_FAILED;
 			}
 			tpropval_array_free(pctx->pproplist);
@@ -575,12 +559,10 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			tmp_rcpts.count = 1;
 			tmp_rcpts.pparray = &pctx->pproplist;
-			if (FALSE == exmdb_client_update_message_instance_rcpts(
-				logon_object_get_dir(pctx->pstream->plogon),
-				((MARKER_NODE*)pnode->pdata)->data.instance_id,
-				&tmp_rcpts)) {
+			if (!exmdb_client_update_message_instance_rcpts(pctx->pstream->plogon->get_dir(),
+			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id,
+			    &tmp_rcpts))
 				return GXERR_CALL_FAILED;
-			}
 			tpropval_array_free(pctx->pproplist);
 			pctx->pproplist = NULL;
 		}
@@ -614,11 +596,9 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			instance_id = fastupctx_object_get_last_message_instance(pctx);
-			if (FALSE == exmdb_client_create_attachment_instance(
-				logon_object_get_dir(pctx->pstream->plogon),
-				instance_id, &tmp_id, &tmp_num) || 0 == tmp_id) {
+			if (!exmdb_client_create_attachment_instance(pctx->pstream->plogon->get_dir(),
+			    instance_id, &tmp_id, &tmp_num) || tmp_id == 0)
 				return GXERR_CALL_FAILED;
-			}
 		} else {
 			pattachment = attachment_content_init();
 			if (NULL == pattachment) {
@@ -651,15 +631,13 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
-			if (!exmdb_client_flush_instance(logon_object_get_dir(pctx->pstream->plogon),
+			if (!exmdb_client_flush_instance(pctx->pstream->plogon->get_dir(),
 			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id,
 			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
 				return e_result;
-			if (FALSE == exmdb_client_unload_instance(
-				logon_object_get_dir(pctx->pstream->plogon),
-				((MARKER_NODE*)pnode->pdata)->data.instance_id)) {
+			if (!exmdb_client_unload_instance(pctx->pstream->plogon->get_dir(),
+			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id))
 				return GXERR_CALL_FAILED;
-			}
 		}
 		double_list_remove(&pctx->marker_stack, pnode);
 		free(pnode->pdata);
@@ -677,23 +655,17 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				}
 			}
 			instance_id = fastupctx_object_get_last_attachment_instance(pctx);
-			if (FALSE == exmdb_client_load_embedded_instance(
-				logon_object_get_dir(pctx->pstream->plogon),
-				FALSE, instance_id, &tmp_id)) {
+			if (!exmdb_client_load_embedded_instance(pctx->pstream->plogon->get_dir(),
+			    false, instance_id, &tmp_id))
 				return GXERR_CALL_FAILED;
-			}
 			if (0 == tmp_id) {
-				if (FALSE == exmdb_client_load_embedded_instance(
-					logon_object_get_dir(pctx->pstream->plogon),
-					TRUE, instance_id, &tmp_id) || 0 == tmp_id) {
+				if (!exmdb_client_load_embedded_instance(pctx->pstream->plogon->get_dir(),
+				    TRUE, instance_id, &tmp_id) || tmp_id == 0)
 					return GXERR_CALL_FAILED;
-				}
 			} else {
-				if (FALSE == exmdb_client_clear_message_instance(
-					logon_object_get_dir(pctx->pstream->plogon),
-					instance_id)) {
+				if (!exmdb_client_clear_message_instance(pctx->pstream->plogon->get_dir(),
+				    instance_id))
 					return GXERR_CALL_FAILED;
-				}
 			}
 		} else {
 			if (NEWATTACH != last_marker) {
@@ -740,15 +712,13 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
-			if (!exmdb_client_flush_instance(logon_object_get_dir(pctx->pstream->plogon),
+			if (!exmdb_client_flush_instance(pctx->pstream->plogon->get_dir(),
 			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id,
 			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
 				return e_result;
-			if (FALSE == exmdb_client_unload_instance(
-				logon_object_get_dir(pctx->pstream->plogon),
-				((MARKER_NODE*)pnode->pdata)->data.instance_id)) {
+			if (!exmdb_client_unload_instance(pctx->pstream->plogon->get_dir(),
+			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id))
 				return GXERR_CALL_FAILED;
-			}
 		}
 		double_list_remove(&pctx->marker_stack, pnode);
 		free(pnode->pdata);
@@ -780,11 +750,9 @@ static BOOL fastupctx_object_del_props(
 			case 0:
 				instance_id =
 					fastupctx_object_get_last_message_instance(pctx);
-				if (FALSE == exmdb_client_empty_message_instance_rcpts(
-					logon_object_get_dir(pctx->pstream->plogon),
-					instance_id)) {
+				if (!exmdb_client_empty_message_instance_rcpts(
+				    pctx->pstream->plogon->get_dir(), instance_id))
 					return FALSE;	
-				}
 			case STARTEMBED:
 				break;
 			default:
@@ -814,8 +782,8 @@ static BOOL fastupctx_object_del_props(
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			switch (last_marker) {
 			case 0:
-				if (FALSE == exmdb_client_empty_message_instance_attachments(
-					logon_object_get_dir(pctx->pstream->plogon),
+				if (!exmdb_client_empty_message_instance_attachments(
+				    pctx->pstream->plogon->get_dir(),
 					fastupctx_object_get_last_message_instance(pctx))) {
 					return FALSE;
 				}
@@ -851,7 +819,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)),
+			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
 			    TRUE, FALSE, FALSE))
 				return FALSE;	
 		}
@@ -863,7 +831,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (fastupctx_object_empty_folder(pctx,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)),
+			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
 			    FALSE, TRUE, FALSE))
 				return FALSE;	
 		}
@@ -875,7 +843,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
-			    folder_object_get_id(static_cast<FOLDER_OBJECT *>(pctx->pobject)),
+			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
 			    FALSE, FALSE, TRUE))
 				return FALSE;	
 		}
@@ -940,14 +908,12 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 			return tpropval_array_set_propval(pctx->pproplist, ppropval) ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGECONTENT:
-			return exmdb_client_set_instance_property(
-					logon_object_get_dir(pctx->pstream->plogon),
+			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
 			       message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pctx->pobject)),
 					ppropval, &b_result) == TRUE ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
-			return exmdb_client_set_instance_property(
-					logon_object_get_dir(pctx->pstream->plogon),
+			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
 			       attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pctx->pobject)),
 					ppropval, &b_result) == TRUE ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;
@@ -973,11 +939,9 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
-			return exmdb_client_set_instance_property(
-					logon_object_get_dir(pctx->pstream->plogon),
-					mknd->data.instance_id,
-					ppropval, &b_result) == TRUE ?
-					GXERR_SUCCESS : GXERR_CALL_FAILED;
+			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
+			       mknd->data.instance_id, ppropval, &b_result) == TRUE ?
+			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		} else {
 			return tpropval_array_set_propval(tp, ppropval) ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;

@@ -236,7 +236,6 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	int32_t tmp_level;
 	BINARY search_bin;
 	BINARY search_bin1;
-	const char *account;
 	char essdn_buff[1024];
 	char tmp_display[256];
 	char essdn_buff1[1024];
@@ -246,7 +245,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[20];
 	
-	account = store_object_get_account(pmessage->pstore);
+	auto account = pmessage->pstore->get_account();
 	tmp_propvals.count = 15;
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_READ;
@@ -1069,12 +1068,9 @@ BINARY* common_util_username_to_addressbook_entryid(
 	}
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
+	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -1093,12 +1089,9 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = deconst(essdn);
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
+	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return FALSE;
-	}
 	pbin->cb = ext_push.offset;
 	return TRUE;
 }
@@ -1152,12 +1145,12 @@ static BOOL common_util_username_to_entryid(const char *username,
 	                             deconst(pdisplay_name) : deconst(username);
 	oneoff_entry.paddress_type = deconst("SMTP");
 	oneoff_entry.pmail_address = (char*)username;
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16))
+	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
+	status = ext_push.p_oneoff_eid(&oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH;
-		status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
+		status = ext_push.p_oneoff_eid(&oneoff_entry);
 	}
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;
@@ -1314,29 +1307,24 @@ BINARY* common_util_to_folder_entryid(
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(
-			store_object_get_mailbox_guid(pstore), &tmp_bin);
-		tmp_entryid.database_guid = rop_util_make_user_guid(
-						store_object_get_account_id(pstore));
+		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
+		tmp_entryid.database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
 		rop_util_get_provider_uid(PROVIDER_UID_PUBLIC,
 							tmp_entryid.provider_uid);
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
-			if (!exmdb_client::get_mapping_guid(
-				store_object_get_dir(pstore), replid,
-				&b_found, &tmp_entryid.database_guid)) {
+			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
+			    replid, &b_found, &tmp_entryid.database_guid))
 				return NULL;	
-			}
 			if (!b_found)
 				return NULL;
 		} else {
-			tmp_entryid.database_guid = rop_util_make_domain_guid(
-								store_object_get_account_id(pstore));
+			tmp_entryid.database_guid = rop_util_make_domain_guid(pstore->account_id);
 		}
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
@@ -1348,13 +1336,9 @@ BINARY* common_util_to_folder_entryid(
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 256, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
-		&ext_push, &tmp_entryid)) {
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -1375,32 +1359,25 @@ BINARY* common_util_calculate_folder_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (TRUE == store_object_check_private(pstore)) {
-		longid.guid = rop_util_make_user_guid(
-			store_object_get_account_id(pstore));
+	if (pstore->b_private) {
+		longid.guid = rop_util_make_user_guid(pstore->account_id);
 	} else {
 		replid = rop_util_get_replid(folder_id);
 		if (1 == replid) {
-			longid.guid = rop_util_make_domain_guid(
-				store_object_get_account_id(pstore));
+			longid.guid = rop_util_make_domain_guid(pstore->account_id);
 		} else {
-			if (!exmdb_client::get_mapping_guid(
-				store_object_get_dir(pstore),
-				replid, &b_found, &longid.guid)) {
+			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
+			    replid, &b_found, &longid.guid))
 				return NULL;	
-			}
 			if (!b_found)
 				return NULL;
 		}	
 	}
 	rop_util_get_gc_array(folder_id, longid.global_counter);
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
-		return nullptr;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
-		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&ext_push, longid.global_counter, 6)) {
+	if (!ext_push.init(pbin->pv, 22, 0) ||
+	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	return pbin;
 }
 
@@ -1414,29 +1391,24 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(
-			store_object_get_mailbox_guid(pstore), &tmp_bin);
-		tmp_entryid.folder_database_guid = rop_util_make_user_guid(
-						store_object_get_account_id(pstore));
+		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
+		tmp_entryid.folder_database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
 		rop_util_get_provider_uid(PROVIDER_UID_PUBLIC,
 							tmp_entryid.provider_uid);
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
-			if (!exmdb_client::get_mapping_guid(
-				store_object_get_dir(pstore), replid,
-				&b_found, &tmp_entryid.folder_database_guid)) {
+			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
+			    replid, &b_found, &tmp_entryid.folder_database_guid))
 				return NULL;	
-			}
 			if (!b_found)
 				return NULL;
 		} else {
-			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(
-								store_object_get_account_id(pstore));
+			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(pstore->account_id);
 		}
 		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
 	}
@@ -1452,13 +1424,9 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 256, 0))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
-		&ext_push, &tmp_entryid)) {
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -1477,15 +1445,12 @@ BINARY* common_util_calculate_message_sourcekey(
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = store_object_guid(pstore);
+	longid.guid = pstore->guid();
 	rop_util_get_gc_array(message_id, longid.global_counter);
-	if (!ext_buffer_push_init(&ext_push, pbin->pv, 22, 0))
-		return nullptr;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
-		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&ext_push, longid.global_counter, 6)) {
+	if (!ext_push.init(pbin->pv, 22, 0) ||
+	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	return pbin;
 }
 
@@ -1498,13 +1463,9 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 		return NULL;
 	}
 	pbin->pv = common_util_alloc(24);
-	if (pbin->pv == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 24, 0))
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
+	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_xid(
-		&ext_push, size, pxid)) {
-		return NULL;
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -1912,18 +1873,13 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	
 	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (FALSE == exmdb_client_get_message_property(
-		store_object_get_dir(pstore), NULL, 0,
-		message_id, PROP_TAG_PARENTFOLDERID,
-		&pvalue) || NULL == pvalue) {
+	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
+	    message_id, PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr)
 		return FALSE;
-	}
 	parent_id = *(uint64_t*)pvalue;
-	if (!exmdb_client::read_message(
-		store_object_get_dir(pstore), NULL, cpid,
-		message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
+	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
@@ -2029,15 +1985,14 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 				body_type = OXCMAIL_BODY_PLAIN_ONLY;
 			}
 		}
-		common_util_set_dir(store_object_get_dir(pstore));
+		common_util_set_dir(pstore->get_dir());
 		/* try to avoid TNEF message */
 		if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 			body_type, g_mime_pool, &imail, common_util_alloc,
 			common_util_get_propids, common_util_get_propname)) {
 			return FALSE;	
 		}
-		if (FALSE == common_util_send_mail(&imail,
-			store_object_get_account(pstore), &temp_list)) {
+		if (!common_util_send_mail(&imail, pstore->get_account(), &temp_list)) {
 			mail_free(&imail);
 			return FALSE;
 		}
@@ -2058,35 +2013,23 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 			&b_private, &accound_id, &folder_id, &new_id)) {
 			return FALSE;	
 		}
-		if (!exmdb_client::clear_submit(
-			store_object_get_dir(pstore),
-			message_id, FALSE)) {
+		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
-		}
-		if (!exmdb_client::movecopy_message(
-			store_object_get_dir(pstore),
-			store_object_get_account_id(pstore),
-			cpid, message_id, folder_id, new_id,
-			TRUE, &b_result)) {
+		if (!exmdb_client::movecopy_message(pstore->get_dir(),
+		    pstore->account_id, cpid, message_id, folder_id, new_id,
+		    TRUE, &b_result))
 			return FALSE;
-		}
 	} else if (TRUE == b_delete) {
-		exmdb_client_delete_message(
-			store_object_get_dir(pstore),
-			store_object_get_account_id(pstore),
-			cpid, parent_id, message_id, TRUE, &b_result);
+		exmdb_client_delete_message(pstore->get_dir(),
+			pstore->account_id, cpid, parent_id, message_id,
+			TRUE, &b_result);
 	} else {
-		if (!exmdb_client::clear_submit(
-			store_object_get_dir(pstore),
-			message_id, FALSE)) {
+		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
-		}
 		ids.count = 1;
 		ids.pids = &message_id;
-		return exmdb_client::movecopy_messages(
-			store_object_get_dir(pstore),
-			store_object_get_account_id(pstore),
-			cpid, FALSE, NULL, parent_id,
+		return exmdb_client::movecopy_messages(pstore->get_dir(),
+		       pstore->account_id, cpid, false, nullptr, parent_id,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
 			FALSE, &ids, &b_partial);
 	}
@@ -2237,13 +2180,13 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	store_entryid.flag = 0;
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
-	if (TRUE == store_object_check_private(pstore)) {
+	if (pstore->b_private) {
 		rop_util_get_provider_uid(
 			PROVIDER_UID_WRAPPED_PRIVATE,
 			store_entryid.wrapped_provider_uid);
 		store_entryid.wrapped_type = 0x0000000C;
-		store_entryid.pserver_name = deconst(store_object_get_account(pstore));
-		if (!common_util_username_to_essdn(store_object_get_account(pstore),
+		store_entryid.pserver_name = deconst(pstore->get_account());
+		if (!common_util_username_to_essdn(pstore->get_account(),
 		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
 	} else {
@@ -2264,12 +2207,9 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	}
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pb == nullptr ||
-	    !ext_buffer_push_init(&ext_push, pbin->pv, 1024, EXT_FLAG_UTF16))
-		return NULL;
-	if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
-		&ext_push, &store_entryid)) {
+	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
+	    ext_push.p_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	}
 	pbin->cb = ext_push.offset;
 	return pbin;
 }
@@ -2287,12 +2227,9 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 	if (0 == pmovecopy->same_store) {
 		pmovecopy1->store_eid.pv = common_util_alloc(1024);
 		if (pmovecopy1->store_eid.pv == nullptr ||
-		    !ext_buffer_push_init(&ext_push, pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16))
-			return NULL;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
-			&ext_push, pmovecopy->pstore_eid)) {
+		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
+		    ext_push.p_store_eid(pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
-		}
 		pmovecopy1->store_eid.cb = ext_push.offset;
 		pmovecopy1->folder_eid = *(BINARY*)pmovecopy->pfolder_eid;
 	} else {
@@ -2369,12 +2306,10 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zarafa_server_get_info();
-	auto username = store_object_check_private(pstore) ? nullptr : pinfo->username;
-	if (!exmdb_client::read_message(
-		store_object_get_dir(pstore), username,
-		pinfo->cpid, message_id, &pmsgctnt)) {
+	auto username = pstore->b_private ? nullptr : pinfo->username;
+	if (!exmdb_client::read_message(pstore->get_dir(), username,
+	    pinfo->cpid, message_id, &pmsgctnt))
 		return GXERR_CALL_FAILED;
-	}
 	if (NULL == pmsgctnt) {
 		return GXERR_SUCCESS;
 	}
@@ -2390,14 +2325,12 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (!exmdb_client::allocate_cn(
-		store_object_get_dir(pstore), &change_num)) {
+	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
 		return GXERR_CALL_FAILED;
-	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	tmp_xid.guid = store_object_guid(pstore);
+	tmp_xid.guid = pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -2415,8 +2348,8 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	}
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client::write_message(store_object_get_dir(pstore1),
-	    store_object_get_account(pstore1), pinfo->cpid, folder_id1,
+	if (!exmdb_client::write_message(pstore1->get_dir(),
+	    pstore1->get_account(), pinfo->cpid, folder_id1,
 	    pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	return GXERR_SUCCESS;
@@ -2464,14 +2397,12 @@ static BOOL common_util_create_folder(
 	propval.proptag = PROP_TAG_PARENTFOLDERID;
 	propval.pvalue = &parent_id;
 	common_util_set_propvals(pproplist, &propval);
-	if (!exmdb_client::allocate_cn(
-		store_object_get_dir(pstore), &change_num)) {
+	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
-	tmp_xid.guid = store_object_guid(pstore);
+	tmp_xid.guid = pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
@@ -2488,12 +2419,10 @@ static BOOL common_util_create_folder(
 	}
 	common_util_set_propvals(pproplist, &propval);
 	auto pinfo = zarafa_server_get_info();
-	if (!exmdb_client::create_folder_by_properties(
-		store_object_get_dir(pstore), pinfo->cpid, pproplist,
-		pfolder_id) || 0 == *pfolder_id) {
+	if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
+	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	}
-	if (FALSE == store_object_check_owner_mode(pstore)) {
+	if (!pstore->check_owner_mode()) {
 		pentryid = common_util_username_to_addressbook_entryid(
 												pinfo->username);
 		if (NULL != pentryid) {
@@ -2511,8 +2440,7 @@ static BOOL common_util_create_folder(
 			propval_buff[1].pvalue = &tmp_id;
 			propval_buff[2].proptag = PROP_TAG_MEMBERRIGHTS;
 			propval_buff[2].pvalue = &permission;
-			exmdb_client::update_folder_permission(
-				store_object_get_dir(pstore),
+			exmdb_client::update_folder_permission(pstore->get_dir(),
 				*pfolder_id, FALSE, 1, &permission_row);
 		}
 	}
@@ -2531,23 +2459,17 @@ static EID_ARRAY* common_util_load_folder_messages(
 	PROPTAG_ARRAY proptags;
 	EID_ARRAY *pmessage_ids;
 	
-	if (!exmdb_client::load_content_table(
-		store_object_get_dir(pstore), 0, folder_id,
-		username, TABLE_FLAG_NONOTIFICATIONS,
-		NULL, NULL, &table_id, &row_count)) {
+	if (!exmdb_client::load_content_table(pstore->get_dir(), 0, folder_id,
+	    username, TABLE_FLAG_NONOTIFICATIONS,
+	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
-	}
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_MID;
-	if (!exmdb_client::query_table(
-		store_object_get_dir(pstore), NULL,
-		0, table_id, &proptags, 0, row_count,
-		&tmp_set)) {
+	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
+	    &proptags, 0, row_count, &tmp_set))
 		return NULL;	
-	}
-	exmdb_client::unload_table(
-		store_object_get_dir(pstore), table_id);
+	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
 	if (NULL == pmessage_ids) {
 		return NULL;
@@ -2585,16 +2507,12 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (!exmdb_client::get_folder_all_proptags(
-		store_object_get_dir(pstore), folder_id,
-		&tmp_proptags)) {
+	if (!exmdb_client::get_folder_all_proptags(pstore->get_dir(),
+	    folder_id, &tmp_proptags))
 		return GXERR_CALL_FAILED;
-	}
-	if (!exmdb_client::get_folder_properties(
-		store_object_get_dir(pstore), 0, folder_id,
-		&tmp_proptags, &tmp_propvals)) {
+	if (!exmdb_client::get_folder_properties(pstore->get_dir(), 0,
+	    folder_id, &tmp_proptags, &tmp_propvals))
 		return GXERR_CALL_FAILED;
-	}
 	if (NULL != new_name) {
 		propval.proptag = PR_DISPLAY_NAME;
 		propval.pvalue = deconst(new_name);
@@ -2605,13 +2523,11 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	}
 	auto pinfo = zarafa_server_get_info();
-	if (FALSE == store_object_check_owner_mode(pstore)) {
+	if (!pstore->check_owner_mode()) {
 		username = pinfo->username;
-		if (!exmdb_client::check_folder_permission(
-			store_object_get_dir(pstore), folder_id,
-			username, &permission)) {
+		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+		    folder_id, username, &permission))
 			return GXERR_CALL_FAILED;
-		}
 		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 			return GXERR_CALL_FAILED;
 	} else {
@@ -2628,24 +2544,18 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		if (err != GXERR_SUCCESS)
 			return err;
 	}
-	username = !store_object_check_owner_mode(pstore) ? pinfo->username : nullptr;
-	if (!exmdb_client::load_hierarchy_table(
-		store_object_get_dir(pstore), folder_id,
-		username, TABLE_FLAG_NONOTIFICATIONS, NULL,
-		&table_id, &row_count)) {
+	username = pstore->check_owner_mode() ? nullptr : pinfo->username;
+	if (!exmdb_client::load_hierarchy_table(pstore->get_dir(), folder_id,
+	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
+	    &table_id, &row_count))
 		return GXERR_CALL_FAILED;
-	}
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_FOLDERID;
-	if (!exmdb_client::query_table(
-		store_object_get_dir(pstore), NULL, 0,
-		table_id, &tmp_proptags, 0, row_count,
-		&tmp_set)) {
+	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
+	    &tmp_proptags, 0, row_count, &tmp_set))
 		return GXERR_CALL_FAILED;
-	}
-	exmdb_client::unload_table(
-		store_object_get_dir(pstore), table_id);
+	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
 		             tmp_set.pparray[i], PROP_TAG_FOLDERID));
@@ -2691,22 +2601,18 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	if (TRUE == exmdb_client_get_message_property(
-		store_object_get_dir(pstore), NULL, 0,
-		message_id, PROP_TAG_MIDSTRING, &pvalue)
-		&& NULL != pvalue) {
+	if (exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
+	    message_id, PROP_TAG_MIDSTRING, &pvalue) && pvalue != nullptr) {
 		snprintf(tmp_path, sizeof(tmp_path), "%s/eml/%s",
-		         store_object_get_dir(pstore),
+		         pstore->get_dir(),
 		         static_cast<const char *>(pvalue));
 		return common_util_load_file(tmp_path, peml_bin);
 	}
 	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (!exmdb_client::read_message(
-		store_object_get_dir(pstore), NULL, cpid,
-		message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
+	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
@@ -2733,7 +2639,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 			body_type = OXCMAIL_BODY_PLAIN_ONLY;
 		}
 	}
-	common_util_set_dir(store_object_get_dir(pstore));
+	common_util_set_dir(pstore->get_dir());
 	/* try to avoid TNEF message */
 	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 		body_type, g_mime_pool, &imail, common_util_alloc,
@@ -2801,7 +2707,7 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 		pinfo->username, timezone) || '\0' == timezone[0]) {
 		strcpy(timezone, g_default_zone);
 	}
-	common_util_set_dir(store_object_get_dir(pstore));
+	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
 	           common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
@@ -2817,14 +2723,12 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 	
 	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (!exmdb_client::read_message(
-		store_object_get_dir(pstore), NULL, cpid,
-		message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
+	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	}
 	if (ical_init(&ical) < 0)
 		return false;
-	common_util_set_dir(store_object_get_dir(pstore));
+	common_util_set_dir(pstore->get_dir());
 	if (FALSE == oxcical_export(pmsgctnt, &ical,
 		common_util_alloc, common_util_get_propids,
 		common_util_entryid_to_username_internal,
@@ -2861,7 +2765,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 		return nullptr;
 	if (!ical_retrieve(&ical, pbuff))
 		return NULL;
-	common_util_set_dir(store_object_get_dir(pstore));
+	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxcical_import(timezone, &ical,
 	           common_util_alloc, common_util_get_propids_create,
 		common_util_username_to_entryid);
@@ -2877,12 +2781,10 @@ BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 	
 	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (!exmdb_client::read_message(
-		store_object_get_dir(pstore), NULL, cpid,
-		message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
+	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	}
-	common_util_set_dir(store_object_get_dir(pstore));
+	common_util_set_dir(pstore->get_dir());
 	if (FALSE == oxvcard_export(pmsgctnt,
 		&vcard, common_util_get_propids)) {
 		return FALSE;
@@ -2920,7 +2822,7 @@ MESSAGE_CONTENT* common_util_vcf_to_message(
 		vcard_free(&vcard);
 		return nullptr;
 	}
-	common_util_set_dir(store_object_get_dir(pstore));
+	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);
 	vcard_free(&vcard);
 	return pmsgctnt;

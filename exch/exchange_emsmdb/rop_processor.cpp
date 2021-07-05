@@ -160,11 +160,11 @@ static void rop_processor_release_objnode(
 		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
 		std::lock_guard hl_hold(g_hash_lock);
 		pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash,
-		       logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject))));
+		       static_cast<LOGON_OBJECT *>(pobject)->get_dir()));
 		if (pref != nullptr) {
 			(*pref) --;
 			if (0 == *pref) {
-				str_hash_remove(g_logon_hash, logon_object_get_dir(static_cast<LOGON_OBJECT *>(pobject)));
+				str_hash_remove(g_logon_hash, static_cast<LOGON_OBJECT *>(pobject)->get_dir());
 			}
 		}
 		b_root = TRUE;
@@ -241,10 +241,10 @@ int rop_processor_create_logon_item(void *plogmap,
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
-	pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash, logon_object_get_dir(plogon)));
+	pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash, plogon->get_dir()));
 	if (NULL == pref) {
 		tmp_ref = 1;
-		str_hash_add(g_logon_hash, logon_object_get_dir(plogon), &tmp_ref);
+		str_hash_add(g_logon_hash, plogon->get_dir(), &tmp_ref);
 	} else {
 		(*pref) ++;
 	}
@@ -533,8 +533,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	EMSMDB_INFO *pemsmdb_info;
 	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
-	const PROPTAG_ARRAY *pcolumns;
-	
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
 	if (*pbuff_len > 0x8000) {
@@ -542,7 +540,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	}
 	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
 			- sizeof(uint32_t)*prop_buff->hnum;
-	if (!ext_buffer_push_init(&ext_push, ext_buff, tmp_len, EXT_FLAG_UTF16))
+	if (!ext_push.init(ext_buff, tmp_len, EXT_FLAG_UTF16))
 		return ecMAPIOOM;
 	rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
 	emsmdb_interface_set_rop_num(rop_num);
@@ -653,30 +651,25 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				TABLE_EVENT_ROW_MODIFIED ==
 				*pnotify->notification_data.ptable_event)) {
 				auto tbl = static_cast<TABLE_OBJECT *>(pobject);
-				pcolumns = table_object_get_columns(tbl);
-				if (!ext_buffer_push_init(&ext_push1, ext_buff1,
-				    sizeof(ext_buff1), EXT_FLAG_UTF16))
+				auto pcolumns = tbl->get_columns();
+				if (!ext_push1.init(ext_buff1, sizeof(ext_buff1), EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;
 				if (pnotify->notification_data.notification_flags
 					&NOTIFICATION_FLAG_MOST_MESSAGE) {
-					if (!table_object_read_row(tbl,
-					    *pnotify->notification_data.prow_message_id,
+					if (!tbl->read_row(*pnotify->notification_data.prow_message_id,
 					    *pnotify->notification_data.prow_instance,
 					    &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 					
 				} else {
-					if (!table_object_read_row(tbl,
-					    *pnotify->notification_data.prow_folder_id,
+					if (!tbl->read_row(*pnotify->notification_data.prow_folder_id,
 					    0, &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 				}
 				if (FALSE == common_util_propvals_to_row(
 					&propvals, pcolumns, &tmp_row) ||
-					EXT_ERR_SUCCESS != ext_buffer_push_property_row(
-					&ext_push1, pcolumns, &tmp_row)) {
+				    ext_push1.p_proprow(pcolumns, &tmp_row) != EXT_ERR_SUCCESS)
 					goto NEXT_NOTIFY;
-				}	
 				tmp_bin.cb = ext_push1.offset;
 				tmp_bin.pb = ext_push1.data;
 				pnotify->notification_data.prow_data = &tmp_bin;

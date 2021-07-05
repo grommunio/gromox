@@ -19,8 +19,8 @@ std::unique_ptr<ICSUPCTX_OBJECT> icsupctx_object_create(
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}
-	pctx->pstore = folder_object_get_store(pfolder);
-	pctx->folder_id = folder_object_get_id(pfolder);
+	pctx->pstore = pfolder->pstore;
+	pctx->folder_id = pfolder->folder_id;
 	pctx->sync_type = sync_type;
 	return pctx;
 }

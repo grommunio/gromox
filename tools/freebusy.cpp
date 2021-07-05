@@ -111,82 +111,82 @@ static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->prefix));
-	TRY(ext_buffer_push_string(pext, r->remote_id));
-	return ext_buffer_push_bool(pext, r->b_private);
+	TRY(pext->p_str(r->prefix));
+	TRY(pext->p_str(r->remote_id));
+	return pext->p_bool(r->b_private);
 }
 
 static int exmdb_client_push_get_named_propids(
 	EXT_PUSH *pext, const GET_NAMED_PROPIDS_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
-	TRY(ext_buffer_push_bool(pext, r->b_create));
-	return ext_buffer_push_propname_array(pext, r->ppropnames);
+	TRY(pext->p_str(r->dir));
+	TRY(pext->p_bool(r->b_create));
+	return pext->p_propname_a(r->ppropnames);
 }
 
 static int exmdb_client_push_check_folder_permission_request(
 	EXT_PUSH *pext, const CHECK_FOLDER_PERMISSION_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
-	TRY(ext_buffer_push_uint64(pext, r->folder_id));
-	return ext_buffer_push_string(pext, r->username);
+	TRY(pext->p_str(r->dir));
+	TRY(pext->p_uint64(r->folder_id));
+	return pext->p_str(r->username);
 }
 
 static int exmdb_client_push_load_content_table_request(
 	EXT_PUSH *pext, const LOAD_CONTENT_TABLE_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
-	TRY(ext_buffer_push_uint32(pext, r->cpid));
-	TRY(ext_buffer_push_uint64(pext, r->folder_id));
+	TRY(pext->p_str(r->dir));
+	TRY(pext->p_uint32(r->cpid));
+	TRY(pext->p_uint64(r->folder_id));
 	if (NULL == r->username) {
-		TRY(ext_buffer_push_uint8(pext, 0));
+		TRY(pext->p_uint8(0));
 	} else {
-		TRY(ext_buffer_push_uint8(pext, 1));
-		TRY(ext_buffer_push_string(pext, r->username));
+		TRY(pext->p_uint8(1));
+		TRY(pext->p_str(r->username));
 	}
-	TRY(ext_buffer_push_uint8(pext, r->table_flags));
+	TRY(pext->p_uint8(r->table_flags));
 	if (NULL == r->prestriction) {
-		TRY(ext_buffer_push_uint8(pext, 0));
+		TRY(pext->p_uint8(0));
 	} else {
-		TRY(ext_buffer_push_uint8(pext, 1));
-		TRY(ext_buffer_push_restriction(pext, r->prestriction));
+		TRY(pext->p_uint8(1));
+		TRY(pext->p_restriction(r->prestriction));
 	}
 	if (NULL == r->psorts) {
-		return ext_buffer_push_uint8(pext, 0);
+		return pext->p_uint8(0);
 	}
-	TRY(ext_buffer_push_uint8(pext, 1));
-	return ext_buffer_push_sortorder_set(pext, r->psorts);
+	TRY(pext->p_uint8(1));
+	return pext->p_sortorder_set(r->psorts);
 }
 
 static int exmdb_client_push_unload_table_request(
 	EXT_PUSH *pext, const UNLOAD_TABLE_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
-	return ext_buffer_push_uint32(pext, r->table_id);
+	TRY(pext->p_str(r->dir));
+	return pext->p_uint32(r->table_id);
 }
 
 static int exmdb_client_push_query_table_request(
 	EXT_PUSH *pext, const QUERY_TABLE_REQUEST *r)
 {
-	TRY(ext_buffer_push_string(pext, r->dir));
+	TRY(pext->p_str(r->dir));
 	if (NULL == r->username) {
-		TRY(ext_buffer_push_uint8(pext, 0));
+		TRY(pext->p_uint8(0));
 	} else {
-		TRY(ext_buffer_push_uint8(pext, 1));
-		TRY(ext_buffer_push_string(pext, r->username));
+		TRY(pext->p_uint8(1));
+		TRY(pext->p_str(r->username));
 	}
-	TRY(ext_buffer_push_uint32(pext, r->cpid));
-	TRY(ext_buffer_push_uint32(pext, r->table_id));
-	TRY(ext_buffer_push_proptag_array(pext, r->pproptags));
-	TRY(ext_buffer_push_uint32(pext, r->start_pos));
-	return ext_buffer_push_int32(pext, r->row_needed);
+	TRY(pext->p_uint32(r->cpid));
+	TRY(pext->p_uint32(r->table_id));
+	TRY(pext->p_proptag_a(r->pproptags));
+	TRY(pext->p_uint32(r->start_pos));
+	return pext->p_int32(r->row_needed);
 }
 
 static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	void *prequest, BINARY *pbin_out)
 {
-	TRY(ext_buffer_push_advance(&ext_push, sizeof(uint32_t)));
-	TRY(ext_buffer_push_uint8(&ext_push, call_id));
+	TRY(ext_push.advance(sizeof(uint32_t)));
+	TRY(ext_push.p_uint8(call_id));
 	switch (call_id) {
 	case exmdb_callid::CONNECT:
 		TRY(exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest)));
@@ -211,9 +211,9 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	TRY(ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t)));
+	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
 	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_buffer_push_release(&ext_push);
+	pbin_out->pb = ext_push.release();
 	return EXT_ERR_SUCCESS;
 }
 
@@ -221,7 +221,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	void *prequest, BINARY *pbin_out)
 {
 	EXT_PUSH ext_push;
-	if (!ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT))
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
 	return exmdb_client_push_request2(ext_push, call_id, prequest, pbin_out);
 }
@@ -1263,12 +1263,9 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
-			if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
-			if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-				&ext_push, &globalobjectid)) {
-				return FALSE;
-			}
 			if (FALSE == encode_hex_binary(tmp_buff,
 				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 				return FALSE;
@@ -1286,14 +1283,11 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pv = tmp_buff1;
 		guid = guid_random_new();
-		if (!ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0) ||
-		    ext_buffer_push_guid(&ext_push, &guid) != EXT_ERR_SUCCESS ||
-		    !ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0))
+		if (!ext_push.init(tmp_buff1, 16, 0) ||
+		    ext_push.p_guid(&guid) != EXT_ERR_SUCCESS ||
+		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_globalobjectid(
-			&ext_push, &globalobjectid)) {
-			return FALSE;
-		}
 		if (FALSE == encode_hex_binary(tmp_buff,
 			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 			return FALSE;

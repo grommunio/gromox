@@ -7,6 +7,33 @@
 
 struct TABLE_OBJECT {
 	~TABLE_OBJECT();
+	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
+	BOOL set_columns(const PROPTAG_ARRAY *);
+	const SORTORDER_SET *get_sorts() const { return psorts; }
+	BOOL set_sorts(const SORTORDER_SET *);
+	BOOL check_loaded();
+	BOOL check_to_load();
+	void unload();
+	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
+	BOOL set_restriction(const RESTRICTION *);
+	void seek_current(BOOL forward, uint16_t row_count);
+	void set_handle(uint32_t h) { handle = h; }
+	uint32_t get_position() const { return position; }
+	void set_position(uint32_t position);
+	void clear_position() { position = 0; }
+	uint32_t get_total() const;
+	BOOL create_bookmark(uint32_t *pindex);
+	void remove_bookmark(uint32_t index);
+	void clear_bookmarks();
+	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
+	void reset();
+	BOOL get_all_columns(PROPTAG_ARRAY *cols);
+	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pposition, TPROPVAL_ARRAY *);
+	BOOL read_row(uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *);
+	BOOL expand(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count);
+	BOOL collapse(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count);
+	BOOL store_state(uint64_t inst_id, uint32_t inst_num, uint32_t *state_id);
+	BOOL restore_state(uint32_t state_id, uint32_t *index);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -23,47 +50,3 @@ struct TABLE_OBJECT {
 };
 
 extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable);
-BOOL table_object_set_columns(TABLE_OBJECT *ptable,
-	const PROPTAG_ARRAY *pcolumns);
-const SORTORDER_SET* table_object_get_sorts(TABLE_OBJECT *ptable);
-BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
-	const SORTORDER_SET *psorts);
-BOOL table_object_check_loaded(TABLE_OBJECT *ptable);
-BOOL table_object_check_to_load(TABLE_OBJECT *ptable);
-void table_object_unload(TABLE_OBJECT *ptable);
-BOOL table_object_query_rows(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count, TARRAY_SET *pset);
-BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
-	const RESTRICTION *prestriction);
-void table_object_seek_current(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count);
-uint8_t table_object_get_rop_id(TABLE_OBJECT *ptable);
-uint32_t table_object_get_table_id(TABLE_OBJECT *ptable);
-void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle);
-uint32_t table_object_get_position(TABLE_OBJECT *ptable);
-void table_object_set_position(TABLE_OBJECT *ptable, uint32_t position);
-void table_object_clear_position(TABLE_OBJECT *ptable);
-uint32_t table_object_get_total(TABLE_OBJECT *ptable);
-BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex);
-void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index);
-void table_object_clear_bookmarks(TABLE_OBJECT *ptable);
-BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
-	uint32_t index, BOOL *pb_exist);
-void table_object_reset(TABLE_OBJECT *ptable);
-BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
-	PROPTAG_ARRAY *pcolumns);
-BOOL table_object_match_row(TABLE_OBJECT *ptable,
-	BOOL b_forward, const RESTRICTION *pres,
-	int32_t *pposition, TPROPVAL_ARRAY *ppropvals);
-BOOL table_object_read_row(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num,
-	TPROPVAL_ARRAY *ppropvals);
-BOOL table_object_expand(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count);
-BOOL table_object_collapse(TABLE_OBJECT *ptable, uint64_t inst_id,
-	BOOL *pb_found, int32_t *pposition, uint32_t *prow_count);
-BOOL table_object_store_state(TABLE_OBJECT *ptable,
-	uint64_t inst_id, uint32_t inst_num, uint32_t *pstate_id);
-BOOL table_object_restore_state(TABLE_OBJECT *ptable,
-	uint32_t state_id, uint32_t *pindex);

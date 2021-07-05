@@ -313,9 +313,8 @@ static int applefile_pull_entry(EXT_PULL *pext,
 
 static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint16_t))) {
+	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_be16(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint16_t);
@@ -324,9 +323,8 @@ static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 
 static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint32_t))) {
+	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
-	}
 	v = cpu_to_be32(v);
 	memcpy(&pext->data[pext->offset], &v, sizeof(v));
 	pext->offset += sizeof(uint32_t);
@@ -344,7 +342,7 @@ static int applefile_push_asheader(EXT_PUSH *pext, const ASHEADER *r)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(applefile_push_uint32(pext, r->version_num));
-	return ext_buffer_push_bytes(pext, r->filler, 16);
+	return pext->p_bytes(r->filler, 16);
 }
 
 static int applefile_push_asiconbw(EXT_PUSH *pext, const ASICONBW *r)
@@ -381,11 +379,11 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 	} else {
 		count = r->valid_count;
 	}
-	TRY(ext_buffer_push_bytes(pext, &r->finfo.fd_type, 4));
+	TRY(pext->p_bytes(&r->finfo.fd_type, 4));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_bytes(pext, &r->finfo.fd_creator, 4));
+	TRY(pext->p_bytes(&r->finfo.fd_creator, 4));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -416,26 +414,26 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_int8(pext, r->fxinfo.fd_script));
+	TRY(pext->p_int8(r->fxinfo.fd_script));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_int8(pext, r->fxinfo.fd_xflags));
+	TRY(pext->p_int8(r->fxinfo.fd_xflags));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_push_int16(pext, r->fxinfo.fd_comment));
+	TRY(pext->p_int16(r->fxinfo.fd_comment));
 	if (0 == --count) {
 		return EXT_ERR_SUCCESS;
 	}
-	return ext_buffer_push_int32(pext, r->fxinfo.fd_putaway);
+	return pext->p_int32(r->fxinfo.fd_putaway);
 	
 }
 
 static int applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
 {
-	TRY(ext_buffer_push_bytes(pext, r->filler, 3));
-	return ext_buffer_push_uint8(pext, r->attribute);
+	TRY(pext->p_bytes(r->filler, 3));
+	return pext->p_uint8(r->attribute);
 }
 
 static int applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
@@ -447,14 +445,14 @@ static int applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
 
 static int applefile_push_asmsdosinfo(EXT_PUSH *pext, const ASMSDOSINFO *r)
 {
-	TRY(ext_buffer_push_uint8(pext, r->filler));
-	return ext_buffer_push_uint8(pext, r->attr);
+	TRY(pext->p_uint8(r->filler));
+	return pext->p_uint8(r->attr);
 }
 
 static int applefile_push_asafpinfo(EXT_PUSH *pext, const ASAFPINFO *r)
 {
-	TRY(ext_buffer_push_bytes(pext, r->filler, 3));
-	return ext_buffer_push_uint8(pext, r->attr);
+	TRY(pext->p_bytes(r->filler, 3));
+	return pext->p_uint8(r->attr);
 }
 
 static int applefile_push_asafpdirid(EXT_PUSH *pext, const ASAFPDIRID *r)
@@ -483,9 +481,8 @@ static int applefile_push_entry(EXT_PUSH *pext,
 	case AS_AFPDIRID:
 		return applefile_push_asafpdirid(pext, static_cast<const ASAFPDIRID *>(pentry));
 	default:
-		return ext_buffer_push_bytes(pext,
-				((BINARY*)pentry)->pb,
-				((BINARY*)pentry)->cb);
+		return pext->p_bytes(static_cast<const BINARY *>(pentry)->pb,
+		       static_cast<const BINARY *>(pentry)->cb);
 	}
 	
 }
@@ -530,7 +527,7 @@ int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
 	TRY(applefile_push_asheader(pext, &r->header));
 	TRY(applefile_push_uint16(pext, r->count));
 	des_offset = pext->offset;
-	TRY(ext_buffer_push_advance(pext, r->count * 3 * sizeof(uint32_t)));
+	TRY(pext->advance(r->count * 3 * sizeof(uint32_t)));
 	entry_offset = pext->offset;
 	for (i=0; i<r->count; i++) {
 		TRY(applefile_push_entry(pext, r->pentries[i].entry_id, r->pentries[i].pentry));

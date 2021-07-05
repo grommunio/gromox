@@ -95,57 +95,51 @@ static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socke
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->prefix);
+	auto status = pext->p_str(r->prefix);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->remote_id);
+	status = pext->p_str(r->remote_id);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_bool(pext, r->b_private);
+	return pext->p_bool(r->b_private);
 }
 
 static int exmdb_client_push_delivery_message_request(
 	EXT_PUSH *pext, const DELIVERY_MESSAGE_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
+	auto status = pext->p_str(r->dir);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->from_address);
+	status = pext->p_str(r->from_address);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_string(pext, r->account);
+	status = pext->p_str(r->account);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_uint32(pext, r->cpid);
+	status = pext->p_uint32(r->cpid);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_message_content(pext, r->pmsg);
+	status = pext->p_msgctnt(r->pmsg);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_string(pext, r->pdigest);
+	return pext->p_str(r->pdigest);
 }
 
 static int exmdb_client_push_check_contact_address_request(
 	EXT_PUSH *pext, const CHECK_CONTACT_ADDRESS_REQUEST *r)
 {
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
+	auto status = pext->p_str(r->dir);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_string(pext, r->paddress);
+	return pext->p_str(r->paddress);
 }
 
 static int exmdb_client_push_request(uint8_t call_id,
@@ -154,15 +148,13 @@ static int exmdb_client_push_request(uint8_t call_id,
 	int status;
 	EXT_PUSH ext_push;
 	
-	if (FALSE == ext_buffer_push_init(
-		&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	}
-	status = ext_buffer_push_advance(&ext_push, sizeof(uint32_t));
+	status = ext_push.advance(sizeof(uint32_t));
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_push_uint8(&ext_push, call_id);
+	status = ext_push.p_uint8(call_id);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -190,11 +182,11 @@ static int exmdb_client_push_request(uint8_t call_id,
 	}
 	pbin_out->cb = ext_push.offset;
 	ext_push.offset = 0;
-	status = ext_buffer_push_uint32(&ext_push, pbin_out->cb - sizeof(uint32_t));
+	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_buffer_push_release(&ext_push);
+	pbin_out->pb = ext_push.release();
 	return EXT_ERR_SUCCESS;
 }
 

@@ -161,14 +161,10 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		}
 		rop_util_free_binary(pbin);
 	}
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0) ||
+	    ext_push.p_tpropval_a(pproplist) != EXT_ERR_SUCCESS) {
 		tpropval_array_free(pproplist);
 		return NULL;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_tpropval_array(
-		&ext_push, pproplist)) {
-		tpropval_array_free(pproplist);
-		return NULL;	
 	}
 	tpropval_array_free(pproplist);
 	pbin = cu_alloc<BINARY>();

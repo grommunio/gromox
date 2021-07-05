@@ -41,9 +41,8 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 		tmp_bin1.cb = pbinhex->res_len;
 		tmp_bin1.pb = pbinhex->presource;
 	}
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0))
 		return nullptr;
-	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
 		return nullptr;
 	}
@@ -52,7 +51,7 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 
@@ -108,9 +107,8 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 		tmp_bin1.pb = deconst(pmacbin->presource);
 		applefile.count ++;
 	}
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0))
 		return NULL;
-	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
 		return NULL;
 	}
@@ -119,7 +117,7 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 
@@ -165,9 +163,8 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 	memcpy(&macbin.header.signature, "mBIN", 4);
 	macbin.header.data_len = data_len;
 	macbin.pdata = static_cast<const uint8_t *>(pdata);
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0))
 		return NULL;
-	}
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
 		return NULL;
 	}
@@ -176,7 +173,7 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 
@@ -222,9 +219,8 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 	macbin.header.version = 130;
 	macbin.header.mini_version = 129; 
 	memcpy(&macbin.header.signature, "mBIN", 4);
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0))
 		return NULL;
-	}
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
 		return NULL;
 	}
@@ -233,7 +229,7 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 
@@ -258,9 +254,8 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 		macbin.header.res_len = pbinhex->res_len;
 		macbin.presource = pbinhex->presource;
 	}
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0))
 		return NULL;
-	}
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
 		return NULL;
 	}
@@ -269,7 +264,7 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }
 
@@ -293,7 +288,7 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		applefile.pentries[applefile.count] = papplefile->pentries[i];
 		applefile.count ++;
 	}
-	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+	if (!ext_push.init(nullptr, 0, 0)) {
 		free(applefile.pentries);
 		return nullptr;
 	}
@@ -307,6 +302,6 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		return NULL;
 	}
 	pbin->cb = ext_push.offset;
-	pbin->pb = ext_buffer_push_release(&ext_push);
+	pbin->pb = ext_push.release();
 	return pbin;
 }

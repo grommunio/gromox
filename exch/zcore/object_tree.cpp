@@ -144,9 +144,9 @@ static void object_tree_free_root(ROOT_OBJECT *prootobj)
 	char tmp_path[256];
 	
 	if (prootobj->b_touched &&
-	    ext_buffer_push_init(&ext_push, nullptr, 0, EXT_FLAG_WCOUNT) &&
-	    ext_buffer_push_tpropval_array(&ext_push, prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
-	    ext_buffer_push_tarray_set(&ext_push, prootobj->pprof_set) == EXT_ERR_SUCCESS) {
+	    ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) &&
+	    ext_push.p_tpropval_a(prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
+	    ext_push.p_tarray_set(prootobj->pprof_set) == EXT_ERR_SUCCESS) {
 		sprintf(tmp_path, "%s/config/zarafa.dat",
 			prootobj->maildir);
 		fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
@@ -491,10 +491,9 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 		do {
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
 			if (pobjnode->type == ZMG_STORE &&
-			    store_object_check_private(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == b_private &&
-			    store_object_get_account_id(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == account_id) {
+			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->b_private == b_private &&
+			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->account_id == account_id)
 				return pobjnode->handle;	
-			}
 		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 	auto pinfo = zarafa_server_get_info();

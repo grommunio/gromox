@@ -5,6 +5,12 @@
 #include "logon_object.h"
 
 struct FOLDER_OBJECT {
+	BOOL get_all_proptags(PROPTAG_ARRAY *);
+	BOOL check_readonly_property(uint32_t proptag);
+	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
+	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);
+
 	LOGON_OBJECT *plogon = nullptr;
 	uint64_t folder_id = 0;
 	uint8_t type = 0;
@@ -12,16 +18,3 @@ struct FOLDER_OBJECT {
 };
 
 extern std::unique_ptr<FOLDER_OBJECT> folder_object_create(LOGON_OBJECT *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
-uint64_t folder_object_get_id(FOLDER_OBJECT *pfolder);
-uint8_t folder_object_get_type(FOLDER_OBJECT *pfolder);
-uint32_t folder_object_get_tag_access(FOLDER_OBJECT *pfolder);
-BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
-	PROPTAG_ARRAY *pproptags);
-BOOL folder_object_check_readonly_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag);
-BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);
-BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);

@@ -28,8 +28,8 @@ std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}
-	pctx->pstore = folder_object_get_store(pfolder);
-	pctx->folder_id = folder_object_get_id(pfolder);
+	pctx->pstore = pfolder->pstore;
+	pctx->folder_id = pfolder->folder_id;
 	pctx->sync_type = sync_type;
 	pctx->pgiven_eids = NULL;
 	pctx->pchg_eids = NULL;
@@ -75,17 +75,15 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
 	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
-	auto username = !store_object_check_private(pctx->pstore) ? pinfo->username : nullptr;
-	if (!exmdb_client::get_content_sync(
-		store_object_get_dir(pctx->pstore), pctx->folder_id,
-		username, pctx->pstate->pgiven, pseen, pseen_fai,
-		pread, pinfo->cpid, prestriction, TRUE, &count_fai,
-		&total_fai, &count_normal, &total_normal,
-		&updated_messages, &chg_messages, &pctx->last_changenum,
-		&given_messages, &deleted_messages, &nolonger_messages,
-		&read_messags, &unread_messags, &pctx->last_readcn)) {
+	auto username = !pctx->pstore->b_private ? pinfo->username : nullptr;
+	if (!exmdb_client::get_content_sync(pctx->pstore->get_dir(),
+	    pctx->folder_id, username, pctx->pstate->pgiven, pseen, pseen_fai,
+	    pread, pinfo->cpid, prestriction, TRUE, &count_fai, &total_fai,
+	    &count_normal, &total_normal, &updated_messages, &chg_messages,
+	    &pctx->last_changenum, &given_messages, &deleted_messages,
+	    &nolonger_messages, &read_messags, &unread_messags,
+	    &pctx->last_readcn))
 		return FALSE;
-	}
 	if (NULL != pctx->pgiven_eids) {
 		eid_array_free(pctx->pgiven_eids);
 	}
@@ -174,14 +172,12 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	auto username = store_object_check_owner_mode(pctx->pstore) ? nullptr : pinfo->username;
-	if (!exmdb_client::get_hierarchy_sync(
-		store_object_get_dir(pctx->pstore), pctx->folder_id,
-		username, pctx->pstate->pgiven, pctx->pstate->pseen,
-		&fldchgs, &pctx->last_changenum, &given_folders,
-		&deleted_folders)) {
+	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->username;
+	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
+	    pctx->folder_id, username, pctx->pstate->pgiven,
+	    pctx->pstate->pseen, &fldchgs, &pctx->last_changenum,
+	    &given_folders, &deleted_folders))
 		return FALSE;
-	}
 	if (NULL != pctx->pgiven_eids) {
 		eid_array_free(pctx->pgiven_eids);
 	}
@@ -307,11 +303,9 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 		}
 		message_id = pctx->pchg_eids->pids[pctx->eid_pos];
 		pctx->eid_pos ++;
-		if (FALSE == exmdb_client_get_message_property(
-			store_object_get_dir(pctx->pstore), NULL, 0,
-			message_id, PROP_TAG_CHANGENUMBER, &pvalue)) {
+		if (!exmdb_client_get_message_property(pctx->pstore->get_dir(),
+		    nullptr, 0, message_id, PROP_TAG_CHANGENUMBER, &pvalue))
 			return FALSE;	
-		}
 	} while (NULL == pvalue);
 	*pb_new = !eid_array_check(pctx->pupdated_eids, message_id) ? TRUE : false;
 	pproplist->count = 2;
@@ -395,11 +389,9 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	proptag_buff[3] = PROP_TAG_ATTRIBUTEHIDDEN;
 	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
 	proptag_buff[5] = PROP_TAG_CHANGENUMBER;
-	if (!exmdb_client::get_folder_properties(
-		store_object_get_dir(pctx->pstore), 0,
-		folder_id, &proptags, &tmp_propvals)) {
+	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
+	    folder_id, &proptags, &tmp_propvals))
 		return FALSE;
-	}
 	pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_CHANGENUMBER);
 	if (NULL == pvalue) {

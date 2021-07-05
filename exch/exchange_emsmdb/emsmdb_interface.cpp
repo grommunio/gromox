@@ -557,7 +557,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	node_cap.pdata = &header_cap;
 	double_list_append_as_tail(&aux_out.aux_list, &node_cap);
 	DCERPC_INFO rpc_info;
-	if (!ext_buffer_push_init(&ext_push, pauxout, 0x1008, EXT_FLAG_UTF16)) {
+	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16)) {
 		double_list_free(&aux_out.aux_list);
 		return ecMAPIOOM;
 	}

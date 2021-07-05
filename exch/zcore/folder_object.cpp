@@ -21,6 +21,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+using namespace gromox;
+
 std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
@@ -37,31 +39,14 @@ std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
 	return pfolder;
 }
 
-uint64_t folder_object_get_id(FOLDER_OBJECT *pfolder)
+BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
-	return pfolder->folder_id;
-}
-
-uint8_t folder_object_get_type(FOLDER_OBJECT *pfolder)
-{
-	return pfolder->type;
-}
-
-STORE_OBJECT* folder_object_get_store(FOLDER_OBJECT *pfolder)
-{
-	return pfolder->pstore;
-}
-
-BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
-	PROPTAG_ARRAY *pproptags)
-{
+	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_folder_all_proptags(
-		store_object_get_dir(pfolder->pstore),
-		pfolder->folder_id, &tmp_proptags)) {
+	if (!exmdb_client::get_folder_all_proptags(pfolder->pstore->get_dir(),
+	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;		
-	}
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 30);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
@@ -84,36 +69,35 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
 		pproptags->count ++;
 	}
-	if (TRUE == store_object_check_private(pfolder->pstore)) {
-		if (pfolder->folder_id == rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) || pfolder->folder_id ==
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
-		}
-	}
+	if (!pfolder->pstore->b_private)
+		return TRUE;
+	if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
+	    pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))
+		return TRUE;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
+	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
+	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 	return TRUE;
 }
 
-BOOL folder_object_check_readonly_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag)
+BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag) const
 {
+	auto pfolder = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
@@ -162,9 +146,8 @@ BOOL folder_object_check_readonly_property(
 	case PR_IPM_JOURNAL_ENTRYID:
 	case PR_IPM_NOTE_ENTRYID:
 	case PR_IPM_TASK_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -193,19 +176,18 @@ static BOOL folder_object_get_calculated_property(
 	case PR_ACCESS:
 		*ppvalue = &pfolder->tag_access;
 		return TRUE;
-	case PROP_TAG_CONTENTUNREADCOUNT:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
-			*ppvalue = cu_alloc<uint32_t>();
-			if (NULL == *ppvalue) {
-				return FALSE;
-			}
-			auto pinfo = zarafa_server_get_info();
-			return exmdb_client::get_public_folder_unread_count(
-						store_object_get_dir(pfolder->pstore),
-						pinfo->username, pfolder->folder_id,
-			       static_cast<uint32_t *>(*ppvalue));
+	case PROP_TAG_CONTENTUNREADCOUNT: {
+		if (pfolder->pstore->b_private)
+			return false;
+		*ppvalue = cu_alloc<uint32_t>();
+		if (NULL == *ppvalue) {
+			return FALSE;
 		}
-		return FALSE;
+		auto pinfo = zarafa_server_get_info();
+		return exmdb_client::get_public_folder_unread_count(pfolder->pstore->get_dir(),
+		       pinfo->username, pfolder->folder_id,
+		       static_cast<uint32_t *>(*ppvalue));
+	}
 	case PROP_TAG_FOLDERID:
 		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
@@ -213,40 +195,35 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
 		return TRUE;
-	case PR_RIGHTS:
+	case PR_RIGHTS: {
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == store_object_check_owner_mode(pfolder->pstore)) {
+		if (pfolder->pstore->check_owner_mode()) {
 			*(uint32_t*)(*ppvalue) =
 				PERMISSION_READANY|PERMISSION_CREATE|
 				PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
 				PERMISSION_EDITANY|PERMISSION_DELETEANY|
 				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
 				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
-		} else {
-			auto pinfo = zarafa_server_get_info();
-			if (!exmdb_client::check_folder_permission(
-				store_object_get_dir(pfolder->pstore),
-			    pfolder->folder_id, pinfo->username,
-			    static_cast<uint32_t *>(*ppvalue))) {
-				return FALSE;
-			}
+			return TRUE;
 		}
-		return TRUE;
+		auto pinfo = zarafa_server_get_info();
+		return exmdb_client::check_folder_permission(pfolder->pstore->get_dir(),
+		       pfolder->folder_id, pinfo->username,
+		       static_cast<uint32_t *>(*ppvalue));
+	}
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 		*ppvalue = common_util_to_folder_entryid(
 			pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
-		if (FALSE == exmdb_client_get_folder_property(
-			store_object_get_dir(pfolder->pstore), 0,
-			pfolder->folder_id, PROP_TAG_PARENTFOLDERID,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
+		    0, pfolder->folder_id, PROP_TAG_PARENTFOLDERID, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;	
-		}
 		*ppvalue = common_util_to_folder_entryid(
 			pfolder->pstore, *(uint64_t*)pvalue);
 		return TRUE;
@@ -255,7 +232,7 @@ static BOOL folder_object_get_calculated_property(
 					pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
-		if (TRUE == store_object_check_private(pfolder->pstore)) {
+		if (pfolder->pstore->b_private) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {
 				*ppvalue = deconst(&fake_bin);
@@ -268,35 +245,27 @@ static BOOL folder_object_get_calculated_property(
 				return TRUE;
 			}
 		}
-		if (FALSE == exmdb_client_get_folder_property(
-			store_object_get_dir(pfolder->pstore), 0,
-			pfolder->folder_id, PROP_TAG_PARENTFOLDERID,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
+		    0, pfolder->folder_id, PROP_TAG_PARENTFOLDERID, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;	
-		}
 		*ppvalue = common_util_calculate_folder_sourcekey(
 					pfolder->pstore, *(uint64_t*)pvalue);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:
-		*ppvalue = common_util_guid_to_binary(
-				store_object_get_mailbox_guid(
-				pfolder->pstore));
+		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mailbox_guid);
 		return TRUE;
 	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pfolder->pstore);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		return TRUE;
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like exchange 2013, alway return 0 */
 		*ppvalue = deconst(&fake_del);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -307,9 +276,8 @@ static BOOL folder_object_get_calculated_property(
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -320,9 +288,8 @@ static BOOL folder_object_get_calculated_property(
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -333,9 +300,8 @@ static BOOL folder_object_get_calculated_property(
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -346,9 +312,8 @@ static BOOL folder_object_get_calculated_property(
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -359,9 +324,8 @@ static BOOL folder_object_get_calculated_property(
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
@@ -372,33 +336,29 @@ static BOOL folder_object_get_calculated_property(
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PROP_TAG_REMINDERSONLINEENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT)) {
 			return FALSE;	
 		}
-		if (FALSE == exmdb_client_get_folder_property(
-			store_object_get_dir(pfolder->pstore), 0,
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
-			PROP_TAG_REMINDERSONLINEENTRYID, &pvalue) ||
-			NULL == pvalue) {
+		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
+		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    PROP_TAG_REMINDERSONLINEENTRYID, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;
-		}
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_ADDITIONAL_REN_ENTRYIDS: {
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
 			return FALSE;
@@ -450,16 +410,15 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	}
 	case PR_ADDITIONAL_REN_ENTRYIDS_EX: {
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
 			return FALSE;
@@ -499,12 +458,9 @@ static BOOL folder_object_get_calculated_property(
 		persistdatas.ppitems[2]->element.pentry_id =
 			common_util_to_folder_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
-		if (!ext_buffer_push_init(&ext_push, temp_buff, sizeof(temp_buff), 0))
-			return false;
-		if (EXT_ERR_SUCCESS != ext_buffer_push_persistdata_array(
-			&ext_push, &persistdatas)) {
+		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
+		    ext_push.p_persistdata_a(&persistdatas) != EXT_ERR_SUCCESS)
 			return FALSE;	
-		}
 		bv->cb = ext_push.offset;
 		bv->pv = common_util_alloc(ext_push.offset);
 		if (bv->pv == nullptr) {
@@ -515,16 +471,15 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	}
 	case PR_FREEBUSY_ENTRYIDS: {
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
+		if (!pfolder->pstore->b_private)
 			return FALSE;
-		}
 		if (pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))
 			return FALSE;
@@ -568,8 +523,8 @@ static BOOL folder_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	void *pvalue;
@@ -586,6 +541,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	ppropvals->count = 0;
+	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
 		if (TRUE == folder_object_get_calculated_property(
 			pfolder, pproptags->pproptag[i], &pvalue)) {
@@ -606,22 +562,19 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 		return TRUE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	if (!exmdb_client::get_folder_properties(
-		store_object_get_dir(pfolder->pstore), pinfo->cpid,
-		pfolder->folder_id, &tmp_proptags, &tmp_propvals)) {
+	if (!exmdb_client::get_folder_properties(pfolder->pstore->get_dir(),
+	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;
-	}
-	if (tmp_propvals.count > 0) {
-		memcpy(ppropvals->ppropval + ppropvals->count,
-			tmp_propvals.ppropval,
-			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
-		ppropvals->count += tmp_propvals.count;
-	}
+	if (tmp_propvals.count == 0)
+		return TRUE;
+	memcpy(ppropvals->ppropval + ppropvals->count,
+	       tmp_propvals.ppropval,
+	       sizeof(TAGGED_PROPVAL) * tmp_propvals.count);
+	ppropvals->count += tmp_propvals.count;
 	return TRUE;	
 }
 
-BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
-	const TPROPVAL_ARRAY *ppropvals)
+BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	XID tmp_xid;
 	uint16_t count;
@@ -642,22 +595,20 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	memcpy(tmp_propvals.ppropval, ppropvals->ppropval,
 			sizeof(TAGGED_PROPVAL)*ppropvals->count);
 	tmp_propvals.count = ppropvals->count;
-	if (!exmdb_client::allocate_cn(
-		store_object_get_dir(pfolder->pstore),
-		&change_num)) {
+	auto pfolder = this;
+	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return FALSE;
-	}
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 									PROP_TAG_CHANGENUMBER;
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 											&change_num;
 	tmp_propvals.count ++;
-	if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	tmp_xid.guid = store_object_guid(pfolder->pstore);
+	tmp_xid.guid = pfolder->pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
@@ -681,16 +632,13 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 											&last_time;
 	tmp_propvals.count ++;
 	auto pinfo = zarafa_server_get_info();
-	if (!exmdb_client::set_folder_properties(
-		store_object_get_dir(pfolder->pstore), pinfo->cpid,
-		pfolder->folder_id, &tmp_propvals, &tmp_problems)) {
+	if (!exmdb_client::set_folder_properties(pfolder->pstore->get_dir(),
+	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	}
 	return TRUE;
 }
 
-BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
-	const PROPTAG_ARRAY *pproptags)
+BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	XID tmp_xid;
@@ -708,11 +656,10 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
+	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == folder_object_check_readonly_property(
-			pfolder, pproptags->pproptag[i])) {
+		if (pfolder->check_readonly_property(pproptags->pproptag[i]))
 			continue;
-		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
 							pproptags->pproptag[i];
 		tmp_proptags.count ++;
@@ -720,25 +667,21 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::remove_folder_properties(
-		store_object_get_dir(pfolder->pstore),
-		pfolder->folder_id, &tmp_proptags)) {
+	if (!exmdb_client::remove_folder_properties(pfolder->pstore->get_dir(),
+	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;	
-	}
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
-	if (!exmdb_client::allocate_cn(
-		store_object_get_dir(pfolder->pstore), &change_num)) {
+	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return TRUE;
-	}
-	if (!exmdb_client_get_folder_property(store_object_get_dir(pfolder->pstore),
+	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	tmp_xid.guid = store_object_guid(pfolder->pstore);
+	tmp_xid.guid = pfolder->pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
@@ -755,16 +698,13 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;
-	exmdb_client::set_folder_properties(
-		store_object_get_dir(pfolder->pstore), 0,
+	exmdb_client::set_folder_properties(pfolder->pstore->get_dir(), 0,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
 	return TRUE;
 }
 
-BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
-	PERMISSION_SET *pperm_set)
+BOOL FOLDER_OBJECT::get_permissions(PERMISSION_SET *pperm_set)
 {
-	const char *dir;
 	uint32_t row_num;
 	uint32_t *prights;
 	uint32_t table_id;
@@ -776,8 +716,9 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 		PROP_TAG_MEMBERRIGHTS
 	};
 	
-	dir = store_object_get_dir(pfolder->pstore);
-	uint32_t flags = !store_object_check_private(pfolder->pstore) &&
+	auto pfolder = this;
+	auto dir = pfolder->pstore->get_dir();
+	uint32_t flags = !pfolder->pstore->b_private &&
 	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 		         PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
 	if (!exmdb_client::load_permission_table(dir,
@@ -818,10 +759,8 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	return TRUE;
 }
 
-BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
-	const PERMISSION_SET *pperm_set)
+BOOL FOLDER_OBJECT::set_permissions(const PERMISSION_SET *pperm_set)
 {
-	const char *dir;
 	BINARY *pentryid;
 	uint32_t row_num;
 	uint32_t table_id;
@@ -834,7 +773,8 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		PROP_TAG_MEMBERID
 	};
 	
-	dir = store_object_get_dir(pfolder->pstore);
+	auto pfolder = this;
+	auto dir = pfolder->pstore->get_dir();
 	if (!exmdb_client::load_permission_table(dir,
 		pfolder->folder_id, 0, &table_id, &row_num)) {
 		return FALSE;
@@ -940,7 +880,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		}
 		count ++;
 	}
-	BOOL b_freebusy = !store_object_check_private(pfolder->pstore) &&
+	BOOL b_freebusy = !pfolder->pstore->b_private &&
 	                  rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 	                  TRUE : false;
 	return exmdb_client::update_folder_permission(dir,
@@ -998,8 +938,7 @@ static BOOL folder_object_flush_delegates(int fd,
 }
 
 
-BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
-	uint32_t flags, const RULE_LIST *plist)
+BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 {
 	int i, fd;
 	BOOL b_exceed;
@@ -1007,14 +946,11 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 	char *pprovider;
 	char temp_path[256];
 	RULE_ACTIONS *pactions = nullptr;
+	auto pfolder = this;
 	
-	if (flags & MODIFY_RULES_FLAG_REPLACE) {
-		if (!exmdb_client::empty_folder_rule(
-			store_object_get_dir(pfolder->pstore),
-			pfolder->folder_id)) {
-			return FALSE;	
-		}
-	}
+	if (flags & MODIFY_RULES_FLAG_REPLACE &&
+	    !exmdb_client::empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
+		return FALSE;	
 	b_delegate = FALSE;
 	for (i=0; i<plist->count; i++) {
 		if (FALSE == common_util_convert_from_zrule(
@@ -1036,29 +972,26 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 			pactions = act;
 		}
 	}
-	if (TRUE == store_object_check_private(pfolder->pstore) &&
+	if (pfolder->pstore->b_private &&
 		PRIVATE_FID_INBOX == rop_util_get_gc_value(pfolder->folder_id)
 		&& ((flags & MODIFY_RULES_FLAG_REPLACE) || TRUE == b_delegate)) {
-		sprintf(temp_path, "%s/config/delegates.txt",
-				store_object_get_dir(pfolder->pstore));
+		snprintf(temp_path, arsizeof(temp_path), "%s/config/delegates.txt",
+		         pfolder->pstore->get_dir());
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 != fd) {
 			if (TRUE == b_delegate) {
 				for (i=0; i<pactions->count; i++) {
-					if (pactions->pblock[i].type == OP_DELEGATE) {
-						if (!folder_object_flush_delegates(
-						    fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
-							close(fd);
-							return FALSE;
-						}
+					if (pactions->pblock[i].type == OP_DELEGATE &&
+					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
+						close(fd);
+						return FALSE;
 					}
 				}
 			}
 			close(fd);
 		}
 	}
-	return exmdb_client::update_folder_rule(
-		store_object_get_dir(pfolder->pstore),
+	return exmdb_client::update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);
 }

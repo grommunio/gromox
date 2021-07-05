@@ -21,11 +21,9 @@ std::unique_ptr<SUBSCRIPTION_OBJECT> subscription_object_create(
 	}
 	psub->plogon = plogon;
 	psub->logon_id = logon_id;
-	if (FALSE == exmdb_client_subscribe_notification(
-		logon_object_get_dir(plogon), notification_types,
-		b_whole, folder_id, message_id, &psub->sub_id)) {
+	if (!exmdb_client_subscribe_notification(plogon->get_dir(),
+	    notification_types, b_whole, folder_id, message_id, &psub->sub_id))
 		return NULL;
-	}
 	return psub;
 }
 
@@ -33,16 +31,13 @@ void subscription_object_set_handle(
 	SUBSCRIPTION_OBJECT *psub, uint32_t handle)
 {
 	psub->handle = handle;
-	emsmdb_interface_add_subscription_notify(
-		logon_object_get_dir(psub->plogon), psub->sub_id,
-		psub->handle, psub->logon_id, &psub->cxh.guid);
+	emsmdb_interface_add_subscription_notify(psub->plogon->get_dir(),
+		psub->sub_id, psub->handle, psub->logon_id, &psub->cxh.guid);
 }
 
 SUBSCRIPTION_OBJECT::~SUBSCRIPTION_OBJECT()
 {	
 	auto psub = this;
-	exmdb_client_unsubscribe_notification(
-		logon_object_get_dir(psub->plogon), psub->sub_id);
-	emsmdb_interface_remove_subscription_notify(
-		logon_object_get_dir(psub->plogon), psub->sub_id);
+	exmdb_client_unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
+	emsmdb_interface_remove_subscription_notify(psub->plogon->get_dir(), psub->sub_id);
 }

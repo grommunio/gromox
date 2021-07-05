@@ -3823,8 +3823,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	sqlite3_bind_int64(pstmt, 1, ptnode->folder_id);
 	sqlite3_bind_int64(pstmt, 2, ptnode->table_flags);
 	if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
-		if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_buffer_push_sortorder_set(&ext_push, ptnode->psorts) != EXT_ERR_SUCCESS) {
+		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_sortorder_set(ptnode->psorts) != EXT_ERR_SUCCESS) {
 			pstmt.finalize();
 			sqlite3_close(psqlite);
 			return FALSE;
@@ -4191,8 +4191,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			goto RESTORE_POSITION;
 		}
 	} else {
-		if (!ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_buffer_push_sortorder_set(&ext_push, ptnode->psorts) != EXT_ERR_SUCCESS) {
+		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		    ext_push.p_sortorder_set(ptnode->psorts) != EXT_ERR_SUCCESS) {
 			pstmt.finalize();
 			goto RESTORE_POSITION;
 		}
