@@ -64,7 +64,6 @@ int main(int argc, const char **argv)
 	auto str_value = config_file_get_value(pconfig, "STATE_PATH");
 	if (NULL == str_value) {
 		gx_strlcpy(state_dir, PKGSTATEDIR, sizeof(state_dir));
-		config_file_set_value(pconfig, "STATE_PATH", state_dir);
 	} else {
 		gx_strlcpy(state_dir, str_value, sizeof(state_dir));
 	}
@@ -76,7 +75,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
 		gx_strlcpy(log_path, PKGLOGDIR "/sa.log", sizeof(log_path));
-		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
 		gx_strlcpy(log_path, str_value, GX_ARRAY_SIZE(log_path));
 	}
@@ -85,7 +83,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
-		config_file_set_value(pconfig, "MYSQL_HOST", "localhost");
 	} else {
 		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
@@ -93,13 +90,10 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "MYSQL_PORT");
 	if (NULL == str_value) {
 		mysql_port = 3306;
-		config_file_set_value(pconfig, "MYSQL_PORT", "3306");
 	} else {
 		mysql_port = atoi(str_value);
-		if (mysql_port <= 0) {
+		if (mysql_port <= 0)
 			mysql_port = 3306;
-			config_file_set_value(pconfig, "MYSQL_PORT", "3306");
-		}
 	}
 	printf("[system]: mysql host is [%s]:%d\n", mysql_host, mysql_port);
 
@@ -109,7 +103,6 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");
-		config_file_set_value(pconfig, "MYSQL_DBNAME", "email");
 	} else {
 		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}

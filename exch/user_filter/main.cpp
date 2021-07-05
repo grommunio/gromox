@@ -48,7 +48,6 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		auto str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
 		if (NULL == str_value) {
 			case_sensitive = FALSE;
-			config_file_set_value(pfile, "IS_CASE_SENSITIVE", "FALSE");
 			printf("[%s]: case-insensitive\n", file_name);
 		} else {
 			if (0 == strcasecmp(str_value, "FALSE")) {
@@ -59,71 +58,39 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 				printf("[%s]: case-sensitive\n", file_name);
 			} else {
 				case_sensitive = FALSE;
-				config_file_set_value(pfile, "IS_CASE_SENSITIVE", "FALSE");
 				printf("[%s]: case-insensitive\n", file_name);
 			}
 		}				
 		str_value = config_file_get_value(pfile, "AUDIT_MAX_NUM");
-		if (NULL == str_value) {
+		audit_max = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
+		if (audit_max < 0)
 			audit_max = 0;
-			config_file_set_value(pfile, "AUDIT_MAX_NUM", "0");
-		} else {
-			audit_max = atoi(str_value);
-			if (audit_max < 0) {
-				audit_max = 0;
-				config_file_set_value(pfile, "AUDIT_MAX_NUM", "0");
-			}
-		}
 		printf("[%s]: audit capacity is %d\n", file_name, audit_max);	
 		str_value = config_file_get_value(pfile, "AUDIT_INTERVAL");
 		if (NULL == str_value) {
 			audit_interval = 60;
-			config_file_set_value(pfile, "AUDIT_INTERVAL", "1minute");
 		} else {
 			audit_interval = atoitvl(str_value);
-			if (audit_interval <= 0) {
+			if (audit_interval <= 0)
 				audit_interval = 60;
-				config_file_set_value(pfile, "AUDIT_INTERVAL", "1minute");
-			}
 		}
 		itvltoa(audit_interval, temp_buff);
 		printf("[%s]: audit interval is %s\n", file_name, temp_buff);
 		str_value = config_file_get_value(pfile, "AUDIT_TIMES");
-		if (NULL == str_value) {
+		audit_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
+		if (audit_times <= 0)
 			audit_times = 10;
-			config_file_set_value(pfile, "AUDIT_TIMES", "10");
-		} else {
-			audit_times = atoi(str_value);
-			if (audit_times <= 0) {
-				audit_times = 10;
-				config_file_set_value(pfile, "AUDIT_TIMES", "10");
-			}
-		}
 		printf("[%s]: audit times is %d\n", file_name, audit_times);
 		str_value = config_file_get_value(pfile, "TEMP_LIST_SIZE");
-		if (NULL == str_value) {
+		temp_list_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
+		if (temp_list_size < 0)
 			temp_list_size = 0;
-			config_file_set_value(pfile, "TEMP_LIST_SIZE", "0");
-		} else {
-			temp_list_size = atoi(str_value);
-			if (temp_list_size < 0) {
-				temp_list_size = 0;
-				config_file_set_value(pfile, "TEMP_LIST_SIZE", "0");
-			}
-		}
 		printf("[%s]: temporary list capacity is %d\n", file_name,
 			temp_list_size);
 		str_value = config_file_get_value(pfile, "GREY_GROWING_NUM");
-		if (NULL == str_value) {
+		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
+		if (growing_num < 0)
 			growing_num = 0;
-			config_file_set_value(pfile, "GREY_GROWING_NUM", "0");
-		} else {
-			growing_num = atoi(str_value);
-			if (growing_num < 0) {
-				growing_num = 0;
-				config_file_set_value(pfile, "GREY_GROWING_NUM", "0");
-			}
-		}
 		printf("[%s]: grey list growing number is %d\n", file_name,
 			growing_num);
 		str_value = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");

@@ -9,7 +9,7 @@
 #include "rops.h"
 #include <gromox/util.hpp>
 
-static unsigned int g_rop_debug;
+unsigned int g_rop_debug;
 
 int rop_dispatch(ROP_REQUEST *prequest,
 	ROP_RESPONSE **ppresponse,

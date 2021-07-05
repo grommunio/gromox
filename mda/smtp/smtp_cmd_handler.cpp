@@ -258,7 +258,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-				system_services_log_info(6, "remote=%s from=%s to=%s  RCPT address is invalid",
+				system_services_log_info(4, "remote=%s from=%s to=%s  RCPT address is invalid",
 					pcontext->connection.client_ip,
 					pcontext->mail.envelope.from, buff);
                 return DISPATCH_CONTINUE;		
@@ -276,7 +276,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-				system_services_log_info(6, "remote=%s from=%s to=%s  Mailbox is full",
+				system_services_log_info(4, "remote=%s from=%s to=%s  Mailbox is full",
 					pcontext->connection.client_ip,
 					pcontext->mail.envelope.from, buff);
 				return DISPATCH_CONTINUE;		

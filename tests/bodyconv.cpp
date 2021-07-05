@@ -26,7 +26,7 @@ struct stdlib_free { void operator()(void *x) { free(x); } };
 
 static void help()
 {
-	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtftohtml|htmltotext}" << std::endl;
+	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcptortf|rtftohtml|htmltotext}" << std::endl;
 	std::cout << "       Will read from stdin and output to stdout" << std::endl;
 }
 
@@ -72,6 +72,10 @@ int main(int argc, const char **argv)
 		rtf_comp.cb = all.size();
 		rtf_comp.pv = deconst(all.c_str());
 		auto unc_size = rtfcp_uncompressed_size(&rtf_comp);
+		if (unc_size == -1) {
+			fprintf(stderr, "Bad header magic, or data stream is shorter than the header says it should be.\n");
+			return EXIT_FAILURE;
+		}
 		if (unc_size > 0) {
 			std::string unc_data;
 			unc_data.resize(unc_size);

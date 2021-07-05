@@ -81,51 +81,31 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		}
 		printf("[exchange_nsp]: x500 org name is \"%s\"\n", org_name);
 		auto str_value = config_file_get_value(pfile, "HASH_TABLE_SIZE");
-		if (NULL == str_value) {
+		table_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 3000;
+		if (table_size <= 0)
 			table_size = 3000;
-			config_file_set_value(pfile, "HASH_TABLE_SIZE", "3000");
-		} else {
-			table_size = atoi(str_value);
-			if (table_size <= 0) {
-				table_size = 3000;
-				config_file_set_value(pfile, "HASH_TABLE_SIZE", "3000");
-			}
-		}
 		printf("[exchange_nsp]: hash table size is %d\n", table_size);
 		str_value = config_file_get_value(pfile, "CACHE_INTERVAL");
 		if (NULL == str_value) {
 			cache_interval = 300;
-			config_file_set_value(pfile, "CACHE_INTERVAL", "5minutes");
 		} else {
 			cache_interval = atoitvl(str_value);
-			if (cache_interval > 24*3600 || cache_interval < 60) {
+			if (cache_interval > 24 * 3600 || cache_interval < 60)
 				cache_interval = 300;
-				config_file_set_value(pfile, "CACHE_INTERVAL", "5minutes");
-			}
 		}
 		itvltoa(cache_interval, temp_buff);
 		printf("[exchange_nsp]: address book tree item"
 				" cache interval is %s\n", temp_buff);
 		str_value = config_file_get_value(pfile, "MAX_ITEM_NUM");
-		if (NULL == str_value) {
+		max_item_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 100000;
+		if (max_item_num <= 0)
 			max_item_num = 100000;
-			config_file_set_value(pfile, "MAX_ITEM_NUM", "100000");
-		} else {
-			max_item_num = atoi(str_value);
-			if (max_item_num <= 0) {
-				max_item_num = 100000;
-				config_file_set_value(pfile, "MAX_ITEM_NUM", "100000");
-			}
-		}
 		printf("[exchange_nsp]: maximum item number is %d\n", max_item_num);
 		str_value = config_file_get_value(pfile, "SESSION_CHECK");
-		if (NULL != str_value && (0 == strcasecmp(str_value,
-			"ON") || 0 == strcasecmp(str_value, "TRUE"))) {
-			b_check = TRUE;
+		b_check = str_value != nullptr && (strcasecmp(str_value, "on") == 0 ||
+		          strcasecmp(str_value, "true") == 0);
+		if (b_check)
 			printf("[exchange_nsp]: bind session will be checked\n");
-		} else {
-			b_check = FALSE;
-		}
 		ab_tree_init(org_name, table_size, cache_interval, max_item_num);
 
 #define regsvr(n) register_service(#n, n)

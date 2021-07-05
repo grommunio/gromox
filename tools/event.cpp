@@ -156,13 +156,10 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_PORT");
 	if (NULL == str_value) {
 		listen_port = 33333;
-		config_file_set_value(pconfig, "EVENT_LISTEN_PORT", "33333");
 	} else {
 		listen_port = atoi(str_value);
-		if (listen_port <= 0) {
+		if (listen_port <= 0)
 			listen_port = 33333;
-			config_file_set_value(pconfig, "EVENT_LISTEN_PORT", "33333");
-		}
 	}
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
@@ -170,17 +167,12 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "EVENT_THREADS_NUM");
 	if (NULL == str_value) {
 		g_threads_num = 50;
-		config_file_set_value(pconfig, "EVENT_THREADS_NUM", "50");
 	} else {
 		g_threads_num = strtoul(str_value, nullptr, 0);
-		if (g_threads_num < 1) {
+		if (g_threads_num < 1)
 			g_threads_num = 1;
-			config_file_set_value(pconfig, "EVENT_THREADS_NUM", "20");
-		}
-		if (g_threads_num > 1000) {
+		if (g_threads_num > 1000)
 			g_threads_num = 1000;
-			config_file_set_value(pconfig, "EVENT_THREADS_NUM", "1000");
-		}
 	}
 
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
