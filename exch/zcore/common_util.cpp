@@ -2844,7 +2844,7 @@ const char* common_util_i18n_to_lang(const char *i18n)
 			return pitem[i].lang;
 		}
 	}
-	return pitem[0].lang;
+	return nullptr;
 }
 
 const char* common_util_get_default_timezone()
