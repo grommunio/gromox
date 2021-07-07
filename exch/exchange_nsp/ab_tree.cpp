@@ -94,7 +94,7 @@ static int g_file_blocks;
 static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
 static int g_cache_interval;
-static char g_org_name[256];
+static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock, g_remote_lock;
 static LIB_BUFFER *g_file_allocator;
@@ -214,7 +214,7 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 void ab_tree_init(const char *org_name, size_t base_size,
 	int cache_interval, int file_blocks)
 {
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_nsp_org_name, org_name, arsizeof(g_nsp_org_name));
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
@@ -1082,7 +1082,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-				g_org_name, hex_string1, hex_string, cusername);
+			g_nsp_org_name, hex_string1, hex_string, cusername);
 		HX_strupper(pbuff);
 		break;
 	case NODE_TYPE_MLIST: try {
@@ -1102,7 +1102,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-				g_org_name, hex_string1, hex_string, username.c_str());
+			g_nsp_org_name, hex_string1, hex_string, username.c_str());
 		HX_strupper(pbuff);
 		break;
 	} catch (...) {
@@ -1126,7 +1126,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	SIMPLE_TREE_NODE **ppnode;
 	
 	temp_len = gx_snprintf(prefix_string, GX_ARRAY_SIZE(prefix_string), "/o=%s/ou=Exchange "
-			"Administrative Group (FYDIBOHF23SPDLT)", g_org_name);
+			"Administrative Group (FYDIBOHF23SPDLT)", g_nsp_org_name);
 	if (temp_len < 0 || strncasecmp(pdn, prefix_string, temp_len) != 0)
 		return NULL;
 	if (strncasecmp(pdn + temp_len, "/cn=Configuration/cn=Servers/cn=", 32) == 0 &&
@@ -1407,7 +1407,7 @@ void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 	snprintf(dn, length, "/o=%s/ou=Exchange Administrative "
 	         "Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers"
 	         "/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
-	         "-%02x%02x%s@%s", g_org_name, username[0], username[1],
+	         "-%02x%02x%s@%s", g_nsp_org_name, username[0], username[1],
 	         username[2], username[3], username[4], username[5],
 	         username[6], username[7], username[8], username[9],
 	         username[10], username[11], hex_string, ptoken);

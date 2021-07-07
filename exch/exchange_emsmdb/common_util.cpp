@@ -37,6 +37,8 @@
 
 #define SOCKET_TIMEOUT						60
 
+using namespace gromox;
+
 enum {
 	SMTP_SEND_OK = 0,
 	SMTP_CANNOT_CONNECT,
@@ -50,8 +52,7 @@ enum {
 static int g_max_rcpt;
 static int g_smtp_port;
 static int g_max_message;
-static char g_smtp_ip[40];
-static char g_org_name[256];
+static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_faststream_id;
 static int g_average_blocks;
 static MIME_POOL *g_mime_pool;
@@ -199,7 +200,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	auto tmp_len = gx_snprintf(tmp_essdn, GX_ARRAY_SIZE(tmp_essdn),
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	               g_emsmdb_org_name);
 	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
 		return FALSE;
 	}
@@ -245,7 +246,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	encode_hex_int(domain_id, hex_string2);
 	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-			g_org_name, hex_string2, hex_string, tmp_name);
+		g_emsmdb_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
 }
@@ -270,7 +271,7 @@ const char* common_util_essdn_to_domain(const char *pessdn)
 	tmp_len = sprintf(tmp_essdn,
 		"/o=%s/ou=Exchange Administrative Group "
 		"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn="
-		"f98430ae-22ad-459a-afba-68c972eefc56@", g_org_name);
+		"f98430ae-22ad-459a-afba-68c972eefc56@", g_emsmdb_org_name);
 	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
 		return NULL;
 	}
@@ -281,7 +282,7 @@ void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax
 {
 	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 		"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn="
-		"f98430ae-22ad-459a-afba-68c972eefc56@%s", g_org_name, pdomain);
+		"f98430ae-22ad-459a-afba-68c972eefc56@%s", g_emsmdb_org_name, pdomain);
 }
 
 BOOL common_util_entryid_to_username(const BINARY *pbin,
@@ -2327,7 +2328,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *submit_command)
 {
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_emsmdb_org_name, org_name, arsizeof(g_emsmdb_org_name));
 	g_average_blocks = average_blocks;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
@@ -2382,7 +2383,7 @@ int common_util_run()
 	E(common_util_extension_to_mime, "extension_to_mime");
 #undef E
 
-	if (FALSE == oxcmail_init_library(g_org_name,
+	if (!oxcmail_init_library(g_emsmdb_org_name,
 		common_util_get_user_ids, common_util_get_username_from_id,
 		common_util_ltag_to_lcid, common_util_lcid_to_ltag,
 		common_util_charset_to_cpid, common_util_cpid_to_charset,

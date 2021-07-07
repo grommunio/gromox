@@ -135,7 +135,7 @@ static constexpr char
 static constexpr size_t namemap_limit = 0x1000;
 static uint8_t MACBINARY_ENCODING[] =
 	{0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B, 0x01};
-static char g_org_name[128];
+static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
 static LTAG_TO_LCID oxcmail_ltag_to_lcid;
@@ -168,7 +168,7 @@ BOOL oxcmail_init_library(const char *org_name,
 	cpid_to_charset, MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_oxcmail_org_name, org_name, arsizeof(g_oxcmail_org_name));
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
 	oxcmail_ltag_to_lcid = ltag_to_lcid;
@@ -211,7 +211,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	encode_hex_int(domain_id, hex_string2);
 	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-			g_org_name, hex_string2, hex_string, tmp_name);
+		g_oxcmail_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	if (NULL != paddress_type) {
 		*paddress_type = address_type;
@@ -227,7 +227,7 @@ static BOOL oxcmail_essdn_to_username(const char *pessdn,
 	
 	auto tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 	               "/o=%s/ou=Exchange Administrative"
-		" Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", g_org_name);
+		" Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", g_oxcmail_org_name);
 	if (0 != strncasecmp(pessdn, tmp_buff, tmp_len)) {
 		return FALSE;
 	}

@@ -64,7 +64,7 @@ struct OPTIMIZE_STMTS {
 };
 }
 
-static char g_org_name[256];
+static char g_exmdb_org_name[256];
 static unsigned int g_max_msg;
 static pthread_key_t g_var_key;
 static pthread_key_t g_opt_key;
@@ -153,7 +153,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	auto tmp_len = gx_snprintf(tmp_essdn, GX_ARRAY_SIZE(tmp_essdn),
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	               g_exmdb_org_name);
 	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
 		return FALSE;
 	}
@@ -199,7 +199,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	encode_hex_int(domain_id, hex_string2);
 	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-			g_org_name, hex_string2, hex_string, tmp_name);
+		g_exmdb_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
 }
@@ -232,7 +232,7 @@ void common_util_pass_service(int service_id, void *func)
 void common_util_init(const char *org_name, uint32_t max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num)
 {
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_exmdb_org_name, org_name, arsizeof(g_exmdb_org_name));
 	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
 	g_max_ext_rule_num = max_ext_rule_num;
