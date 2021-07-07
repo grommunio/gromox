@@ -69,6 +69,20 @@ static void term_handler(int signo)
 	g_notify_stop = true;
 }
 
+static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
+{
+	if (pconfig == nullptr)
+		pconfig = config_file_prg(opt_config_file, "zcore.cfg");
+	if (opt_config_file != nullptr && pconfig == nullptr) {
+		printf("[exmdb_provider]: config_file_init %s: %s\n",
+		       opt_config_file, strerror(errno));
+		return false;
+	}
+	auto v = config_file_get_value(pconfig, "zrpc_debug");
+	g_zrpc_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	return true;
+}
+
 int main(int argc, const char **argv)
 {
 	int max_mail;
@@ -123,9 +137,6 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 
-	str_value = config_file_get_value(pconfig, "zrpc_debug");
-	if (str_value != nullptr)
-		g_zrpc_debug = strtoul(str_value, nullptr, 0);
 	str_value = config_file_get_value(pconfig, "HOST_ID");
 	if (NULL == str_value) {
 		gethostname(host_name, 256);
@@ -198,6 +209,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "STATE_PATH");
 	gx_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
+	if (!zcore_reload_config(pconfig))
+		return EXIT_FAILURE;
 	
 	msgchg_grouping_init(data_path);
 	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
@@ -536,8 +549,10 @@ int main(int argc, const char **argv)
 	printf("[system]: zcore is now running\n");
 	while (!g_notify_stop) {
 		sleep(1);
-		if (g_hup_signalled.exchange(false))
+		if (g_hup_signalled.exchange(false)) {
+			zcore_reload_config(nullptr);
 			service_reload_all();
+		}
 	}
 	return 0;
 }
