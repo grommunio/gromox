@@ -752,8 +752,9 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 	if (g_exrpc_debug == 0)
 		return ret;
 	if (!ret || g_exrpc_debug == 2)
-		fprintf(stderr, "EXRPC %s %xh\n", exmdb_rpc_idtoname(prequest->call_id),
-		        static_cast<unsigned int>(ret));
+		fprintf(stderr, "EXRPC %s %s\n",
+		        ret == 0 ? "FAIL" : "ok  ",
+		        exmdb_rpc_idtoname(prequest->call_id));
 	return ret;
 }
 
