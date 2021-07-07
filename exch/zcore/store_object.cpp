@@ -1501,12 +1501,54 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 		&tmp_problems);
 }
 
+/**
+ * @locale:	input string like "en_US.UTF-8"
+ */
+static void set_store_lang(STORE_OBJECT *store, const char *locale)
+{
+	/*
+	 * If Offline Mode happens to write this prop even though it is
+	 * unchanged, it may appear as if folder names have reset.
+	 */
+	if (!store->b_private)
+		return;
+	auto lang = common_util_i18n_to_lang(locale);
+	{
+		char *fnam[RES_TOTAL_NUM];
+		common_util_get_folder_lang(lang, fnam);
+		store_object_set_folder_name(store, PRIVATE_FID_IPMSUBTREE, fnam[RES_ID_IPM]);
+		store_object_set_folder_name(store, PRIVATE_FID_INBOX, fnam[RES_ID_INBOX]);
+		store_object_set_folder_name(store, PRIVATE_FID_DRAFT, fnam[RES_ID_DRAFT]);
+		store_object_set_folder_name(store, PRIVATE_FID_OUTBOX, fnam[RES_ID_OUTBOX]);
+		store_object_set_folder_name(store, PRIVATE_FID_SENT_ITEMS, fnam[RES_ID_SENT]);
+		store_object_set_folder_name(store, PRIVATE_FID_DELETED_ITEMS, fnam[RES_ID_DELETED]);
+		store_object_set_folder_name(store, PRIVATE_FID_CONTACTS, fnam[RES_ID_CONTACTS]);
+		store_object_set_folder_name(store, PRIVATE_FID_CALENDAR, fnam[RES_ID_CALENDAR]);
+		store_object_set_folder_name(store, PRIVATE_FID_JOURNAL, fnam[RES_ID_JOURNAL]);
+		store_object_set_folder_name(store, PRIVATE_FID_NOTES, fnam[RES_ID_NOTES]);
+		store_object_set_folder_name(store, PRIVATE_FID_TASKS, fnam[RES_ID_TASKS]);
+		store_object_set_folder_name(store, PRIVATE_FID_JUNK, fnam[RES_ID_JUNK]);
+		store_object_set_folder_name(store, PRIVATE_FID_SYNC_ISSUES, fnam[RES_ID_SYNC]);
+		store_object_set_folder_name(store, PRIVATE_FID_CONFLICTS, fnam[RES_ID_CONFLICT]);
+		store_object_set_folder_name(store, PRIVATE_FID_LOCAL_FAILURES, fnam[RES_ID_LOCAL]);
+		store_object_set_folder_name(store, PRIVATE_FID_SERVER_FAILURES, fnam[RES_ID_SERVER]);
+	}
+
+	char mloc[32];
+	gx_strlcpy(mloc, locale, arsizeof(mloc));
+	auto p = strchr(mloc, '.');
+	if (p != nullptr)
+		*p = '\0';
+	p = strchr(mloc, '@');
+	if (p != nullptr)
+		*p = '\0';
+	system_services_set_user_lang(store->account, mloc);
+}
+
 BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	int i, fd;
-	const char *plang;
 	char temp_path[256];
-	char *folder_lang[RES_TOTAL_NUM];
 	
 	auto pinfo = zarafa_server_get_info();
 	auto pstore = this;
@@ -1534,77 +1576,9 @@ BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			    ppropvals->ppropval[i].pvalue))
 				return FALSE;	
 			break;
-		case PROP_TAG_ECUSERLANGUAGE: {
-			/*
-			 * If Offline Mode happens to write this prop even
-			 * though it is unchanged, it may appear as if folder
-			 * names reset.
-			 */
-			if (!pstore->b_private)
-				break;
-			plang = common_util_i18n_to_lang(
-				static_cast<char *>(ppropvals->ppropval[i].pvalue));
-			common_util_get_folder_lang(plang, folder_lang);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_IPMSUBTREE,
-				folder_lang[RES_ID_IPM]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_INBOX,
-				folder_lang[RES_ID_INBOX]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_DRAFT,
-				folder_lang[RES_ID_DRAFT]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_OUTBOX,
-				folder_lang[RES_ID_OUTBOX]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_SENT_ITEMS,
-				folder_lang[RES_ID_SENT]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_DELETED_ITEMS,
-				folder_lang[RES_ID_DELETED]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_CONTACTS,
-				folder_lang[RES_ID_CONTACTS]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_CALENDAR,
-				folder_lang[RES_ID_CALENDAR]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_JOURNAL,
-				folder_lang[RES_ID_JOURNAL]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_NOTES,
-				folder_lang[RES_ID_NOTES]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_TASKS,
-				folder_lang[RES_ID_TASKS]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_JUNK,
-				folder_lang[RES_ID_JUNK]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_SYNC_ISSUES,
-				folder_lang[RES_ID_SYNC]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_CONFLICTS,
-				folder_lang[RES_ID_CONFLICT]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_LOCAL_FAILURES,
-				folder_lang[RES_ID_LOCAL]);
-			store_object_set_folder_name(
-				pstore, PRIVATE_FID_SERVER_FAILURES,
-				folder_lang[RES_ID_SERVER]);
-
-			char tmp[32];
-			gx_strlcpy(tmp, static_cast<char *>(ppropvals->ppropval[i].pvalue), sizeof(tmp));
-			auto p = strchr(tmp, '.');
-			if (p != nullptr)
-				*p = '\0';
-			p = strchr(tmp, '@');
-			if (p != nullptr)
-				*p = '\0';
-			system_services_set_user_lang(pstore->account, tmp);
+		case PROP_TAG_ECUSERLANGUAGE:
+			set_store_lang(pstore, static_cast<char *>(ppropvals->ppropval[i].pvalue));
 			break;
-		}
 		case PROP_TAG_ECUSERTIMEZONE:
 			if (pstore->b_private)
 				system_services_set_timezone(pstore->account,
