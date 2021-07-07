@@ -1351,8 +1351,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 		if (gx_sql_col_uint64(pstmt, 0) <= cn_val)
 			continue;
 		if (sqlite3_column_bytes(pstmt, 1) > 0) {
-			ext_buffer_pull_init(&ext_pull,
-				sqlite3_column_blob(pstmt, 1),
+			ext_pull.init(sqlite3_column_blob(pstmt, 1),
 				sqlite3_column_bytes(pstmt, 1),
 				common_util_alloc, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_proptag_array(
@@ -1371,8 +1370,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 			}
 		}
 		if (sqlite3_column_bytes(pstmt, 2) > 0) {
-			ext_buffer_pull_init(&ext_pull,
-				sqlite3_column_blob(pstmt, 2),
+			ext_pull.init(sqlite3_column_blob(pstmt, 2),
 				sqlite3_column_bytes(pstmt, 2),
 				common_util_alloc, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_proptag_array(
@@ -4186,9 +4184,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		auto bv = static_cast<BINARY *>(pvalue);
 		if (pvalue == nullptr || bv->cb == 0)
 			continue;
-		ext_buffer_pull_init(&ext_pull, bv->pb,
-			bv->cb, common_util_alloc,
-			EXT_FLAG_WCOUNT|EXT_FLAG_UTF16);
+		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
+			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS !=
 			ext_buffer_pull_namedproperty_information(
 			&ext_pull, &propname_info) || EXT_ERR_SUCCESS !=
@@ -4214,9 +4211,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		if (NULL == pvalue) {
 			continue;
 		}
-		ext_buffer_pull_init(&ext_pull, bv->pb,
-			bv->cb, common_util_alloc,
-			EXT_FLAG_WCOUNT|EXT_FLAG_UTF16);
+		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
+			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_namedproperty_information(
 			&ext_pull, &propname_info) || EXT_ERR_SUCCESS !=
 			ext_buffer_pull_uint32(&ext_pull, &version) || 1 != version ||

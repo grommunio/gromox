@@ -2249,10 +2249,8 @@ BOOL exmdb_server_get_search_criteria(
 	}
 	search_flags = sqlite3_column_int64(pstmt, 1);
 	if (NULL != pprestriction) {
-		ext_buffer_pull_init(&ext_pull,
-			sqlite3_column_blob(pstmt, 2),
-			sqlite3_column_bytes(pstmt, 2),
-			common_util_alloc, 0);
+		ext_pull.init(sqlite3_column_blob(pstmt, 2),
+			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
 		*pprestriction = cu_alloc<RESTRICTION>();
 		if (NULL == *pprestriction) {
 			return FALSE;
@@ -2409,10 +2407,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 			pstmt.finalize();
 			goto CRITERIA_FAILURE;
 		}
-		ext_buffer_pull_init(&ext_pull,
-			sqlite3_column_blob(pstmt, 0),
-			sqlite3_column_bytes(pstmt, 0),
-			common_util_alloc, 0);
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_restriction(
 			&ext_pull, (RESTRICTION*)prestriction)) {
 			pstmt.finalize();

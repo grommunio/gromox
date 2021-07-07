@@ -717,8 +717,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	DOUBLE_LIST_NODE *pnode1;
 	DOUBLE_LIST response_list;
 	
-	ext_buffer_pull_init(&ext_pull, pin, cb_in,
-			common_util_alloc, EXT_FLAG_UTF16);
+	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
 	switch(rop_ext_pull_rop_buffer(&ext_pull, &rop_buff)) {
 	case EXT_ERR_SUCCESS:
 		break;

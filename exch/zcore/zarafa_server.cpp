@@ -1472,8 +1472,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	uint8_t provider_uid[16];
 	STORE_ENTRYID store_entryid = {};
 	
-	ext_buffer_pull_init(&ext_pull, entryid.pb,
-		entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
+	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_store_entryid(
 		&ext_pull, &store_entryid)) {
 		return ecError;
@@ -3399,8 +3398,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			    common_util_get_propvals(prcpt, PROP_TAG_ADDRESSTYPE) != nullptr &&
 			    common_util_get_propvals(prcpt, PR_DISPLAY_NAME) != nullptr))
 				continue;
-			ext_buffer_pull_init(&ext_pull, pbin->pb,
-					pbin->cb, common_util_alloc, 0);
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 				&ext_pull, &tmp_flags) || 0 != tmp_flags) {
 				continue;
@@ -3411,8 +3409,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			}
 			rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 			if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-				ext_buffer_pull_init(&ext_pull, pbin->pb,
-					pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 				if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 					&ext_pull, &ab_entryid)) {
 					continue;
@@ -3456,8 +3453,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			}
 			rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 			if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-				ext_buffer_pull_init(&ext_pull, pbin->pb,
-					pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 				if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
 					&ext_pull, &oneoff_entry) || 0 != strcasecmp(
 					oneoff_entry.paddress_type, "SMTP")) {

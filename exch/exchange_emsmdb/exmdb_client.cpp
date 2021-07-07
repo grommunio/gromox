@@ -296,8 +296,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		*pb_owner = FALSE;
 		return TRUE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &ab_entryid)) {
 		*pb_owner = false;

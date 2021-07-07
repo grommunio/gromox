@@ -577,8 +577,7 @@ static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
     uint32_t rtf_length, ATTACHMENT_LIST *pattachments)
 {
 	double_list_init(&preader->attr_stack_list);
-	ext_buffer_pull_init(&preader->ext_pull,
-		prtf_buff, rtf_length, NULL, 0);
+	preader->ext_pull.init(prtf_buff, rtf_length, nullptr, 0);
 	preader->pfont_hash = int_hash_init(MAX_FONTS, sizeof(FONTENTRY));
 	if (NULL == preader->pfont_hash) {
 		return false;

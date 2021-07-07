@@ -1148,8 +1148,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
-	ext_buffer_pull_init(&ext_pull, pbuff,
-		length, alloc, EXT_FLAG_UTF16);
+	ext_pull.init(pbuff, length, alloc, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &tmp_int32)) {
 		return NULL;

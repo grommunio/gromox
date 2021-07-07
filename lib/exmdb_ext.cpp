@@ -2650,8 +2650,7 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 {
 	EXT_PULL ext_pull;
 	
-	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_buffer_pull_uint8(&ext_pull, &prequest->call_id));
 	if (prequest->call_id == exmdb_callid::CONNECT) {
 		return exmdb_ext_pull_connect_request(
@@ -5004,8 +5003,7 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 {
 	EXT_PULL ext_pull;
 	
-	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	switch (presponse->call_id) {
 	case exmdb_callid::PING_STORE:
 		return EXT_ERR_SUCCESS;
@@ -5852,8 +5850,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	uint8_t tmp_byte;
 	EXT_PULL ext_pull;
 	
-	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_buffer_pull_string(&ext_pull, &pnotify->dir));
 	TRY(ext_buffer_pull_bool(&ext_pull, &pnotify->b_table));
 	TRY(ext_buffer_pull_long_array(&ext_pull, &pnotify->id_array));

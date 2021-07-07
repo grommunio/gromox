@@ -3245,9 +3245,7 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	} else {
 		memcpy(pbuff, pdata, rpc_header_ext.size_actual);
 	}
-	ext_buffer_pull_init(&subext,
-		pbuff, rpc_header_ext.size_actual,
-		common_util_alloc, EXT_FLAG_UTF16);
+	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(ext_buffer_pull_uint16(&subext, &size));
 	while (subext.offset < size) {
 		pnode = pext->anew<DOUBLE_LIST_NODE>();

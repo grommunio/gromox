@@ -161,8 +161,7 @@ static BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_xid(
 		&ext_pull, pbin->cb, pxid)) {
 		return FALSE;

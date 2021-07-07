@@ -298,7 +298,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	if (pbin->cb < 20) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb, 20, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &flags) || 0 != flags) {
 		return FALSE;
@@ -309,8 +309,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 			&ext_pull, &ab_entryid)) {
 			return FALSE;	
@@ -323,8 +322,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
 			&ext_pull, &oneoff_entry)) {
 			return FALSE;	
@@ -565,8 +563,7 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
 	
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_folder_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;	
@@ -615,8 +612,7 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
 	
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_message_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;	
@@ -691,8 +687,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_xid(
 		&ext_pull, pbin->cb, pxid)) {
 		return FALSE;	

@@ -965,8 +965,7 @@ BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
-	ext_buffer_pull_init(&ext_pull, entryid_bin.pb,
-		entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
+	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
@@ -980,8 +979,7 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
-	ext_buffer_pull_init(&ext_pull, entryid_bin.pb,
-		entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
+	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
@@ -1004,7 +1002,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	if (pbin->cb < 20) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb, 20, alloc, 0);
+	ext_pull.init(pbin->pb, 20, alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &flags) || 0 != flags) {
 		return FALSE;
@@ -1015,8 +1013,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 			&ext_pull, &ab_entryid)) {
 			return FALSE;
@@ -1029,8 +1026,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
 			&ext_pull, &oneoff_entry)) {
 			return FALSE;
@@ -1173,8 +1169,7 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	uint16_t folder_type;
 	char provider_uid[16];
 	
-	ext_buffer_pull_init(&ext_pull, bin.pb,
-			bin.cb, common_util_alloc, 0);
+	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &flags)) {
 		return 0;
@@ -1198,8 +1193,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
 	
-	ext_buffer_pull_init(&ext_pull, bin.pb,
-			bin.cb, common_util_alloc, 0);
+	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_folder_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;	
@@ -1248,8 +1242,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
 	
-	ext_buffer_pull_init(&ext_pull, bin.pb,
-		bin.cb, common_util_alloc, 0);
+	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_message_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;	
@@ -1481,8 +1474,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_xid(
 		&ext_pull, pbin->cb, pxid)) {
 		return FALSE;
@@ -2081,9 +2073,7 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	if (NULL == pstore_entryid) {
 		return NULL;
 	}
-	ext_buffer_pull_init(&ext_pull,
-		pmovecopy->store_eid.pb,
-		pmovecopy->store_eid.cb,
+	ext_pull.init(pmovecopy->store_eid.pb, pmovecopy->store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_store_entryid(
 		&ext_pull, pstore_entryid)) {

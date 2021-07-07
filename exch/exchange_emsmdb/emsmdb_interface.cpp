@@ -609,8 +609,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	
 	client_mode = CLIENT_MODE_UNKNOWN;
 	if (0 != cb_auxin) {
-		ext_buffer_pull_init(&ext_pull, pauxin,
-			cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
 			debug_info("[exchange_emsmdb]: fail to pull input "
 				"auxiliary buffer in emsmdb_interface_connect_ex\n");
@@ -713,8 +712,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	time(&phandle->last_time);
 	pthread_setspecific(g_handle_key, (const void*)phandle);
 	if (cb_auxin > 0) {
-		ext_buffer_pull_init(&ext_pull, pauxin,
-			cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
 			debug_info("[exchange_emsmdb]: fail to pharse input "
 				"auxiliary buffer in emsmdb_interface_rpc_ext2\n");

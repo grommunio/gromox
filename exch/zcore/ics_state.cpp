@@ -189,8 +189,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 	if (pbin->cb <= 16) {
 		return TRUE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_tpropval_array(
 		&ext_pull, &propvals)) {
 		return FALSE;	

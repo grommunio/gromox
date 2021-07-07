@@ -141,10 +141,8 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 		pdynamic->node.pdata = pdynamic;
 		pdynamic->folder_id = sqlite3_column_int64(pstmt, 0);
 		pdynamic->search_flags = search_flags;
-		ext_buffer_pull_init(&ext_pull,
-			sqlite3_column_blob(pstmt, 2),
-			sqlite3_column_bytes(pstmt, 2),
-			common_util_alloc, 0);
+		ext_pull.init(sqlite3_column_blob(pstmt, 2),
+			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_restriction(
 			&ext_pull, &tmp_restriction)) {
 			free(pdynamic);

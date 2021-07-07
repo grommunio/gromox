@@ -2181,8 +2181,7 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 {
 	EXT_PULL ext_pull;
 	
-	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
-		pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
 	QRF(ext_buffer_pull_uint8(&ext_pull, &prequest->call_id));
 	switch (prequest->call_id) {
 	case zcore_callid::LOGON:

@@ -2496,8 +2496,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_CLSID:
 				pvalue = cu_alloc<GUID>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_guid(&ext_pull,
@@ -2509,8 +2508,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_SVREID:
 				pvalue = cu_alloc<SVREID>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_svreid(&ext_pull,
@@ -2522,8 +2520,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_SRESTRICT:
 				pvalue = cu_alloc<RESTRICTION>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_restriction(&ext_pull,
@@ -2535,8 +2532,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_ACTIONS:
 				pvalue = cu_alloc<RULE_ACTIONS>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_rule_actions(&ext_pull,
@@ -2564,8 +2560,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_MV_SHORT:
 				pvalue = cu_alloc<SHORT_ARRAY>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_short_array(&ext_pull,
@@ -2577,8 +2572,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_MV_LONG:
 				pvalue = cu_alloc<LONG_ARRAY>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_long_array(&ext_pull,
@@ -2590,8 +2584,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_MV_I8:
 				pvalue = cu_alloc<LONGLONG_ARRAY>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_longlong_array(&ext_pull,
@@ -2605,8 +2598,7 @@ BOOL common_util_get_properties(int table_type,
 				auto sa = cu_alloc<STRING_ARRAY>();
 				pvalue = sa;
 				if (sa != nullptr) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_wstring_array(&ext_pull, sa) != EXT_ERR_SUCCESS) {
@@ -2627,8 +2619,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_MV_CLSID:
 				pvalue = cu_alloc<GUID_ARRAY>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_guid_array(&ext_pull,
@@ -2640,8 +2631,7 @@ BOOL common_util_get_properties(int table_type,
 			case PT_MV_BINARY:
 				pvalue = cu_alloc<BINARY_ARRAY>();
 				if (NULL != pvalue) {
-					ext_buffer_pull_init(&ext_pull,
-						sqlite3_column_blob(pstmt, 0),
+					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
 					if (ext_buffer_pull_binary_array(&ext_pull,
@@ -3769,10 +3759,8 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		ext_buffer_pull_init(&ext_pull,
-			sqlite3_column_blob(pstmt, 0),
-			sqlite3_column_bytes(pstmt, 0),
-			common_util_alloc, 0);
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
 		if (ext_buffer_pull_restriction(&ext_pull,
 		    static_cast<RESTRICTION *>(*ppvalue)) != EXT_ERR_SUCCESS) {
 			*ppvalue = NULL;
@@ -3784,10 +3772,8 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		ext_buffer_pull_init(&ext_pull,
-			sqlite3_column_blob(pstmt, 0),
-			sqlite3_column_bytes(pstmt, 0),
-			common_util_alloc, 0);
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
 		if (ext_buffer_pull_rule_actions(&ext_pull,
 		    static_cast<RULE_ACTIONS *>(*ppvalue)) != EXT_ERR_SUCCESS) {
 			*ppvalue = NULL;
@@ -3928,8 +3914,7 @@ BOOL common_util_addressbook_entryid_to_username(const BINARY *pentryid_bin,
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
-	ext_buffer_pull_init(&ext_pull, pentryid_bin->pb,
-		pentryid_bin->cb, common_util_alloc, 0);
+	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
@@ -3943,8 +3928,7 @@ BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
 	EXT_PULL ext_pull;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
-	ext_buffer_pull_init(&ext_pull, pentryid_bin->pb,
-		pentryid_bin->cb, common_util_alloc, 0);
+	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &tmp_entryid)) {
 		return FALSE;
@@ -3966,7 +3950,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	if (pbin->cb < 20) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb, 20, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &flags) || 0 != flags) {
 		return FALSE;
@@ -3977,8 +3961,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 			&ext_pull, &ab_entryid)) {
 			return FALSE;
@@ -3990,8 +3973,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
 			&ext_pull, &oneoff_entry)) {
 			return FALSE;
@@ -4018,7 +4000,7 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	if (pbin->cb < 20) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb, 20, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &flags) || 0 != flags) {
 		return FALSE;
@@ -4029,8 +4011,7 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 			&ext_pull, &ab_entryid)) {
 			return FALSE;
@@ -4044,8 +4025,7 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
 			&ext_pull, &oneoff_entry)) {
 			return FALSE;
@@ -4973,8 +4953,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		*pb_owner = FALSE;
 		return TRUE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &ab_entryid)) {
 		*pb_owner = false;
@@ -5596,8 +5575,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_xid(
 		&ext_pull, pbin->cb, pxid)) {
 		return FALSE;
@@ -5813,8 +5791,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		ext_buffer_pull_init(&ext_pull, pvalue,
-			sqlite3_column_bytes(pstmt, column_index),
+		ext_pull.init(pvalue, sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
 		pvalue = cu_alloc<GUID>();
 		if (NULL == pvalue) {
@@ -5829,8 +5806,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		ext_buffer_pull_init(&ext_pull, pvalue,
-			sqlite3_column_bytes(pstmt, column_index),
+		ext_pull.init(pvalue, sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
 		pvalue = cu_alloc<SVREID>();
 		if (NULL == pvalue) {

@@ -242,8 +242,7 @@ static BOOL exmdb_client_get_named_propids(int sockd, const char *dir,
 	    !cl_rd_sock(sockd, &tmp_bin) ||
 	    tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	ext_buffer_pull_init(&ext_pull, tmp_bin.pb + 5,
-		tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_propid_array(
 		&ext_pull, ppropids)) {
 		return FALSE;
@@ -336,8 +335,7 @@ static BOOL exmdb_client_query_table(int sockd, const char *dir,
 	    !cl_rd_sock(sockd, &tmp_bin) ||
 	    tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	ext_buffer_pull_init(&ext_pull, tmp_bin.pb + 5,
-		tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_tarray_set(
 		&ext_pull, pset)) {
 		return FALSE;
@@ -1241,8 +1239,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 	GLOBALOBJECTID globalobjectid;
 	
 	if (NULL != pglobal_obj) {
-		ext_buffer_pull_init(&ext_pull,
-			pglobal_obj->pb, pglobal_obj->cb, malloc, 0);
+		ext_pull.init(pglobal_obj->pb, pglobal_obj->cb, malloc, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_globalobjectid(
 			&ext_pull, &globalobjectid)) {
 			return FALSE;
@@ -1718,8 +1715,8 @@ static BOOL get_freebusy(const char *dir)
 			if (NULL == pvalue) {
 				ptz_component = NULL;
 			} else {
-				ext_buffer_pull_init(&ext_pull, ((BINARY*)pvalue)->pb,
-					((BINARY*)pvalue)->cb, malloc, EXT_FLAG_UTF16);
+				ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
+					static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
 				if (EXT_ERR_SUCCESS != ext_buffer_pull_timezonestruct(
 					&ext_pull, &tzstruct)) {
 					continue;	
@@ -1735,8 +1732,8 @@ static BOOL get_freebusy(const char *dir)
 			if (NULL == pvalue) {
 				continue;
 			}
-			ext_buffer_pull_init(&ext_pull, ((BINARY*)pvalue)->pb,
-				((BINARY*)pvalue)->cb, malloc, EXT_FLAG_UTF16);
+			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
+				static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
 			if (EXT_ERR_SUCCESS !=
 				ext_buffer_pull_appointmentrecurrencepattern(
 				&ext_pull, &apprecurr)) {

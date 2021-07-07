@@ -248,7 +248,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	if (pbin->cb < 20) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb, 20, alloc, 0);
+	ext_pull.init(pbin->pb, 20, alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
 		&ext_pull, &flags) || 0 != flags) {
 		return FALSE;
@@ -259,8 +259,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 			&ext_pull, &ab_entryid)) {
 			return FALSE;
@@ -272,8 +271,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	}
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
-		ext_buffer_pull_init(&ext_pull, pbin->pb,
-			pbin->cb, alloc, EXT_FLAG_UTF16);
+		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
 			&ext_pull, &oneoff_entry)) {
 			return FALSE;
@@ -2341,7 +2339,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		return FALSE;
 	}
 	(*plast_propid) ++;
-	ext_buffer_pull_init(&ext_pull, pcontent, content_len, alloc, 0);
+	ext_pull.init(pcontent, content_len, alloc, 0);
 	if (EXT_ERR_SUCCESS != applefile_pull_file(&ext_pull, &applefile)) {
 		free(pcontent);
 		return FALSE;
@@ -2436,7 +2434,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pcontent, content_len, alloc, 0);
+	ext_pull.init(pcontent, content_len, alloc, 0);
 	if (EXT_ERR_SUCCESS != macbinary_pull_binary(&ext_pull, &macbin)) {
 		free(pcontent);
 		return FALSE;
@@ -2527,7 +2525,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pcontent, content_len, alloc, 0);
+	ext_pull.init(pcontent, content_len, alloc, 0);
 	if (EXT_ERR_SUCCESS != applefile_pull_file(&ext_pull, &applefile)) {
 		free(pcontent);
 		return oxcmail_parse_macbinary(pmime,
@@ -4929,7 +4927,7 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 	if (NULL == pbin) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull, pbin->pb, pbin->cb, alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_array(
 		&ext_pull, &address_array)) {
 		return FALSE;
@@ -6349,8 +6347,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	if (NULL == pbin) {
 		return FALSE;
 	}
-	ext_buffer_pull_init(&ext_pull,
-		pbin->pb, pbin->cb, alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, alloc, 0);
 	if (EXT_ERR_SUCCESS != macbinary_pull_binary(
 		&ext_pull, &macbin)) {
 		return FALSE;
