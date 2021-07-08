@@ -730,7 +730,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		    pinfo->cpid, message_id, &pbrief))
 			return FALSE;	
 		if (NULL != pbrief) {
-			common_util_notify_receipt(plogon->get_dir(),
+			common_util_notify_receipt(plogon->get_account(),
 				NOTIFY_RECEIPT_READ, pbrief);
 		}
 		propvals.count = 2;

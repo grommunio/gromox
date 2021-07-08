@@ -33,7 +33,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[20];
 	
-	auto account = pmessage->plogon->get_dir();
+	auto account = pmessage->plogon->get_account();
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	tmp_propvals.count = 16;
 	tmp_propvals.ppropval = propval_buff;
@@ -272,7 +272,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
-	auto account = plogon->get_dir();
+	auto account = plogon->get_account();
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else {

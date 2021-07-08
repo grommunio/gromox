@@ -919,7 +919,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode == LOGON_MODE_OWNER)
 		username = NULL;
-	else if (!exmdb_client_check_folder_permission(plogon->get_dir(),
+	else if (!exmdb_client_check_folder_permission(plogon->get_account(),
 	    pfolder->folder_id, rpc_info.username, &permission))
 		return ecError;
 	else if (permission & (PERMISSION_DELETEANY | PERMISSION_FOLDEROWNER))
