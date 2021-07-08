@@ -1651,23 +1651,20 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PR_INTERNET_CPID));
 		if (NULL != pbin && NULL != pcpid) {
 			std::string plainbuf;
-			if (html_to_plain(pbin->pc, pbin->cb, plainbuf) < 0) {
+			auto ret = html_to_plain(pbin->pc, pbin->cb, plainbuf);
+			if (ret < 0)
 				return false;
-			}
-			auto plainout = plainbuf.c_str();
-			pvalue = common_util_alloc(3 * strlen(plainout) + 1);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			memcpy(pvalue, plainout, strlen(plainout) + 1);
-			pvalue = static_cast<char *>(common_util_convert_copy(TRUE, *pcpid, static_cast<char *>(pvalue)));
-			if (NULL != pvalue) {
-				propval.proptag = PR_BODY;
+			propval.proptag = PR_BODY_W;
+			if (ret == 65001 || *pcpid == 65001) {
+				propval.pvalue = plainbuf.data();
+			} else {
+				pvalue = common_util_convert_copy(TRUE, *pcpid, plainbuf.c_str());
+				if (pvalue == nullptr)
+					return false;
 				propval.pvalue = pvalue;
-				if(!tpropval_array_set_propval(&((MESSAGE_CONTENT*)
-					pinstance->pcontent)->proplist, &propval))
-					return FALSE;
 			}
+			if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval))
+				return false;
 		}
 	}
 	pinstance->change_mask = 0;

@@ -4677,25 +4677,30 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				tmp_int32 = *(uint32_t*)pvalue;
 			}
 			std::string plainbuf;
-			if (html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf) < 0) {
+			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf);
+			if (ret < 0) {
 				message_content_free(pmsg);
 				return NULL;
 			}
-			auto plainout = plainbuf.c_str();
-			propval.proptag = PR_BODY;
-			propval.pvalue = alloc(3 * strlen(plainout) + 1);
-			if (NULL == pvalue) {
-				message_content_free(pmsg);
-				return NULL;
+			propval.proptag = PR_BODY_W;
+			if (ret == 65001) {
+				propval.pvalue = plainbuf.data();
+				tpropval_array_set_propval(&pmsg->proplist, &propval);
+			} else {
+				propval.pvalue = alloc(3 * plainbuf.size() + 1);
+				if (propval.pvalue == nullptr) {
+					message_content_free(pmsg);
+					return NULL;
+				}
+				encoding = oxcmail_cpid_to_charset(tmp_int32);
+				if (NULL == encoding) {
+					encoding = "windows-1252";
+				}
+				if (string_to_utf8(encoding, plainbuf.c_str(), static_cast<char *>(propval.pvalue)) &&
+				    utf8_check(static_cast<char *>(propval.pvalue)))
+					tpropval_array_set_propval(
+						&pmsg->proplist, &propval);
 			}
-			encoding = oxcmail_cpid_to_charset(tmp_int32);
-			if (NULL == encoding) {
-				encoding = "windows-1252";
-			}
-			if (string_to_utf8(encoding, plainout, static_cast<char *>(propval.pvalue)) &&
-			    utf8_check(static_cast<char *>(propval.pvalue)))
-				tpropval_array_set_propval(
-					&pmsg->proplist, &propval);
 		}
 	}
 	if (NULL == tpropval_array_get_propval(

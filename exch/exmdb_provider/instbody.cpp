@@ -87,6 +87,7 @@ static int instance_conv_htmlfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	return 1;
 }
 
+/* Always yields UTF-8 */
 static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 {
 	auto ret = instance_get_raw(mc, bin, ID_TAG_HTML);
@@ -98,11 +99,17 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	ret = html_to_plain(bin->pc, bin->cb, plainbuf);
 	if (ret < 0)
 		return 0;
-	auto outbuf = plainbuf.c_str();
-	bin->pv = common_util_alloc(strlen(outbuf) + 1);
+	auto cpraw = tpropval_array_get_propval(&mc->proplist, PR_INTERNET_CPID);
+	uint32_t orig_cpid = cpraw != nullptr ? *static_cast<uint32_t *>(cpraw) : 65001;
+	if (ret != 65001 && orig_cpid != 65001) {
+		bin->pv = common_util_convert_copy(TRUE, orig_cpid, plainbuf.c_str());
+		return bin->pv != nullptr ? 1 : -1;
+	}
+	/* Original already was UTF-8, or conversion to UTF-8 happened by HTP */
+	bin->pv = common_util_alloc(plainbuf.size() + 1);
 	if (bin->pv == nullptr)
 		return -1;
-	memcpy(bin->pv, outbuf, strlen(outbuf) + 1);
+	memcpy(bin->pv, plainbuf.c_str(), plainbuf.size() + 1);
 	return 1;
 }
 
@@ -206,7 +213,7 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, unsigned int cpid,
 		return ret;
 
 	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PR_BODY;
+	pv.proptag = PR_BODY_W;
 	pv.pvalue  = bin->pc;
 	++pval->count;
 	return 1;

@@ -1951,8 +1951,11 @@ int html_to_plain(const void *inbuf, int len, std::string &outbuf)
 {
 	auto ret = feed_w3m(inbuf, len, outbuf);
 	if (ret >= 0)
+		return 65001;
+	ret = html_to_plain_boring(inbuf, len, outbuf);
+	if (ret <= 0)
 		return ret;
-	return html_to_plain_boring(inbuf, len, outbuf);
+	return 1;
 }
 
 char *plain_to_html(const char *rbuf)
