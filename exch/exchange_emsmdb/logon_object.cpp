@@ -564,7 +564,7 @@ static BOOL logon_object_check_readonly_property(
 	case PR_EMAIL_ADDRESS_A:
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
-	case PROP_TAG_LOCALEID:
+	case PR_LOCALE_ID:
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 	case PR_MAILBOX_OWNER_ENTRYID:
 	case PR_MAILBOX_OWNER_NAME:
@@ -715,7 +715,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
-	case PROP_TAG_LOCALEID: {
+	case PR_LOCALE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_string;
 		return TRUE;

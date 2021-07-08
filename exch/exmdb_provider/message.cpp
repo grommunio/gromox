@@ -881,7 +881,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	proptag_buff[3] = PROP_TAG_CLIENTSUBMITTIME;
 	proptag_buff[4] = PR_MESSAGE_SIZE;
-	proptag_buff[5] = PROP_TAG_INTERNETCODEPAGE;
+	proptag_buff[5] = PR_INTERNET_CPID;
 	proptag_buff[6] = PROP_TAG_INTERNETMESSAGEID;
 	proptag_buff[7] = PR_PARENT_KEY;
 	proptag_buff[8] = PROP_TAG_CONVERSATIONINDEX;
@@ -3183,8 +3183,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		} else if (0 == strcasecmp(content_type, "text/html")) {
 			propval.proptag = PROP_TAG_HTML;
 			propval.pvalue = &tmp_bin;
-			pvalue = common_util_get_propvals(
-				&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE);
+			pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID);
 			if (NULL != pvalue && 1200 != *(uint32_t*)pvalue) {
 				tmp_bin.pc = common_util_convert_copy(
 					FALSE, *(uint32_t*)pvalue, tmp_buff);

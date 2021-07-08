@@ -356,8 +356,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	}
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
-	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_LOCALEID;
+	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -1275,7 +1274,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
-		    pmessage->instance_id, PROP_TAG_INTERNETCODEPAGE, &pvalue) &&
+		    pmessage->instance_id, PR_INTERNET_CPID, &pvalue) &&
 		    pvalue != nullptr && pinfo->cpid == *static_cast<uint32_t *>(pvalue))
 			pv.pvalue = &pinfo->lcid_string;
 		else

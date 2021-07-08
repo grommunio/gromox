@@ -1834,9 +1834,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	int_hash_free(phash1);
 	
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_INTERNETCODEPAGE)) {
-		propval.proptag = PROP_TAG_INTERNETCODEPAGE;
+	if (tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID) == nullptr) {
+		propval.proptag = PR_INTERNET_CPID;
 		propval.pvalue = &cpid;
 		tpropval_array_set_propval(&pmsg->proplist, &propval);
 	}
@@ -2285,7 +2284,6 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	GET_PROPNAME get_propname)
 {
 	BOOL b_key;
-	void *pvalue;
 	void *pvalue1;
 	void *pvalue2;
 	BINARY tmp_bin;
@@ -2326,9 +2324,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		return FALSE;
 	}
 	/* ATTRIBUTE_ID_OEMCODEPAGE */
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_INTERNETCODEPAGE);
+	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID);
 	if (NULL == pvalue) {
-		debug_info("[tnef]: cannot find PROP_TAG_INTERNETCODEPAGE");
+		debug_info("[tnef]: cannot find PR_INTERNET_CPID");
 		return FALSE;
 	}
 	attribute.attr_id = ATTRIBUTE_ID_OEMCODEPAGE;

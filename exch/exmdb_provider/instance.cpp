@@ -1648,7 +1648,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 		       &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_HTML));
 		pcpid = static_cast<uint32_t *>(tpropval_array_get_propval(
-		        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_INTERNETCODEPAGE));
+		        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PR_INTERNET_CPID));
 		if (NULL != pbin && NULL != pcpid) {
 			std::string plainbuf;
 			if (html_to_plain(pbin->pc, pbin->cb, plainbuf) < 0) {

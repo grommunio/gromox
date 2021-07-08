@@ -409,8 +409,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	}
 	message_size = *(uint32_t*)pvalue;
 	if ('\0' == charset[0]) {
-		pvalue = common_util_get_propvals(
-			&pbrief->proplist, PROP_TAG_INTERNETCODEPAGE);
+		pvalue = common_util_get_propvals(&pbrief->proplist, PR_INTERNET_CPID);
 		if (NULL == pvalue) {
 			strcpy(charset, "ascii");
 		} else {

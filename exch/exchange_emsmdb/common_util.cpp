@@ -2138,15 +2138,14 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU(message_id));
 		return FALSE;
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID) == nullptr) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
-		ppropval[pmsgctnt->proplist.count].proptag = PROP_TAG_INTERNETCODEPAGE;
+		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
 		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;

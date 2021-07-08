@@ -2042,7 +2042,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	}
 	content_type = mime_get_content_type(pmime);
 	if (0 == strcasecmp(content_type, "text/html")) {
-		propval.proptag = PROP_TAG_INTERNETCODEPAGE;
+		propval.proptag = PR_INTERNET_CPID;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
 		if (!tpropval_array_set_propval(pproplist, &propval)) {
@@ -2076,7 +2076,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
 		pcontent[length] = '\0';
 		enriched_to_html(pcontent, pcontent + length + 1, 2*length);
-		propval.proptag = PROP_TAG_INTERNETCODEPAGE;
+		propval.proptag = PR_INTERNET_CPID;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
 		if (!tpropval_array_set_propval(pproplist, &propval)) {
@@ -4644,8 +4644,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			phtml_bin = static_cast<BINARY *>(tpropval_array_get_propval(
 			            &pmsg->proplist, PROP_TAG_HTML));
 			if (NULL != phtml_bin) {
-				pvalue = tpropval_array_get_propval(
-					&pmsg->proplist, PROP_TAG_INTERNETCODEPAGE);
+				pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID);
 				if (NULL == pvalue) {
 					tmp_int32 = 65001;
 				} else {
@@ -4671,8 +4670,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		phtml_bin = static_cast<BINARY *>(tpropval_array_get_propval(
 		            &pmsg->proplist, PROP_TAG_HTML));
 		if (NULL != phtml_bin) {
-			pvalue = tpropval_array_get_propval(
-				&pmsg->proplist,  PROP_TAG_INTERNETCODEPAGE);
+			pvalue = tpropval_array_get_propval(&pmsg->proplist,  PR_INTERNET_CPID);
 			if (NULL == pvalue) {
 				tmp_int32 = 65001;
 			} else {
@@ -4719,7 +4717,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			propval.pvalue = phtml_bin;
 			tpropval_array_set_propval(
 				&pmsg->proplist, &propval);
-			propval.proptag = PROP_TAG_INTERNETCODEPAGE;
+			propval.proptag = PR_INTERNET_CPID;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = 65001;
 			tpropval_array_set_propval(
@@ -6744,7 +6742,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	MIME *pmime;
 	MIME *pplain;
 	MIME *pmixed;
-	void *pvalue;
 	BINARY *pbin;
 	BOOL b_inline;
 	MIME *prelated;
@@ -6758,9 +6755,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	
 	
 	mail_init(pmail, ppool);
-	pvalue = tpropval_array_get_propval(
-		(TPROPVAL_ARRAY*)&pmsg->proplist,
-		PROP_TAG_INTERNETCODEPAGE);
+	auto pvalue = tpropval_array_get_propval(const_cast<TPROPVAL_ARRAY *>(&pmsg->proplist), PR_INTERNET_CPID);
 	if (NULL == pvalue || 1200 == *(uint32_t*)pvalue) {
 		pcharset = "utf-8";
 	} else {

@@ -393,11 +393,9 @@ BOOL bounce_producer_make_content(const char *from,
 		return FALSE;
 	message_size = *(uint32_t*)pvalue;
 	if ('\0' == charset[0]) {
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0,
-			psqlite, PROP_TAG_INTERNETCODEPAGE, &pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, psqlite, PR_INTERNET_CPID, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue) {
 			strcpy(charset, "ascii");
 		} else {

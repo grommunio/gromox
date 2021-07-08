@@ -1126,7 +1126,7 @@ static BOOL oxcical_parse_html(std::shared_ptr<ICAL_LINE> piline,
 	tmp_bin.pc = deconst(pvalue);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_INTERNETCODEPAGE;
+	propval.proptag = PR_INTERNET_CPID;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 65001;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))

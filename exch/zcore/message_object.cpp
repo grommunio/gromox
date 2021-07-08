@@ -293,9 +293,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	*(uint32_t*)pvalue = 0x0409;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
-	
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_LOCALEID;
+	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	

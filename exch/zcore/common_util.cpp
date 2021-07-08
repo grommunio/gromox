@@ -1880,15 +1880,14 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID) == nullptr) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
-		ppropval[pmsgctnt->proplist.count].proptag = PROP_TAG_INTERNETCODEPAGE;
+		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
 		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;
@@ -2613,15 +2612,14 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID) == nullptr) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
-		ppropval[pmsgctnt->proplist.count].proptag = PROP_TAG_INTERNETCODEPAGE;
+		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
 		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;
