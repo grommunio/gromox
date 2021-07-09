@@ -15,15 +15,15 @@ using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 static BOOL rpc_ext_pull_zmovecopy_action(
 	EXT_PULL *pext, ZMOVECOPY_ACTION *r)
 {
-	QRF(ext_buffer_pull_binary(pext, &r->store_eid));
-	QRF(ext_buffer_pull_binary(pext, &r->folder_eid));
+	QRF(pext->g_bin(&r->store_eid));
+	QRF(pext->g_bin(&r->folder_eid));
 	return TRUE;
 }
 
 static BOOL rpc_ext_pull_zreply_action(
 	EXT_PULL *pext, ZREPLY_ACTION *r)
 {
-	QRF(ext_buffer_pull_binary(pext, &r->message_eid));
+	QRF(pext->g_bin(&r->message_eid));
 	QRF(pext->g_guid(&r->template_guid));
 	return TRUE;
 }
@@ -243,7 +243,7 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_binary(pext, static_cast<BINARY *>(*ppval)));
+		QRF(pext->g_bin(static_cast<BINARY *>(*ppval)));
 		return TRUE;
 	case PT_MV_SHORT:
 		*ppval = pext->anew<SHORT_ARRAY>();
@@ -292,7 +292,7 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_binary_array(pext, static_cast<BINARY_ARRAY *>(*ppval)));
+		QRF(pext->g_bin_a(static_cast<BINARY_ARRAY *>(*ppval)));
 		return TRUE;
 	default:
 		return FALSE;
@@ -365,7 +365,7 @@ static BOOL rpc_ext_pull_permission_row(
 	EXT_PULL *pext, PERMISSION_ROW *r)
 {
 	QRF(pext->g_uint32(&r->flags));
-	QRF(ext_buffer_pull_binary(pext, &r->entryid));
+	QRF(pext->g_bin(&r->entryid));
 	QRF(pext->g_uint32(&r->member_rights));
 	return TRUE;
 }
@@ -393,7 +393,7 @@ static BOOL rpc_ext_pull_permission_set(
 static BOOL rpc_ext_pull_message_state(
 	EXT_PULL *pext, MESSAGE_STATE *r)
 {
-	QRF(ext_buffer_pull_binary(pext, &r->source_key));
+	QRF(pext->g_bin(&r->source_key));
 	QRF(pext->g_uint32(&r->message_flags));
 	return TRUE;
 }
@@ -834,7 +834,7 @@ static BOOL rpc_ext_pull_openentry_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(pext->g_guid(&ppayload->openentry.hsession));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->openentry.entryid));
+	QRF(pext->g_bin(&ppayload->openentry.entryid));
 	QRF(pext->g_uint32(&ppayload->openentry.flags));
 	return TRUE;
 }
@@ -852,7 +852,7 @@ static BOOL rpc_ext_pull_openstoreentry_request(
 {
 	QRF(pext->g_guid(&ppayload->openstoreentry.hsession));
 	QRF(pext->g_uint32(&ppayload->openstoreentry.hobject));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->openstoreentry.entryid));
+	QRF(pext->g_bin(&ppayload->openstoreentry.entryid));
 	QRF(pext->g_uint32(&ppayload->openstoreentry.flags));
 	return TRUE;
 }
@@ -869,7 +869,7 @@ static BOOL rpc_ext_pull_openabentry_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(pext->g_guid(&ppayload->openabentry.hsession));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->openabentry.entryid));
+	QRF(pext->g_bin(&ppayload->openabentry.entryid));
 	return TRUE;
 }
 
@@ -974,7 +974,7 @@ static BOOL rpc_ext_pull_openstore_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(pext->g_guid(&ppayload->openstore.hsession));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->openstore.entryid));
+	QRF(pext->g_bin(&ppayload->openstore.entryid));
 	return TRUE;
 }
 
@@ -1098,7 +1098,7 @@ static BOOL rpc_ext_pull_deletemessages_request(
 	if (NULL == ppayload->deletemessages.pentryids) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary_array(pext, ppayload->deletemessages.pentryids));
+	QRF(pext->g_bin_a(ppayload->deletemessages.pentryids));
 	QRF(pext->g_uint32(&ppayload->deletemessages.flags));
 	return TRUE;
 }
@@ -1113,7 +1113,7 @@ static BOOL rpc_ext_pull_copymessages_request(
 	if (NULL == ppayload->copymessages.pentryids) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary_array(pext, ppayload->copymessages.pentryids));
+	QRF(pext->g_bin_a(ppayload->copymessages.pentryids));
 	QRF(pext->g_uint32(&ppayload->copymessages.flags));
 	return TRUE;
 }
@@ -1127,7 +1127,7 @@ static BOOL rpc_ext_pull_setreadflags_request(
 	if (NULL == ppayload->setreadflags.pentryids) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary_array(pext, ppayload->setreadflags.pentryids));
+	QRF(pext->g_bin_a(ppayload->setreadflags.pentryids));
 	QRF(pext->g_uint32(&ppayload->setreadflags.flags));
 	return TRUE;
 }
@@ -1156,7 +1156,7 @@ static BOOL rpc_ext_pull_deletefolder_request(
 {
 	QRF(pext->g_guid(&ppayload->deletefolder.hsession));
 	QRF(pext->g_uint32(&ppayload->deletefolder.hparent_folder));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->deletefolder.entryid));
+	QRF(pext->g_bin(&ppayload->deletefolder.entryid));
 	QRF(pext->g_uint32(&ppayload->deletefolder.flags));
 	return TRUE;
 }
@@ -1177,7 +1177,7 @@ static BOOL rpc_ext_pull_copyfolder_request(
 	
 	QRF(pext->g_guid(&ppayload->copyfolder.hsession));
 	QRF(pext->g_uint32(&ppayload->copyfolder.hsrc_folder));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->copyfolder.entryid));
+	QRF(pext->g_bin(&ppayload->copyfolder.entryid));
 	QRF(pext->g_uint32(&ppayload->copyfolder.hdst_folder));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
@@ -1210,8 +1210,7 @@ static BOOL rpc_ext_pull_entryidfromsourcekey_request(
 	
 	QRF(pext->g_guid(&ppayload->entryidfromsourcekey.hsession));
 	QRF(pext->g_uint32(&ppayload->entryidfromsourcekey.hstore));
-	QRF(ext_buffer_pull_binary(pext,
-		&ppayload->entryidfromsourcekey.folder_key));
+	QRF(pext->g_bin(&ppayload->entryidfromsourcekey.folder_key));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->entryidfromsourcekey.pmessage_key = NULL;
@@ -1220,8 +1219,7 @@ static BOOL rpc_ext_pull_entryidfromsourcekey_request(
 		if (NULL == ppayload->entryidfromsourcekey.pmessage_key) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_binary(pext,
-			ppayload->entryidfromsourcekey.pmessage_key));
+		QRF(pext->g_bin(ppayload->entryidfromsourcekey.pmessage_key));
 	}
 	return TRUE;
 }
@@ -1248,7 +1246,7 @@ static BOOL rpc_ext_pull_storeadvise_request(
 		if (NULL == ppayload->storeadvise.pentryid) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_binary(pext, ppayload->storeadvise.pentryid));
+		QRF(pext->g_bin(ppayload->storeadvise.pentryid));
 	}
 	QRF(pext->g_uint32(&ppayload->storeadvise.event_mask));
 	return TRUE;
@@ -1742,7 +1740,7 @@ static BOOL rpc_ext_pull_configsync_request(
 	if (NULL == ppayload->configsync.pstate) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary(pext, ppayload->configsync.pstate));
+	QRF(pext->g_bin(ppayload->configsync.pstate));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->configsync.prestriction = NULL;
@@ -1881,7 +1879,7 @@ static BOOL rpc_ext_pull_configimport_request(
 	if (NULL == ppayload->configimport.pstate) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary(pext, ppayload->configimport.pstate));
+	QRF(pext->g_bin(ppayload->configimport.pstate));
 	return TRUE;
 }
 
@@ -1949,7 +1947,7 @@ static BOOL rpc_ext_pull_importdeletion_request(
 	if (NULL == ppayload->importdeletion.pbins) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary_array(pext, ppayload->importdeletion.pbins));
+	QRF(pext->g_bin_a(ppayload->importdeletion.pbins));
 	return TRUE;
 }
 
@@ -2000,7 +1998,7 @@ static BOOL rpc_ext_pull_setsearchcriteria_request(
 	if (NULL == ppayload->setsearchcriteria.pfolder_array) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary_array(pext, ppayload->setsearchcriteria.pfolder_array));
+	QRF(pext->g_bin_a(ppayload->setsearchcriteria.pfolder_array));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->setsearchcriteria.prestriction = NULL;
@@ -2039,7 +2037,7 @@ static BOOL rpc_ext_pull_rfc822tomessage_request(
 	if (NULL == ppayload->rfc822tomessage.peml_bin) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary(pext, ppayload->rfc822tomessage.peml_bin));
+	QRF(pext->g_bin(ppayload->rfc822tomessage.peml_bin));
 	return TRUE;
 }
 
@@ -2068,7 +2066,7 @@ static BOOL rpc_ext_pull_icaltomessage_request(
 	if (NULL == ppayload->icaltomessage.pical_bin) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary(pext, ppayload->icaltomessage.pical_bin));
+	QRF(pext->g_bin(ppayload->icaltomessage.pical_bin));
 	return TRUE;
 }
 
@@ -2097,7 +2095,7 @@ static BOOL rpc_ext_pull_vcftomessage_request(
 	if (NULL == ppayload->vcftomessage.pvcf_bin) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_binary(pext, ppayload->vcftomessage.pvcf_bin));
+	QRF(pext->g_bin(ppayload->vcftomessage.pvcf_bin));
 	return TRUE;
 }
 
@@ -2105,7 +2103,7 @@ static BOOL rpc_ext_pull_getuseravailability_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(pext->g_guid(&ppayload->getuseravailability.hsession));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->getuseravailability.entryid));
+	QRF(pext->g_bin(&ppayload->getuseravailability.entryid));
 	QRF(pext->g_uint64(&ppayload->getuseravailability.starttime));
 	QRF(pext->g_uint64(&ppayload->getuseravailability.endtime));
 	return TRUE;
@@ -2136,8 +2134,8 @@ static BOOL rpc_ext_pull_linkmessage_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(pext->g_guid(&ppayload->linkmessage.hsession));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->linkmessage.search_entryid));
-	QRF(ext_buffer_pull_binary(pext, &ppayload->linkmessage.message_entryid));
+	QRF(pext->g_bin(&ppayload->linkmessage.search_entryid));
+	QRF(pext->g_bin(&ppayload->linkmessage.message_entryid));
 	return TRUE;
 }
 

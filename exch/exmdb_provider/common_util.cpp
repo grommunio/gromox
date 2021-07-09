@@ -2627,10 +2627,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_binary_array(&ext_pull,
-					    static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_bin_a(static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			default:

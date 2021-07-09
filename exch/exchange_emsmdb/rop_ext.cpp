@@ -82,7 +82,7 @@ static int rop_ext_push_propidname_array(
 static int rop_ext_pull_message_read_stat(
 	EXT_PULL *pext, MESSAGE_READ_STAT *r)
 {
-	TRY(ext_buffer_pull_sbinary(pext, &r->message_xid));
+	TRY(pext->g_sbin(&r->message_xid));
 	return pext->g_uint8(&r->mark_as_read);
 }
 
@@ -294,7 +294,7 @@ static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
 	TRY(ext_buffer_pull_long_term_id(pext, &r->long_folder_id));
 	TRY(pext->g_uint8(&r->has_finished));
 	TRY(pext->g_uint32(&r->offset));
-	TRY(ext_buffer_pull_sbinary(pext, &r->data));
+	TRY(pext->g_sbin(&r->data));
 	if (0 == r->offset && TRUE == b_private) {
 		r->pguid = pext->anew<GUID>();
 		if (NULL == r->pguid) {
@@ -675,7 +675,7 @@ static int rop_ext_push_seekrow_response(
 static int rop_ext_pull_seekrowbookmark_request(
 	EXT_PULL *pext, SEEKROWBOOKMARK_REQUEST *r)
 {
-	TRY(ext_buffer_pull_sbinary(pext, &r->bookmark));
+	TRY(pext->g_sbin(&r->bookmark));
 	TRY(ext_buffer_pull_int32(pext, &r->offset));
 	return pext->g_uint8(&r->want_moved_count);
 }
@@ -729,7 +729,7 @@ static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
 		pext->offset = offset;
 	}
 	TRY(pext->g_uint8(&r->seek_pos));
-	return ext_buffer_pull_sbinary(pext, &r->bookmark);
+	return pext->g_sbin(&r->bookmark);
 }
 
 static int rop_ext_push_findrow_response(
@@ -748,7 +748,7 @@ static int rop_ext_push_findrow_response(
 static int rop_ext_pull_freebookmark_request(EXT_PULL *pext,
 	FREEBOOKMARK_REQUEST *r)
 {
-	return ext_buffer_pull_sbinary(pext, &r->bookmark);
+	return pext->g_sbin(&r->bookmark);
 }
 
 static int rop_ext_pull_expandrow_request(EXT_PULL *pext,
@@ -794,7 +794,7 @@ static int rop_ext_push_getcollapsestate_response(EXT_PUSH *pext,
 static int rop_ext_pull_setcollapsestate_request(EXT_PULL *pext,
 	SETCOLLAPSESTATE_REQUEST *r)
 {
-	return ext_buffer_pull_sbinary(pext, &r->collapse_state);
+	return pext->g_sbin(&r->collapse_state);
 }
 
 static int rop_ext_push_setcollapsestate_response(EXT_PUSH *pext,
@@ -1445,7 +1445,7 @@ static int rop_ext_push_readstream_response(
 static int rop_ext_pull_writestream_request(
 	EXT_PULL *pext, WRITESTREAM_REQUEST *r)
 {
-	return ext_buffer_pull_sbinary(pext, &r->data);
+	return pext->g_sbin(&r->data);
 }
 
 static int rop_ext_push_writestream_response(
@@ -1520,7 +1520,7 @@ static int rop_ext_pull_unlockregionstream_request(
 static int rop_ext_pull_writeandcommitstream_request(
 	EXT_PULL *pext, WRITEANDCOMMITSTREAM_REQUEST *r)
 {
-	return ext_buffer_pull_sbinary(pext, &r->data);
+	return pext->g_sbin(&r->data);
 }
 
 static int rop_ext_push_writeandcommitstream_response(
@@ -1595,8 +1595,8 @@ static int rop_ext_pull_getrulestable_request(
 static int rop_ext_pull_updatedeferredactionmessages_request(
 	EXT_PULL *pext, UPDATEDEFERREDACTIONMESSAGES_REQUEST *r)
 {
-	TRY(ext_buffer_pull_sbinary(pext, &r->server_entry_id));
-	return ext_buffer_pull_sbinary(pext, &r->client_entry_id);
+	TRY(pext->g_sbin(&r->server_entry_id));
+	return pext->g_sbin(&r->client_entry_id);
 }
 
 static int rop_ext_pull_fasttransferdestconfigure_request(
@@ -1610,7 +1610,7 @@ static int rop_ext_pull_fasttransferdestconfigure_request(
 static int rop_ext_pull_fasttransferdestputbuffer_request(
 	EXT_PULL *pext, FASTTRANSFERDESTPUTBUFFER_REQUEST *r)
 {
-	return ext_buffer_pull_sbinary(pext, &r->transfer_data);	
+	return pext->g_sbin(&r->transfer_data);	
 }
 
 static int rop_ext_push_fasttransferdestputbuffer_response(
@@ -1788,11 +1788,11 @@ static int rop_ext_pull_syncimportdeletes_request(
 static int rop_ext_pull_syncimportmessagemove_request(
 	EXT_PULL *pext, SYNCIMPORTMESSAGEMOVE_REQUEST *r)
 {
-	TRY(ext_buffer_pull_exbinary(pext, &r->src_folder_id));
-	TRY(ext_buffer_pull_exbinary(pext, &r->src_message_id));
-	TRY(ext_buffer_pull_exbinary(pext, &r->change_list));
-	TRY(ext_buffer_pull_exbinary(pext, &r->dst_message_id));
-	return ext_buffer_pull_exbinary(pext, &r->change_number);
+	TRY(pext->g_exbin(&r->src_folder_id));
+	TRY(pext->g_exbin(&r->src_message_id));
+	TRY(pext->g_exbin(&r->change_list));
+	TRY(pext->g_exbin(&r->dst_message_id));
+	return pext->g_exbin(&r->change_number);
 }
 
 static int rop_ext_push_syncimportmessagemove_response(
@@ -1824,7 +1824,7 @@ static int rop_ext_pull_syncuploadstatestreambegin_request(
 static int rop_ext_pull_syncuploadstatestreamcontinue_request(
 	EXT_PULL *pext, SYNCUPLOADSTATESTREAMCONTINUE_REQUEST *r)
 {
-	return ext_buffer_pull_exbinary(pext, &r->stream_data);
+	return pext->g_exbin(&r->stream_data);
 }
 
 static int rop_ext_pull_setlocalreplicamidsetdeleted_request(

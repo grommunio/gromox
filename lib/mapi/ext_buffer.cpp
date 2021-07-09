@@ -380,7 +380,7 @@ int ext_buffer_pull_binary_array(EXT_PULL *pext, BINARY_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_binary(pext, &r->pbin[i]));
+		TRY(pext->g_bin(&r->pbin[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -723,7 +723,7 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 		if (NULL == r->pfolder_eid) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_binary(pext, static_cast<BINARY *>(r->pfolder_eid));
+		return pext->g_bin(static_cast<BINARY *>(r->pfolder_eid));
 	}
 }
 
@@ -937,7 +937,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_binary(pext, static_cast<BINARY *>(*ppval));
+		return pext->g_bin(static_cast<BINARY *>(*ppval));
 	case PT_MV_SHORT:
 		*ppval = pext->anew<SHORT_ARRAY>();
 		if (NULL == (*ppval)) {
@@ -979,7 +979,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_binary_array(pext, static_cast<BINARY_ARRAY *>(*ppval));
+		return pext->g_bin_a(static_cast<BINARY_ARRAY *>(*ppval));
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
@@ -1505,12 +1505,12 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 		if (NULL == r->pentry_id) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_binary(pext, r->pentry_id));
+		TRY(pext->g_bin(r->pentry_id));
 		r->psearch_key = pext->anew<BINARY>();
 		if (NULL == r->psearch_key) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_binary(pext, r->psearch_key));
+		TRY(pext->g_bin(r->psearch_key));
 	}
 	r->paddress_type = NULL;
 	if (RECIPIENT_ROW_TYPE_NONE == type &&
@@ -2058,7 +2058,7 @@ int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r)
 	TRY(pext->g_uint8(&r->day));
 	TRY(pext->g_uint64(&r->creationtime));
 	TRY(pext->g_bytes(r->x, 8));
-	return ext_buffer_pull_exbinary(pext, &r->data);
+	return pext->g_exbin(&r->data);
 }
 
 static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)

@@ -2179,7 +2179,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 	if (0 != tmp_byte) {
 		TRY(pext->g_str(&ppayload->get_content_sync.username));
 	}
-	TRY(ext_buffer_pull_exbinary(pext, &tmp_bin));
+	TRY(pext->g_exbin(&tmp_bin));
 	ppayload->get_content_sync.pgiven =
 		idset_init(FALSE, REPL_TYPE_ID);
 	if (NULL == ppayload->get_content_sync.pgiven) {
@@ -2195,7 +2195,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
-		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
+		status = pext->g_exbin(&tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
 			return gcsr_failure(status, ppayload);
 		}
@@ -2216,7 +2216,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
-		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
+		status = pext->g_exbin(&tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
 			return gcsr_failure(status, ppayload);
 		}
@@ -2237,7 +2237,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		return gcsr_failure(status, ppayload);
 	}
 	if (0 != tmp_byte) {
-		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
+		status = pext->g_exbin(&tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
 			return gcsr_failure(status, ppayload);
 		}
@@ -2374,7 +2374,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 	if (0 != tmp_byte) {
 		TRY(pext->g_str(&ppayload->get_hierarchy_sync.username));
 	}
-	TRY(ext_buffer_pull_exbinary(pext, &tmp_bin));
+	TRY(pext->g_exbin(&tmp_bin));
 	ppayload->get_hierarchy_sync.pgiven =
 		idset_init(FALSE, REPL_TYPE_ID);
 	if (NULL == ppayload->get_hierarchy_sync.pgiven) {
@@ -2391,7 +2391,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 		return status;
 	}
 	if (0 != tmp_byte) {
-		status = ext_buffer_pull_exbinary(pext, &tmp_bin);
+		status = pext->g_exbin(&tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
 			idset_free(ppayload->get_hierarchy_sync.pgiven);
 			return status;
