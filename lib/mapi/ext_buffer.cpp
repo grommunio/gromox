@@ -431,7 +431,7 @@ int ext_buffer_pull_guid_array(EXT_PULL *pext, GUID_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_guid(pext, &r->pguid[i]));
+		TRY(pext->g_guid(&r->pguid[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -731,7 +731,7 @@ static int ext_buffer_pull_reply_action(EXT_PULL *pext, REPLY_ACTION *r)
 {
 	TRY(pext->g_uint64(&r->template_folder_id));
 	TRY(pext->g_uint64(&r->template_message_id));
-	return ext_buffer_pull_guid(pext, &r->template_guid);
+	return pext->g_guid(&r->template_guid);
 }
 
 static int ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
@@ -918,7 +918,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_guid(pext, static_cast<GUID *>(*ppval));
+		return pext->g_guid(static_cast<GUID *>(*ppval));
 	case PT_SRESTRICT:
 		*ppval = pext->anew<RESTRICTION>();
 		if (NULL == (*ppval)) {
@@ -973,7 +973,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_guid_array(pext, static_cast<GUID_ARRAY *>(*ppval));
+		return pext->g_guid_a(static_cast<GUID_ARRAY *>(*ppval));
 	case PT_MV_BINARY:
 		*ppval = pext->anew<BINARY_ARRAY>();
 		if (NULL == (*ppval)) {
@@ -999,7 +999,7 @@ int ext_buffer_pull_tagged_propval(EXT_PULL *pext, TAGGED_PROPVAL *r)
 
 int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
 {
-	TRY(ext_buffer_pull_guid(pext, &r->guid));
+	TRY(pext->g_guid(&r->guid));
 	TRY(ext_buffer_pull_bytes(pext, r->global_counter, 6));
 	return pext->g_uint16(&r->padding);
 }
@@ -1036,7 +1036,7 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 	uint8_t name_size;
 	
 	TRY(pext->g_uint8(&r->kind));
-	TRY(ext_buffer_pull_guid(pext, &r->guid));
+	TRY(pext->g_guid(&r->guid));
 	r->lid = 0;
 	r->pname = NULL;
 	if (r->kind == MNID_ID) {
@@ -1166,7 +1166,7 @@ int ext_buffer_pull_xid(EXT_PULL *pext, uint8_t size, XID *pxid)
 	if (size < 17 || size > 24) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_pull_guid(pext, &pxid->guid));
+	TRY(pext->g_guid(&pxid->guid));
 	return ext_buffer_pull_bytes(pext, pxid->local_id, size - 16);
 }
 
@@ -1175,7 +1175,7 @@ int ext_buffer_pull_folder_entryid(EXT_PULL *pext, FOLDER_ENTRYID *r)
 	TRY(pext->g_uint32(&r->flags));
 	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->folder_type));
-	TRY(ext_buffer_pull_guid(pext, &r->database_guid));
+	TRY(pext->g_guid(&r->database_guid));
 	TRY(ext_buffer_pull_bytes(pext, r->global_counter, 6));
 	return ext_buffer_pull_bytes(pext, r->pad, 2);
 }
@@ -1203,10 +1203,10 @@ int ext_buffer_pull_message_entryid(EXT_PULL *pext, MESSAGE_ENTRYID *r)
 	TRY(pext->g_uint32(&r->flags));
 	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->message_type));
-	TRY(ext_buffer_pull_guid(pext, &r->folder_database_guid));
+	TRY(pext->g_guid(&r->folder_database_guid));
 	TRY(ext_buffer_pull_bytes(pext, r->folder_global_counter, 6));
 	TRY(ext_buffer_pull_bytes(pext, r->pad1, 2));
-	TRY(ext_buffer_pull_guid(pext, &r->message_database_guid));
+	TRY(pext->g_guid(&r->message_database_guid));
 	TRY(ext_buffer_pull_bytes(pext, r->message_global_counter, 6));
 	return ext_buffer_pull_bytes(pext, r->pad2, 2);
 }
@@ -1221,7 +1221,7 @@ static int ext_buffer_pull_ext_reply_action(
 		return EXT_ERR_FORMAT;
 	}
 	TRY(ext_buffer_pull_message_entryid(pext, &r->message_eid));
-	return ext_buffer_pull_guid(pext, &r->template_guid);
+	return pext->g_guid(&r->template_guid);
 }
 
 

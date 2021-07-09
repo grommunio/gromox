@@ -105,8 +105,7 @@ static int exmdb_ext_push_get_mapping_guid_request(
 static int exmdb_ext_pull_get_mapping_replid_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_guid(pext,
-		&ppayload->get_mapping_replid.guid);
+	return pext->g_guid(&ppayload->get_mapping_replid.guid);
 }
 
 static int exmdb_ext_push_get_mapping_replid_request(
@@ -3530,8 +3529,7 @@ static int exmdb_ext_pull_get_mapping_guid_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(ext_buffer_pull_bool(pext, &ppayload->get_mapping_guid.b_found));
-	return ext_buffer_pull_guid(pext,
-		&ppayload->get_mapping_guid.guid);
+	return pext->g_guid(&ppayload->get_mapping_guid.guid);
 }
 
 static int exmdb_ext_push_get_mapping_guid_response(

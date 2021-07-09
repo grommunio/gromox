@@ -2499,10 +2499,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_guid(&ext_pull,
-					    static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_SVREID:
@@ -2622,10 +2620,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_guid_array(&ext_pull,
-					    static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_guid_a(static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_MV_BINARY:
@@ -5793,8 +5789,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (ext_buffer_pull_guid(&ext_pull,
-		    static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return NULL;
 		return pvalue;
 	case PT_SVREID:

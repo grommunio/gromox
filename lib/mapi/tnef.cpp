@@ -214,7 +214,7 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 	uint32_t offset;
 	uint32_t tmp_int;
 	
-	TRY(ext_buffer_pull_guid(pext, &r->guid));
+	TRY(pext->g_guid(&r->guid));
 	TRY(pext->g_uint32(&tmp_int));
 	if (0 == tmp_int) {
 		r->kind = MNID_ID;
@@ -324,7 +324,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_guid(pext, static_cast<GUID *>(r->pvalue));
+		return pext->g_guid(static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
 		r->pvalue = pext->anew<SVREID>();
 		if (NULL == r->pvalue) {
@@ -528,7 +528,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		for (size_t i = 0; i < ga->count; ++i)
-			TRY(ext_buffer_pull_guid(pext, ga->pguid + i));
+			TRY(pext->g_guid(&ga->pguid[i]));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {

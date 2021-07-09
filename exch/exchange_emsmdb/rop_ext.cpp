@@ -251,7 +251,7 @@ static int rop_ext_push_idfromlongtermid_response(
 static int rop_ext_pull_getperuserlongtermids_request(
 	EXT_PULL *pext, GETPERUSERLONGTERMIDS_REQUEST *r)
 {
-	return ext_buffer_pull_guid(pext, &r->guid);
+	return pext->g_guid(&r->guid);
 }
 
 static int rop_ext_push_getperuserlongtermids_response(
@@ -300,7 +300,7 @@ static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
 		if (NULL == r->pguid) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_guid(pext, r->pguid);
+		return pext->g_guid(r->pguid);
 	}
 	r->pguid = NULL;
 	return EXT_ERR_SUCCESS;
@@ -1357,7 +1357,7 @@ static int rop_ext_pull_querynamedproperties_request(
 	if (NULL == r->pguid) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_guid(pext, r->pguid);
+	return pext->g_guid(r->pguid);
 }
 
 static int rop_ext_push_querynamedproperties_response(

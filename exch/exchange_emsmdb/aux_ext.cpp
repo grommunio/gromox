@@ -27,7 +27,7 @@ static int aux_ext_pull_aux_perf_sessioninfo(
 {
 	TRY(pext->g_uint16(&r->session_id));
 	TRY(pext->g_uint16(&r->reserved));
-	return ext_buffer_pull_guid(pext, &r->session_guid);
+	return pext->g_guid(&r->session_guid);
 }
 
 static int aux_ext_push_aux_perf_sessioninfo(
@@ -43,7 +43,7 @@ static int aux_ext_pull_aux_perf_sessioninfo_v2(
 {
 	TRY(pext->g_uint16(&r->session_id));
 	TRY(pext->g_uint16(&r->reserved));
-	TRY(ext_buffer_pull_guid(pext, &r->session_guid));
+	TRY(pext->g_guid(&r->session_guid));
 	return pext->g_uint32(&r->connection_id);
 }
 
@@ -269,7 +269,7 @@ static int aux_ext_pull_aux_perf_processinfo(
 	payload_offset = pext->offset;
 	TRY(pext->g_uint16(&r->process_id));
 	TRY(pext->g_uint16(&r->reserved1));
-	TRY(ext_buffer_pull_guid(pext, &r->process_guid));
+	TRY(pext->g_guid(&r->process_guid));
 	TRY(pext->g_uint16(&process_name_offset));
 	TRY(pext->g_uint16(&r->reserved2));
 	if (0 != process_name_offset) {
@@ -551,7 +551,7 @@ static int aux_ext_pull_aux_perf_accountinfo(
 {
 	TRY(pext->g_uint16(&r->client_id));
 	TRY(pext->g_uint16(&r->reserved));
-	return ext_buffer_pull_guid(pext, &r->account);
+	return pext->g_guid(&r->account);
 }
 
 static int aux_ext_push_aux_perf_accountinfo(
@@ -581,7 +581,7 @@ static int aux_ext_pull_aux_client_connection_info(
 	uint16_t offset_connection_context_info;
 	
 	payload_offset = pext->offset;
-	TRY(ext_buffer_pull_guid(pext, &r->connection_guid));
+	TRY(pext->g_guid(&r->connection_guid));
 	TRY(pext->g_uint16(&offset_connection_context_info));
 	TRY(pext->g_uint16(&r->reserved));
 	TRY(pext->g_uint32(&r->connection_attempts));
