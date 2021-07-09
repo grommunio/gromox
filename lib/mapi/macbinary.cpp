@@ -106,7 +106,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	}
 	TRY(pext->g_bytes(r->file_name, tmp_byte));
 	r->file_name[tmp_byte] = '\0';
-	TRY(ext_buffer_pull_advance(pext, 63 - tmp_byte));
+	TRY(pext->advance(63 - tmp_byte));
 	TRY(pext->g_bytes(&r->type, 4));
 	TRY(pext->g_bytes(&r->creator, 4));
 	TRY(pext->g_uint8(&r->original_flags));
@@ -125,8 +125,8 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	TRY(macbinary_pull_uint16(pext, &r->comment_len));
 	TRY(pext->g_uint8(&r->finder_flags));
 	TRY(pext->g_bytes(reinterpret_cast<uint8_t *>(&r->signature), 4));
-	TRY(ext_buffer_pull_int8(pext, &r->fd_script));
-	TRY(ext_buffer_pull_int8(pext, &r->fd_xflags));
+	TRY(pext->g_int8(&r->fd_script));
+	TRY(pext->g_int8(&r->fd_xflags));
 	TRY(pext->g_bytes(r->pads1, 8));
 	TRY(macbinary_pull_uint32(pext, &r->total_unpacked));
 	TRY(macbinary_pull_uint16(pext, &r->xheader_len));

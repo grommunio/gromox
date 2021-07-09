@@ -1469,11 +1469,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_xid(
-		&ext_pull, pbin->cb, pxid)) {
-		return FALSE;
-	}
-	return TRUE;
+	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
 BINARY* common_util_guid_to_binary(GUID guid)

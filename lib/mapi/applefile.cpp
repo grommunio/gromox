@@ -154,22 +154,22 @@ static int applefile_pull_asfinderinfo(EXT_PULL *pext,
 		}
 	}
 	r->valid_count ++;
-	TRY(ext_buffer_pull_int8(pext, &r->fxinfo.fd_script));
+	TRY(pext->g_int8(&r->fxinfo.fd_script));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_pull_int8(pext, &r->fxinfo.fd_xflags));
+	TRY(pext->g_int8(&r->fxinfo.fd_xflags));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_pull_int16(pext, &r->fxinfo.fd_comment));
+	TRY(pext->g_int16(&r->fxinfo.fd_comment));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_pull_int32(pext, &r->fxinfo.fd_putaway));
+	TRY(pext->g_int32(&r->fxinfo.fd_putaway));
 	r->valid_count ++;
 	return EXT_ERR_SUCCESS;
 }
@@ -306,7 +306,7 @@ static int applefile_pull_entry(EXT_PULL *pext,
 		}
 		((BINARY*)*ppentry)->cb = entry_length;
 		static_cast<BINARY *>(*ppentry)->pb = const_cast<uint8_t *>(pext->data + pext->offset);
-		return ext_buffer_pull_advance(pext, entry_length);
+		return pext->advance(entry_length);
 	}
 	
 }

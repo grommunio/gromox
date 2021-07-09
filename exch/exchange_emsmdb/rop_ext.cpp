@@ -394,7 +394,7 @@ static int rop_ext_pull_setsearchcriteria_request(
 		}
 		pext->offset = offset;
 	}
-	TRY(ext_buffer_pull_slonglong_array(pext, &r->folder_ids));
+	TRY(pext->g_uint64_sa(&r->folder_ids));
 	return pext->g_uint32(&r->search_flags);
 }
 
@@ -434,7 +434,7 @@ static int rop_ext_pull_movecopymessages_request(
 	EXT_PULL *pext, MOVECOPYMESSAGES_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->hindex));
-	TRY(ext_buffer_pull_slonglong_array(pext, &r->message_ids));
+	TRY(pext->g_uint64_sa(&r->message_ids));
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	return pext->g_uint8(&r->want_copy);
 }
@@ -517,7 +517,7 @@ static int rop_ext_pull_deletemessages_request(
 {
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->notify_non_read));
-	return ext_buffer_pull_slonglong_array(pext, &r->message_ids);
+	return pext->g_uint64_sa(&r->message_ids);
 }
 
 static int rop_ext_push_deletemessages_response(
@@ -531,7 +531,7 @@ static int rop_ext_pull_harddeletemessages_request(
 {
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->notify_non_read));
-	return ext_buffer_pull_slonglong_array(pext, &r->message_ids);
+	return pext->g_uint64_sa(&r->message_ids);
 }
 
 static int rop_ext_push_harddeletemessages_response(
@@ -661,7 +661,7 @@ static int rop_ext_push_queryposition_response(
 static int rop_ext_pull_seekrow_request(EXT_PULL *pext, SEEKROW_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->seek_pos));
-	TRY(ext_buffer_pull_int32(pext, &r->offset));
+	TRY(pext->g_int32(&r->offset));
 	return pext->g_uint8(&r->want_moved_count);
 }
 
@@ -676,7 +676,7 @@ static int rop_ext_pull_seekrowbookmark_request(
 	EXT_PULL *pext, SEEKROWBOOKMARK_REQUEST *r)
 {
 	TRY(pext->g_sbin(&r->bookmark));
-	TRY(ext_buffer_pull_int32(pext, &r->offset));
+	TRY(pext->g_int32(&r->offset));
 	return pext->g_uint8(&r->want_moved_count);
 }
 
@@ -1000,7 +1000,7 @@ static int rop_ext_pull_setreadflags_request(
 {
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->read_flags));
-	return ext_buffer_pull_slonglong_array(pext, &r->message_ids);
+	return pext->g_uint64_sa(&r->message_ids);
 }
 
 static int rop_ext_push_setreadflags_response(
@@ -1470,7 +1470,7 @@ static int rop_ext_pull_seekstream_request(
 	EXT_PULL *pext, SEEKSTREAM_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->seek_pos));
-	return ext_buffer_pull_int64(pext, &r->offset);
+	return pext->g_int64(&r->offset);
 }
 
 static int rop_ext_push_seekstream_response(
@@ -1657,7 +1657,7 @@ static int rop_ext_pull_fasttransfersourcecopymessages_request(
 	EXT_PULL *pext, FASTTRANSFERSOURCECOPYMESSAGES_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->hindex));
-	TRY(ext_buffer_pull_slonglong_array(pext, &r->message_ids));
+	TRY(pext->g_uint64_sa(&r->message_ids));
 	TRY(pext->g_uint8(&r->flags));
 	return pext->g_uint8(&r->send_options);
 }

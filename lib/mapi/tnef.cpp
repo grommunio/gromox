@@ -228,7 +228,7 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset;
-		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
+		return pext->advance(tnef_align(tmp_int));
 	}
 	return EXT_ERR_FORMAT;
 }
@@ -256,7 +256,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		TRY(pext->g_uint16(static_cast<uint16_t *>(r->pvalue)));
-		return ext_buffer_pull_advance(pext, 2);
+		return pext->advance(2);
 	case PT_ERROR:
 	case PT_LONG:
 		r->pvalue = pext->anew<uint32_t>();
@@ -269,14 +269,14 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_float(pext, static_cast<float *>(r->pvalue));
+		return pext->g_float( static_cast<float *>(r->pvalue));
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		r->pvalue = pext->anew<double>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_double(pext, static_cast<double *>(r->pvalue));
+		return pext->g_double(static_cast<double *>(r->pvalue));
 	case PT_BOOLEAN:
 		r->pvalue = pext->anew<uint8_t>();
 		if (NULL == r->pvalue) {
@@ -284,7 +284,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		TRY(pext->g_uint16(&fake_byte));
 		*(uint8_t*)r->pvalue = fake_byte;
-		return ext_buffer_pull_advance(pext, 2);
+		return pext->advance(2);
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
@@ -305,7 +305,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset;
-		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
+		return pext->advance(tnef_align(tmp_int));
 	case PT_UNICODE:
 		TRY(pext->g_uint32(&tmp_int));
 		if (1 != tmp_int) {
@@ -318,7 +318,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset;
-		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
+		return pext->advance(tnef_align(tmp_int));
 	case PT_CLSID:
 		r->pvalue = pext->anew<GUID>();
 		if (NULL == r->pvalue) {
@@ -355,8 +355,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		    memcmp(bv->pv, IID_IStorage, 16) != 0 &&
 		    memcmp(bv->pv, IID_IStream, 16) != 0)
 			return EXT_ERR_FORMAT;
-		return ext_buffer_pull_advance(pext,
-			tnef_align(pext->offset - offset));
+		return pext->advance(tnef_align(pext->offset - offset));
 	}
 	case PT_BINARY: {
 		r->pvalue = pext->anew<BINARY>();
@@ -378,8 +377,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		offset = pext->offset;
 		TRY(pext->g_bytes(bv->pv, bv->cb));
-		return ext_buffer_pull_advance(pext,
-			tnef_align(pext->offset - offset));
+		return pext->advance(tnef_align(pext->offset - offset));
 	}
 	case PT_MV_SHORT: {
 		r->pvalue = pext->anew<SHORT_ARRAY>();
@@ -401,7 +399,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(pext->g_uint16(&sa->ps[i]));
-			TRY(ext_buffer_pull_advance(pext, 2));
+			TRY(pext->advance(2));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -475,7 +473,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_FORMAT;
 			}
 			pext->offset = offset;
-			TRY(ext_buffer_pull_advance(pext, tnef_align(tmp_int)));
+			TRY(pext->advance(tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -505,7 +503,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				return EXT_ERR_FORMAT;
 			}
 			pext->offset = offset;
-			TRY(ext_buffer_pull_advance(pext, tnef_align(tmp_int)));
+			TRY(pext->advance(tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -564,7 +562,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 			offset = pext->offset;
 			TRY(pext->g_bytes(ba->pbin[i].pv, ba->pbin[i].cb));
-			TRY(ext_buffer_pull_advance(pext,tnef_align(pext->offset - offset)));
+			TRY(pext->advance(tnef_align(pext->offset - offset)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
@@ -677,7 +675,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset1;
-		TRY(ext_buffer_pull_advance(pext, 8));
+		TRY(pext->advance(8));
 		break;
 	case ATTRIBUTE_ID_SUBJECT:
 	case ATTRIBUTE_ID_MESSAGEID:

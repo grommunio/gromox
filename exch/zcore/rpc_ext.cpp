@@ -187,7 +187,7 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_float(pext, static_cast<float *>(*ppval)));
+		QRF(pext->g_float(static_cast<float *>(*ppval)));
 		return TRUE;
 	case PT_DOUBLE:
 	case PT_APPTIME:
@@ -195,7 +195,7 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_double(pext, static_cast<double *>(*ppval)));
+		QRF(pext->g_double(static_cast<double *>(*ppval)));
 		return TRUE;
 	case PT_BOOLEAN:
 		*ppval = pext->anew<uint8_t>();
@@ -250,21 +250,21 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_short_array(pext, static_cast<SHORT_ARRAY *>(*ppval)));
+		QRF(pext->g_uint16_a(static_cast<SHORT_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_LONG:
 		*ppval = pext->anew<LONG_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_long_array(pext, static_cast<LONG_ARRAY *>(*ppval)));
+		QRF(pext->g_uint32_a(static_cast<LONG_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_I8:
 		*ppval = pext->anew<LONGLONG_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_longlong_array(pext, static_cast<LONGLONG_ARRAY *>(*ppval)));
+		QRF(pext->g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_STRING8:
 		*ppval = pext->anew<STRING_ARRAY>();
@@ -1358,7 +1358,7 @@ static BOOL rpc_ext_pull_seekrow_request(
 	QRF(pext->g_guid(&ppayload->seekrow.hsession));
 	QRF(pext->g_uint32(&ppayload->seekrow.htable));
 	QRF(pext->g_uint32(&ppayload->seekrow.bookmark));
-	QRF(ext_buffer_pull_int32(pext, &ppayload->seekrow.seek_rows));
+	QRF(pext->g_int32(&ppayload->seekrow.seek_rows));
 	return TRUE;
 }
 

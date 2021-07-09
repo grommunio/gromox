@@ -181,7 +181,7 @@ int ext_buffer_pull_string(EXT_PULL *pext, char **ppstr)
 		return EXT_ERR_ALLOC;
 	}
 	memcpy(*ppstr, pext->data + pext->offset, len);
-	return ext_buffer_pull_advance(pext, len);
+	return pext->advance(len);
 }
 
 int ext_buffer_pull_wstring(EXT_PULL *pext, char **ppstr)
@@ -220,7 +220,7 @@ int ext_buffer_pull_wstring(EXT_PULL *pext, char **ppstr)
 		return EXT_ERR_CHARCNV;
 	}
 	free(pbuff);
-	return ext_buffer_pull_advance(pext, len);
+	return pext->advance(len);
 }
 
 int ext_buffer_pull_data_blob(EXT_PULL *pext, DATA_BLOB *pblob)
@@ -710,7 +710,7 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 		TRY(ext_buffer_pull_store_entryid(pext, r->pstore_eid));
 	} else {
 		r->pstore_eid = NULL;
-		TRY(ext_buffer_pull_advance(pext, eid_size));
+		TRY(pext->advance(eid_size));
 	}
 	if (0 != r->same_store) {
 		r->pfolder_eid = pext->anew<SVREID>();
@@ -881,14 +881,14 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_float(pext, static_cast<float *>(*ppval));
+		return pext->g_float(static_cast<float *>(*ppval));
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		*ppval = pext->anew<double>();
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_double(pext, static_cast<double *>(*ppval));
+		return pext->g_double(static_cast<double *>(*ppval));
 	case PT_BOOLEAN:
 		*ppval = pext->anew<uint8_t>();
 		if (NULL == (*ppval)) {
@@ -943,19 +943,19 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_short_array(pext, static_cast<SHORT_ARRAY *>(*ppval));
+		return pext->g_uint16_a(static_cast<SHORT_ARRAY *>(*ppval));
 	case PT_MV_LONG:
 		*ppval = pext->anew<LONG_ARRAY>();
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_long_array(pext, static_cast<LONG_ARRAY *>(*ppval));
+		return pext->g_uint32_a(static_cast<LONG_ARRAY *>(*ppval));
 	case PT_MV_I8:
 		*ppval = pext->anew<LONGLONG_ARRAY>();
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_longlong_array(pext, static_cast<LONGLONG_ARRAY *>(*ppval));
+		return pext->g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval));
 	case PT_MV_STRING8:
 		*ppval = pext->anew<STRING_ARRAY>();
 		if (NULL == (*ppval)) {
@@ -1189,7 +1189,7 @@ static int ext_buffer_pull_ext_movecopy_action(
 	if (0 == size) {
 		return EXT_ERR_FORMAT;
 	} else {
-		TRY(ext_buffer_pull_advance(pext, size));
+		TRY(pext->advance(size));
 	}
 	TRY(pext->g_uint32(&size));
 	if (46 != size) {
@@ -1654,7 +1654,7 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 		}
 		pext->offset = offset2;
 		pad_len = ((bytes + 3) & ~3) - bytes;
-		TRY(ext_buffer_pull_advance(pext, pad_len));
+		TRY(pext->advance(pad_len));
 	}
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
@@ -1682,24 +1682,24 @@ int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r)
 
 int ext_buffer_pull_systemtime(EXT_PULL *pext, SYSTEMTIME *r)
 {
-	TRY(ext_buffer_pull_int16(pext, &r->year));
-	TRY(ext_buffer_pull_int16(pext, &r->month));
-	TRY(ext_buffer_pull_int16(pext, &r->dayofweek));
-	TRY(ext_buffer_pull_int16(pext, &r->day));
-	TRY(ext_buffer_pull_int16(pext, &r->hour));
-	TRY(ext_buffer_pull_int16(pext, &r->minute));
-	TRY(ext_buffer_pull_int16(pext, &r->second));
-	return ext_buffer_pull_int16(pext, &r->milliseconds);
+	TRY(pext->g_int16(&r->year));
+	TRY(pext->g_int16(&r->month));
+	TRY(pext->g_int16(&r->dayofweek));
+	TRY(pext->g_int16(&r->day));
+	TRY(pext->g_int16(&r->hour));
+	TRY(pext->g_int16(&r->minute));
+	TRY(pext->g_int16(&r->second));
+	return pext->g_int16(&r->milliseconds);
 }
 
 int ext_buffer_pull_timezonestruct(EXT_PULL *pext, TIMEZONESTRUCT *r)
 {
-	TRY(ext_buffer_pull_int32(pext, &r->bias));
-	TRY(ext_buffer_pull_int32(pext, &r->standardbias));
-	TRY(ext_buffer_pull_int32(pext, &r->daylightbias));
-	TRY(ext_buffer_pull_int16(pext, &r->standardyear));
+	TRY(pext->g_int32(&r->bias));
+	TRY(pext->g_int32(&r->standardbias));
+	TRY(pext->g_int32(&r->daylightbias));
+	TRY(pext->g_int16(&r->standardyear));
 	TRY(ext_buffer_pull_systemtime(pext, &r->standarddate));
-	TRY(ext_buffer_pull_int16(pext, &r->daylightyear));
+	TRY(pext->g_int16(&r->daylightyear));
 	return ext_buffer_pull_systemtime(pext, &r->daylightdate);
 }
 
@@ -1709,11 +1709,11 @@ static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	TRY(pext->g_uint8(&r->minor));
 	TRY(pext->g_uint16(&r->reserved));
 	TRY(pext->g_uint16(&r->flags));
-	TRY(ext_buffer_pull_int16(pext, &r->year));
+	TRY(pext->g_int16(&r->year));
 	TRY(pext->g_bytes(r->x, 14));
-	TRY(ext_buffer_pull_int32(pext, &r->bias));
-	TRY(ext_buffer_pull_int32(pext, &r->standardbias));
-	TRY(ext_buffer_pull_int32(pext, &r->daylightbias));
+	TRY(pext->g_int32(&r->bias));
+	TRY(pext->g_int32(&r->standardbias));
+	TRY(pext->g_int32(&r->daylightbias));
 	TRY(ext_buffer_pull_systemtime(pext, &r->standarddate));
 	return ext_buffer_pull_systemtime(pext, &r->daylightdate);
 }

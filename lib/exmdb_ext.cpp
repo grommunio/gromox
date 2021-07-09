@@ -494,8 +494,7 @@ static int exmdb_ext_pull_set_search_criteria_request(
 	if (NULL == ppayload->set_search_criteria.pfolder_ids) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_longlong_array(pext,
-		ppayload->set_search_criteria.pfolder_ids);
+	return pext->g_uint64_a(ppayload->set_search_criteria.pfolder_ids);
 }
 
 static int exmdb_ext_push_set_search_criteria_request(
@@ -921,8 +920,7 @@ static int exmdb_ext_pull_query_table_request(
 	}
 	TRY(pext->g_proptag_a(ppayload->query_table.pproptags));
 	TRY(pext->g_uint32(&ppayload->query_table.start_pos));
-	return ext_buffer_pull_int32(pext,
-		&ppayload->query_table.row_needed);
+	return pext->g_int32(&ppayload->query_table.row_needed);
 }
 
 static int exmdb_ext_push_query_table_request(
@@ -1605,8 +1603,7 @@ static int exmdb_ext_pull_query_message_instance_attachment_table_request(
 	}
 	TRY(pext->g_proptag_a(ppayload->query_message_instance_attachment_table.pproptags));
 	TRY(pext->g_uint32(&ppayload->query_message_instance_attachment_table.start_pos));
-	return ext_buffer_pull_int32(pext,
-		&ppayload->query_message_instance_attachment_table.row_needed);
+	return pext->g_int32(&ppayload->query_message_instance_attachment_table.row_needed);
 }
 
 static int exmdb_ext_push_query_message_instance_attachment_table_request(
@@ -3778,8 +3775,7 @@ static int exmdb_ext_pull_get_search_criteria_response(
 		}
 		TRY(pext->g_restriction(ppayload->get_search_criteria.prestriction));
 	}
-	return ext_buffer_pull_longlong_array(pext,
-		&ppayload->get_search_criteria.folder_ids);
+	return pext->g_uint64_a(&ppayload->get_search_criteria.folder_ids);
 }
 
 static int exmdb_ext_push_get_search_criteria_response(
@@ -3994,7 +3990,7 @@ static int exmdb_ext_push_query_table_response(
 static int exmdb_ext_pull_match_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_pull_int32(pext, &ppayload->match_table.position));
+	TRY(pext->g_int32(&ppayload->match_table.position));
 	return pext->g_tpropval_a(&ppayload->match_table.propvals);
 }
 
@@ -4008,7 +4004,7 @@ static int exmdb_ext_push_match_table_response(
 static int exmdb_ext_pull_locate_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_pull_int32(pext, &ppayload->locate_table.position));
+	TRY(pext->g_int32(&ppayload->locate_table.position));
 	return pext->g_uint32(&ppayload->locate_table.row_type);
 }
 
@@ -4063,7 +4059,7 @@ static int exmdb_ext_pull_expand_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->g_bool(&ppayload->expand_table.b_found));
-	TRY(ext_buffer_pull_int32(pext, &ppayload->expand_table.position));
+	TRY(pext->g_int32(&ppayload->expand_table.position));
 	return pext->g_uint32(&ppayload->expand_table.row_count);
 }
 
@@ -4079,7 +4075,7 @@ static int exmdb_ext_pull_collapse_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->g_bool(&ppayload->collapse_table.b_found));
-	TRY(ext_buffer_pull_int32(pext, &ppayload->collapse_table.position));
+	TRY(pext->g_int32(&ppayload->collapse_table.position));
 	return pext->g_uint32(&ppayload->collapse_table.row_count);
 }
 
@@ -4106,8 +4102,7 @@ static int exmdb_ext_push_store_table_state_response(
 static int exmdb_ext_pull_restore_table_state_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_int32(pext,
-		&ppayload->restore_table_state.position);
+	return pext->g_int32(&ppayload->restore_table_state.position);
 }
 
 static int exmdb_ext_push_restore_table_state_response(
@@ -5677,7 +5672,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_pull.g_str(&pnotify->dir));
 	TRY(ext_pull.g_bool(&pnotify->b_table));
-	TRY(ext_buffer_pull_long_array(&ext_pull, &pnotify->id_array));
+	TRY(ext_pull.g_uint32_a(&pnotify->id_array));
 	TRY(ext_pull.g_uint8(&pnotify->db_notify.type));
 	switch (pnotify->db_notify.type) {
 	case DB_NOTIFY_TYPE_NEW_MAIL: {

@@ -2559,10 +2559,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_short_array(&ext_pull,
-					    static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_uint16_a(static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_MV_LONG:
@@ -2571,10 +2569,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_long_array(&ext_pull,
-					    static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_uint32_a(static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_MV_I8:
@@ -2583,10 +2579,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_longlong_array(&ext_pull,
-					    static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_uint64_a(static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_MV_STRING8:
@@ -5562,11 +5556,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_xid(
-		&ext_pull, pbin->cb, pxid)) {
-		return FALSE;
-	}
-	return TRUE;
+	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,

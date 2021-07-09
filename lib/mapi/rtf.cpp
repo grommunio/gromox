@@ -1109,8 +1109,7 @@ static int rtf_getchar(RTF_READER *preader, int *pch)
 		return EXT_ERR_SUCCESS;
 	}
 	do {
-		status = ext_buffer_pull_int8(
-			&preader->ext_pull, &tmp_char);
+		status = preader->ext_pull.g_int8(&tmp_char);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
@@ -1297,8 +1296,7 @@ static char* rtf_read_element(RTF_READER *preader)
 		rtf_ungetchar(preader, ch);
 	input_str[ix] = '\0';
 	if (strncmp(input_str, "\\bin", 4) == 0 && HX_isdigit(input_str[4]))
-		ext_buffer_pull_advance(&preader->ext_pull,
-			atoi(input_str + 4));
+		preader->ext_pull.advance(atoi(input_str + 4));
 	return input_str;
 }
 
