@@ -99,8 +99,8 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	uint8_t tmp_byte;
 	
 	offset = pext->offset;
-	TRY(ext_buffer_pull_uint8(pext, &r->old_version));
-	TRY(ext_buffer_pull_uint8(pext, &tmp_byte));
+	TRY(pext->g_uint8(&r->old_version));
+	TRY(pext->g_uint8(&tmp_byte));
 	if (tmp_byte > 63) {
 		return EXT_ERR_FORMAT;
 	}
@@ -109,13 +109,13 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	TRY(ext_buffer_pull_advance(pext, 63 - tmp_byte));
 	TRY(ext_buffer_pull_bytes(pext, &r->type, 4));
 	TRY(ext_buffer_pull_bytes(pext, &r->creator, 4));
-	TRY(ext_buffer_pull_uint8(pext, &r->original_flags));
-	TRY(ext_buffer_pull_uint8(pext, &r->pad1));
+	TRY(pext->g_uint8(&r->original_flags));
+	TRY(pext->g_uint8(&r->pad1));
 	TRY(macbinary_pull_uint16(pext, &r->point_v));
 	TRY(macbinary_pull_uint16(pext, &r->point_h));
 	TRY(macbinary_pull_uint16(pext, &r->folder_id));
-	TRY(ext_buffer_pull_uint8(pext, &r->protected_flag));
-	TRY(ext_buffer_pull_uint8(pext, &r->pad2));
+	TRY(pext->g_uint8(&r->protected_flag));
+	TRY(pext->g_uint8(&r->pad2));
 	TRY(macbinary_pull_uint32(pext, &r->data_len));
 	TRY(macbinary_pull_uint32(pext, &r->res_len));
 	TRY(macbinary_pull_int32(pext, &tmp_int));
@@ -123,14 +123,14 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	TRY(macbinary_pull_int32(pext, &tmp_int));
 	r->modify_time = TIMEDIFF + tmp_int;
 	TRY(macbinary_pull_uint16(pext, &r->comment_len));
-	TRY(ext_buffer_pull_uint8(pext, &r->finder_flags));
+	TRY(pext->g_uint8(&r->finder_flags));
 	TRY(ext_buffer_pull_bytes(pext, (uint8_t*)&r->signature, 4));
 	TRY(ext_buffer_pull_int8(pext, &r->fd_script));
 	TRY(ext_buffer_pull_int8(pext, &r->fd_xflags));
 	TRY(ext_buffer_pull_bytes(pext, r->pads1, 8));
 	TRY(macbinary_pull_uint32(pext, &r->total_unpacked));
 	TRY(macbinary_pull_uint16(pext, &r->xheader_len));
-	TRY(ext_buffer_pull_uint8(pext, &r->version));
+	TRY(pext->g_uint8(&r->version));
 	if (129 != r->version && 130 != r->version) {
 		return EXT_ERR_FORMAT;
 	}
@@ -138,7 +138,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 		(char*)&r->signature, "mBIN", 4)) {
 		debug_info("[macbinary]: signature of MacBinaryIII error");
 	}
-	TRY(ext_buffer_pull_uint8(pext, &r->mini_version));
+	TRY(pext->g_uint8(&r->mini_version));
 	if (129 != r->mini_version) {
 		return EXT_ERR_FORMAT;
 	}

@@ -4214,8 +4214,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
 			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_namedproperty_information(
-			&ext_pull, &propname_info) || EXT_ERR_SUCCESS !=
-			ext_buffer_pull_uint32(&ext_pull, &version) || 1 != version ||
+			&ext_pull, &propname_info) ||
+		    ext_pull.g_uint32(&version) != EXT_ERR_SUCCESS ||
+		    1 != version ||
 			EXT_ERR_SUCCESS != ext_buffer_pull_ext_rule_actions(&ext_pull,
 			&ext_actions)) {
 			continue;

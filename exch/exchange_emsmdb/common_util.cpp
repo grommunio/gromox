@@ -299,10 +299,8 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		&ext_pull, &flags) || 0 != flags) {
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0)
 		return FALSE;
-	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
 		&ext_pull, provider_uid, 16)) {
 		return FALSE;	

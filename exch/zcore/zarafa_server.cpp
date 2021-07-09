@@ -3399,10 +3399,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			    common_util_get_propvals(prcpt, PR_DISPLAY_NAME) != nullptr))
 				continue;
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-				&ext_pull, &tmp_flags) || 0 != tmp_flags) {
+			if (ext_pull.g_uint32(&tmp_flags) != EXT_ERR_SUCCESS ||
+			    tmp_flags != 0)
 				continue;
-			}
 			if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
 				&ext_pull, provider_uid, 16)) {
 				continue;

@@ -1003,10 +1003,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, 20, alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		&ext_pull, &flags) || 0 != flags) {
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0)
 		return FALSE;
-	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
 		&ext_pull, provider_uid, 16)) {
 		return FALSE;
@@ -1170,18 +1168,14 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	char provider_uid[16];
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		&ext_pull, &flags)) {
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS)
 		return 0;
-	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
 		&ext_pull, provider_uid, 16)) {
 		return 0;	
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint16(
-		&ext_pull, &folder_type)) {
+	if (ext_pull.g_uint16(&folder_type) != EXT_ERR_SUCCESS)
 		return 0;
-	}
 	return folder_type;
 }
 

@@ -185,7 +185,7 @@ static int applefile_pull_asmacinfo(EXT_PULL *pext,
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	return ext_buffer_pull_uint8(pext, &r->attribute);
+	return pext->g_uint8(&r->attribute);
 }
 
 static int applefile_pull_asprodosinfo(EXT_PULL *pext,
@@ -213,11 +213,11 @@ static int applefile_pull_asmsdosinfo(EXT_PULL *pext,
 	
 	memset(r, 0, sizeof(ASMSDOSINFO));
 	offset = pext->offset;
-	TRY(ext_buffer_pull_uint8(pext, &r->filler));
+	TRY(pext->g_uint8(&r->filler));
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	return ext_buffer_pull_uint8(pext, &r->attr);
+	return pext->g_uint8(&r->attr);
 }
 
 static int applefile_pull_asafpinfo(EXT_PULL *pext,
@@ -231,7 +231,7 @@ static int applefile_pull_asafpinfo(EXT_PULL *pext,
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	return ext_buffer_pull_uint8(pext, &r->attr);
+	return pext->g_uint8(&r->attr);
 }
 
 static int applefile_pull_asafpdirid(EXT_PULL *pext, ASAFPDIRID *r)
