@@ -388,7 +388,7 @@ static int rop_ext_pull_setsearchcriteria_request(
 			return EXT_ERR_ALLOC;
 		}
 		offset = pext->offset + res_size;
-		TRY(ext_buffer_pull_restriction(pext, r->pres));
+		TRY(pext->g_restriction(r->pres));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -608,7 +608,7 @@ static int rop_ext_pull_restrict_request(
 			return EXT_ERR_ALLOC;
 		}
 		offset = pext->offset + res_size;
-		TRY(ext_buffer_pull_restriction(pext, r->pres));
+		TRY(pext->g_restriction(r->pres));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -722,7 +722,7 @@ static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		}
 		offset = pext->offset + res_size;
-		TRY(ext_buffer_pull_restriction(pext, r->pres));
+		TRY(pext->g_restriction(r->pres));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -1712,7 +1712,7 @@ static int rop_ext_pull_syncconfigure_request(
 			return EXT_ERR_ALLOC;
 		}
 		offset = pext->offset + res_size;
-		TRY(ext_buffer_pull_restriction(pext, r->pres));
+		TRY(pext->g_restriction(r->pres));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}

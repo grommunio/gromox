@@ -456,14 +456,14 @@ static int ext_buffer_pull_restriction_and_or(
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_restriction(pext, &r->pres[i]));
+		TRY(pext->g_restriction(&r->pres[i]));
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_pull_restriction_not(
 	EXT_PULL *pext, RESTRICTION_NOT *r)
 {
-	return ext_buffer_pull_restriction(pext, &r->res);
+	return pext->g_restriction(&r->res);
 }
 
 static int ext_buffer_pull_restriction_content(
@@ -528,7 +528,7 @@ static int ext_buffer_pull_restriction_subobj(
 	EXT_PULL *pext, RESTRICTION_SUBOBJ *r)
 {
 	TRY(pext->g_uint32(&r->subobject));
-	return ext_buffer_pull_restriction(pext, &r->res);
+	return pext->g_restriction(&r->res);
 }
 
 static int ext_buffer_pull_restriction_comment(
@@ -555,7 +555,7 @@ static int ext_buffer_pull_restriction_comment(
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction(pext, r->pres);
+		return pext->g_restriction(r->pres);
 	}
 	r->pres = NULL;
 	return EXT_ERR_SUCCESS;
@@ -565,7 +565,7 @@ static int ext_buffer_pull_restriction_count(
 	EXT_PULL *pext, RESTRICTION_COUNT *r)
 {
 	TRY(pext->g_uint32(&r->count));
-	return ext_buffer_pull_restriction(pext, &r->sub_res);
+	return pext->g_restriction(&r->sub_res);
 }
 
 int ext_buffer_pull_restriction(EXT_PULL *pext, RESTRICTION *r)
@@ -924,7 +924,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_restriction(pext, static_cast<RESTRICTION *>(*ppval));
+		return pext->g_restriction(static_cast<RESTRICTION *>(*ppval));
 	case PT_ACTIONS:
 		*ppval = pext->anew<RULE_ACTIONS>();
 		if (NULL == (*ppval)) {

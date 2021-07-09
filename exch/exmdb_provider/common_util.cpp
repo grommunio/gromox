@@ -2521,10 +2521,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_restriction(&ext_pull,
-					    static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_restriction(static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_ACTIONS:
@@ -3756,8 +3754,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_buffer_pull_restriction(&ext_pull,
-		    static_cast<RESTRICTION *>(*ppvalue)) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_restriction(static_cast<RESTRICTION *>(*ppvalue)) != EXT_ERR_SUCCESS) {
 			*ppvalue = NULL;
 			return TRUE;
 		}

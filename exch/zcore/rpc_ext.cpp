@@ -230,7 +230,7 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_restriction(pext, static_cast<RESTRICTION *>(*ppval)));
+		QRF(pext->g_restriction(static_cast<RESTRICTION *>(*ppval)));
 		return TRUE;
 	case PT_ACTIONS:
 		*ppval = pext->anew<RULE_ACTIONS>();
@@ -1318,7 +1318,7 @@ static BOOL rpc_ext_pull_queryrows_request(
 		if (NULL == ppayload->queryrows.prestriction) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_restriction(pext, ppayload->queryrows.prestriction));
+		QRF(pext->g_restriction(ppayload->queryrows.prestriction));
 	}
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
@@ -1408,7 +1408,7 @@ static BOOL rpc_ext_pull_restricttable_request(
 	if (NULL == ppayload->restricttable.prestriction) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_restriction(pext, ppayload->restricttable.prestriction));
+	QRF(pext->g_restriction(ppayload->restricttable.prestriction));
 	QRF(pext->g_uint32(&ppayload->restricttable.flags));
 	return TRUE;
 }
@@ -1423,7 +1423,7 @@ static BOOL rpc_ext_pull_findrow_request(
 	if (NULL == ppayload->findrow.prestriction) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_restriction(pext, ppayload->findrow.prestriction));
+	QRF(pext->g_restriction(ppayload->findrow.prestriction));
 	QRF(pext->g_uint32(&ppayload->findrow.flags));
 	return TRUE;
 }
@@ -1751,7 +1751,7 @@ static BOOL rpc_ext_pull_configsync_request(
 		if (NULL == ppayload->configsync.prestriction) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_restriction(pext, ppayload->configsync.prestriction));
+		QRF(pext->g_restriction(ppayload->configsync.prestriction));
 	}
 	return TRUE;
 }
@@ -2009,7 +2009,7 @@ static BOOL rpc_ext_pull_setsearchcriteria_request(
 		if (NULL == ppayload->setsearchcriteria.prestriction) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_restriction(pext, ppayload->setsearchcriteria.prestriction));
+		QRF(pext->g_restriction(ppayload->setsearchcriteria.prestriction));
 	}
 	return TRUE;
 }

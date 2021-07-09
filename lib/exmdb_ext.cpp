@@ -488,7 +488,7 @@ static int exmdb_ext_pull_set_search_criteria_request(
 		if (NULL == ppayload->set_search_criteria.prestriction) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_restriction(pext, ppayload->set_search_criteria.prestriction));
+		TRY(pext->g_restriction(ppayload->set_search_criteria.prestriction));
 	}
 	ppayload->set_search_criteria.pfolder_ids = cu_alloc<LONGLONG_ARRAY>();
 	if (NULL == ppayload->set_search_criteria.pfolder_ids) {
@@ -719,7 +719,7 @@ static int exmdb_ext_pull_load_hierarchy_table_request(
 		if (NULL == ppayload->load_hierarchy_table.prestriction) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_restriction(pext, ppayload->load_hierarchy_table.prestriction));
+		TRY(pext->g_restriction(ppayload->load_hierarchy_table.prestriction));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -781,7 +781,7 @@ static int exmdb_ext_pull_load_content_table_request(
 		if (NULL == ppayload->load_content_table.prestriction) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_restriction(pext, ppayload->load_content_table.prestriction));
+		TRY(pext->g_restriction(ppayload->load_content_table.prestriction));
 	}
 	TRY(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
@@ -863,8 +863,7 @@ static int exmdb_ext_pull_load_rule_table_request(
 	if (NULL == ppayload->load_rule_table.prestriction) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_restriction(pext,
-	       ppayload->load_rule_table.prestriction);
+	return pext->g_restriction(ppayload->load_rule_table.prestriction);
 }
 
 static int exmdb_ext_push_load_rule_table_request(
@@ -961,7 +960,7 @@ static int exmdb_ext_pull_match_table_request(
 	if (NULL == ppayload->match_table.pres) {
 		return EXT_ERR_ALLOC;
 	}
-	TRY(ext_buffer_pull_restriction(pext, ppayload->match_table.pres));
+	TRY(pext->g_restriction(ppayload->match_table.pres));
 	ppayload->match_table.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (NULL == ppayload->match_table.pproptags) {
 		return EXT_ERR_ALLOC;
@@ -2268,8 +2267,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 			status = EXT_ERR_ALLOC;
 			return gcsr_failure(status, ppayload);
 		}
-		status = ext_buffer_pull_restriction(pext,
-			ppayload->get_content_sync.prestriction);
+		status = pext->g_restriction(ppayload->get_content_sync.prestriction);
 		if (EXT_ERR_SUCCESS != status) {
 			return gcsr_failure(status, ppayload);
 		}
@@ -3778,7 +3776,7 @@ static int exmdb_ext_pull_get_search_criteria_response(
 		if (NULL == ppayload->get_search_criteria.prestriction) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_restriction(pext, ppayload->get_search_criteria.prestriction));
+		TRY(pext->g_restriction(ppayload->get_search_criteria.prestriction));
 	}
 	return ext_buffer_pull_longlong_array(pext,
 		&ppayload->get_search_criteria.folder_ids);

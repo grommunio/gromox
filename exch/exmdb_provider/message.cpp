@@ -4186,10 +4186,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS !=
 			ext_buffer_pull_namedproperty_information(
-			&ext_pull, &propname_info) || EXT_ERR_SUCCESS !=
-			ext_buffer_pull_restriction(&ext_pull, &restriction)) {
+			&ext_pull, &propname_info) ||
+		    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
 			continue;
-		}
 		if (FALSE == message_replace_restriction_propid(
 			psqlite, &propname_info, &restriction)) {
 			return FALSE;

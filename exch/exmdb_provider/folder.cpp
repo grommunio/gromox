@@ -2255,10 +2255,8 @@ BOOL exmdb_server_get_search_criteria(
 		if (NULL == *pprestriction) {
 			return FALSE;
 		}
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_restriction(
-			&ext_pull, *pprestriction)) {
+		if (ext_pull.g_restriction(*pprestriction) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 	}
 	pstmt.finalize();
 	if (NULL != pfolder_ids) {
@@ -2409,8 +2407,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_restriction(
-			&ext_pull, (RESTRICTION*)prestriction)) {
+		if (ext_pull.g_restriction(const_cast<RESTRICTION *>(prestriction)) != EXT_ERR_SUCCESS) {
 			pstmt.finalize();
 			goto CRITERIA_FAILURE;
 		}

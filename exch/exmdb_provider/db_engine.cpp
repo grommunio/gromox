@@ -143,8 +143,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 		pdynamic->search_flags = search_flags;
 		ext_pull.init(sqlite3_column_blob(pstmt, 2),
 			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_restriction(
-			&ext_pull, &tmp_restriction)) {
+		if (ext_pull.g_restriction(&tmp_restriction) != EXT_ERR_SUCCESS) {
 			free(pdynamic);
 			continue;
 		}
