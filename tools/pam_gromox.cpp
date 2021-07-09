@@ -66,8 +66,8 @@ static int read_password(pam_handle_t *pamh, const char *prompt, char **pass)
 PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     int argc, const char **argv)
 {
-	auto cfg = config_file_prg(nullptr, "pam.cfg");
-	if (cfg == nullptr)
+	auto cfg = g_config_file = config_file_prg(nullptr, "pam.cfg");
+	if (g_config_file == nullptr)
 		return PAM_AUTH_ERR;
 
 	const char *username = nullptr;
