@@ -1354,8 +1354,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 			ext_pull.init(sqlite3_column_blob(pstmt, 1),
 				sqlite3_column_bytes(pstmt, 1),
 				common_util_alloc, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_pull_proptag_array(
-				&ext_pull, &tmp_indices)) {
+			if (ext_pull.g_proptag_a(&tmp_indices) != EXT_ERR_SUCCESS) {
 				proptag_array_free(ptmp_indices);
 				proptag_array_free(ptmp_proptags);
 				return FALSE;
@@ -1373,8 +1372,7 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 			ext_pull.init(sqlite3_column_blob(pstmt, 2),
 				sqlite3_column_bytes(pstmt, 2),
 				common_util_alloc, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_pull_proptag_array(
-				&ext_pull, &tmp_proptags)) {
+			if (ext_pull.g_proptag_a(&tmp_proptags) != EXT_ERR_SUCCESS) {
 				proptag_array_free(ptmp_indices);
 				proptag_array_free(ptmp_proptags);
 				return FALSE;

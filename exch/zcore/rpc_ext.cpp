@@ -1328,7 +1328,7 @@ static BOOL rpc_ext_pull_queryrows_request(
 		if (NULL == ppayload->queryrows.pproptags) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_proptag_array(pext, ppayload->queryrows.pproptags));
+		QRF(pext->g_proptag_a(ppayload->queryrows.pproptags));
 	}
 	return TRUE;
 }
@@ -1349,7 +1349,7 @@ static BOOL rpc_ext_pull_setcolumns_request(
 	if (NULL == ppayload->setcolumns.pproptags) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_proptag_array(pext, ppayload->setcolumns.pproptags));
+	QRF(pext->g_proptag_a(ppayload->setcolumns.pproptags));
 	QRF(pext->g_uint32(&ppayload->setcolumns.flags));
 	return TRUE;
 }
@@ -1587,7 +1587,7 @@ static BOOL rpc_ext_pull_getpropvals_request(
 		if (NULL == ppayload->getpropvals.pproptags) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_proptag_array(pext, ppayload->getpropvals.pproptags));
+		QRF(pext->g_proptag_a(ppayload->getpropvals.pproptags));
 	}
 	return TRUE;
 }
@@ -1608,7 +1608,7 @@ static BOOL rpc_ext_pull_deletepropvals_request(
 	if (NULL == ppayload->deletepropvals.pproptags) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_proptag_array(pext, ppayload->deletepropvals.pproptags));
+	QRF(pext->g_proptag_a(ppayload->deletepropvals.pproptags));
 	return TRUE;
 }
 
@@ -1686,7 +1686,7 @@ static BOOL rpc_ext_pull_copyto_request(
 	if (NULL == ppayload->copyto.pexclude_proptags) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_proptag_array(pext, ppayload->copyto.pexclude_proptags));
+	QRF(pext->g_proptag_a(ppayload->copyto.pexclude_proptags));
 	QRF(pext->g_uint32(&ppayload->copyto.hdstobject));
 	QRF(pext->g_uint32(&ppayload->copyto.flags));
 	return TRUE;

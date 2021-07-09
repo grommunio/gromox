@@ -570,7 +570,7 @@ static int rop_ext_pull_setcolumns_request(
 	EXT_PULL *pext, SETCOLUMNS_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->table_flags));
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_push_setcolumns_response(
@@ -895,7 +895,7 @@ static int rop_ext_pull_modifyrecipients_request(
 {
 	int i;
 
-	TRY(ext_buffer_pull_proptag_array(pext, &r->proptags));
+	TRY(pext->g_proptag_a(&r->proptags));
 	TRY(pext->g_uint16(&r->count));
 	if (0 == r->count) {
 		r->prow = NULL;
@@ -1246,7 +1246,7 @@ static int rop_ext_pull_getpropertiesspecific_request(
 {
 	TRY(pext->g_uint16(&r->size_limit));
 	TRY(pext->g_uint16(&r->want_unicode));
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_push_getpropertiesspecific_response(
@@ -1321,7 +1321,7 @@ static int rop_ext_push_setpropertiesnoreplicate_response(
 static int rop_ext_pull_deleteproperties_request(
 	EXT_PULL *pext,	DELETEPROPERTIES_REQUEST *r)
 {
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_push_deleteproperties_response(
@@ -1333,7 +1333,7 @@ static int rop_ext_push_deleteproperties_response(
 static int rop_ext_pull_deletepropertiesnoreplicate_request(
 	EXT_PULL *pext, DELETEPROPERTIESNOREPLICATE_REQUEST *r)
 {
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_push_deletepropertiesnoreplicate_response(
@@ -1372,7 +1372,7 @@ static int rop_ext_pull_copyproperties_request(
 	TRY(pext->g_uint8(&r->hindex));
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->copy_flags));
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_push_copyproperties_response(
@@ -1387,7 +1387,7 @@ static int rop_ext_pull_copyto_request(EXT_PULL *pext, COPYTO_REQUEST *r)
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->want_subobjects));
 	TRY(pext->g_uint8(&r->copy_flags));
-	return ext_buffer_pull_proptag_array(pext, &r->excluded_proptags);
+	return pext->g_proptag_a(&r->excluded_proptags);
 }
 
 static int rop_ext_push_copyto_response(EXT_PUSH *pext,
@@ -1669,7 +1669,7 @@ static int rop_ext_pull_fasttransfersourcecopyto_request(
 	TRY(pext->g_uint8(&r->level));
 	TRY(pext->g_uint32(&r->flags));
 	TRY(pext->g_uint8(&r->send_options));
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_pull_fasttransfersourcecopyproperties_request(
@@ -1679,7 +1679,7 @@ static int rop_ext_pull_fasttransfersourcecopyproperties_request(
 	TRY(pext->g_uint8(&r->level));
 	TRY(pext->g_uint8(&r->flags));
 	TRY(pext->g_uint8(&r->send_options));
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_pull_tellversion_request(
@@ -1719,7 +1719,7 @@ static int rop_ext_pull_syncconfigure_request(
 		pext->offset = offset;
 	}
 	TRY(pext->g_uint32(&r->extra_flags));
-	return ext_buffer_pull_proptag_array(pext, &r->proptags);
+	return pext->g_proptag_a(&r->proptags);
 }
 
 static int rop_ext_pull_syncimportmessagechange_request(
