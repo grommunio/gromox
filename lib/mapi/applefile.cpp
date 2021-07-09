@@ -55,7 +55,7 @@ static int applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
 	if (APPLEFILE_VERSION != r->version_num) {
 		return EXT_ERR_FORMAT;
 	}
-	return ext_buffer_pull_bytes(pext, r->filler, 16);
+	return pext->g_bytes(r->filler, 16);
 }
 
 static int applefile_pull_asiconbw(EXT_PULL *pext,
@@ -111,12 +111,12 @@ static int applefile_pull_asfinderinfo(EXT_PULL *pext,
 	
 	memset(r, 0, sizeof(ASFINDERINFO));
 	offset = pext->offset;
-	TRY(ext_buffer_pull_bytes(pext, &r->finfo.fd_type, 4));
+	TRY(pext->g_bytes(&r->finfo.fd_type, 4));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
-	TRY(ext_buffer_pull_bytes(pext, &r->finfo.fd_creator, 4));
+	TRY(pext->g_bytes(&r->finfo.fd_creator, 4));
 	r->valid_count ++;
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
@@ -181,7 +181,7 @@ static int applefile_pull_asmacinfo(EXT_PULL *pext,
 	
 	memset(r, 0, sizeof(ASMACINFO));
 	offset = pext->offset;
-	TRY(ext_buffer_pull_bytes(pext, r->filler, 3));
+	TRY(pext->g_bytes(r->filler, 3));
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}
@@ -227,7 +227,7 @@ static int applefile_pull_asafpinfo(EXT_PULL *pext,
 	
 	memset(r, 0, sizeof(ASAFPINFO));
 	offset = pext->offset;
-	TRY(ext_buffer_pull_bytes(pext, r->filler, 3));
+	TRY(pext->g_bytes(r->filler, 3));
 	if (pext->offset - offset == entry_length) {
 		return EXT_ERR_SUCCESS;
 	}

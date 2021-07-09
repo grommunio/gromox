@@ -350,7 +350,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		offset = pext->offset;
-		TRY(ext_buffer_pull_bytes(pext, bv->pv, bv->cb));
+		TRY(pext->g_bytes(bv->pv, bv->cb));
 		if (memcmp(bv->pv, IID_IMessage, 16) != 0 &&
 		    memcmp(bv->pv, IID_IStorage, 16) != 0 &&
 		    memcmp(bv->pv, IID_IStream, 16) != 0)
@@ -377,7 +377,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		offset = pext->offset;
-		TRY(ext_buffer_pull_bytes(pext, bv->pv, bv->cb));
+		TRY(pext->g_bytes(bv->pv, bv->cb));
 		return ext_buffer_pull_advance(pext,
 			tnef_align(pext->offset - offset));
 	}
@@ -563,7 +563,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 				}
 			}
 			offset = pext->offset;
-			TRY(ext_buffer_pull_bytes(pext, ba->pbin[i].pv, ba->pbin[i].cb));
+			TRY(pext->g_bytes(ba->pbin[i].pv, ba->pbin[i].cb));
 			TRY(ext_buffer_pull_advance(pext,tnef_align(pext->offset - offset)));
 		}
 		return EXT_ERR_SUCCESS;
@@ -738,7 +738,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, r->pvalue, len));
+		TRY(pext->g_bytes(r->pvalue, len));
 		((char*)r->pvalue)[len] = '\0';
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
@@ -852,7 +852,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		bv->pv = pext->alloc(len);
 		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(ext_buffer_pull_bytes(pext, bv->pv, len));
+		TRY(pext->g_bytes(bv->pv, len));
 		break;
 	}
 	case ATTRIBUTE_ID_TNEFVERSION:

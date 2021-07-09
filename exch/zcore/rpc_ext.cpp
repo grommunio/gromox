@@ -104,7 +104,7 @@ static BOOL rpc_ext_pull_action_block(
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_bytes(pext, r->pdata, tmp_len));
+		QRF(pext->g_bytes(r->pdata, tmp_len));
 		return TRUE;
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
@@ -999,7 +999,7 @@ static BOOL rpc_ext_pull_openpropfilesec_request(
 		if (NULL == ppayload->openpropfilesec.puid) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_bytes(pext, const_cast<FLATUID *>(ppayload->openpropfilesec.puid), sizeof(FLATUID)));
+		QRF(pext->g_bytes(const_cast<FLATUID *>(ppayload->openpropfilesec.puid), sizeof(FLATUID)));
 	}
 	return TRUE;
 }

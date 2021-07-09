@@ -102,7 +102,7 @@ static int rop_ext_pull_logon_request(EXT_PULL *pext, LOGON_REQUEST *r)
 	if (NULL == r->pessdn) {
 		return EXT_ERR_ALLOC;
 	}
-	TRY(ext_buffer_pull_bytes(pext, r->pessdn, size));
+	TRY(pext->g_bytes(r->pessdn, size));
 	if ('\0' != r->pessdn[size - 1]) {
 		return EXT_ERR_FORMAT;
 	}

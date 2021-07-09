@@ -100,7 +100,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + client_ip_offset - 4;
-		TRY(ext_buffer_pull_bytes(pext, r->client_ip, r->client_ip_size));
+		TRY(pext->g_bytes(r->client_ip, r->client_ip_size));
 	} else {
 		r->client_ip = NULL;
 	}
@@ -111,7 +111,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + client_ip_mask_offset - 4;
-		TRY(ext_buffer_pull_bytes(pext, r->client_ip_mask, r->client_ip_mask_size));
+		TRY(pext->g_bytes(r->client_ip_mask, r->client_ip_mask_size));
 	} else {
 		r->client_ip_mask = NULL;
 	}
@@ -128,7 +128,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			return EXT_ERR_ALLOC;
 		}
 		pext->offset = payload_offset + mac_address_offset - 4;
-		TRY(ext_buffer_pull_bytes(pext, r->mac_address, r->mac_address_size));
+		TRY(pext->g_bytes(r->mac_address, r->mac_address_size));
 	} else {
 		r->mac_address = NULL;
 	}
@@ -322,7 +322,7 @@ static int aux_ext_pull_aux_perf_defgc_success(
 	TRY(pext->g_uint32(&r->time_since_request));
 	TRY(pext->g_uint32(&r->time_to_complete_request));
 	TRY(pext->g_uint8(&r->request_operation));
-	return ext_buffer_pull_bytes(pext, r->reserved, 3);
+	return pext->g_bytes(r->reserved, 3);
 }
 
 static int aux_ext_push_aux_perf_defgc_success(
@@ -394,7 +394,7 @@ static int aux_ext_pull_aux_perf_gc_success(
 	TRY(pext->g_uint32(&r->time_since_request));
 	TRY(pext->g_uint32(&r->time_to_complete_request));
 	TRY(pext->g_uint8(&r->request_operation));
-	return ext_buffer_pull_bytes(pext, r->reserved2, 3);
+	return pext->g_bytes(r->reserved2, 3);
 }
 
 static int aux_ext_push_aux_perf_gc_success(
@@ -420,7 +420,7 @@ static int aux_ext_pull_aux_perf_gc_success_v2(
 	TRY(pext->g_uint32(&r->time_since_request));
 	TRY(pext->g_uint32(&r->time_to_complete_request));
 	TRY(pext->g_uint8(&r->request_operation));
-	return ext_buffer_pull_bytes(pext, r->reserved, 3);
+	return pext->g_bytes(r->reserved, 3);
 }
 
 static int aux_ext_push_aux_perf_gc_success_v2(
@@ -446,7 +446,7 @@ static int aux_ext_pull_aux_perf_failure(EXT_PULL *pext, AUX_PERF_FAILURE *r)
 	TRY(pext->g_uint32(&r->time_to_fail_request));
 	TRY(pext->g_uint32(&r->result_code));
 	TRY(pext->g_uint8(&r->request_operation));
-	return ext_buffer_pull_bytes(pext, r->reserved, 3);
+	return pext->g_bytes(r->reserved, 3);
 }
 
 static int aux_ext_push_aux_perf_failure(
@@ -516,7 +516,7 @@ static int aux_ext_pull_aux_osversioninfo(
 	TRY(pext->g_uint32(&r->major_version));
 	TRY(pext->g_uint32(&r->minor_version));
 	TRY(pext->g_uint32(&r->build_number));
-	TRY(ext_buffer_pull_bytes(pext, r->reserved1, 132));
+	TRY(pext->g_bytes(r->reserved1, 132));
 	TRY(pext->g_uint16(&r->service_pack_major));
 	TRY(pext->g_uint16(&r->service_pack_minor));
 	return pext->g_uint32(&r->reserved2);

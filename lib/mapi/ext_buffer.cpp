@@ -161,8 +161,8 @@ int ext_buffer_pull_guid(EXT_PULL *pext, GUID *r)
 	TRY(pext->g_uint32(&r->time_low));
 	TRY(pext->g_uint16(&r->time_mid));
 	TRY(pext->g_uint16(&r->time_hi_and_version));
-	TRY(ext_buffer_pull_bytes(pext, r->clock_seq, 2));
-	TRY(ext_buffer_pull_bytes(pext, r->node, 6));
+	TRY(pext->g_bytes(r->clock_seq, 2));
+	TRY(pext->g_bytes(r->node, 6));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -260,7 +260,7 @@ int ext_buffer_pull_binary(EXT_PULL *pext, BINARY *r)
 		r->cb = 0;
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_bytes(pext, r->pv, r->cb);
+	return pext->g_bytes(r->pv, r->cb);
 }
 
 int ext_buffer_pull_sbinary(EXT_PULL *pext, BINARY *r)
@@ -278,7 +278,7 @@ int ext_buffer_pull_sbinary(EXT_PULL *pext, BINARY *r)
 		r->cb = 0;
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_bytes(pext, r->pv, r->cb);
+	return pext->g_bytes(r->pv, r->cb);
 }
 
 int ext_buffer_pull_exbinary(EXT_PULL *pext, BINARY *r)
@@ -293,7 +293,7 @@ int ext_buffer_pull_exbinary(EXT_PULL *pext, BINARY *r)
 		r->cb = 0;
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_bytes(pext, r->pv, r->cb);
+	return pext->g_bytes(r->pv, r->cb);
 }
 
 int ext_buffer_pull_short_array(EXT_PULL *pext, SHORT_ARRAY *r)
@@ -671,7 +671,7 @@ int ext_buffer_pull_svreid(EXT_PULL *pext, SVREID *r)
 			r->pbin->cb = 0;
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_bytes(pext, r->pbin->pv, r->pbin->cb);
+		return pext->g_bytes(r->pbin->pv, r->pbin->cb);
 	}
 	if (21 != length) {
 		return EXT_ERR_FORMAT;
@@ -685,12 +685,12 @@ int ext_buffer_pull_svreid(EXT_PULL *pext, SVREID *r)
 int ext_buffer_pull_store_entryid(EXT_PULL *pext, STORE_ENTRYID *r)
 {
 	TRY(pext->g_uint32(&r->flags));
-	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint8(&r->version));
 	TRY(pext->g_uint8(&r->flag));
-	TRY(ext_buffer_pull_bytes(pext, r->dll_name, 14));
+	TRY(pext->g_bytes(r->dll_name, 14));
 	TRY(pext->g_uint32(&r->wrapped_flags));
-	TRY(ext_buffer_pull_bytes(pext, r->wrapped_provider_uid, 16));
+	TRY(pext->g_bytes(r->wrapped_provider_uid, 16));
 	TRY(pext->g_uint32(&r->wrapped_type));
 	TRY(pext->g_str(&r->pserver_name));
 	return pext->g_str(&r->pmailbox_dn);
@@ -803,7 +803,7 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_bytes(pext, r->pdata, tmp_len);
+		return pext->g_bytes(r->pdata, tmp_len);
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (NULL == r->pdata) {
@@ -1000,7 +1000,7 @@ int ext_buffer_pull_tagged_propval(EXT_PULL *pext, TAGGED_PROPVAL *r)
 int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
 {
 	TRY(pext->g_guid(&r->guid));
-	TRY(ext_buffer_pull_bytes(pext, r->global_counter, 6));
+	TRY(pext->g_bytes(r->global_counter, 6));
 	return pext->g_uint16(&r->padding);
 }
 
@@ -1167,17 +1167,17 @@ int ext_buffer_pull_xid(EXT_PULL *pext, uint8_t size, XID *pxid)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(pext->g_guid(&pxid->guid));
-	return ext_buffer_pull_bytes(pext, pxid->local_id, size - 16);
+	return pext->g_bytes(pxid->local_id, size - 16);
 }
 
 int ext_buffer_pull_folder_entryid(EXT_PULL *pext, FOLDER_ENTRYID *r)
 {
 	TRY(pext->g_uint32(&r->flags));
-	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->folder_type));
 	TRY(pext->g_guid(&r->database_guid));
-	TRY(ext_buffer_pull_bytes(pext, r->global_counter, 6));
-	return ext_buffer_pull_bytes(pext, r->pad, 2);
+	TRY(pext->g_bytes(r->global_counter, 6));
+	return pext->g_bytes(r->pad, 2);
 }
 
 static int ext_buffer_pull_ext_movecopy_action(
@@ -1201,14 +1201,14 @@ static int ext_buffer_pull_ext_movecopy_action(
 int ext_buffer_pull_message_entryid(EXT_PULL *pext, MESSAGE_ENTRYID *r)
 {
 	TRY(pext->g_uint32(&r->flags));
-	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->message_type));
 	TRY(pext->g_guid(&r->folder_database_guid));
-	TRY(ext_buffer_pull_bytes(pext, r->folder_global_counter, 6));
-	TRY(ext_buffer_pull_bytes(pext, r->pad1, 2));
+	TRY(pext->g_bytes(r->folder_global_counter, 6));
+	TRY(pext->g_bytes(r->pad1, 2));
 	TRY(pext->g_guid(&r->message_database_guid));
-	TRY(ext_buffer_pull_bytes(pext, r->message_global_counter, 6));
-	return ext_buffer_pull_bytes(pext, r->pad2, 2);
+	TRY(pext->g_bytes(r->message_global_counter, 6));
+	return pext->g_bytes(r->pad2, 2);
 }
 
 static int ext_buffer_pull_ext_reply_action(
@@ -1290,7 +1290,7 @@ static int ext_buffer_pull_ext_action_block(
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_bytes(pext, r->pdata, tmp_len);
+		return pext->g_bytes(r->pdata, tmp_len);
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (NULL == r->pdata) {
@@ -1607,7 +1607,7 @@ int ext_buffer_pull_addressbook_entryid(
 	EXT_PULL *pext, ADDRESSBOOK_ENTRYID *r)
 {
 	TRY(pext->g_uint32(&r->flags));
-	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint32(&r->version));
 	TRY(pext->g_uint32(&r->type));
 	return pext->g_str(&r->px500dn);
@@ -1616,7 +1616,7 @@ int ext_buffer_pull_addressbook_entryid(
 int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r)
 {
 	TRY(pext->g_uint32(&r->flags));
-	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
+	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->version));
 	TRY(pext->g_uint16(&r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
@@ -1710,7 +1710,7 @@ static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	TRY(pext->g_uint16(&r->reserved));
 	TRY(pext->g_uint16(&r->flags));
 	TRY(ext_buffer_pull_int16(pext, &r->year));
-	TRY(ext_buffer_pull_bytes(pext, r->x, 14));
+	TRY(pext->g_bytes(r->x, 14));
 	TRY(ext_buffer_pull_int32(pext, &r->bias));
 	TRY(ext_buffer_pull_int32(pext, &r->standardbias));
 	TRY(ext_buffer_pull_int32(pext, &r->daylightbias));
@@ -1738,7 +1738,7 @@ int ext_buffer_pull_timezonedefinition(EXT_PULL *pext, TIMEZONEDEFINITION *r)
 		return EXT_ERR_FORMAT;
 	}
 	memset(tmp_buff, 0, sizeof(tmp_buff));
-	TRY(ext_buffer_pull_bytes(pext, tmp_buff, cbheader - 6));
+	TRY(pext->g_bytes(tmp_buff, cbheader - 6));
 	if (FALSE == utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, 1024)) {
 		return EXT_ERR_CHARCNV;
 	}
@@ -1844,7 +1844,7 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 		if (NULL == r->subject) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, r->subject, tmp_len2));
+		TRY(pext->g_bytes(r->subject, tmp_len2));
 		r->subject[tmp_len2] = '\0';
 	}
 	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE) {
@@ -1866,7 +1866,7 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 		if (NULL == r->location) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, r->location, tmp_len2));
+		TRY(pext->g_bytes(r->location, tmp_len2));
 		r->location[tmp_len2] = '\0';
 	}
 	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS) {
@@ -1900,8 +1900,7 @@ static int ext_buffer_pull_changehighlight(
 		r->size = 0;
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_bytes(pext, r->preserved,
-						r->size - sizeof(uint32_t));
+	return pext->g_bytes(r->preserved, r->size - sizeof(uint32_t));
 }
 
 static int ext_buffer_pull_extendedexception(
@@ -1923,7 +1922,7 @@ static int ext_buffer_pull_extendedexception(
 			r->reservedblockee1size = 0;
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, r->preservedblockee1, r->reservedblockee1size));
+		TRY(pext->g_bytes(r->preservedblockee1, r->reservedblockee1size));
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
@@ -1940,7 +1939,7 @@ static int ext_buffer_pull_extendedexception(
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len));
+		TRY(pext->g_bytes(pbuff.get(), tmp_len));
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
@@ -1961,7 +1960,7 @@ static int ext_buffer_pull_extendedexception(
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, pbuff.get(), tmp_len));
+		TRY(pext->g_bytes(pbuff.get(), tmp_len));
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
@@ -1984,7 +1983,7 @@ static int ext_buffer_pull_extendedexception(
 				r->reservedblockee2size = 0;
 				return EXT_ERR_ALLOC;
 			}
-			TRY(ext_buffer_pull_bytes(pext, r->preservedblockee2, r->reservedblockee2size));
+			TRY(pext->g_bytes(r->preservedblockee2, r->reservedblockee2size));
 		}
 	}
 	return EXT_ERR_SUCCESS;
@@ -2028,7 +2027,7 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 			r->reservedblock1size = 0;
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_bytes(pext, r->preservedblock1, r->reservedblock1size));
+		TRY(pext->g_bytes(r->preservedblock1, r->reservedblock1size));
 	}
 	for (i=0; i<r->exceptioncount; i++) {
 		TRY(ext_buffer_pull_extendedexception(pext, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
@@ -2043,9 +2042,7 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 		r->reservedblock2size = 0;
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_bytes(pext,
-			r->preservedblock2,
-			r->reservedblock2size);
+	return pext->g_bytes(r->preservedblock2, r->reservedblock2size);
 }
 
 int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r)
@@ -2053,14 +2050,14 @@ int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r)
 	uint8_t yh;
 	uint8_t yl;
 	
-	TRY(ext_buffer_pull_bytes(pext, r->arrayid, 16));
+	TRY(pext->g_bytes(r->arrayid, 16));
 	TRY(pext->g_uint8(&yh));
 	TRY(pext->g_uint8(&yl));
 	r->year = ((uint16_t)yh) << 8 | yl;
 	TRY(pext->g_uint8(&r->month));
 	TRY(pext->g_uint8(&r->day));
 	TRY(pext->g_uint64(&r->creationtime));
-	TRY(ext_buffer_pull_bytes(pext, r->x, 8));
+	TRY(pext->g_bytes(r->x, 8));
 	return ext_buffer_pull_exbinary(pext, &r->data);
 }
 

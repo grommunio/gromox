@@ -104,11 +104,11 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	if (tmp_byte > 63) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_pull_bytes(pext, r->file_name, tmp_byte));
+	TRY(pext->g_bytes(r->file_name, tmp_byte));
 	r->file_name[tmp_byte] = '\0';
 	TRY(ext_buffer_pull_advance(pext, 63 - tmp_byte));
-	TRY(ext_buffer_pull_bytes(pext, &r->type, 4));
-	TRY(ext_buffer_pull_bytes(pext, &r->creator, 4));
+	TRY(pext->g_bytes(&r->type, 4));
+	TRY(pext->g_bytes(&r->creator, 4));
 	TRY(pext->g_uint8(&r->original_flags));
 	TRY(pext->g_uint8(&r->pad1));
 	TRY(macbinary_pull_uint16(pext, &r->point_v));
@@ -124,10 +124,10 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	r->modify_time = TIMEDIFF + tmp_int;
 	TRY(macbinary_pull_uint16(pext, &r->comment_len));
 	TRY(pext->g_uint8(&r->finder_flags));
-	TRY(ext_buffer_pull_bytes(pext, (uint8_t*)&r->signature, 4));
+	TRY(pext->g_bytes(reinterpret_cast<uint8_t *>(&r->signature), 4));
 	TRY(ext_buffer_pull_int8(pext, &r->fd_script));
 	TRY(ext_buffer_pull_int8(pext, &r->fd_xflags));
-	TRY(ext_buffer_pull_bytes(pext, r->pads1, 8));
+	TRY(pext->g_bytes(r->pads1, 8));
 	TRY(macbinary_pull_uint32(pext, &r->total_unpacked));
 	TRY(macbinary_pull_uint16(pext, &r->xheader_len));
 	TRY(pext->g_uint8(&r->version));
@@ -146,7 +146,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	if (crc != macbinary_crc(pext->data + offset, 124, 0)) {
 		debug_info("[macbinary]: CRC checksum error");
 	}
-	return ext_buffer_pull_bytes(pext, r->pads2, 2);
+	return pext->g_bytes(r->pads2, 2);
 }
 
 static int macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
