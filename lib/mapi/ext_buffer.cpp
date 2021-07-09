@@ -190,7 +190,7 @@ int ext_buffer_pull_wstring(EXT_PULL *pext, char **ppstr)
 	int len, max_len;
 	
 	if (0 == (pext->flags & EXT_FLAG_UTF16)) {
-		return ext_buffer_pull_string(pext, ppstr);
+		return pext->g_str(ppstr);
 	}
 	if (pext->offset >= pext->data_size) {
 		return EXT_ERR_BUFSIZE;
@@ -397,7 +397,7 @@ int ext_buffer_pull_string_array(EXT_PULL *pext, STRING_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_string(pext, &r->ppstr[i]));
+		TRY(pext->g_str(&r->ppstr[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -414,7 +414,7 @@ int ext_buffer_pull_wstring_array(EXT_PULL *pext, STRING_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_wstring(pext, &r->ppstr[i]));
+		TRY(pext->g_wstr(&r->ppstr[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -692,8 +692,8 @@ int ext_buffer_pull_store_entryid(EXT_PULL *pext, STORE_ENTRYID *r)
 	TRY(pext->g_uint32(&r->wrapped_flags));
 	TRY(ext_buffer_pull_bytes(pext, r->wrapped_provider_uid, 16));
 	TRY(pext->g_uint32(&r->wrapped_type));
-	TRY(ext_buffer_pull_string(pext, &r->pserver_name));
-	return ext_buffer_pull_string(pext, &r->pmailbox_dn);
+	TRY(pext->g_str(&r->pserver_name));
+	return pext->g_str(&r->pmailbox_dn);
 }
 
 static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
@@ -904,9 +904,9 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		}
 		return pext->g_uint64(static_cast<uint64_t *>(*ppval));
 	case PT_STRING8:
-		return ext_buffer_pull_string(pext, (char**)ppval);
+		return pext->g_str(reinterpret_cast<char **>(ppval));
 	case PT_UNICODE:
-		return ext_buffer_pull_wstring(pext, (char**)ppval);
+		return pext->g_wstr(reinterpret_cast<char **>(ppval));
 	case PT_SVREID:
 		*ppval = pext->anew<SVREID>();
 		if (NULL == (*ppval)) {
@@ -961,13 +961,13 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_string_array(pext, static_cast<STRING_ARRAY *>(*ppval));
+		return pext->g_str_a(static_cast<STRING_ARRAY *>(*ppval));
 	case PT_MV_UNICODE:
 		*ppval = pext->anew<STRING_ARRAY>();
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_wstring_array(pext, static_cast<STRING_ARRAY *>(*ppval));
+		return pext->g_wstr_a(static_cast<STRING_ARRAY *>(*ppval));
 	case PT_MV_CLSID:
 		*ppval = pext->anew<GUID_ARRAY>();
 		if (NULL == (*ppval)) {
@@ -1047,7 +1047,7 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 			return EXT_ERR_FORMAT;
 		}
 		offset = pext->offset + name_size;
-		TRY(ext_buffer_pull_wstring(pext, &r->pname));
+		TRY(pext->g_wstr(&r->pname));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -1495,7 +1495,7 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 			return EXT_ERR_ALLOC;
 		}
 		TRY(pext->g_uint8(r->pdisplay_type));
-		TRY(ext_buffer_pull_string(pext, &r->px500dn));
+		TRY(pext->g_str(&r->px500dn));
 	}
 	r->pentry_id = NULL;
 	r->psearch_key = NULL;
@@ -1515,38 +1515,38 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 	r->paddress_type = NULL;
 	if (RECIPIENT_ROW_TYPE_NONE == type &&
 		(r->flags & RECIPIENT_ROW_FLAG_OUTOFSTANDARD)) {
-		TRY(ext_buffer_pull_string(pext, &r->paddress_type));
+		TRY(pext->g_str(&r->paddress_type));
 	}
 	r->pmail_address = NULL;
 	if (RECIPIENT_ROW_FLAG_EMAIL & r->flags) {
 		if (TRUE == b_unicode) {
-			TRY(ext_buffer_pull_wstring(pext, &r->pmail_address));
+			TRY(pext->g_wstr(&r->pmail_address));
 		} else {
-			TRY(ext_buffer_pull_string(pext, &r->pmail_address));
+			TRY(pext->g_str(&r->pmail_address));
 		}
 	}
 	r->pdisplay_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_DISPLAY) {
 		if (TRUE == b_unicode) {
-			TRY(ext_buffer_pull_wstring(pext, &r->pdisplay_name));
+			TRY(pext->g_wstr(&r->pdisplay_name));
 		} else {
-			TRY(ext_buffer_pull_string(pext, &r->pdisplay_name));
+			TRY(pext->g_str(&r->pdisplay_name));
 		}
 	}
 	r->psimple_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_SIMPLE) {
 		if (TRUE == b_unicode) {
-			TRY(ext_buffer_pull_wstring(pext, &r->psimple_name));
+			TRY(pext->g_wstr(&r->psimple_name));
 		} else {
-			TRY(ext_buffer_pull_string(pext, &r->psimple_name));
+			TRY(pext->g_str(&r->psimple_name));
 		}
 	}
 	r->ptransmittable_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_TRANSMITTABLE) {
 		if (TRUE == b_unicode) {
-			TRY(ext_buffer_pull_wstring(pext, &r->ptransmittable_name));
+			TRY(pext->g_wstr(&r->ptransmittable_name));
 		} else {
-			TRY(ext_buffer_pull_string(pext, &r->ptransmittable_name));
+			TRY(pext->g_str(&r->ptransmittable_name));
 		}
 	}
 	if (RECIPIENT_ROW_FLAG_SAME == r->flags) {
@@ -1610,7 +1610,7 @@ int ext_buffer_pull_addressbook_entryid(
 	TRY(ext_buffer_pull_bytes(pext, r->provider_uid, 16));
 	TRY(pext->g_uint32(&r->version));
 	TRY(pext->g_uint32(&r->type));
-	return ext_buffer_pull_string(pext, &r->px500dn);
+	return pext->g_str(&r->px500dn);
 }
 
 int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r)
@@ -1620,13 +1620,13 @@ int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r)
 	TRY(pext->g_uint16(&r->version));
 	TRY(pext->g_uint16(&r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
-		TRY(ext_buffer_pull_wstring(pext, &r->pdisplay_name));
-		TRY(ext_buffer_pull_wstring(pext, &r->paddress_type));
-		return ext_buffer_pull_wstring(pext, &r->pmail_address);
+		TRY(pext->g_wstr(&r->pdisplay_name));
+		TRY(pext->g_wstr(&r->paddress_type));
+		return pext->g_wstr(&r->pmail_address);
 	} else {
-		TRY(ext_buffer_pull_string(pext, &r->pdisplay_name));
-		TRY(ext_buffer_pull_string(pext, &r->paddress_type));
-		return ext_buffer_pull_string(pext, &r->pmail_address);
+		TRY(pext->g_str(&r->pdisplay_name));
+		TRY(pext->g_str(&r->paddress_type));
+		return pext->g_str(&r->pmail_address);
 	}
 }
 

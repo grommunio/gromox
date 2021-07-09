@@ -223,7 +223,7 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 		r->kind = MNID_STRING;
 		TRY(pext->g_uint32(&tmp_int));
 		offset = pext->offset + tmp_int;
-		TRY(ext_buffer_pull_wstring(pext, &r->pname));
+		TRY(pext->g_wstr(&r->pname));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -300,7 +300,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		TRY(pext->g_uint32(&tmp_int));
 		offset = pext->offset + tmp_int;
-		TRY(ext_buffer_pull_string(pext, reinterpret_cast<char **>(&r->pvalue)));
+		TRY(pext->g_str(reinterpret_cast<char **>(&r->pvalue)));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -313,7 +313,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		TRY(pext->g_uint32(&tmp_int));
 		offset = pext->offset + tmp_int;
-		TRY(ext_buffer_pull_wstring(pext, reinterpret_cast<char **>(&r->pvalue)));
+		TRY(pext->g_wstr(reinterpret_cast<char **>(&r->pvalue)));
 		if (pext->offset > offset) {
 			return EXT_ERR_FORMAT;
 		}
@@ -470,7 +470,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(pext->g_uint32(&tmp_int));
 			offset = pext->offset + tmp_int;
-			TRY(ext_buffer_pull_string(pext, &sa->ppstr[i]));
+			TRY(pext->g_str(&sa->ppstr[i]));
 			if (pext->offset > offset) {
 				return EXT_ERR_FORMAT;
 			}
@@ -500,7 +500,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		for (size_t i = 0; i < sa->count; ++i) {
 			TRY(pext->g_uint32(&tmp_int));
 			offset = pext->offset + tmp_int;
-			TRY(ext_buffer_pull_wstring(pext, &sa->ppstr[i]));
+			TRY(pext->g_wstr(&sa->ppstr[i]));
 			if (pext->offset > offset) {
 				return EXT_ERR_FORMAT;
 			}
@@ -663,14 +663,14 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 			return EXT_ERR_FORMAT;
 		}
 		offset1 = pext->offset;
-		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
+		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
 		offset1 += header.displayname_len;
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: triple header's sender-name-length error");
 			return EXT_ERR_FORMAT;
 		}
 		pext->offset = offset1;
-		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->address));
+		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->address));
 		offset1 += header.address_len;
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: triple header's sender-email-length error");
@@ -687,7 +687,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 	case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
 	case ATTRIBUTE_ID_PARENTID:
 	case ATTRIBUTE_ID_CONVERSATIONID:
-		TRY(ext_buffer_pull_string(pext, reinterpret_cast<char **>(&r->pvalue)));
+		TRY(pext->g_str(reinterpret_cast<char **>(&r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_DATESTART:
 	case ATTRIBUTE_ID_DATEEND:
@@ -811,7 +811,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		}
 		TRY(pext->g_uint16(&tmp_len));
 		offset1 = pext->offset + tmp_len;
-		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
+		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: owner's display-name-length error");
 			return EXT_ERR_FORMAT;
@@ -819,7 +819,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		pext->offset = offset1;
 		TRY(pext->g_uint16(&tmp_len));
 		offset1 = pext->offset + tmp_len;
-		TRY(ext_buffer_pull_string(pext, &static_cast<ATTR_ADDR *>(r->pvalue)->address));
+		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->address));
 		if (pext->offset > offset1) {
 			debug_info("[tnef]: owner's address-length error");
 			return EXT_ERR_FORMAT;

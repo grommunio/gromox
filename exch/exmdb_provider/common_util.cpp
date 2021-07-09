@@ -2599,9 +2599,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_wstring_array(&ext_pull, sa) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 					if (proptype == PT_MV_STRING8) {
 						for (size_t j = 0; j < sa->count; ++j) {
 							pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);

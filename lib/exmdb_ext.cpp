@@ -27,8 +27,8 @@ template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(exmdb_rp
 static int exmdb_ext_pull_connect_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_pull_string(pext, &ppayload->connect.prefix));
-	TRY(ext_buffer_pull_string(pext, &ppayload->connect.remote_id));
+	TRY(pext->g_str(&ppayload->connect.prefix));
+	TRY(pext->g_str(&ppayload->connect.remote_id));
 	return ext_buffer_pull_bool(pext,
 			&ppayload->connect.b_private);
 }
@@ -44,8 +44,7 @@ static int exmdb_ext_push_connect_request(
 static int exmdb_ext_pull_listen_notification_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_string(pext,
-			&ppayload->listen_notification.remote_id);
+	return pext->g_str(&ppayload->listen_notification.remote_id);
 }
 
 static int exmdb_ext_push_listen_notification_request(
@@ -172,8 +171,7 @@ static int exmdb_ext_push_remove_store_properties_request(
 static int exmdb_ext_pull_check_mailbox_permission_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_string(pext,
-		&ppayload->check_mailbox_permission.username);
+	return pext->g_str(&ppayload->check_mailbox_permission.username);
 }
 
 static int exmdb_ext_push_check_mailbox_permission_request(
@@ -185,8 +183,7 @@ static int exmdb_ext_push_check_mailbox_permission_request(
 static int exmdb_ext_pull_get_folder_by_class_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_string(pext,
-		&ppayload->get_folder_by_class.str_class);
+	return pext->g_str(&ppayload->get_folder_by_class.str_class);
 }
 
 static int exmdb_ext_push_get_folder_by_class_request(
@@ -199,8 +196,7 @@ static int exmdb_ext_pull_set_folder_by_class_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->g_uint64(&ppayload->set_folder_by_class.folder_id));
-	return ext_buffer_pull_string(pext,
-		&ppayload->set_folder_by_class.str_class);
+	return pext->g_str(&ppayload->set_folder_by_class.str_class);
 }
 
 static int exmdb_ext_push_set_folder_by_class_request(
@@ -250,8 +246,7 @@ static int exmdb_ext_pull_get_folder_by_name_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->g_uint64(&ppayload->get_folder_by_name.parent_id));
-	return ext_buffer_pull_string(pext,
-		&ppayload->get_folder_by_name.str_name);
+	return pext->g_str(&ppayload->get_folder_by_name.str_name);
 }
 
 static int exmdb_ext_push_get_folder_by_name_request(
@@ -265,8 +260,7 @@ static int exmdb_ext_pull_check_folder_permission_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->g_uint64(&ppayload->check_folder_permission.folder_id));
-	return ext_buffer_pull_string(pext,
-		&ppayload->check_folder_permission.username);
+	return pext->g_str(&ppayload->check_folder_permission.username);
 }
 
 static int exmdb_ext_push_check_folder_permission_request(
@@ -395,7 +389,7 @@ static int exmdb_ext_pull_empty_folder_request(
 	if (0 == tmp_byte) {
 		ppayload->empty_folder.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->empty_folder.username));
+		TRY(pext->g_str(&ppayload->empty_folder.username));
 	}
 	TRY(pext->g_uint64(&ppayload->empty_folder.folder_id));
 	TRY(ext_buffer_pull_bool(pext, &ppayload->empty_folder.b_hard));
@@ -448,7 +442,7 @@ static int exmdb_ext_pull_copy_folder_internal_request(
 	if (0 == tmp_byte) {
 		ppayload->copy_folder_internal.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->copy_folder_internal.username));
+		TRY(pext->g_str(&ppayload->copy_folder_internal.username));
 	}
 	TRY(pext->g_uint64(&ppayload->copy_folder_internal.src_fid));
 	TRY(ext_buffer_pull_bool(pext, &ppayload->copy_folder_internal.b_normal));
@@ -564,7 +558,7 @@ static int exmdb_ext_pull_movecopy_messages_request(
 	if (0 == tmp_byte) {
 		ppayload->movecopy_messages.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->movecopy_messages.username));
+		TRY(pext->g_str(&ppayload->movecopy_messages.username));
 	}
 	TRY(pext->g_uint64(&ppayload->movecopy_messages.src_fid));
 	TRY(pext->g_uint64(&ppayload->movecopy_messages.dst_fid));
@@ -607,12 +601,12 @@ static int exmdb_ext_pull_movecopy_folder_request(
 	if (0 == tmp_byte) {
 		ppayload->movecopy_folder.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->movecopy_folder.username));
+		TRY(pext->g_str(&ppayload->movecopy_folder.username));
 	}
 	TRY(pext->g_uint64(&ppayload->movecopy_folder.src_pid));
 	TRY(pext->g_uint64(&ppayload->movecopy_folder.src_fid));
 	TRY(pext->g_uint64(&ppayload->movecopy_folder.dst_fid));
-	TRY(ext_buffer_pull_string(pext, &ppayload->movecopy_folder.str_new));
+	TRY(pext->g_str(&ppayload->movecopy_folder.str_new));
 	return ext_buffer_pull_bool(pext,
 		&ppayload->movecopy_folder.b_copy);
 }
@@ -647,7 +641,7 @@ static int exmdb_ext_pull_delete_messages_request(
 	if (0 == tmp_byte) {
 		ppayload->delete_messages.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->delete_messages.username));
+		TRY(pext->g_str(&ppayload->delete_messages.username));
 	}
 	TRY(pext->g_uint64(&ppayload->delete_messages.folder_id));
 	ppayload->delete_messages.pmessage_ids = cu_alloc<EID_ARRAY>();
@@ -699,7 +693,7 @@ static int exmdb_ext_pull_sum_hierarchy_request(
 	if (0 == tmp_byte) {
 		ppayload->sum_hierarchy.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->sum_hierarchy.username));
+		TRY(pext->g_str(&ppayload->sum_hierarchy.username));
 	}
 	return ext_buffer_pull_bool(pext,
 		&ppayload->sum_hierarchy.b_depth);
@@ -728,7 +722,7 @@ static int exmdb_ext_pull_load_hierarchy_table_request(
 	if (0 == tmp_byte) {
 		ppayload->load_hierarchy_table.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->load_hierarchy_table.username));
+		TRY(pext->g_str(&ppayload->load_hierarchy_table.username));
 	}
 	TRY(pext->g_uint8(&ppayload->load_hierarchy_table.table_flags));
 	TRY(pext->g_uint8(&tmp_byte));
@@ -791,7 +785,7 @@ static int exmdb_ext_pull_load_content_table_request(
 	if (0 == tmp_byte) {
 		ppayload->load_content_table.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->load_content_table.username));
+		TRY(pext->g_str(&ppayload->load_content_table.username));
 	}
 	TRY(pext->g_uint8(&ppayload->load_content_table.table_flags));
 	TRY(pext->g_uint8(&tmp_byte));
@@ -933,7 +927,7 @@ static int exmdb_ext_pull_query_table_request(
 	if (0 == tmp_byte) {
 		ppayload->query_table.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->query_table.username));
+		TRY(pext->g_str(&ppayload->query_table.username));
 	}
 	TRY(pext->g_uint32(&ppayload->query_table.cpid));
 	TRY(pext->g_uint32(&ppayload->query_table.table_id));
@@ -972,7 +966,7 @@ static int exmdb_ext_pull_match_table_request(
 	if (0 == tmp_byte) {
 		ppayload->match_table.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->match_table.username));
+		TRY(pext->g_str(&ppayload->match_table.username));
 	}
 	TRY(pext->g_uint32(&ppayload->match_table.cpid));
 	TRY(pext->g_uint32(&ppayload->match_table.table_id));
@@ -1033,7 +1027,7 @@ static int exmdb_ext_pull_read_table_row_request(
 	if (0 == tmp_byte) {
 		ppayload->read_table_row.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->read_table_row.username));
+		TRY(pext->g_str(&ppayload->read_table_row.username));
 	}
 	TRY(pext->g_uint32(&ppayload->read_table_row.cpid));
 	TRY(pext->g_uint32(&ppayload->read_table_row.table_id));
@@ -1181,7 +1175,7 @@ static int exmdb_ext_pull_load_message_instance_request(
 	if (0 == tmp_byte) {
 		ppayload->load_message_instance.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->load_message_instance.username));
+		TRY(pext->g_str(&ppayload->load_message_instance.username));
 	}
 	TRY(pext->g_uint32(&ppayload->load_message_instance.cpid));
 	TRY(ext_buffer_pull_bool(pext, &ppayload->load_message_instance.b_new));
@@ -1389,8 +1383,7 @@ static int exmdb_ext_pull_flush_instance_request(
 		ppayload->flush_instance.account = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	return ext_buffer_pull_string(pext,
-	       &ppayload->flush_instance.account);
+	return pext->g_str(&ppayload->flush_instance.account);
 }
 
 static int exmdb_ext_push_flush_instance_request(
@@ -1703,7 +1696,7 @@ static int exmdb_ext_pull_get_message_properties_request(
 	if (0 == tmp_byte) {
 		ppayload->get_message_properties.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->get_message_properties.username));
+		TRY(pext->g_str(&ppayload->get_message_properties.username));
 	}
 	TRY(pext->g_uint32(&ppayload->get_message_properties.cpid));
 	TRY(pext->g_uint64(&ppayload->get_message_properties.message_id));
@@ -1738,7 +1731,7 @@ static int exmdb_ext_pull_set_message_properties_request(
 	if (0 == tmp_byte) {
 		ppayload->set_message_properties.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->set_message_properties.username));
+		TRY(pext->g_str(&ppayload->set_message_properties.username));
 	}
 	TRY(pext->g_uint32(&ppayload->set_message_properties.cpid));
 	TRY(pext->g_uint64(&ppayload->set_message_properties.message_id));
@@ -1773,7 +1766,7 @@ static int exmdb_ext_pull_set_message_read_state_request(
 	if (0 == tmp_byte) {
 		ppayload->set_message_read_state.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->set_message_read_state.username));
+		TRY(pext->g_str(&ppayload->set_message_read_state.username));
 	}
 	TRY(pext->g_uint64(&ppayload->set_message_read_state.message_id));
 	return pext->g_uint8(&ppayload->set_message_read_state.mark_as_read);
@@ -1972,9 +1965,9 @@ static int exmdb_ext_pull_rule_new_message_request(
 	if (0 == tmp_byte) {
 		ppayload->rule_new_message.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->rule_new_message.username));
+		TRY(pext->g_str(&ppayload->rule_new_message.username));
 	}
-	TRY(ext_buffer_pull_string(pext, &ppayload->rule_new_message.account));
+	TRY(pext->g_str(&ppayload->rule_new_message.account));
 	TRY(pext->g_uint32(&ppayload->rule_new_message.cpid));
 	TRY(pext->g_uint64(&ppayload->rule_new_message.folder_id));
 	return pext->g_uint64(&ppayload->rule_new_message.message_id);
@@ -2116,16 +2109,15 @@ static int exmdb_ext_push_update_folder_rule_request(
 static int exmdb_ext_pull_delivery_message_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_pull_string(pext, &ppayload->delivery_message.from_address));
-	TRY(ext_buffer_pull_string(pext, &ppayload->delivery_message.account));
+	TRY(pext->g_str(&ppayload->delivery_message.from_address));
+	TRY(pext->g_str(&ppayload->delivery_message.account));
 	TRY(pext->g_uint32(&ppayload->delivery_message.cpid));
 	ppayload->delivery_message.pmsg = cu_alloc<MESSAGE_CONTENT>();
 	if (NULL == ppayload->delivery_message.pmsg) {
 		return EXT_ERR_ALLOC;
 	}
 	TRY(ext_buffer_pull_message_content( pext, ppayload->delivery_message.pmsg));
-	return ext_buffer_pull_string(pext,
-		&ppayload->delivery_message.pdigest);
+	return pext->g_str(&ppayload->delivery_message.pdigest);
 }
 
 static int exmdb_ext_push_delivery_message_request(
@@ -2141,7 +2133,7 @@ static int exmdb_ext_push_delivery_message_request(
 static int exmdb_ext_pull_write_message_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_pull_string(pext, &ppayload->write_message.account));
+	TRY(pext->g_str(&ppayload->write_message.account));
 	TRY(pext->g_uint32(&ppayload->write_message.cpid));
 	TRY(pext->g_uint64(&ppayload->write_message.folder_id));
 	ppayload->write_message.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
@@ -2170,7 +2162,7 @@ static int exmdb_ext_pull_read_message_request(
 	if (0 == tmp_byte) {
 		ppayload->read_message.username = NULL;
 	} else {
-		TRY(ext_buffer_pull_string(pext, &ppayload->read_message.username));
+		TRY(pext->g_str(&ppayload->read_message.username));
 	}
 	TRY(pext->g_uint32(&ppayload->read_message.cpid));
 	return pext->g_uint64(&ppayload->read_message.message_id);
@@ -2212,7 +2204,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 	TRY(pext->g_uint64(&ppayload->get_content_sync.folder_id));
 	TRY(pext->g_uint8(&tmp_byte));
 	if (0 != tmp_byte) {
-		TRY(ext_buffer_pull_string(pext, &ppayload->get_content_sync.username));
+		TRY(pext->g_str(&ppayload->get_content_sync.username));
 	}
 	TRY(ext_buffer_pull_exbinary(pext, &tmp_bin));
 	ppayload->get_content_sync.pgiven =
@@ -2409,7 +2401,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 	TRY(pext->g_uint64(&ppayload->get_hierarchy_sync.folder_id));
 	TRY(pext->g_uint8(&tmp_byte));
 	if (0 != tmp_byte) {
-		TRY(ext_buffer_pull_string(pext, &ppayload->get_hierarchy_sync.username));
+		TRY(pext->g_str(&ppayload->get_hierarchy_sync.username));
 	}
 	TRY(ext_buffer_pull_exbinary(pext, &tmp_bin));
 	ppayload->get_hierarchy_sync.pgiven =
@@ -2540,8 +2532,7 @@ static int exmdb_ext_pull_transport_new_mail_request(
 	TRY(pext->g_uint64(&ppayload->transport_new_mail.folder_id));
 	TRY(pext->g_uint64(&ppayload->transport_new_mail.message_id));
 	TRY(pext->g_uint32(&ppayload->transport_new_mail.message_flags));
-	return ext_buffer_pull_string(pext,
-		&ppayload->transport_new_mail.pstr_class);
+	return pext->g_str(&ppayload->transport_new_mail.pstr_class);
 }
 
 static int exmdb_ext_push_transport_new_mail_request(
@@ -2556,8 +2547,7 @@ static int exmdb_ext_push_transport_new_mail_request(
 static int exmdb_ext_pull_check_contact_address_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_string(pext,
-		&ppayload->check_contact_address.paddress);
+	return pext->g_str(&ppayload->check_contact_address.paddress);
 }
 
 static int exmdb_ext_push_check_contact_address_request(
@@ -2569,7 +2559,7 @@ static int exmdb_ext_push_check_contact_address_request(
 static int exmdb_ext_pull_get_public_folder_unread_count_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	TRY(ext_buffer_pull_string(pext, &ppayload->get_public_folder_unread_count.username));
+	TRY(pext->g_str(&ppayload->get_public_folder_unread_count.username));
 	return pext->g_uint64(&ppayload->get_public_folder_unread_count.folder_id);
 }
 
@@ -2594,7 +2584,7 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 		return exmdb_ext_pull_listen_notification_request(
 							&ext_pull, &prequest->payload);
 	}
-	TRY(ext_buffer_pull_string(&ext_pull, &prequest->dir));
+	TRY(ext_pull.g_str(&prequest->dir));
 	switch (prequest->call_id) {
 	case exmdb_callid::PING_STORE:
 		return EXT_ERR_SUCCESS;
@@ -3608,8 +3598,7 @@ static int exmdb_ext_pull_get_folder_by_class_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->g_uint64(&ppayload->get_folder_by_class.id));
-	return ext_buffer_pull_string(pext,
-		&ppayload->get_folder_by_class.str_explicit);
+	return pext->g_str(&ppayload->get_folder_by_class.str_explicit);
 }
 
 static int exmdb_ext_push_get_folder_by_class_response(
@@ -5751,7 +5740,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	EXT_PULL ext_pull;
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
-	TRY(ext_buffer_pull_string(&ext_pull, &pnotify->dir));
+	TRY(ext_pull.g_str(&pnotify->dir));
 	TRY(ext_buffer_pull_bool(&ext_pull, &pnotify->b_table));
 	TRY(ext_buffer_pull_long_array(&ext_pull, &pnotify->id_array));
 	TRY(ext_pull.g_uint8(&pnotify->db_notify.type));
@@ -5764,7 +5753,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		TRY(ext_pull.g_uint64(&n->folder_id));
 		TRY(ext_pull.g_uint64(&n->message_id));
 		TRY(ext_pull.g_uint32(&n->message_flags));
-		return ext_buffer_pull_string(&ext_pull, const_cast<char **>(&n->pmessage_class));
+		return ext_pull.g_str(const_cast<char **>(&n->pmessage_class));
 	}
 	case DB_NOTIFY_TYPE_FOLDER_CREATED: {
 		auto n = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();

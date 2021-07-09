@@ -156,7 +156,7 @@ static int rop_ext_push_logon_redirect_response(
 static int rop_ext_pull_getreceivefolder_request(
 	EXT_PULL *pext, GETRECEIVEFOLDER_REQUEST *r)
 {
-	return ext_buffer_pull_string(pext, &r->pstr_class);
+	return pext->g_str(&r->pstr_class);
 }
 
 static int rop_ext_push_getreceivefolder_response(
@@ -170,7 +170,7 @@ static int rop_ext_pull_setreceivefolder_request(
 	EXT_PULL *pext, SETRECEIVEFOLDER_REQUEST *r)
 {
 	TRY(pext->g_uint64(&r->folder_id));
-	return ext_buffer_pull_string(pext, &r->pstr_class);
+	return pext->g_str(&r->pstr_class);
 }
 
 static int rop_ext_push_getreceivefoldertable_response(
@@ -335,11 +335,11 @@ static int rop_ext_pull_createfolder_request(
 	TRY(pext->g_uint8(&r->open_existing));
 	TRY(pext->g_uint8(&r->reserved));
 	if (0 == r->use_unicode) {
-		TRY(ext_buffer_pull_string(pext, &r->pfolder_name));
-		return ext_buffer_pull_string(pext, &r->pfolder_comment);
+		TRY(pext->g_str(&r->pfolder_name));
+		return pext->g_str(&r->pfolder_comment);
 	} else {
-		TRY(ext_buffer_pull_wstring(pext, &r->pfolder_name));
-		return ext_buffer_pull_wstring(pext, &r->pfolder_comment);
+		TRY(pext->g_wstr(&r->pfolder_name));
+		return pext->g_wstr(&r->pfolder_comment);
 	}
 }
 
@@ -453,9 +453,9 @@ static int rop_ext_pull_movefolder_request(
 	TRY(pext->g_uint8(&r->use_unicode));
 	TRY(pext->g_uint64(&r->folder_id));
 	if (0 == r->use_unicode) {
-		return ext_buffer_pull_string(pext, &r->pnew_name);
+		return pext->g_str(&r->pnew_name);
 	} else {
-		return ext_buffer_pull_wstring(pext, &r->pnew_name);
+		return pext->g_wstr(&r->pnew_name);
 	}
 }
 
@@ -474,9 +474,9 @@ static int rop_ext_pull_copyfolder_request(
 	TRY(pext->g_uint8(&r->use_unicode));
 	TRY(pext->g_uint64(&r->folder_id));
 	if (0 == r->use_unicode) {
-		return ext_buffer_pull_string(pext, &r->pnew_name);
+		return pext->g_str(&r->pnew_name);
 	} else {
-		return ext_buffer_pull_wstring(pext, &r->pnew_name);
+		return pext->g_wstr(&r->pnew_name);
 	}
 }
 
@@ -1187,7 +1187,7 @@ static int rop_ext_pull_transportnewmail_request(
 {
 	TRY(pext->g_uint64(&r->message_id));
 	TRY(pext->g_uint64(&r->folder_id));
-	TRY(ext_buffer_pull_string(pext, &r->pstr_class));
+	TRY(pext->g_str(&r->pstr_class));
 	return pext->g_uint32(&r->message_flags);
 }
 
@@ -1200,7 +1200,7 @@ static int rop_ext_push_gettransportfolder_response(
 static int rop_ext_pull_optionsdata_request(
 	EXT_PULL *pext, OPTIONSDATA_REQUEST *r)
 {
-	TRY(ext_buffer_pull_string(pext, &r->paddress_type));
+	TRY(pext->g_str(&r->paddress_type));
 	return pext->g_uint8(&r->want_win32);
 }
 

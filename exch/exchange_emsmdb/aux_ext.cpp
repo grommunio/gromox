@@ -83,13 +83,13 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	TRY(pext->g_uint16(&r->reserved));
 	if (0 != machine_name_offset) {
 		pext->offset = payload_offset + machine_name_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->machine_name));
+		TRY(pext->g_str(&r->machine_name));
 	} else {
 		r->machine_name = NULL;
 	}
 	if (0 != user_name_offset) {
 		pext->offset = payload_offset + user_name_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->user_name));
+		TRY(pext->g_str(&r->user_name));
 	} else {
 		r->user_name = NULL;
 	}
@@ -117,7 +117,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	}
 	if (0 != adapter_name_offset) {
 		pext->offset = payload_offset + adapter_name_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->adapter_name));
+		TRY(pext->g_str(&r->adapter_name));
 	} else {
 		r->adapter_name = NULL;
 	}
@@ -223,11 +223,11 @@ static int aux_ext_pull_aux_perf_serverinfo(
 	TRY(pext->g_uint16(&server_name_offset));
 	if (0 != server_dn_offset) {
 		pext->offset = payload_offset + server_dn_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->server_dn));
+		TRY(pext->g_str(&r->server_dn));
 	}
 	if (0 != server_name_offset) {
 		pext->offset = payload_offset + server_name_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->server_name));
+		TRY(pext->g_str(&r->server_name));
 	} else {
 		r->server_name = NULL;
 	}
@@ -274,7 +274,7 @@ static int aux_ext_pull_aux_perf_processinfo(
 	TRY(pext->g_uint16(&r->reserved2));
 	if (0 != process_name_offset) {
 		pext->offset = payload_offset + process_name_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->process_name));
+		TRY(pext->g_str(&r->process_name));
 	} else {
 		r->process_name = NULL;
 	}
@@ -588,7 +588,7 @@ static int aux_ext_pull_aux_client_connection_info(
 	TRY(pext->g_uint32(&r->connection_flags));
 	if (0 != offset_connection_context_info) {
 		pext->offset = payload_offset + offset_connection_context_info - 4;
-		TRY(ext_buffer_pull_string(pext, &r->connection_context_info));
+		TRY(pext->g_str(&r->connection_context_info));
 	} else {
 		r->connection_context_info = NULL;
 	}
@@ -620,7 +620,7 @@ static int aux_ext_pull_aux_server_session_info(
 	TRY(pext->g_uint16(&offset_server_session_context_info));
 	if (0 != offset_server_session_context_info) {
 		pext->offset = payload_offset + offset_server_session_context_info - 4;
-		TRY(ext_buffer_pull_string(pext, &r->server_session_context_info));
+		TRY(pext->g_str(&r->server_session_context_info));
 	} else {
 		r->server_session_context_info = NULL;
 	}
@@ -656,31 +656,31 @@ static int aux_ext_pull_aux_protocol_device_identification(
 	TRY(pext->g_uint16(&device_firmware_version_offset));
 	if (0 != device_manufacturer_offset) {
 		pext->offset = payload_offset + device_manufacturer_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->device_manufacturer));
+		TRY(pext->g_str(&r->device_manufacturer));
 	} else {
 		r->device_manufacturer = NULL;
 	}
 	if (0 != device_model_offset) {
 		pext->offset = payload_offset + device_model_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->device_model));
+		TRY(pext->g_str(&r->device_model));
 	} else {
 		r->device_model = NULL;
 	}
 	if (0 != device_serial_number_offset) {
 		pext->offset = payload_offset + device_serial_number_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->device_serial_number));
+		TRY(pext->g_str(&r->device_serial_number));
 	} else {
 		r->device_serial_number = NULL;
 	}
 	if (0 != device_version_offset) {
 		pext->offset = payload_offset + device_version_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->device_version));
+		TRY(pext->g_str(&r->device_version));
 	} else {
 		r->device_version = NULL;
 	}
 	if (0 != device_firmware_version_offset) {
 		pext->offset = payload_offset + device_firmware_version_offset - 4;
-		TRY(ext_buffer_pull_string(pext, &r->device_firmware_version));
+		TRY(pext->g_str(&r->device_firmware_version));
 	} else {
 		r->device_firmware_version = NULL;
 	}

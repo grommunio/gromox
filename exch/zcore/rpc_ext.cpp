@@ -213,10 +213,10 @@ static BOOL rpc_ext_pull_propval(
 		QRF(pext->g_uint64(static_cast<uint64_t *>(*ppval)));
 		return TRUE;
 	case PT_STRING8:
-		QRF(ext_buffer_pull_string(pext, reinterpret_cast<char **>(ppval)));
+		QRF(pext->g_str(reinterpret_cast<char **>(ppval)));
 		return TRUE;
 	case PT_UNICODE:
-		QRF(ext_buffer_pull_wstring(pext, reinterpret_cast<char **>(ppval)));
+		QRF(pext->g_wstr(reinterpret_cast<char **>(ppval)));
 		return TRUE;
 	case PT_CLSID:
 		*ppval = pext->anew<GUID>();
@@ -271,14 +271,14 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_string_array(pext, static_cast<STRING_ARRAY *>(*ppval)));
+		QRF(pext->g_str_a(static_cast<STRING_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_UNICODE:
 		*ppval = pext->anew<STRING_ARRAY>();
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_wstring_array(pext, static_cast<STRING_ARRAY *>(*ppval)));
+		QRF(pext->g_wstr_a(static_cast<STRING_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_CLSID:
 		*ppval = pext->anew<GUID_ARRAY>();
@@ -780,12 +780,12 @@ static BOOL rpc_ext_pull_logon_request(
 {
 	uint8_t tmp_byte;
 	
-	QRF(ext_buffer_pull_string(pext, &ppayload->logon.username));
+	QRF(pext->g_str(&ppayload->logon.username));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->logon.password = NULL;
 	} else {
-		QRF(ext_buffer_pull_string(pext, &ppayload->logon.password));
+		QRF(pext->g_str(&ppayload->logon.password));
 	}
 	QRF(pext->g_uint32(&ppayload->logon.flags));
 	return TRUE;
@@ -808,7 +808,7 @@ static BOOL rpc_ext_pull_checksession_request(
 static BOOL rpc_ext_pull_uinfo_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_pull_string(pext, &ppayload->uinfo.username));
+	QRF(pext->g_str(&ppayload->uinfo.username));
 	return TRUE;
 }
 
@@ -1138,9 +1138,8 @@ static BOOL rpc_ext_pull_createfolder_request(
 	QRF(pext->g_guid(&ppayload->createfolder.hsession));
 	QRF(pext->g_uint32(&ppayload->createfolder.hparent_folder));
 	QRF(pext->g_uint32(&ppayload->createfolder.folder_type));
-	QRF(ext_buffer_pull_string(pext, &ppayload->createfolder.folder_name));
-	QRF(ext_buffer_pull_string(pext,
-		&ppayload->createfolder.folder_comment));
+	QRF(pext->g_str(&ppayload->createfolder.folder_name));
+	QRF(pext->g_str(&ppayload->createfolder.folder_comment));
 	QRF(pext->g_uint32(&ppayload->createfolder.flags));
 	return TRUE;
 }
@@ -1184,7 +1183,7 @@ static BOOL rpc_ext_pull_copyfolder_request(
 	if (0 == tmp_byte) {
 		ppayload->copyfolder.new_name = NULL;
 	} else {
-		QRF(ext_buffer_pull_string(pext, &ppayload->copyfolder.new_name));
+		QRF(pext->g_str(&ppayload->copyfolder.new_name));
 	}
 	QRF(pext->g_uint32(&ppayload->copyfolder.flags));
 	return TRUE;
@@ -1193,8 +1192,7 @@ static BOOL rpc_ext_pull_copyfolder_request(
 static BOOL rpc_ext_pull_getstoreentryid_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_pull_string(pext,
-		&ppayload->getstoreentryid.mailbox_dn));
+	QRF(pext->g_str(&ppayload->getstoreentryid.mailbox_dn));
 	return TRUE;
 }
 
@@ -1472,7 +1470,7 @@ static BOOL rpc_ext_pull_getreceivefolder_request(
 	if (0 == tmp_byte) {
 		ppayload->getreceivefolder.pstrclass = NULL;
 	} else {
-		QRF(ext_buffer_pull_string(pext, &ppayload->getreceivefolder.pstrclass));
+		QRF(pext->g_str(&ppayload->getreceivefolder.pstrclass));
 	}
 	return TRUE;
 }
@@ -2128,9 +2126,9 @@ static BOOL rpc_ext_push_getuseravailability_response(
 static BOOL rpc_ext_pull_setpasswd_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	QRF(ext_buffer_pull_string(pext, &ppayload->setpasswd.username));
-	QRF(ext_buffer_pull_string(pext, &ppayload->setpasswd.passwd));
-	QRF(ext_buffer_pull_string(pext, &ppayload->setpasswd.new_passwd));
+	QRF(pext->g_str(&ppayload->setpasswd.username));
+	QRF(pext->g_str(&ppayload->setpasswd.passwd));
+	QRF(pext->g_str(&ppayload->setpasswd.new_passwd));
 	return TRUE;
 }
 
