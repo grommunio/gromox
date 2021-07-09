@@ -885,6 +885,7 @@ static BOOL store_object_get_calculated_property(
 		    pstore->dir, pinfo->username, &permission)) {
 			return FALSE;
 		}
+		permission &= ~frightsGromoxStoreOwner; /* not interpreted yet by zcore */
 		*(uint32_t *)*ppvalue = TAG_ACCESS_READ;
 		if (permission & frightsOwner) {
 			*(uint32_t *)*ppvalue =
@@ -915,7 +916,7 @@ static BOOL store_object_get_calculated_property(
 				pstore->dir, pinfo->username, &permission)) {
 				return FALSE;
 			}
-			*static_cast<uint32_t *>(*ppvalue) &= ~frightsGromoxSendAs;
+			*static_cast<uint32_t *>(*ppvalue) &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
 			return TRUE;
 		}
 		*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;

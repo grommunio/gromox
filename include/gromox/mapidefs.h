@@ -389,6 +389,7 @@ enum {
 	frightsVisible              = 1U << 10,
 	frightsFreeBusySimple       = 1U << 11, /* cf. IExchangeModifyTable */
 	frightsFreeBusyDetailed     = 1U << 12, /* cf. IExchangeModifyTable */
+	frightsGromoxStoreOwner     = 1U << 13,
 
 	rightsNone = 0,
 	rightsGromox7 = frightsReadAny | frightsCreate | frightsEditAny |

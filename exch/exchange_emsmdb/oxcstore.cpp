@@ -66,6 +66,11 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		} else {
 			logon_mode = LOGON_MODE_GUEST;
 		}
+		if (permission & frightsGromoxStoreOwner) {
+			permission ^= frightsGromoxStoreOwner;
+			*presponse_flags |= RESPONSE_FLAG_OWNERRIGHT;
+			logon_mode = LOGON_MODE_OWNER;
+		}
 	} else {
 		*presponse_flags = RESPONSE_FLAG_RESERVED |
 							RESPONSE_FLAG_OWNERRIGHT |

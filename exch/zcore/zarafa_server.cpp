@@ -3600,7 +3600,6 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	uint8_t mapi_type;
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
-	uint32_t permission;
 	uint32_t mail_length;
 	STORE_OBJECT *pstore;
 	uint64_t submit_time;
@@ -3625,6 +3624,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (!pstore->b_private)
 		return ecNotSupported;
 	if (!pstore->check_owner_mode()) {
+		uint32_t permission = 0;
 		if (!exmdb_client::check_mailbox_permission(pstore->get_dir(),
 		    pinfo->username, &permission))
 			return ecError;

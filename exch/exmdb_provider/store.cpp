@@ -233,6 +233,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*ppermission = rightsNone;
+
+	/* Store permission := union of folder permissions */
 	sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -244,6 +246,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		*ppermission |= sqlite3_column_int64(pstmt, 0);
 	}
 	pstmt.finalize();
+
+	/* add in mlist permissions(?) */
 	sprintf(sql_string, "SELECT "
 		"username, permission FROM permissions");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -255,7 +259,21 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 			*ppermission |= sqlite3_column_int64(pstmt, 1);
 	}
 	pstmt.finalize();
+
+	/*
+	 * Tryout for conveying the special store ownership.
+	 * Take FOLDEROWNER bit _only_ from Top Of Information Store.
+	 */
+	pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission FROM permissions WHERE username=? AND folder_id=9 LIMIT 1");
+	if (pstmt == nullptr)
+		return false;
+	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
+	while (sqlite3_step(pstmt) == SQLITE_ROW)
+		*ppermission |= frightsGromoxStoreOwner;
+	pstmt.finalize();
 	pdb.reset();
+
+	/* Delegate bit */
 	sprintf(temp_path, "%s/config/delegates.txt", dir);
 	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
 	if (NULL != pfile) {
