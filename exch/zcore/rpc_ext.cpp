@@ -1568,7 +1568,7 @@ static BOOL rpc_ext_pull_setpropvals_request(
 	if (NULL == ppayload->setpropvals.ppropvals) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_tpropval_array(pext, ppayload->setpropvals.ppropvals));
+	QRF(pext->g_tpropval_a(ppayload->setpropvals.ppropvals));
 	return TRUE;
 }
 
@@ -1912,7 +1912,7 @@ static BOOL rpc_ext_pull_importmessage_request(
 	if (NULL == ppayload->importmessage.pproplist) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_tpropval_array(pext, ppayload->importmessage.pproplist));
+	QRF(pext->g_tpropval_a(ppayload->importmessage.pproplist));
 	return TRUE;
 }
 
@@ -1933,7 +1933,7 @@ static BOOL rpc_ext_pull_importfolder_request(
 	if (NULL == ppayload->importfolder.pproplist) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_tpropval_array(pext, ppayload->importfolder.pproplist));
+	QRF(pext->g_tpropval_a(ppayload->importfolder.pproplist));
 	return TRUE;
 }
 

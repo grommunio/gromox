@@ -1282,7 +1282,7 @@ static int rop_ext_pull_setproperties_request(
 	
 	TRY(pext->g_uint16(&size));
 	offset = pext->offset + size;
-	TRY(ext_buffer_pull_tpropval_array(pext, &r->propvals));
+	TRY(pext->g_tpropval_a(&r->propvals));
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1304,7 +1304,7 @@ static int rop_ext_pull_setpropertiesnoreplicate_request(
 	
 	TRY(pext->g_uint16(&size));
 	offset = pext->offset + size;
-	TRY(ext_buffer_pull_tpropval_array(pext, &r->propvals));
+	TRY(pext->g_tpropval_a(&r->propvals));
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
 	}
@@ -1727,7 +1727,7 @@ static int rop_ext_pull_syncimportmessagechange_request(
 {
 	TRY(pext->g_uint8(&r->hindex));
 	TRY(pext->g_uint8(&r->import_flags));
-	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
+	return pext->g_tpropval_a(&r->propvals);
 }
 
 static int rop_ext_push_syncimportmessagechange_response(
@@ -1768,8 +1768,8 @@ static int rop_ext_pull_syncimportreadstatechanges_request(
 static int rop_ext_pull_syncimporthierarchychange_request(
 	EXT_PULL *pext, SYNCIMPORTHIERARCHYCHANGE_REQUEST *r)
 {
-	TRY(ext_buffer_pull_tpropval_array(pext, &r->hichyvals));
-	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
+	TRY(pext->g_tpropval_a(&r->hichyvals));
+	return pext->g_tpropval_a(&r->propvals);
 }
 
 static int rop_ext_push_syncimporthierarchychange_response(
@@ -1782,7 +1782,7 @@ static int rop_ext_pull_syncimportdeletes_request(
 	EXT_PULL *pext, SYNCIMPORTDELETES_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->flags));
-	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
+	return pext->g_tpropval_a(&r->propvals);
 }
 
 static int rop_ext_pull_syncimportmessagemove_request(

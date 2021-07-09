@@ -190,10 +190,8 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 		return TRUE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_tpropval_array(
-		&ext_pull, &propvals)) {
+	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	for (i=0; i<propvals.count; i++) {
 		switch (propvals.ppropval[i].proptag) {
 		case META_TAG_IDSETGIVEN1:

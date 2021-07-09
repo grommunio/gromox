@@ -1133,7 +1133,7 @@ int ext_buffer_pull_tarray_set(EXT_PULL *pext, TARRAY_SET *r)
 		if (NULL == r->pparray[i]) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_tpropval_array(pext, r->pparray[i]));
+		TRY(pext->g_tpropval_a(r->pparray[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1594,13 +1594,13 @@ int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 int ext_buffer_pull_permission_data(EXT_PULL *pext, PERMISSION_DATA *r)
 {
 	TRY(pext->g_uint8(&r->flags));
-	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
+	return pext->g_tpropval_a(&r->propvals);
 }
 
 int ext_buffer_pull_rule_data(EXT_PULL *pext, RULE_DATA *r)
 {
 	TRY(pext->g_uint8(&r->flags));
-	return ext_buffer_pull_tpropval_array(pext, &r->propvals);
+	return pext->g_tpropval_a(&r->propvals);
 }
 
 int ext_buffer_pull_addressbook_entryid(
@@ -2077,7 +2077,7 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 		if (NULL == r->pplist[i]) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_tpropval_array(pext, &r->pplist[i]->proplist));
+		TRY(pext->g_tpropval_a(&r->pplist[i]->proplist));
 		TRY(pext->g_uint8(&tmp_byte));
 		if (0 != tmp_byte) {
 			r->pplist[i]->pembedded = pext->anew<MESSAGE_CONTENT>();
@@ -2096,7 +2096,7 @@ int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *r)
 {
 	uint8_t tmp_byte;
 	
-	TRY(ext_buffer_pull_tpropval_array(pext, &r->proplist));
+	TRY(pext->g_tpropval_a(&r->proplist));
 	TRY(pext->g_uint8(&tmp_byte));
 	if (0 != tmp_byte) {
 		r->children.prcpts = pext->anew<TARRAY_SET>();

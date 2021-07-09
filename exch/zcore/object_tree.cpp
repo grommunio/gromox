@@ -102,8 +102,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 		return NULL;
 	}
 	ext_pull.init(pbuff, node_stat.st_size, common_util_alloc, EXT_FLAG_WCOUNT);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_tpropval_array(
-		&ext_pull, &propvals)) {
+	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS) {
 		free(pbuff);
 		free(prootobj->maildir);
 		free(prootobj);
