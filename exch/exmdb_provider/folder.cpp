@@ -862,7 +862,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 					if ((PERMISSION_FOLDEROWNER & permission) ||
 						(PERMISSION_DELETEANY & permission)) {
 						/* do nothing */
-					} else if (PERMISSION_DELETEOWNED) {
+					} else if (permission & PERMISSION_DELETEOWNED) {
 						if (FALSE == common_util_check_message_owner(
 							pdb->psqlite, message_id, username, &b_owner)) {
 							return FALSE;
