@@ -1,6 +1,9 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <mutex>
+#include <string>
+#include <unordered_map>
 #include <gromox/mapi_types.hpp>
 #include "common_util.h"
 #include "object_tree.h"
@@ -29,6 +32,8 @@ struct USER_INFO {
 	OBJECT_TREE *ptree = nullptr;
 	pthread_mutex_t lock{};
 	DOUBLE_LIST sink_list{};
+	std::unordered_map<int, long> extra_owner;
+	std::mutex eowner_lock;
 };
 
 extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);

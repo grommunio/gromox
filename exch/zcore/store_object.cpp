@@ -238,7 +238,27 @@ BOOL STORE_OBJECT::check_owner_mode() const
 	if (!pstore->b_private)
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
-	return pinfo->user_id == pstore->account_id ? TRUE : false;
+	if (pinfo->user_id == pstore->account_id)
+		return TRUE;
+	std::unique_lock lk(pinfo->eowner_lock);
+	auto i = pinfo->extra_owner.find(pstore->account_id);
+	if (i == pinfo->extra_owner.end())
+		return false;
+	auto age = time(nullptr) - i->second;
+	if (age < 60)
+		return TRUE;
+	lk.unlock();
+	uint32_t perm = rightsNone;
+	if (!exmdb_client::check_mailbox_permission(pstore->dir, pinfo->username, &perm))
+		return false;
+	if (!(perm & frightsGromoxStoreOwner))
+		return false;
+	lk.lock();
+	i = pinfo->extra_owner.find(pstore->account_id);
+	if (i == pinfo->extra_owner.end())
+		return false;
+	i->second = time(nullptr);
+	return TRUE;
 }
 
 BOOL STORE_OBJECT::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
@@ -885,7 +905,7 @@ static BOOL store_object_get_calculated_property(
 		    pstore->dir, pinfo->username, &permission)) {
 			return FALSE;
 		}
-		permission &= ~frightsGromoxStoreOwner; /* not interpreted yet by zcore */
+		permission &= ~frightsGromoxStoreOwner;
 		*(uint32_t *)*ppvalue = TAG_ACCESS_READ;
 		if (permission & frightsOwner) {
 			*(uint32_t *)*ppvalue =

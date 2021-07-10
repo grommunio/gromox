@@ -269,6 +269,7 @@ static void *zcorezs_scanwork(void *param)
 				}
 				common_util_build_environment();
 				object_tree_free(pinfo->ptree);
+				pinfo->ptree = nullptr;
 				common_util_free_environment();
 				double_list_free(&pinfo->sink_list);
 				pthread_mutex_destroy(&pinfo->lock);
@@ -1491,7 +1492,6 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	char dir[256];
 	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
-	uint32_t permission;
 	uint8_t provider_uid[16];
 	STORE_ENTRYID store_entryid = {};
 	
@@ -1522,12 +1522,18 @@ uint32_t zarafa_server_openstore(GUID hsession,
 				username, dir)) {
 				return ecError;
 			}
+			uint32_t permission = rightsNone;
 			if (!exmdb_client::check_mailbox_permission(
 				dir, pinfo->username, &permission)) {
 				return ecError;
 			}
 			if (permission == rightsNone)
 				return ecLoginPerm;
+			if (permission & frightsGromoxStoreOwner) try {
+				std::lock_guard lk(pinfo->eowner_lock);
+				pinfo->extra_owner.insert_or_assign(user_id, time(nullptr));
+			} catch (const std::bad_alloc &) {
+			}
 		}
 		*phobject = object_tree_get_store_handle(
 					pinfo->ptree, TRUE, user_id);
