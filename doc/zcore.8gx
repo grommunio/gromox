@@ -185,6 +185,10 @@ Default: \fI/var/lib/gromox\fP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
 .TP
 \fBuser_cache_interval\fP
+Sets the time how long a zcore-specific "OBJECT_TREE" structure is cached. At
+the end of this interval, user settings like PR_EC_WEBACCESS_JSON (stored in a
+separate file, not in SQLite) are flushed to disk.
+.br
 Default: \fI1 hour\fP
 .TP
 \fBuser_table_size\fP
@@ -224,6 +228,9 @@ corresponding libc locale name.
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: response templates for when mail cannot be
 delivered
+.IP \(bu 4
+\fI/var/lib/gromox/user/**/config/zarafa.dat\fP: file for the
+PR_EC_WEBACCESS_JSON property.
 .SH Notes
 .PP
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that
