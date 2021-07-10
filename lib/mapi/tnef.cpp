@@ -330,7 +330,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_svreid(pext, static_cast<SVREID *>(r->pvalue));
+		return pext->g_svreid(static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
 		r->pvalue = pext->anew<BINARY>();
 		if (NULL == r->pvalue) {

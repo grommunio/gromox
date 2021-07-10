@@ -707,7 +707,7 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 		if (NULL == r->pstore_eid) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_store_entryid(pext, r->pstore_eid));
+		TRY(pext->g_store_eid(r->pstore_eid));
 	} else {
 		r->pstore_eid = NULL;
 		TRY(pext->advance(eid_size));
@@ -717,7 +717,7 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 		if (NULL == r->pfolder_eid) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_svreid(pext, static_cast<SVREID *>(r->pfolder_eid));
+		return pext->g_svreid(static_cast<SVREID *>(r->pfolder_eid));
 	} else {
 		r->pfolder_eid = pext->anew<BINARY>();
 		if (NULL == r->pfolder_eid) {
@@ -912,7 +912,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_svreid(pext, static_cast<SVREID *>(*ppval));
+		return pext->g_svreid(static_cast<SVREID *>(*ppval));
 	case PT_CLSID:
 		*ppval = pext->anew<GUID>();
 		if (NULL == (*ppval)) {
@@ -1195,7 +1195,7 @@ static int ext_buffer_pull_ext_movecopy_action(
 	if (46 != size) {
 		return EXT_ERR_FORMAT;
 	}
-	return ext_buffer_pull_folder_entryid(pext, &r->folder_eid);
+	return pext->g_folder_eid(&r->folder_eid);
 }
 
 int ext_buffer_pull_message_entryid(EXT_PULL *pext, MESSAGE_ENTRYID *r)
@@ -1428,7 +1428,7 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 			if (NULL == r->pppropval[i]) {
 				return EXT_ERR_ALLOC;
 			}
-			TRY(ext_buffer_pull_flagged_propval(pext, PROP_TYPE(pcolumns->pproptag[i]),
+			TRY(pext->g_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
 			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		}
 		return EXT_ERR_SUCCESS;
@@ -1648,7 +1648,7 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 	for (size_t i = 0; i < r->count; ++i) {
 		TRY(pext->g_uint32(&bytes));
 		offset2 = pext->offset + bytes;
-		TRY(ext_buffer_pull_oneoff_entryid(pext, r->pentry_id + i));
+		TRY(pext->g_oneoff_eid(&r->pentry_id[i]));
 		if (pext->offset > offset2) {
 			return EXT_ERR_FORMAT;
 		}

@@ -3899,10 +3899,8 @@ BOOL common_util_addressbook_entryid_to_username(const BINARY *pentryid_bin,
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
 	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-		&ext_pull, &tmp_entryid)) {
+	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	return common_util_essdn_to_username(tmp_entryid.px500dn, username, ulen);
 }
 
@@ -3913,10 +3911,8 @@ BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
 	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-		&ext_pull, &tmp_entryid)) {
+	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	gx_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
 	return TRUE;
 }
@@ -3944,10 +3940,8 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-			&ext_pull, &ab_entryid)) {
+		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
@@ -3956,10 +3950,8 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
-			&ext_pull, &oneoff_entry)) {
+		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
@@ -3992,10 +3984,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-			&ext_pull, &ab_entryid)) {
+		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
@@ -4006,10 +3996,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
-			&ext_pull, &oneoff_entry)) {
+		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
@@ -4934,8 +4922,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		return TRUE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-		&ext_pull, &ab_entryid)) {
+	if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS) {
 		*pb_owner = false;
 		return TRUE;
 	}

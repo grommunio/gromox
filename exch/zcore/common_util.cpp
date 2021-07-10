@@ -966,10 +966,8 @@ BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
 	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-		&ext_pull, &tmp_entryid)) {
+	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	return common_util_essdn_to_username(tmp_entryid.px500dn, username, ulen);
 }
 
@@ -980,10 +978,8 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 
 	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-		&ext_pull, &tmp_entryid)) {
+	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	*ptype = tmp_entryid.type;
 	gx_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
 	return TRUE;
@@ -1012,10 +1008,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-			&ext_pull, &ab_entryid)) {
+		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
 			return FALSE;
 		}
@@ -1025,10 +1019,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
-			&ext_pull, &oneoff_entry)) {
+		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
 			return FALSE;
 		}
@@ -1188,10 +1180,8 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 	FOLDER_ENTRYID tmp_entryid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_folder_entryid(
-		&ext_pull, &tmp_entryid)) {
+	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	switch (tmp_entryid.folder_type) {
 	case EITLT_PRIVATE_FOLDER:
 		*pb_private = TRUE;
@@ -2065,10 +2055,8 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	}
 	ext_pull.init(pmovecopy->store_eid.pb, pmovecopy->store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_store_entryid(
-		&ext_pull, pstore_entryid)) {
+	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	if (FALSE == common_util_essdn_to_uid(
 		pstore_entryid->pmailbox_dn, &user_id)) {
 		return NULL;	

@@ -662,8 +662,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		return TRUE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-		&ext_pull, &ab_entryid)) {
+	if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS) {
 		*pb_owner = false;
 		return TRUE;
 	}

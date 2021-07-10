@@ -1473,10 +1473,8 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	STORE_ENTRYID store_entryid = {};
 	
 	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_store_entryid(
-		&ext_pull, &store_entryid)) {
+	if (ext_pull.g_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
-	}
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -3409,10 +3407,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 			if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
-					&ext_pull, &ab_entryid)) {
+				if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 					continue;
-				}
 				if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER
 					!= ab_entryid.type) {
 					continue;
@@ -3453,11 +3449,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
 			if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_entryid(
-					&ext_pull, &oneoff_entry) || 0 != strcasecmp(
-					oneoff_entry.paddress_type, "SMTP")) {
+				if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS ||
+				    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
 					continue;
-				}
 				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
 				if (ppropval == nullptr)
 					return ecError;
