@@ -380,15 +380,9 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		return TRUE;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
-		if (ptable->table_flags & FLAG_CONVENIENT_DEPTH) {
-			return container_object_query_container_table(
-			       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-			       pcolumns, true, ptable->position, row_needed, pset);
-		} else {
-			return container_object_query_container_table(
-			       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-			       pcolumns, false, ptable->position, row_needed, pset);
-		}
+		return container_object_query_container_table(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
+		       pcolumns, (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
+		       ptable->position, row_needed, pset);
 	} else if (USER_TABLE == ptable->table_type) {
 		return container_object_query_user_table(
 		       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
@@ -749,15 +743,8 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 		return num;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		num1 = 0;
-		if (ptable->table_flags & FLAG_CONVENIENT_DEPTH) {
-			container_object_get_container_table_num(
-				static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-				true, &num1);
-		} else {
-			container_object_get_container_table_num(
-				static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-				false, &num1);
-		}
+		container_object_get_container_table_num(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
+			(ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false, &num1);
 		return num1;
 	} else if (USER_TABLE == ptable->table_type) {
 		num1 = 0;
