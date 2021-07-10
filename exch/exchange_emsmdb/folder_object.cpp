@@ -213,12 +213,7 @@ static BOOL folder_object_get_calculated_property(
 		if (*outvalue == nullptr)
 			return FALSE;
 		if (pfolder->plogon->logon_mode == LOGON_MODE_OWNER) {
-			*static_cast<uint32_t *>(*outvalue) =
-				frightsReadAny | frightsCreate |
-				frightsEditOwned | frightsDeleteOwned |
-				frightsEditAny | frightsDeleteAny |
-				frightsCreateSubfolder | frightsOwner |
-				frightsContact | frightsVisible;
+			*static_cast<uint32_t *>(*outvalue) = rightsAll | frightsContact;
 		} else {
 			auto rpc_info = get_rpc_info();
 			if (!exmdb_client_check_folder_permission(

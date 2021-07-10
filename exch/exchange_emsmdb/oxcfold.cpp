@@ -266,10 +266,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 				return ecMAPIOOM;
 			}
 			tmp_id = 1;
-			permission = frightsOwner | frightsReadAny |
-			             frightsVisible | frightsCreate |
-			             frightsEditAny | frightsDeleteAny |
-			             frightsCreateSubfolder;
+			permission = rightsGromox7;
 			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;

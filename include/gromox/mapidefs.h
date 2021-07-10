@@ -391,6 +391,13 @@ enum {
 	frightsFreeBusyDetailed     = 1U << 12, /* cf. IExchangeModifyTable */
 
 	rightsNone = 0,
+	rightsGromox7 = frightsReadAny | frightsCreate | frightsEditAny |
+	                frightsDeleteAny | frightsCreateSubfolder |
+	                frightsOwner | frightsVisible,
+	/* as per edkmdb */
+	rightsAll = frightsReadAny | frightsCreate | frightsEditOwned |
+	            frightsDeleteOwned | frightsEditAny | frightsDeleteAny |
+	            frightsCreateSubfolder | frightsOwner | frightsVisible,
 };
 
 enum zics_type {

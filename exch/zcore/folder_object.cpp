@@ -201,12 +201,7 @@ static BOOL folder_object_get_calculated_property(
 			return FALSE;
 		}
 		if (pfolder->pstore->check_owner_mode()) {
-			*(uint32_t*)(*ppvalue) =
-				frightsReadAny | frightsCreate |
-				frightsEditOwned | frightsDeleteOwned |
-				frightsEditAny | frightsDeleteAny |
-				frightsCreateSubfolder | frightsOwner |
-				frightsContact | frightsVisible;
+			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();

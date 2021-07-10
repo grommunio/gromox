@@ -254,10 +254,7 @@ static uint32_t table_object_get_folder_permission_rights(
 	uint32_t permission;
 	
 	if (pstore->check_owner_mode()) {
-		permission = frightsReadAny | frightsCreate | frightsEditOwned |
-		             frightsDeleteOwned | frightsEditAny |
-		             frightsDeleteAny | frightsCreateSubfolder |
-		             frightsOwner | frightsContact | frightsVisible;
+		permission = rightsAll | frightsContact;
 	} else {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, username, &permission))
