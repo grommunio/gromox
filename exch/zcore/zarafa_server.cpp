@@ -81,7 +81,47 @@ static pthread_key_t g_info_key;
 static std::mutex g_table_lock, g_notify_lock;
 static std::unordered_map<std::string, int> g_user_table;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
-static INT_HASH_TABLE *g_session_table;
+static std::unordered_map<int, USER_INFO> g_session_table;
+
+USER_INFO::USER_INFO()
+{
+	pthread_mutex_init(&lock, nullptr);
+	double_list_init(&sink_list);
+}
+
+USER_INFO::USER_INFO(USER_INFO &&o) :
+	hsession(o.hsession), user_id(o.user_id), domain_id(o.domain_id),
+	org_id(o.org_id), cpid(o.cpid), flags(o.flags),
+	last_time(o.last_time), reload_time(o.reload_time), ptree(o.ptree),
+	sink_list(o.sink_list)
+{
+	memcpy(username, o.username, arsizeof(username));
+	memcpy(lang, o.lang, arsizeof(lang));
+	memcpy(maildir, o.maildir, arsizeof(maildir));
+	memcpy(homedir, o.homedir, arsizeof(homedir));
+	o.ptree = nullptr;
+	o.sink_list = {};
+	pthread_mutex_init(&lock, nullptr);
+}
+
+USER_INFO::~USER_INFO()
+{
+	auto pinfo = this;
+	DOUBLE_LIST_NODE *pnode;
+	while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
+		auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
+		close(psink_node->clifd);
+		free(psink_node->sink.padvise);
+		free(psink_node);
+	}
+	double_list_free(&pinfo->sink_list);
+	if (pinfo->ptree != nullptr) {
+		common_util_build_environment();
+		object_tree_free(pinfo->ptree);
+		common_util_free_environment();
+	}
+	pthread_mutex_destroy(&lock);
+}
 
 static int zarafa_server_get_user_id(GUID hsession)
 {
@@ -97,8 +137,11 @@ static USER_INFO_REF zarafa_server_query_session(GUID hsession)
 	
 	user_id = zarafa_server_get_user_id(hsession);
 	std::unique_lock tl_hold(g_table_lock);
-	auto pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
-	if (pinfo == nullptr || guid_compare(&hsession, &pinfo->hsession) != 0)
+	auto iter = g_session_table.find(user_id);
+	if (iter == g_session_table.end())
+		return nullptr;
+	auto pinfo = &iter->second;
+	if (guid_compare(&hsession, &pinfo->hsession) != 0)
 		return nullptr;
 	pinfo->reference ++;
 	time(&pinfo->last_time);
@@ -147,7 +190,6 @@ static void *zcorezs_scanwork(void *param)
 	time_t cur_time;
 	uint8_t tmp_byte;
 	OBJECT_TREE *ptree;
-	INT_HASH_ITER *iter;
 	struct pollfd fdpoll;
 	ZCORE_RPC_RESPONSE response;
 	SINK_NODE *psink_node;
@@ -171,12 +213,10 @@ static void *zcorezs_scanwork(void *param)
 		}
 		std::unique_lock tl_hold(g_table_lock);
 		time(&cur_time);
-		iter = int_hash_iter_init(g_session_table);
-		for (int_hash_iter_begin(iter);
-			FALSE == int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			auto pinfo = static_cast<USER_INFO *>(int_hash_iter_get_value(iter, nullptr));
+		for (auto iter = g_session_table.begin(); iter != g_session_table.end(); ) {
+			auto pinfo = &iter->second;
 			if (0 != pinfo->reference) {
+				++iter;
 				continue;
 			}
 			ptail = double_list_get_tail(&pinfo->sink_list);
@@ -201,23 +241,30 @@ static void *zcorezs_scanwork(void *param)
 					pinfo->reload_time = cur_time;
 				}
 				common_util_free_environment();
+				++iter;
 				continue;
 			}
 			if (cur_time - pinfo->last_time < g_cache_interval) {
 				if (0 != count) {
+					++iter;
 					continue;
 				}
 				pnode = me_alloc<DOUBLE_LIST_NODE>();
-				if (pnode == nullptr)
+				if (pnode == nullptr) {
+					++iter;
 					continue;
+				}
 				pnode->pdata = strdup(pinfo->maildir);
 				if (NULL == pnode->pdata) {
 					free(pnode);
+					++iter;
 					continue;
 				}
 				double_list_append_as_tail(&temp_list, pnode);
+				++iter;
 			} else {
 				if (0 != double_list_get_nodes_num(&pinfo->sink_list)) {
+					++iter;
 					continue;
 				}
 				common_util_build_environment();
@@ -226,10 +273,9 @@ static void *zcorezs_scanwork(void *param)
 				double_list_free(&pinfo->sink_list);
 				pthread_mutex_destroy(&pinfo->lock);
 				g_user_table.erase(pinfo->username);
-				int_hash_iter_remove(iter);
+				iter = g_session_table.erase(iter);
 			}
 		}
-		int_hash_iter_free(iter);
 		tl_hold.unlock();
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			common_util_build_environment();
@@ -638,17 +684,10 @@ void zarafa_server_init(size_t table_size, int cache_interval,
 
 int zarafa_server_run()
 {
-	g_session_table = int_hash_init(g_table_size, sizeof(USER_INFO));
-	if (NULL == g_session_table) {
-		printf("[zarafa_server]: fail to "
-			"create session hash table\n");
-		return -1;
-	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[zarafa_server]: E-1443: pthread_create: %s\n", strerror(ret));
-		int_hash_free(g_session_table);
 		return -4;
 	}
 	pthread_setname_np(g_scan_id, "zarafa");
@@ -658,31 +697,10 @@ int zarafa_server_run()
 
 int zarafa_server_stop()
 {
-	INT_HASH_ITER *iter;
-	SINK_NODE *psink_node;
-	DOUBLE_LIST_NODE *pnode;
-	
 	g_notify_stop = true;
 	pthread_kill(g_scan_id, SIGALRM);
 	pthread_join(g_scan_id, NULL);
-	iter = int_hash_iter_init(g_session_table);
-	for (int_hash_iter_begin(iter);
-		FALSE == int_hash_iter_done(iter);
-		int_hash_iter_forward(iter)) {
-		auto pinfo = static_cast<USER_INFO *>(int_hash_iter_get_value(iter, nullptr));
-		while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
-			psink_node = (SINK_NODE*)pnode->pdata;
-			close(psink_node->clifd);
-			free(psink_node->sink.padvise);
-			free(psink_node);
-		}
-		double_list_free(&pinfo->sink_list);
-		common_util_build_environment();
-		object_tree_free(pinfo->ptree);
-		common_util_free_environment();
-	}
-	int_hash_iter_free(iter);
-	int_hash_free(g_session_table);
+	g_session_table.clear();
 	g_user_table.clear();
 	g_notify_table.clear();
 	return 0;
@@ -717,7 +735,6 @@ uint32_t zarafa_server_logon(const char *username,
 	char homedir[256];
 	char maildir[256];
 	char tmp_name[UADDR_SIZE];
-	USER_INFO tmp_info;
 	
 	auto pdomain = strchr(username, '@');
 	if (pdomain == nullptr)
@@ -732,8 +749,9 @@ uint32_t zarafa_server_logon(const char *username,
 	auto iter = g_user_table.find(tmp_name);
 	if (iter != g_user_table.end()) {
 		user_id = iter->second;
-		auto pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
-		if (NULL != pinfo) {
+		auto st_iter = g_session_table.find(user_id);
+		if (st_iter != g_session_table.end()) {
+			auto pinfo = &st_iter->second;
 			time(&pinfo->last_time);
 			*phsession = pinfo->hsession;
 			return ecSuccess;
@@ -753,7 +771,8 @@ uint32_t zarafa_server_logon(const char *username,
 	    (!system_services_get_maildir(username, maildir) ||
 	    !system_services_get_user_lang(username, lang)))
 		return ecError;
-	tmp_info.reference = 0;
+
+	USER_INFO tmp_info;
 	tmp_info.hsession = guid_random_new();
 	memcpy(tmp_info.hsession.node, &user_id, sizeof(int));
 	tmp_info.user_id = user_id;
@@ -769,40 +788,34 @@ uint32_t zarafa_server_logon(const char *username,
 	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
 	tmp_info.reload_time = tmp_info.last_time;
-	double_list_init(&tmp_info.sink_list);
 	tmp_info.ptree = object_tree_create(maildir);
 	if (tmp_info.ptree == nullptr)
 		return ecError;
 	tl_hold.lock();
-	auto pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
-	if (NULL != pinfo) {
+	auto st_iter = g_session_table.find(user_id);
+	if (st_iter != g_session_table.end()) {
+		auto pinfo = &st_iter->second;
 		*phsession = pinfo->hsession;
-		tl_hold.unlock();
-		object_tree_free(tmp_info.ptree);
 		return ecSuccess;
 	}
-	if (1 != int_hash_add(g_session_table, user_id, &tmp_info)) {
-		tl_hold.unlock();
-		object_tree_free(tmp_info.ptree);
+	if (g_session_table.size() >= g_table_size)
+		return ecError;
+	try {
+		st_iter = g_session_table.try_emplace(user_id, std::move(tmp_info)).first;
+	} catch (const std::bad_alloc &) {
 		return ecError;
 	}
 	if (g_user_table.size() >= g_table_size) {
-		int_hash_remove(g_session_table, user_id);
-		tl_hold.unlock();
-		object_tree_free(tmp_info.ptree);
+		g_session_table.erase(user_id);
 		return ecError;
 	}
 	try {
 		g_user_table.try_emplace(tmp_name, user_id);
 	} catch (const std::bad_alloc &) {
-		int_hash_remove(g_session_table, user_id);
-		tl_hold.unlock();
-		object_tree_free(tmp_info.ptree);
+		g_session_table.erase(user_id);
 		return ecError;
 	}
-	pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
-	pthread_mutex_init(&pinfo->lock, NULL);
-	*phsession = tmp_info.hsession;
+	*phsession = st_iter->second.hsession;
 	return ecSuccess;
 }
 

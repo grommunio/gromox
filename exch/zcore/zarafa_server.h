@@ -13,22 +13,22 @@ enum {
 };
 
 struct USER_INFO {
-	GUID hsession;
-	std::atomic<int> reference;
-	int user_id;
-	int domain_id;
-	int org_id;
-	char username[UADDR_SIZE];
-	char lang[32];
-	uint32_t cpid;
-	char maildir[256];
-	char homedir[256];
-	uint32_t flags;
-	time_t last_time;
-	time_t reload_time;
-	OBJECT_TREE *ptree;
-	pthread_mutex_t lock;
-	DOUBLE_LIST sink_list;
+	USER_INFO();
+	USER_INFO(USER_INFO &&);
+	void operator=(USER_INFO &&) = delete;
+	~USER_INFO();
+
+	GUID hsession{};
+	std::atomic<int> reference{0};
+	int user_id = 0, domain_id = 0, org_id = 0;
+	char username[UADDR_SIZE]{}, lang[32]{};
+	uint32_t cpid = 0;
+	char maildir[256]{}, homedir[256]{};
+	uint32_t flags = 0;
+	time_t last_time = 0, reload_time = 0;
+	OBJECT_TREE *ptree = nullptr;
+	pthread_mutex_t lock{};
+	DOUBLE_LIST sink_list{};
 };
 
 extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);

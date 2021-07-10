@@ -669,6 +669,8 @@ void common_util_free_environment()
 {
 	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	pthread_setspecific(g_env_key, NULL);
+	if (pctx == nullptr)
+		return;
 	alloc_context_free(&pctx->allocator);
 	free(pctx);
 }
