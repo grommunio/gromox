@@ -457,7 +457,6 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				} else {
 					handle = object_tree_get_store_handle(
 						pinfo->ptree, FALSE, pinfo->domain_id);
-					break;
 				}
 				pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
 				         pinfo->ptree, handle, &mapi_type));
