@@ -88,10 +88,8 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_FOLDERVISIBLE)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_FOLDERVISIBLE)))
 			return ecAccessDenied;
-		}
 	}
 	auto ptable = table_object_create(plogon, pfolder, flags,
 	              ropGetPermissionsTable, logon_id);

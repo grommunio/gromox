@@ -96,12 +96,9 @@ uint32_t rop_openfolder(uint64_t folder_id,
 				}
 			}
 		}
-		if (0 == (permission & PERMISSION_READANY) &&
-			0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-			0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 			/* same as exchange 2013, not ecAccessDenied */
 			return ecNotFound;
-		}
 		if (permission & PERMISSION_FOLDEROWNER) {
 			tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
@@ -209,10 +206,8 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pparent->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
 			return ecAccessDenied;
-		}
 	}
 	if (!exmdb_client_get_folder_by_name(plogon->get_dir(),
 	    pparent->folder_id, folder_name, &folder_id))
@@ -467,10 +462,8 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    pfolder_ids->pll[i], rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-				0 == (permission & PERMISSION_READANY)) {
+			if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)))
 				return ecAccessDenied;
-			}
 		}
 	}
 	if (NULL != pres) {
@@ -665,10 +658,8 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pdst_folder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
 			return ecAccessDenied;
-		}
 		b_guest = TRUE;
 	} else {
 		b_guest = FALSE;
@@ -788,10 +779,8 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pdst_folder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
 			return ecAccessDenied;
-		}
 		b_guest = TRUE;
 	} else {
 		b_guest = FALSE;
@@ -852,10 +841,8 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_DELETEANY) &&
-			0 == (permission & PERMISSION_DELETEOWNED)) {
+		if (!(permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED)))
 			return ecAccessDenied;
-		}
 		username = rpc_info.username;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -1099,10 +1086,8 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    pfolder->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_READANY) &&
-				0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 				return ecAccessDenied;
-			}
 		}
 		if (!exmdb_client_sum_content(plogon->get_dir(),
 		    pfolder->folder_id, b_fai, b_deleted, prow_count))

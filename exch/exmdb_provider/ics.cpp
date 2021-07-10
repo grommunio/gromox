@@ -770,11 +770,8 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 				psqlite, fid_val, username, &permission)) {
 				return FALSE;
 			}
-			if (0 == (permission & PERMISSION_READANY) &&
-				0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-				0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 				continue;
-			}
 		}
 		pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {

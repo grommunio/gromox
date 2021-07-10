@@ -102,11 +102,8 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 					username, &permission)) {
 					continue;
 				}
-				if (0 == (permission & PERMISSION_READANY) &&
-					0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-					0 == (permission & PERMISSION_FOLDEROWNER)) {
+				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 					continue;
-				}
 				count ++;
 			}
 		}
@@ -124,11 +121,8 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 					username, &permission)) {
 					continue;
 				}
-				if (0 == (permission & PERMISSION_READANY) &&
-					0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-					0 == (permission & PERMISSION_FOLDEROWNER)) {
+				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 					continue;
-				}
 			}
 			count += table_sum_hierarchy(psqlite,
 				sqlite3_column_int64(pstmt, 0), username, TRUE);
@@ -168,11 +162,8 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 				psqlite, folder_id1, username, &permission)) {
 				continue;
 			}
-			if (0 == (permission & PERMISSION_READANY) &&
-				0 == (permission & PERMISSION_FOLDERVISIBLE) &&
-				0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
 				continue;
-			}
 		}
 		if (prestriction != nullptr &&
 		    !common_util_evaluate_folder_restriction(psqlite, folder_id1, prestriction))
@@ -2267,8 +2258,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				if (PROP_TAG_MEMBERRIGHTS == pproptags->pproptag[i]
 					&& 0 == (ptnode->table_flags &
 					PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY)) {
-					*(uint32_t*)pvalue &= ~PERMISSION_FREEBUSYSIMPLE;
-					*(uint32_t*)pvalue &= ~PERMISSION_FREEBUSYDETAILED;
+					*static_cast<uint32_t *>(pvalue) &= ~(PERMISSION_FREEBUSYSIMPLE | PERMISSION_FREEBUSYDETAILED);
 				}
 				if (NULL == pvalue) {
 					continue;

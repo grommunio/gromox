@@ -859,8 +859,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						pdb->psqlite, parent_fid, username, &permission)) {
 						return FALSE;
 					}
-					if ((PERMISSION_FOLDEROWNER & permission) ||
-						(PERMISSION_DELETEANY & permission)) {
+					if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) {
 						/* do nothing */
 					} else if (permission & PERMISSION_DELETEOWNED) {
 						if (FALSE == common_util_check_message_owner(
@@ -1687,8 +1686,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 						pdb->psqlite, parent_fid, username, &permission)) {
 						return FALSE;
 					}
-					if ((PERMISSION_FOLDEROWNER & permission) ||
-						(PERMISSION_READANY & permission)) {
+					if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)) {
 						/* do nothing */
 					} else {
 						if (FALSE == common_util_check_message_owner(
@@ -1882,8 +1880,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 						pdb->psqlite, fid_val, username, &permission)) {
 						return FALSE;
 					}
-					if (0 == (permission & PERMISSION_READANY) &&
-						0 == (permission & PERMISSION_FOLDERVISIBLE)) {
+					if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE))) {
 						*pb_partial = TRUE;
 						continue;
 					}
@@ -2583,8 +2580,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				permission |= PERMISSION_FOLDERVISIBLE;
 			}
 			if (permission & PERMISSION_FOLDEROWNER) {
-				permission |= PERMISSION_FOLDERVISIBLE;
-				permission |= PERMISSION_FOLDERCONTACT;
+				permission |= PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDERCONTACT;
 			}
 			if (permission & PERMISSION_DELETEANY) {
 				permission |= PERMISSION_DELETEOWNED;
@@ -2714,8 +2710,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				permission |= PERMISSION_FOLDERVISIBLE;
 			}
 			if (permission & PERMISSION_FOLDEROWNER) {
-				permission |= PERMISSION_FOLDERVISIBLE;
-				permission |= PERMISSION_FOLDERCONTACT;
+				permission |= PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDERCONTACT;
 			}
 			if (permission & PERMISSION_DELETEANY) {
 				permission |= PERMISSION_DELETEOWNED;

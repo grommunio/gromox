@@ -365,8 +365,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 					pdb->psqlite, parent_fid, username, &permission)) {
 					goto MVCP_FAILURE;
 				}
-				if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-					0 == (permission & PERMISSION_READANY)) {
+				if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY))) {
 					if (FALSE == common_util_check_message_owner(
 						pdb->psqlite, tmp_val, username, &b_owner)) {
 						goto MVCP_FAILURE;
@@ -631,8 +630,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 					}
 					return FALSE;
 				}
-				if (0 == (permission & PERMISSION_FOLDEROWNER) &&
-					0 == (permission & PERMISSION_DELETEANY)) {
+				if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY))) {
 					if (FALSE == common_util_check_message_owner(
 						pdb->psqlite, tmp_val, username, &b_owner)) {
 						pstmt.finalize();

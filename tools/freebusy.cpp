@@ -1488,9 +1488,7 @@ static BOOL get_freebusy(const char *dir)
 			cache_connection(dir, -1);
 			return FALSE;
 		}
-		if (0 == (permission&PERMISSION_FREEBUSYSIMPLE) &&
-			0 == (permission&PERMISSION_FREEBUSYDETAILED)
-			&& 0 == (permission&PERMISSION_READANY)) {
+		if (!(permission & (PERMISSION_FREEBUSYSIMPLE | PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY))) {
 			printf("{\"dir\":\"%s\", \"permission\":\"none\"}\n", dir);
 			cache_connection(dir, sockd);
 			return TRUE;

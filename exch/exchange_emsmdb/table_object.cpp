@@ -97,10 +97,8 @@ BOOL TABLE_OBJECT::check_to_load()
 				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 				    rpc_info.username, &permission))
 					return FALSE;	
-				if (0 == (permission & PERMISSION_READANY) &&
-					0 == (permission & PERMISSION_FOLDEROWNER)) {
+				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
 					username = rpc_info.username;
-				}
 			}
 		}
 		if (!exmdb_client_load_content_table(ptable->plogon->get_dir(),

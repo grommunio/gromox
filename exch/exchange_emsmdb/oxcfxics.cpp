@@ -520,8 +520,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (PERMISSION_READANY & permission) &&
-			0 == (PERMISSION_FOLDEROWNER & permission)) {
+		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER))) {
 			for (size_t i = 0; i < pmessage_ids->count; ++i) {
 				if (!exmdb_client_check_message_owner(plogon->get_dir(),
 				    pmessage_ids->pll[i], rpc_info.username, &b_owner))
