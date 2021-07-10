@@ -11,9 +11,7 @@ loaded in advance (this is the case by default).
 .SH Configuration file directives
 .TP
 \fBauth_backend_selection\fP
-This controls how authmgr picks the backend. Once \fBalways_ldap\fP or
-\fBexternid\fP is set, ldap_adaptor(4gx) becomes mandatory, as does its
-configuration, i.e. LDAP search base and access credentials need to be valid.
+This controls how authmgr picks the backend.
 .br
 Available: \fIalways_mysql\fP, \fIalways_ldap\fP, \fIexternid\fP
 .br
