@@ -100,10 +100,9 @@ struct SORT_ITEM {
 }
 
 static size_t g_base_size;
-static int g_file_blocks;
+static int g_file_blocks, g_ab_cache_interval;
 static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
-static int g_cache_interval;
 static char g_zcab_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
@@ -205,7 +204,7 @@ void ab_tree_init(const char *org_name, int base_size,
 {
 	gx_strlcpy(g_zcab_org_name, org_name, arsizeof(g_zcab_org_name));
 	g_base_size = base_size;
-	g_cache_interval = cache_interval;
+	g_ab_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
 	g_notify_stop = true;
 }
@@ -823,7 +822,7 @@ static void *zcoreab_scanwork(void *param)
 		for (auto &pair : g_base_hash) {
 			if (pair.second.status != BASE_STATUS_LIVING ||
 			    pair.second.reference != 0 ||
-			    now - pair.second.load_time < g_cache_interval)
+			    now - pair.second.load_time < g_ab_cache_interval)
 				continue;
 			pbase = &pair.second;
 			pbase->status = BASE_STATUS_CONSTRUCTING;

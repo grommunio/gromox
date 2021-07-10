@@ -90,10 +90,9 @@ struct ab_sort_item {
 }
 
 static size_t g_base_size;
-static int g_file_blocks;
+static int g_file_blocks, g_ab_cache_interval;
 static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_scan_id;
-static int g_cache_interval;
 static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock, g_remote_lock;
@@ -216,7 +215,7 @@ void ab_tree_init(const char *org_name, size_t base_size,
 {
 	gx_strlcpy(g_nsp_org_name, org_name, arsizeof(g_nsp_org_name));
 	g_base_size = base_size;
-	g_cache_interval = cache_interval;
+	g_ab_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
 	g_notify_stop = true;
 }
@@ -866,7 +865,7 @@ static void *nspab_scanwork(void *param)
 			auto &base = kvpair.second;
 			if (base.status != BASE_STATUS_LIVING ||
 			    base.reference != 0 ||
-			    time(nullptr) - base.load_time < g_cache_interval)
+			    time(nullptr) - base.load_time < g_ab_cache_interval)
 				continue;
 			pbase = &base;
 			pbase->status = BASE_STATUS_CONSTRUCTING;
