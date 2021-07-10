@@ -79,7 +79,7 @@ static pthread_t g_scan_id;
 static int g_cache_interval;
 static pthread_key_t g_info_key;
 static std::mutex g_table_lock, g_notify_lock;
-static STR_HASH_TABLE *g_user_table;
+static std::unordered_map<std::string, int> g_user_table;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
 static INT_HASH_TABLE *g_session_table;
 
@@ -225,7 +225,7 @@ static void *zcorezs_scanwork(void *param)
 				common_util_free_environment();
 				double_list_free(&pinfo->sink_list);
 				pthread_mutex_destroy(&pinfo->lock);
-				str_hash_remove(g_user_table, pinfo->username);
+				g_user_table.erase(pinfo->username);
 				int_hash_iter_remove(iter);
 			}
 		}
@@ -644,19 +644,10 @@ int zarafa_server_run()
 			"create session hash table\n");
 		return -1;
 	}
-	g_user_table = str_hash_init(
-		g_table_size, sizeof(int), NULL);
-	if (NULL == g_user_table) {
-		int_hash_free(g_session_table);
-		printf("[zarafa_server]: fail to"
-			" create user hash table\n");
-		return -2;
-	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[zarafa_server]: E-1443: pthread_create: %s\n", strerror(ret));
-		str_hash_free(g_user_table);
 		int_hash_free(g_session_table);
 		return -4;
 	}
@@ -692,7 +683,7 @@ int zarafa_server_stop()
 	}
 	int_hash_iter_free(iter);
 	int_hash_free(g_session_table);
-	str_hash_free(g_user_table);
+	g_user_table.clear();
 	g_notify_table.clear();
 	return 0;
 }
@@ -708,7 +699,7 @@ int zarafa_server_get_param(int param)
 	case USER_TABLE_SIZE:
 		return g_table_size;
 	case USER_TABLE_USED:
-		return g_user_table->item_num;
+		return g_user_table.size();
 	default:
 		return -1;
 	}
@@ -719,7 +710,6 @@ uint32_t zarafa_server_logon(const char *username,
 {
 	int org_id;
 	int user_id;
-	int *puser_id;
 	int domain_id;
 	char lang[32];
 	char charset[64];
@@ -739,16 +729,16 @@ uint32_t zarafa_server_logon(const char *username,
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);
-	puser_id = static_cast<int *>(str_hash_query(g_user_table, tmp_name));
-	if (NULL != puser_id) {
-		user_id = *puser_id;
+	auto iter = g_user_table.find(tmp_name);
+	if (iter != g_user_table.end()) {
+		user_id = iter->second;
 		auto pinfo = static_cast<USER_INFO *>(int_hash_query(g_session_table, user_id));
 		if (NULL != pinfo) {
 			time(&pinfo->last_time);
 			*phsession = pinfo->hsession;
 			return ecSuccess;
 		}
-		str_hash_remove(g_user_table, tmp_name);
+		g_user_table.erase(iter);
 	}
 	tl_hold.unlock();
 	if (FALSE == system_services_get_id_from_username(
@@ -796,7 +786,15 @@ uint32_t zarafa_server_logon(const char *username,
 		object_tree_free(tmp_info.ptree);
 		return ecError;
 	}
-	if (1 != str_hash_add(g_user_table, tmp_name, &user_id)) {
+	if (g_user_table.size() >= g_table_size) {
+		int_hash_remove(g_session_table, user_id);
+		tl_hold.unlock();
+		object_tree_free(tmp_info.ptree);
+		return ecError;
+	}
+	try {
+		g_user_table.try_emplace(tmp_name, user_id);
+	} catch (const std::bad_alloc &) {
 		int_hash_remove(g_session_table, user_id);
 		tl_hold.unlock();
 		object_tree_free(tmp_info.ptree);
