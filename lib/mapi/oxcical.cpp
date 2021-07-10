@@ -1371,8 +1371,8 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0) {
 		if (TRUE == decode_hex_binary(pvalue, tmp_buff, 1024)) {
 			ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
-			if (EXT_ERR_SUCCESS == ext_buffer_pull_globalobjectid(
-				&ext_pull, &globalobjectid) && ext_pull.offset == tmp_len/2) {
+			if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
+			    ext_pull.offset == tmp_len / 2) {
 				if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
 					globalobjectid.month > 12 || 0 == globalobjectid.month ||
 					globalobjectid.day > ical_get_monthdays(
@@ -4733,10 +4733,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	} else {
 		ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 			static_cast<BINARY *>(pvalue)->cb, alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_appointmentrecurrencepattern(
-			&ext_pull, &apprecurr)) {
+		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		b_recurrence = TRUE;
 	}
 	
@@ -4852,10 +4850,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 				static_cast<BINARY *>(pvalue)->cb, alloc, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_pull_timezonestruct(
-				&ext_pull, &tz_struct)) {
+			if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
 				return FALSE;
-			}
 			ptz_component = oxcical_export_timezone(
 					pical, year - 1, tzid, &tz_struct);
 			if (NULL == ptz_component) {
@@ -4875,10 +4871,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL != pvalue) {
 				ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 					static_cast<BINARY *>(pvalue)->cb, alloc, 0);
-				if (EXT_ERR_SUCCESS != ext_buffer_pull_timezonedefinition(
-					&ext_pull, &tz_definition)) {
+				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
 					return FALSE;
-				}
 				tzid = tz_definition.keyname;
 				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 				ptz_component = oxcical_export_timezone(
@@ -4910,10 +4904,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL != pvalue) {
 			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 				static_cast<BINARY *>(pvalue)->cb, alloc, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_pull_timezonedefinition(
-				&ext_pull, &tz_definition)) {
+			if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
 				return FALSE;
-			}
 			tzid = tz_definition.keyname;
 			oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 			ptz_component = oxcical_export_timezone(
@@ -5056,10 +5048,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL != pvalue) {
 		ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 			static_cast<BINARY *>(pvalue)->cb, alloc, 0);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_globalobjectid(
-			&ext_pull, &globalobjectid)) {
+		if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (globalobjectid.data.pb != nullptr &&
 		    globalobjectid.data.cb >= 12 &&
 		    memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, 12) == 0) {
@@ -5161,8 +5151,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				if (NULL != pvalue) {
 					ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 						static_cast<BINARY *>(pvalue)->cb, alloc, 0);
-					if (EXT_ERR_SUCCESS != ext_buffer_pull_globalobjectid(
-						&ext_pull, &globalobjectid)) {
+					if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS) {
 						return FALSE;
 					} else {
 						itime.year = globalobjectid.year;

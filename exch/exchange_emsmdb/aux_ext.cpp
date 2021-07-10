@@ -887,7 +887,7 @@ static int aux_ext_pull_aux_header_type_union1(
 	if (NULL == (*pppayload)) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_data_blob(pext, static_cast<DATA_BLOB *>(*pppayload));
+	return pext->g_blob(static_cast<DATA_BLOB *>(*pppayload));
 }
 
 static int aux_ext_push_aux_header_type_union1(
@@ -989,7 +989,7 @@ static int aux_ext_pull_aux_header_type_union2(
 		if (NULL == (*pppayload)) {
 			return EXT_ERR_ALLOC;
 		}
-	return ext_buffer_pull_data_blob(pext, static_cast<DATA_BLOB *>(*pppayload));
+	return pext->g_blob(static_cast<DATA_BLOB *>(*pppayload));
 }
 
 static int aux_ext_push_aux_header_type_union2(
@@ -1082,8 +1082,7 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	
-	TRY(ext_buffer_pull_rpc_header_ext(pext, &rpc_header_ext));
+	TRY(pext->g_rpc_header_ext(&rpc_header_ext));
 	if (0 == (rpc_header_ext.flags & RHE_FLAG_LAST)) {
 		return EXT_ERR_HEADER_FLAGS;
 	}

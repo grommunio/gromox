@@ -239,7 +239,7 @@ static int rop_ext_push_longtermidfromid_response(
 static int rop_ext_pull_idfromlongtermid_request(
 	EXT_PULL *pext, IDFROMLONGTERMID_REQUEST *r)
 {
-	return ext_buffer_pull_long_term_id(pext, &r->long_term_id);
+	return pext->g_longterm(&r->long_term_id);
 }
 
 static int rop_ext_push_idfromlongtermid_response(
@@ -263,7 +263,7 @@ static int rop_ext_push_getperuserlongtermids_response(
 static int rop_ext_pull_getperuserguid_request(
 	EXT_PULL *pext, GETPERUSERGUID_REQUEST *r)
 {
-	return ext_buffer_pull_long_term_id(pext, &r->long_term_id);
+	return pext->g_longterm(&r->long_term_id);
 }
 
 static int rop_ext_push_getperuserguid_response(
@@ -275,7 +275,7 @@ static int rop_ext_push_getperuserguid_response(
 static int rop_ext_pull_readperuserinformation_request(
 	EXT_PULL *pext, READPERUSERINFORMATION_REQUEST *r)
 {
-	TRY(ext_buffer_pull_long_term_id(pext, &r->long_folder_id));
+	TRY(pext->g_longterm(&r->long_folder_id));
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint32(&r->data_offset));
 	return pext->g_uint16(&r->max_data_size);
@@ -291,7 +291,7 @@ static int rop_ext_push_readperuserinformation_response(
 static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
 	WRITEPERUSERINFORMATION_REQUEST *r, BOOL b_private)
 {
-	TRY(ext_buffer_pull_long_term_id(pext, &r->long_folder_id));
+	TRY(pext->g_longterm(&r->long_folder_id));
 	TRY(pext->g_uint8(&r->has_finished));
 	TRY(pext->g_uint32(&r->offset));
 	TRY(pext->g_sbin(&r->data));
@@ -583,7 +583,7 @@ static int rop_ext_pull_sorttable_request(
 	EXT_PULL *pext, SORTTABLE_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->table_flags));
-	return ext_buffer_pull_sortorder_set(pext, &r->sort_criteria);
+	return pext->g_sortorder_set(&r->sort_criteria);
 }
 
 static int rop_ext_push_sorttable_response(
@@ -1022,7 +1022,7 @@ static int rop_ext_pull_setmessagereadflag_request(EXT_PULL *pext,
 		if (NULL == r->pclient_data) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_long_term_id(pext, r->pclient_data);
+		return pext->g_longterm(r->pclient_data);
 	}
 }
 
@@ -1220,7 +1220,7 @@ static int rop_ext_pull_getpropertyidsfromnames_request(
 	EXT_PULL *pext, GETPROPERTYIDSFROMNAMES_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->flags));
-	return ext_buffer_pull_propname_array(pext, &r->propnames);
+	return pext->g_propname_a(&r->propnames);
 }
 
 static int rop_ext_push_getpropertyidsfromnames_response(
@@ -1232,7 +1232,7 @@ static int rop_ext_push_getpropertyidsfromnames_response(
 static int rop_ext_pull_getnamesfrompropertyids_request(
 	EXT_PULL *pext, GETNAMESFROMPROPERTYIDS_REQUEST *r)
 {
-	return ext_buffer_pull_propid_array(pext, &r->propids);
+	return pext->g_propid_a(&r->propids);
 }
 
 static int rop_ext_push_getnamesfrompropertyids_response(
@@ -1552,7 +1552,7 @@ static int rop_ext_pull_modifypermissions_request(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_permission_data(pext, r->prow + i));
+		TRY(pext->g_permission_data(&r->prow[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1580,7 +1580,7 @@ static int rop_ext_pull_modifyrules_request(
 		return EXT_ERR_SUCCESS;
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_rule_data(pext, r->prow + i));
+		TRY(pext->g_rule_data(&r->prow[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1845,7 +1845,7 @@ static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_long_term_id_rang(pext, r->prange + i));
+		TRY(pext->g_longterm_rang(&r->prange[i]));
 	if (pext->offset > offset) {
 		return EXT_ERR_FORMAT;
 	}
@@ -3214,8 +3214,7 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	
-	TRY(ext_buffer_pull_rpc_header_ext(pext, &rpc_header_ext));
+	TRY(pext->g_rpc_header_ext(&rpc_header_ext));
 	if (0 == (rpc_header_ext.flags & RHE_FLAG_LAST)) {
 		return EXT_ERR_HEADER_FLAGS;
 	}

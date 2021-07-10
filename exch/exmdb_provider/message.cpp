@@ -4184,9 +4184,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			continue;
 		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
 			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS !=
-			ext_buffer_pull_namedproperty_information(
-			&ext_pull, &propname_info) ||
+		if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
 		    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
 			continue;
 		if (FALSE == message_replace_restriction_propid(
@@ -4210,8 +4208,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		}
 		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
 			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_namedproperty_information(
-			&ext_pull, &propname_info) ||
+		if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
 		    ext_pull.g_uint32(&version) != EXT_ERR_SUCCESS ||
 		    version != 1 ||
 		    ext_pull.g_ext_rule_actions(&ext_actions) != EXT_ERR_SUCCESS)

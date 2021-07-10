@@ -862,7 +862,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_typed_propval(pext, static_cast<TYPED_PROPVAL *>(*ppval));
+		return pext->g_typed_pv(static_cast<TYPED_PROPVAL *>(*ppval));
 	case PT_SHORT:
 		*ppval = pext->anew<uint16_t>();
 		if (NULL == (*ppval)) {
@@ -930,7 +930,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_rule_actions(pext, static_cast<RULE_ACTIONS *>(*ppval));
+		return pext->g_rule_actions(static_cast<RULE_ACTIONS *>(*ppval));
 	case PT_BINARY:
 	case PT_OBJECT:
 		*ppval = pext->anew<BINARY>();
@@ -988,13 +988,13 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 int ext_buffer_pull_typed_propval(EXT_PULL *pext, TYPED_PROPVAL *r)
 {
 	TRY(pext->g_uint16(&r->type));
-	return ext_buffer_pull_propval(pext, r->type, &r->pvalue);
+	return pext->g_propval(r->type, &r->pvalue);
 }
 
 int ext_buffer_pull_tagged_propval(EXT_PULL *pext, TAGGED_PROPVAL *r)
 {
 	TRY(pext->g_uint32(&r->proptag));
-	return ext_buffer_pull_propval(pext, PROP_TYPE(r->proptag), &r->pvalue);
+	return pext->g_propval(PROP_TYPE(r->proptag), &r->pvalue);
 }
 
 int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
@@ -1006,8 +1006,8 @@ int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
 
 int ext_buffer_pull_long_term_id_rang(EXT_PULL *pext, LONG_TERM_ID_RANGE *r)
 {
-	TRY(ext_buffer_pull_long_term_id(pext, &r->min));
-	return ext_buffer_pull_long_term_id(pext, &r->max);
+	TRY(pext->g_longterm(&r->min));
+	return pext->g_longterm(&r->max);
 }
 
 int ext_buffer_pull_proptag_array(EXT_PULL *pext, PROPTAG_ARRAY *r)
@@ -1071,7 +1071,7 @@ int ext_buffer_pull_propname_array(EXT_PULL *pext, PROPNAME_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_property_name(pext, r->ppropname + i));
+		TRY(pext->g_propname(&r->ppropname[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1364,7 +1364,7 @@ int ext_buffer_pull_namedproperty_information(
 	TRY(pext->g_uint32(&size));
 	offset = pext->offset + size;
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_property_name(pext, r->ppropname + i));
+		TRY(pext->g_propname(&r->ppropname[i]));
 	}
 	if (offset < pext->offset) {
 		return EXT_ERR_FORMAT;
@@ -1392,7 +1392,7 @@ int ext_buffer_pull_flagged_propval(EXT_PULL *pext,
 	TRY(pext->g_uint8(&r->flag));
 	switch (r->flag) {
 	case FLAGGED_PROPVAL_FLAG_AVAILABLE:
-		return ext_buffer_pull_propval(pext, type, ppvalue);
+		return pext->g_propval(type, ppvalue);
 	case FLAGGED_PROPVAL_FLAG_UNAVAILABLE:
 		*ppvalue = NULL;
 		return EXT_ERR_SUCCESS;
@@ -1419,7 +1419,7 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 	}
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
-			TRY(ext_buffer_pull_propval(pext, PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]));
+			TRY(pext->g_propval(PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]));
 		}
 		return EXT_ERR_SUCCESS;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
@@ -1562,7 +1562,7 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 	}
 	proptags.count = r->count;
 	proptags.pproptag = (uint32_t*)pproptags->pproptag;
-	return ext_buffer_pull_property_row(pext, &proptags, &r->properties);
+	return pext->g_proprow(&proptags, &r->properties);
 }
 
 int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
@@ -1698,9 +1698,9 @@ int ext_buffer_pull_timezonestruct(EXT_PULL *pext, TIMEZONESTRUCT *r)
 	TRY(pext->g_int32(&r->standardbias));
 	TRY(pext->g_int32(&r->daylightbias));
 	TRY(pext->g_int16(&r->standardyear));
-	TRY(ext_buffer_pull_systemtime(pext, &r->standarddate));
+	TRY(pext->g_systime(&r->standarddate));
 	TRY(pext->g_int16(&r->daylightyear));
-	return ext_buffer_pull_systemtime(pext, &r->daylightdate);
+	return pext->g_systime(&r->daylightdate);
 }
 
 static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
@@ -1714,8 +1714,8 @@ static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	TRY(pext->g_int32(&r->bias));
 	TRY(pext->g_int32(&r->standardbias));
 	TRY(pext->g_int32(&r->daylightbias));
-	TRY(ext_buffer_pull_systemtime(pext, &r->standarddate));
-	return ext_buffer_pull_systemtime(pext, &r->daylightdate);
+	TRY(pext->g_systime(&r->standarddate));
+	return pext->g_systime(&r->daylightdate);
 }
 
 int ext_buffer_pull_timezonedefinition(EXT_PULL *pext, TIMEZONEDEFINITION *r)

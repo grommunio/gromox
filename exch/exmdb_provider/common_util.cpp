@@ -2509,10 +2509,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_svreid(&ext_pull,
-					    static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_SRESTRICT:
@@ -2531,10 +2529,8 @@ BOOL common_util_get_properties(int table_type,
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
 						sqlite3_column_bytes(pstmt, 0),
 						common_util_alloc, 0);
-					if (ext_buffer_pull_rule_actions(&ext_pull,
-					    static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS)
 						return FALSE;
-					}
 				}
 				break;
 			case PT_OBJECT:
@@ -3758,8 +3754,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_buffer_pull_rule_actions(&ext_pull,
-		    static_cast<RULE_ACTIONS *>(*ppvalue)) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(*ppvalue)) != EXT_ERR_SUCCESS) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -5768,8 +5763,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (ext_buffer_pull_svreid(&ext_pull,
-		    static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return NULL;
 		return pvalue;
 	case PT_OBJECT:

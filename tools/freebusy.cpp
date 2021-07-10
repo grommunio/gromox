@@ -243,11 +243,7 @@ static BOOL exmdb_client_get_named_propids(int sockd, const char *dir,
 	    tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
 	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_propid_array(
-		&ext_pull, ppropids)) {
-		return FALSE;
-	}
-	return TRUE;
+	return ext_pull.g_propid_a(ppropids) == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
 static BOOL exmdb_client_check_folder_permission(int sockd,
@@ -1236,10 +1232,8 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 	
 	if (NULL != pglobal_obj) {
 		ext_pull.init(pglobal_obj->pb, pglobal_obj->cb, malloc, 0);
-		if (EXT_ERR_SUCCESS != ext_buffer_pull_globalobjectid(
-			&ext_pull, &globalobjectid)) {
+		if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
 		if (0 == memcmp(globalobjectid.data.pb,
 			"\x76\x43\x61\x6c\x2d\x55\x69\x64\x01\x00\x00\x00", 12)) {
 			if (globalobjectid.data.cb - 12 > sizeof(tmp_buff) - 1) {
@@ -1713,10 +1707,8 @@ static BOOL get_freebusy(const char *dir)
 			} else {
 				ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 					static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
-				if (EXT_ERR_SUCCESS != ext_buffer_pull_timezonestruct(
-					&ext_pull, &tzstruct)) {
+				if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
 					continue;	
-				}
 				ptz_component = tzstruct_to_vtimezone(
 						1600, "timezone", &tzstruct);
 				if (NULL == ptz_component) {
@@ -1730,11 +1722,8 @@ static BOOL get_freebusy(const char *dir)
 			}
 			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 				static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
-			if (EXT_ERR_SUCCESS !=
-				ext_buffer_pull_appointmentrecurrencepattern(
-				&ext_pull, &apprecurr)) {
+			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 				continue;
-			}
 			if (FALSE == find_recurrence_times(ptz_component,
 				whole_start_time, &apprecurr, g_start_time,
 				g_end_time, &tmp_list)) {

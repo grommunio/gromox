@@ -1378,7 +1378,7 @@ static BOOL rpc_ext_pull_sorttable_request(
 	if (NULL == ppayload->sorttable.psortset) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_sortorder_set(pext, ppayload->sorttable.psortset));
+	QRF(pext->g_sortorder_set(ppayload->sorttable.psortset));
 	return TRUE;
 }
 
@@ -1644,7 +1644,7 @@ static BOOL rpc_ext_pull_getnamedpropids_request(
 	if (NULL == ppayload->getnamedpropids.ppropnames) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_propname_array(pext, ppayload->getnamedpropids.ppropnames));
+	QRF(pext->g_propname_a(ppayload->getnamedpropids.ppropnames));
 	return TRUE;
 }
 
@@ -1664,7 +1664,7 @@ static BOOL rpc_ext_pull_getpropnames_request(
 	if (NULL == ppayload->getpropnames.ppropids) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_propid_array(pext, ppayload->getpropnames.ppropids));
+	QRF(pext->g_propid_a(ppayload->getpropnames.ppropids));
 	return TRUE;
 }
 
