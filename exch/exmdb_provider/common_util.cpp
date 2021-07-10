@@ -3931,12 +3931,9 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0)
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
+	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
-		&ext_pull, provider_uid, 16)) {
-		return FALSE;
-	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
@@ -3975,12 +3972,9 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0)
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
+	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
-		&ext_pull, provider_uid, 16)) {
-		return FALSE;
-	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);

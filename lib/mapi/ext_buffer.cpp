@@ -471,7 +471,7 @@ static int ext_buffer_pull_restriction_content(
 {
 	TRY(pext->g_uint32(&r->fuzzy_level));
 	TRY(pext->g_uint32(&r->proptag));
-	return ext_buffer_pull_tagged_propval(pext, &r->propval);
+	return pext->g_tagged_pv(&r->propval);
 }
 
 static int ext_buffer_pull_restriction_property(
@@ -482,7 +482,7 @@ static int ext_buffer_pull_restriction_property(
 	TRY(pext->g_uint8(&relop));
 	r->relop = static_cast<enum relop>(relop);
 	TRY(pext->g_uint32(&r->proptag));
-	return ext_buffer_pull_tagged_propval(pext, &r->propval);
+	return pext->g_tagged_pv(&r->propval);
 }
 
 static int ext_buffer_pull_restriction_propcompare(
@@ -547,7 +547,7 @@ static int ext_buffer_pull_restriction_comment(
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
+		TRY(pext->g_tagged_pv(&r->ppropval[i]));
 	}
 	TRY(pext->g_uint8(&res_present));
 	if (0 != res_present) {
@@ -749,7 +749,7 @@ static int ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
+		TRY(pext->g_tagged_pv(&r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -822,7 +822,7 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata));
+		return pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
 		r->pdata = NULL;
@@ -1111,7 +1111,7 @@ int ext_buffer_pull_tpropval_array(EXT_PULL *pext, TPROPVAL_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_tagged_propval(pext, r->ppropval + i));
+		TRY(pext->g_tagged_pv(&r->ppropval[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1220,7 +1220,7 @@ static int ext_buffer_pull_ext_reply_action(
 	if (70 != size) {
 		return EXT_ERR_FORMAT;
 	}
-	TRY(ext_buffer_pull_message_entryid(pext, &r->message_eid));
+	TRY(pext->g_msg_eid(&r->message_eid));
 	return pext->g_guid(&r->template_guid);
 }
 
@@ -1239,7 +1239,7 @@ static int ext_buffer_pull_ext_recipient_block(
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
+		TRY(pext->g_tagged_pv(&r->ppropval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1309,7 +1309,7 @@ static int ext_buffer_pull_ext_action_block(
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
-		return ext_buffer_pull_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata));
+		return pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
 		r->pdata = NULL;
@@ -2084,7 +2084,7 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 			if (NULL == r->pplist[i]->pembedded) {
 				return EXT_ERR_ALLOC;
 			}
-			TRY(ext_buffer_pull_message_content(pext, r->pplist[i]->pembedded));
+			TRY(pext->g_msgctnt(r->pplist[i]->pembedded));
 		} else {
 			r->pplist[i]->pembedded = NULL;
 		}
@@ -2103,7 +2103,7 @@ int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *r)
 		if (NULL == r->children.prcpts) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_tarray_set(pext, r->children.prcpts));
+		TRY(pext->g_tarray_set(r->children.prcpts));
 	} else {
 		r->children.prcpts = NULL;
 	}

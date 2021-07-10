@@ -115,8 +115,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 		free(prootobj);
 		return NULL;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_tarray_set(
-		&ext_pull, &prof_set)) {
+	if (ext_pull.g_tarray_set(&prof_set) != EXT_ERR_SUCCESS) {
 		tpropval_array_free(prootobj->pprivate_proplist);
 		free(pbuff);
 		free(prootobj->maildir);

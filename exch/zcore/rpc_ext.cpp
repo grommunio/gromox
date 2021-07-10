@@ -44,7 +44,7 @@ static BOOL rpc_ext_pull_recipient_block(
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
-		QRF(ext_buffer_pull_tagged_propval(pext, &r->ppropval[i]));
+		QRF(pext->g_tagged_pv(&r->ppropval[i]));
 	}
 	return TRUE;
 }
@@ -126,7 +126,7 @@ static BOOL rpc_ext_pull_action_block(
 		if (NULL == r->pdata) {
 			return FALSE;
 		}
-		QRF(ext_buffer_pull_tagged_propval(pext, static_cast<TAGGED_PROPVAL *>(r->pdata)));
+		QRF(pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata)));
 		return TRUE;
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
@@ -889,7 +889,7 @@ static BOOL rpc_ext_pull_resolvename_request(
 	if (NULL == ppayload->resolvename.pcond_set) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_tarray_set(pext, ppayload->resolvename.pcond_set));
+	QRF(pext->g_tarray_set(ppayload->resolvename.pcond_set));
 	return TRUE;
 }
 
@@ -1490,7 +1490,7 @@ static BOOL rpc_ext_pull_modifyrecipients_request(
 	if (NULL == ppayload->modifyrecipients.prcpt_list) {
 		return FALSE;
 	}
-	QRF(ext_buffer_pull_tarray_set(pext, ppayload->modifyrecipients.prcpt_list));
+	QRF(pext->g_tarray_set(ppayload->modifyrecipients.prcpt_list));
 	return TRUE;
 }
 

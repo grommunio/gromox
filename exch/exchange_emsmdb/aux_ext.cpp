@@ -476,7 +476,7 @@ static int aux_ext_pull_aux_perf_failure_v2(
 	TRY(pext->g_uint32(&r->time_to_fail_request));
 	TRY(pext->g_uint32(&r->result_code));
 	TRY(pext->g_uint8(&r->request_operation));
-	return ext_buffer_pull_bytes(pext,r->reserved2, 3);
+	return pext->g_bytes(r->reserved2, 3);
 }
 
 static int aux_ext_push_aux_perf_failure_v2(

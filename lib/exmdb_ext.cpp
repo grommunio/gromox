@@ -1248,7 +1248,7 @@ static int exmdb_ext_pull_write_message_instance_request(
 	if (NULL == ppayload->write_message_instance.pmsgctnt) {
 		return EXT_ERR_ALLOC;
 	}
-	TRY(ext_buffer_pull_message_content(pext, ppayload->write_message_instance.pmsgctnt));
+	TRY(pext->g_msgctnt(ppayload->write_message_instance.pmsgctnt));
 	return pext->g_bool(&ppayload->write_message_instance.b_force);
 }
 
@@ -1315,7 +1315,7 @@ static int exmdb_ext_pull_write_attachment_instance_request(
 		if (NULL == ppayload->write_attachment_instance.pattctnt->pembedded) {
 			return EXT_ERR_ALLOC;
 		}
-		TRY(ext_buffer_pull_message_content(pext, ppayload->write_attachment_instance.pattctnt->pembedded));
+		TRY(pext->g_msgctnt(ppayload->write_attachment_instance.pattctnt->pembedded));
 	} else {
 		ppayload->write_attachment_instance.pattctnt->pembedded = NULL;
 	}
@@ -1529,8 +1529,7 @@ static int exmdb_ext_pull_update_message_instance_rcpts_request(
 	if (NULL == ppayload->update_message_instance_rcpts.pset) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_tarray_set(pext,
-		ppayload->update_message_instance_rcpts.pset);
+	return pext->g_tarray_set(ppayload->update_message_instance_rcpts.pset);
 }
 
 static int exmdb_ext_push_update_message_instance_rcpts_request(
@@ -1638,8 +1637,7 @@ static int exmdb_ext_pull_set_message_instance_conflict_request(
 	if (NULL == ppayload->set_message_instance_conflict.pmsgctnt) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_message_content(pext,
-		ppayload->set_message_instance_conflict.pmsgctnt);
+	return pext->g_msgctnt(ppayload->set_message_instance_conflict.pmsgctnt);
 }
 
 static int exmdb_ext_push_set_message_instance_conflict_request(
@@ -2085,7 +2083,7 @@ static int exmdb_ext_pull_delivery_message_request(
 	if (NULL == ppayload->delivery_message.pmsg) {
 		return EXT_ERR_ALLOC;
 	}
-	TRY(ext_buffer_pull_message_content( pext, ppayload->delivery_message.pmsg));
+	TRY(pext->g_msgctnt(ppayload->delivery_message.pmsg));
 	return pext->g_str(&ppayload->delivery_message.pdigest);
 }
 
@@ -2109,8 +2107,7 @@ static int exmdb_ext_pull_write_message_request(
 	if (NULL == ppayload->write_message.pmsgctnt) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_message_content(pext,
-		ppayload->write_message.pmsgctnt);
+	return pext->g_msgctnt(ppayload->write_message.pmsgctnt);
 }
 
 static int exmdb_ext_push_write_message_request(
@@ -3588,8 +3585,7 @@ static int exmdb_ext_push_set_folder_by_class_response(
 static int exmdb_ext_pull_get_folder_class_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_tarray_set(pext,
-		&ppayload->get_folder_class_table.table);
+	return pext->g_tarray_set(&ppayload->get_folder_class_table.table);
 }
 
 static int exmdb_ext_push_get_folder_class_table_response(
@@ -3613,8 +3609,7 @@ static int exmdb_ext_push_check_folder_id_response(
 static int exmdb_ext_pull_query_folder_messages_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_tarray_set(pext,
-		&ppayload->query_folder_messages.set);
+	return pext->g_tarray_set(&ppayload->query_folder_messages.set);
 }
 
 static int exmdb_ext_push_query_folder_messages_response(
@@ -3867,8 +3862,7 @@ static int exmdb_ext_pull_get_message_brief_response(
 	if (NULL == ppayload->get_message_brief.pbrief) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_message_content(pext,
-	       ppayload->get_message_brief.pbrief);
+	return pext->g_msgctnt(ppayload->get_message_brief.pbrief);
 }
 
 static int exmdb_ext_push_get_message_brief_response(
@@ -3976,8 +3970,7 @@ static int exmdb_ext_push_sum_table_response(
 static int exmdb_ext_pull_query_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_tarray_set(
-		pext, &ppayload->query_table.set);
+	return pext->g_tarray_set(&ppayload->query_table.set);
 }
 
 static int exmdb_ext_push_query_table_response(
@@ -4199,8 +4192,7 @@ static int exmdb_ext_push_reload_message_instance_response(
 static int exmdb_ext_pull_read_message_instance_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_message_content(pext,
-		&ppayload->read_message_instance.msgctnt);
+	return pext->g_msgctnt(&ppayload->read_message_instance.msgctnt);
 }
 
 static int exmdb_ext_push_read_message_instance_response(
@@ -4265,8 +4257,7 @@ static int exmdb_ext_pull_read_attachment_instance_response(
 	if (NULL == ppayload->read_attachment_instance.attctnt.pembedded) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_message_content(pext,
-	       ppayload->read_attachment_instance.attctnt.pembedded);
+	return pext->g_msgctnt(ppayload->read_attachment_instance.attctnt.pembedded);
 }
 
 static int exmdb_ext_push_read_attachment_instance_response(
@@ -4394,8 +4385,7 @@ static int exmdb_ext_push_get_message_instance_rcpts_all_proptags_response(
 static int exmdb_ext_pull_get_message_instance_rcpts_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_tarray_set(pext,
-		&ppayload->get_message_instance_rcpts.set);
+	return pext->g_tarray_set(&ppayload->get_message_instance_rcpts.set);
 }
 
 static int exmdb_ext_push_get_message_instance_rcpts_response(
@@ -4443,8 +4433,7 @@ static int exmdb_ext_push_get_message_instance_attachment_table_all_proptags_res
 static int exmdb_ext_pull_query_message_instance_attachment_table_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_tarray_set(pext,
-		&ppayload->query_message_instance_attachment_table.set);
+	return pext->g_tarray_set(&ppayload->query_message_instance_attachment_table.set);
 }
 
 static int exmdb_ext_push_query_message_instance_attachment_table_response(
@@ -4468,8 +4457,7 @@ static int exmdb_ext_push_copy_instance_attachments_response(
 static int exmdb_ext_pull_get_message_rcpts_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_tarray_set(pext,
-		&ppayload->get_message_rcpts.set);
+	return pext->g_tarray_set(&ppayload->get_message_rcpts.set);
 }
 
 static int exmdb_ext_push_get_message_rcpts_response(
@@ -4683,8 +4671,7 @@ static int exmdb_ext_pull_read_message_response(
 	if (NULL == ppayload->read_message.pmsgctnt) {
 		return EXT_ERR_ALLOC;
 	}
-	return ext_buffer_pull_message_content(
-		pext, ppayload->read_message.pmsgctnt);
+	return pext->g_msgctnt(ppayload->read_message.pmsgctnt);
 }
 
 static int exmdb_ext_push_read_message_response(

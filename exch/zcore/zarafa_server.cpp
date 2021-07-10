@@ -3400,10 +3400,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			if (ext_pull.g_uint32(&tmp_flags) != EXT_ERR_SUCCESS ||
 			    tmp_flags != 0)
 				continue;
-			if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
-				&ext_pull, provider_uid, 16)) {
+			if (ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
 				continue;
-			}
 			rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 			if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);

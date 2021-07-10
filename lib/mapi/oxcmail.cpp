@@ -249,12 +249,9 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, 20, alloc, 0);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0)
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
+	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
-		&ext_pull, provider_uid, 16)) {
-		return FALSE;
-	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
@@ -4922,10 +4919,8 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_oneoff_array(
-		&ext_pull, &address_array)) {
+	if (ext_pull.g_oneoff_a(&address_array) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	pstrings = static_cast<STRING_ARRAY *>(tpropval_array_get_propval(
 	           &pmsg->proplist, PROP_TAG_REPLYRECIPIENTNAMES));
 	if (NULL != pstrings && pstrings->count !=

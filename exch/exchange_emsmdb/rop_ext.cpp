@@ -907,7 +907,7 @@ static int rop_ext_pull_modifyrecipients_request(
 		}
 	}
 	for (i=0; i<r->count; i++) {
-		TRY(ext_buffer_pull_modifyrecipient_row(pext, &r->proptags, r->prow + i));
+		TRY(pext->g_modrcpt_row(&r->proptags, &r->prow[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }

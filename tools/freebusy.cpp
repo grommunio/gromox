@@ -336,11 +336,7 @@ static BOOL exmdb_client_query_table(int sockd, const char *dir,
 	    tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
 	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_tarray_set(
-		&ext_pull, pset)) {
-		return FALSE;
-	}
-	return TRUE;
+	return ext_pull.g_tarray_set(pset) == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
 static void cache_connection(const char *dir, int sockd)

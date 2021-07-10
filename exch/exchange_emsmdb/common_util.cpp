@@ -299,12 +299,9 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0)
-		return FALSE;
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_bytes(
-		&ext_pull, provider_uid, 16)) {
+	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
+	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
 	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
@@ -605,10 +602,8 @@ BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_message_entryid(
-		&ext_pull, &tmp_entryid)) {
+	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	if (0 != memcmp(&tmp_entryid.folder_database_guid,
 		&tmp_entryid.message_database_guid, sizeof(GUID))) {
 		return FALSE;
