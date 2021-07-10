@@ -47,9 +47,8 @@ uint32_t rop_modifypermissions(uint8_t flags,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & frightsOwner))
 			return ecAccessDenied;
-		}
 	}
 	if (MODIFY_PERMISSIONS_FLAG_REPLACEROWS & flags) {
 		if (!exmdb_client_empty_folder_permission(plogon->get_dir(),
@@ -88,7 +87,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_FOLDERVISIBLE)))
+		if (!(permission & (frightsOwner | frightsVisible)))
 			return ecAccessDenied;
 	}
 	auto ptable = table_object_create(plogon, pfolder, flags,

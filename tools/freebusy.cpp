@@ -1488,13 +1488,14 @@ static BOOL get_freebusy(const char *dir)
 			cache_connection(dir, -1);
 			return FALSE;
 		}
-		if (!(permission & (PERMISSION_FREEBUSYSIMPLE | PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY))) {
+		if (!(permission & (frightsFreeBusySimple |
+		    frightsFreeBusyDetailed | frightsReadAny))) {
 			printf("{\"dir\":\"%s\", \"permission\":\"none\"}\n", dir);
 			cache_connection(dir, sockd);
 			return TRUE;
 		}
 	} else {
-		permission = PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY;
+		permission = frightsFreeBusyDetailed | frightsReadAny;
 	}
 	tmp_true = 1;
 	restriction.rt = RES_OR;
@@ -1665,7 +1666,7 @@ static BOOL get_freebusy(const char *dir)
 		return FALSE;	
 	}
 	printf("{\"dir\":\"%s\", \"permission\":", dir);
-	printf((permission & (PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY)) ?
+	printf((permission & (frightsFreeBusyDetailed | frightsReadAny)) ?
 	       "\"detailed\", " : "\"simple\", ");
 	printf("\"events\":[");
 	b_first = FALSE;

@@ -57,11 +57,10 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 			rpc_info.username, &permission)) {
 			return ecError;
 		}
-		if (PERMISSION_NONE == permission) {
+		if (permission == rightsNone)
 			return ecLoginPerm;
-		}
 		*presponse_flags = RESPONSE_FLAG_RESERVED;
-		if (permission & PERMISSION_SENDAS) {
+		if (permission & frightsGromoxSendAs) {
 			*presponse_flags |= RESPONSE_FLAG_SENDASRIGHT;
 			logon_mode = LOGON_MODE_DELEGATE;
 		} else {

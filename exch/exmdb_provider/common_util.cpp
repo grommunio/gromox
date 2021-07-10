@@ -4142,7 +4142,7 @@ BOOL common_util_check_folder_permission(
 {
 	char sql_string[1024];
 	
-	*ppermission = 0;
+	*ppermission = rightsNone;
 	snprintf(sql_string, 1024, "SELECT permission"
 				" FROM permissions WHERE folder_id=%llu AND"
 				" username=?", LLU(folder_id));

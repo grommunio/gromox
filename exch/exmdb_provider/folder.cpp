@@ -859,9 +859,9 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						pdb->psqlite, parent_fid, username, &permission)) {
 						return FALSE;
 					}
-					if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) {
+					if (permission & (frightsOwner | frightsDeleteAny)) {
 						/* do nothing */
-					} else if (permission & PERMISSION_DELETEOWNED) {
+					} else if (permission & frightsDeleteOwned) {
 						if (FALSE == common_util_check_message_owner(
 							pdb->psqlite, message_id, username, &b_owner)) {
 							return FALSE;
@@ -906,14 +906,14 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		if (NULL == username) {
 			b_check = FALSE;
 		} else {
-			uint32_t permission = 0;
+			uint32_t permission = rightsNone;
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
 			}
-			if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) {
+			if (permission & (frightsOwner | frightsDeleteAny)) {
 				b_check	= FALSE;
-			} else if (permission & PERMISSION_DELETEOWNED) {
+			} else if (permission & frightsDeleteOwned) {
 				b_check = TRUE;
 			} else {
 				*pb_partial = TRUE;
@@ -1097,12 +1097,12 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		if (!b_hard && is_deleted)
 			continue;
 		if (NULL != username) {
-			uint32_t permission = 0;
+			uint32_t permission = rightsNone;
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
 			}
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner)) {
 				*pb_partial = TRUE;
 				continue;
 			}
@@ -1459,7 +1459,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-		sqlite3_bind_int64(pstmt, 2, PERMISSION_FOLDEROWNER);
+		sqlite3_bind_int64(pstmt, 2, frightsOwner);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -1558,7 +1558,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-		sqlite3_bind_int64(pstmt, 2, PERMISSION_FOLDEROWNER);
+		sqlite3_bind_int64(pstmt, 2, frightsOwner);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -1639,7 +1639,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	uint64_t message_id1;
 	uint32_t folder_type;
 	char sql_string[256];
-	uint32_t message_size, permission = 0;
+	uint32_t message_size, permission = rightsNone;
 	
 	*pb_partial = FALSE;
 	fid_val = src_fid;
@@ -1654,7 +1654,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				pdb->psqlite, dst_fid, username, &permission)) {
 				return FALSE;
 			}
-			if (0 == (permission & PERMISSION_CREATE)) {
+			if (!(permission & frightsCreate)) {
 				*pb_partial = TRUE;
 				return TRUE;
 			}
@@ -1686,7 +1686,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 						pdb->psqlite, parent_fid, username, &permission)) {
 						return FALSE;
 					}
-					if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)) {
+					if (permission & (frightsOwner | frightsReadAny)) {
 						/* do nothing */
 					} else {
 						if (FALSE == common_util_check_message_owner(
@@ -1729,7 +1729,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		if (FALSE == b_guest) {
 			b_check = FALSE;
 		} else {
-			if (0 == (permission & PERMISSION_CREATE)) {
+			if (!(permission & frightsCreate)) {
 				*pb_partial = FALSE;
 				return TRUE;
 			}
@@ -1737,12 +1737,12 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				pdb->psqlite, fid_val, username, &permission)) {
 				return FALSE;
 			}
-			b_check	= (permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)) ? false : TRUE;
+			b_check	= (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, dst_fid, username, &permission)) {
 				return FALSE;
 			}
-			if (0 == (permission & PERMISSION_CREATE)) {
+			if (!(permission & frightsCreate)) {
 				*pb_partial = TRUE;
 				goto COPY_SUBFOLDER;
 			}
@@ -1862,7 +1862,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					pdb->psqlite, dst_fid, username, &permission)) {
 					return FALSE;
 				}
-				if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+				if (!(permission & frightsCreateSubfolder)) {
 					*pb_partial = TRUE;
 					return TRUE;
 				}
@@ -1880,7 +1880,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 						pdb->psqlite, fid_val, username, &permission)) {
 						return FALSE;
 					}
-					if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDERVISIBLE))) {
+					if (!(permission & (frightsReadAny | frightsVisible))) {
 						*pb_partial = TRUE;
 						continue;
 					}
@@ -2546,7 +2546,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	uint64_t fid_val;
 	uint64_t member_id;
 	char username[UADDR_SIZE];
-	uint32_t permission = 0;
+	uint32_t permission = rightsNone;
 	xstmt pstmt;
 	char sql_string[128];
 	
@@ -2576,23 +2576,18 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				continue;
 			}
 			permission = *(uint32_t*)pvalue;
-			if (permission & PERMISSION_READANY) {
-				permission |= PERMISSION_FOLDERVISIBLE;
-			}
-			if (permission & PERMISSION_FOLDEROWNER) {
-				permission |= PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDERCONTACT;
-			}
-			if (permission & PERMISSION_DELETEANY) {
-				permission |= PERMISSION_DELETEOWNED;
-			}
-			if (permission & PERMISSION_EDITANY) {
-				permission |= PERMISSION_EDITOWNED;
-			}
+			if (permission & frightsReadAny)
+				permission |= frightsVisible;
+			if (permission & frightsOwner)
+				permission |= frightsVisible | frightsContact;
+			if (permission & frightsDeleteAny)
+				permission |= frightsDeleteOwned;
+			if (permission & frightsEditAny)
+				permission |= frightsEditOwned;
 			if (FALSE == b_freebusy ||
 				FALSE == exmdb_server_check_private()
 				|| fid_val != PRIVATE_FID_CALENDAR) {
-				permission &= ~(PERMISSION_FREEBUSYSIMPLE |
-								PERMISSION_FREEBUSYDETAILED);
+				permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 			}
 			if (NULL == pstmt) {
 				sprintf(sql_string, "INSERT INTO permissions"
@@ -2706,23 +2701,18 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				continue;
 			}
 			permission = *(uint32_t*)pvalue;
-			if (permission & PERMISSION_READANY) {
-				permission |= PERMISSION_FOLDERVISIBLE;
-			}
-			if (permission & PERMISSION_FOLDEROWNER) {
-				permission |= PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDERCONTACT;
-			}
-			if (permission & PERMISSION_DELETEANY) {
-				permission |= PERMISSION_DELETEOWNED;
-			}
-			if (permission & PERMISSION_EDITANY) {
-				permission |= PERMISSION_EDITOWNED;
-			}
+			if (permission & frightsReadAny)
+				permission |= frightsVisible;
+			if (permission & frightsOwner)
+				permission |= frightsVisible | frightsContact;
+			if (permission & frightsDeleteAny)
+				permission |= frightsDeleteOwned;
+			if (permission & frightsEditAny)
+				permission |= frightsEditOwned;
 			if (FALSE == b_freebusy ||
 				FALSE == exmdb_server_check_private()
 				|| fid_val != PRIVATE_FID_CALENDAR) {
-				permission &= ~(PERMISSION_FREEBUSYSIMPLE |
-								PERMISSION_FREEBUSYDETAILED);
+				permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 			}
 			sprintf(sql_string, "UPDATE permissions SET permission=%u"
 			        " WHERE member_id=%llu", permission, LLU(member_id));

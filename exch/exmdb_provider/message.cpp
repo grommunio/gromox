@@ -304,7 +304,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 				pdb->psqlite, src_val, username, &permission)) {
 				return FALSE;
 			}
-			b_check = (permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)) ? false : TRUE;
+			b_check = (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
 		} else {
 			b_check = TRUE;
 		}
@@ -365,7 +365,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 					pdb->psqlite, parent_fid, username, &permission)) {
 					goto MVCP_FAILURE;
 				}
-				if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY))) {
+				if (!(permission & (frightsOwner | frightsReadAny))) {
 					if (FALSE == common_util_check_message_owner(
 						pdb->psqlite, tmp_val, username, &b_owner)) {
 						goto MVCP_FAILURE;
@@ -562,7 +562,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 				pdb->psqlite, src_val, username, &permission)) {
 				return FALSE;
 			}
-			b_check = (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) ? false : TRUE;
+			b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 		} else {
 			b_check = TRUE;
 		}
@@ -630,7 +630,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 					}
 					return FALSE;
 				}
-				if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY))) {
+				if (!(permission & (frightsOwner | frightsDeleteAny))) {
 					if (FALSE == common_util_check_message_owner(
 						pdb->psqlite, tmp_val, username, &b_owner)) {
 						pstmt.finalize();

@@ -91,7 +91,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 				    pinfo->username, &permission))
 					return FALSE;	
-				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
+				if (!(permission & (frightsReadAny | frightsOwner)))
 					username = pinfo->username;
 			}
 		}
@@ -233,18 +233,16 @@ static uint32_t table_object_get_folder_tag_access(
 		    folder_id, username, &permission))
 			return 0;
 		tag_access = TAG_ACCESS_READ;
-		if (permission & PERMISSION_FOLDEROWNER) {
+		if (permission & frightsOwner) {
 			tag_access = TAG_ACCESS_MODIFY |TAG_ACCESS_DELETE |
 				TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
 				TAG_ACCESS_FAI_CONTENTS;
 		} else {
-			if (permission & PERMISSION_CREATE) {
+			if (permission & frightsCreate)
 				tag_access |= TAG_ACCESS_CONTENTS |
 							TAG_ACCESS_FAI_CONTENTS;
-			}
-			if (permission & PERMISSION_CREATESUBFOLDER) {
+			if (permission & frightsCreateSubfolder)
 				tag_access |= TAG_ACCESS_HIERARCHY;
-			}
 		}
 	}
 	return tag_access;
@@ -256,11 +254,10 @@ static uint32_t table_object_get_folder_permission_rights(
 	uint32_t permission;
 	
 	if (pstore->check_owner_mode()) {
-		permission = PERMISSION_READANY|PERMISSION_CREATE|
-				PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
-				PERMISSION_EDITANY|PERMISSION_DELETEANY|
-				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
-				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+		permission = frightsReadAny | frightsCreate | frightsEditOwned |
+		             frightsDeleteOwned | frightsEditAny |
+		             frightsDeleteAny | frightsCreateSubfolder |
+		             frightsOwner | frightsContact | frightsVisible;
 	} else {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, username, &permission))

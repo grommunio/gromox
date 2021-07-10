@@ -375,6 +375,24 @@ enum res_type {
 	RES_NULL = 0xff,
 };
 
+enum {
+	frightsReadAny              = 1U << 0,
+	frightsCreate               = 1U << 1,
+	frightsGromoxSendAs         = 1U << 2,
+	frightsEditOwned            = 1U << 3,
+	frightsDeleteOwned          = 1U << 4,
+	frightsEditAny              = 1U << 5,
+	frightsDeleteAny            = 1U << 6,
+	frightsCreateSubfolder      = 1U << 7,
+	frightsOwner                = 1U << 8,
+	frightsContact              = 1U << 9,
+	frightsVisible              = 1U << 10,
+	frightsFreeBusySimple       = 1U << 11, /* cf. IExchangeModifyTable */
+	frightsFreeBusyDetailed     = 1U << 12, /* cf. IExchangeModifyTable */
+
+	rightsNone = 0,
+};
+
 enum zics_type {
 	ICS_TYPE_CONTENTS = 1,
 	ICS_TYPE_HIERARCHY = 2,

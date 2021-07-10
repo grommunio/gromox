@@ -377,9 +377,8 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    fld->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		}
 		if (!fld->set_properties(ppropvals, pproblems))
 			return ecError;
@@ -450,9 +449,8 @@ uint32_t rop_deleteproperties(
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    fld->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		}
 		if (!fld->remove_properties(pproptags, pproblems))
 			return ecError;
@@ -660,9 +658,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    flddst->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		}
 		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
 			if (!flddst->get_all_proptags(&proptags1))
@@ -920,21 +917,18 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    fldsrc->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (permission & PERMISSION_FOLDEROWNER) {
+			if (permission & frightsOwner) {
 				username = NULL;
 			} else {
-				if (0 == (permission & PERMISSION_READANY)) {
+				if (!(permission & frightsReadAny))
 					return ecAccessDenied;
-				}
 				username = rpc_info.username;
 			}
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    flddst->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
-			
 		} else {
 			username = NULL;
 		}
@@ -1076,9 +1070,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 				    static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
 				    rpc_info.username, &permission))
 					return ecError;
-				if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+				if (!(permission & frightsOwner))
 					return ecAccessDenied;
-				}
 			}
 		}
 		max_length = MAX_LENGTH_FOR_FOLDER;

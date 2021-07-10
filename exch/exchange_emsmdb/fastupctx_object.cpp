@@ -205,10 +205,10 @@ static BOOL fastupctx_object_create_folder(
 											rpc_info.username);
 		if (NULL != pentryid) {
 			tmp_id = 1;
-			permission = PERMISSION_FOLDEROWNER|PERMISSION_READANY|
-						PERMISSION_FOLDERVISIBLE|PERMISSION_CREATE|
-						PERMISSION_EDITANY|PERMISSION_DELETEANY|
-						PERMISSION_CREATESUBFOLDER;
+			permission = frightsOwner | frightsReadAny |
+			             frightsVisible | frightsCreate |
+			             frightsEditAny | frightsDeleteAny |
+			             frightsCreateSubfolder;
 			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;

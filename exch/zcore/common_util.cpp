@@ -2426,10 +2426,10 @@ static BOOL common_util_create_folder(
 												pinfo->username);
 		if (NULL != pentryid) {
 			tmp_id = 1;
-			permission = PERMISSION_FOLDEROWNER|PERMISSION_READANY|
-						PERMISSION_FOLDERVISIBLE|PERMISSION_CREATE|
-						PERMISSION_EDITANY|PERMISSION_DELETEANY|
-						PERMISSION_CREATESUBFOLDER;
+			permission = frightsOwner | frightsReadAny |
+			             frightsVisible | frightsCreate |
+			             frightsEditAny | frightsDeleteAny |
+			             frightsCreateSubfolder;
 			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;
@@ -2527,7 +2527,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, username, &permission))
 			return GXERR_CALL_FAILED;
-		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
+		if (!(permission & (frightsReadAny | frightsOwner)))
 			return GXERR_CALL_FAILED;
 	} else {
 		username = NULL;

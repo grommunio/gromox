@@ -886,20 +886,18 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		*(uint32_t *)*ppvalue = TAG_ACCESS_READ;
-		if (permission & PERMISSION_FOLDEROWNER) {
+		if (permission & frightsOwner) {
 			*(uint32_t *)*ppvalue =
 				TAG_ACCESS_MODIFY | TAG_ACCESS_DELETE |
 				TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
 				TAG_ACCESS_FAI_CONTENTS;
 			return TRUE;
 		}
-		if (permission & PERMISSION_CREATE) {
+		if (permission & frightsCreate)
 			*(uint32_t *)*ppvalue |= TAG_ACCESS_CONTENTS |
 				TAG_ACCESS_FAI_CONTENTS;
-		}
-		if (permission & PERMISSION_CREATESUBFOLDER) {
+		if (permission & frightsCreateSubfolder)
 			*(uint32_t *)*ppvalue |= TAG_ACCESS_HIERARCHY;
-		}
 		return TRUE;
 	}
 	case PR_RIGHTS: {
@@ -909,11 +907,11 @@ static BOOL store_object_get_calculated_property(
 		}
 		if (pstore->check_owner_mode()) {
 			*(uint32_t*)(*ppvalue) =
-					PERMISSION_READANY|PERMISSION_CREATE|
-					PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
-					PERMISSION_EDITANY|PERMISSION_DELETEANY|
-					PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
-					PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+				frightsReadAny | frightsCreate |
+				frightsEditOwned | frightsDeleteOwned |
+				frightsEditAny | frightsDeleteAny |
+				frightsCreateSubfolder | frightsOwner |
+				frightsContact | frightsVisible;
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();
@@ -922,15 +920,15 @@ static BOOL store_object_get_calculated_property(
 				pstore->dir, pinfo->username, &permission)) {
 				return FALSE;
 			}
-			*(uint32_t *)(*ppvalue) &= ~PERMISSION_SENDAS;
+			*static_cast<uint32_t *>(*ppvalue) &= ~frightsGromoxSendAs;
 			return TRUE;
 		}
 		*(uint32_t *)(*ppvalue) =
-			PERMISSION_READANY|PERMISSION_CREATE|
-			PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
-			PERMISSION_EDITANY|PERMISSION_DELETEANY|
-			PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
-			PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+			frightsReadAny | frightsCreate |
+			frightsEditOwned | frightsDeleteOwned |
+			frightsEditAny | frightsDeleteAny |
+			frightsCreateSubfolder | frightsOwner |
+			frightsContact | frightsVisible;
 		return TRUE;
 	}
 	case PR_EMAIL_ADDRESS:

@@ -44,9 +44,8 @@ uint32_t rop_modifyrules(uint8_t flags,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & frightsOwner))
 			return ecAccessDenied;
-		}
 	}
 	if (MODIFY_RULES_FLAG_REPLACE & flags) {
 		for (i=0; i<count; i++) {
@@ -142,9 +141,8 @@ uint32_t rop_updatedeferredactionmessages(
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    fid_deferred, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_EDITANY)) {
+		if (!(permission & frightsEditAny))
 			return ecAccessDenied;
-		}
 	}
 	
 	restriction.rt = RES_PROPERTY;

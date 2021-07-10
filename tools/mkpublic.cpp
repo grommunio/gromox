@@ -560,9 +560,8 @@ int main(int argc, const char **argv)
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_DEFAULT_PERMISSION);
-	sqlite3_bind_int64(pstmt, 2, PERMISSION_READANY|
-		PERMISSION_CREATE|PERMISSION_FOLDERVISIBLE|
-		PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED);
+	sqlite3_bind_int64(pstmt, 2, frightsReadAny | frightsCreate |
+		frightsVisible | frightsEditOwned | frightsDeleteOwned);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return 9;

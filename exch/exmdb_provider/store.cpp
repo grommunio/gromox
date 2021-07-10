@@ -232,7 +232,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	*ppermission = 0;
+	*ppermission = rightsNone;
 	sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -264,7 +264,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		for (decltype(item_num) i = 0; i < item_num; ++i) {
 			if (strcasecmp(pitem[i].user, username) == 0 ||
 			    common_util_check_mlist_include(pitem[i].user, username)) {
-				*ppermission |= PERMISSION_SENDAS;
+				*ppermission |= frightsGromoxSendAs;
 				break;
 			}
 		}

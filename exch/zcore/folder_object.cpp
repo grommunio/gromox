@@ -202,11 +202,11 @@ static BOOL folder_object_get_calculated_property(
 		}
 		if (pfolder->pstore->check_owner_mode()) {
 			*(uint32_t*)(*ppvalue) =
-				PERMISSION_READANY|PERMISSION_CREATE|
-				PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
-				PERMISSION_EDITANY|PERMISSION_DELETEANY|
-				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
-				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+				frightsReadAny | frightsCreate |
+				frightsEditOwned | frightsDeleteOwned |
+				frightsEditAny | frightsDeleteAny |
+				frightsCreateSubfolder | frightsOwner |
+				frightsContact | frightsVisible;
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();

@@ -97,7 +97,7 @@ BOOL TABLE_OBJECT::check_to_load()
 				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
 				    rpc_info.username, &permission))
 					return FALSE;	
-				if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
+				if (!(permission & (frightsReadAny | frightsOwner)))
 					username = rpc_info.username;
 			}
 		}

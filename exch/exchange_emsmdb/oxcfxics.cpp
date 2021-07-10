@@ -106,7 +106,7 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, username, &permission))
 			return NULL;	
-		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
+		if (!(permission & (frightsReadAny | frightsOwner)))
 			return NULL;
 	} else {
 		username = NULL;
@@ -520,7 +520,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER))) {
+		if (!(permission & (frightsReadAny | frightsOwner))) {
 			for (size_t i = 0; i < pmessage_ids->count; ++i) {
 				if (!exmdb_client_check_message_owner(plogon->get_dir(),
 				    pmessage_ids->pll[i], rpc_info.username, &b_owner))
@@ -917,7 +917,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    pfolder->folder_id, rpc_info.username, &permission))
 				return ecError;
-			if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)))
+			if (!(permission & (frightsOwner | frightsReadAny)))
 				return ecAccessDenied;
 		}
 	}
@@ -952,8 +952,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	uint32_t result;
 	int object_type;
 	uint64_t message_id;
-	uint32_t permission, tag_access = 0;
-	uint32_t tmp_proptag;
+	uint32_t permission = rightsNone, tag_access = 0, tmp_proptag;
 	FOLDER_OBJECT *pfolder;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY tmp_problems;
@@ -1008,33 +1007,29 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (FALSE == b_exist) {
-			if (0 == (permission & PERMISSION_CREATE)) {
+			if (!(permission & frightsCreate))
 				return ecAccessDenied;
-			}
 			tag_access = TAG_ACCESS_READ;
-			if (permission & (PERMISSION_EDITANY | PERMISSION_EDITOWNED))
+			if (permission & (frightsEditAny | frightsEditOwned))
 				tag_access |= TAG_ACCESS_MODIFY;	
-			if (permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED))
+			if (permission & (frightsDeleteAny | frightsDeleteOwned))
 				tag_access |= TAG_ACCESS_DELETE;	
 		} else {
-			if (permission & PERMISSION_FOLDEROWNER) {
+			if (permission & frightsOwner) {
 				tag_access = TAG_ACCESS_MODIFY|
 					TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 			} else {
 				if (!exmdb_client_check_message_owner(plogon->get_dir(),
 				    message_id, rpc_info.username, &b_owner))
 					return ecError;
-				if (TRUE == b_owner || (permission & PERMISSION_READANY)) {
+				if (b_owner || (permission & frightsReadAny))
 					tag_access |= TAG_ACCESS_READ;
-				}
-				if ((permission & PERMISSION_EDITANY) || (TRUE ==
-					b_owner && (permission & PERMISSION_EDITOWNED))) {
+				if ((permission & frightsEditAny) ||
+				    (b_owner && (permission & frightsEditOwned)))
 					tag_access |= TAG_ACCESS_MODIFY;	
-				}
-				if ((permission & PERMISSION_DELETEANY) || (TRUE ==
-					b_owner && (permission & PERMISSION_DELETEOWNED))) {
+				if ((permission & frightsDeleteAny) ||
+				    (b_owner && (permission & frightsDeleteOwned)))
 					tag_access |= TAG_ACCESS_DELETE;	
-				}
 			}
 		}
 	} else {
@@ -1157,9 +1152,8 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_READANY)) {
+		if (!(permission & frightsReadAny))
 			username = rpc_info.username;
-		}
 	}
 	for (i=0; i<count; i++) {
 		if (FALSE == common_util_binary_to_xid(
@@ -1349,9 +1343,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    parent_id1, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+			if (!(permission & frightsCreateSubfolder))
 				return ecAccessDenied;
-			}
 		}
 		if (!exmdb_client_get_folder_by_name(plogon->get_dir(), parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), &tmp_fid))
@@ -1416,9 +1409,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & frightsOwner))
 			return ecAccessDenied;
-		}
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
 	    PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr)
@@ -1436,9 +1428,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 			    parent_id1, rpc_info.username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+			if (!(permission & frightsCreateSubfolder))
 				return ecAccessDenied;
-			}
 			b_guest = TRUE;
 		} else {
 			b_guest = FALSE;
@@ -1542,9 +1533,9 @@ uint32_t rop_syncimportdeletes(
 	} else if (sync_type == SYNC_TYPE_CONTENTS &&
 	    !exmdb_client_check_folder_permission(plogon->get_dir(),
 	    folder_id, rpc_info.username, &permission)) {
-		if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY))
+		if (permission & (frightsOwner | frightsDeleteAny))
 			username = NULL;
-		else if (!(permission & PERMISSION_DELETEOWNED))
+		else if (!(permission & frightsDeleteOwned))
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -1619,7 +1610,7 @@ uint32_t rop_syncimportdeletes(
 					return ecAccessDenied;
 				}
 			} else if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    eid, username, &permission) && !(permission & PERMISSION_FOLDEROWNER)) {
+			    eid, username, &permission) && !(permission & frightsOwner)) {
 				return ecAccessDenied;
 			}
 		}
@@ -1732,9 +1723,9 @@ uint32_t rop_syncimportmessagemove(
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    src_fid, rpc_info.username, &permission))
 			return ecError;
-		if (PERMISSION_DELETEANY & permission) {
+		if (permission & frightsDeleteAny) {
 			/* do nothing */
-		} else if (PERMISSION_DELETEOWNED & permission) {
+		} else if (permission & frightsDeleteOwned) {
 			if (!exmdb_client_check_message_owner(plogon->get_dir(),
 			    src_mid, rpc_info.username, &b_owner))
 				return ecError;
@@ -1747,9 +1738,8 @@ uint32_t rop_syncimportmessagemove(
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_CREATE)) {
+		if (!(permission & frightsCreate))
 			return ecAccessDenied;
-		}
 	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
 	    src_mid, PROP_TAG_ASSOCIATED, &pvalue))

@@ -779,7 +779,7 @@ int main(int argc, const char **argv)
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
-		PRIVATE_FID_CALENDAR, PERMISSION_FREEBUSYSIMPLE);
+	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_JOURNAL,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_JOURNAL],
@@ -895,7 +895,7 @@ int main(int argc, const char **argv)
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
-		PRIVATE_FID_LOCAL_FREEBUSY, PERMISSION_FREEBUSYSIMPLE);
+	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	pstmt = gx_sql_prep(psqlite, csql_string);

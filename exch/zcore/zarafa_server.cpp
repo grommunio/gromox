@@ -1054,10 +1054,9 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_READANY |
-		    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
+		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 			return ecAccessDenied;
-		if (permission & PERMISSION_FOLDEROWNER) {
+		if (permission & frightsOwner) {
 			tag_access = TAG_ACCESS_MODIFY|
 				TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 			goto PERMISSION_CHECK;
@@ -1065,13 +1064,13 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		if (!exmdb_client_check_message_owner(pstore->get_dir(),
 		    message_id, pinfo->username, &b_owner))
 			return ecError;
-		if (b_owner || (permission & PERMISSION_READANY))
+		if (b_owner || (permission & frightsReadAny))
 			tag_access |= TAG_ACCESS_READ;
-		if ((permission & PERMISSION_EDITANY) ||
-		    (b_owner && (permission & PERMISSION_EDITOWNED)))
+		if ((permission & frightsEditAny) ||
+		    (b_owner && (permission & frightsEditOwned)))
 			tag_access |= TAG_ACCESS_MODIFY;	
-		if ((permission & PERMISSION_DELETEANY) ||
-		    (b_owner && (permission & PERMISSION_DELETEOWNED)))
+		if ((permission & frightsDeleteAny) ||
+		    (b_owner && (permission & frightsDeleteOwned)))
 			tag_access |= TAG_ACCESS_DELETE;	
  PERMISSION_CHECK:
 		if (0 == (TAG_ACCESS_READ & tag_access)) {
@@ -1115,35 +1114,32 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder_id, pinfo->username, &permission))
 				return ecError;
-			if (0 == permission) {
+			if (permission == rightsNone) {
 				fid_val = rop_util_get_gc_value(folder_id);
 				if (pstore->b_private) {
 					if (PRIVATE_FID_ROOT == fid_val ||
 						PRIVATE_FID_IPMSUBTREE == fid_val) {
-						permission = PERMISSION_FOLDERVISIBLE;
+						permission = frightsVisible;
 					}
 				} else {
 					if (PUBLIC_FID_ROOT == fid_val) {
-						permission = PERMISSION_FOLDERVISIBLE;
+						permission = frightsVisible;
 					}
 				}
 			}
-			if (!(permission & (PERMISSION_READANY |
-			    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
+			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 				return ecNotFound;
-			if (permission & PERMISSION_FOLDEROWNER) {
+			if (permission & frightsOwner) {
 				tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 					TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 					TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
 			} else {
 				tag_access = TAG_ACCESS_READ;
-				if (permission & PERMISSION_CREATE) {
+				if (permission & frightsCreate)
 					tag_access |= TAG_ACCESS_CONTENTS |
 								TAG_ACCESS_FAI_CONTENTS;
-				}
-				if (permission & PERMISSION_CREATESUBFOLDER) {
+				if (permission & frightsCreateSubfolder)
 					tag_access |= TAG_ACCESS_HIERARCHY;
-				}
 			}
 		}
 		auto pfolder = folder_object_create(pstore,
@@ -1511,9 +1507,8 @@ uint32_t zarafa_server_openstore(GUID hsession,
 				dir, pinfo->username, &permission)) {
 				return ecError;
 			}
-			if (PERMISSION_NONE == permission) {
+			if (permission == rightsNone)
 				return ecLoginPerm;
-			}
 		}
 		*phobject = object_tree_get_store_handle(
 					pinfo->ptree, TRUE, user_id);
@@ -1604,7 +1599,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
 				return ecNotFound;
-			if (!(permission & (PERMISSION_READANY | PERMISSION_FOLDEROWNER)))
+			if (!(permission & (frightsReadAny | frightsOwner)))
 				return ecNotFound;
 		}
 		ptable = table_object_create(folder->pstore,
@@ -1715,10 +1710,10 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATE)))
+		if (!(permission & (frightsOwner | frightsCreate)))
 			return ecNotFound;
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
-		if (permission & (PERMISSION_DELETEOWNED | PERMISSION_DELETEANY))
+		if (permission & (frightsDeleteOwned | frightsDeleteAny))
 			tag_access |= TAG_ACCESS_DELETE;
 	} else {
 		tag_access = TAG_ACCESS_MODIFY|
@@ -1810,13 +1805,12 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (permission & (PERMISSION_DELETEANY | PERMISSION_FOLDEROWNER)) {
+		if (permission & (frightsDeleteAny | frightsOwner))
 			username = NULL;
-		} else if (permission & PERMISSION_DELETEOWNED) {
+		else if (permission & frightsDeleteOwned)
 			username = pinfo->username;
-		} else {
+		else
 			return ecNotFound;
-		}
 	} else {
 		username = NULL;
 	}
@@ -1930,22 +1924,20 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 				if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 				    psrc_folder->folder_id, pinfo->username, &permission))
 					return ecError;
-				if (permission & PERMISSION_DELETEANY) {
-					/* permission to delete any message */
-				} else if (permission & PERMISSION_DELETEOWNED) {
+				if (permission & frightsDeleteAny)
+					/* permission to delete any message */;
+				else if (permission & frightsDeleteOwned)
 					b_guest = TRUE;
-				} else {
+				else
 					return ecAccessDenied;
-				}
 			}
 		}
 		if (!pstore1->check_owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore1->get_dir(),
 			    pdst_folder->folder_id, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_CREATE)) {
+			if (!(permission & frightsCreate))
 				return ecAccessDenied;
-			}
 		}
 		for (size_t i = 0; i < pentryids->count; ++i) {
 			if (FALSE == common_util_from_message_entryid(
@@ -1999,9 +1991,8 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pdst_folder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_CREATE)) {
+		if (!(permission & frightsCreate))
 			return ecAccessDenied;
-		}
 		b_guest = TRUE;
 	} else {
 		b_guest = FALSE;
@@ -2195,7 +2186,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pparent->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
+		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
 	if (!exmdb_client::get_folder_by_name(pstore->get_dir(),
@@ -2251,10 +2242,10 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 			if (pentryid == nullptr)
 				return ecError;
 			tmp_id = 1;
-			permission = PERMISSION_FOLDEROWNER|PERMISSION_READANY|
-						PERMISSION_FOLDERVISIBLE|PERMISSION_CREATE|
-						PERMISSION_EDITANY|PERMISSION_DELETEANY|
-						PERMISSION_CREATESUBFOLDER;
+			permission = frightsOwner | frightsReadAny |
+			             frightsVisible | frightsCreate |
+			             frightsEditAny | frightsDeleteAny |
+			             frightsCreateSubfolder;
 			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;
@@ -2342,9 +2333,8 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & frightsOwner))
 			return ecAccessDenied;
-		}
 		username = pinfo->username;
 	}
 	if (!exmdb_client::check_folder_id(pstore->get_dir(),
@@ -2410,7 +2400,7 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED)))
+		if (!(permission & (frightsDeleteAny | frightsDeleteOwned)))
 			return ecAccessDenied;
 		username = pinfo->username;
 	}
@@ -2478,13 +2468,12 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_READANY)) {
+		if (!(permission & frightsReadAny))
 			return ecAccessDenied;
-		}
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pdst_folder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATESUBFOLDER)))
+		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 		username = pinfo->username;
 		b_guest = TRUE;
@@ -2497,9 +2486,8 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    psrc_parent->folder_id, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		}
 		gxerr_t err = common_util_remote_copy_folder(pstore, folder_id,
 		              pstore1, pdst_folder->folder_id, new_name);
@@ -3643,9 +3631,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		if (!exmdb_client::check_mailbox_permission(pstore->get_dir(),
 		    pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_SENDAS)) {
+		if (!(permission & frightsGromoxSendAs))
 			return ecAccessDenied;
-		}
 	}
 	if (0 == message_object_get_id(pmessage)) {
 		return ecNotSupported;
@@ -3969,9 +3956,8 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		}
 		if (!folder->set_properties(ppropvals))
 			return ecError;
@@ -4141,9 +4127,8 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		}
 		if (!folder->remove_properties(pproptags))
 			return ecError;
@@ -4335,20 +4320,18 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->username, &permission))
 				return ecError;
-			if (permission & PERMISSION_FOLDEROWNER) {
+			if (permission & frightsOwner) {
 				username = NULL;
 			} else {
-				if (0 == (permission & PERMISSION_READANY)) {
+				if (!(permission & frightsReadAny))
 					return ecAccessDenied;
-				}
 				username = pinfo->username;
 			}
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    fdst->folder_id, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+			if (!(permission & frightsOwner))
 				return ecAccessDenied;
-			}
 		} else {
 			username = NULL;
 		}
@@ -4796,7 +4779,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	uint8_t mapi_type;
 	uint64_t folder_id;
 	uint64_t message_id;
-	uint32_t permission, tag_access = 0;
+	uint32_t permission = rightsNone, tag_access = 0;
 	STORE_OBJECT *pstore;
 	ICSUPCTX_OBJECT *pctx;
 	
@@ -4854,29 +4837,28 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		    folder_id, pinfo->username, &permission))
 			return ecError;
 		if (TRUE == b_new) {
-			if (0 == (permission & PERMISSION_CREATE)) {
+			if (!(permission & frightsCreate))
 				return ecAccessDenied;
-			}
 			tag_access = TAG_ACCESS_READ;
-			if (permission & (PERMISSION_EDITANY | PERMISSION_EDITOWNED))
+			if (permission & (frightsEditAny | frightsEditOwned))
 				tag_access |= TAG_ACCESS_MODIFY;	
-			if (permission & (PERMISSION_DELETEANY | PERMISSION_DELETEOWNED))
+			if (permission & (frightsDeleteAny | frightsDeleteOwned))
 				tag_access |= TAG_ACCESS_DELETE;	
 		} else {
-			if (permission & PERMISSION_FOLDEROWNER) {
+			if (permission & frightsOwner) {
 				tag_access = TAG_ACCESS_MODIFY|
 					TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 			} else {
 				if (!exmdb_client_check_message_owner(pstore->get_dir(),
 				    message_id, pinfo->username, &b_owner))
 					return ecError;
-				if (b_owner || (permission & PERMISSION_READANY))
+				if (b_owner || (permission & frightsReadAny))
 					tag_access |= TAG_ACCESS_READ;
-				if ((permission & PERMISSION_EDITANY) ||
-				    (b_owner && (permission & PERMISSION_EDITOWNED)))
+				if ((permission & frightsEditAny) ||
+				    (b_owner && (permission & frightsEditOwned)))
 					tag_access |= TAG_ACCESS_MODIFY;	
-				if ((permission & PERMISSION_DELETEANY) ||
-				    (b_owner && (permission & PERMISSION_DELETEOWNED)))
+				if ((permission & frightsDeleteAny) ||
+				    (b_owner && (permission & frightsDeleteOwned)))
 					tag_access |= TAG_ACCESS_DELETE;	
 			}
 		}
@@ -5052,9 +5034,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    parent_id1, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+			if (!(permission & frightsCreateSubfolder))
 				return ecAccessDenied;
-			}
 		}
 		if (!exmdb_client::get_folder_by_name(pstore->get_dir(),
 		    parent_id1, static_cast<char *>(pproplist->ppropval[3].pvalue),
@@ -5105,9 +5086,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & frightsOwner))
 			return ecAccessDenied;
-		}
 	}
 	if (!exmdb_client_get_folder_property(pstore->get_dir(), 0, folder_id,
 	    PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr)
@@ -5125,9 +5105,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    parent_id1, pinfo->username, &permission))
 				return ecError;
-			if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
+			if (!(permission & frightsCreateSubfolder))
 				return ecAccessDenied;
-			}
 			b_guest = TRUE;
 		} else {
 			b_guest = FALSE;
@@ -5216,11 +5195,10 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 		if (SYNC_TYPE_CONTENTS == sync_type) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder_id, pinfo->username, &permission)) {
-				if (permission & (PERMISSION_FOLDEROWNER | PERMISSION_DELETEANY)) {
+				if (permission & (frightsOwner | frightsDeleteAny))
 					username = NULL;	
-				} else if (0 == (permission & PERMISSION_DELETEOWNED)) {
+				else if (!(permission & frightsDeleteOwned))
 					return ecAccessDenied;
-				}
 			}
 		}
 	}
@@ -5291,7 +5269,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 				if (!b_owner)
 					return ecAccessDenied;
 			} else if (!exmdb_client::check_folder_permission(pstore->get_dir(),
-			    eid, username, &permission) && !(permission & PERMISSION_FOLDEROWNER)) {
+			    eid, username, &permission) && !(permission & frightsOwner)) {
 				return ecAccessDenied;
 			}
 		}
@@ -5364,9 +5342,8 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_READANY)) {
+		if (!(permission & frightsReadAny))
 			username = pinfo->username;
-		}
 	}
 	for (size_t i = 0; i < pstates->count; ++i) {
 		if (FALSE == common_util_binary_to_xid(
@@ -5497,9 +5474,8 @@ uint32_t zarafa_server_setsearchcriteria(
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->username, &permission))
 			return ecError;
-		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
+		if (!(permission & frightsOwner))
 			return ecAccessDenied;
-		}
 	}
 	if (NULL == prestriction || 0 == pfolder_array->count) {
 		if (!exmdb_client::get_search_criteria(pstore->get_dir(),
@@ -5529,7 +5505,7 @@ uint32_t zarafa_server_setsearchcriteria(
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder_ids.pll[i], pinfo->username, &permission))
 				return ecError;
-			if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_READANY)))
+			if (!(permission & (frightsOwner | frightsReadAny)))
 				return ecAccessDenied;
 		}
 	}

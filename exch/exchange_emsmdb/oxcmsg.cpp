@@ -87,28 +87,23 @@ uint32_t rop_openmessage(uint16_t cpid,
 	if (!exmdb_client_check_folder_permission(plogon->get_dir(), folder_id,
 	    rpc_info.username, &permission))
 		return ecError;
-	if (!(permission & (PERMISSION_READANY |
-	    PERMISSION_FOLDERVISIBLE | PERMISSION_FOLDEROWNER)))
+	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 		return ecAccessDenied;
-	if (permission & PERMISSION_FOLDEROWNER) {
+	if (permission & frightsOwner) {
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
 	if (!exmdb_client_check_message_owner(plogon->get_dir(), message_id,
 	    rpc_info.username, &b_owner))
 		return ecError;
-	if (TRUE == b_owner || (permission & PERMISSION_READANY)) {
+	if (b_owner || (permission & frightsReadAny))
 		tag_access |= TAG_ACCESS_READ;
-	}
-	if ((permission & PERMISSION_EDITANY) || (TRUE == b_owner &&
-		(permission & PERMISSION_EDITOWNED))) {
+	if ((permission & frightsEditAny) ||
+	    (b_owner && (permission & frightsEditOwned)))
 		tag_access |= TAG_ACCESS_MODIFY;	
-	}
-	if ((permission & PERMISSION_DELETEANY) || (TRUE == b_owner &&
-		(permission & PERMISSION_DELETEOWNED))) {
+	if ((permission & frightsDeleteAny) ||
+	    (b_owner && (permission & frightsDeleteOwned)))
 		tag_access |= TAG_ACCESS_DELETE;	
-	}
-	
  PERMISSION_CHECK:
 	if (0 == (TAG_ACCESS_READ & tag_access)) {
 		return ecAccessDenied;
@@ -224,10 +219,10 @@ uint32_t rop_createmessage(uint16_t cpid,
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (!(permission & (PERMISSION_FOLDEROWNER | PERMISSION_CREATE)))
+		if (!(permission & (frightsOwner | frightsCreate)))
 			return ecAccessDenied;
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
-		if (permission & (PERMISSION_DELETEOWNED | PERMISSION_DELETEANY))
+		if (permission & (frightsDeleteOwned | frightsDeleteAny))
 			tag_access |= TAG_ACCESS_DELETE;
 	} else {
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
