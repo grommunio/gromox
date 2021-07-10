@@ -7,7 +7,9 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unistd.h>
+#include <unordered_map>
 #include <sys/wait.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -44,10 +46,15 @@ using namespace gromox;
 namespace {
 
 struct NOTIFY_ITEM {
-	DOUBLE_LIST notify_list;
-	GUID hsession;
-	uint32_t hstore;
-	time_t last_time;
+	NOTIFY_ITEM(const GUID &session, uint32_t store);
+	NOTIFY_ITEM(NOTIFY_ITEM &&) = delete;
+	~NOTIFY_ITEM();
+	void operator=(NOTIFY_ITEM &&) = delete;
+
+	DOUBLE_LIST notify_list{};
+	GUID hsession{};
+	uint32_t hstore = 0;
+	time_t last_time = 0;
 };
 
 struct SINK_NODE {
@@ -65,7 +72,7 @@ struct user_info_del {
 
 using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;
 
-static int g_table_size;
+static size_t g_table_size;
 static std::atomic<bool> g_notify_stop{false};
 static int g_ping_interval;
 static pthread_t g_scan_id;
@@ -73,7 +80,7 @@ static int g_cache_interval;
 static pthread_key_t g_info_key;
 static std::mutex g_table_lock, g_notify_lock;
 static STR_HASH_TABLE *g_user_table;
-static STR_HASH_TABLE *g_notify_table;
+static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
 static INT_HASH_TABLE *g_session_table;
 
 static int zarafa_server_get_user_id(GUID hsession)
@@ -115,6 +122,23 @@ void user_info_del::operator()(USER_INFO *pinfo)
 	pthread_setspecific(g_info_key, NULL);
 }
 
+NOTIFY_ITEM::NOTIFY_ITEM(const GUID &ses, uint32_t store) :
+	hsession(ses), hstore(store)
+{
+	double_list_init(&notify_list);
+	time(&last_time);
+}
+
+NOTIFY_ITEM::~NOTIFY_ITEM()
+{
+	DOUBLE_LIST_NODE *pnode;
+	while ((pnode = double_list_pop_front(&notify_list)) != nullptr) {
+		common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
+		free(pnode);
+	}
+	double_list_free(&notify_list);
+}
+
 static void *zcorezs_scanwork(void *param)
 {
 	int count;
@@ -123,9 +147,7 @@ static void *zcorezs_scanwork(void *param)
 	time_t cur_time;
 	uint8_t tmp_byte;
 	OBJECT_TREE *ptree;
-	NOTIFY_ITEM *pnitem;
 	INT_HASH_ITER *iter;
-	STR_HASH_ITER *iter1;
 	struct pollfd fdpoll;
 	ZCORE_RPC_RESPONSE response;
 	SINK_NODE *psink_node;
@@ -240,19 +262,12 @@ static void *zcorezs_scanwork(void *param)
 		}
 		time(&cur_time);
 		std::unique_lock nl_hold(g_notify_lock);
-		iter1 = str_hash_iter_init(g_notify_table);
-		for (str_hash_iter_begin(iter1);
-			FALSE == str_hash_iter_done(iter1);
-			str_hash_iter_forward(iter1)) {
-			pnitem = static_cast<NOTIFY_ITEM *>(str_hash_iter_get_value(iter1, nullptr));
-			if (cur_time - pnitem->last_time >= g_cache_interval) {
-				while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
-					common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-					free(pnode);
-				}
-				double_list_free(&pnitem->notify_list);
-				str_hash_iter_remove(iter1);
-			}
+		for (auto iter1 = g_notify_table.begin(); iter1 != g_notify_table.end(); ) {
+			auto pnitem = &iter1->second;
+			if (cur_time - pnitem->last_time >= g_cache_interval)
+				iter1 = g_notify_table.erase(iter1);
+			else
+				++iter1;
 		}
 	}
 	return NULL;
@@ -272,7 +287,6 @@ static void zarafa_server_notification_proc(const char *dir,
 	uint64_t old_eid;
 	uint8_t mapi_type;
 	char tmp_buff[256];
-	NOTIFY_ITEM *pitem;
 	uint64_t folder_id;
 	uint64_t parent_id;
 	uint64_t message_id;
@@ -293,9 +307,10 @@ static void zarafa_server_notification_proc(const char *dir,
 		return;
 	sprintf(tmp_buff, "%u|%s", notify_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
-	pitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
-	if (pitem == nullptr)
+	auto iter = g_notify_table.find(tmp_buff);
+	if (iter == g_notify_table.end())
 		return;
+	auto pitem = &iter->second;
 	hsession = pitem->hsession;
 	hstore = pitem->hstore;
 	nl_hold.unlock();
@@ -601,7 +616,8 @@ static void zarafa_server_notification_proc(const char *dir,
 		return;
 	}
 	nl_hold.lock();
-	pitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
+	iter = g_notify_table.find(tmp_buff);
+	pitem = iter != g_notify_table.end() ? &iter->second : nullptr;
 	if (pitem != nullptr)
 		double_list_append_as_tail(&pitem->notify_list, pnode);
 	nl_hold.unlock();
@@ -611,8 +627,8 @@ static void zarafa_server_notification_proc(const char *dir,
 	}
 }
 
-void zarafa_server_init(int table_size,
-	int cache_interval, int ping_interval)
+void zarafa_server_init(size_t table_size, int cache_interval,
+    int ping_interval)
 {
 	g_table_size = table_size;
 	g_cache_interval = cache_interval;
@@ -635,14 +651,6 @@ int zarafa_server_run()
 		printf("[zarafa_server]: fail to"
 			" create user hash table\n");
 		return -2;
-	}
-	g_notify_table = str_hash_init(
-		g_table_size, sizeof(NOTIFY_ITEM), NULL);
-	if (NULL == g_notify_table) {
-		int_hash_free(g_session_table);
-		printf("[zarafa_server]: fail to "
-			"create notify hash table\n");
-		return -3;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
@@ -685,7 +693,7 @@ int zarafa_server_stop()
 	int_hash_iter_free(iter);
 	int_hash_free(g_session_table);
 	str_hash_free(g_user_table);
-	str_hash_free(g_notify_table);
+	g_notify_table.clear();
 	return 0;
 }
 
@@ -2660,7 +2668,6 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 	uint64_t folder_id;
 	uint64_t message_id;
 	STORE_OBJECT *pstore;
-	NOTIFY_ITEM tmp_item;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -2702,13 +2709,16 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		return ecError;
 	gx_strlcpy(dir, pstore->get_dir(), arsizeof(dir));
 	pinfo.reset();
-	double_list_init(&tmp_item.notify_list);
-	tmp_item.hsession = hsession;
-	tmp_item.hstore = hstore;
-	time(&tmp_item.last_time);
 	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", *psub_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
-	if (1 != str_hash_add(g_notify_table, tmp_buff, &tmp_item)) {
+	if (g_notify_table.size() == g_table_size) {
+		nl_hold.unlock();
+		exmdb_client::unsubscribe_notification(dir, *psub_id);
+		return ecError;
+	}
+	try {
+		g_notify_table.try_emplace(tmp_buff, hsession, hstore);
+	} catch (const std::bad_alloc &) {
 		nl_hold.unlock();
 		exmdb_client::unsubscribe_notification(dir, *psub_id);
 		return ecError;
@@ -2722,9 +2732,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	char dir[256];
 	uint8_t mapi_type;
 	char tmp_buff[256];
-	NOTIFY_ITEM *pnitem;
 	STORE_OBJECT *pstore;
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -2740,15 +2748,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	exmdb_client::unsubscribe_notification(dir, sub_id);
 	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", sub_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
-	pnitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
-	if (NULL != pnitem) {
-		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
-			common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-			free(pnode);
-		}
-		double_list_free(&pnitem->notify_list);
-	}
-	str_hash_remove(g_notify_table, tmp_buff);
+	g_notify_table.erase(tmp_buff);
 	return ecSuccess;
 }
 
@@ -2759,7 +2759,6 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	int count;
 	uint8_t mapi_type;
 	char tmp_buff[256];
-	NOTIFY_ITEM *pnitem;
 	STORE_OBJECT *pstore;
 	DOUBLE_LIST_NODE *pnode;
 	ZNOTIFICATION* ppnotifications[1024];
@@ -2777,9 +2776,10 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			psink->padvise[i].sub_id,
 			pstore->get_dir());
 		std::unique_lock nl_hold(g_notify_lock);
-		pnitem = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_table, tmp_buff));
-		if (pnitem == nullptr)
+		auto iter = g_notify_table.find(tmp_buff);
+		if (iter == g_notify_table.end())
 			continue;
+		auto pnitem = &iter->second;
 		time(&pnitem->last_time);
 		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
 			ppnotifications[count] = common_util_dup_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata), true);

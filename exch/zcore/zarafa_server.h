@@ -31,8 +31,7 @@ struct USER_INFO {
 	DOUBLE_LIST sink_list;
 };
 
-void zarafa_server_init(int table_size,
-	int cache_interval, int ping_interval);
+extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);
 extern int zarafa_server_run();
 extern int zarafa_server_stop();
 extern void zarafa_server_free();
