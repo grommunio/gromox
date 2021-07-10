@@ -14,7 +14,7 @@
 #include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
-enum { A_MYSQL, A_LDAP, A_EXTERNID };
+enum { A_DENY_ALL, A_ALLOW_ALL, A_MYSQL, A_LDAP, A_EXTERNID };
 
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login;
@@ -31,14 +31,18 @@ static BOOL login_gen(const char *username, const char *password,
 	            length, mode, ep, sizeof(ep), &have_xid);
 	if (!meta || have_xid == 0xFF)
 		sleep(1);
+	else if (am_choice == A_DENY_ALL)
+		auth = false;
+	else if (am_choice == A_ALLOW_ALL)
+		auth = true;
 	else if (am_choice == A_MYSQL)
 		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length);
 	else if (am_choice == A_LDAP)
 		auth = fptr_ldap_login(username, password);
-	else if (have_xid > 0)
+	else if (am_choice == A_EXTERNID && have_xid > 0)
 		auth = fptr_ldap_login(username, password);
-	else
+	else if (am_choice == A_EXTERNID)
 		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length);
 	return meta && auth ? TRUE : false;
@@ -76,6 +80,10 @@ static bool authmgr_reload()
 	auto val = config_file_get_value(pfile, "auth_backend_selection");
 	if (val == nullptr)
 		/* nothing */;
+	else if (strcmp(val, "deny_all") == 0)
+		am_choice = A_DENY_ALL;
+	else if (strcmp(val, "allow_all") == 0)
+		am_choice = A_ALLOW_ALL;
 	else if (strcmp(val, "always_mysql") == 0)
 		am_choice = A_MYSQL;
 	else if (strcmp(val, "always_ldap") == 0)
