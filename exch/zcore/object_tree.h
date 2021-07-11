@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/int_hash.hpp>
@@ -7,13 +8,14 @@
 #define INVALID_HANDLE					0xFFFFFFFF
 
 struct OBJECT_TREE {
-	uint32_t last_handle;
-	INT_HASH_TABLE *phash;
-	SIMPLE_TREE tree;
+	~OBJECT_TREE();
+
+	uint32_t last_handle = 0;
+	INT_HASH_TABLE *phash = nullptr;
+	SIMPLE_TREE tree{};
 };
 
-OBJECT_TREE* object_tree_create(const char *maildir);
-void object_tree_free(OBJECT_TREE *ptree);
+extern std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir);
 uint32_t object_tree_add_object_handle(OBJECT_TREE *ptree,
 	int parent_handle, int type, void *pobject);
 void* object_tree_get_object(OBJECT_TREE *ptree,

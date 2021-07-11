@@ -231,17 +231,15 @@ static void object_tree_release_objnode(
 		&pobjnode->node, object_tree_free_objnode);
 }
 
-void object_tree_free(OBJECT_TREE *pobjtree)
+OBJECT_TREE::~OBJECT_TREE()
 {
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(&pobjtree->tree);
+	auto pobjtree = this;
+	auto proot = simple_tree_get_root(&tree);
 	if (NULL != proot) {
 		object_tree_release_objnode(pobjtree, static_cast<OBJECT_NODE *>(proot->pdata));
 	}
 	int_hash_free(pobjtree->phash);
 	simple_tree_free(&pobjtree->tree);
-	free(pobjtree);
 }
 
 uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
@@ -310,36 +308,28 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 	return pobjnode->handle;
 }
 
-OBJECT_TREE* object_tree_create(const char *maildir)
+std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 {
-	int handle;
 	ROOT_OBJECT *prootobj;
-	
-	auto pobjtree = me_alloc<OBJECT_TREE>();
-	if (NULL == pobjtree) {
+	std::unique_ptr<OBJECT_TREE> pobjtree;
+	try {
+		pobjtree = std::make_unique<OBJECT_TREE>();
+	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
 	pobjtree->last_handle = 0;
 	pobjtree->phash = int_hash_init(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == pobjtree->phash) {
-		free(pobjtree);
 		return NULL;
 	}
 	prootobj = object_tree_init_root(maildir);
 	if (NULL == prootobj) {
-		int_hash_free(pobjtree->phash);
-		free(pobjtree);
 		return NULL;
 	}
 	simple_tree_init(&pobjtree->tree);
-	handle = object_tree_add_object_handle(pobjtree, -1, ZMG_ROOT, prootobj);
-	if (handle < 0) {
-		object_tree_free_root(prootobj);
-		int_hash_free(pobjtree->phash);
-		simple_tree_free(&pobjtree->tree);
-		free(pobjtree);
-		return NULL;
-	}
+	auto handle = object_tree_add_object_handle(pobjtree.get(), -1, ZMG_ROOT, prootobj);
+	if (handle == INVALID_HANDLE)
+		return nullptr;
 	return pobjtree;
 }
 

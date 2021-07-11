@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -31,7 +32,7 @@ struct USER_INFO {
 	std::string username, lang, maildir, homedir;
 	uint32_t cpid = 0, flags = 0;
 	time_t last_time = 0, reload_time = 0;
-	OBJECT_TREE *ptree = nullptr;
+	std::unique_ptr<OBJECT_TREE> ptree;
 	DOUBLE_LIST sink_list{};
 	std::unordered_map<int, long> extra_owner;
 	std::mutex eowner_lock, lock;

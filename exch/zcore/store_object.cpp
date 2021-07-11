@@ -1217,7 +1217,6 @@ BOOL STORE_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -1233,6 +1232,7 @@ BOOL STORE_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->count = 0;
 	auto pstore = this;
 	for (i=0; i<pproptags->count; i++) {
+		void *pvalue = nullptr;
 		if (store_object_get_calculated_property(this,
 		    pproptags->pproptag[i], &pvalue)) {
 			if (NULL == pvalue) {
@@ -1255,8 +1255,7 @@ BOOL STORE_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (TRUE == pstore->b_private &&
 		pinfo->user_id == pstore->account_id) {
 		for (i=0; i<tmp_proptags.count; i++) {
-			pvalue = object_tree_get_zarafa_store_propval(
-					pinfo->ptree, tmp_proptags.pproptag[i]);
+			auto pvalue = object_tree_get_zarafa_store_propval(pinfo->ptree.get(), tmp_proptags.pproptag[i]);
 			if (pvalue == nullptr)
 				continue;
 			ppropvals->ppropval[ppropvals->count].proptag =
@@ -1605,10 +1604,8 @@ BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			}
 			break;
 		default:
-			if (FALSE == object_tree_set_zarafa_store_propval(
-				pinfo->ptree, &ppropvals->ppropval[i])) {
+			if (!object_tree_set_zarafa_store_propval(pinfo->ptree.get(), &ppropvals->ppropval[i]))
 				return FALSE;	
-			}
 			break;
 		}
 	}
@@ -1629,8 +1626,7 @@ BOOL STORE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 			pstore, pproptags->pproptag[i])) {
 			continue;
 		}
-		object_tree_remove_zarafa_store_propval(
-			pinfo->ptree, pproptags->pproptag[i]);
+		object_tree_remove_zarafa_store_propval(pinfo->ptree.get(), pproptags->pproptag[i]);
 	}
 	return TRUE;
 }

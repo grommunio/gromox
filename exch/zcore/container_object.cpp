@@ -186,18 +186,14 @@ static BOOL container_object_match_contact_message(
 static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 {
 	int i;
-	uint32_t handle;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[9];
 	
 	auto pinfo = zarafa_server_get_info();
-	handle = object_tree_get_store_handle(
-		pinfo->ptree, TRUE, pinfo->user_id);
-	pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
-	         pinfo->ptree, handle, &mapi_type));
+	auto handle = object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pinfo->user_id);
+	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
 	if (pstore == nullptr || mapi_type != ZMG_STORE)
 		return FALSE;
 	propnames.count = 9;
@@ -311,7 +307,6 @@ BOOL container_object_load_user_table(
 	void *pvalue;
 	char *paddress;
 	BINARY tmp_bin;
-	uint32_t handle;
 	uint32_t tmp_int;
 	uint32_t row_num;
 	uint32_t table_id;
@@ -320,7 +315,6 @@ BOOL container_object_load_user_table(
 	TARRAY_SET tmp_set;
 	char *pdisplayname;
 	char *paddress_type;
-	STORE_OBJECT *pstore;
 	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
@@ -442,10 +436,8 @@ BOOL container_object_load_user_table(
 		if (NULL == pparent_entryid) {
 			return FALSE;
 		}
-		handle = object_tree_get_store_handle(
-			pinfo->ptree, TRUE, pinfo->user_id);
-		pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
-		         pinfo->ptree, handle, &mapi_type));
+		auto handle = object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pinfo->user_id);
+		auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			return FALSE;
 	} else {
