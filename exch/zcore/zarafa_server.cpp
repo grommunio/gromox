@@ -353,7 +353,7 @@ static void zarafa_server_notification_proc(const char *dir,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr || mapi_type != ZMG_STORE ||
 	    strcmp(dir, pstore->get_dir()) != 0)
 		return;
@@ -860,7 +860,7 @@ uint32_t zarafa_server_unloadobject(GUID hsession, uint32_t hobject)
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	object_tree_release_object_handle(pinfo->ptree.get(), hobject);
+	pinfo->ptree->release_object_handle(hobject);
 	return ecSuccess;
 }
 
@@ -890,7 +890,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 			entryid, &b_private, &account_id, &folder_id)) {
 			break;
 		}
-		auto handle = object_tree_get_store_handle(pinfo->ptree.get(), b_private, account_id);
+		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
 		if (handle == INVALID_HANDLE)
 			return ecNullObject;
 		pinfo.reset();
@@ -904,7 +904,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 			&message_id)) {
 			break;
 		}
-		auto handle = object_tree_get_store_handle(pinfo->ptree.get(), b_private, account_id);
+		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
 		if (handle == INVALID_HANDLE)
 			return ecNullObject;
 		pinfo.reset();
@@ -938,7 +938,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		return ecNotFound;
 	}
 	
-	auto handle = object_tree_get_store_handle(pinfo->ptree.get(), b_private, user_id);
+	auto handle = pinfo->ptree->get_store_handle(b_private, user_id);
 	pinfo.reset();
 	return zarafa_server_openstoreentry(hsession,
 		handle, entryid, flags, pmapi_type, phobject);
@@ -970,7 +970,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hobject, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hobject, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -1091,8 +1091,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		                b_writable, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-		            hobject, ZMG_MESSAGE, pmessage.get());
+		*phobject = pinfo->ptree->add_object_handle(hobject, ZMG_MESSAGE, pmessage.get());
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
 		pmessage.release();
@@ -1155,8 +1154,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			folder_id, folder_type, tag_access);
 		if (pfolder == nullptr)
 			return ecError;
-		*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-		            hobject, ZMG_FOLDER, pfolder.get());
+		*phobject = pinfo->ptree->add_object_handle(hobject, ZMG_FOLDER, pfolder.get());
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
 		pfolder.release();
@@ -1194,8 +1192,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if (contobj == nullptr)
 			return ecError;
 		*pmapi_type = ZMG_ABCONT;
-		*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-		            ROOT_HANDLE, *pmapi_type, contobj.get());
+		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, *pmapi_type, contobj.get());
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
 		contobj.release();
@@ -1300,8 +1297,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	} else {
 		return ecInvalidParam;
 	}
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-						ROOT_HANDLE, *pmapi_type, pobject);
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, *pmapi_type, pobject);
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	contobj.release();
@@ -1376,7 +1372,7 @@ uint32_t zarafa_server_getpermissions(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hobject, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (NULL == pobject) {
 		pperm_set->count = 0;
 		return ecNullObject;
@@ -1404,7 +1400,7 @@ uint32_t zarafa_server_modifypermissions(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -1421,7 +1417,7 @@ uint32_t zarafa_server_modifyrules(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -1459,8 +1455,7 @@ uint32_t zarafa_server_loadstoretable(
 	auto ptable = table_object_create(nullptr, nullptr, STORE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), ROOT_HANDLE,
-	            ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, ZMG_TABLE, ptable.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	ptable.release();
@@ -1490,8 +1485,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 		PROVIDER_UID_WRAPPED_PUBLIC, provider_uid);
 	if (0 == memcmp(store_entryid.wrapped_provider_uid,
 		provider_uid, 16)) {
-		*phobject = object_tree_get_store_handle(pinfo->ptree.get(),
-			false, pinfo->domain_id);
+		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 	} else {
 		if (FALSE == common_util_essdn_to_uid(
 			store_entryid.pmailbox_dn, &user_id)) {
@@ -1516,8 +1510,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 			} catch (const std::bad_alloc &) {
 			}
 		}
-		*phobject = object_tree_get_store_handle(
-					pinfo->ptree.get(), TRUE, user_id);
+		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
 	}
 	return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 }
@@ -1534,11 +1527,10 @@ uint32_t zarafa_server_openpropfilesec(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ppropvals = object_tree_get_profile_sec(pinfo->ptree.get(), guid);
+	auto ppropvals = pinfo->ptree->get_profile_sec(guid);
 	if (ppropvals == nullptr)
 		return ecNotFound;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-	            ROOT_HANDLE, ZMG_PROFPROPERTY, ppropvals);
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, ZMG_PROFPROPERTY, ppropvals);
 	return ecSuccess;
 }
 
@@ -1552,7 +1544,7 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hfolder, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
@@ -1570,8 +1562,7 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hfolder,
-	            ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	ptable.release();
@@ -1589,7 +1580,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hfolder, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
@@ -1616,8 +1607,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hfolder,
-	            ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	ptable.release();
@@ -1632,7 +1622,7 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -1641,8 +1631,7 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 	              pmessage, RECIPIENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hmessage,
-	            ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_TABLE, ptable.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	ptable.release();
@@ -1656,7 +1645,7 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -1665,8 +1654,7 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 	auto ptable = table_object_create(pfolder->pstore, &folder_id, RULE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hfolder,
-	            ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	ptable.release();
@@ -1688,14 +1676,14 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
 	auto pstore = pfolder->pstore;
-	auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), pstore->b_private, pstore->account_id);
+	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
 	if (!pstore->check_owner_mode()) {
@@ -1752,8 +1740,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of folder */
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hstore,
-	            ZMG_MESSAGE, pmessage.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_MESSAGE, pmessage.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pmessage.release();
@@ -1784,7 +1771,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return FALSE;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -1888,13 +1875,13 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto psrc_folder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hsrcfolder, &mapi_type));
+	auto psrc_folder = pinfo->ptree->get_object<FOLDER_OBJECT>(hsrcfolder, &mapi_type);
 	if (psrc_folder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = psrc_folder->pstore;
-	auto pdst_folder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hdstfolder, &mapi_type));
+	auto pdst_folder = pinfo->ptree->get_object<FOLDER_OBJECT>(hdstfolder, &mapi_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER || pdst_folder->type == FOLDER_TYPE_SEARCH)
@@ -2019,7 +2006,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -2149,7 +2136,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pparent = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hparent_folder, &mapi_type));
+	auto pparent = pinfo->ptree->get_object<FOLDER_OBJECT>(hparent_folder, &mapi_type);
 	if (pparent == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -2245,14 +2232,12 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		/* add the store handle as the parent object handle
 			because the caller normaly will not keep the
 			handle of parent folder */
-		auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pstore->account_id);
+		auto hstore = pinfo->ptree->get_store_handle(TRUE, pstore->account_id);
 		if (hstore == INVALID_HANDLE)
 			return ecError;
-		*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-		            hstore, ZMG_FOLDER, pfolder.get());
+		*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_FOLDER, pfolder.get());
 	} else {
-		*phobject = object_tree_add_object_handle(pinfo->ptree.get(),
-		            hparent_folder, ZMG_FOLDER, pfolder.get());
+		*phobject = pinfo->ptree->add_object_handle(hparent_folder, ZMG_FOLDER, pfolder.get());
 	}
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
@@ -2276,7 +2261,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hparent_folder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hparent_folder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -2349,7 +2334,7 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -2395,7 +2380,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto psrc_parent = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hsrc_folder, &mapi_type));
+	auto psrc_parent = pinfo->ptree->get_object<FOLDER_OBJECT>(hsrc_folder, &mapi_type);
 	if (psrc_parent == nullptr)
 		return ecNullObject;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
@@ -2410,7 +2395,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	}
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
 		return ecInvalidParam;
-	auto pdst_folder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hdst_folder, &mapi_type));
+	auto pdst_folder = pinfo->ptree->get_object<FOLDER_OBJECT>(hdst_folder, &mapi_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -2542,7 +2527,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -2624,7 +2609,7 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -2687,7 +2672,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -2716,7 +2701,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 		return ecError;
 	count = 0;
 	for (i=0; i<psink->count; i++) {
-		auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), psink->padvise[i].hstore, &mapi_type));
+		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(psink->padvise[i].hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			continue;
 		sprintf(tmp_buff, "%u|%s",
@@ -2797,7 +2782,7 @@ uint32_t zarafa_server_queryrows(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -2908,7 +2893,7 @@ uint32_t zarafa_server_setcolumns(GUID hsession, uint32_t htable,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -2927,7 +2912,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3025,7 +3010,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3141,7 +3126,7 @@ uint32_t zarafa_server_getrowcount(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3160,7 +3145,7 @@ uint32_t zarafa_server_restricttable(GUID hsession, uint32_t htable,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3194,7 +3179,7 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3249,7 +3234,7 @@ uint32_t zarafa_server_createbookmark(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3274,7 +3259,7 @@ uint32_t zarafa_server_freebookmark(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = static_cast<TABLE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), htable, &mapi_type));
+	auto ptable = pinfo->ptree->get_object<TABLE_OBJECT>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
@@ -3306,7 +3291,7 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -3351,7 +3336,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -3533,7 +3518,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -3725,7 +3710,7 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -3734,8 +3719,7 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	auto ptable = table_object_create(pstore, pmessage, ATTACHMENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hmessage,
-	            ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_TABLE, ptable.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	ptable.release();
@@ -3749,7 +3733,7 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -3760,8 +3744,7 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 	if (attachment_object_get_instance_id(pattachment.get()) == 0) {
 		return ecNotFound;
 	}
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hmessage,
-	            ZMG_ATTACH, pattachment.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_ATTACH, pattachment.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pattachment.release();
@@ -3775,7 +3758,7 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -3793,8 +3776,7 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 	if (!attachment_object_init_attachment(pattachment.get())) {
 		return ecError;
 	}
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hmessage,
-	            ZMG_ATTACH, pattachment.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_ATTACH, pattachment.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pattachment.release();
@@ -3808,7 +3790,7 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -3829,7 +3811,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hobject, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
@@ -3840,7 +3822,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 				return ecError;
 			}
 		}
-		object_tree_touch_profile_sec(pinfo->ptree.get());
+		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case ZMG_STORE: {
 		auto store = static_cast<STORE_OBJECT *>(pobject);
@@ -3896,7 +3878,7 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hobject, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
@@ -3999,7 +3981,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hobject, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
@@ -4007,7 +3989,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 		for (i=0; i<pproptags->count; i++) {
 			tpropval_array_remove_propval(static_cast<TPROPVAL_ARRAY *>(pobject), pproptags->pproptag[i]);
 		}
-		object_tree_touch_profile_sec(pinfo->ptree.get());
+		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case ZMG_STORE: {
 		auto store = static_cast<STORE_OBJECT *>(pobject);
@@ -4060,7 +4042,7 @@ uint32_t zarafa_server_setmessagereadflag(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -4079,13 +4061,13 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pattachment = static_cast<ATTACHMENT_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hattachment, &mapi_type));
+	auto pattachment = pinfo->ptree->get_object<ATTACHMENT_OBJECT>(hattachment, &mapi_type);
 	if (pattachment == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ATTACH)
 		return ecNotSupported;
 	pstore = attachment_object_get_store(pattachment);
-	auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), pstore->b_private, pstore->account_id);
+	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
 	b_writable = attachment_object_check_writable(pattachment);
@@ -4116,8 +4098,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of attachment */
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hstore,
-	            ZMG_MESSAGE, pmessage.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_MESSAGE, pmessage.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pmessage.release();
@@ -4131,7 +4112,7 @@ uint32_t zarafa_server_getnamedpropids(GUID hsession, uint32_t hstore,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -4147,7 +4128,7 @@ uint32_t zarafa_server_getpropnames(GUID hsession, uint32_t hstore,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hstore, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
@@ -4175,10 +4156,10 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hsrcobject, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hsrcobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	auto pobject_dst = object_tree_get_object(pinfo->ptree.get(), hdstobject, &dst_type);
+	auto pobject_dst = pinfo->ptree->get_object<void>(hdstobject, &dst_type);
 	if (pobject_dst == nullptr)
 		return ecNullObject;
 	if (mapi_type != dst_type) {
@@ -4300,7 +4281,7 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pobject = object_tree_get_object(pinfo->ptree.get(), hobject, &mapi_type);
+	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (mapi_type == ZMG_MESSAGE) {
@@ -4338,20 +4319,19 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), pstore->b_private, pstore->account_id);
+	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
 	auto pctx = icsdownctx_object_create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hstore,
-	            ZMG_ICSDOWNCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSDOWNCTX, pctx.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pctx.release();
@@ -4365,20 +4345,19 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), pstore->b_private, pstore->account_id);
+	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
 	auto pctx = icsdownctx_object_create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hstore,
-	            ZMG_ICSDOWNCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSDOWNCTX, pctx.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pctx.release();
@@ -4393,7 +4372,7 @@ uint32_t zarafa_server_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX)
@@ -4422,7 +4401,7 @@ uint32_t zarafa_server_statesync(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX)
@@ -4442,7 +4421,7 @@ uint32_t zarafa_server_syncmessagechange(GUID hsession, uint32_t hctx,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX ||
@@ -4465,7 +4444,7 @@ uint32_t zarafa_server_syncfolderchange(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX ||
@@ -4485,7 +4464,7 @@ uint32_t zarafa_server_syncreadstatechanges(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX ||
@@ -4501,7 +4480,7 @@ uint32_t zarafa_server_syncdeletions(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSDOWNCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX)
@@ -4516,19 +4495,19 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER || pfolder->type == FOLDER_TYPE_SEARCH)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), pstore->b_private, pstore->account_id);
+	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
 	auto pctx = icsupctx_object_create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hstore, ZMG_ICSUPCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSUPCTX, pctx.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pctx.release();
@@ -4542,19 +4521,19 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	auto hstore = object_tree_get_store_handle(pinfo->ptree.get(), pstore->b_private, pstore->account_id);
+	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
 	auto pctx = icsupctx_object_create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hstore, ZMG_ICSUPCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSUPCTX, pctx.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pctx.release();
@@ -4568,7 +4547,7 @@ uint32_t zarafa_server_configimport(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSUPCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
@@ -4584,7 +4563,7 @@ uint32_t zarafa_server_stateimport(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSUPCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
@@ -4630,7 +4609,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSUPCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
@@ -4717,8 +4696,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	    b_fai, pinfo->cpid)) {
 		return ecError;
 	}
-	*phobject = object_tree_add_object_handle(pinfo->ptree.get(), hctx,
-	            ZMG_MESSAGE, pmessage.get());
+	*phobject = pinfo->ptree->add_object_handle(hctx, ZMG_MESSAGE, pmessage.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	pmessage.release();
@@ -4778,7 +4756,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSUPCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
@@ -4996,7 +4974,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSUPCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
@@ -5139,7 +5117,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pctx = static_cast<ICSUPCTX_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hctx, &mapi_type));
+	auto pctx = pinfo->ptree->get_object<ICSUPCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
@@ -5219,7 +5197,7 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -5270,7 +5248,7 @@ uint32_t zarafa_server_setsearchcriteria(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hfolder, &mapi_type));
+	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
@@ -5330,7 +5308,7 @@ uint32_t zarafa_server_messagetorfc822(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -5347,7 +5325,7 @@ uint32_t zarafa_server_rfc822tomessage(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -5366,7 +5344,7 @@ uint32_t zarafa_server_messagetoical(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -5383,7 +5361,7 @@ uint32_t zarafa_server_icaltomessage(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -5402,7 +5380,7 @@ uint32_t zarafa_server_messagetovcf(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -5418,7 +5396,7 @@ uint32_t zarafa_server_vcftomessage(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), hmessage, &mapi_type));
+	auto pmessage = pinfo->ptree->get_object<MESSAGE_OBJECT>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
@@ -5559,13 +5537,13 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto handle = object_tree_get_store_handle(pinfo->ptree.get(), b_private, account_id);
+	auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
 	if (handle == INVALID_HANDLE)
 		return ecNullObject;
 	if (pinfo->user_id < 0 || static_cast<unsigned int>(pinfo->user_id) != account_id) {
 		return ecAccessDenied;
 	}
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
 	if (pstore == nullptr || mapi_type != ZMG_STORE)
 		return ecError;
 	gx_strlcpy(maildir, pstore->get_dir(), arsizeof(maildir));

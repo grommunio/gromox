@@ -354,10 +354,10 @@ static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
 				return FALSE;
 			}
 			uint32_t handle = i == 0 ?
-				object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pinfo->user_id) :
-				object_tree_get_store_handle(pinfo->ptree.get(), false, pinfo->domain_id);
+				pinfo->ptree->get_store_handle(TRUE, pinfo->user_id) :
+				pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 			uint8_t mapi_type = 0;
-			auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
+			auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
 			if (pstore == nullptr || mapi_type != ZMG_STORE)
 				return FALSE;
 			if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
@@ -384,10 +384,10 @@ static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
 			return FALSE;
 		}
 		uint32_t handle = i == 0 ?
-			object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pinfo->user_id) :
-			object_tree_get_store_handle(pinfo->ptree.get(), false, pinfo->domain_id);
+			pinfo->ptree->get_store_handle(TRUE, pinfo->user_id) :
+			pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 		uint8_t mapi_type = 0;
-		auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
+		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			return FALSE;
 		if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))

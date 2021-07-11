@@ -242,9 +242,9 @@ OBJECT_TREE::~OBJECT_TREE()
 	simple_tree_free(&pobjtree->tree);
 }
 
-uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
-	int parent_handle, int type, void *pobject)
+uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobject)
 {
+	auto pobjtree = this;
 	int tmp_handle;
 	INT_HASH_ITER *iter;
 	OBJECT_NODE *ptmphanle;
@@ -327,20 +327,20 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 		return NULL;
 	}
 	simple_tree_init(&pobjtree->tree);
-	auto handle = object_tree_add_object_handle(pobjtree.get(), -1, ZMG_ROOT, prootobj);
+	auto handle = pobjtree->add_object_handle(-1, ZMG_ROOT, prootobj);
 	if (handle == INVALID_HANDLE)
 		return nullptr;
 	return pobjtree;
 }
 
-void* object_tree_get_object(OBJECT_TREE *pobjtree,
-	uint32_t obj_handle, uint8_t *ptype)
+void *OBJECT_TREE::get_object1(uint32_t obj_handle, uint8_t *ptype)
 {
 	OBJECT_NODE **ppobjnode;
 	
 	if (obj_handle > 0x7FFFFFFF) {
 		return NULL;
 	}
+	auto pobjtree = this;
 	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
 	if (NULL == ppobjnode) {
 		return NULL;
@@ -349,14 +349,14 @@ void* object_tree_get_object(OBJECT_TREE *pobjtree,
 	return (*ppobjnode)->pobject;
 }
 
-void object_tree_release_object_handle(
-	OBJECT_TREE *pobjtree, uint32_t obj_handle)
+void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 {
 	OBJECT_NODE **ppobjnode;
 	
 	if (ROOT_HANDLE == obj_handle || obj_handle > 0x7FFFFFFF) {
 		return;
 	}
+	auto pobjtree = this;
 	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
 	/* do not relase store object until
 	the whole object tree is unloaded */
@@ -365,9 +365,9 @@ void object_tree_release_object_handle(
 	object_tree_release_objnode(pobjtree, *ppobjnode);
 }
 
-void* object_tree_get_zarafa_store_propval(
-	OBJECT_TREE *pobjtree, uint32_t proptag)
+void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 {
+	auto pobjtree = this;
 	ROOT_OBJECT *prootobj;
 	SIMPLE_TREE_NODE *proot;
 	
@@ -380,9 +380,9 @@ void* object_tree_get_zarafa_store_propval(
 		prootobj->pprivate_proplist, proptag);
 }
 
-BOOL object_tree_set_zarafa_store_propval(
-	OBJECT_TREE *pobjtree, const TAGGED_PROPVAL *ppropval)
+BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 {
+	auto pobjtree = this;
 	ROOT_OBJECT *prootobj;
 	SIMPLE_TREE_NODE *proot;
 	
@@ -396,9 +396,9 @@ BOOL object_tree_set_zarafa_store_propval(
 	       TRUE : false;
 }
 
-void object_tree_remove_zarafa_store_propval(
-	OBJECT_TREE *pobjtree, uint32_t proptag)
+void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 {
+	auto pobjtree = this;
 	ROOT_OBJECT *prootobj;
 	SIMPLE_TREE_NODE *proot;
 	
@@ -412,9 +412,9 @@ void object_tree_remove_zarafa_store_propval(
 		prootobj->pprivate_proplist, proptag);
 }
 
-TPROPVAL_ARRAY* object_tree_get_profile_sec(
-	OBJECT_TREE *pobjtree, GUID sec_guid)
+TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 {
+	auto pobjtree = this;
 	GUID *pguid;
 	ROOT_OBJECT *prootobj;
 	TAGGED_PROPVAL propval;
@@ -451,8 +451,9 @@ TPROPVAL_ARRAY* object_tree_get_profile_sec(
 	return pproplist;
 }
 
-void object_tree_touch_profile_sec(OBJECT_TREE *pobjtree)
+void OBJECT_TREE::touch_profile_sec()
 {
+	auto pobjtree = this;
 	ROOT_OBJECT *prootobj;
 	SIMPLE_TREE_NODE *proot;
 	
@@ -464,9 +465,9 @@ void object_tree_touch_profile_sec(OBJECT_TREE *pobjtree)
 	prootobj->b_touched = TRUE;
 }
 
-uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
-	BOOL b_private, int account_id)
+uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 {
+	auto pobjtree = this;
 	char dir[256];
 	char account[UADDR_SIZE];
 	OBJECT_NODE *pobjnode;
@@ -515,8 +516,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	if (NULL == pstore) {
 		return INVALID_HANDLE;
 	}
-	auto handle = object_tree_add_object_handle(pobjtree, ROOT_HANDLE,
-	              ZMG_STORE, pstore.get());
+	auto handle = add_object_handle(ROOT_HANDLE, ZMG_STORE, pstore.get());
 	if (handle != INVALID_HANDLE)
 		pstore.release();
 	return handle;

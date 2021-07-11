@@ -192,8 +192,8 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	PROPERTY_NAME propname_buff[9];
 	
 	auto pinfo = zarafa_server_get_info();
-	auto handle = object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pinfo->user_id);
-	auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
+	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
+	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
 	if (pstore == nullptr || mapi_type != ZMG_STORE)
 		return FALSE;
 	propnames.count = 9;
@@ -436,8 +436,8 @@ BOOL container_object_load_user_table(
 		if (NULL == pparent_entryid) {
 			return FALSE;
 		}
-		auto handle = object_tree_get_store_handle(pinfo->ptree.get(), TRUE, pinfo->user_id);
-		auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(pinfo->ptree.get(), handle, &mapi_type));
+		auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
+		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			return FALSE;
 	} else {
