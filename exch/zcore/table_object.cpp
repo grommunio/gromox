@@ -47,7 +47,6 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t permission;
-	const char *username;
 	uint32_t table_flags;
 	
 	if (ATTACHMENT_TABLE == ptable->table_type ||
@@ -66,7 +65,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	switch (ptable->table_type) {
 	case HIERARCHY_TABLE: {
 		auto pinfo = zarafa_server_get_info();
-		username = ptable->pstore->check_owner_mode() ? nullptr : pinfo->username;
+		auto username = ptable->pstore->check_owner_mode() ?
+		                nullptr : pinfo->get_username();
 		table_flags = TABLE_FLAG_NONOTIFICATIONS;
 		if (ptable->table_flags & FLAG_SOFT_DELETE) {
 			table_flags |= TABLE_FLAG_SOFTDELETES;
@@ -82,17 +82,17 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	}
 	case CONTENT_TABLE: {
 		auto pinfo = zarafa_server_get_info();
-		username = NULL;
+		const char *username = nullptr;
 		if (!ptable->pstore->check_owner_mode()) {
 			if (!ptable->pstore->b_private) {
-				username = pinfo->username;
+				username = pinfo->get_username();
 			} else {
 				if (!exmdb_client::check_folder_permission(ptable->pstore->get_dir(),
 				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
-				    pinfo->username, &permission))
+				    pinfo->get_username(), &permission))
 					return FALSE;	
 				if (!(permission & (frightsReadAny | frightsOwner)))
-					username = pinfo->username;
+					username = pinfo->get_username();
 			}
 		}
 		table_flags = TABLE_FLAG_NONOTIFICATIONS;
@@ -161,12 +161,9 @@ static BOOL table_object_get_store_table_all_proptags(
 	};
 	
 	auto pinfo = zarafa_server_get_info();
-	if (!exmdb_client::get_store_all_proptags(
-		pinfo->maildir, &tmp_proptags1) ||
-		!exmdb_client::get_store_all_proptags(
-		pinfo->homedir, &tmp_proptags2)) {
+	if (!exmdb_client::get_store_all_proptags(pinfo->get_maildir(), &tmp_proptags1) ||
+	    !exmdb_client::get_store_all_proptags(pinfo->get_homedir(), &tmp_proptags2))
 		return FALSE;
-	}
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags1.count + tmp_proptags2.count + 25);
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
@@ -450,7 +447,8 @@ static bool hiertbl_q1(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
 			auto ptag_access = cu_alloc<uint32_t>();
 			if (ptag_access == nullptr)
 				return false;
-			*ptag_access = table_object_get_folder_tag_access(ptable->pstore, tmp_eid, pinfo->username);
+			*ptag_access = table_object_get_folder_tag_access(ptable->pstore,
+			               tmp_eid, pinfo->get_username());
 			r.proptag = PR_ACCESS;
 			r.pvalue = ptag_access;
 			break;
@@ -471,7 +469,8 @@ static bool hiertbl_q2(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
 			auto perm = cu_alloc<uint32_t>();
 			if (perm == nullptr)
 				return false;
-			*perm = table_object_get_folder_permission_rights(ptable->pstore, tmp_eid, pinfo->username);
+			*perm = table_object_get_folder_permission_rights(ptable->pstore,
+			        tmp_eid, pinfo->get_username());
 			r.proptag = PR_RIGHTS;
 			r.pvalue = perm;
 			break;
@@ -484,7 +483,7 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
     const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns,
     const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
 {
-	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
+	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	int idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
 	int idx1 = -1, idx2 = -1;
 	TARRAY_SET temp_set;
@@ -631,7 +630,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	} else if (STORE_TABLE == ptable->table_type) {
 		return storetbl_query_rows(ptable, b_forward, pcolumns, pset, pinfo, row_needed);
 	}
-	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
+	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	if ((CONTENT_TABLE == ptable->table_type ||
 	    HIERARCHY_TABLE == ptable->table_type)) {
 		return hierconttbl_query_rows(ptable, pcolumns, tmp_columns, pinfo, row_needed, pset);
@@ -1152,7 +1151,7 @@ BOOL table_object_match_row(TABLE_OBJECT *ptable,
 		return FALSE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
+	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_INSTID;

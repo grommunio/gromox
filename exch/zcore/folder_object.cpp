@@ -185,7 +185,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		auto pinfo = zarafa_server_get_info();
 		return exmdb_client::get_public_folder_unread_count(pfolder->pstore->get_dir(),
-		       pinfo->username, pfolder->folder_id,
+		       pinfo->get_username(), pfolder->folder_id,
 		       static_cast<uint32_t *>(*ppvalue));
 	}
 	case PROP_TAG_FOLDERID:
@@ -206,7 +206,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		auto pinfo = zarafa_server_get_info();
 		return exmdb_client::check_folder_permission(pfolder->pstore->get_dir(),
-		       pfolder->folder_id, pinfo->username,
+		       pfolder->folder_id, pinfo->get_username(),
 		       static_cast<uint32_t *>(*ppvalue));
 	}
 	case PR_ENTRYID:

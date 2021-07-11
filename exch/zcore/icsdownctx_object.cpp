@@ -75,7 +75,7 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
 	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
-	auto username = !pctx->pstore->b_private ? pinfo->username : nullptr;
+	auto username = pctx->pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_content_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven, pseen, pseen_fai,
 	    pread, pinfo->cpid, prestriction, TRUE, &count_fai, &total_fai,
@@ -172,7 +172,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->username;
+	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven,
 	    pctx->pstate->pseen, &fldchgs, &pctx->last_changenum,

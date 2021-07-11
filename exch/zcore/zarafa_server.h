@@ -20,20 +20,21 @@ struct USER_INFO {
 	USER_INFO(USER_INFO &&);
 	void operator=(USER_INFO &&) = delete;
 	~USER_INFO();
+	inline const char *get_username() const { return username.c_str(); }
+	inline const char *get_lang() const { return lang.c_str(); }
+	inline const char *get_maildir() const { return maildir.c_str(); }
+	inline const char *get_homedir() const { return homedir.c_str(); }
 
 	GUID hsession{};
 	std::atomic<int> reference{0};
 	int user_id = 0, domain_id = 0, org_id = 0;
-	char username[UADDR_SIZE]{}, lang[32]{};
-	uint32_t cpid = 0;
-	char maildir[256]{}, homedir[256]{};
-	uint32_t flags = 0;
+	std::string username, lang, maildir, homedir;
+	uint32_t cpid = 0, flags = 0;
 	time_t last_time = 0, reload_time = 0;
 	OBJECT_TREE *ptree = nullptr;
-	pthread_mutex_t lock{};
 	DOUBLE_LIST sink_list{};
 	std::unordered_map<int, long> extra_owner;
-	std::mutex eowner_lock;
+	std::mutex eowner_lock, lock;
 };
 
 extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);

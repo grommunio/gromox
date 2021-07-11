@@ -249,7 +249,8 @@ BOOL STORE_OBJECT::check_owner_mode() const
 		return TRUE;
 	lk.unlock();
 	uint32_t perm = rightsNone;
-	if (!exmdb_client::check_mailbox_permission(pstore->dir, pinfo->username, &perm))
+	if (!exmdb_client::check_mailbox_permission(pstore->dir,
+	    pinfo->get_username(), &perm))
 		return false;
 	if (!(perm & frightsGromoxStoreOwner))
 		return false;
@@ -901,10 +902,9 @@ static BOOL store_object_get_calculated_property(
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
 			return TRUE;
 		}
-		if (!exmdb_client::check_mailbox_permission(
-		    pstore->dir, pinfo->username, &permission)) {
+		if (!exmdb_client::check_mailbox_permission(pstore->dir,
+		    pinfo->get_username(), &permission))
 			return FALSE;
-		}
 		permission &= ~frightsGromoxStoreOwner;
 		*(uint32_t *)*ppvalue = TAG_ACCESS_READ;
 		if (permission & frightsOwner) {
@@ -932,10 +932,9 @@ static BOOL store_object_get_calculated_property(
 		}
 		auto pinfo = zarafa_server_get_info();
 		if (TRUE == pstore->b_private) {
-			if (!exmdb_client::check_mailbox_permission(
-				pstore->dir, pinfo->username, &permission)) {
+			if (!exmdb_client::check_mailbox_permission(pstore->dir,
+			    pinfo->get_username(), &permission))
 				return FALSE;
-			}
 			*static_cast<uint32_t *>(*ppvalue) &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
 			return TRUE;
 		}
@@ -1047,10 +1046,8 @@ static BOOL store_object_get_calculated_property(
 		}
 		*(uint32_t *)(*ppvalue) = EC_SUPPORTMASK_OTHER;
 		auto pinfo = zarafa_server_get_info();
-		if (TRUE == common_util_check_delegate_permission(
-		    pinfo->username, pstore->dir)) {
+		if (common_util_check_delegate_permission(pinfo->get_username(), pstore->dir))
 			*(uint32_t *)(*ppvalue) |= STORE_SUBMIT_OK;
-		}
 		return TRUE;
 	}
 	case PR_RECORD_KEY:
@@ -1068,13 +1065,12 @@ static BOOL store_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_USERNAME: {
 		auto pinfo = zarafa_server_get_info();
-		*ppvalue = pinfo->username;
+		*ppvalue = deconst(pinfo->get_username());
 		return TRUE;
 	}
 	case PR_USER_ENTRYID: {
 		auto pinfo = zarafa_server_get_info();
-		*ppvalue = common_util_username_to_addressbook_entryid(
-												pinfo->username);
+		*ppvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}

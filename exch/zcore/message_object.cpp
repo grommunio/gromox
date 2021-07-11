@@ -75,7 +75,7 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 		} else {
 			auto pinfo = zarafa_server_get_info();
 			if (!exmdb_client::load_message_instance(pstore->get_dir(),
-			    pinfo->username, cpid, b_new, pmessage->folder_id,
+			    pinfo->get_username(), cpid, b_new, pmessage->folder_id,
 			    message_id, &pmessage->instance_id))
 				return NULL;
 		}
@@ -304,17 +304,16 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	if (!system_services_get_user_displayname(pinfo->username,
+	if (!system_services_get_user_displayname(pinfo->get_username(),
 	    static_cast<char *>(pvalue)) ||
 	    *static_cast<char *>(pvalue) == '\0')
-		strcpy(static_cast<char *>(pvalue), pinfo->username);
+		strcpy(static_cast<char *>(pvalue), pinfo->get_username());
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 						PROP_TAG_CREATORENTRYID;
-	pvalue = common_util_username_to_addressbook_entryid(
-										pinfo->username);
+	pvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -418,18 +417,17 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		if (NULL == pvalue) {
 			return GXERR_CALL_FAILED;
 		}
-		if (!system_services_get_user_displayname(pinfo->username,
+		if (!system_services_get_user_displayname(pinfo->get_username(),
 		    static_cast<char *>(pvalue)) ||
 		    *static_cast<char *>(pvalue) == '\0')
-			strcpy(static_cast<char *>(pvalue), pinfo->username);
+			strcpy(static_cast<char *>(pvalue), pinfo->get_username());
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
 		tmp_propvals.count ++;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 							PROP_TAG_LASTMODIFIERENTRYID;
-	pvalue = common_util_username_to_addressbook_entryid(
-										pinfo->username);
+	pvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (NULL == pvalue) {
 		return GXERR_CALL_FAILED;
 	}
@@ -611,10 +609,9 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		when the message is first saved to the folder */
 	if (b_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->pstore->b_private)
-		exmdb_client::rule_new_message(dir, pinfo->username,
-			pmessage->pstore->get_account(),
-			pmessage->cpid, pmessage->folder_id,
-			pmessage->message_id);
+		exmdb_client::rule_new_message(dir, pinfo->get_username(),
+			pmessage->pstore->get_account(), pmessage->cpid,
+			pmessage->folder_id, pmessage->message_id);
 	return GXERR_SUCCESS;
 }
 
@@ -1321,7 +1318,6 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint32_t result;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
-	const char *username;
 	PROBLEM_ARRAY problems;
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pbrief;
@@ -1334,11 +1330,10 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 				MSG_READ_FLAG_GENERATE_RECEIPT_ONLY|
 				MSG_READ_FLAG_CLEAR_NOTIFY_READ|
 				MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD;
-	if (pmessage->pstore->b_private) {
-		username = NULL;
-	} else {
+	const char *username = nullptr;
+	if (!pmessage->pstore->b_private) {
 		auto pinfo = zarafa_server_get_info();
-		username = pinfo->username;
+		username = pinfo->get_username();
 	}
 	b_notify = FALSE;
 	*pb_changed = FALSE;

@@ -44,6 +44,8 @@
 #include <fcntl.h>
 #include <cstdio>
 
+using namespace gromox;
+
 enum {
 	SMTP_SEND_OK = 0,
 	SMTP_CANNOT_CONNECT,
@@ -1226,7 +1228,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_mapping_replid(pinfo->homedir,
+		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
 		    tmp_entryid.database_guid, &b_found, &replid) || !b_found)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
@@ -1284,7 +1286,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_mapping_replid(pinfo->homedir,
+		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
 		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
 		    !b_found)
 			return FALSE;
@@ -1628,7 +1630,7 @@ static void log_err(const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	system_services_log_info(3, "user=%s  %s", pinfo->username, log_buf);
+	system_services_log_info(3, "user=%s  %s", pinfo->get_username(), log_buf);
 }
 
 static BOOL common_util_send_mail(MAIL *pmail,
@@ -2197,8 +2199,8 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 		store_entryid.wrapped_type = 0x00000006;
 		store_entryid.pserver_name = g_hostname;
 		auto pinfo = zarafa_server_get_info();
-		if (!common_util_username_to_essdn(pinfo->username, tmp_buff,
-		    GX_ARRAY_SIZE(tmp_buff)))
+		if (!common_util_username_to_essdn(pinfo->get_username(),
+		    tmp_buff, arsizeof(tmp_buff)))
 			return NULL;	
 	}
 	store_entryid.pmailbox_dn = tmp_buff;
@@ -2307,7 +2309,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zarafa_server_get_info();
-	auto username = pstore->b_private ? nullptr : pinfo->username;
+	auto username = pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client::read_message(pstore->get_dir(), username,
 	    pinfo->cpid, message_id, &pmsgctnt))
 		return GXERR_CALL_FAILED;
@@ -2425,8 +2427,7 @@ static BOOL common_util_create_folder(
 		return FALSE;
 	if (pstore->check_owner_mode())
 		return TRUE;
-	pentryid = common_util_username_to_addressbook_entryid(
-											pinfo->username);
+	pentryid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (pentryid == nullptr)
 		return TRUE;
 	tmp_id = 1;
@@ -2497,7 +2498,6 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	const char *username;
 	uint64_t *pfolder_id;
 	uint32_t tmp_proptag;
 	TAGGED_PROPVAL propval;
@@ -2521,15 +2521,14 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	}
 	auto pinfo = zarafa_server_get_info();
+	const char *username = nullptr;
 	if (!pstore->check_owner_mode()) {
-		username = pinfo->username;
+		username = pinfo->get_username();
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, username, &permission))
 			return GXERR_CALL_FAILED;
 		if (!(permission & (frightsReadAny | frightsOwner)))
 			return GXERR_CALL_FAILED;
-	} else {
-		username = NULL;
 	}
 	pmessage_ids = common_util_load_folder_messages(
 						pstore, folder_id, username);
@@ -2542,7 +2541,7 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		if (err != GXERR_SUCCESS)
 			return err;
 	}
-	username = pstore->check_owner_mode() ? nullptr : pinfo->username;
+	username = pstore->check_owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::load_hierarchy_table(pstore->get_dir(), folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
@@ -2696,14 +2695,12 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 		mail_free(&imail);
 		return NULL;
 	}
-	if (FALSE == system_services_lang_to_charset(
-		pinfo->lang, charset) || '\0' == charset[0]) {
+	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
+	    charset[0] == '\0')
 		strcpy(charset, g_default_charset);
-	}
-	if (FALSE == system_services_get_timezone(
-		pinfo->username, timezone) || '\0' == timezone[0]) {
+	if (!system_services_get_timezone(pinfo->get_username(), timezone) ||
+	    timezone[0] == '\0')
 		strcpy(timezone, g_default_zone);
-	}
 	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
 	           common_util_alloc, common_util_get_propids_create);
@@ -2748,10 +2745,9 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zarafa_server_get_info();
-	if (FALSE == system_services_get_timezone(
-		pinfo->username, timezone) || '\0' == timezone[0]) {
+	if (!system_services_get_timezone(pinfo->get_username(), timezone) ||
+	    timezone[0] == '\0')
 		strcpy(timezone, g_default_zone);
-	}
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (NULL == pbuff) {
 		return nullptr;
