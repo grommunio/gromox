@@ -438,6 +438,7 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (CONTENT_TABLE == ptable->table_type) {
+			auto ret = [](const TABLE_OBJECT *ptable, TARRAY_SET &temp_set) -> bool {
 			for (size_t i = 0; i < temp_set.count; ++i) {
 				for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 					if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_MID)
@@ -454,8 +455,13 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 					break;
 				}
 			}
+			return true;
+			}(ptable, temp_set);
+			if (!ret)
+				return false;
 		} else {
 			if (idx >= 0) {
+				auto ret = [](const TABLE_OBJECT *ptable, TARRAY_SET &temp_set) -> bool {
 				for (size_t i = 0; i < temp_set.count; ++i) {
 					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
@@ -472,8 +478,13 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 						break;
 					}
 				}
+				return true;
+				}(ptable, temp_set);
+				if (!ret)
+					return false;
 			}
 			if (idx1 >= 0) {
+				auto ret = [](const TABLE_OBJECT *ptable, const USER_INFO *pinfo, TARRAY_SET &temp_set) -> bool {
 				for (size_t i = 0; i < temp_set.count; ++i) {
 					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
@@ -492,8 +503,13 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 						break;
 					}
 				}
+				return true;
+				}(ptable, pinfo, temp_set);
+				if (!ret)
+					return false;
 			}
 			if (idx2 >= 0) {
+				auto ret = [](const TABLE_OBJECT *ptable, const USER_INFO *pinfo, TARRAY_SET &temp_set) -> bool {
 				for (size_t i = 0; i < temp_set.count; ++i) {
 					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
@@ -512,6 +528,10 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 						break;
 					}
 				}
+				return true;
+				}(ptable, pinfo, temp_set);
+				if (!ret)
+					return false;
 			}
 		}
 	} else {
