@@ -5196,25 +5196,20 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 	pstore = icsupctx_object_get_store(pctx);
 	sync_type = icsupctx_object_get_type(pctx);
 	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
-	if (SYNC_DELETES_FLAG_HIERARCHY & flags) {
-		if (SYNC_TYPE_CONTENTS == sync_type) {
-			return ecNotSupported;
-		}
-	}
+	if (flags & SYNC_DELETES_FLAG_HIERARCHY &&
+	    sync_type == SYNC_TYPE_CONTENTS)
+		return ecNotSupported;
 	folder_id = icsupctx_object_get_parent_folder_id(pctx);
 	username = pinfo->username;
 	if (pstore->check_owner_mode()) {
 		username = NULL;
-	} else {
-		if (SYNC_TYPE_CONTENTS == sync_type) {
-			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
-			    folder_id, pinfo->username, &permission)) {
-				if (permission & (frightsOwner | frightsDeleteAny))
-					username = NULL;	
-				else if (!(permission & frightsDeleteOwned))
-					return ecAccessDenied;
-			}
-		}
+	} else if (sync_type == SYNC_TYPE_CONTENTS &&
+	    !exmdb_client::check_folder_permission(pstore->get_dir(),
+	    folder_id, pinfo->username, &permission)) {
+		if (permission & (frightsOwner | frightsDeleteAny))
+			username = NULL;
+		else if (!(permission & frightsDeleteOwned))
+			return ecAccessDenied;
 	}
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
@@ -5236,32 +5231,30 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 				return ecInvalidParam;
 			}
 			eid = rop_util_make_eid(1, tmp_xid.local_id);
+		} else if (sync_type == SYNC_TYPE_CONTENTS) {
+			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
+			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+				return ecInvalidParam;
+			}
+			eid = rop_util_make_eid(1, tmp_xid.local_id);
 		} else {
-			if (SYNC_TYPE_CONTENTS == sync_type) {
-				auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
-				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
+			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+				domain_id = rop_util_make_domain_id(tmp_xid.guid);
+				if (-1 == domain_id) {
 					return ecInvalidParam;
 				}
-				eid = rop_util_make_eid(1, tmp_xid.local_id);
+				if (!system_services_check_same_org(domain_id,
+				    pstore->account_id))
+					return ecInvalidParam;
+				if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
+				    tmp_xid.guid, &b_found, &replid))
+					return ecError;
+				if (!b_found)
+					return ecInvalidParam;
+				eid = rop_util_make_eid(replid, tmp_xid.local_id);
 			} else {
-				auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
-				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-					domain_id = rop_util_make_domain_id(tmp_xid.guid);
-					if (-1 == domain_id) {
-						return ecInvalidParam;
-					}
-					if (!system_services_check_same_org(domain_id,
-					    pstore->account_id))
-						return ecInvalidParam;
-					if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-					    tmp_xid.guid, &b_found, &replid))
-						return ecError;
-					if (!b_found)
-						return ecInvalidParam;
-					eid = rop_util_make_eid(replid, tmp_xid.local_id);
-				} else {
-					eid = rop_util_make_eid(1, tmp_xid.local_id);
-				}
+				eid = rop_util_make_eid(1, tmp_xid.local_id);
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {

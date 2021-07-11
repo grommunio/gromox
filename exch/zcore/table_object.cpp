@@ -418,13 +418,9 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
 				}
-				if (0 == i) {
-					handle = object_tree_get_store_handle(
-						pinfo->ptree, TRUE, pinfo->user_id);
-				} else {
-					handle = object_tree_get_store_handle(
-						pinfo->ptree, FALSE, pinfo->domain_id);
-				}
+				handle = i == 0 ?
+					object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
+					object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
 				pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
 				         pinfo->ptree, handle, &mapi_type));
 				if (pstore == nullptr || mapi_type != ZMG_STORE)
@@ -433,39 +429,35 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 					return FALSE;	
 				pset->count ++;
 			}
-		} else {
-			end_pos = ptable->position - row_needed;
-			if (end_pos < 0) {
-				end_pos = 0;
+			return TRUE;
+		}
+		end_pos = ptable->position - row_needed;
+		if (end_pos < 0) {
+			end_pos = 0;
+		}
+		pset->count = 0;
+		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
+		if (NULL == pset->pparray) {
+			return FALSE;
+		}
+		for (ssize_t i = ptable->position; i >= end_pos; --i) {
+			if (0 != i && 1 != i) {
+				continue;
 			}
-			pset->count = 0;
-			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
-			if (NULL == pset->pparray) {
+			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+			if (NULL == pset->pparray[pset->count]) {
 				return FALSE;
 			}
-			for (ssize_t i = ptable->position; i >= end_pos; --i) {
-				if (0 != i && 1 != i) {
-					continue;
-				}
-				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-				if (NULL == pset->pparray[pset->count]) {
-					return FALSE;
-				}
-				if (0 == i) {
-					handle = object_tree_get_store_handle(
-						pinfo->ptree, TRUE, pinfo->user_id);
-				} else {
-					handle = object_tree_get_store_handle(
-						pinfo->ptree, FALSE, pinfo->domain_id);
-				}
-				pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
-				         pinfo->ptree, handle, &mapi_type));
-				if (pstore == nullptr || mapi_type != ZMG_STORE)
-					return FALSE;
-				if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
-					return FALSE;	
-				pset->count ++;
-			}
+			handle = i == 0 ?
+				object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
+				object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
+			pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+				 pinfo->ptree, handle, &mapi_type));
+			if (pstore == nullptr || mapi_type != ZMG_STORE)
+				return FALSE;
+			if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
+				return FALSE;
+			pset->count ++;
 		}
 		return TRUE;
 	}
@@ -505,12 +497,31 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (CONTENT_TABLE == ptable->table_type) {
 				for (size_t i = 0; i < temp_set.count; ++i) {
 					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-						if (PROP_TAG_MID == 
-							temp_set.pparray[i]->ppropval[j].proptag) {
-							tmp_eid = *(uint64_t*)
+						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_MID)
+							continue;
+						tmp_eid = *(uint64_t *)
+							temp_set.pparray[i]->ppropval[j].pvalue;
+						temp_set.pparray[i]->ppropval[j].pvalue =
+							common_util_calculate_message_sourcekey(
+							ptable->pstore, tmp_eid);
+						if (NULL ==
+							temp_set.pparray[i]->ppropval[j].pvalue) {
+							return FALSE;
+						}
+						temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
+						break;
+					}
+				}
+			} else {
+				if (idx >= 0) {
+					for (size_t i = 0; i < temp_set.count; ++i) {
+						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
+								continue;
+							tmp_eid = *(uint64_t *)
 								temp_set.pparray[i]->ppropval[j].pvalue;
 							temp_set.pparray[i]->ppropval[j].pvalue =
-								common_util_calculate_message_sourcekey(
+								common_util_calculate_folder_sourcekey(
 								ptable->pstore, tmp_eid);
 							if (NULL ==
 								temp_set.pparray[i]->ppropval[j].pvalue) {
@@ -518,71 +529,48 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 							}
 							temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
 							break;
-						}	
-					}
-				}
-			} else {
-				if (idx >= 0) {
-					for (size_t i = 0; i < temp_set.count; ++i) {
-						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-							if (PROP_TAG_FOLDERID == 
-								temp_set.pparray[i]->ppropval[j].proptag) {
-								tmp_eid = *(uint64_t*)
-									temp_set.pparray[i]->ppropval[j].pvalue;
-								temp_set.pparray[i]->ppropval[j].pvalue =
-									common_util_calculate_folder_sourcekey(
-									ptable->pstore, tmp_eid);
-								if (NULL ==
-									temp_set.pparray[i]->ppropval[j].pvalue) {
-									return FALSE;
-								}
-								temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
-								break;
-							}	
 						}
 					}
 				}
 				if (idx1 >= 0) {
 					for (size_t i = 0; i < temp_set.count; ++i) {
 						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-							if (PROP_TAG_FOLDERID == 
-								temp_set.pparray[i]->ppropval[j].proptag) {
-								tmp_eid = *(uint64_t*)
-									temp_set.pparray[i]->ppropval[j].pvalue;
-								ptag_access = cu_alloc<uint32_t>();
-								if (NULL == ptag_access) {
-									return FALSE;
-								}
-								*ptag_access =
-									table_object_get_folder_tag_access(
-									ptable->pstore, tmp_eid, pinfo->username);
-								temp_set.pparray[i]->ppropval[j].proptag = PR_ACCESS;
-								temp_set.pparray[i]->ppropval[j].pvalue =
-															ptag_access;
-								break;
-							}	
+							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
+								continue;
+							tmp_eid = *(uint64_t *)
+								temp_set.pparray[i]->ppropval[j].pvalue;
+							ptag_access = cu_alloc<uint32_t>();
+							if (NULL == ptag_access) {
+								return FALSE;
+							}
+							*ptag_access =
+								table_object_get_folder_tag_access(
+								ptable->pstore, tmp_eid, pinfo->username);
+							temp_set.pparray[i]->ppropval[j].proptag = PR_ACCESS;
+							temp_set.pparray[i]->ppropval[j].pvalue =
+								ptag_access;
+							break;
 						}
 					}
 				}
 				if (idx2 >= 0) {
 					for (size_t i = 0; i < temp_set.count; ++i) {
 						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-							if (PROP_TAG_FOLDERID == 
-								temp_set.pparray[i]->ppropval[j].proptag) {
-								tmp_eid = *(uint64_t*)
-									temp_set.pparray[i]->ppropval[j].pvalue;
-								ppermission = cu_alloc<uint32_t>();
-								if (NULL == ppermission) {
-									return FALSE;
-								}
-								*ppermission =
-									table_object_get_folder_permission_rights(
-									ptable->pstore, tmp_eid, pinfo->username);
-								temp_set.pparray[i]->ppropval[j].proptag = PR_RIGHTS;
-								temp_set.pparray[i]->ppropval[j].pvalue =
-																ppermission;
-								break;
-							}	
+							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
+								continue;
+							tmp_eid = *(uint64_t *)
+								temp_set.pparray[i]->ppropval[j].pvalue;
+							ppermission = cu_alloc<uint32_t>();
+							if (NULL == ppermission) {
+								return FALSE;
+							}
+							*ppermission =
+								table_object_get_folder_permission_rights(
+								ptable->pstore, tmp_eid, pinfo->username);
+							temp_set.pparray[i]->ppropval[j].proptag = PR_RIGHTS;
+							temp_set.pparray[i]->ppropval[j].pvalue =
+								ppermission;
+							break;
 						}
 					}
 				}
@@ -635,13 +623,13 @@ void table_object_seek_current(TABLE_OBJECT *ptable,
 		if (ptable->position > total_rows) {
 			ptable->position = total_rows;
 		}
-	} else {
-		if (ptable->position < row_count) {
-			ptable->position = 0;
-			return;
-		}
-		ptable->position -= row_count;
+		return;
 	}
+	if (ptable->position < row_count) {
+		ptable->position = 0;
+		return;
+	}
+	ptable->position -= row_count;
 }
 
 uint8_t table_object_get_table_type(TABLE_OBJECT *ptable)
@@ -956,12 +944,10 @@ static BOOL table_object_evaluate_restriction(
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 				return FALSE;
-			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
 			}
+			if (strcmp(static_cast<char *>(rcon->propval.pvalue),
+			    static_cast<char *>(pvalue)) == 0)
+				return TRUE;
 			return FALSE;
 		case FL_SUBSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
@@ -969,11 +955,10 @@ static BOOL table_object_evaluate_restriction(
 				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 				return FALSE;
-			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
 			}
+			if (strstr(static_cast<char *>(pvalue),
+			    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
+				return TRUE;
 			return FALSE;
 		case FL_PREFIX: {
 			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
@@ -983,13 +968,11 @@ static BOOL table_object_evaluate_restriction(
 				    len) == 0)
 					return TRUE;
 				return FALSE;
-			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue),
-				    len) == 0)
-					return TRUE;
-				return FALSE;
 			}
+			if (strncmp(static_cast<char *>(pvalue),
+			    static_cast<char *>(rcon->propval.pvalue),
+			    len) == 0)
+				return TRUE;
 			return FALSE;
 		}
 		}
