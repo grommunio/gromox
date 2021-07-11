@@ -337,6 +337,7 @@ OBJECT_TREE* object_tree_create(const char *maildir)
 		object_tree_free_root(prootobj);
 		int_hash_free(pobjtree->phash);
 		simple_tree_free(&pobjtree->tree);
+		free(pobjtree);
 		return NULL;
 	}
 	return pobjtree;
