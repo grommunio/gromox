@@ -402,6 +402,84 @@ static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
 	return TRUE;
 }
 
+static bool conttbl_q0(const TABLE_OBJECT *ptable, TARRAY_SET &temp_set)
+{
+	for (size_t i = 0; i < temp_set.count; ++i) {
+		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+			auto &r = temp_set.pparray[i]->ppropval[j];
+			if (r.proptag != PROP_TAG_MID)
+				continue;
+			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
+			r.pvalue = common_util_calculate_message_sourcekey(ptable->pstore, tmp_eid);
+			if (r.pvalue == nullptr)
+				return FALSE;
+			r.proptag = PR_SOURCE_KEY;
+			break;
+		}
+	}
+	return true;
+}
+
+static bool hiertbl_q0(const TABLE_OBJECT *ptable, TARRAY_SET &temp_set)
+{
+	for (size_t i = 0; i < temp_set.count; ++i) {
+		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+			auto &r = temp_set.pparray[i]->ppropval[j];
+			if (r.proptag != PROP_TAG_FOLDERID)
+				continue;
+			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
+			r.pvalue = common_util_calculate_folder_sourcekey(ptable->pstore, tmp_eid);
+			if (r.pvalue == nullptr)
+				return false;
+			r.proptag = PR_SOURCE_KEY;
+			break;
+		}
+	}
+	return true;
+}
+
+static bool hiertbl_q1(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
+    TARRAY_SET &temp_set)
+{
+	for (size_t i = 0; i < temp_set.count; ++i) {
+		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+			auto &r = temp_set.pparray[i]->ppropval[j];
+			if (r.proptag != PROP_TAG_FOLDERID)
+				continue;
+			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
+			auto ptag_access = cu_alloc<uint32_t>();
+			if (ptag_access == nullptr)
+				return false;
+			*ptag_access = table_object_get_folder_tag_access(ptable->pstore, tmp_eid, pinfo->username);
+			r.proptag = PR_ACCESS;
+			r.pvalue = ptag_access;
+			break;
+		}
+	}
+	return true;
+}
+
+static bool hiertbl_q2(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
+    TARRAY_SET &temp_set)
+{
+	for (size_t i = 0; i < temp_set.count; ++i) {
+		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+			auto &r = temp_set.pparray[i]->ppropval[j];
+			if (r.proptag != PROP_TAG_FOLDERID)
+				continue;
+			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
+			auto perm = cu_alloc<uint32_t>();
+			if (perm == nullptr)
+				return false;
+			*perm = table_object_get_folder_permission_rights(ptable->pstore, tmp_eid, pinfo->username);
+			r.proptag = PR_RIGHTS;
+			r.pvalue = perm;
+			break;
+		}
+	}
+	return true;
+}
+
 static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
     const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns,
     const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
@@ -438,98 +516,22 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (CONTENT_TABLE == ptable->table_type) {
-			auto ret = [](const TABLE_OBJECT *ptable, TARRAY_SET &temp_set) -> bool {
-			for (size_t i = 0; i < temp_set.count; ++i) {
-				for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-					if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_MID)
-						continue;
-					auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-					temp_set.pparray[i]->ppropval[j].pvalue =
-						common_util_calculate_message_sourcekey(
-						ptable->pstore, tmp_eid);
-					if (NULL ==
-						temp_set.pparray[i]->ppropval[j].pvalue) {
-						return FALSE;
-					}
-					temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
-					break;
-				}
-			}
-			return true;
-			}(ptable, temp_set);
+			auto ret = conttbl_q0(ptable, temp_set);
 			if (!ret)
 				return false;
 		} else {
 			if (idx >= 0) {
-				auto ret = [](const TABLE_OBJECT *ptable, TARRAY_SET &temp_set) -> bool {
-				for (size_t i = 0; i < temp_set.count; ++i) {
-					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
-							continue;
-						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-						temp_set.pparray[i]->ppropval[j].pvalue =
-							common_util_calculate_folder_sourcekey(
-							ptable->pstore, tmp_eid);
-						if (NULL ==
-							temp_set.pparray[i]->ppropval[j].pvalue) {
-							return FALSE;
-						}
-						temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
-						break;
-					}
-				}
-				return true;
-				}(ptable, temp_set);
+				auto ret = hiertbl_q0(ptable, temp_set);
 				if (!ret)
 					return false;
 			}
 			if (idx1 >= 0) {
-				auto ret = [](const TABLE_OBJECT *ptable, const USER_INFO *pinfo, TARRAY_SET &temp_set) -> bool {
-				for (size_t i = 0; i < temp_set.count; ++i) {
-					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
-							continue;
-						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-						auto ptag_access = cu_alloc<uint32_t>();
-						if (NULL == ptag_access) {
-							return FALSE;
-						}
-						*ptag_access =
-							table_object_get_folder_tag_access(
-							ptable->pstore, tmp_eid, pinfo->username);
-						temp_set.pparray[i]->ppropval[j].proptag = PR_ACCESS;
-						temp_set.pparray[i]->ppropval[j].pvalue =
-							ptag_access;
-						break;
-					}
-				}
-				return true;
-				}(ptable, pinfo, temp_set);
+				auto ret = hiertbl_q1(ptable, pinfo, temp_set);
 				if (!ret)
 					return false;
 			}
 			if (idx2 >= 0) {
-				auto ret = [](const TABLE_OBJECT *ptable, const USER_INFO *pinfo, TARRAY_SET &temp_set) -> bool {
-				for (size_t i = 0; i < temp_set.count; ++i) {
-					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
-							continue;
-						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-						auto ppermission = cu_alloc<uint32_t>();
-						if (NULL == ppermission) {
-							return FALSE;
-						}
-						*ppermission =
-							table_object_get_folder_permission_rights(
-							ptable->pstore, tmp_eid, pinfo->username);
-						temp_set.pparray[i]->ppropval[j].proptag = PR_RIGHTS;
-						temp_set.pparray[i]->ppropval[j].pvalue =
-							ppermission;
-						break;
-					}
-				}
-				return true;
-				}(ptable, pinfo, temp_set);
+				auto ret = hiertbl_q2(ptable, pinfo, temp_set);
 				if (!ret)
 					return false;
 			}
