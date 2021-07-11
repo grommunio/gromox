@@ -263,6 +263,290 @@ static uint32_t table_object_get_folder_permission_rights(
 	return permission;
 }
 
+static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
+    const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, uint32_t row_needed)
+{
+	TARRAY_SET rcpt_set;
+
+	if (!message_object_read_recipients(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
+	    0, 0xFFFF, &rcpt_set))
+		return FALSE;
+	if (TRUE == b_forward) {
+		uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
+				   rcpt_set.count : ptable->position + row_needed;
+		pset->count = 0;
+		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
+		if (NULL == pset->pparray) {
+			return FALSE;
+		}
+		for (size_t i = ptable->position; i < end_pos; ++i) {
+			pset->pparray[pset->count] = rcpt_set.pparray[i];
+			pset->count ++;
+		}
+	} else {
+		uint32_t end_pos;
+		if (row_needed >= 0 && static_cast<uint32_t>(row_needed) >= ptable->position) {
+			end_pos = 0;
+		} else {
+			end_pos = ptable->position - row_needed + 1;
+		}
+		pset->count = 0;
+		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
+		if (NULL == pset->pparray) {
+			return FALSE;
+		}
+		for (ssize_t i = ptable->position; i >= end_pos; --i) {
+			pset->pparray[pset->count] = rcpt_set.pparray[i];
+			pset->count++;
+		}
+	}
+	if (common_util_index_proptags(pcolumns, PR_ENTRYID) < 0)
+		return TRUE;
+	for (size_t i = 0; i < pset->count; ++i) {
+		if (common_util_get_propvals(pset->pparray[i], PR_ENTRYID) != nullptr)
+			continue;
+		auto pvalue = common_util_get_propvals(pset->pparray[i], PROP_TAG_ADDRESSTYPE);
+		if (pvalue == nullptr ||
+		    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
+			continue;
+		pvalue = common_util_get_propvals(pset->pparray[i], PR_EMAIL_ADDRESS);
+		if (NULL == pvalue) {
+			continue;
+		}
+		auto pentryid = cu_alloc<BINARY>();
+		if (NULL == pentryid) {
+			return FALSE;
+		}
+		if (!common_util_essdn_to_entryid(static_cast<char *>(pvalue), pentryid))
+			return FALSE;
+		pvalue = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 1);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		memcpy(pvalue, pset->pparray[i]->ppropval,
+			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
+		pset->pparray[i]->ppropval = static_cast<TAGGED_PROPVAL *>(pvalue);
+		pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag = PR_ENTRYID;
+		pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
+			pentryid;
+		pset->pparray[i]->count ++;
+	}
+	return TRUE;
+}
+
+static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
+    const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo,
+    uint32_t row_needed)
+{
+	if (TRUE == b_forward) {
+		uint32_t end_pos = ptable->position + row_needed;
+		if (end_pos >= 2) {
+			end_pos = 1;
+		}
+		pset->count = 0;
+		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
+		if (NULL == pset->pparray) {
+			return FALSE;
+		}
+		for (size_t i = ptable->position; i <= end_pos; ++i) {
+			if (0 != i && 1 != i) {
+				continue;
+			}
+			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+			if (NULL == pset->pparray[pset->count]) {
+				return FALSE;
+			}
+			uint32_t handle = i == 0 ?
+				object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
+				object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
+			uint8_t mapi_type = 0;
+			auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+				 pinfo->ptree, handle, &mapi_type));
+			if (pstore == nullptr || mapi_type != ZMG_STORE)
+				return FALSE;
+			if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
+				return FALSE;
+			pset->count ++;
+		}
+		return TRUE;
+	}
+	uint32_t end_pos = ptable->position - row_needed;
+	if (end_pos < 0) {
+		end_pos = 0;
+	}
+	pset->count = 0;
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
+	if (NULL == pset->pparray) {
+		return FALSE;
+	}
+	for (ssize_t i = ptable->position; i >= end_pos; --i) {
+		if (0 != i && 1 != i) {
+			continue;
+		}
+		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+		if (NULL == pset->pparray[pset->count]) {
+			return FALSE;
+		}
+		uint32_t handle = i == 0 ?
+			object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
+			object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
+		uint8_t mapi_type = 0;
+		auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+			 pinfo->ptree, handle, &mapi_type));
+		if (pstore == nullptr || mapi_type != ZMG_STORE)
+			return FALSE;
+		if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
+			return FALSE;
+		pset->count ++;
+	}
+	return TRUE;
+}
+
+static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
+    const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns,
+    const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
+{
+	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
+	int idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
+	int idx1 = -1, idx2 = -1;
+	TARRAY_SET temp_set;
+
+	if (HIERARCHY_TABLE == ptable->table_type) {
+		idx1 = common_util_index_proptags(pcolumns, PR_ACCESS);
+		idx2 = common_util_index_proptags(pcolumns, PR_RIGHTS);
+	}
+	if (idx >= 0 || idx1 >= 0 || idx2 >= 0) {
+		tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
+		if (NULL == tmp_columns.pproptag) {
+			return FALSE;
+		}
+		tmp_columns.count = pcolumns->count;
+		memcpy(tmp_columns.pproptag, pcolumns->pproptag,
+			sizeof(uint32_t)*pcolumns->count);
+		if (idx >= 0) {
+			tmp_columns.pproptag[idx] = ptable->table_type == CONTENT_TABLE ?
+			                            PROP_TAG_MID : PROP_TAG_FOLDERID;
+		}
+		if (idx1 >= 0) {
+			tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
+		}
+		if (idx2 >= 0) {
+			tmp_columns.pproptag[idx2] = PROP_TAG_FOLDERID;
+		}
+		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
+		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
+		    ptable->position, row_needed, &temp_set))
+			return FALSE;
+		if (CONTENT_TABLE == ptable->table_type) {
+			for (size_t i = 0; i < temp_set.count; ++i) {
+				for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+					if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_MID)
+						continue;
+					auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
+					temp_set.pparray[i]->ppropval[j].pvalue =
+						common_util_calculate_message_sourcekey(
+						ptable->pstore, tmp_eid);
+					if (NULL ==
+						temp_set.pparray[i]->ppropval[j].pvalue) {
+						return FALSE;
+					}
+					temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
+					break;
+				}
+			}
+		} else {
+			if (idx >= 0) {
+				for (size_t i = 0; i < temp_set.count; ++i) {
+					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
+							continue;
+						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
+						temp_set.pparray[i]->ppropval[j].pvalue =
+							common_util_calculate_folder_sourcekey(
+							ptable->pstore, tmp_eid);
+						if (NULL ==
+							temp_set.pparray[i]->ppropval[j].pvalue) {
+							return FALSE;
+						}
+						temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
+						break;
+					}
+				}
+			}
+			if (idx1 >= 0) {
+				for (size_t i = 0; i < temp_set.count; ++i) {
+					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
+							continue;
+						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
+						auto ptag_access = cu_alloc<uint32_t>();
+						if (NULL == ptag_access) {
+							return FALSE;
+						}
+						*ptag_access =
+							table_object_get_folder_tag_access(
+							ptable->pstore, tmp_eid, pinfo->username);
+						temp_set.pparray[i]->ppropval[j].proptag = PR_ACCESS;
+						temp_set.pparray[i]->ppropval[j].pvalue =
+							ptag_access;
+						break;
+					}
+				}
+			}
+			if (idx2 >= 0) {
+				for (size_t i = 0; i < temp_set.count; ++i) {
+					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
+						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
+							continue;
+						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
+						auto ppermission = cu_alloc<uint32_t>();
+						if (NULL == ppermission) {
+							return FALSE;
+						}
+						*ppermission =
+							table_object_get_folder_permission_rights(
+							ptable->pstore, tmp_eid, pinfo->username);
+						temp_set.pparray[i]->ppropval[j].proptag = PR_RIGHTS;
+						temp_set.pparray[i]->ppropval[j].pvalue =
+							ppermission;
+						break;
+					}
+				}
+			}
+		}
+	} else {
+		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
+		    username, pinfo->cpid, ptable->table_id,
+		    pcolumns, ptable->position, row_needed, &temp_set))
+			return FALSE;
+	}
+	if (common_util_index_proptags(pcolumns, PR_STORE_ENTRYID) >= 0) {
+		auto pentryid = common_util_to_store_entryid(ptable->pstore);
+		if (NULL == pentryid) {
+			return FALSE;
+		}
+		for (size_t i = 0; i < temp_set.count; ++i) {
+			auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
+			if (NULL == ppropvals) {
+				return FALSE;
+			}
+			ppropvals->count = temp_set.pparray[i]->count + 1;
+			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
+			if (NULL == ppropvals->ppropval) {
+				return FALSE;
+			}
+			memcpy(ppropvals->ppropval, temp_set.pparray[i]->ppropval,
+				sizeof(TAGGED_PROPVAL)*temp_set.pparray[i]->count);
+			ppropvals->ppropval[temp_set.pparray[i]->count].proptag = PR_STORE_ENTRYID;
+			ppropvals->ppropval[temp_set.pparray[i]->count].pvalue =
+				pentryid;
+			temp_set.pparray[i] = ppropvals;
+		}
+	}
+	*pset = temp_set;
+	return TRUE;
+}
+
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
 {
@@ -272,8 +556,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			pcolumns = ptable->pcolumns;
 		} else {
 			if (FALSE == table_object_get_all_columns(
-				ptable, &tmp_columns)) {
-				return FALSE;	
+			    ptable, &tmp_columns)) {
+				return FALSE;
 			}
 			pcolumns = &tmp_columns;
 		}
@@ -301,74 +585,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, ptable->position, row_needed, pset);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
-		return [](TABLE_OBJECT *ptable, BOOL b_forward, const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, uint32_t row_needed) -> BOOL {
-		TARRAY_SET rcpt_set;
-
-		if (!message_object_read_recipients(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-		    0, 0xFFFF, &rcpt_set))
-			return FALSE;	
-		if (TRUE == b_forward) {
-			uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
-			                   rcpt_set.count : ptable->position + row_needed;
-			pset->count = 0;
-			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
-			if (NULL == pset->pparray) {
-				return FALSE;
-			}
-			for (size_t i = ptable->position; i < end_pos; ++i) {
-				pset->pparray[pset->count] = rcpt_set.pparray[i];
-				pset->count ++;
-			}
-		} else {
-			uint32_t end_pos;
-			if (row_needed >= 0 && static_cast<uint32_t>(row_needed) >= ptable->position) {
-				end_pos = 0;
-			} else {
-				end_pos = ptable->position - row_needed + 1;
-			}
-			pset->count = 0;
-			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
-			if (NULL == pset->pparray) {
-				return FALSE;
-			}
-			for (ssize_t i = ptable->position; i >= end_pos; --i) {
-				pset->pparray[pset->count] = rcpt_set.pparray[i];
-				pset->count ++;
-			}
-		}
-		if (common_util_index_proptags(pcolumns, PR_ENTRYID) < 0)
-			return TRUE;	
-		for (size_t i = 0; i < pset->count; ++i) {
-			if (common_util_get_propvals(pset->pparray[i], PR_ENTRYID) != nullptr)
-				continue;
-			auto pvalue = common_util_get_propvals(pset->pparray[i], PROP_TAG_ADDRESSTYPE);
-			if (pvalue == nullptr ||
-			    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
-				continue;
-			pvalue = common_util_get_propvals(pset->pparray[i], PR_EMAIL_ADDRESS);
-			if (NULL == pvalue) {
-				continue;
-			}
-			auto pentryid = cu_alloc<BINARY>();
-			if (NULL == pentryid) {
-				return FALSE;
-			}
-			if (!common_util_essdn_to_entryid(static_cast<char *>(pvalue), pentryid))
-				return FALSE;	
-			pvalue = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 1);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			memcpy(pvalue, pset->pparray[i]->ppropval,
-				sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
-			pset->pparray[i]->ppropval = static_cast<TAGGED_PROPVAL *>(pvalue);
-			pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag = PR_ENTRYID;
-			pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
-																pentryid;
-			pset->pparray[i]->count ++;
-		}
-		return TRUE;
-		}(ptable, b_forward, pcolumns, pset, row_needed);
+		return rcpttable_query_rows(ptable, b_forward, pcolumns, pset, row_needed);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		return container_object_query_container_table(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
@@ -385,220 +602,17 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		for (size_t i = 0; i < pset->count; ++i) {
 			if (FALSE == common_util_convert_to_zrule_data(
 				ptable->pstore, pset->pparray[i])) {
-				return FALSE;	
+				return FALSE;
 			}
 		}
 		return TRUE;
 	} else if (STORE_TABLE == ptable->table_type) {
-		return [](TABLE_OBJECT *ptable, BOOL b_forward, const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo, uint32_t row_needed) -> BOOL {
-		if (TRUE == b_forward) {
-			uint32_t end_pos = ptable->position + row_needed;
-			if (end_pos >= 2) {
-				end_pos = 1;
-			}
-			pset->count = 0;
-			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
-			if (NULL == pset->pparray) {
-				return FALSE;
-			}
-			for (size_t i = ptable->position; i <= end_pos; ++i) {
-				if (0 != i && 1 != i) {
-					continue;
-				}
-				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-				if (NULL == pset->pparray[pset->count]) {
-					return FALSE;
-				}
-				uint32_t handle = i == 0 ?
-					object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
-					object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
-				uint8_t mapi_type = 0;
-				auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
-				         pinfo->ptree, handle, &mapi_type));
-				if (pstore == nullptr || mapi_type != ZMG_STORE)
-					return FALSE;
-				if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
-					return FALSE;	
-				pset->count ++;
-			}
-			return TRUE;
-		}
-		uint32_t end_pos = ptable->position - row_needed;
-		if (end_pos < 0) {
-			end_pos = 0;
-		}
-		pset->count = 0;
-		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
-		if (NULL == pset->pparray) {
-			return FALSE;
-		}
-		for (ssize_t i = ptable->position; i >= end_pos; --i) {
-			if (0 != i && 1 != i) {
-				continue;
-			}
-			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == pset->pparray[pset->count]) {
-				return FALSE;
-			}
-			uint32_t handle = i == 0 ?
-				object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
-				object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
-			uint8_t mapi_type = 0;
-			auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
-				 pinfo->ptree, handle, &mapi_type));
-			if (pstore == nullptr || mapi_type != ZMG_STORE)
-				return FALSE;
-			if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
-				return FALSE;
-			pset->count ++;
-		}
-		return TRUE;
-		}(ptable, b_forward, pcolumns, pset, pinfo, row_needed);
+		return storetbl_query_rows(ptable, b_forward, pcolumns, pset, pinfo, row_needed);
 	}
 	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
 	if ((CONTENT_TABLE == ptable->table_type ||
-		HIERARCHY_TABLE == ptable->table_type)) {
-		return [](TABLE_OBJECT *ptable, const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns, const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset) -> BOOL {
-		auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
-		int idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
-		int idx1 = -1, idx2 = -1;
-		TARRAY_SET temp_set;
-
-		if (HIERARCHY_TABLE == ptable->table_type) {
-			idx1 = common_util_index_proptags(pcolumns, PR_ACCESS);
-			idx2 = common_util_index_proptags(pcolumns, PR_RIGHTS);
-		}
-		if (idx >= 0 || idx1 >= 0 || idx2 >= 0) {
-			tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
-			if (NULL == tmp_columns.pproptag) {
-				return FALSE;
-			}
-			tmp_columns.count = pcolumns->count;
-			memcpy(tmp_columns.pproptag, pcolumns->pproptag,
-						sizeof(uint32_t)*pcolumns->count);
-			if (idx >= 0) {
-				tmp_columns.pproptag[idx] = ptable->table_type == CONTENT_TABLE ?
-				                            PROP_TAG_MID : PROP_TAG_FOLDERID;
-			}
-			if (idx1 >= 0) {
-				tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
-			}
-			if (idx2 >= 0) {
-				tmp_columns.pproptag[idx2] = PROP_TAG_FOLDERID;
-			}
-			if (!exmdb_client::query_table(ptable->pstore->get_dir(),
-			    username, pinfo->cpid, ptable->table_id, &tmp_columns,
-			    ptable->position, row_needed, &temp_set))
-				return FALSE;	
-			if (CONTENT_TABLE == ptable->table_type) {
-				for (size_t i = 0; i < temp_set.count; ++i) {
-					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_MID)
-							continue;
-						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-						temp_set.pparray[i]->ppropval[j].pvalue =
-							common_util_calculate_message_sourcekey(
-							ptable->pstore, tmp_eid);
-						if (NULL ==
-							temp_set.pparray[i]->ppropval[j].pvalue) {
-							return FALSE;
-						}
-						temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
-						break;
-					}
-				}
-			} else {
-				if (idx >= 0) {
-					for (size_t i = 0; i < temp_set.count; ++i) {
-						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
-								continue;
-							auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-							temp_set.pparray[i]->ppropval[j].pvalue =
-								common_util_calculate_folder_sourcekey(
-								ptable->pstore, tmp_eid);
-							if (NULL ==
-								temp_set.pparray[i]->ppropval[j].pvalue) {
-								return FALSE;
-							}
-							temp_set.pparray[i]->ppropval[j].proptag = PR_SOURCE_KEY;
-							break;
-						}
-					}
-				}
-				if (idx1 >= 0) {
-					for (size_t i = 0; i < temp_set.count; ++i) {
-						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
-								continue;
-							auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-							auto ptag_access = cu_alloc<uint32_t>();
-							if (NULL == ptag_access) {
-								return FALSE;
-							}
-							*ptag_access =
-								table_object_get_folder_tag_access(
-								ptable->pstore, tmp_eid, pinfo->username);
-							temp_set.pparray[i]->ppropval[j].proptag = PR_ACCESS;
-							temp_set.pparray[i]->ppropval[j].pvalue =
-								ptag_access;
-							break;
-						}
-					}
-				}
-				if (idx2 >= 0) {
-					for (size_t i = 0; i < temp_set.count; ++i) {
-						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
-							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
-								continue;
-							auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
-							auto ppermission = cu_alloc<uint32_t>();
-							if (NULL == ppermission) {
-								return FALSE;
-							}
-							*ppermission =
-								table_object_get_folder_permission_rights(
-								ptable->pstore, tmp_eid, pinfo->username);
-							temp_set.pparray[i]->ppropval[j].proptag = PR_RIGHTS;
-							temp_set.pparray[i]->ppropval[j].pvalue =
-								ppermission;
-							break;
-						}
-					}
-				}
-			}
-		} else {
-			if (!exmdb_client::query_table(ptable->pstore->get_dir(),
-			    username, pinfo->cpid, ptable->table_id,
-			    pcolumns, ptable->position, row_needed, &temp_set))
-				return FALSE;	
-		}
-		if (common_util_index_proptags(pcolumns, PR_STORE_ENTRYID) >= 0) {
-			auto pentryid = common_util_to_store_entryid(ptable->pstore);
-			if (NULL == pentryid) {
-				return FALSE;
-			}
-			for (size_t i = 0; i < temp_set.count; ++i) {
-				auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
-				if (NULL == ppropvals) {
-					return FALSE;
-				}
-				ppropvals->count = temp_set.pparray[i]->count + 1;
-				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
-				if (NULL == ppropvals->ppropval) {
-					return FALSE;
-				}
-				memcpy(ppropvals->ppropval, temp_set.pparray[i]->ppropval,
-					sizeof(TAGGED_PROPVAL)*temp_set.pparray[i]->count);
-				ppropvals->ppropval[temp_set.pparray[i]->count].proptag = PR_STORE_ENTRYID;
-				ppropvals->ppropval[temp_set.pparray[i]->count].pvalue =
-																pentryid;
-				temp_set.pparray[i] = ppropvals;
-			}
-		}
-		*pset = temp_set;
-		return TRUE;
-		}(ptable, pcolumns, tmp_columns, pinfo, row_needed, pset);
+	    HIERARCHY_TABLE == ptable->table_type)) {
+		return hierconttbl_query_rows(ptable, pcolumns, tmp_columns, pinfo, row_needed, pset);
 	}
 	return exmdb_client::query_table(ptable->pstore->get_dir(),
 		username, pinfo->cpid, ptable->table_id,
