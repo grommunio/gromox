@@ -301,6 +301,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, ptable->position, row_needed, pset);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
+		return [](TABLE_OBJECT *ptable, BOOL b_forward, const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, uint32_t row_needed) -> BOOL {
 		TARRAY_SET rcpt_set;
 
 		if (!message_object_read_recipients(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
@@ -367,6 +368,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			pset->pparray[i]->count ++;
 		}
 		return TRUE;
+		}(ptable, b_forward, pcolumns, pset, row_needed);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		return container_object_query_container_table(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
@@ -388,6 +390,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		return TRUE;
 	} else if (STORE_TABLE == ptable->table_type) {
+		return [](TABLE_OBJECT *ptable, BOOL b_forward, const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo, uint32_t row_needed) -> BOOL {
 		if (TRUE == b_forward) {
 			uint32_t end_pos = ptable->position + row_needed;
 			if (end_pos >= 2) {
@@ -450,10 +453,13 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			pset->count ++;
 		}
 		return TRUE;
+		}(ptable, b_forward, pcolumns, pset, pinfo, row_needed);
 	}
 	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
 	if ((CONTENT_TABLE == ptable->table_type ||
 		HIERARCHY_TABLE == ptable->table_type)) {
+		return [](TABLE_OBJECT *ptable, const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns, const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset) -> BOOL {
+		auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
 		int idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
 		int idx1 = -1, idx2 = -1;
 		TARRAY_SET temp_set;
@@ -592,6 +598,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		*pset = temp_set;
 		return TRUE;
+		}(ptable, pcolumns, tmp_columns, pinfo, row_needed, pset);
 	}
 	return exmdb_client::query_table(ptable->pstore->get_dir(),
 		username, pinfo->cpid, ptable->table_id,
