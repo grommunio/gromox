@@ -266,22 +266,7 @@ static uint32_t table_object_get_folder_permission_rights(
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
 {
-	void *pvalue;
-	uint32_t handle;
-	uint32_t row_num;
-	uint32_t end_pos;
-	BINARY *pentryid;
-	uint64_t tmp_eid;
-	uint8_t mapi_type;
-	int idx, idx1, idx2;
-	TARRAY_SET rcpt_set;
-	TARRAY_SET temp_set;
-	STORE_OBJECT *pstore;
-	uint32_t *ppermission;
-	uint32_t *ptag_access;
-	TPROPVAL_ARRAY *ppropvals;
 	PROPTAG_ARRAY tmp_columns;
-	
 	if (NULL == pcolumns) {
 		if (NULL != ptable->pcolumns) {
 			pcolumns = ptable->pcolumns;
@@ -301,7 +286,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		pset->count = 0;
 		return TRUE;
 	}
-	row_num = table_object_get_total(ptable);
+	uint32_t row_num = table_object_get_total(ptable);
 	if (ptable->position >= row_num && TRUE == b_forward) {
 		pset->count = 0;
 		return TRUE;
@@ -310,17 +295,20 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		row_count = row_num;
 	}
 	int32_t row_needed = b_forward == TRUE ? row_count : -row_count; /* XXX */
+
 	if (ATTACHMENT_TABLE == ptable->table_type) {
 		return message_object_query_attachment_table(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, ptable->position, row_needed, pset);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
+		TARRAY_SET rcpt_set;
+
 		if (!message_object_read_recipients(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
 		    0, 0xFFFF, &rcpt_set))
 			return FALSE;	
 		if (TRUE == b_forward) {
-			end_pos = ptable->position + row_needed > rcpt_set.count ?
-			          rcpt_set.count : ptable->position + row_needed;
+			uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
+			                   rcpt_set.count : ptable->position + row_needed;
 			pset->count = 0;
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
 			if (NULL == pset->pparray) {
@@ -331,6 +319,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				pset->count ++;
 			}
 		} else {
+			uint32_t end_pos;
 			if (row_needed >= 0 && static_cast<uint32_t>(row_needed) >= ptable->position) {
 				end_pos = 0;
 			} else {
@@ -351,8 +340,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		for (size_t i = 0; i < pset->count; ++i) {
 			if (common_util_get_propvals(pset->pparray[i], PR_ENTRYID) != nullptr)
 				continue;
-			pvalue = common_util_get_propvals(
-				pset->pparray[i], PROP_TAG_ADDRESSTYPE);
+			auto pvalue = common_util_get_propvals(pset->pparray[i], PROP_TAG_ADDRESSTYPE);
 			if (pvalue == nullptr ||
 			    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
 				continue;
@@ -360,7 +348,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pvalue) {
 				continue;
 			}
-			pentryid = cu_alloc<BINARY>();
+			auto pentryid = cu_alloc<BINARY>();
 			if (NULL == pentryid) {
 				return FALSE;
 			}
@@ -401,7 +389,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		return TRUE;
 	} else if (STORE_TABLE == ptable->table_type) {
 		if (TRUE == b_forward) {
-			end_pos = ptable->position + row_needed;
+			uint32_t end_pos = ptable->position + row_needed;
 			if (end_pos >= 2) {
 				end_pos = 1;
 			}
@@ -418,10 +406,11 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
 				}
-				handle = i == 0 ?
+				uint32_t handle = i == 0 ?
 					object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
 					object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
-				pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+				uint8_t mapi_type = 0;
+				auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
 				         pinfo->ptree, handle, &mapi_type));
 				if (pstore == nullptr || mapi_type != ZMG_STORE)
 					return FALSE;
@@ -431,7 +420,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			}
 			return TRUE;
 		}
-		end_pos = ptable->position - row_needed;
+		uint32_t end_pos = ptable->position - row_needed;
 		if (end_pos < 0) {
 			end_pos = 0;
 		}
@@ -448,10 +437,11 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			if (NULL == pset->pparray[pset->count]) {
 				return FALSE;
 			}
-			handle = i == 0 ?
+			uint32_t handle = i == 0 ?
 				object_tree_get_store_handle(pinfo->ptree, TRUE, pinfo->user_id) :
 				object_tree_get_store_handle(pinfo->ptree, FALSE, pinfo->domain_id);
-			pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+			uint8_t mapi_type = 0;
+			auto pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
 				 pinfo->ptree, handle, &mapi_type));
 			if (pstore == nullptr || mapi_type != ZMG_STORE)
 				return FALSE;
@@ -464,13 +454,13 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	auto username = !ptable->pstore->b_private ? pinfo->username : nullptr;
 	if ((CONTENT_TABLE == ptable->table_type ||
 		HIERARCHY_TABLE == ptable->table_type)) {
-		idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
+		int idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
+		int idx1 = -1, idx2 = -1;
+		TARRAY_SET temp_set;
+
 		if (HIERARCHY_TABLE == ptable->table_type) {
 			idx1 = common_util_index_proptags(pcolumns, PR_ACCESS);
 			idx2 = common_util_index_proptags(pcolumns, PR_RIGHTS);
-		} else {
-			idx1 = -1;
-			idx2 = -1;
 		}
 		if (idx >= 0 || idx1 >= 0 || idx2 >= 0) {
 			tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
@@ -499,8 +489,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 					for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 						if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_MID)
 							continue;
-						tmp_eid = *(uint64_t *)
-							temp_set.pparray[i]->ppropval[j].pvalue;
+						auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
 						temp_set.pparray[i]->ppropval[j].pvalue =
 							common_util_calculate_message_sourcekey(
 							ptable->pstore, tmp_eid);
@@ -518,8 +507,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
 								continue;
-							tmp_eid = *(uint64_t *)
-								temp_set.pparray[i]->ppropval[j].pvalue;
+							auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
 							temp_set.pparray[i]->ppropval[j].pvalue =
 								common_util_calculate_folder_sourcekey(
 								ptable->pstore, tmp_eid);
@@ -537,9 +525,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
 								continue;
-							tmp_eid = *(uint64_t *)
-								temp_set.pparray[i]->ppropval[j].pvalue;
-							ptag_access = cu_alloc<uint32_t>();
+							auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
+							auto ptag_access = cu_alloc<uint32_t>();
 							if (NULL == ptag_access) {
 								return FALSE;
 							}
@@ -558,9 +545,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 						for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 							if (temp_set.pparray[i]->ppropval[j].proptag != PROP_TAG_FOLDERID)
 								continue;
-							tmp_eid = *(uint64_t *)
-								temp_set.pparray[i]->ppropval[j].pvalue;
-							ppermission = cu_alloc<uint32_t>();
+							auto tmp_eid = *static_cast<uint64_t *>(temp_set.pparray[i]->ppropval[j].pvalue);
+							auto ppermission = cu_alloc<uint32_t>();
 							if (NULL == ppermission) {
 								return FALSE;
 							}
@@ -582,12 +568,12 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				return FALSE;	
 		}
 		if (common_util_index_proptags(pcolumns, PR_STORE_ENTRYID) >= 0) {
-			pentryid = common_util_to_store_entryid(ptable->pstore);
+			auto pentryid = common_util_to_store_entryid(ptable->pstore);
 			if (NULL == pentryid) {
 				return FALSE;
 			}
 			for (size_t i = 0; i < temp_set.count; ++i) {
-				ppropvals = cu_alloc<TPROPVAL_ARRAY>();
+				auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == ppropvals) {
 					return FALSE;
 				}
