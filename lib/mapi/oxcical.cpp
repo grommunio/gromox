@@ -1616,11 +1616,17 @@ static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
+static constexpr std::pair<enum ol_busy_status, const char *> busy_status_names[] = {
+	{olFree, "FREE"},
+	{olTentative, "TENTATIVE"},
+	{olBusy, "BUSY"},
+	{olWorkingElsewhere, "WORKINGELSEWHERE"},
+};
+
 static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
     uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
-	uint32_t tmp_int32;
 	const char *pvalue;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
@@ -1629,37 +1635,29 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	if (strcasecmp(pvalue, "FREE") == 0)
-		tmp_int32 = olFree;
-	else if (strcasecmp(pvalue, "TENTATIVE") == 0)
-		tmp_int32 = olTentative;
-	else if (strcasecmp(pvalue, "BUSY") == 0)
-		tmp_int32 = olBusy;
-	else if (strcasecmp(pvalue, "OOF") == 0)
-		tmp_int32 = olOutOfOffice;
-	else if (strcasecmp(pvalue, "WORKINGELSEWHERE") == 0)
-		tmp_int32 = olWorkingElsewhere;
-	else
+	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
+	          [&](const auto &p) { return strcasecmp(p.second, pvalue) == 0; });
+	if (it == std::cend(busy_status_names))
 		return TRUE;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
+	uint32_t busy_status = it->first;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &tmp_int32;
+	propval.pvalue = &busy_status;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
-		pexception->busystatus = tmp_int32;
+		pexception->busystatus = busy_status;
 	}
 
 	if (intended_val == 0)
 		return TRUE;
 	else if (intended_val == 2)
-		intended_val = tmp_int32;
+		intended_val = busy_status;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidIntendedBusyStatus;
@@ -4534,17 +4532,12 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 static bool busystatus_to_line(uint32_t status, const char *key,
     ICAL_COMPONENT *com)
 {
-	const char *s = nullptr;
-	switch (status) {
-	case olFree: s = "FREE"; break;
-	case olTentative: s = "TENTATIVE"; break;
-	case olBusy: s = "BUSY"; break;
-	case olOutOfOffice: s = "OOF"; break;
-	case olWorkingElsewhere: s = "WORKINGELSEWHERE"; break;
-	}
-	if (s == nullptr)
+	auto it = std::lower_bound(std::cbegin(busy_status_names),
+	          std::cend(busy_status_names), status,
+	          [&](const auto &p, uint32_t v) { return p.first < v; });
+	if (it == std::cend(busy_status_names))
 		return true;
-	auto line = ical_new_simple_line(key, s);
+	auto line = ical_new_simple_line(key, it->second);
 	return line != nullptr && com->append_line(line) >= 0;
 }
 
