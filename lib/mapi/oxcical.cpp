@@ -1617,7 +1617,7 @@ static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
 }
 
 static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
-    uint32_t intented_val, namemap &phash, uint16_t *plast_propid,
+    uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
 	uint32_t tmp_int32;
@@ -1654,18 +1654,18 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
 		pexception->busystatus = tmp_int32;
 	}
-	if (0 == intented_val) {
+
+	if (intended_val == 0)
 		return TRUE;
-	} else if (2 == intented_val) {
-		intented_val = tmp_int32;
-	}
+	else if (intended_val == 2)
+		intended_val = tmp_int32;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidIntendedBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &intented_val;
+	propval.pvalue = &intended_val;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
@@ -1673,7 +1673,7 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 }
 
 static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
-    uint32_t intented_val, namemap &phash, uint16_t *plast_propid,
+    uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
 	uint32_t tmp_int32;
@@ -1706,18 +1706,18 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
 		pexception->busystatus = tmp_int32;
 	}
-	if (0 == intented_val) {
+
+	if (intended_val == 0)
 		return TRUE;
-	} else if (2 == intented_val) {
-		intented_val = tmp_int32;
-	}
+	else if (intended_val == 2)
+		intended_val = tmp_int32;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidIntendedBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &intented_val;
+	propval.pvalue = &intended_val;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
@@ -1725,7 +1725,7 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 }
 
 static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
-    uint32_t intented_val, namemap &phash, uint16_t *plast_propid,
+    uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
 	uint32_t tmp_int32;
@@ -1760,18 +1760,18 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
 		pexception->busystatus = tmp_int32;
 	}
-	if (0 == intented_val) {
+
+	if (intended_val == 0)
 		return TRUE;
-	} else if (2 == intented_val) {
-		intented_val = tmp_int32;
-	}
+	else if (intended_val == 2)
+		intended_val = tmp_int32;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidIntendedBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &intented_val;
+	propval.pvalue = &intended_val;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
