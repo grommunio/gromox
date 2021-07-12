@@ -3238,7 +3238,7 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 		return CAL_LUNAR_ETO_CHN;
 	} else if (0 == strcasecmp(pvalue, "LunarEtoKor")) {
 		return CAL_LUNAR_ETO_KOR;
-	} else if (0 == strcasecmp(pvalue, "LunaRokuyou")) {
+	} else if (0 == strcasecmp(pvalue, "LunarRokuyou")) {
 		return CAL_LUNAR_ETO_ROKUYOU;
 	} else if (0 == strcasecmp(pvalue, "KoreaLunar")) {
 		return CAL_LUNAR_KOREAN;
@@ -4809,7 +4809,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			str_value = "LunarEtoKor";
 			break;
 		case CAL_LUNAR_ETO_ROKUYOU:
-			str_value = "LunaRokuyou";
+			str_value = "LunarRokuyou";
 			break;
 		case CAL_LUNAR_KOREAN:
 			str_value = "KoreaLunar";
