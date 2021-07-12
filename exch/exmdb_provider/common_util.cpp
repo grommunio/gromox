@@ -1089,8 +1089,11 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 		if (pstmt == nullptr)
 			return FALSE;
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			fprintf(stderr, "W-1299: folder_type of %s:%llxh indeterminate, possible db corruption\n",
-			        dir != nullptr ? dir : "", static_cast<unsigned long long>(folder_id));
+			/*
+			 * Could be if db_engine_proc_dynamic_event was just
+			 * looking at a folder a moment ago that then was
+			 * deleted.
+			 */
 			return FALSE;
 		}
 		*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_TYPE_GENERIC : FOLDER_TYPE_SEARCH;
