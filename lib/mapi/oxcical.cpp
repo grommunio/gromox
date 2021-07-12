@@ -1624,9 +1624,11 @@ static constexpr std::pair<enum ol_busy_status, const char *> busy_status_names[
 };
 
 static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
-    uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
+    uint32_t pidlid, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
+	if (piline == nullptr)
+		return TRUE;
 	const char *pvalue;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
@@ -1641,7 +1643,7 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 		return TRUE;
 	uint32_t busy_status = it->first;
 	propname.kind = MNID_ID;
-	propname.lid = PidLidBusyStatus;
+	propname.lid = pidlid;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
@@ -1653,21 +1655,6 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
 		pexception->busystatus = busy_status;
 	}
-
-	if (intended_val == 0)
-		return TRUE;
-	else if (intended_val == 2)
-		intended_val = busy_status;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
-	propname.kind = MNID_ID;
-	propname.lid = PidLidIntendedBusyStatus;
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &intended_val;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	(*plast_propid) ++;
 	return TRUE;
 }
 
@@ -2801,25 +2788,27 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
+	auto busy_line = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
+	if (busy_line == nullptr)
+		busy_line = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-BUSYSTATUS");
+	decltype(busy_line) intent_line;
 	if (method != nullptr && strcasecmp(method, "REQUEST") == 0) {
-		if (pmain_event->get_line("X-MICROSOFT-CDO-INTENDEDSTATUS") != nullptr ||
-		    pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-INTENDEDSTATUS") != nullptr)
-			tmp_int32 = 1;
-		else
-			tmp_int32 = 2;
-	} else {
-		tmp_int32 = 0;
+		intent_line = pmain_event->get_line("X-MICROSOFT-CDO-INTENDEDSTATUS");
+		if (intent_line == nullptr)
+			intent_line = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-INTENDEDSTATUS");
 	}
-	
-	piline = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
-	if (NULL == piline) {
-		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-BUSYSTATUS");
-	}
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_busystatus(piline,
-			tmp_int32, phash, &last_propid, pmsg, pexception)) {
+	if (busy_line != nullptr || intent_line != nullptr) {
+		/*
+		 * This is just the import to a mail object; this is not a
+		 * "calendar object" yet and so OXCICAL v11 pg 73 with the
+		 * property juggling does not apply.
+		 */
+		if (!oxcical_parse_busystatus(busy_line, PidLidBusyStatus,
+		    phash, &last_propid, pmsg, pexception))
 			return FALSE;
-		}
+		if (!oxcical_parse_busystatus(intent_line, PidLidIntendedBusyStatus,
+		    phash, &last_propid, pmsg, pexception))
+			return false;
 	} else {
 		piline = pmain_event->get_line("TRANSP");
 		if (NULL != piline) {
