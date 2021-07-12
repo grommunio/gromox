@@ -3193,6 +3193,30 @@ static const char *oxcical_get_partstat(const std::list<std::shared_ptr<UID_EVEN
 	return NULL;
 }
 
+static constexpr std::pair<enum calendar_scale, const char *> cal_scale_names[] = {
+	/* keep ordered by CAL value */
+	{CAL_GREGORIAN, "Gregorian"},
+	{CAL_GREGORIAN_US, "Gregorian_us"},
+	{CAL_JAPAN, "Japan"},
+	{CAL_TAIWAN, "Taiwan"},
+	{CAL_KOREA, "Korea"},
+	{CAL_HIJRI, "Hijri"},
+	{CAL_THAI, "Thai"},
+	{CAL_HEBREW, "Hebrew"},
+	{CAL_GREGORIAN_ME_FRENCH, "GregorianMeFrench"},
+	{CAL_GREGORIAN_ARABIC, "GregorianArabic"},
+	{CAL_GREGORIAN_XLIT_ENGLISH, "GregorianXlitEnglish"},
+	{CAL_GREGORIAN_XLIT_FRENCH, "GregorianXlitFrench"},
+	{CAL_LUNAR_JAPANESE, "JapanLunar"},
+	{CAL_CHINESE_LUNAR, "ChineseLunar"},
+	{CAL_SAKA, "Saka"},
+	{CAL_LUNAR_ETO_CHN, "LunarEtoChn"},
+	{CAL_LUNAR_ETO_KOR, "LunarEtoKor"},
+	{CAL_LUNAR_ETO_ROKUYOU, "LunarRokuyou"},
+	{CAL_LUNAR_KOREAN, "KoreaLunar"},
+	{CAL_UMALQURA, "Umalqura"},
+};
+
 static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 {
 	const char *pvalue;
@@ -3204,48 +3228,9 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 	if (NULL == pvalue) {
 		return CAL_DEFAULT;
 	}
-	if (0 == strcasecmp(pvalue, "Gregorian")) {
-		return CAL_GREGORIAN;
-	} else if (0 == strcasecmp(pvalue, "Gregorian_us")) {
-		return CAL_GREGORIAN_US;
-	} else if (0 == strcasecmp(pvalue, "Japan")) {
-		return CAL_JAPAN;
-	} else if (0 == strcasecmp(pvalue, "Taiwan")) {
-		return CAL_TAIWAN;
-	} else if (0 == strcasecmp(pvalue, "Korea")) {
-		return CAL_KOREA;
-	} else if (0 == strcasecmp(pvalue, "Hijri")) {
-		return CAL_HIJRI;
-	} else if (0 == strcasecmp(pvalue, "Thai")) {
-		return CAL_THAI;
-	} else if (0 == strcasecmp(pvalue, "Hebrew")) {
-		return CAL_HEBREW;
-	} else if (0 == strcasecmp(pvalue, "GregorianMeFrench")) {
-		return CAL_GREGORIAN_ME_FRENCH;
-	} else if (0 == strcasecmp(pvalue, "GregorianArabic")) {
-		return CAL_GREGORIAN_ARABIC;
-	} else if (0 == strcasecmp(pvalue, "GregorianXlitEnglish")) {
-		return CAL_GREGORIAN_XLIT_ENGLISH;
-	} else if (0 == strcasecmp(pvalue, "GregorianXlitFrench")) {
-		return CAL_GREGORIAN_XLIT_FRENCH;
-	} else if (0 == strcasecmp(pvalue, "JapanLunar")) {
-		return CAL_LUNAR_JAPANESE;
-	} else if (0 == strcasecmp(pvalue, "ChineseLunar")) {
-		return CAL_CHINESE_LUNAR;
-	} else if (0 == strcasecmp(pvalue, "Saka")) {
-		return CAL_SAKA;
-	} else if (0 == strcasecmp(pvalue, "LunarEtoChn")) {
-		return CAL_LUNAR_ETO_CHN;
-	} else if (0 == strcasecmp(pvalue, "LunarEtoKor")) {
-		return CAL_LUNAR_ETO_KOR;
-	} else if (0 == strcasecmp(pvalue, "LunarRokuyou")) {
-		return CAL_LUNAR_ETO_ROKUYOU;
-	} else if (0 == strcasecmp(pvalue, "KoreaLunar")) {
-		return CAL_LUNAR_KOREAN;
-	} else if (0 == strcasecmp(pvalue, "Umalqura")) {
-		return CAL_UMALQURA;
-	}
-	return CAL_DEFAULT;
+	auto it = std::find_if(cal_scale_names, std::end(cal_scale_names),
+	          [&](const auto &p) { return strcasecmp(pvalue, p.second) == 0; });
+	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
 MESSAGE_CONTENT* oxcical_import(
@@ -3886,23 +3871,15 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	case CAL_JAPAN:
 	case CAL_TAIWAN:
 	case CAL_KOREA:
-		str_tag = "RRULE";
-		break;
-	case CAL_HIJRI:
-		str_tag = "X-MICROSOFT-RRULE";
-		break;
 	case CAL_THAI:
-		str_tag = "RRULE";
-		break;
-	case CAL_HEBREW:
-		str_tag = "X-MICROSOFT-RRULE";
-		break;
 	case CAL_GREGORIAN_ME_FRENCH:
 	case CAL_GREGORIAN_ARABIC:
 	case CAL_GREGORIAN_XLIT_ENGLISH:
 	case CAL_GREGORIAN_XLIT_FRENCH:
 		str_tag = "RRULE";
 		break;
+	case CAL_HIJRI:
+	case CAL_HEBREW:
 	case CAL_LUNAR_JAPANESE:
 	case CAL_CHINESE_LUNAR:
 	case CAL_SAKA:
@@ -4756,70 +4733,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (TRUE == b_recurrence) {
-		switch (apprecurr.recurrencepattern.calendartype) {
-		case CAL_GREGORIAN:
-			str_value = "Gregorian";
-			break;
-		case CAL_GREGORIAN_US:
-			str_value = "Gregorian_us";
-			break;
-		case CAL_JAPAN:
-			str_value = "Japan";
-			break;
-		case CAL_TAIWAN:
-			str_value = "Taiwan";
-			break;
-		case CAL_KOREA:
-			str_value = "Korea";
-			break;
-		case CAL_HIJRI:
-			str_value = "Hijri";
-			break;
-		case CAL_THAI:
-			str_value = "Thai";
-			break;
-		case CAL_HEBREW:
-			str_value = "Hebrew";
-			break;
-		case CAL_GREGORIAN_ME_FRENCH:
-			str_value = "GregorianMeFrench";
-			break;
-		case CAL_GREGORIAN_ARABIC:
-			str_value = "GregorianArabic";
-			break;
-		case CAL_GREGORIAN_XLIT_ENGLISH:
-			str_value = "GregorianXlitEnglish";
-			break;
-		case CAL_GREGORIAN_XLIT_FRENCH:
-			str_value = "GregorianXlitFrench";
-			break;
-		case CAL_LUNAR_JAPANESE:
-			str_value = "JapanLunar";
-			break;
-		case CAL_CHINESE_LUNAR:
-			str_value = "ChineseLunar";
-			break;
-		case CAL_SAKA:
-			str_value = "Saka";
-			break;
-		case CAL_LUNAR_ETO_CHN:
-			str_value = "LunarEtoChn";
-			break;
-		case CAL_LUNAR_ETO_KOR:
-			str_value = "LunarEtoKor";
-			break;
-		case CAL_LUNAR_ETO_ROKUYOU:
-			str_value = "LunarRokuyou";
-			break;
-		case CAL_LUNAR_KOREAN:
-			str_value = "KoreaLunar";
-			break;
-		case CAL_UMALQURA:
-			str_value = "Umalqura";
-			break;
-		default:
-			str_value = NULL;
-		}
+		auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
+		          apprecurr.recurrencepattern.calendartype,
+		          [&](const auto &p, unsigned int v) { return p.first < v; });
+		str_value = it != std::end(cal_scale_names) ? it->second : nullptr;
 		if (PATTERNTYPE_HJMONTH ==
 			apprecurr.recurrencepattern.patterntype ||
 			PATTERNTYPE_HJMONTHNTH ==
