@@ -4554,6 +4554,22 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	return TRUE;
 }
 
+static bool busystatus_to_line(uint32_t status, const char *key,
+    ICAL_COMPONENT *com)
+{
+	const char *s = nullptr;
+	switch (status) {
+	case 0: s = "FREE"; break;
+	case 1: s = "TENTATIVE"; break;
+	case 2: s = "BUSY"; break;
+	case 3: s = "OOF"; break;
+	}
+	if (s == nullptr)
+		return true;
+	auto line = ical_new_simple_line(key, s);
+	return line != nullptr && com->append_line(line) >= 0;
+}
+
 static BOOL oxcical_export_internal(const char *method, const char *tzid,
     std::shared_ptr<ICAL_COMPONENT> ptz_component, MESSAGE_CONTENT *pmsg,
     ICAL *pical, ENTRYID_TO_USERNAME entryid_to_username,
@@ -5549,47 +5565,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return false;
 	}
 	
-	if (NULL != pbusystatus) {
-		switch (*pbusystatus) {
-		case 0:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-BUSYSTATUS", "FREE");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		case 1:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-BUSYSTATUS", "TENTATIVE");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		case 2:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-BUSYSTATUS", "BUSY");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		case 3:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-BUSYSTATUS", "OOF");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		}
-	}
-	
+	if (pbusystatus != nullptr && !busystatus_to_line(*pbusystatus,
+	    "X-MICROSOFT-CDO-BUSYSTATUS", pcomponent.get()))
+		return false;
+
 	propname.kind = MNID_ID;
 	propname.lid = PidLidIntendedBusyStatus;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
@@ -5599,47 +5578,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
-	if (NULL != pvalue) {
-		switch (*(uint32_t*)pvalue) {
-		case 0:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-INTENDEDSTATUS", "FREE");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		case 1:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-INTENDEDSTATUS", "TENTATIVE");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		case 2:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-INTENDEDSTATUS", "BUSY");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		case 3:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-INTENDEDSTATUS", "OOF");
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			break;
-		}
-	}
-	
+	if (pvalue != nullptr && !busystatus_to_line(*static_cast<uint32_t *>(pvalue),
+	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent.get()))
+		return false;
+
 	if (TRUE == b_allday) {
 		piline = ical_new_simple_line(
 			"X-MICROSOFT-CDO-ALLDAYEVENT", "TRUE");
