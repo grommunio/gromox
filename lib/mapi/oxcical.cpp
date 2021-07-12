@@ -4721,7 +4721,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	if (pical->append_line(piline) < 0)
 		return false;
-	piline = ical_new_simple_line("PRODID", "gromox-oxical");
+	piline = ical_new_simple_line("PRODID", "gromox-oxcical");
 	if (NULL == piline) {
 		return FALSE;
 	}
