@@ -353,6 +353,7 @@ enum ol_busy_status {
 	olTentative = 1,
 	olBusy = 2,
 	olOutOfOffice = 3,
+	olWorkingElsewhere = 4,
 };
 
 enum relop {

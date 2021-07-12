@@ -1629,17 +1629,18 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	if (0 == strcasecmp(pvalue, "FREE")) {
+	if (strcasecmp(pvalue, "FREE") == 0)
 		tmp_int32 = olFree;
-	} else if (0 == strcasecmp(pvalue, "TENTATIVE")) {
+	else if (strcasecmp(pvalue, "TENTATIVE") == 0)
 		tmp_int32 = olTentative;
-	} else if (0 == strcasecmp(pvalue, "BUSY")) {
+	else if (strcasecmp(pvalue, "BUSY") == 0)
 		tmp_int32 = olBusy;
-	} else if (0 == strcasecmp(pvalue, "OOF")) {
+	else if (strcasecmp(pvalue, "OOF") == 0)
 		tmp_int32 = olOutOfOffice;
-	} else {
+	else if (strcasecmp(pvalue, "WORKINGELSEWHERE") == 0)
+		tmp_int32 = olWorkingElsewhere;
+	else
 		return TRUE;
-	}
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidBusyStatus;
@@ -4563,6 +4564,7 @@ static bool busystatus_to_line(uint32_t status, const char *key,
 	case olTentative: s = "TENTATIVE"; break;
 	case olBusy: s = "BUSY"; break;
 	case olOutOfOffice: s = "OOF"; break;
+	case olWorkingElsewhere: s = "WORKINGELSEWHERE"; break;
 	}
 	if (s == nullptr)
 		return true;
