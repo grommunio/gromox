@@ -689,13 +689,13 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		break;
 	}
-	if (CALENDARTYPE_HIJRI == calendartype) {
+	if (calendartype == CAL_HIJRI) {
 		if (PATTERNTYPE_MONTH == patterntype) {
 			patterntype = PATTERNTYPE_HJMONTH;
-			calendartype = CALENDARTYPE_DEFAULT;
+			calendartype = CAL_DEFAULT;
 		} else if (PATTERNTYPE_MONTHNTH == patterntype) {
 			patterntype = PATTERNTYPE_HJMONTHNTH;
-			calendartype = CALENDARTYPE_DEFAULT;
+			calendartype = CAL_DEFAULT;
 		}
 	}
 	papprecurr->recurrencepattern.patterntype = patterntype;
@@ -3198,54 +3198,54 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 	const char *pvalue;
 	
 	if (NULL == piline) {
-		return CALENDARTYPE_DEFAULT;
+		return CAL_DEFAULT;
 	}
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
-		return CALENDARTYPE_DEFAULT;
+		return CAL_DEFAULT;
 	}
 	if (0 == strcasecmp(pvalue, "Gregorian")) {
-		return CALENDARTYPE_GREGORIAN;
+		return CAL_GREGORIAN;
 	} else if (0 == strcasecmp(pvalue, "Gregorian_us")) {
-		return CALENDARTYPE_GREGORIAN_US;
+		return CAL_GREGORIAN_US;
 	} else if (0 == strcasecmp(pvalue, "Japan")) {
-		return CALENDARTYPE_JAPAN;
+		return CAL_JAPAN;
 	} else if (0 == strcasecmp(pvalue, "Taiwan")) {
-		return CALENDARTYPE_TAIWAN;
+		return CAL_TAIWAN;
 	} else if (0 == strcasecmp(pvalue, "Korea")) {
-		return CALENDARTYPE_KOREA;
+		return CAL_KOREA;
 	} else if (0 == strcasecmp(pvalue, "Hijri")) {
-		return CALENDARTYPE_HIJRI;
+		return CAL_HIJRI;
 	} else if (0 == strcasecmp(pvalue, "Thai")) {
-		return CALENDARTYPE_THAI;
+		return CAL_THAI;
 	} else if (0 == strcasecmp(pvalue, "Hebrew")) {
-		return CALENDARTYPE_HEBREW;
+		return CAL_HEBREW;
 	} else if (0 == strcasecmp(pvalue, "GregorianMeFrench")) {
-		return CALENDARTYPE_GREGORIAN_ME_FRENCH;
+		return CAL_GREGORIAN_ME_FRENCH;
 	} else if (0 == strcasecmp(pvalue, "GregorianArabic")) {
-		return CALENDARTYPE_GREGORIAN_ARABIC;
+		return CAL_GREGORIAN_ARABIC;
 	} else if (0 == strcasecmp(pvalue, "GregorianXlitEnglish")) {
-		return CALENDARTYPE_GREGORIAN_XLIT_ENGLISH;
+		return CAL_GREGORIAN_XLIT_ENGLISH;
 	} else if (0 == strcasecmp(pvalue, "GregorianXlitFrench")) {
-		return CALENDARTYPE_GREGORIAN_XLIT_FRENCH;
+		return CAL_GREGORIAN_XLIT_FRENCH;
 	} else if (0 == strcasecmp(pvalue, "JapanLunar")) {
-		return CALENDARTYPE_LUNAR_JAPANESE;
+		return CAL_LUNAR_JAPANESE;
 	} else if (0 == strcasecmp(pvalue, "ChineseLunar")) {
-		return CALENDARTYPE_CHINESE_LUNAR;
+		return CAL_CHINESE_LUNAR;
 	} else if (0 == strcasecmp(pvalue, "Saka")) {
-		return CALENDARTYPE_SAKA;
+		return CAL_SAKA;
 	} else if (0 == strcasecmp(pvalue, "LunarEtoChn")) {
-		return CALENDARTYPE_LUNAR_ETO_CHN;
+		return CAL_LUNAR_ETO_CHN;
 	} else if (0 == strcasecmp(pvalue, "LunarEtoKor")) {
-		return CALENDARTYPE_LUNAR_ETO_KOR;
+		return CAL_LUNAR_ETO_KOR;
 	} else if (0 == strcasecmp(pvalue, "LunaRokuyou")) {
-		return CALENDARTYPE_LUNAR_ETO_ROKUYOU;
+		return CAL_LUNAR_ETO_ROKUYOU;
 	} else if (0 == strcasecmp(pvalue, "KoreaLunar")) {
-		return CALENDARTYPE_LUNAR_KOREAN;
+		return CAL_LUNAR_KOREAN;
 	} else if (0 == strcasecmp(pvalue, "Umalqura")) {
-		return CALENDARTYPE_UMALQURA;
+		return CAL_UMALQURA;
 	}
-	return CALENDARTYPE_DEFAULT;
+	return CAL_DEFAULT;
 }
 
 MESSAGE_CONTENT* oxcical_import(
@@ -3870,7 +3870,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	
 	str_tag = NULL;
 	switch (papprecurr->recurrencepattern.calendartype) {
-	case CALENDARTYPE_DEFAULT:
+	case CAL_DEFAULT:
 		switch (papprecurr->recurrencepattern.patterntype) {
 		case PATTERNTYPE_HJMONTH:
 		case PATTERNTYPE_HJMONTHNTH:
@@ -3881,36 +3881,36 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			break;
 		}
 		break;
-	case CALENDARTYPE_GREGORIAN:
-	case CALENDARTYPE_GREGORIAN_US:
-	case CALENDARTYPE_JAPAN:
-	case CALENDARTYPE_TAIWAN:
-	case CALENDARTYPE_KOREA:
+	case CAL_GREGORIAN:
+	case CAL_GREGORIAN_US:
+	case CAL_JAPAN:
+	case CAL_TAIWAN:
+	case CAL_KOREA:
 		str_tag = "RRULE";
 		break;
-	case CALENDARTYPE_HIJRI:
+	case CAL_HIJRI:
 		str_tag = "X-MICROSOFT-RRULE";
 		break;
-	case CALENDARTYPE_THAI:
+	case CAL_THAI:
 		str_tag = "RRULE";
 		break;
-	case CALENDARTYPE_HEBREW:
+	case CAL_HEBREW:
 		str_tag = "X-MICROSOFT-RRULE";
 		break;
-	case CALENDARTYPE_GREGORIAN_ME_FRENCH:
-	case CALENDARTYPE_GREGORIAN_ARABIC:
-	case CALENDARTYPE_GREGORIAN_XLIT_ENGLISH:
-	case CALENDARTYPE_GREGORIAN_XLIT_FRENCH:
+	case CAL_GREGORIAN_ME_FRENCH:
+	case CAL_GREGORIAN_ARABIC:
+	case CAL_GREGORIAN_XLIT_ENGLISH:
+	case CAL_GREGORIAN_XLIT_FRENCH:
 		str_tag = "RRULE";
 		break;
-	case CALENDARTYPE_LUNAR_JAPANESE:
-	case CALENDARTYPE_CHINESE_LUNAR:
-	case CALENDARTYPE_SAKA:
-	case CALENDARTYPE_LUNAR_ETO_CHN:
-	case CALENDARTYPE_LUNAR_ETO_KOR:
-	case CALENDARTYPE_LUNAR_ETO_ROKUYOU:
-	case CALENDARTYPE_LUNAR_KOREAN:
-	case CALENDARTYPE_UMALQURA:
+	case CAL_LUNAR_JAPANESE:
+	case CAL_CHINESE_LUNAR:
+	case CAL_SAKA:
+	case CAL_LUNAR_ETO_CHN:
+	case CAL_LUNAR_ETO_KOR:
+	case CAL_LUNAR_ETO_ROKUYOU:
+	case CAL_LUNAR_KOREAN:
+	case CAL_UMALQURA:
 		str_tag = "X-MICROSOFT-RRULE";
 		break;
 	}
@@ -4369,8 +4369,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
-	if (CALENDARTYPE_DEFAULT !=
-		papprecurr->recurrencepattern.calendartype ||
+	if (papprecurr->recurrencepattern.calendartype != CAL_DEFAULT ||
 		PATTERNTYPE_HJMONTH ==
 		papprecurr->recurrencepattern.patterntype ||
 		PATTERNTYPE_HJMONTHNTH ==
@@ -4758,64 +4757,64 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (TRUE == b_recurrence) {
 		switch (apprecurr.recurrencepattern.calendartype) {
-		case CALENDARTYPE_GREGORIAN:
+		case CAL_GREGORIAN:
 			str_value = "Gregorian";
 			break;
-		case CALENDARTYPE_GREGORIAN_US:
+		case CAL_GREGORIAN_US:
 			str_value = "Gregorian_us";
 			break;
-		case CALENDARTYPE_JAPAN:
+		case CAL_JAPAN:
 			str_value = "Japan";
 			break;
-		case CALENDARTYPE_TAIWAN:
+		case CAL_TAIWAN:
 			str_value = "Taiwan";
 			break;
-		case CALENDARTYPE_KOREA:
+		case CAL_KOREA:
 			str_value = "Korea";
 			break;
-		case CALENDARTYPE_HIJRI:
+		case CAL_HIJRI:
 			str_value = "Hijri";
 			break;
-		case CALENDARTYPE_THAI:
+		case CAL_THAI:
 			str_value = "Thai";
 			break;
-		case CALENDARTYPE_HEBREW:
+		case CAL_HEBREW:
 			str_value = "Hebrew";
 			break;
-		case CALENDARTYPE_GREGORIAN_ME_FRENCH:
+		case CAL_GREGORIAN_ME_FRENCH:
 			str_value = "GregorianMeFrench";
 			break;
-		case CALENDARTYPE_GREGORIAN_ARABIC:
+		case CAL_GREGORIAN_ARABIC:
 			str_value = "GregorianArabic";
 			break;
-		case CALENDARTYPE_GREGORIAN_XLIT_ENGLISH:
+		case CAL_GREGORIAN_XLIT_ENGLISH:
 			str_value = "GregorianXlitEnglish";
 			break;
-		case CALENDARTYPE_GREGORIAN_XLIT_FRENCH:
+		case CAL_GREGORIAN_XLIT_FRENCH:
 			str_value = "GregorianXlitFrench";
 			break;
-		case CALENDARTYPE_LUNAR_JAPANESE:
+		case CAL_LUNAR_JAPANESE:
 			str_value = "JapanLunar";
 			break;
-		case CALENDARTYPE_CHINESE_LUNAR:
+		case CAL_CHINESE_LUNAR:
 			str_value = "ChineseLunar";
 			break;
-		case CALENDARTYPE_SAKA:
+		case CAL_SAKA:
 			str_value = "Saka";
 			break;
-		case CALENDARTYPE_LUNAR_ETO_CHN:
+		case CAL_LUNAR_ETO_CHN:
 			str_value = "LunarEtoChn";
 			break;
-		case CALENDARTYPE_LUNAR_ETO_KOR:
+		case CAL_LUNAR_ETO_KOR:
 			str_value = "LunarEtoKor";
 			break;
-		case CALENDARTYPE_LUNAR_ETO_ROKUYOU:
+		case CAL_LUNAR_ETO_ROKUYOU:
 			str_value = "LunaRokuyou";
 			break;
-		case CALENDARTYPE_LUNAR_KOREAN:
+		case CAL_LUNAR_KOREAN:
 			str_value = "KoreaLunar";
 			break;
-		case CALENDARTYPE_UMALQURA:
+		case CAL_UMALQURA:
 			str_value = "Umalqura";
 			break;
 		default:
