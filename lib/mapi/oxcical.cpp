@@ -1630,13 +1630,13 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 		return TRUE;
 	}
 	if (0 == strcasecmp(pvalue, "FREE")) {
-		tmp_int32 = 0;
+		tmp_int32 = olFree;
 	} else if (0 == strcasecmp(pvalue, "TENTATIVE")) {
-		tmp_int32 = 1;
+		tmp_int32 = olTentative;
 	} else if (0 == strcasecmp(pvalue, "BUSY")) {
-		tmp_int32 = 2;
+		tmp_int32 = olBusy;
 	} else if (0 == strcasecmp(pvalue, "OOF")) {
-		tmp_int32 = 3;
+		tmp_int32 = olOutOfOffice;
 	} else {
 		return TRUE;
 	}
@@ -4559,10 +4559,10 @@ static bool busystatus_to_line(uint32_t status, const char *key,
 {
 	const char *s = nullptr;
 	switch (status) {
-	case 0: s = "FREE"; break;
-	case 1: s = "TENTATIVE"; break;
-	case 2: s = "BUSY"; break;
-	case 3: s = "OOF"; break;
+	case olFree: s = "FREE"; break;
+	case olTentative: s = "TENTATIVE"; break;
+	case olBusy: s = "BUSY"; break;
+	case olOutOfOffice: s = "OOF"; break;
 	}
 	if (s == nullptr)
 		return true;

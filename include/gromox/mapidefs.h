@@ -348,6 +348,13 @@ enum {
 	MSGFLAG_OUTLOOK_NON_EMS_XP = 1U << 16,
 };
 
+enum ol_busy_status {
+	olFree = 0,
+	olTentative = 1,
+	olBusy = 2,
+	olOutOfOffice = 3,
+};
+
 enum relop {
 	RELOP_LT = 0x00,
 	RELOP_LE,
