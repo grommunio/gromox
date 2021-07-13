@@ -1105,7 +1105,7 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 			pdata = buff;
 		}
 		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
-		while (subext.offset < subext.data_size) {
+		while (subext.offset < subext.m_data_size) {
 			pnode = pext->anew<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				return EXT_ERR_ALLOC;

@@ -71,7 +71,7 @@ struct TYPED_STRING;
 struct XID;
 
 struct EXT_PULL {
-	EXT_BUFFER_ALLOC alloc{};
+	EXT_BUFFER_ALLOC m_alloc{};
 	void init(const void *, uint32_t, EXT_BUFFER_ALLOC, uint32_t);
 	int advance(uint32_t);
 	int g_rpc_header_ext(RPC_HEADER_EXT *);
@@ -142,14 +142,14 @@ struct EXT_PULL {
 	int g_goid(GLOBALOBJECTID *);
 	int g_msgctnt(MESSAGE_CONTENT *);
 
-	template<typename T> inline T *anew() { return static_cast<T *>(alloc(sizeof(T))); }
-	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(alloc(sizeof(T) * elem)); }
+	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
+	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }
 	union {
 		const uint8_t *data, *udata;
 		const char *cdata;
 		const void *vdata = nullptr;
 	};
-	uint32_t data_size = 0, offset = 0, flags = 0;
+	uint32_t m_data_size = 0, offset = 0, m_flags = 0;
 };
 
 struct EXT_PUSH {

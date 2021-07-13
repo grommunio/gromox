@@ -1978,10 +1978,11 @@ int rop_ext_push_pending_response(EXT_PUSH *pext,
 
 static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 {
+	auto &ext = *pext;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	r->bookmark.pb = (uint8_t*)pext->data + pext->offset;
-	r->bookmark.cb = pext->data_size - pext->offset;
+	r->bookmark.cb = ext.m_data_size - pext->offset;
 	TRY(pext->g_uint8(&r->rop_id));
 	TRY(pext->g_uint8(&r->logon_id));
 	TRY(pext->g_uint8(&r->hindex));

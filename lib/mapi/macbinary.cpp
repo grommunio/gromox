@@ -64,10 +64,10 @@ static uint16_t macbinary_crc(const uint8_t *ptr,
 
 static int macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
-	if (pext->data_size < sizeof(uint16_t) ||
-		pext->offset + sizeof(uint16_t) > pext->data_size) {
+	auto &ext = *pext;
+	if (ext.m_data_size < sizeof(uint16_t) ||
+	    pext->offset + sizeof(uint16_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = be16_to_cpu(*v);
 	pext->offset += sizeof(uint16_t);
@@ -76,10 +76,10 @@ static int macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
 
 static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
-	if (pext->data_size < sizeof(uint32_t) ||
-		pext->offset + sizeof(uint32_t) > pext->data_size) {
+	auto &ext = *pext;
+	if (ext.m_data_size < sizeof(uint32_t) ||
+	    pext->offset + sizeof(uint32_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = be32_to_cpu(*v);
 	pext->offset += sizeof(uint32_t);
@@ -227,12 +227,12 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 
 int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 {
+	auto &ext = *pext;
 	TRY(macbinary_pull_header(pext, &r->header));
 	if (0 != r->header.xheader_len) {
 		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > pext->data_size) {
+		if (pext->offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		}
 		r->pxheader = pext->data + pext->offset;
 		pext->offset += r->header.xheader_len;
 	} else {
@@ -240,9 +240,8 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 	}
 	if (0 != r->header.data_len) {
 		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > pext->data_size) {
+		if (pext->offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		}
 		r->pdata = pext->data + pext->offset;
 		pext->offset += r->header.data_len;
 	} else {
@@ -250,9 +249,8 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 	}
 	if (0 != r->header.res_len) {
 		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > pext->data_size) {
+		if (pext->offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		}
 		r->presource = pext->data + pext->offset;
 		pext->offset += r->header.res_len;
 	} else {
@@ -260,9 +258,8 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 	}
 	if (0 != r->header.comment_len) {
 		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > pext->data_size) {
+		if (pext->offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		}
 		r->pcomment = pext->data + pext->offset;
 		pext->offset += r->header.comment_len;
 	} else {

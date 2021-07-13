@@ -12,10 +12,10 @@
 
 static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
-	if (pext->data_size < sizeof(uint16_t) ||
-		pext->offset + sizeof(uint16_t) > pext->data_size) {
+	auto &ext = *pext;
+	if (ext.m_data_size < sizeof(uint16_t) ||
+	    pext->offset + sizeof(uint16_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = be16_to_cpu(*v);
 	pext->offset += sizeof(uint16_t);
@@ -24,10 +24,10 @@ static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 
 static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
-	if (pext->data_size < sizeof(uint32_t) ||
-		pext->offset + sizeof(uint32_t) > pext->data_size) {
+	auto &ext = *pext;
+	if (ext.m_data_size < sizeof(uint32_t) ||
+	    pext->offset + sizeof(uint32_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = be32_to_cpu(*v);
 	pext->offset += sizeof(uint32_t);

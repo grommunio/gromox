@@ -75,6 +75,7 @@ static BOOL rpc_ext_pull_forwarddelegate_action(
 static BOOL rpc_ext_pull_action_block(
 	EXT_PULL *pext, ACTION_BLOCK *r)
 {
+	auto &ext = *pext;
 	uint16_t tmp_len;
 	
 	QRF(pext->g_uint16(&r->length));
@@ -100,7 +101,7 @@ static BOOL rpc_ext_pull_action_block(
 		       static_cast<ZREPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		r->pdata = pext->alloc(tmp_len);
+		r->pdata = ext.m_alloc(tmp_len);
 		if (NULL == r->pdata) {
 			return FALSE;
 		}

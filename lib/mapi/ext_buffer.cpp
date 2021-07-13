@@ -17,19 +17,18 @@ void EXT_PULL::init(const void *pdata, uint32_t data_size,
 {
 	auto pext = this;
 	pext->data = static_cast<const uint8_t *>(pdata);
-	pext->data_size = data_size;
-	pext->alloc = alloc;
+	m_data_size = data_size;
+	m_alloc = alloc;
 	pext->offset = 0;
-	pext->flags = flags;
+	m_flags = flags;
 }
 
 int EXT_PULL::advance(uint32_t size)
 {
 	auto pext = this;
 	pext->offset += size;
-	if (pext->offset > pext->data_size) {
+	if (pext->offset > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -45,10 +44,9 @@ int EXT_PULL::g_rpc_header_ext(RPC_HEADER_EXT *r)
 int EXT_PULL::g_uint8(uint8_t *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(uint8_t) ||
-		pext->offset + sizeof(uint8_t) > pext->data_size) {
+	if (m_data_size < sizeof(uint8_t) ||
+	    pext->offset + sizeof(uint8_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	*v = pext->data[pext->offset];
 	pext->offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
@@ -57,10 +55,9 @@ int EXT_PULL::g_uint8(uint8_t *v)
 int EXT_PULL::g_uint16(uint16_t *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(uint16_t) ||
-		pext->offset + sizeof(uint16_t) > pext->data_size) {
+	if (m_data_size < sizeof(uint16_t) ||
+	    pext->offset + sizeof(uint16_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = le16_to_cpu(*v);
 	pext->offset += sizeof(uint16_t);
@@ -70,10 +67,9 @@ int EXT_PULL::g_uint16(uint16_t *v)
 int EXT_PULL::g_uint32(uint32_t *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(uint32_t) ||
-		pext->offset + sizeof(uint32_t) > pext->data_size) {
+	if (m_data_size < sizeof(uint32_t) ||
+	    pext->offset + sizeof(uint32_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = le32_to_cpu(*v);
 	pext->offset += sizeof(uint32_t);
@@ -83,10 +79,9 @@ int EXT_PULL::g_uint32(uint32_t *v)
 int EXT_PULL::g_uint64(uint64_t *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(uint64_t) ||
-		pext->offset + sizeof(uint64_t) > pext->data_size) {
+	if (m_data_size < sizeof(uint64_t) ||
+	    pext->offset + sizeof(uint64_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	*v = le64_to_cpu(*v);
 	pext->offset += sizeof(uint64_t);
@@ -96,10 +91,9 @@ int EXT_PULL::g_uint64(uint64_t *v)
 int EXT_PULL::g_float(float *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(float) ||
-		pext->offset + sizeof(float) > pext->data_size) {
+	if (m_data_size < sizeof(float) ||
+	    pext->offset + sizeof(float) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	pext->offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
@@ -108,10 +102,9 @@ int EXT_PULL::g_float(float *v)
 int EXT_PULL::g_double(double *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(double) ||
-		pext->offset + sizeof(double) > pext->data_size) {
+	if (m_data_size < sizeof(double) ||
+	    pext->offset + sizeof(double) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	memcpy(v, &pext->data[pext->offset], sizeof(*v));
 	pext->offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
@@ -120,10 +113,9 @@ int EXT_PULL::g_double(double *v)
 int EXT_PULL::g_bool(BOOL *v)
 {
 	auto pext = this;
-	if (pext->data_size < sizeof(uint8_t) ||
-		pext->offset + sizeof(uint8_t) > pext->data_size) {
+	if (m_data_size < sizeof(uint8_t) ||
+	    pext->offset + sizeof(uint8_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
 	uint8_t tmp_byte = pext->data[pext->offset++];
 	if (0 == tmp_byte) {
 		*v = FALSE;
@@ -138,10 +130,8 @@ int EXT_PULL::g_bool(BOOL *v)
 int EXT_PULL::g_bytes(void *data, uint32_t n)
 {
 	auto pext = this;
-	if (pext->data_size < n || pext->offset + n > pext->data_size) {
+	if (m_data_size < n || pext->offset + n > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
-	
 	memcpy(data, pext->data + pext->offset, n);
 	pext->offset += n;
 	return EXT_ERR_SUCCESS;
@@ -161,13 +151,11 @@ int EXT_PULL::g_guid(GUID *r)
 int EXT_PULL::g_str(char **ppstr)
 {
 	auto pext = this;
-	if (pext->offset >= pext->data_size) {
+	if (pext->offset >= m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
-	auto len = strnlen(pext->cdata + pext->offset, pext->data_size - pext->offset);
-	if (len + 1 > pext->data_size - pext->offset) {
+	auto len = strnlen(pext->cdata + pext->offset, m_data_size - pext->offset);
+	if (len + 1 > m_data_size - pext->offset)
 		return EXT_ERR_BUFSIZE;
-	}
 	len ++;
 	*ppstr = pext->anew<char>(len);
 	if (NULL == *ppstr) {
@@ -180,16 +168,13 @@ int EXT_PULL::g_str(char **ppstr)
 int EXT_PULL::g_wstr(char **ppstr)
 {
 	auto pext = this;
-	int i;
-	int len, max_len;
+	int i, len;
 	
-	if (0 == (pext->flags & EXT_FLAG_UTF16)) {
+	if (!(m_flags & EXT_FLAG_UTF16))
 		return pext->g_str(ppstr);
-	}
-	if (pext->offset >= pext->data_size) {
+	if (pext->offset >= m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
-	max_len = pext->data_size - pext->offset;
+	int max_len = m_data_size - pext->offset;
 	for (i=0; i<max_len-1; i+=2) {
 		if (0 == *(pext->data + pext->offset + i) &&
 			0 == *(pext->data + pext->offset + i + 1)) {
@@ -219,13 +204,11 @@ int EXT_PULL::g_wstr(char **ppstr)
 
 int EXT_PULL::g_blob(DATA_BLOB *pblob)
 {
-	uint32_t length;
 	auto pext = this;
 	
-	if (pext->offset > pext->data_size) {
+	if (pext->offset > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	}
-	length = pext->data_size - pext->offset;
+	uint32_t length = m_data_size - pext->offset;
 	pblob->data = pext->anew<uint8_t>(length);
 	if (NULL == pblob->data) {
 		return EXT_ERR_ALLOC;
@@ -241,7 +224,7 @@ int EXT_PULL::g_bin(BINARY *r)
 	uint16_t cb;
 	auto pext = this;
 	
-	if (pext->flags & EXT_FLAG_WCOUNT) {
+	if (m_flags & EXT_FLAG_WCOUNT) {
 		TRY(pext->g_uint32(&r->cb));
 	} else {
 		TRY(pext->g_uint16(&cb));
@@ -251,7 +234,7 @@ int EXT_PULL::g_bin(BINARY *r)
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pv = pext->alloc(r->cb);
+	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
 		return EXT_ERR_ALLOC;
@@ -270,7 +253,7 @@ int EXT_PULL::g_sbin(BINARY *r)
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pv = pext->alloc(r->cb);
+	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
 		return EXT_ERR_ALLOC;
@@ -286,7 +269,7 @@ int EXT_PULL::g_exbin(BINARY *r)
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pv = pext->alloc(r->cb);
+	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
 		return EXT_ERR_ALLOC;
@@ -444,9 +427,10 @@ int EXT_PULL::g_guid_a(GUID_ARRAY *r)
 static int ext_buffer_pull_restriction_and_or(
 	EXT_PULL *pext, RESTRICTION_AND_OR *r)
 {
+	auto &ext = *pext;
 	uint16_t count;
 	
-	if (pext->flags & EXT_FLAG_WCOUNT) {
+	if (ext.m_flags & EXT_FLAG_WCOUNT) {
 		TRY(pext->g_uint32(&r->count));
 	} else {
 		TRY(pext->g_uint16(&count));
@@ -674,7 +658,7 @@ int EXT_PULL::g_svreid(SVREID *r)
 			return EXT_ERR_ALLOC;
 		}
 		r->pbin->cb = length > 0 ? length - 1 : 0;
-		r->pbin->pv = pext->alloc(r->pbin->cb);
+		r->pbin->pv = m_alloc(r->pbin->cb);
 		if (r->pbin->pv == nullptr) {
 			r->pbin->cb = 0;
 			return EXT_ERR_ALLOC;
@@ -785,6 +769,7 @@ static int ext_buffer_pull_forwarddelegate_action(
 
 static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 {
+	auto &ext = *pext;
 	uint16_t tmp_len;
 	
 	TRY(pext->g_uint16(&r->length));
@@ -808,7 +793,7 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 		return ext_buffer_pull_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		r->pdata = pext->alloc(tmp_len);
+		r->pdata = ext.m_alloc(tmp_len);
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}
@@ -1288,6 +1273,7 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 static int ext_buffer_pull_ext_action_block(
 	EXT_PULL *pext, EXT_ACTION_BLOCK *r)
 {
+	auto &ext = *pext;
 	uint32_t tmp_len;
 	
 	TRY(pext->g_uint32(&r->length));
@@ -1311,7 +1297,7 @@ static int ext_buffer_pull_ext_action_block(
 		return ext_buffer_pull_ext_reply_action(pext, static_cast<EXT_REPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - sizeof(uint32_t);
-		r->pdata = pext->alloc(tmp_len);
+		r->pdata = ext.m_alloc(tmp_len);
 		if (NULL == r->pdata) {
 			return EXT_ERR_ALLOC;
 		}

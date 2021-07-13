@@ -235,6 +235,7 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 
 static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 {
+	auto &ext = *pext;
 	uint32_t offset;
 	uint32_t tmp_int;
 	uint16_t fake_byte;
@@ -342,9 +343,9 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		TRY(pext->g_uint32(&bv->cb));
-		if (bv->cb < 16 || bv->cb > pext->data_size - pext->offset)
+		if (bv->cb < 16 || bv->cb > ext.m_data_size - pext->offset)
 			return EXT_ERR_FORMAT;
-		bv->pv = pext->alloc(bv->cb);
+		bv->pv = ext.m_alloc(bv->cb);
 		if (bv->pv == nullptr) {
 			bv->cb = 0;
 			return EXT_ERR_ALLOC;
@@ -368,9 +369,9 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		TRY(pext->g_uint32(&bv->cb));
-		if (bv->cb + pext->offset > pext->data_size)
+		if (bv->cb + pext->offset > ext.m_data_size)
 			return EXT_ERR_FORMAT;
-		bv->pv = pext->alloc(bv->cb);
+		bv->pv = ext.m_alloc(bv->cb);
 		if (bv->pv == nullptr) {
 			bv->cb = 0;
 			return EXT_ERR_ALLOC;
@@ -549,12 +550,12 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		for (size_t i = 0; i < ba->count; ++i) {
 			TRY(pext->g_uint32(&ba->pbin[i].cb));
-			if (ba->pbin[i].cb + pext->offset > pext->data_size)
+			if (ba->pbin[i].cb + pext->offset > ext.m_data_size)
 				return EXT_ERR_FORMAT;
 			if (ba->pbin[i].cb == 0) {
 				ba->pbin[i].pv = nullptr;
 			} else {
-				ba->pbin[i].pv = pext->alloc(ba->pbin[i].cb);
+				ba->pbin[i].pv = ext.m_alloc(ba->pbin[i].cb);
 				if (ba->pbin[i].pv == nullptr) {
 					ba->pbin[i].cb = 0;
 					return EXT_ERR_ALLOC;
@@ -572,6 +573,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 
 static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 {
+	auto &ext = *pext;
 	DTR tmp_dtr;
 	uint32_t len;
 	uint32_t offset;
@@ -637,9 +639,8 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		}
 	}
 	TRY(pext->g_uint32(&len));
-	if (pext->offset + len > pext->data_size) {
+	if (pext->offset + len > ext.m_data_size)
 		return EXT_ERR_FORMAT;
-	}
 	offset = pext->offset;
 	switch (r->attr_id) {
 	case ATTRIBUTE_ID_FROM:
@@ -732,7 +733,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		TRY(pext->g_uint32(static_cast<uint32_t *>(r->pvalue)));
 		break;
 	case ATTRIBUTE_ID_BODY:
-		r->pvalue = pext->alloc(len + 1);
+		r->pvalue = ext.m_alloc(len + 1);
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
@@ -847,7 +848,7 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		}
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		bv->cb = len;
-		bv->pv = pext->alloc(len);
+		bv->pv = ext.m_alloc(len);
 		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
 		TRY(pext->g_bytes(bv->pv, len));
