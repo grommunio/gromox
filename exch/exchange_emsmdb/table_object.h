@@ -7,9 +7,9 @@
 
 struct TABLE_OBJECT {
 	~TABLE_OBJECT();
-	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
+	const PROPTAG_ARRAY *get_columns() const { return m_columns; }
 	BOOL set_columns(const PROPTAG_ARRAY *);
-	const SORTORDER_SET *get_sorts() const { return psorts; }
+	const SORTORDER_SET *get_sorts() const { return m_sorts; }
 	BOOL set_sorts(const SORTORDER_SET *);
 	BOOL check_loaded();
 	BOOL check_to_load();
@@ -18,9 +18,9 @@ struct TABLE_OBJECT {
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint16_t row_count);
 	void set_handle(uint32_t h) { handle = h; }
-	uint32_t get_position() const { return position; }
+	uint32_t get_position() const { return m_position; }
 	void set_position(uint32_t position);
-	void clear_position() { position = 0; }
+	void clear_position() { m_position = 0; }
 	uint32_t get_total() const;
 	BOOL create_bookmark(uint32_t *pindex);
 	void remove_bookmark(uint32_t index);
@@ -42,10 +42,10 @@ struct TABLE_OBJECT {
 	uint32_t handle = 0;
 	void *pparent_obj = nullptr;
 	uint8_t rop_id = 0, table_flags = 0;
-	PROPTAG_ARRAY *pcolumns = nullptr;
-	SORTORDER_SET *psorts = nullptr;
-	RESTRICTION *prestriction = nullptr;
-	uint32_t position = 0, table_id = 0, bookmark_index = 0;
+	PROPTAG_ARRAY *m_columns = nullptr;
+	SORTORDER_SET *m_sorts = nullptr;
+	RESTRICTION *m_restriction = nullptr;
+	uint32_t m_position = 0, m_table_id = 0, bookmark_index = 0;
 	DOUBLE_LIST bookmark_list{};
 };
 

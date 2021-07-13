@@ -32,12 +32,11 @@ static void table_object_set_table_id(
 	TABLE_OBJECT *ptable, uint32_t table_id)
 {
 	auto dir = ptable->plogon->get_dir();
-	if (0 != ptable->table_id) {
-		exmdb_client_unload_table(dir, ptable->table_id);
+	if (ptable->m_table_id != 0) {
+		exmdb_client_unload_table(dir, ptable->m_table_id);
 		if (ptable->rop_id == ropGetContentsTable ||
 		    ptable->rop_id == ropGetHierarchyTable)
-			emsmdb_interface_remove_table_notify(
-							dir, ptable->table_id);
+			emsmdb_interface_remove_table_notify(dir, ptable->m_table_id);
 	}
 	if (0 != table_id) {
 		if (ptable->rop_id == ropGetContentsTable ||
@@ -46,7 +45,7 @@ static void table_object_set_table_id(
 				dir, table_id, ptable->handle,
 				ptable->logon_id, &ptable->cxh.guid);
 	}
-	ptable->table_id = table_id;
+	ptable->m_table_id = table_id;
 }
 
 BOOL TABLE_OBJECT::check_loaded()
@@ -54,7 +53,7 @@ BOOL TABLE_OBJECT::check_loaded()
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
-	return ptable->table_id == 0 ? false : TRUE;
+	return m_table_id == 0 ? false : TRUE;
 }
 
 BOOL TABLE_OBJECT::check_to_load()
@@ -66,9 +65,8 @@ BOOL TABLE_OBJECT::check_to_load()
 	
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
-	if (0 != ptable->table_id) {
+	if (m_table_id != 0)
 		return TRUE;
-	}
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {
 		auto rpc_info = get_rpc_info();
@@ -76,7 +74,7 @@ BOOL TABLE_OBJECT::check_to_load()
 		                nullptr : rpc_info.username;
 		if (!exmdb_client_load_hierarchy_table(ptable->plogon->get_dir(),
 		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
-		    username, ptable->table_flags, ptable->prestriction,
+		    username, ptable->table_flags, m_restriction,
 		    &table_id, &row_num))
 			return FALSE;
 		break;
@@ -103,8 +101,8 @@ BOOL TABLE_OBJECT::check_to_load()
 		}
 		if (!exmdb_client_load_content_table(ptable->plogon->get_dir(),
 		    pinfo->cpid, static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
-		    username, ptable->table_flags, ptable->prestriction,
-		    ptable->psorts, &table_id, &row_num))
+		    username, ptable->table_flags, m_restriction,
+		    m_sorts, &table_id, &row_num))
 			return FALSE;
 		break;
 	}
@@ -117,7 +115,7 @@ BOOL TABLE_OBJECT::check_to_load()
 	case ropGetRulesTable:
 		if (!exmdb_client_load_rule_table(ptable->plogon->get_dir(),
 		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
-		    ptable->table_flags, ptable->prestriction, &table_id, &row_num))
+		    ptable->table_flags, m_restriction, &table_id, &row_num))
 			return FALSE;
 		break;
 	default:
@@ -139,18 +137,17 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
-	if (NULL == ptable->pcolumns) {
+	if (m_columns == nullptr)
 		return FALSE;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	if (0 == ptable->position && FALSE == b_forward) {
+	if (m_position == 0 && !b_forward) {
 		pset->count = 0;
 		return TRUE;
 	}
-	if (ptable->position >= ptable->get_total() && b_forward) {
+	if (m_position >= ptable->get_total() && b_forward) {
 		pset->count = 0;
 		return TRUE;
 	}
@@ -158,7 +155,7 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	if (ptable->rop_id == ropGetAttachmentTable) {
 		return message_object_query_attachment_table(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-		       ptable->pcolumns, ptable->position, row_needed, pset);
+		       m_columns, m_position, row_needed, pset);
 	}
 	if (!ptable->plogon->check_private()) {
 		rpc_info = get_rpc_info();
@@ -167,8 +164,8 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 		username = NULL;
 	}
 	return exmdb_client_query_table(ptable->plogon->get_dir(), username,
-	       pinfo->cpid, ptable->table_id, ptable->pcolumns,
-	       ptable->position, row_needed, pset);
+	       pinfo->cpid, m_table_id, m_columns,
+	       m_position, row_needed, pset);
 }
 
 void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
@@ -176,69 +173,53 @@ void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 	auto ptable = this;
 	
 	if (TRUE == b_forward) {
-		ptable->position += row_count;
+		m_position += row_count;
 		auto total_rows = ptable->get_total();
-		if (ptable->position > total_rows) {
-			ptable->position = total_rows;
-		}
+		if (m_position > total_rows)
+			m_position = total_rows;
 	} else {
-		if (ptable->position < row_count) {
-			ptable->position = 0;
+		if (m_position < row_count) {
+			m_position = 0;
 			return;
 		}
-		ptable->position -= row_count;
+		m_position -= row_count;
 	}
 }
 
 BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *pcolumns)
 {
-	auto ptable = this;
-	if (NULL != ptable->pcolumns) {
-		proptag_array_free(ptable->pcolumns);
-	}
+	if (m_columns != nullptr)
+		proptag_array_free(m_columns);
 	if (NULL == pcolumns) {
-		ptable->pcolumns = NULL;
+		m_columns = nullptr;
 		return TRUE;
 	}
-	ptable->pcolumns = proptag_array_dup(pcolumns);
-	if (NULL == ptable->pcolumns) {
-		return FALSE;
-	}
-	return TRUE;
+	m_columns = proptag_array_dup(pcolumns);
+	return m_columns != nullptr ? TRUE : false;
 }
 
 BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *psorts)
 {
-	auto ptable = this;
-	if (NULL != ptable->psorts) {
-		sortorder_set_free(ptable->psorts);
-	}
+	if (m_sorts != nullptr)
+		sortorder_set_free(m_sorts);
 	if (NULL == psorts) {
-		ptable->psorts = NULL;
+		m_sorts = nullptr;
 		return TRUE;
 	}
-	ptable->psorts = sortorder_set_dup(psorts);
-	if (NULL == ptable->psorts) {
-		return FALSE;
-	}
-	return TRUE;
+	m_sorts = sortorder_set_dup(psorts);
+	return m_sorts != nullptr ? TRUE : false;
 }
 
 BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
 {
-	auto ptable = this;
-	if (NULL != ptable->prestriction) {
-		restriction_free(ptable->prestriction);
-	}
+	if (m_restriction != nullptr)
+		restriction_free(m_restriction);
 	if (NULL == prestriction) {
-		ptable->prestriction = NULL;
+		m_restriction = nullptr;
 		return TRUE;
 	}
-	ptable->prestriction = restriction_dup(prestriction);
-	if (NULL == ptable->prestriction) {
-		return FALSE;
-	}
-	return TRUE;
+	m_restriction = restriction_dup(prestriction);
+	return m_restriction != nullptr ? TRUE : false;
 }
 
 void TABLE_OBJECT::set_position(uint32_t position)
@@ -248,7 +229,7 @@ void TABLE_OBJECT::set_position(uint32_t position)
 	if (position > total_rows) {
 		position = total_rows;
 	}
-	ptable->position = position;
+	m_position = position;
 }
 
 uint32_t TABLE_OBJECT::get_total() const
@@ -263,7 +244,7 @@ uint32_t TABLE_OBJECT::get_total() const
 		return num;
 	}
 	exmdb_client_sum_table(ptable->plogon->get_dir(),
-		ptable->table_id, &total_rows);
+		m_table_id, &total_rows);
 	return total_rows;
 }
 
@@ -286,11 +267,11 @@ std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *plogon,
 	ptable->rop_id = rop_id;
 	ptable->table_flags = table_flags;
 	ptable->logon_id = logon_id;
-	ptable->pcolumns = NULL;
-	ptable->psorts = NULL;
-	ptable->prestriction = NULL;
-	ptable->position = 0;
-	ptable->table_id = 0;
+	ptable->m_columns = nullptr;
+	ptable->m_sorts = nullptr;
+	ptable->m_restriction = nullptr;
+	ptable->m_position = 0;
+	ptable->m_table_id = 0;
 	ptable->bookmark_index = 0;
 	double_list_init(&ptable->bookmark_list);
 	return ptable;
@@ -310,8 +291,8 @@ BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
 	uint32_t row_type;
 	uint32_t inst_num;
 	
-	if (!exmdb_client_mark_table(ptable->plogon->get_dir(), ptable->table_id,
-	    ptable->position, &inst_id, &inst_num, &row_type))
+	if (!exmdb_client_mark_table(ptable->plogon->get_dir(), m_table_id,
+	    m_position, &inst_id, &inst_num, &row_type))
 		return FALSE;
 	auto pbookmark = me_alloc<BOOKMARK_NODE>();
 	if (NULL == pbookmark) {
@@ -323,7 +304,7 @@ BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
 	pbookmark->inst_id = inst_id;
 	pbookmark->row_type = row_type;
 	pbookmark->inst_num = inst_num;
-	pbookmark->position = ptable->position;
+	pbookmark->position = m_position;
 	double_list_append_as_tail(&ptable->bookmark_list, &pbookmark->node);
 	*pindex = pbookmark->index;
 	return TRUE;
@@ -354,21 +335,20 @@ BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 		return FALSE;
 	}
 	if (!exmdb_client_locate_table(ptable->plogon->get_dir(),
-	    ptable->table_id, inst_id, inst_num, &tmp_position, &tmp_type))
+	    m_table_id, inst_id, inst_num, &tmp_position, &tmp_type))
 		return FALSE;
 	*pb_exist = FALSE;
 	if (tmp_position >= 0) {
 		if (tmp_type == row_type) {
 			*pb_exist = TRUE;
 		}
-		ptable->position = tmp_position;
+		m_position = tmp_position;
 	} else {
-		ptable->position = position;
+		m_position = position;
 	}
 	auto total_rows = ptable->get_total();
-	if (ptable->position > total_rows) {
-		ptable->position = total_rows;
-	}
+	if (m_position > total_rows)
+		m_position = total_rows;
 	return TRUE;
 }
 
@@ -398,19 +378,19 @@ void TABLE_OBJECT::clear_bookmarks()
 void TABLE_OBJECT::reset()
 {
 	auto ptable = this;
-	if (NULL != ptable->pcolumns) {
-		proptag_array_free(ptable->pcolumns);
-		ptable->pcolumns = NULL;
+	if (m_columns != nullptr) {
+		proptag_array_free(m_columns);
+		m_columns = nullptr;
 	}
-	if (NULL != ptable->psorts) {
-		sortorder_set_free(ptable->psorts);
-		ptable->psorts = NULL;
+	if (m_sorts != nullptr) {
+		sortorder_set_free(m_sorts);
+		m_sorts = nullptr;
 	}
-	if (NULL != ptable->prestriction) {
-		restriction_free(ptable->prestriction);
-		ptable->prestriction = NULL;
+	if (m_restriction != nullptr) {
+		restriction_free(m_restriction);
+		m_restriction = nullptr;
 	}
-	ptable->position = 0;
+	m_position = 0;
 	table_object_set_table_id(ptable, 0);
 	ptable->clear_bookmarks();
 }
@@ -422,7 +402,7 @@ BOOL TABLE_OBJECT::get_all_columns(PROPTAG_ARRAY *pcolumns)
 		return message_object_get_attachment_table_all_proptags(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), pcolumns);
 	return exmdb_client_get_table_all_proptags(ptable->plogon->get_dir(),
-	       ptable->table_id, pcolumns);
+	       m_table_id, pcolumns);
 }
 
 BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
@@ -432,9 +412,8 @@ BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
-	if (NULL == ptable->pcolumns) {
+	if (m_columns == nullptr)
 		return FALSE;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!ptable->plogon->check_private()) {
 		rpc_info = get_rpc_info();
@@ -443,8 +422,8 @@ BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
 		username = NULL;
 	}
 	return exmdb_client_match_table(ptable->plogon->get_dir(), username,
-	       pinfo->cpid, ptable->table_id, b_forward, ptable->position,
-	       pres, ptable->pcolumns, pposition, ppropvals);
+	       pinfo->cpid, m_table_id, b_forward, m_position,
+	       pres, m_columns, pposition, ppropvals);
 }
 
 BOOL TABLE_OBJECT::read_row(uint64_t inst_id, uint32_t inst_num,
@@ -454,9 +433,8 @@ BOOL TABLE_OBJECT::read_row(uint64_t inst_id, uint32_t inst_num,
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
-	if (NULL == ptable->pcolumns) {
+	if (m_columns == nullptr)
 		return FALSE;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!ptable->plogon->check_private()) {
 		rpc_info = get_rpc_info();
@@ -465,7 +443,7 @@ BOOL TABLE_OBJECT::read_row(uint64_t inst_id, uint32_t inst_num,
 		username = NULL;
 	}
 	return exmdb_client_read_table_row(ptable->plogon->get_dir(), username,
-	       pinfo->cpid, ptable->table_id, ptable->pcolumns,
+	       pinfo->cpid, m_table_id, m_columns,
 	       inst_id, inst_num, ppropvals);
 }
 
@@ -473,21 +451,21 @@ BOOL TABLE_OBJECT::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
     uint32_t *prow_count)
 {
 	return exmdb_client_expand_table(plogon->get_dir(),
-	       table_id, inst_id, pb_found, pposition, prow_count);
+	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
 BOOL TABLE_OBJECT::collapse(uint64_t inst_id, BOOL *pb_found,
     int32_t *pposition, uint32_t *prow_count)
 {
 	return exmdb_client_collapse_table(plogon->get_dir(),
-	       table_id, inst_id, pb_found, pposition, prow_count);
+	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
 BOOL TABLE_OBJECT::store_state(uint64_t inst_id, uint32_t inst_num,
     uint32_t *pstate_id)
 {
 	return exmdb_client_store_table_state(plogon->get_dir(),
-	       table_id, inst_id, inst_num, pstate_id);
+	       m_table_id, inst_id, inst_num, pstate_id);
 }
 
 BOOL TABLE_OBJECT::restore_state(uint32_t state_id, uint32_t *pindex)
@@ -500,13 +478,13 @@ BOOL TABLE_OBJECT::restore_state(uint32_t state_id, uint32_t *pindex)
 	auto ptable = this;
 	
 	if (!exmdb_client_mark_table(ptable->plogon->get_dir(),
-	    ptable->table_id, ptable->position, &inst_id, &inst_num, &tmp_type))
+	    m_table_id, m_position, &inst_id, &inst_num, &tmp_type))
 		return FALSE;
 	if (!exmdb_client_restore_table_state(ptable->plogon->get_dir(),
-	    ptable->table_id, state_id, &position))
+	    m_table_id, state_id, &position))
 		return FALSE;	
 	if (!exmdb_client_locate_table(ptable->plogon->get_dir(),
-	    ptable->table_id, inst_id, inst_num,
+	    m_table_id, inst_id, inst_num,
 	    reinterpret_cast<int32_t *>(&new_position), &tmp_type))
 		return FALSE;
 	if (position < 0) {
@@ -515,11 +493,11 @@ BOOL TABLE_OBJECT::restore_state(uint32_t state_id, uint32_t *pindex)
 		ptable->bookmark_index ++;
 		return TRUE;
 	}
-	ptable->position = position;
+	m_position = position;
 	if (!ptable->create_bookmark(pindex)) {
-		ptable->position = new_position;
+		m_position = new_position;
 		return FALSE;
 	}
-	ptable->position = new_position;
+	m_position = new_position;
 	return TRUE;
 }
