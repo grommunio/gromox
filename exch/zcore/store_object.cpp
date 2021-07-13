@@ -185,7 +185,7 @@ std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private,
 	gx_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
 	gx_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
 	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	pstore->pgpinfo = NULL;
+	pstore->m_gpinfo = nullptr;
 	pstore->ppropid_hash = NULL;
 	pstore->ppropname_hash = NULL;
 	double_list_init(&pstore->group_list);
@@ -199,9 +199,8 @@ STORE_OBJECT::~STORE_OBJECT()
 	PROPERTY_NAME *ppropname;
 
 	auto pstore = this;
-	if (NULL != pstore->pgpinfo) {
-		property_groupinfo_free(pstore->pgpinfo);
-	}
+	if (m_gpinfo != nullptr)
+		property_groupinfo_free(m_gpinfo);
 	while ((pnode = double_list_pop_front(&pstore->group_list)) != nullptr) {
 		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
 		free(pnode);
@@ -466,11 +465,10 @@ static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t 
 PROPERTY_GROUPINFO *STORE_OBJECT::get_last_property_groupinfo()
 {
 	auto pstore = this;
-	if (NULL == pstore->pgpinfo) {
-		pstore->pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		                  pstore, msgchg_grouping_get_last_group_id());
-	}
-	return pstore->pgpinfo;
+	if (m_gpinfo == nullptr)
+		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
+		           pstore, msgchg_grouping_get_last_group_id());
+	return m_gpinfo;
 }
 
 PROPERTY_GROUPINFO *STORE_OBJECT::get_property_groupinfo(uint32_t group_id)
