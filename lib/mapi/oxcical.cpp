@@ -888,7 +888,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	tmp_byte = 0;
 	message_content_set_rcpts_internal(pmsg, prcpts);
 	for (auto piline : pmain_event->line_list) {
-		if (strcasecmp(piline->name.c_str(), "ATTENDEE") != 0)
+		if (strcasecmp(piline->m_name.c_str(), "ATTENDEE") != 0)
 			continue;
 		paddress = piline->get_first_subvalue();
 		if (NULL == paddress || 0 != strncasecmp(paddress, "MAILTO:", 7)) {
@@ -3019,7 +3019,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	size_t tmp_count = 0;
 	for (auto piline : pmain_event->line_list) {
-		if (strcasecmp(piline->name.c_str(), "ATTACH") != 0)
+		if (strcasecmp(piline->m_name.c_str(), "ATTACH") != 0)
 			continue;
 		tmp_count ++;
 		if (FALSE == oxcical_parse_attachment(piline, tmp_count, pmsg)) {

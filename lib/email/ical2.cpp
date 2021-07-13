@@ -90,7 +90,7 @@ std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
 {
 	try {
 		auto l = std::make_shared<ICAL_LINE>();
-		l->name = name;
+		l->m_name = name;
 		return l;
 	} catch (...) {
 	}
@@ -101,7 +101,7 @@ std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
 std::shared_ptr<ICAL_LINE> ICAL_COMPONENT::get_line(const char *name)
 {
 	for (auto l : line_list)
-		if (strcasecmp(l->name.c_str(), name) == 0)
+		if (strcasecmp(l->m_name.c_str(), name) == 0)
 			return l;
 	return nullptr;
 }

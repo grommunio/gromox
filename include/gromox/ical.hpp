@@ -55,7 +55,7 @@ struct GX_EXPORT ICAL_LINE {
 	const char *get_first_subvalue_by_name(const char *name);
 	ical_svlist *get_subval_list(const char *name);
 
-	std::string name;
+	std::string m_name;
 	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
 	ical_vlist value_list;
 };

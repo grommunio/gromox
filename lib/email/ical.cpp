@@ -455,7 +455,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			break;
 
 		if (NULL != tmp_item.pvalue) {
-			if (r1something(piline->name.c_str())) {
+			if (r1something(piline->m_name.c_str())) {
 				auto pivalue = ical_new_value(nullptr);
 				if (NULL == pivalue) {
 					break;
@@ -611,7 +611,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	for (auto piline : pcomponent->line_list) {
 		line_begin = offset;
 		offset += gx_snprintf(out_buff + offset,
-		          max_length - offset, "%s", piline->name.c_str());
+		          max_length - offset, "%s", piline->m_name.c_str());
 		if (offset >= max_length) {
 			return 0;
 		}
