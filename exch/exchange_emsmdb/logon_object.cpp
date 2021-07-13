@@ -156,7 +156,7 @@ std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags,
 	gx_strlcpy(plogon->account, account, GX_ARRAY_SIZE(plogon->account));
 	gx_strlcpy(plogon->dir, dir, GX_ARRAY_SIZE(plogon->dir));
 	plogon->mailbox_guid = mailbox_guid;
-	plogon->pgpinfo = NULL;
+	plogon->m_gpinfo = nullptr;
 	plogon->ppropid_hash = NULL;
 	plogon->ppropname_hash = NULL;
 	double_list_init(&plogon->group_list);
@@ -170,9 +170,8 @@ LOGON_OBJECT::~LOGON_OBJECT()
 	PROPERTY_NAME *ppropname;
 
 	auto plogon = this;
-	if (NULL != plogon->pgpinfo) {
-		property_groupinfo_free(plogon->pgpinfo);
-	}
+	if (m_gpinfo != nullptr)
+		property_groupinfo_free(m_gpinfo);
 	while ((pnode = double_list_pop_front(&plogon->group_list)) != nullptr) {
 		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
 		free(pnode);
@@ -439,11 +438,10 @@ static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *p
 PROPERTY_GROUPINFO *LOGON_OBJECT::get_last_property_groupinfo()
 {
 	auto plogon = this;
-	if (NULL == plogon->pgpinfo) {
-		plogon->pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		                  plogon, msgchg_grouping_get_last_group_id());
-	}
-	return plogon->pgpinfo;
+	if (m_gpinfo == nullptr)
+		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
+		           plogon, msgchg_grouping_get_last_group_id());
+	return m_gpinfo;
 }
 
 PROPERTY_GROUPINFO *LOGON_OBJECT::get_property_groupinfo(uint32_t group_id)
