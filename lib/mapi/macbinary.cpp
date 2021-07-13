@@ -66,11 +66,11 @@ static int macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint16_t) ||
-	    pext->offset + sizeof(uint16_t) > ext.m_data_size)
+	    ext.m_offset + sizeof(uint16_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &ext.m_udata[ext.m_offset], sizeof(*v));
 	*v = be16_to_cpu(*v);
-	pext->offset += sizeof(uint16_t);
+	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -78,11 +78,11 @@ static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint32_t) ||
-	    pext->offset + sizeof(uint32_t) > ext.m_data_size)
+	    ext.m_offset + sizeof(uint32_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &ext.m_udata[ext.m_offset], sizeof(*v));
 	*v = be32_to_cpu(*v);
-	pext->offset += sizeof(uint32_t);
+	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -93,12 +93,12 @@ static int macbinary_pull_int32(EXT_PULL *pext, int32_t *v)
 
 static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 {
+	auto &ext = *pext;
 	uint16_t crc;
-	uint32_t offset;
 	int32_t tmp_int;
 	uint8_t tmp_byte;
-	
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
+
 	TRY(pext->g_uint8(&r->old_version));
 	TRY(pext->g_uint8(&tmp_byte));
 	if (tmp_byte > 63) {
@@ -143,9 +143,8 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(macbinary_pull_uint16(pext, &crc));
-	if (crc != macbinary_crc(pext->data + offset, 124, 0)) {
+	if (macbinary_crc(&ext.m_udata[offset], 124, 0) != crc)
 		debug_info("[macbinary]: CRC checksum error");
-	}
 	return pext->g_bytes(r->pads2, 2);
 }
 
@@ -230,38 +229,38 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 	auto &ext = *pext;
 	TRY(macbinary_pull_header(pext, &r->header));
 	if (0 != r->header.xheader_len) {
-		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > ext.m_data_size)
+		ext.m_offset = (ext.m_offset + 127) & ~127;
+		if (ext.m_offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		r->pxheader = pext->data + pext->offset;
-		pext->offset += r->header.xheader_len;
+		r->pxheader = &ext.m_udata[ext.m_offset];
+		ext.m_offset += r->header.xheader_len;
 	} else {
 		r->pxheader = NULL;
 	}
 	if (0 != r->header.data_len) {
-		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > ext.m_data_size)
+		ext.m_offset = (ext.m_offset + 127) & ~127;
+		if (ext.m_offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		r->pdata = pext->data + pext->offset;
-		pext->offset += r->header.data_len;
+		r->pdata = &ext.m_udata[ext.m_offset];
+		ext.m_offset += r->header.data_len;
 	} else {
 		r->pdata = NULL;
 	}
 	if (0 != r->header.res_len) {
-		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > ext.m_data_size)
+		ext.m_offset = (ext.m_offset + 127) & ~127;
+		if (ext.m_offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		r->presource = pext->data + pext->offset;
-		pext->offset += r->header.res_len;
+		r->presource = &ext.m_udata[ext.m_offset];
+		ext.m_offset += r->header.res_len;
 	} else {
 		r->presource = NULL;
 	}
 	if (0 != r->header.comment_len) {
-		pext->offset = (pext->offset + 127) & ~127;
-		if (pext->offset > ext.m_data_size)
+		ext.m_offset = (ext.m_offset + 127) & ~127;
+		if (ext.m_offset > ext.m_data_size)
 			return EXT_ERR_BUFSIZE;
-		r->pcomment = pext->data + pext->offset;
-		pext->offset += r->header.comment_len;
+		r->pcomment = &ext.m_udata[ext.m_offset];
+		ext.m_offset += r->header.comment_len;
 	} else {
 		r->pcomment = NULL;
 	}

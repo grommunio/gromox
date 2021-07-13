@@ -14,11 +14,11 @@ static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint16_t) ||
-	    pext->offset + sizeof(uint16_t) > ext.m_data_size)
+	    ext.m_offset + sizeof(uint16_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &ext.m_udata[ext.m_offset], sizeof(*v));
 	*v = be16_to_cpu(*v);
-	pext->offset += sizeof(uint16_t);
+	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -26,11 +26,11 @@ static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint32_t) ||
-	    pext->offset + sizeof(uint32_t) > ext.m_data_size)
+	    ext.m_offset + sizeof(uint32_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &ext.m_udata[ext.m_offset], sizeof(*v));
 	*v = be32_to_cpu(*v);
-	pext->offset += sizeof(uint32_t);
+	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -61,16 +61,15 @@ static int applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
 static int applefile_pull_asiconbw(EXT_PULL *pext,
 	uint32_t entry_length, ASICONBW *r)
 {
+	auto &ext = *pext;
 	int i;
-	uint32_t offset;
 	
 	memset(r, 0, sizeof(ASICONBW));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	for (i=0; i<32; i++) {
 		TRY(applefile_pull_uint32(pext, &r->bitrow[i]));
-		if (pext->offset - offset == entry_length) {
+		if (ext.m_offset - offset == entry_length)
 			return EXT_ERR_SUCCESS;
-		}
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -78,26 +77,23 @@ static int applefile_pull_asiconbw(EXT_PULL *pext,
 static int applefile_pull_asfiledates(EXT_PULL *pext,
 	uint32_t entry_length, ASFILEDATES *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	int32_t tmp_time;
 	
 	memset(r, 0, sizeof(ASFILEDATES));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->create = TIMEDIFF + tmp_time;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->modify = TIMEDIFF + tmp_time;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->backup = TIMEDIFF + tmp_time;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_int32(pext, &tmp_time));
 	r->access = TIMEDIFF + tmp_time;
 	return EXT_ERR_SUCCESS;
@@ -106,69 +102,57 @@ static int applefile_pull_asfiledates(EXT_PULL *pext,
 static int applefile_pull_asfinderinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASFINDERINFO *r)
 {
+	auto &ext = *pext;
 	int i;
-	uint32_t offset;
 	
 	memset(r, 0, sizeof(ASFINDERINFO));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->g_bytes(&r->finfo.fd_type, 4));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(pext->g_bytes(&r->finfo.fd_creator, 4));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_uint16(pext, &r->finfo.fd_flags));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_int16(pext, &r->finfo.fd_location.v));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_int16(pext, &r->finfo.fd_location.h));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_int16(pext, &r->finfo.fd_folder));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
-	
 	TRY(applefile_pull_int16(pext, &r->fxinfo.fd_iconid));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	for (i=0; i<3; i++) {
 		TRY(applefile_pull_int16(pext, &r->fxinfo.fd_unused[i]));
-		if (pext->offset - offset == entry_length) {
+		if (ext.m_offset - offset == entry_length)
 			return EXT_ERR_SUCCESS;
-		}
 	}
 	r->valid_count ++;
 	TRY(pext->g_int8(&r->fxinfo.fd_script));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(pext->g_int8(&r->fxinfo.fd_xflags));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(pext->g_int16(&r->fxinfo.fd_comment));
 	r->valid_count ++;
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(pext->g_int32(&r->fxinfo.fd_putaway));
 	r->valid_count ++;
 	return EXT_ERR_SUCCESS;
@@ -177,60 +161,55 @@ static int applefile_pull_asfinderinfo(EXT_PULL *pext,
 static int applefile_pull_asmacinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASMACINFO *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	
 	memset(r, 0, sizeof(ASMACINFO));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->g_bytes(r->filler, 3));
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->g_uint8(&r->attribute);
 }
 
 static int applefile_pull_asprodosinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASPRODOSINFO *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	
 	memset(r, 0, sizeof(ASPRODOSINFO));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(applefile_pull_uint16(pext, &r->access));
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	TRY(applefile_pull_uint16(pext, &r->filetype));
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	return applefile_pull_uint32(pext, &r->auxtype);
 }
 
 static int applefile_pull_asmsdosinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASMSDOSINFO *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	
 	memset(r, 0, sizeof(ASMSDOSINFO));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->g_uint8(&r->filler));
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->g_uint8(&r->attr);
 }
 
 static int applefile_pull_asafpinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASAFPINFO *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	
 	memset(r, 0, sizeof(ASAFPINFO));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->g_bytes(r->filler, 3));
-	if (pext->offset - offset == entry_length) {
+	if (ext.m_offset - offset == entry_length)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->g_uint8(&r->attr);
 }
 
@@ -242,6 +221,7 @@ static int applefile_pull_asafpdirid(EXT_PULL *pext, ASAFPDIRID *r)
 static int applefile_pull_entry(EXT_PULL *pext,
 	uint32_t entry_id, uint32_t entry_length, void **ppentry)
 {	
+	auto &ext = *pext;
 	switch (entry_id) {
 	case AS_ICONBW:
 		*ppentry = pext->anew<ASICONBW>();
@@ -305,7 +285,7 @@ static int applefile_pull_entry(EXT_PULL *pext,
 			return EXT_ERR_ALLOC;
 		}
 		((BINARY*)*ppentry)->cb = entry_length;
-		static_cast<BINARY *>(*ppentry)->pb = const_cast<uint8_t *>(pext->data + pext->offset);
+		static_cast<BINARY *>(*ppentry)->pb = deconst(&ext.m_udata[ext.m_offset]);
 		return pext->advance(entry_length);
 	}
 	
@@ -489,8 +469,8 @@ static int applefile_push_entry(EXT_PUSH *pext,
 
 int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 {
+	auto &ext = *pext;
 	int i;
-	uint32_t offset;
 	uint32_t entry_offset;
 	uint32_t entry_length;
 	
@@ -505,13 +485,12 @@ int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 		TRY(applefile_pull_uint32(pext, &r->pentries[i].entry_id));
 		TRY(applefile_pull_uint32(pext, &entry_offset));
 		TRY(applefile_pull_uint32(pext, &entry_length));
-		offset = pext->offset;
-		pext->offset = entry_offset;
+		uint32_t offset = ext.m_offset;
+		ext.m_offset = entry_offset;
 		TRY(applefile_pull_entry(pext, r->pentries[i].entry_id, entry_length, &r->pentries[i].pentry));
-		if (pext->offset > entry_offset + entry_length) {
+		if (ext.m_offset > entry_offset + entry_length)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
+		ext.m_offset = offset;
 	}
 	return EXT_ERR_SUCCESS;
 }

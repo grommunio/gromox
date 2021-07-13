@@ -59,15 +59,15 @@ static int aux_ext_push_aux_perf_sessioninfo_v2(
 static int aux_ext_pull_aux_perf_clientinfo(
 	EXT_PULL *pext, AUX_PERF_CLIENTINFO *r)
 {
-	uint32_t payload_offset;
+	auto &ext = *pext;
 	uint16_t machine_name_offset;
 	uint16_t user_name_offset;
 	uint16_t client_ip_offset;
 	uint16_t client_ip_mask_offset;
 	uint16_t adapter_name_offset;
 	uint16_t mac_address_offset;
-	
-	payload_offset = pext->offset;
+	uint32_t payload_offset = ext.m_offset;
+
 	TRY(pext->g_uint32(&r->adapter_speed));
 	TRY(pext->g_uint16(&r->client_id));
 	TRY(pext->g_uint16(&machine_name_offset));
@@ -82,13 +82,13 @@ static int aux_ext_pull_aux_perf_clientinfo(
 	TRY(pext->g_uint16(&r->client_mode));
 	TRY(pext->g_uint16(&r->reserved));
 	if (0 != machine_name_offset) {
-		pext->offset = payload_offset + machine_name_offset - 4;
+		ext.m_offset = payload_offset + machine_name_offset - 4;
 		TRY(pext->g_str(&r->machine_name));
 	} else {
 		r->machine_name = NULL;
 	}
 	if (0 != user_name_offset) {
-		pext->offset = payload_offset + user_name_offset - 4;
+		ext.m_offset = payload_offset + user_name_offset - 4;
 		TRY(pext->g_str(&r->user_name));
 	} else {
 		r->user_name = NULL;
@@ -99,7 +99,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			r->client_ip_size = 0;
 			return EXT_ERR_ALLOC;
 		}
-		pext->offset = payload_offset + client_ip_offset - 4;
+		ext.m_offset = payload_offset + client_ip_offset - 4;
 		TRY(pext->g_bytes(r->client_ip, r->client_ip_size));
 	} else {
 		r->client_ip = NULL;
@@ -110,13 +110,13 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			r->client_ip_mask_size = 0;
 			return EXT_ERR_ALLOC;
 		}
-		pext->offset = payload_offset + client_ip_mask_offset - 4;
+		ext.m_offset = payload_offset + client_ip_mask_offset - 4;
 		TRY(pext->g_bytes(r->client_ip_mask, r->client_ip_mask_size));
 	} else {
 		r->client_ip_mask = NULL;
 	}
 	if (0 != adapter_name_offset) {
-		pext->offset = payload_offset + adapter_name_offset - 4;
+		ext.m_offset = payload_offset + adapter_name_offset - 4;
 		TRY(pext->g_str(&r->adapter_name));
 	} else {
 		r->adapter_name = NULL;
@@ -127,7 +127,7 @@ static int aux_ext_pull_aux_perf_clientinfo(
 			r->mac_address_size = 0;
 			return EXT_ERR_ALLOC;
 		}
-		pext->offset = payload_offset + mac_address_offset - 4;
+		ext.m_offset = payload_offset + mac_address_offset - 4;
 		TRY(pext->g_bytes(r->mac_address, r->mac_address_size));
 	} else {
 		r->mac_address = NULL;
@@ -212,21 +212,21 @@ static int aux_ext_push_aux_perf_clientinfo(
 static int aux_ext_pull_aux_perf_serverinfo(
 	EXT_PULL *pext, AUX_PERF_SERVERINFO *r)
 {
-	uint32_t payload_offset;
+	auto &ext = *pext;
 	uint16_t server_dn_offset;
 	uint16_t server_name_offset;
-	
-	payload_offset = pext->offset;
+	uint32_t payload_offset = ext.m_offset;
+
 	TRY(pext->g_uint16(&r->server_id));
 	TRY(pext->g_uint16(&r->server_type));
 	TRY(pext->g_uint16(&server_dn_offset));
 	TRY(pext->g_uint16(&server_name_offset));
 	if (0 != server_dn_offset) {
-		pext->offset = payload_offset + server_dn_offset - 4;
+		ext.m_offset = payload_offset + server_dn_offset - 4;
 		TRY(pext->g_str(&r->server_dn));
 	}
 	if (0 != server_name_offset) {
-		pext->offset = payload_offset + server_name_offset - 4;
+		ext.m_offset = payload_offset + server_name_offset - 4;
 		TRY(pext->g_str(&r->server_name));
 	} else {
 		r->server_name = NULL;
@@ -263,17 +263,17 @@ static int aux_ext_push_aux_perf_serverinfo(
 static int aux_ext_pull_aux_perf_processinfo(
 	EXT_PULL *pext, AUX_PERF_PROCESSINFO *r)
 {
-	uint32_t payload_offset;
+	auto &ext = *pext;
 	uint16_t process_name_offset;
-	
-	payload_offset = pext->offset;
+	uint32_t payload_offset = ext.m_offset;
+
 	TRY(pext->g_uint16(&r->process_id));
 	TRY(pext->g_uint16(&r->reserved1));
 	TRY(pext->g_guid(&r->process_guid));
 	TRY(pext->g_uint16(&process_name_offset));
 	TRY(pext->g_uint16(&r->reserved2));
 	if (0 != process_name_offset) {
-		pext->offset = payload_offset + process_name_offset - 4;
+		ext.m_offset = payload_offset + process_name_offset - 4;
 		TRY(pext->g_str(&r->process_name));
 	} else {
 		r->process_name = NULL;
@@ -577,17 +577,17 @@ static int aux_ext_push_aux_endpoint_capabilities(
 static int aux_ext_pull_aux_client_connection_info(
 	EXT_PULL *pext, AUX_CLIENT_CONNECTION_INFO *r)
 {
-	uint32_t payload_offset;
+	auto &ext = *pext;
 	uint16_t offset_connection_context_info;
-	
-	payload_offset = pext->offset;
+	uint32_t payload_offset = ext.m_offset;
+
 	TRY(pext->g_guid(&r->connection_guid));
 	TRY(pext->g_uint16(&offset_connection_context_info));
 	TRY(pext->g_uint16(&r->reserved));
 	TRY(pext->g_uint32(&r->connection_attempts));
 	TRY(pext->g_uint32(&r->connection_flags));
 	if (0 != offset_connection_context_info) {
-		pext->offset = payload_offset + offset_connection_context_info - 4;
+		ext.m_offset = payload_offset + offset_connection_context_info - 4;
 		TRY(pext->g_str(&r->connection_context_info));
 	} else {
 		r->connection_context_info = NULL;
@@ -613,13 +613,13 @@ static int aux_ext_push_aux_client_connection_info(
 static int aux_ext_pull_aux_server_session_info(
 	EXT_PULL *pext, AUX_SERVER_SESSION_INFO *r)
 {
-	uint32_t payload_offset;
+	auto &ext = *pext;
 	uint16_t offset_server_session_context_info;
-	
-	payload_offset = pext->offset;
+	uint32_t payload_offset = ext.m_offset;
+
 	TRY(pext->g_uint16(&offset_server_session_context_info));
 	if (0 != offset_server_session_context_info) {
-		pext->offset = payload_offset + offset_server_session_context_info - 4;
+		ext.m_offset = payload_offset + offset_server_session_context_info - 4;
 		TRY(pext->g_str(&r->server_session_context_info));
 	} else {
 		r->server_session_context_info = NULL;
@@ -641,45 +641,45 @@ static int aux_ext_push_aux_server_session_info(
 static int aux_ext_pull_aux_protocol_device_identification(
 	EXT_PULL *pext, AUX_PROTOCOL_DEVICE_IDENTIFICATION *r)
 {
-	uint32_t payload_offset;
+	auto &ext = *pext;
 	uint16_t device_manufacturer_offset;
 	uint16_t device_model_offset;
 	uint16_t device_serial_number_offset;
 	uint16_t device_version_offset;
 	uint16_t device_firmware_version_offset;
-	
-	payload_offset = pext->offset;
+	uint32_t payload_offset = ext.m_offset;
+
 	TRY(pext->g_uint16(&device_manufacturer_offset));
 	TRY(pext->g_uint16(&device_model_offset));
 	TRY(pext->g_uint16(&device_serial_number_offset));
 	TRY(pext->g_uint16(&device_version_offset));
 	TRY(pext->g_uint16(&device_firmware_version_offset));
 	if (0 != device_manufacturer_offset) {
-		pext->offset = payload_offset + device_manufacturer_offset - 4;
+		ext.m_offset = payload_offset + device_manufacturer_offset - 4;
 		TRY(pext->g_str(&r->device_manufacturer));
 	} else {
 		r->device_manufacturer = NULL;
 	}
 	if (0 != device_model_offset) {
-		pext->offset = payload_offset + device_model_offset - 4;
+		ext.m_offset = payload_offset + device_model_offset - 4;
 		TRY(pext->g_str(&r->device_model));
 	} else {
 		r->device_model = NULL;
 	}
 	if (0 != device_serial_number_offset) {
-		pext->offset = payload_offset + device_serial_number_offset - 4;
+		ext.m_offset = payload_offset + device_serial_number_offset - 4;
 		TRY(pext->g_str(&r->device_serial_number));
 	} else {
 		r->device_serial_number = NULL;
 	}
 	if (0 != device_version_offset) {
-		pext->offset = payload_offset + device_version_offset - 4;
+		ext.m_offset = payload_offset + device_version_offset - 4;
 		TRY(pext->g_str(&r->device_version));
 	} else {
 		r->device_version = NULL;
 	}
 	if (0 != device_firmware_version_offset) {
-		pext->offset = payload_offset + device_firmware_version_offset - 4;
+		ext.m_offset = payload_offset + device_firmware_version_offset - 4;
 		TRY(pext->g_str(&r->device_firmware_version));
 	} else {
 		r->device_firmware_version = NULL;
@@ -1018,10 +1018,10 @@ static int aux_ext_push_aux_header_type_union2(
 
 static int aux_ext_pull_aux_header(EXT_PULL *pext, AUX_HEADER *r)
 {
+	auto &ext = *pext;
 	uint16_t size;
-	uint32_t offset;
-	
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
+
 	TRY(pext->g_uint16(&size));
 	offset += size;
 	TRY(pext->g_uint8(&r->version));
@@ -1036,10 +1036,9 @@ static int aux_ext_pull_aux_header(EXT_PULL *pext, AUX_HEADER *r)
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	if (pext->offset > offset) {
+	if (ext.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	ext.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1075,7 +1074,7 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 
 int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 {
-	uint8_t *pdata;
+	auto &ext = *pext;
 	EXT_PULL subext;
 	uint8_t buff[0x1008];
 	DOUBLE_LIST_NODE *pnode;
@@ -1090,10 +1089,10 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 	r->rhe_flags = rpc_header_ext.flags;
 	double_list_init(&r->aux_list);
 	if (0 != rpc_header_ext.size) {
-		pdata = (uint8_t*)pext->data + pext->offset;
+		auto pdata = ext.m_udata + ext.m_offset;
 		/* obfuscation case */
 		if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
-			common_util_obfuscate_data(pdata, rpc_header_ext.size_actual);
+			common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
 		}
 		/* lzxpress case */
 		if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
@@ -1105,7 +1104,7 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 			pdata = buff;
 		}
 		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
-		while (subext.offset < subext.m_data_size) {
+		while (subext.m_offset < subext.m_data_size) {
 			pnode = pext->anew<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				return EXT_ERR_ALLOC;

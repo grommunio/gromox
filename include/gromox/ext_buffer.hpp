@@ -145,11 +145,11 @@ struct EXT_PULL {
 	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
 	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }
 	union {
-		const uint8_t *data, *udata;
-		const char *cdata;
-		const void *vdata = nullptr;
+		const uint8_t *m_udata;
+		const char *m_cdata;
+		const void *m_vdata = nullptr;
 	};
-	uint32_t m_data_size = 0, offset = 0, m_flags = 0;
+	uint32_t m_data_size = 0, m_offset = 0, m_flags = 0;
 };
 
 struct EXT_PUSH {

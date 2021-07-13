@@ -1372,7 +1372,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 		if (TRUE == decode_hex_binary(pvalue, tmp_buff, 1024)) {
 			ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
 			if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
-			    ext_pull.offset == tmp_len / 2) {
+			    ext_pull.m_offset == tmp_len / 2) {
 				if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
 					globalobjectid.month > 12 || 0 == globalobjectid.month ||
 					globalobjectid.day > ical_get_monthdays(

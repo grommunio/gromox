@@ -376,7 +376,7 @@ static int rop_ext_push_deletefolder_response(
 static int rop_ext_pull_setsearchcriteria_request(
 	EXT_PULL *pext, SETSEARCHCRITERIA_REQUEST *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	uint16_t res_size;
 	
 	TRY(pext->g_uint16(&res_size));
@@ -387,12 +387,11 @@ static int rop_ext_pull_setsearchcriteria_request(
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		offset = pext->offset + res_size;
+		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
-		if (pext->offset > offset) {
+		if (ext.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
+		ext.m_offset = offset;
 	}
 	TRY(pext->g_uint64_sa(&r->folder_ids));
 	return pext->g_uint32(&r->search_flags);
@@ -595,7 +594,7 @@ static int rop_ext_push_sorttable_response(
 static int rop_ext_pull_restrict_request(
 	EXT_PULL *pext, RESTRICT_REQUEST *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	uint16_t res_size;
 	
 	TRY(pext->g_uint8(&r->res_flags));
@@ -607,12 +606,11 @@ static int rop_ext_pull_restrict_request(
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		offset = pext->offset + res_size;
+		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
-		if (pext->offset > offset) {
+		if (ext.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
+		ext.m_offset = offset;
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -709,7 +707,7 @@ static int rop_ext_push_querycolumnsall_response(
 
 static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	uint16_t res_size;
 	
 	TRY(pext->g_uint8(&r->flags));
@@ -721,12 +719,11 @@ static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		offset = pext->offset + res_size;
+		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
-		if (pext->offset > offset) {
+		if (ext.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
+		ext.m_offset = offset;
 	}
 	TRY(pext->g_uint8(&r->seek_pos));
 	return pext->g_sbin(&r->bookmark);
@@ -1277,16 +1274,15 @@ static int rop_ext_push_getpropertieslist_response(
 static int rop_ext_pull_setproperties_request(
 	EXT_PULL *pext, SETPROPERTIES_REQUEST *r)
 {
+	auto &ext = *pext;
 	uint16_t size;
-	uint32_t offset;
 	
 	TRY(pext->g_uint16(&size));
-	offset = pext->offset + size;
+	uint32_t offset = ext.m_offset + size;
 	TRY(pext->g_tpropval_a(&r->propvals));
-	if (pext->offset > offset) {
+	if (ext.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	ext.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1299,16 +1295,15 @@ static int rop_ext_push_setproperties_response(
 static int rop_ext_pull_setpropertiesnoreplicate_request(
 	EXT_PULL *pext, SETPROPERTIESNOREPLICATE_REQUEST *r)
 {
+	auto &ext = *pext;
 	uint16_t size;
-	uint32_t offset;
 	
 	TRY(pext->g_uint16(&size));
-	offset = pext->offset + size;
+	uint32_t offset = ext.m_offset + size;
 	TRY(pext->g_tpropval_a(&r->propvals));
-	if (pext->offset > offset) {
+	if (ext.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	ext.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1696,7 +1691,7 @@ static int rop_ext_pull_tellversion_request(
 static int rop_ext_pull_syncconfigure_request(
 	EXT_PULL *pext, SYNCCONFIGURE_REQUEST *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	uint16_t res_size;
 	
 	TRY(pext->g_uint8(&r->hindex));
@@ -1711,12 +1706,11 @@ static int rop_ext_pull_syncconfigure_request(
 		if (NULL == r->pres) {
 			return EXT_ERR_ALLOC;
 		}
-		offset = pext->offset + res_size;
+		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
-		if (pext->offset > offset) {
+		if (ext.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
+		ext.m_offset = offset;
 	}
 	TRY(pext->g_uint32(&r->extra_flags));
 	return pext->g_proptag_a(&r->proptags);
@@ -1739,8 +1733,8 @@ static int rop_ext_push_syncimportmessagechange_response(
 static int rop_ext_pull_syncimportreadstatechanges_request(
 	EXT_PULL *pext, SYNCIMPORTREADSTATECHANGES_REQUEST *r)
 {
+	auto &ext = *pext;
 	uint16_t size;
-	uint32_t offset;
 	MESSAGE_READ_STAT tmp_array[0x1000];
 	
 	TRY(pext->g_uint16(&size));
@@ -1748,14 +1742,13 @@ static int rop_ext_pull_syncimportreadstatechanges_request(
 		return EXT_ERR_FORMAT;
 	}
 	r->count = 0;
-	offset = pext->offset + size;
-	while (pext->offset < offset && r->count < 0x1000) {
+	uint32_t offset = ext.m_offset + size;
+	while (ext.m_offset < offset && r->count < 0x1000) {
 		TRY(rop_ext_pull_message_read_stat(pext, tmp_array + r->count));
 		r->count ++;
 	}
-	if (pext->offset != offset) {
+	if (ext.m_offset != offset)
 		return EXT_ERR_FORMAT;
-	}
 	r->pread_stat = pext->anew<MESSAGE_READ_STAT>(r->count);
 	if (NULL == r->pread_stat) {
 		r->count = 0;
@@ -1830,11 +1823,11 @@ static int rop_ext_pull_syncuploadstatestreamcontinue_request(
 static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 	EXT_PULL *pext, SETLOCALREPLICAMIDSETDELETED_REQUEST *r)
 {
-	uint32_t offset;
+	auto &ext = *pext;
 	uint16_t data_size;
 	
 	TRY(pext->g_uint16(&data_size));
-	offset = pext->offset + data_size;
+	uint32_t offset = ext.m_offset + data_size;
 	TRY(pext->g_uint32(&r->count));
 	if (0 == r->count) {
 		return EXT_ERR_FORMAT;
@@ -1846,10 +1839,9 @@ static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_longterm_rang(&r->prange[i]));
-	if (pext->offset > offset) {
+	if (ext.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	ext.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1981,8 +1973,8 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 	auto &ext = *pext;
 	EMSMDB_INFO *pemsmdb_info;
 	
-	r->bookmark.pb = (uint8_t*)pext->data + pext->offset;
-	r->bookmark.cb = ext.m_data_size - pext->offset;
+	r->bookmark.pb = deconst(ext.m_udata) + ext.m_offset;
+	r->bookmark.cb = ext.m_data_size - ext.m_offset;
 	TRY(pext->g_uint8(&r->rop_id));
 	TRY(pext->g_uint8(&r->logon_id));
 	TRY(pext->g_uint8(&r->hindex));
@@ -3206,10 +3198,10 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 
 int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 {
+	auto &ext = *pext;
 	uint16_t i;
 	int tmp_num;
 	uint16_t size;
-	uint8_t *pdata;
 	EXT_PULL subext;
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t decompressed_len;
@@ -3229,11 +3221,10 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	if (NULL == pbuff) {
 		return EXT_ERR_ALLOC;
 	}
-	pdata = (uint8_t*)pext->data + pext->offset;
+	auto pdata = ext.m_udata + ext.m_offset;
 	/* obfuscation case */
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
-		common_util_obfuscate_data(pdata,
-			rpc_header_ext.size_actual);
+		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
 	}
 	/* lzxpress case */
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
@@ -3247,7 +3238,7 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	}
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
-	while (subext.offset < size) {
+	while (subext.m_offset < size) {
 		pnode = pext->anew<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return EXT_ERR_ALLOC;

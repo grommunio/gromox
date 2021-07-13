@@ -15,19 +15,17 @@
 void EXT_PULL::init(const void *pdata, uint32_t data_size,
     EXT_BUFFER_ALLOC alloc, uint32_t flags)
 {
-	auto pext = this;
-	pext->data = static_cast<const uint8_t *>(pdata);
+	m_udata = static_cast<const uint8_t *>(pdata);
 	m_data_size = data_size;
 	m_alloc = alloc;
-	pext->offset = 0;
+	m_offset = 0;
 	m_flags = flags;
 }
 
 int EXT_PULL::advance(uint32_t size)
 {
-	auto pext = this;
-	pext->offset += size;
-	if (pext->offset > m_data_size)
+	m_offset += size;
+	if (m_offset > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	return EXT_ERR_SUCCESS;
 }
@@ -43,80 +41,73 @@ int EXT_PULL::g_rpc_header_ext(RPC_HEADER_EXT *r)
 
 int EXT_PULL::g_uint8(uint8_t *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(uint8_t) ||
-	    pext->offset + sizeof(uint8_t) > m_data_size)
+	    m_offset + sizeof(uint8_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	*v = pext->data[pext->offset];
-	pext->offset += sizeof(uint8_t);
+	*v = m_udata[m_offset];
+	m_offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_uint16(uint16_t *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(uint16_t) ||
-	    pext->offset + sizeof(uint16_t) > m_data_size)
+	    m_offset + sizeof(uint16_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &m_udata[m_offset], sizeof(*v));
 	*v = le16_to_cpu(*v);
-	pext->offset += sizeof(uint16_t);
+	m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_uint32(uint32_t *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(uint32_t) ||
-	    pext->offset + sizeof(uint32_t) > m_data_size)
+	    m_offset + sizeof(uint32_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &m_udata[m_offset], sizeof(*v));
 	*v = le32_to_cpu(*v);
-	pext->offset += sizeof(uint32_t);
+	m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_uint64(uint64_t *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(uint64_t) ||
-	    pext->offset + sizeof(uint64_t) > m_data_size)
+	    m_offset + sizeof(uint64_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
+	memcpy(v, &m_udata[m_offset], sizeof(*v));
 	*v = le64_to_cpu(*v);
-	pext->offset += sizeof(uint64_t);
+	m_offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_float(float *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(float) ||
-	    pext->offset + sizeof(float) > m_data_size)
+	    m_offset + sizeof(float) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
-	pext->offset += sizeof(float);
+	memcpy(v, &m_udata[m_offset], sizeof(*v));
+	m_offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_double(double *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(double) ||
-	    pext->offset + sizeof(double) > m_data_size)
+	    m_offset + sizeof(double) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &pext->data[pext->offset], sizeof(*v));
-	pext->offset += sizeof(double);
+	memcpy(v, &m_udata[m_offset], sizeof(*v));
+	m_offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_bool(BOOL *v)
 {
-	auto pext = this;
 	if (m_data_size < sizeof(uint8_t) ||
-	    pext->offset + sizeof(uint8_t) > m_data_size)
+	    m_offset + sizeof(uint8_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	uint8_t tmp_byte = pext->data[pext->offset++];
+	auto tmp_byte = m_udata[m_offset++];
 	if (0 == tmp_byte) {
 		*v = FALSE;
 	} else if (1 == tmp_byte) {
@@ -129,11 +120,10 @@ int EXT_PULL::g_bool(BOOL *v)
 
 int EXT_PULL::g_bytes(void *data, uint32_t n)
 {
-	auto pext = this;
-	if (m_data_size < n || pext->offset + n > m_data_size)
+	if (m_data_size < n || m_offset + n > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(data, pext->data + pext->offset, n);
-	pext->offset += n;
+	memcpy(data, &m_udata[m_offset], n);
+	m_offset += n;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -151,17 +141,17 @@ int EXT_PULL::g_guid(GUID *r)
 int EXT_PULL::g_str(char **ppstr)
 {
 	auto pext = this;
-	if (pext->offset >= m_data_size)
+	if (m_offset >= m_data_size)
 		return EXT_ERR_BUFSIZE;
-	auto len = strnlen(pext->cdata + pext->offset, m_data_size - pext->offset);
-	if (len + 1 > m_data_size - pext->offset)
+	auto len = strnlen(&m_cdata[m_offset], m_data_size - m_offset);
+	if (len + 1 > m_data_size - m_offset)
 		return EXT_ERR_BUFSIZE;
 	len ++;
 	*ppstr = pext->anew<char>(len);
 	if (NULL == *ppstr) {
 		return EXT_ERR_ALLOC;
 	}
-	memcpy(*ppstr, pext->data + pext->offset, len);
+	memcpy(*ppstr, &m_udata[m_offset], len);
 	return pext->advance(len);
 }
 
@@ -172,14 +162,12 @@ int EXT_PULL::g_wstr(char **ppstr)
 	
 	if (!(m_flags & EXT_FLAG_UTF16))
 		return pext->g_str(ppstr);
-	if (pext->offset >= m_data_size)
+	if (m_offset >= m_data_size)
 		return EXT_ERR_BUFSIZE;
-	int max_len = m_data_size - pext->offset;
+	int max_len = m_data_size - m_offset;
 	for (i=0; i<max_len-1; i+=2) {
-		if (0 == *(pext->data + pext->offset + i) &&
-			0 == *(pext->data + pext->offset + i + 1)) {
+		if (m_udata[m_offset+i] == '\0' && m_udata[m_offset+i+1] == '\0')
 			break;
-		}
 	}
 	if (i >= max_len - 1) {
 		return EXT_ERR_BUFSIZE;
@@ -193,7 +181,7 @@ int EXT_PULL::g_wstr(char **ppstr)
 	if (NULL == pbuff) {
 		return EXT_ERR_ALLOC;
 	}
-	memcpy(pbuff, pext->data + pext->offset, len);
+	memcpy(pbuff, &m_udata[m_offset], len);
 	if (FALSE == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
 		free(pbuff);
 		return EXT_ERR_CHARCNV;
@@ -206,16 +194,16 @@ int EXT_PULL::g_blob(DATA_BLOB *pblob)
 {
 	auto pext = this;
 	
-	if (pext->offset > m_data_size)
+	if (m_offset > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	uint32_t length = m_data_size - pext->offset;
+	uint32_t length = m_data_size - m_offset;
 	pblob->data = pext->anew<uint8_t>(length);
 	if (NULL == pblob->data) {
 		return EXT_ERR_ALLOC;
 	}
-	memcpy(pblob->data, pext->data + pext->offset, length);
+	memcpy(pblob->data, &m_udata[m_offset], length);
 	pblob->length = length;
-	pext->offset += length;
+	m_offset += length;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1033,7 +1021,6 @@ int EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 
 int EXT_PULL::g_propname(PROPERTY_NAME *r)
 {
-	uint32_t offset;
 	uint8_t name_size;
 	auto pext = this;
 	
@@ -1048,12 +1035,11 @@ int EXT_PULL::g_propname(PROPERTY_NAME *r)
 		if (name_size < 2) {
 			return EXT_ERR_FORMAT;
 		}
-		offset = pext->offset + name_size;
+		uint32_t offset = m_offset + name_size;
 		TRY(pext->g_wstr(&r->pname));
-		if (pext->offset > offset) {
+		if (m_offset > offset)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
+		m_offset = offset;
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1351,7 +1337,6 @@ int EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFOMATION *r)
 {
 	int i;
 	uint32_t size;
-	uint32_t offset;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
@@ -1374,14 +1359,13 @@ int EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFOMATION *r)
 		TRY(pext->g_uint16(&r->ppropid[i]));
 	}
 	TRY(pext->g_uint32(&size));
-	offset = pext->offset + size;
+	uint32_t offset = m_offset + size;
 	for (i=0; i<r->count; i++) {
 		TRY(pext->g_propname(&r->ppropname[i]));
 	}
-	if (offset < pext->offset) {
+	if (offset < m_offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1581,7 +1565,6 @@ int EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
 
 int EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
 {
-	uint32_t offset;
 	uint16_t row_size;
 	auto pext = this;
 	
@@ -1592,16 +1575,15 @@ int EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
 		r->precipient_row = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	offset = pext->offset + row_size;
+	uint32_t offset = m_offset + row_size;
 	r->precipient_row = pext->anew<RECIPIENT_ROW>();
 	if (NULL == r->precipient_row) {
 		return EXT_ERR_ALLOC;
 	}
 	TRY(g_recipient_row(pproptags, r->precipient_row));
-	if (pext->offset > offset) {
+	if (m_offset > offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1651,8 +1633,6 @@ int EXT_PULL::g_oneoff_a(ONEOFF_ARRAY *r)
 {
 	uint32_t bytes;
 	uint8_t pad_len;
-	uint32_t offset;
-	uint32_t offset2;
 	auto pext = this;
 	
 	TRY(pext->g_uint32(&r->count));
@@ -1662,22 +1642,20 @@ int EXT_PULL::g_oneoff_a(ONEOFF_ARRAY *r)
 		return EXT_ERR_ALLOC;
 	}
 	TRY(pext->g_uint32(&bytes));
-	offset = pext->offset + bytes;
+	uint32_t offset = m_offset + bytes;
 	for (size_t i = 0; i < r->count; ++i) {
 		TRY(pext->g_uint32(&bytes));
-		offset2 = pext->offset + bytes;
+		uint32_t offset2 = m_offset + bytes;
 		TRY(pext->g_oneoff_eid(&r->pentry_id[i]));
-		if (pext->offset > offset2) {
+		if (m_offset > offset2)
 			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset2;
+		m_offset = offset2;
 		pad_len = ((bytes + 3) & ~3) - bytes;
 		TRY(pext->advance(pad_len));
 	}
-	if (pext->offset > offset) {
+	if (m_offset > offset)
 		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
+	m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
