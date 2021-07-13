@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2020-2021 grammm GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <gromox/mapidefs.h>
@@ -260,7 +261,7 @@ static uint32_t table_object_get_folder_permission_rights(
 	return permission;
 }
 
-static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
+static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable,
     const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, uint32_t row_needed)
 {
 	TARRAY_SET rcpt_set;
@@ -268,34 +269,16 @@ static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
 	if (!message_object_read_recipients(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
 	    0, 0xFFFF, &rcpt_set))
 		return FALSE;
-	if (TRUE == b_forward) {
-		uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
-				   rcpt_set.count : ptable->position + row_needed;
-		pset->count = 0;
-		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
-		if (NULL == pset->pparray) {
-			return FALSE;
-		}
-		for (size_t i = ptable->position; i < end_pos; ++i) {
-			pset->pparray[pset->count] = rcpt_set.pparray[i];
-			pset->count ++;
-		}
-	} else {
-		uint32_t end_pos;
-		if (row_needed >= 0 && static_cast<uint32_t>(row_needed) >= ptable->position) {
-			end_pos = 0;
-		} else {
-			end_pos = ptable->position - row_needed + 1;
-		}
-		pset->count = 0;
-		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
-		if (NULL == pset->pparray) {
-			return FALSE;
-		}
-		for (ssize_t i = ptable->position; i >= end_pos; --i) {
-			pset->pparray[pset->count] = rcpt_set.pparray[i];
-			pset->count++;
-		}
+	uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
+	                   rcpt_set.count : ptable->position + row_needed;
+	pset->count = 0;
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position);
+	if (NULL == pset->pparray) {
+		return FALSE;
+	}
+	for (size_t i = ptable->position; i < end_pos; ++i) {
+		pset->pparray[pset->count] = rcpt_set.pparray[i];
+		pset->count++;
 	}
 	if (common_util_index_proptags(pcolumns, PR_ENTRYID) < 0)
 		return TRUE;
@@ -331,51 +314,20 @@ static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
 	return TRUE;
 }
 
-static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable, BOOL b_forward,
+static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable,
     const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo,
     uint32_t row_needed)
 {
-	if (TRUE == b_forward) {
-		uint32_t end_pos = ptable->position + row_needed;
-		if (end_pos >= 2) {
-			end_pos = 1;
-		}
-		pset->count = 0;
-		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
-		if (NULL == pset->pparray) {
-			return FALSE;
-		}
-		for (size_t i = ptable->position; i <= end_pos; ++i) {
-			if (0 != i && 1 != i) {
-				continue;
-			}
-			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == pset->pparray[pset->count]) {
-				return FALSE;
-			}
-			uint32_t handle = i == 0 ?
-				pinfo->ptree->get_store_handle(TRUE, pinfo->user_id) :
-				pinfo->ptree->get_store_handle(false, pinfo->domain_id);
-			uint8_t mapi_type = 0;
-			auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
-			if (pstore == nullptr || mapi_type != ZMG_STORE)
-				return FALSE;
-			if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
-				return FALSE;
-			pset->count ++;
-		}
-		return TRUE;
-	}
-	uint32_t end_pos = ptable->position - row_needed;
-	if (end_pos < 0) {
-		end_pos = 0;
+	uint32_t end_pos = ptable->position + row_needed;
+	if (end_pos >= 2) {
+		end_pos = 1;
 	}
 	pset->count = 0;
-	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(ptable->position - end_pos + 1);
+	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
-	for (ssize_t i = ptable->position; i >= end_pos; --i) {
+	for (size_t i = ptable->position; i <= end_pos; ++i) {
 		if (0 != i && 1 != i) {
 			continue;
 		}
@@ -566,8 +518,8 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
-	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
+BOOL table_object_query_rows(TABLE_OBJECT *ptable,
+    const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
 {
 	PROPTAG_ARRAY tmp_columns;
 	if (NULL == pcolumns) {
@@ -585,38 +537,35 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	if (0 == ptable->position && FALSE == b_forward) {
-		pset->count = 0;
-		return TRUE;
-	}
 	uint32_t row_num = table_object_get_total(ptable);
-	if (ptable->position >= row_num && TRUE == b_forward) {
+	if (ptable->position >= row_num) {
 		pset->count = 0;
 		return TRUE;
 	}
 	if (row_count > row_num) {
 		row_count = row_num;
 	}
-	int32_t row_needed = b_forward == TRUE ? row_count : -row_count; /* XXX */
+	if (row_count > INT32_MAX)
+		row_count = INT32_MAX;
 
 	if (ATTACHMENT_TABLE == ptable->table_type) {
 		return message_object_query_attachment_table(
 		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-		       pcolumns, ptable->position, row_needed, pset);
+		       pcolumns, ptable->position, row_count, pset);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
-		return rcpttable_query_rows(ptable, b_forward, pcolumns, pset, row_needed);
+		return rcpttable_query_rows(ptable, pcolumns, pset, row_count);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		return container_object_query_container_table(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
 		       pcolumns, (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
-		       ptable->position, row_needed, pset);
+		       ptable->position, row_count, pset);
 	} else if (USER_TABLE == ptable->table_type) {
 		return container_object_query_user_table(
 		       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-		       pcolumns, ptable->position, row_needed, pset);
+		       pcolumns, ptable->position, row_count, pset);
 	} else if (RULE_TABLE == ptable->table_type) {
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    nullptr, pinfo->cpid, ptable->table_id, pcolumns,
-		    ptable->position, row_needed, pset))
+		    ptable->position, row_count, pset))
 			return FALSE;
 		for (size_t i = 0; i < pset->count; ++i) {
 			if (FALSE == common_util_convert_to_zrule_data(
@@ -626,16 +575,16 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		return TRUE;
 	} else if (STORE_TABLE == ptable->table_type) {
-		return storetbl_query_rows(ptable, b_forward, pcolumns, pset, pinfo, row_needed);
+		return storetbl_query_rows(ptable, pcolumns, pset, pinfo, row_count);
 	}
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	if ((CONTENT_TABLE == ptable->table_type ||
 	    HIERARCHY_TABLE == ptable->table_type)) {
-		return hierconttbl_query_rows(ptable, pcolumns, tmp_columns, pinfo, row_needed, pset);
+		return hierconttbl_query_rows(ptable, pcolumns, tmp_columns, pinfo, row_count, pset);
 	}
 	return exmdb_client::query_table(ptable->pstore->get_dir(),
 		username, pinfo->cpid, ptable->table_id,
-		pcolumns, ptable->position, row_needed, pset);
+	       pcolumns, ptable->position, row_count, pset);
 }
 
 void table_object_seek_current(TABLE_OBJECT *ptable,

@@ -2813,10 +2813,8 @@ uint32_t zarafa_server_queryrows(
 					break;
 				}
 				table_object_set_position(ptable, position);
-				if (FALSE == table_object_query_rows(ptable,
-					TRUE, pproptags, 1, &tmp_set)) {
+				if (!table_object_query_rows(ptable, pproptags, 1, &tmp_set))
 					return ecError;
-				}
 				if (1 != tmp_set.count) {
 					break;
 				}
@@ -2840,10 +2838,8 @@ uint32_t zarafa_server_queryrows(
 			return ecNotSupported;
 		}
 	} else {
-		if (FALSE == table_object_query_rows(ptable,
-			TRUE, pproptags, count, prowset)) {
+		if (!table_object_query_rows(ptable, pproptags, count, prowset))
 			return ecError;
-		}
 		table_object_seek_current(ptable, TRUE, prowset->count);
 	}
 	pinfo.reset();

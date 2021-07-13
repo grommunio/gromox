@@ -38,8 +38,7 @@ BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
 	const SORTORDER_SET *psorts);
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable);
 void table_object_unload(TABLE_OBJECT *ptable);
-BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
-	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset);
+extern BOOL table_object_query_rows(TABLE_OBJECT *, const PROPTAG_ARRAY *cols, uint32_t row_count, TARRAY_SET *);
 BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
 	const RESTRICTION *prestriction);
 void table_object_seek_current(TABLE_OBJECT *ptable,
