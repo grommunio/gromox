@@ -6,6 +6,7 @@
 #include <gromox/util.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/safeint.hpp>
 #include "common_util.h"
 #include "rop_processor.h"
 #include "stream_object.h"
@@ -170,15 +171,13 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 		pstream->seek_ptr >= pstream->content_bin.cb) {
 		return 0;
 	}
-	if (pstream->seek_ptr > static_cast<uint32_t>(UINT32_MAX) - buf_len)
-		/* overflow safety check for u32t+u32t (seekp+buflen>UINT32_MAX) */
+	int8_t clamped = 0;
+	auto newpos = safe_add_s(pstream->seek_ptr, buf_len, &clamped);
+	if (clamped >= 1)
 		return 0;
-	if (pstream->seek_ptr + buf_len > pstream->content_bin.cb) {
-		if (FALSE == stream_object_set_length(pstream,
-			pstream->seek_ptr + buf_len)) {
-			return 0;	
-		}
-	}
+	if (newpos > pstream->content_bin.cb &&
+	    !stream_object_set_length(pstream, newpos))
+		return 0;
 	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
 		if (!attachment_object_append_stream_object(static_cast<ATTACHMENT_OBJECT *>(pstream->pparent), pstream))
 			return 0;	
@@ -188,7 +187,7 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 	}
 	memcpy(pstream->content_bin.pb +
 		pstream->seek_ptr, pbuff, buf_len);
-	pstream->seek_ptr += buf_len;
+	pstream->seek_ptr = newpos;
 	pstream->b_touched = TRUE;
 	return buf_len;
 }
@@ -268,70 +267,22 @@ BOOL stream_object_set_length(
 
 BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
 {	
+	uint64_t origin;
 	switch (opt) {
-	case STREAM_SEEK_SET:
-		if (offset <= 0) {
-			pstream->seek_ptr = 0;
-			return TRUE;
-		}
-		if (static_cast<uint64_t>(offset) > pstream->content_bin.cb) {
-			if (FALSE == stream_object_set_length(
-				pstream, offset)) {
-				return FALSE;
-			}
-		}
-		pstream->seek_ptr = offset;
-		return TRUE; 
-	case STREAM_SEEK_CUR: {
-		if (offset < 0) {
-			/* underflow safety check for s64t */
-			uint64_t dwoff = offset != INT64_MIN ? -offset :
-			                 static_cast<uint64_t>(INT64_MIN);
-			if (dwoff > pstream->seek_ptr) {
-				pstream->seek_ptr = 0;
-				return TRUE;
-			}
-			pstream->seek_ptr -= dwoff;
-			return TRUE;
-		}
-		auto upoff = static_cast<uint64_t>(offset);
-		if (pstream->seek_ptr > static_cast<uint64_t>(UINT64_MAX) - upoff)
-			/* overflow safety check for u64t+u64t */
-			return false;
-		if (pstream->seek_ptr + upoff > pstream->content_bin.cb) {
-			if (FALSE == stream_object_set_length(
-				pstream, pstream->seek_ptr + offset)) {
-				return FALSE;
-			}
-		}
-		pstream->seek_ptr += upoff;
-		return TRUE;
+	case STREAM_SEEK_SET: origin = 0; break;
+	case STREAM_SEEK_CUR: origin = pstream->seek_ptr; break;
+	case STREAM_SEEK_END: origin = pstream->content_bin.cb; break;
+	default: return false;
 	}
-	case STREAM_SEEK_END: {
-		if (offset <= 0) {
-			/* underflow safety check for s64t */
-			uint64_t dwoff = offset != INT64_MIN ? -offset :
-			                 static_cast<uint64_t>(INT64_MIN);
-			pstream->seek_ptr = dwoff > pstream->seek_ptr ? 0 :
-			                    pstream->content_bin.cb - dwoff;
-			return TRUE;
-		}
-		auto upoff = static_cast<uint64_t>(offset);
-		if (pstream->content_bin.cb > UINT64_MAX - upoff) {
-			/* overflow safety check for u64t+u64t (cb+upoff>UINT64_MAX) */
-			/* don't bother trying to call set_length(pstream,UINT64_MAX), it'll never complete */
-			return false;
-		} else if (pstream->content_bin.cb + upoff > static_cast<uint64_t>(INT32_MAX) + 1) {
-			/* OXCPRPT leaves this unspecified */
-			return false;
-		} else if (!stream_object_set_length(pstream, pstream->content_bin.cb + offset)) {
-			return FALSE;
-		}
-		pstream->seek_ptr = pstream->content_bin.cb + offset;
-		return TRUE;
-	}
-	}
-	return FALSE;
+	int8_t clamped = 0;
+	auto newpos = safe_add_s(origin, offset, &clamped);
+	if (clamped > 1)
+		return false;
+	if (newpos > pstream->content_bin.cb &&
+	    !stream_object_set_length(pstream, newpos))
+		return false;
+	pstream->seek_ptr = newpos;
+	return TRUE;
 }
 
 uint32_t stream_object_get_seek_position(STREAM_OBJECT *pstream)

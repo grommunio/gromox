@@ -22,6 +22,7 @@
 #include "ab_tree.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/int_hash.hpp>
+#include <gromox/safeint.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "user_object.h"
@@ -2921,39 +2922,17 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		original_position = 0;
 		table_object_set_position(ptable, static_cast<uint32_t>(seek_rows));
 		break;
-	case BOOKMARK_END: {
+	case BOOKMARK_END:
 		if (seek_rows > 0) {
 			return ecInvalidParam;
 		}
 		original_position = table_object_get_total(ptable);
-		/* underflow safety check for s32t */
-		uint32_t dwoff = seek_rows != INT32_MIN ? -seek_rows :
-		                 static_cast<uint32_t>(INT32_MIN) + 1;
-		if (dwoff > table_object_get_total(ptable))
-			table_object_set_position(ptable, 0);
-		else
-			table_object_set_position(ptable, table_object_get_total(ptable) - dwoff);
+		table_object_set_position(ptable, safe_add_s(original_position, seek_rows));
 		break;
-	}
-	case BOOKMARK_CURRENT: {
+	case BOOKMARK_CURRENT:
 		original_position = table_object_get_position(ptable);
-		if (seek_rows < 0) {
-			/* underflow safety check for s32t */
-			uint32_t dwoff = seek_rows != INT32_MIN ? -seek_rows :
-			                 static_cast<uint32_t>(INT32_MIN) + 1;
-			if (dwoff > original_position)
-				table_object_set_position(ptable, 0);
-			else
-				table_object_set_position(ptable, original_position - dwoff);
-			break;
-		}
-		auto upoff = static_cast<uint32_t>(seek_rows);
-		if (original_position > static_cast<uint32_t>(UINT32_MAX) - upoff)
-			/* overflow safety check for u32t+u32t */
-			return 0;
-		table_object_set_position(ptable, original_position + upoff);
+		table_object_set_position(ptable, safe_add_s(original_position, seek_rows));
 		break;
-	}
 	default: {
 		original_position = table_object_get_position(ptable);
 		if (FALSE == table_object_retrieve_bookmark(
@@ -2963,21 +2942,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		if (!b_exist)
 			return ecNotFound;
 		auto original_position1 = table_object_get_position(ptable);
-		if (seek_rows < 0) {
-			/* underflow safety check for s32t */
-			uint32_t dwoff = seek_rows != INT32_MIN ? -seek_rows :
-			                 static_cast<uint32_t>(INT32_MIN) + 1;
-			if (dwoff > original_position1)
-				table_object_set_position(ptable, 0);
-			else
-				table_object_set_position(ptable, original_position1 - dwoff);
-			break;
-		}
-		auto upoff = static_cast<uint32_t>(seek_rows);
-		if (original_position1 > static_cast<uint32_t>(UINT32_MAX) - upoff)
-			/* overflow check for u32t+u32t */
-			return 0;
-		table_object_set_position(ptable, original_position1 + upoff);
+		table_object_set_position(ptable, safe_add_s(original_position1, seek_rows));
 		break;
 	}
 	}

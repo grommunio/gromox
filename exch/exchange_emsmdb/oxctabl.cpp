@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <climits>
 #include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/safeint.hpp>
 #include "rops.h"
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -411,54 +411,36 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 	}
 	if (!ptable->check_to_load())
 		return ecError;
+	int8_t clamped = 0;
 	switch (seek_pos) {
 	case BOOKMARK_BEGINNING:
 		if (offset < 0) {
 			return ecInvalidParam;
 		}
 		original_position = 0;
-		*phas_soughtless = static_cast<uint32_t>(offset) > ptable->get_total();
+		clamped = static_cast<uint32_t>(offset) > ptable->get_total();
 		ptable->set_position(offset);
 		break;
-	case BOOKMARK_END: {
+	case BOOKMARK_END:
 		if (offset > 0) {
 			return ecInvalidParam;
 		}
 		original_position = ptable->get_total();
-		/* underflow safety check for s32t */
-		uint32_t dwoff = offset != INT32_MIN ? -offset :
-		                 static_cast<uint32_t>(INT32_MIN) + 1;
-		*phas_soughtless = dwoff > original_position;
-		ptable->set_position(*phas_soughtless ? 0 : original_position - dwoff);
+		ptable->set_position(safe_add_s(original_position, offset, &clamped));
 		break;
-	}
 	case BOOKMARK_CURRENT: {
 		original_position = ptable->get_position();
-		if (offset < 0) {
-			/* underflow safety check for s32t */
-			uint32_t dwoff = offset != INT32_MIN ? -offset :
-			                 static_cast<uint32_t>(INT32_MIN) + 1;
-			*phas_soughtless = dwoff > original_position;
-			ptable->set_position(*phas_soughtless ? 0 : original_position - dwoff);
-			break;
-		}
-		auto upoff = static_cast<uint32_t>(offset);
-		if (original_position > static_cast<uint32_t>(UINT32_MAX) - upoff) {
-			/* overflow safety check for u32t+u32t */
-			*phas_soughtless = 1;
-			ptable->set_position(UINT32_MAX);
-		} else if (original_position + upoff > ptable->get_total()) {
-			*phas_soughtless = 1;
-			ptable->set_position(original_position + upoff);
-		} else {
-			*phas_soughtless = 0;
-			ptable->set_position(original_position + upoff);
+		auto newpos = safe_add_s(original_position, offset, &clamped);
+		if (newpos > ptable->get_total()) {
+			newpos = ptable->get_total();
+			clamped = 1;
 		}
 		break;
 	}
 	default:
 		return ecInvalidParam;
 	}
+	*phas_soughtless = !!clamped;
 	*poffset_sought = ptable->get_position() - original_position;
 	return ecSuccess;
 }
