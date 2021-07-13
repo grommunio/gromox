@@ -1,12 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/int_hash.hpp>
 #define ROOT_HANDLE						0
 #define INVALID_HANDLE					0xFFFFFFFF
 
+struct OBJECT_NODE;
 struct OBJECT_TREE {
 	~OBJECT_TREE();
 	uint32_t add_object_handle(int parent_handle, int type, void *obj);
@@ -22,8 +24,9 @@ struct OBJECT_TREE {
 	uint32_t get_store_handle(BOOL b_private, int account_id);
 
 	uint32_t last_handle = 0;
-	INT_HASH_TABLE *phash = nullptr;
-	SIMPLE_TREE tree{};
+	SIMPLE_TREE /* <OBJECT_NODE> */ tree{};
+	/* index into @tree elements */
+	std::unordered_map<int, OBJECT_NODE *> m_hash;
 };
 
 extern std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir);

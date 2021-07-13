@@ -44,14 +44,14 @@ struct ROOT_OBJECT {
 	TARRAY_SET *pprof_set;
 };
 
+}
+
 struct OBJECT_NODE {
 	SIMPLE_TREE_NODE node;
 	uint32_t handle;
 	uint8_t type;
 	void *pobject;
 };
-
-}
 
 static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 {
@@ -165,7 +165,7 @@ static void object_tree_enum_objnode(
 	
 	pobjtree = (OBJECT_TREE*)pparam;
 	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	int_hash_remove(pobjtree->phash, pobjnode->handle);
+	pobjtree->m_hash.erase(pobjnode->handle);
 }
 
 static void object_tree_free_object(void *pobject, uint8_t type)
@@ -234,17 +234,13 @@ OBJECT_TREE::~OBJECT_TREE()
 	if (NULL != proot) {
 		object_tree_release_objnode(pobjtree, static_cast<OBJECT_NODE *>(proot->pdata));
 	}
-	int_hash_free(pobjtree->phash);
 	simple_tree_free(&pobjtree->tree);
 }
 
 uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobject)
 {
 	auto pobjtree = this;
-	int tmp_handle;
-	INT_HASH_ITER *iter;
-	OBJECT_NODE *ptmphanle;
-	OBJECT_NODE **ppparent;
+	decltype(m_hash.end()) parent_iter;
 	
 	if (simple_tree_get_nodes_num(&pobjtree->tree) > MAX_HANDLE_NUM) {
 		return INVALID_HANDLE;
@@ -253,12 +249,11 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 		if (NULL != simple_tree_get_root(&pobjtree->tree)) {
 			return INVALID_HANDLE;
 		}
-		ppparent = NULL;
+		parent_iter = pobjtree->m_hash.end();
 	} else {
-		ppparent = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, parent_handle));
-		if (NULL == ppparent) {
+		parent_iter = pobjtree->m_hash.find(parent_handle);
+		if (parent_iter == pobjtree->m_hash.end())
 			return INVALID_HANDLE;
-		}
 	}
 	auto pobjnode = me_alloc<OBJECT_NODE>();
 	if (NULL == pobjnode) {
@@ -276,31 +271,17 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 	pobjnode->node.pdata = pobjnode;
 	pobjnode->type = type;
 	pobjnode->pobject = pobject;
-	if (1 != int_hash_add(pobjtree->phash,
-		pobjnode->handle, &pobjnode)) {
-		INT_HASH_TABLE *phash = int_hash_init(pobjtree->phash->capacity +
-		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
-		if (NULL == phash) {
-			free(pobjnode);
-			return INVALID_HANDLE;
-		}
-		iter = int_hash_iter_init(pobjtree->phash);
-		for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			ptmphanle = static_cast<OBJECT_NODE *>(int_hash_iter_get_value(iter, &tmp_handle));
-			int_hash_add(phash, tmp_handle, ptmphanle);
-		}
-		int_hash_iter_free(iter);
-		int_hash_free(pobjtree->phash);
-		pobjtree->phash = phash;
-		int_hash_add(pobjtree->phash, pobjnode->handle, &pobjnode);
+	try {
+		pobjtree->m_hash.try_emplace(pobjnode->handle, pobjnode);
+	} catch (const std::bad_alloc &) {
+		free(pobjnode);
+		return INVALID_HANDLE;
 	}
-	if (NULL == ppparent) {
+	if (parent_iter == pobjtree->m_hash.end())
 		simple_tree_set_root(&pobjtree->tree, &pobjnode->node);
-	} else {
-		simple_tree_add_child(&pobjtree->tree, &(*ppparent)->node,
+	else
+		simple_tree_add_child(&pobjtree->tree, &parent_iter->second->node,
 			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
-	}
 	return pobjnode->handle;
 }
 
@@ -314,10 +295,6 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 		return NULL;
 	}
 	pobjtree->last_handle = 0;
-	pobjtree->phash = int_hash_init(HGROWING_SIZE, sizeof(OBJECT_NODE *));
-	if (NULL == pobjtree->phash) {
-		return NULL;
-	}
 	prootobj = object_tree_init_root(maildir);
 	if (NULL == prootobj) {
 		return NULL;
@@ -331,34 +308,29 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 
 void *OBJECT_TREE::get_object1(uint32_t obj_handle, uint8_t *ptype)
 {
-	OBJECT_NODE **ppobjnode;
-	
 	if (obj_handle > 0x7FFFFFFF) {
 		return NULL;
 	}
 	auto pobjtree = this;
-	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
-	if (NULL == ppobjnode) {
+	auto iter = pobjtree->m_hash.find(obj_handle);
+	if (iter == pobjtree->m_hash.end())
 		return NULL;
-	}
-	*ptype = (*ppobjnode)->type;
-	return (*ppobjnode)->pobject;
+	*ptype = iter->second->type;
+	return iter->second->pobject;
 }
 
 void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 {
-	OBJECT_NODE **ppobjnode;
-	
 	if (ROOT_HANDLE == obj_handle || obj_handle > 0x7FFFFFFF) {
 		return;
 	}
 	auto pobjtree = this;
-	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
+	auto iter = pobjtree->m_hash.find(obj_handle);
 	/* do not relase store object until
 	the whole object tree is unloaded */
-	if (ppobjnode == nullptr || (*ppobjnode)->type == ZMG_STORE)
+	if (iter == pobjtree->m_hash.end() || iter->second->type == ZMG_STORE)
 		return;
-	object_tree_release_objnode(pobjtree, *ppobjnode);
+	object_tree_release_objnode(pobjtree, iter->second);
 }
 
 void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
