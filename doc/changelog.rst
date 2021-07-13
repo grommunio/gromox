@@ -1,3 +1,31 @@
+0.27 (2021-07-13)
+=================
+
+Fixes:
+
+* oxcical: recognize calendar scale "LunarRokuyou"
+* oxcical: fix PidLidIntendedStatus always being olTentative
+* pam_gromox: fix NULL deref when the plugin is used
+* Avoid double UTF-8 transformation by html_to_plain
+* zcore: do not switch to Chinese when desired store language is unavailable
+
+Changes:
+
+* SIGHUP now reloads the exrpc_debug, rop_debug and/or zrpc_debug config
+  directives.
+* smtp: bump logmsg severity for rejected deliveries so that they become
+  default-visible in journalctl.
+
+Enhancements:
+
+* exchange_emsmdb, zcore: store ownership bit (tentatively configured by
+  setting owner on Top Of Information Store)
+* oxcical: support for the olWorkingElsewhere busy status
+* authmgr: implement "allow_all" auth mode
+* authmgr: switch default mode to "externid"
+* dbop: new db schema n77 to support sync policy of mobile devices
+
+
 0.26 (2021-07-03)
 =================
 
