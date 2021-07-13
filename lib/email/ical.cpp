@@ -122,7 +122,7 @@ static char *ical_get_value_sep(char *pstring, char sep)
 static int ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
 {
 	try {
-		pcomponent->name = name;
+		pcomponent->m_name = name;
 	} catch (...) {
 		return -ENOMEM;
 	}
@@ -440,7 +440,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 		}
 		if (0 == strcasecmp(tmp_item.ptag, "END")) {
 			if (tmp_item.pvalue == nullptr ||
-			    strcasecmp(pcomponent->name.c_str(), tmp_item.pvalue) != 0)
+			    strcasecmp(pcomponent->m_name.c_str(), tmp_item.pvalue) != 0)
 				break;
 			if (NULL != ppnext) {
 				*ppnext = pnext;
@@ -604,7 +604,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	BOOL need_semicolon;
 	
 	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n",
-	                pcomponent->name.c_str());
+	                pcomponent->m_name.c_str());
 	if (offset >= max_length) {
 		return 0;
 	}
@@ -704,7 +704,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		offset += offset1;
 	}
 	offset += gx_snprintf(out_buff + offset, max_length - offset,
-	          "END:%s\r\n", pcomponent->name.c_str());
+	          "END:%s\r\n", pcomponent->m_name.c_str());
 	if (offset >= max_length) {
 		return 0;
 	}
@@ -1451,8 +1451,8 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 	b_standard = FALSE;
 	b_daylight = FALSE;
 	for (auto pcomponent : ptz_component->component_list) {
-		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
-		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
+		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
+		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
 		piline = pcomponent->get_line("DTSTART");
 		if (NULL == piline) {
@@ -1520,7 +1520,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
+		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0) {
 			b_standard = TRUE;
 			standard_offset = pvalue;
 			itime_standard = itime1;
@@ -1550,7 +1550,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 					return NULL;
 				}
 			}
-			if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
+			if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0) {
 				itime_standard.year = itime.year;
 				itime_standard.month = month;
 			} else {
@@ -1605,7 +1605,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 					return NULL;
 				}
 			}
-			if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
+			if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0) {
 				itime_standard.day = dayofmonth;
 				itime_standard.hour = hour;
 				itime_standard.minute = minute;
@@ -1619,7 +1619,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 				itime_daylight.leap_second = 0;
 			}
 		} else {
-			if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0)
+			if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
 				itime_standard.year = itime.year;
 			else
 				itime_daylight.year = itime.year;
@@ -1745,8 +1745,8 @@ bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		return true;
 	}
 	for (auto pcomponent : ptz_component->component_list) {
-		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") != 0 &&
-		    strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") != 0)
+		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
+		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return false;
 		piline = pcomponent->get_line("TZOFFSETTO");
 		if (NULL == piline) {

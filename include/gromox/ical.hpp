@@ -66,7 +66,7 @@ struct GX_EXPORT ICAL_COMPONENT {
 	int append_line(std::shared_ptr<ICAL_LINE>);
 	std::shared_ptr<ICAL_LINE> get_line(const char *name);
 
-	std::string name;
+	std::string m_name;
 	std::list<std::shared_ptr<ICAL_LINE>> line_list;
 	std::list<std::shared_ptr<ICAL_COMPONENT>> component_list;
 };

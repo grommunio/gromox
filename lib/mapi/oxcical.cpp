@@ -186,9 +186,9 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 	}
 	ptz_definition->crules = 0;
 	for (auto pcomponent : pvt_component->component_list) {
-		if (strcasecmp(pcomponent->name.c_str(), "STANDARD") == 0) {
+		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0) {
 			b_daylight = FALSE;
-		} else if (strcasecmp(pcomponent->name.c_str(), "DAYLIGHT") == 0) {
+		} else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0) {
 			b_daylight = TRUE;
 		} else {
 			continue;
@@ -708,7 +708,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_find_vtimezone(ICAL *pical, const
 	const char *pvalue;
 	
 	for (auto pcomponent : pical->component_list) {
-		if (strcasecmp(pcomponent->name.c_str(), "VTIMEZONE") != 0)
+		if (strcasecmp(pcomponent->m_name.c_str(), "VTIMEZONE") != 0)
 			continue;
 		auto piline = pcomponent->get_line("TZID");
 		if (NULL == piline) {
@@ -3030,7 +3030,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	b_alarm = FALSE;
 	if (pmain_event->component_list.size() > 0) {
 		auto palarm_component = pmain_event->component_list.front();
-		if (strcasecmp(palarm_component->name.c_str(), "VALARM") == 0) {
+		if (strcasecmp(palarm_component->m_name.c_str(), "VALARM") == 0) {
 			b_alarm = TRUE;
 			piline = palarm_component->get_line("TRIGGER");
 			if (piline == nullptr ||
@@ -3140,7 +3140,7 @@ static BOOL oxcical_classify_calendar(ICAL *pical,
 {
 	
 	for (auto pcomponent : pical->component_list) {
-		if (strcasecmp(pcomponent->name.c_str(), "VEVENT") != 0)
+		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
 		std::shared_ptr<UID_EVENTS> puid_events;
 		auto piline = pcomponent->get_line("UID");
