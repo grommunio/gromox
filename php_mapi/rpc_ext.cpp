@@ -135,10 +135,7 @@ static zend_bool rpc_ext_pull_getpermissions_response(
 static zend_bool rpc_ext_push_modifypermissions_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->modifypermissions.hsession)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->modifypermissions.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->modifypermissions.hfolder));
 	return ext_pack_push_permission_set(pctx,
 			ppayload->modifypermissions.pset);
@@ -290,10 +287,7 @@ static zend_bool rpc_ext_push_deletemessages_request(
 {
 	TRY(ext_pack_push_guid(pctx, &ppayload->deletemessages.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->deletemessages.hfolder));
-	if (!ext_pack_push_binary_array(pctx,
-		ppayload->deletemessages.pentryids)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_binary_array(pctx, ppayload->deletemessages.pentryids));
 	return ext_pack_push_uint32(pctx, ppayload->deletemessages.flags);
 }
 
@@ -303,10 +297,7 @@ static zend_bool rpc_ext_push_copymessages_request(
 	TRY(ext_pack_push_guid(pctx, &ppayload->copymessages.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->copymessages.hsrcfolder));
 	TRY(ext_pack_push_uint32(pctx, ppayload->copymessages.hdstfolder));
-	if (!ext_pack_push_binary_array(pctx,
-		ppayload->copymessages.pentryids)) {
-		return 0;
-	}
+	TRY(ext_pack_push_binary_array(pctx, ppayload->copymessages.pentryids));
 	return ext_pack_push_uint32(pctx, ppayload->copymessages.flags);
 }
 
@@ -315,10 +306,7 @@ static zend_bool rpc_ext_push_setreadflags_request(
 {
 	TRY(ext_pack_push_guid(pctx, &ppayload->setreadflags.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->setreadflags.hfolder));
-	if (!ext_pack_push_binary_array(pctx,
-		ppayload->setreadflags.pentryids)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_binary_array(pctx, ppayload->setreadflags.pentryids));
 	return ext_pack_push_uint32(pctx, ppayload->setreadflags.flags);
 }
 
@@ -329,10 +317,7 @@ static zend_bool rpc_ext_push_createfolder_request(
 	TRY(ext_pack_push_uint32(pctx, ppayload->createfolder.hparent_folder));
 	TRY(ext_pack_push_uint32(pctx, ppayload->createfolder.folder_type));
 	TRY(ext_pack_push_string(pctx, ppayload->createfolder.folder_name));
-	if (!ext_pack_push_string(pctx,
-		ppayload->createfolder.folder_comment)) {
-		return 0;
-	}
+	TRY(ext_pack_push_string(pctx, ppayload->createfolder.folder_comment));
 	return ext_pack_push_uint32(pctx, ppayload->createfolder.flags);
 }
 
@@ -393,18 +378,9 @@ static zend_bool rpc_ext_pull_getstoreentryid_response(
 static zend_bool rpc_ext_push_entryidfromsourcekey_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->entryidfromsourcekey.hsession)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->entryidfromsourcekey.hstore)) {
-		return 0;
-	}
-	if (!ext_pack_push_binary(pctx,
-		&ppayload->entryidfromsourcekey.folder_key)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->entryidfromsourcekey.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->entryidfromsourcekey.hstore));
+	TRY(ext_pack_push_binary(pctx, &ppayload->entryidfromsourcekey.folder_key));
 	if (NULL == ppayload->entryidfromsourcekey.pmessage_key) {
 		return ext_pack_push_uint8(pctx, 0);
 	} else {
@@ -424,19 +400,13 @@ static zend_bool rpc_ext_pull_entryidfromsourcekey_response(
 static zend_bool rpc_ext_push_storeadvise_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->storeadvise.hsession)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->storeadvise.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->storeadvise.hstore));
 	if (NULL == ppayload->storeadvise.pentryid) {
 		TRY(ext_pack_push_uint8(pctx, 0));
 	} else {
 		TRY(ext_pack_push_uint8(pctx, 1));
-		if (!ext_pack_push_binary(pctx,
-			ppayload->storeadvise.pentryid)) {
-			return 0;	
-		}
+		TRY(ext_pack_push_binary(pctx, ppayload->storeadvise.pentryid));
 	}
 	return ext_pack_push_uint32(pctx,
 		ppayload->storeadvise.event_mask);
@@ -452,14 +422,8 @@ static zend_bool rpc_ext_pull_storeadvise_response(
 static zend_bool rpc_ext_push_unadvise_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->unadvise.hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->unadvise.hstore)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->unadvise.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->unadvise.hstore));
 	return ext_pack_push_uint32(pctx, ppayload->unadvise.sub_id);
 }
 
@@ -468,23 +432,11 @@ static zend_bool rpc_ext_push_notifdequeue_request(
 {
 	int i;
 	
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->notifdequeue.psink->hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint16(pctx,
-		ppayload->notifdequeue.psink->count)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->notifdequeue.psink->hsession));
+	TRY(ext_pack_push_uint16(pctx, ppayload->notifdequeue.psink->count));
 	for (i=0; i<ppayload->notifdequeue.psink->count; i++) {
-		if (!ext_pack_push_uint32(pctx,
-			ppayload->notifdequeue.psink->padvise[i].hstore)) {
-			return 0;	
-		}
-		if (!ext_pack_push_uint32(pctx,
-			ppayload->notifdequeue.psink->padvise[i].sub_id)) {
-			return 0;	
-		}
+		TRY(ext_pack_push_uint32(pctx, ppayload->notifdequeue.psink->padvise[i].hstore));
+		TRY(ext_pack_push_uint32(pctx, ppayload->notifdequeue.psink->padvise[i].sub_id));
 	}
 	return ext_pack_push_uint32(pctx, ppayload->notifdequeue.timeval);
 }
@@ -507,10 +459,7 @@ static zend_bool rpc_ext_push_queryrows_request(
 		TRY(ext_pack_push_uint8(pctx, 0));
 	} else {
 		TRY(ext_pack_push_uint8(pctx, 1));
-		if (!ext_pack_push_restriction(pctx,
-			ppayload->queryrows.prestriction)) {
-			return 0;
-		}
+		TRY(ext_pack_push_restriction(pctx, ppayload->queryrows.prestriction));
 	}
 	if (NULL == ppayload->queryrows.pproptags) {
 		return ext_pack_push_uint8(pctx, 0);
@@ -532,10 +481,7 @@ static zend_bool rpc_ext_push_setcolumns_request(
 {
 	TRY(ext_pack_push_guid(pctx, &ppayload->setcolumns.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->setcolumns.htable));
-	if (!ext_pack_push_proptag_array(pctx,
-		ppayload->setcolumns.pproptags)) {
-		return 0;
-	}
+	TRY(ext_pack_push_proptag_array(pctx, ppayload->setcolumns.pproptags));
 	return ext_pack_push_uint32(pctx, ppayload->setcolumns.flags);
 }
 
@@ -575,10 +521,7 @@ static zend_bool rpc_ext_push_restricttable_request(
 {
 	TRY(ext_pack_push_guid(pctx, &ppayload->restricttable.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->restricttable.htable));
-	if (!ext_pack_push_restriction(pctx,
-		ppayload->restricttable.prestriction)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_restriction(pctx, ppayload->restricttable.prestriction));
 	return ext_pack_push_uint32(pctx, ppayload->restricttable.flags);
 }
 
@@ -588,10 +531,7 @@ static zend_bool rpc_ext_push_findrow_request(
 	TRY(ext_pack_push_guid(pctx, &ppayload->findrow.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->findrow.htable));
 	TRY(ext_pack_push_uint32(pctx, ppayload->findrow.bookmark));
-	if (!ext_pack_push_restriction(pctx,
-		ppayload->findrow.prestriction)) {
-		return 0;
-	}
+	TRY(ext_pack_push_restriction(pctx, ppayload->findrow.prestriction));
 	return ext_pack_push_uint32(pctx, ppayload->findrow.flags);
 }
 
@@ -605,10 +545,7 @@ static zend_bool rpc_ext_push_createbookmark_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
 	
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->createbookmark.hsession)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->createbookmark.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->createbookmark.htable);
 }
@@ -623,14 +560,8 @@ static zend_bool rpc_ext_pull_createbookmark_response(
 static zend_bool rpc_ext_push_freebookmark_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->freebookmark.hsession)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->freebookmark.htable)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->freebookmark.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->freebookmark.htable));
 	return ext_pack_push_uint32(pctx,
 		ppayload->freebookmark.bookmark);
 }
@@ -638,14 +569,8 @@ static zend_bool rpc_ext_push_freebookmark_request(
 static zend_bool rpc_ext_push_getreceivefolder_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->getreceivefolder.hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->getreceivefolder.hstore)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->getreceivefolder.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->getreceivefolder.hstore));
 	if (NULL == ppayload->getreceivefolder.pstrclass) {
 		return ext_pack_push_uint8(pctx, 0);
 	} else {
@@ -682,10 +607,7 @@ static zend_bool rpc_ext_push_submitmessage_request(
 static zend_bool rpc_ext_push_loadattachmenttable_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->loadattachmenttable.hsession)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->loadattachmenttable.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->loadattachmenttable.hmessage);
 }
@@ -700,10 +622,7 @@ static zend_bool rpc_ext_pull_loadattachmenttable_response(
 static zend_bool rpc_ext_push_openattachment_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->openattachment.hsession)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->openattachment.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->openattachment.hmessage));
 	return ext_pack_push_uint32(pctx, ppayload->openattachment.attach_id);
 }
@@ -718,10 +637,7 @@ static zend_bool rpc_ext_pull_openattachment_response(
 static zend_bool rpc_ext_push_createattachment_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->createattachment.hsession)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->createattachment.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->createattachment.hmessage);
 }
@@ -736,14 +652,8 @@ static zend_bool rpc_ext_pull_createattachment_response(
 static zend_bool rpc_ext_push_deleteattachment_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->deleteattachment.hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->deleteattachment.hmessage)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->deleteattachment.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->deleteattachment.hmessage));
 	return ext_pack_push_uint32(pctx,
 		ppayload->deleteattachment.attach_id);
 }
@@ -829,14 +739,8 @@ static zend_bool rpc_ext_pull_getnamedpropids_response(
 static zend_bool rpc_ext_push_getpropnames_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->getpropnames.hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->getpropnames.hstore)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->getpropnames.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->getpropnames.hstore));
 	return ext_pack_push_propid_array(pctx,
 			ppayload->getpropnames.ppropids);
 }
@@ -853,10 +757,7 @@ static zend_bool rpc_ext_push_copyto_request(
 {
 	TRY(ext_pack_push_guid(pctx, &ppayload->copyto.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->copyto.hsrcobject));
-	if (!ext_pack_push_proptag_array(pctx,
-		ppayload->copyto.pexclude_proptags)) {
-		return 0;
-	}
+	TRY(ext_pack_push_proptag_array(pctx, ppayload->copyto.pexclude_proptags));
 	TRY(ext_pack_push_uint32(pctx, ppayload->copyto.hdstobject));
 	return ext_pack_push_uint32(pctx, ppayload->copyto.flags);
 }
@@ -915,8 +816,7 @@ static zend_bool rpc_ext_push_configsync_request(
 static zend_bool rpc_ext_pull_configsync_response(
 	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
 {
-	if (!ext_pack_pull_uint8(pctx, &ppayload->configsync.b_changed))
-		return 0;
+	TRY(ext_pack_pull_uint8(pctx, &ppayload->configsync.b_changed));
 	return ext_pack_pull_uint32(pctx,
 		&ppayload->configsync.count);
 }
@@ -945,8 +845,7 @@ static zend_bool rpc_ext_pull_syncmessagechange_response(
 	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
 {
 	uint8_t v = 0;
-	if (!ext_pack_pull_uint8(pctx, &v))
-		return 0;
+	TRY(ext_pack_pull_uint8(pctx, &v));
 	ppayload->syncmessagechange.b_new = v;
 	return ext_pack_pull_tpropval_array(pctx,
 		&ppayload->syncmessagechange.proplist);
@@ -969,10 +868,7 @@ static zend_bool rpc_ext_pull_syncfolderchange_response(
 static zend_bool rpc_ext_push_syncreadstatechanges_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->syncreadstatechanges.hsession)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->syncreadstatechanges.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->syncreadstatechanges.hctx);
 }
@@ -987,14 +883,8 @@ static zend_bool rpc_ext_pull_syncreadstatechanges_response(
 static zend_bool rpc_ext_push_syncdeletions_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->syncdeletions.hsession)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->syncdeletions.hctx)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->syncdeletions.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->syncdeletions.hctx));
 	return ext_pack_push_uint32(pctx,
 		ppayload->syncdeletions.flags);
 }
@@ -1110,10 +1000,7 @@ static zend_bool rpc_ext_pull_getsearchcriteria_response(
 {
 	uint8_t tmp_byte;
 	
-	if (!ext_pack_pull_binary_array(pctx,
-		&ppayload->getsearchcriteria.folder_array)) {
-		return 0;	
-	}
+	TRY(ext_pack_pull_binary_array(pctx, &ppayload->getsearchcriteria.folder_array));
 	TRY(ext_pack_pull_uint8(pctx, &tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->getsearchcriteria.prestriction = NULL;
@@ -1122,10 +1009,7 @@ static zend_bool rpc_ext_pull_getsearchcriteria_response(
 		if (NULL == ppayload->getsearchcriteria.prestriction) {
 			return 0;
 		}
-		if (!ext_pack_pull_restriction(pctx,
-			ppayload->getsearchcriteria.prestriction)) {
-			return 0;	
-		}
+		TRY(ext_pack_pull_restriction(pctx, ppayload->getsearchcriteria.prestriction));
 	}
 	return ext_pack_pull_uint32(pctx,
 		&ppayload->getsearchcriteria.search_stat);
@@ -1137,10 +1021,7 @@ static zend_bool rpc_ext_push_setsearchcriteria_request(
 	TRY(ext_pack_push_guid(pctx, &ppayload->setsearchcriteria.hsession));
 	TRY(ext_pack_push_uint32(pctx, ppayload->setsearchcriteria.hfolder));
 	TRY(ext_pack_push_uint32(pctx, ppayload->setsearchcriteria.flags));
-	if (!ext_pack_push_binary_array(pctx,
-		ppayload->setsearchcriteria.pfolder_array)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_binary_array(pctx, ppayload->setsearchcriteria.pfolder_array));
 	if (NULL == ppayload->setsearchcriteria.prestriction) {
 		return ext_pack_push_uint8(pctx, 0);
 	} else {
@@ -1153,10 +1034,7 @@ static zend_bool rpc_ext_push_setsearchcriteria_request(
 static zend_bool rpc_ext_push_messagetorfc822_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->messagetorfc822.hsession)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->messagetorfc822.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->messagetorfc822.hmessage);
 }
@@ -1171,14 +1049,8 @@ static zend_bool rpc_ext_pull_messagetorfc822_response(
 static zend_bool rpc_ext_push_rfc822tomessage_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->rfc822tomessage.hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->rfc822tomessage.hmessage)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->rfc822tomessage.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->rfc822tomessage.hmessage));
 	return ext_pack_push_binary(pctx,
 		ppayload->rfc822tomessage.peml_bin);
 }
@@ -1186,10 +1058,7 @@ static zend_bool rpc_ext_push_rfc822tomessage_request(
 static zend_bool rpc_ext_push_messagetoical_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->messagetoical.hsession)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->messagetoical.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->messagetoical.hmessage);
 }
@@ -1204,14 +1073,8 @@ static zend_bool rpc_ext_pull_messagetoical_response(
 static zend_bool rpc_ext_push_icaltomessage_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->icaltomessage.hsession)) {
-		return 0;	
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->icaltomessage.hmessage)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->icaltomessage.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->icaltomessage.hmessage));
 	return ext_pack_push_binary(pctx,
 		ppayload->icaltomessage.pical_bin);
 }
@@ -1219,10 +1082,7 @@ static zend_bool rpc_ext_push_icaltomessage_request(
 static zend_bool rpc_ext_push_messagetovcf_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->messagetovcf.hsession)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->messagetovcf.hsession));
 	return ext_pack_push_uint32(pctx,
 		ppayload->messagetovcf.hmessage);
 }
@@ -1237,14 +1097,8 @@ static zend_bool rpc_ext_pull_messagetovcf_response(
 static zend_bool rpc_ext_push_vcftomessage_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->vcftomessage.hsession)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint32(pctx,
-		ppayload->vcftomessage.hmessage)) {
-		return 0;
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->vcftomessage.hsession));
+	TRY(ext_pack_push_uint32(pctx, ppayload->vcftomessage.hmessage));
 	return ext_pack_push_binary(pctx,
 		ppayload->vcftomessage.pvcf_bin);
 }
@@ -1252,18 +1106,9 @@ static zend_bool rpc_ext_push_vcftomessage_request(
 static zend_bool rpc_ext_push_getuseravailability_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx,
-		&ppayload->vcftomessage.hsession)) {
-		return 0;
-	}
-	if (!ext_pack_push_binary(pctx,
-		&ppayload->getuseravailability.entryid)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint64(pctx,
-		ppayload->getuseravailability.starttime)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_guid(pctx, &ppayload->vcftomessage.hsession));
+	TRY(ext_pack_push_binary(pctx, &ppayload->getuseravailability.entryid));
+	TRY(ext_pack_push_uint64(pctx, ppayload->getuseravailability.starttime));
 	return ext_pack_push_uint64(pctx,
 		ppayload->getuseravailability.endtime);
 }
@@ -1285,12 +1130,8 @@ static zend_bool rpc_ext_pull_getuseravailability_reponse(
 static zend_bool rpc_ext_push_setpasswd_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_string(pctx, ppayload->setpasswd.username)) {
-		return 0;	
-	}
-	if (!ext_pack_push_string(pctx, ppayload->setpasswd.passwd)) {
-		return 0;	
-	}
+	TRY(ext_pack_push_string(pctx, ppayload->setpasswd.username));
+	TRY(ext_pack_push_string(pctx, ppayload->setpasswd.passwd));
 	return ext_pack_push_string(pctx, ppayload->setpasswd.new_passwd);
 }
 
@@ -1309,12 +1150,8 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	zend_bool b_result;
 
 	TRY(ext_pack_push_init(&push_ctx));
-	if (!ext_pack_push_advance(&push_ctx, sizeof(uint32_t))) {
-		return 0;
-	}
-	if (!ext_pack_push_uint8(&push_ctx, prequest->call_id)) {
-		return 0;
-	}
+	TRY(ext_pack_push_advance(&push_ctx, sizeof(uint32_t)));
+	TRY(ext_pack_push_uint8(&push_ctx, prequest->call_id));
 	switch (prequest->call_id) {
 	case zcore_callid::LOGON:
 		b_result = rpc_ext_push_logon_request(
