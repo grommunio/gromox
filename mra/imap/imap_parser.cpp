@@ -744,7 +744,9 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 					pcontext->message_fd = -1;
 				}
 				if ('\0' != pcontext->file_path[0]) {
-					remove(pcontext->file_path);
+					if (remove(pcontext->file_path) != 0 && errno != ENOENT)
+						fprintf(stderr, "W-1474: remove %s: %s\n",
+						        pcontext->file_path, strerror(errno));
 					pcontext->file_path[0] = '\0';
 				}
 				size_t string_length = 0;
