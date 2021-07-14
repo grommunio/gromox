@@ -4,6 +4,7 @@
  *	programs
  */
 #include <cstdint>
+#include <ctime>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -1929,4 +1930,13 @@ std::string bin2hex(const void *vin, size_t len)
 		++input;
 	}
 	return buffer;
+}
+
+void rfc1123_dstring(char *buf, size_t z, time_t ts)
+{
+	if (ts == 0)
+		ts = time(nullptr);
+	struct tm tm;
+	gmtime_r(&ts, &tm);
+	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
 }

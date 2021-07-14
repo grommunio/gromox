@@ -44,6 +44,8 @@
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
 
+using namespace gromox;
+
 namespace {
 struct VIRTUAL_CONNECTION {
 	~VIRTUAL_CONNECTION();
@@ -312,17 +314,6 @@ void VCONN_REF::put()
 	pvconnection = nullptr;
 }
 
-static void http_parser_rfc1123_dstring(char *dstring)
-{
-	time_t cur_time;
-	struct tm tmp_tm;
-	
-	time(&cur_time);
-	gmtime_r(&cur_time, &tmp_tm);
-	
-	strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-}
-
 static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 	const char *field_name, char *field_value, int buff_len)
 {
@@ -418,7 +409,7 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 		mod_cache_put_context(ctx);
 
 	char dstring[128], response_buff[1024];
-	http_parser_rfc1123_dstring(dstring);
+	rfc1123_dstring(dstring, arsizeof(dstring));
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
@@ -444,7 +435,7 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 		mod_cache_put_context(ctx);
 
 	char dstring[128], response_buff[1024];
-	http_parser_rfc1123_dstring(dstring);
+	rfc1123_dstring(dstring, arsizeof(dstring));
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
@@ -685,7 +676,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
 		char dstring[128], response_buff[1024];
-		http_parser_rfc1123_dstring(dstring);
+		rfc1123_dstring(dstring, arsizeof(dstring));
 		auto response_len = gx_snprintf(
 			response_buff, GX_ARRAY_SIZE(response_buff),
 			"HTTP/1.1 503 L-689 Service Unavailable\r\n"
@@ -712,7 +703,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	    pcontext->maildir, pcontext->lang, reason, GX_ARRAY_SIZE(reason))) {
 		if ('\0' == pcontext->maildir[0]) {
 			char dstring[128], response_buff[1024];
-			http_parser_rfc1123_dstring(dstring);
+			rfc1123_dstring(dstring, arsizeof(dstring));
 			auto response_len = gx_snprintf(
 				response_buff, GX_ARRAY_SIZE(response_buff),
 				"HTTP/1.1 401 Unauthorized\r\n"
@@ -750,7 +741,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
 	char dstring[128], response_buff[1024];
-	http_parser_rfc1123_dstring(dstring);
+	rfc1123_dstring(dstring, arsizeof(dstring));
 	auto response_len = gx_snprintf(
 		response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
@@ -825,7 +816,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 
 	if (FALSE == pcontext->b_authed) {
 		char dstring[128], response_buff[1024];
-		http_parser_rfc1123_dstring(dstring);
+		rfc1123_dstring(dstring, arsizeof(dstring));
 		auto response_len = gx_snprintf(
 			response_buff, GX_ARRAY_SIZE(response_buff),
 			"HTTP/1.1 401 Unauthorized\r\n"
@@ -1050,7 +1041,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		}
 		/* other http request here if wanted */
 		char dstring[128], response_buff[1024];
-		http_parser_rfc1123_dstring(dstring);
+		rfc1123_dstring(dstring, arsizeof(dstring));
 		auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 404 Not Found\r\n"
 					"Date: %s\r\n"
@@ -1675,7 +1666,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			}
 			/* first send http response head */
 			char dstring[128], response_buff[1024];
-			http_parser_rfc1123_dstring(dstring);
+			rfc1123_dstring(dstring, arsizeof(dstring));
 			auto response_len = gx_snprintf(
 				response_buff, GX_ARRAY_SIZE(response_buff),
 				"HTTP/1.1 200 Success\r\n"

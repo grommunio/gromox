@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <ctime>
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -53,3 +54,4 @@ int uuencode(int mode, const char *file_name, const char *in,
 extern void debug_info(const char *format, ...);
 extern bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
+extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
