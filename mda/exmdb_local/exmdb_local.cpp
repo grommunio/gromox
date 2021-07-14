@@ -396,8 +396,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	char hostname[128];
 	char home_dir[256];
 	uint32_t tmp_int32;
-	char file_name[128];
-	char temp_path[256];
 	TAGGED_PROPVAL propval;
 	uint32_t suppress_mask;
 	BOOL b_bounce_delivered = false;
@@ -447,10 +445,15 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			strcpy(hostname, "localhost");
 		}
 	}
-	snprintf(file_name, 128, "%ld.%d.%s",
-		cur_time, sequence_ID, hostname);
-	snprintf(temp_path, 255, "%s/eml/%s", home_dir, file_name);
-	fd = open(temp_path, O_CREAT|O_RDWR|O_TRUNC, DEF_MODE);
+	std::string mid_string, json_string, eml_path;
+	try {
+		mid_string = std::to_string(cur_time) + "." +
+		             std::to_string(sequence_ID) + "." + hostname;
+		eml_path = std::string(home_dir) + "/eml/" + mid_string;
+		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1472: ENOMEM\n");
+	}
 	if (-1 == fd) {
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
@@ -463,8 +466,9 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	if (FALSE == mail_to_file(pmail, fd)) {
 		close(fd);
-		if (remove(temp_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1386: remove %s: %s\n", temp_path, strerror(errno));
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1386: remove %s: %s\n",
+			        eml_path.c_str(), strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
@@ -475,13 +479,14 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	}
 	close(fd);
 
-	tmp_len = sprintf(temp_buff, "{\"file\":\"%s\",", file_name);
+	tmp_len = sprintf(temp_buff, "{\"file\":\"%s\",", mid_string.c_str());
 	result = mail_get_digest(pmail, &mess_len, temp_buff + tmp_len,
 				MAX_DIGLEN - tmp_len - 1);
 	
 	if (result <= 0) {
-		if (remove(temp_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1387: remove %s: %s\n", temp_path, strerror(errno));
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1387: remove %s: %s\n",
+			        eml_path.c_str(), strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
@@ -504,8 +509,9 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (NULL == pmsg) {
 		alloc_context_free(&alloc_ctx);
 		pthread_setspecific(g_alloc_key, NULL);
-		if (remove(temp_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1388: remove %s: %s\n", temp_path, strerror(errno));
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1388: remove %s: %s\n",
+			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext, address, 8, "fail "
 			"to convert rtf822 into MAPI message object");
 		return DELIVERY_OPERATION_ERROR;
@@ -554,7 +560,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	switch (result) {
 	case EXMDB_RESULT_OK:
 		exmdb_local_log_info(pcontext, address, 8,
-			"message %s is delivered OK", temp_path);
+			"message %s was delivered OK", eml_path.c_str());
 		if (TRUE == pcontext->pcontrol->need_bounce &&
 			0 != strcmp(pcontext->pcontrol->from, "none@none") &&
 			0 == (suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF)) {

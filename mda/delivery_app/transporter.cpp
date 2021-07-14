@@ -721,10 +721,12 @@ int transporter_load_library(const char* path)
 		}
 	}
 	void *handle = dlopen(path, RTLD_LAZY);
-	if (handle == NULL && strchr(path, '/') == NULL) {
-		char altpath[256];
-		snprintf(altpath, sizeof(altpath), "%s/%s", g_path, path);
-		handle = dlopen(altpath, RTLD_LAZY);
+	if (handle == NULL && strchr(path, '/') == NULL) try {
+		auto altpath = std::string(g_path) + "/" + path;
+		handle = dlopen(altpath.c_str(), RTLD_LAZY);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1473: ENOMEM\n");
+		return PLUGIN_FAIL_OPEN;
 	}
     if (NULL == handle){
         printf("[transporter]: error loading %s: %s\n", fake_path, dlerror());
