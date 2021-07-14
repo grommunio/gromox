@@ -843,7 +843,7 @@ static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
-	bxid.cb = ep.offset;
+	bxid.cb = ep.m_offset;
 	std::unique_ptr<PCL, afree> pcl(pcl_init());
 	if (pcl == nullptr) {
 		fprintf(stderr, "pcl_init: ENOMEM\n");
@@ -912,7 +912,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
-	bxid.cb = ep.offset;
+	bxid.cb = ep.m_offset;
 	std::unique_ptr<PCL, afree> pcl(pcl_init());
 	if (pcl == nullptr) {
 		fprintf(stderr, "pcl_init: ENOMEM\n");

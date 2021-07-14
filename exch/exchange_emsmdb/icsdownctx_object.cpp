@@ -606,11 +606,11 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 				    ext_push.p_persistdata_a(&persistdatas) != EXT_ERR_SUCCESS)
 					return false;
-				bv->cb = ext_push.offset;
-				bv->pv = common_util_alloc(ext_push.offset);
+				bv->cb = ext_push.m_offset;
+				bv->pv = common_util_alloc(bv->cb);
 				if (bv->pv == nullptr)
 					return FALSE;
-				memcpy(bv->pv, ext_push.data, ext_push.offset);
+				memcpy(bv->pv, ext_push.m_udata, bv->cb);
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}

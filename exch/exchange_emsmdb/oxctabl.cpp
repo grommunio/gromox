@@ -283,10 +283,10 @@ uint32_t rop_queryrows(uint8_t flags,
 	uint8_t *pseek_pos, uint16_t *pcount, EXT_PUSH *pext,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
+	auto &ext = *pext;
 	int object_type;
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
-	uint32_t last_offset;
 	
 	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
 	              logon_id, hin, &object_type));
@@ -314,9 +314,9 @@ uint32_t rop_queryrows(uint8_t flags,
 			if (!common_util_propvals_to_row(tmp_set.pparray[i],
 			    ptable->get_columns(), &tmp_row))
 				return ecMAPIOOM;
-			last_offset = pext->offset;
+			uint32_t last_offset = ext.m_offset;
 			if (pext->p_proprow(ptable->get_columns(), &tmp_row) != EXT_ERR_SUCCESS) {
-				pext->offset = last_offset;
+				ext.m_offset = last_offset;
 				break;
 			}
 		}
@@ -695,13 +695,13 @@ uint32_t rop_expandrow(uint16_t max_count,
 	uint16_t *pcount, EXT_PUSH *pext, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
+	auto &ext = *pext;
 	size_t i;
 	BOOL b_found;
 	int object_type;
 	int32_t position;
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
-	uint32_t last_offset;
 	
 	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
 	              logon_id, hin, &object_type));
@@ -742,9 +742,9 @@ uint32_t rop_expandrow(uint16_t max_count,
 		if (!common_util_propvals_to_row(tmp_set.pparray[i],
 		    ptable->get_columns(), &tmp_row))
 			return ecMAPIOOM;
-		last_offset = pext->offset;
+		uint32_t last_offset = ext.m_offset;
 		if (pext->p_proprow(ptable->get_columns(), &tmp_row) != EXT_ERR_SUCCESS) {
-			pext->offset = last_offset;
+			ext.m_offset = last_offset;
 			break;
 		}
 	}

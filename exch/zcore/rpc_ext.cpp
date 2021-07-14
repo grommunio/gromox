@@ -473,11 +473,9 @@ static BOOL rpc_ext_push_forwarddelegate_action(
 static BOOL rpc_ext_push_action_block(
 	EXT_PUSH *pext, const ACTION_BLOCK *r)
 {
-	uint32_t offset;
-	uint32_t offset1;
-	uint16_t tmp_len;
-	
-	offset = pext->offset;
+	auto &ext = *pext;
+	uint32_t offset = ext.m_offset;
+
 	QRF(pext->advance(sizeof(uint16_t)));
 	QRF(pext->p_uint8(r->type));
 	QRF(pext->p_uint32(r->flavor));
@@ -495,10 +493,11 @@ static BOOL rpc_ext_push_action_block(
 		    static_cast<const ZREPLY_ACTION *>(r->pdata)))
 			return FALSE;
 		break;
-	case OP_DEFER_ACTION:
-		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
+	case OP_DEFER_ACTION: {
+		uint16_t tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		QRF(pext->p_bytes(r->pdata, tmp_len));
 		break;
+	}
 	case OP_BOUNCE:
 		QRF(pext->p_uint32(*static_cast<uint32_t *>(r->pdata)));
 		break;
@@ -515,11 +514,11 @@ static BOOL rpc_ext_push_action_block(
 	default:
 		return FALSE;
 	}
-	tmp_len = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint16_t tmp_len = ext.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	QRF(pext->p_uint16(tmp_len));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return TRUE;
 }
 
@@ -2418,7 +2417,7 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		if (ext_push.p_uint32(4) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
 			return FALSE;
-		pbin_out->cb = ext_push.offset;
+		pbin_out->cb = ext_push.m_offset;
 		pbin_out->pb = ext_push.release();
 		return TRUE;
 	}
@@ -2716,8 +2715,8 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	}
 	if (!b_result)
 		return FALSE;
-	pbin_out->cb = ext_push.offset;
-	ext_push.offset = 1;
+	pbin_out->cb = ext_push.m_offset;
+	ext_push.m_offset = 1;
 	if (ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1) != EXT_ERR_SUCCESS)
 		return false;
 	pbin_out->pb = ext_push.release();

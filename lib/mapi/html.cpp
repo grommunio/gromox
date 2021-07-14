@@ -1431,10 +1431,10 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 			return FALSE;
 		}
 	}
-	*plength = writer.ext_push.offset;
+	*plength = writer.ext_push.m_offset;
 	*pbuff_out = static_cast<char *>(malloc(*plength));
 	if (*pbuff_out != nullptr)
-		memcpy(*pbuff_out, writer.ext_push.data, *plength);
+		memcpy(*pbuff_out, writer.ext_push.m_udata, *plength);
 	gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);
 	free(pbuffer);
 	return *pbuff_out != nullptr ? TRUE : FALSE;

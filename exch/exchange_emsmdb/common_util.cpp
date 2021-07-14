@@ -355,7 +355,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -382,7 +382,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -429,7 +429,7 @@ BINARY* common_util_to_folder_entryid(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -519,7 +519,7 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -663,7 +663,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -834,7 +834,7 @@ BINARY* common_util_to_folder_replica(
 	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
 	    ext_push.p_str(essdn) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 

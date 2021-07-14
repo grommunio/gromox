@@ -247,7 +247,7 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	if (pbin == nullptr) {
 		return nullptr;
 	}
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	pbin->pb = ext_push.release();
 	return pbin;
 }

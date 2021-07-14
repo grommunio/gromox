@@ -847,7 +847,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
-	pentryid->cb = ext_push.offset;
+	pentryid->cb = ext_push.m_offset;
 	*ppdisplay_name = common_util_dup(display_name);
 	*ppx500dn = common_util_dup(x500dn);
 	if (NULL == *ppdisplay_name || NULL == *ppx500dn) {
@@ -2501,7 +2501,7 @@ uint32_t zarafa_server_getstoreentryid(
 	    !ext_push.init(pentryid->pb, 1024, EXT_FLAG_UTF16) ||
 	    ext_push.p_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
-	pentryid->cb = ext_push.offset;
+	pentryid->cb = ext_push.m_offset;
 	return ecSuccess;
 }
 

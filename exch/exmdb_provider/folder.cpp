@@ -2381,8 +2381,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			goto CRITERIA_FAILURE;
-		sqlite3_bind_blob(pstmt, 1, ext_push.data,
-				ext_push.offset, SQLITE_STATIC);
+		sqlite3_bind_blob(pstmt, 1, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			pstmt.finalize();
 			goto CRITERIA_FAILURE;
@@ -2789,14 +2788,12 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	int i;
 	char *pname;
 	void *pvalue;
-	int action_len;
 	uint32_t state;
 	char *pprovider;
 	uint32_t seq_id;
 	uint64_t fid_val;
 	uint64_t rule_id;
 	uint32_t *plevel;
-	int condition_len;
 	EXT_PUSH ext_push;
 	char sql_string[256];
 	BINARY *pprovider_bin;
@@ -2821,7 +2818,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
-		case RULE_DATA_FLAG_ADD_ROW:
+		case RULE_DATA_FLAG_ADD_ROW: {
 			if (rule_count >= common_util_get_param(
 				COMMON_UTIL_MAX_RULE_NUMBER)) {
 				*pb_exceed = TRUE;
@@ -2867,7 +2864,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
 			    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
-			condition_len = ext_push.offset;
+			int condition_len = ext_push.m_offset;
 			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL == paction) {
@@ -2876,7 +2873,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
 			    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
-			action_len = ext_push.offset;
+			int action_len = ext_push.m_offset;
 			if (NULL == pstmt) {
 				sprintf(sql_string, "INSERT INTO rules "
 					"(name, provider, sequence, state, level, user_flags,"
@@ -2915,6 +2912,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			}
 			sqlite3_reset(pstmt);
 			break;
+		}
 		case RULE_DATA_FLAG_MODIFY_ROW: {
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_RULEID);
@@ -3008,7 +3006,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
 				    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 					goto RULE_FAILURE;
-				condition_len = ext_push.offset;
+				int condition_len = ext_push.m_offset;
 				sprintf(sql_string, "UPDATE rules SET "
 				          "condition=? WHERE rule_id=%llu", LLU(rule_id));
 				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
@@ -3028,7 +3026,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
 				    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
 					goto RULE_FAILURE;
-				action_len = ext_push.offset;
+				int action_len = ext_push.m_offset;
 				sprintf(sql_string, "UPDATE rules SET "
 				          "actions=? WHERE rule_id=%llu", LLU(rule_id));
 				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);

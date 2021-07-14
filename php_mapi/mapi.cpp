@@ -792,7 +792,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	RETVAL_STRINGL(reinterpret_cast<const char *>(push_ctx.vdata), push_ctx.offset);
+	RETVAL_STRINGL(reinterpret_cast<const char *>(push_ctx.m_vdata), push_ctx.m_offset);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -5269,7 +5269,7 @@ ZEND_FUNCTION(kc_session_save)
 		return;	
 	}
 	ext_pack_push_guid(&push_ctx, &psession->hsession);
-	ZVAL_STRINGL(pzoutstr, reinterpret_cast<const char *>(push_ctx.vdata), push_ctx.offset);
+	ZVAL_STRINGL(pzoutstr, reinterpret_cast<const char *>(push_ctx.m_vdata), push_ctx.m_offset);
 	RETVAL_LONG(ecSuccess);
 }
 

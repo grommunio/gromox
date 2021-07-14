@@ -304,7 +304,7 @@ static BOOL oxcical_tzdefinition_to_binary(
 	}
 	if (ext_push.p_tzdef(ptz_definition) != EXT_ERR_SUCCESS)
 		return FALSE;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return TRUE;
 }
 
@@ -316,7 +316,7 @@ static BOOL oxcical_timezonestruct_to_binary(
 	if (!ext_push.init(pbin->pb, 256, 0) ||
 	    ext_push.p_tzstruct(ptzstruct) != EXT_ERR_SUCCESS)
 		return false;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return TRUE;
 }
 
@@ -1401,7 +1401,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	if (!ext_push.init(tmp_buff, 1024, 0) ||
 	    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 		return false;
-	tmp_bin.cb = ext_push.offset;
+	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
 	propname.kind = MNID_ID;
@@ -1419,7 +1419,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	if (!ext_push.init(tmp_buff, 1024, 0) ||
 	    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 		return false;
-	tmp_bin.cb = ext_push.offset;
+	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
 	propname.kind = MNID_ID;
@@ -1913,8 +1913,8 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENTRECURRENCEPATTERN *p
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    ext_push.p_apptrecpat(papprecurr) != EXT_ERR_SUCCESS)
 		return FALSE;
-	tmp_bin.cb = ext_push.offset;
-	tmp_bin.pb = ext_push.data;
+	tmp_bin.cb = ext_push.m_offset;
+	tmp_bin.pb = ext_push.m_udata;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidAppointmentRecur;
@@ -4986,10 +4986,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
-			if (FALSE == encode_hex_binary(tmp_buff,
-				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
+			if (!encode_hex_binary(tmp_buff, ext_push.m_offset,
+			    tmp_buff1, sizeof(tmp_buff1)))
 				return FALSE;
-			}
 			HX_strupper(tmp_buff1);
 			piline = ical_new_simple_line("UID", tmp_buff1);
 		}
@@ -5011,10 +5010,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
-		if (FALSE == encode_hex_binary(tmp_buff,
-			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
+		if (!encode_hex_binary(tmp_buff, ext_push.m_offset, tmp_buff1,
+		    sizeof(tmp_buff1)))
 			return FALSE;
-		}
 		HX_strupper(tmp_buff1);
 		piline = ical_new_simple_line("UID", tmp_buff1);
 		if (NULL == piline) {

@@ -210,8 +210,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
 		return false;
 	sqlite3_bind_int64(pstmt, 1, PR_CHANGE_KEY);
-	sqlite3_bind_blob(pstmt, 2, ext_push.data,
-			ext_push.offset, SQLITE_STATIC);
+	sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -359,8 +358,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
 		return false;
 	sqlite3_bind_int64(pstmt, 1, PR_CHANGE_KEY);
-	sqlite3_bind_blob(pstmt, 2, ext_push.data,
-			ext_push.offset, SQLITE_STATIC);
+	sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}

@@ -2131,17 +2131,17 @@ BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
 	if (NULL == pdata) {
 		pext->b_alloc = TRUE;
 		m_alloc_size = 8192;
-		udata = static_cast<uint8_t *>(m_mgt.alloc(m_alloc_size));
-		if (NULL == pext->data) {
+		m_udata = static_cast<uint8_t *>(m_mgt.alloc(m_alloc_size));
+		if (m_udata == nullptr) {
 			m_alloc_size = 0;
 			return FALSE;
 		}
 	} else {
 		pext->b_alloc = FALSE;
-		pext->data = static_cast<uint8_t *>(pdata);
+		m_udata = static_cast<uint8_t *>(pdata);
 		m_alloc_size = alloc_size;
 	}
-	pext->offset = 0;
+	m_offset = 0;
 	m_flags = flags;
 	return TRUE;
 }
@@ -2150,7 +2150,7 @@ EXT_PUSH::~EXT_PUSH()
 {
 	auto pext = this;
 	if (TRUE == pext->b_alloc) {
-		m_mgt.free(udata);
+		m_mgt.free(m_udata);
 	}
 }
 
@@ -2167,7 +2167,7 @@ int EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT *r)
 BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 {
 	auto pext = this;
-	auto alloc_size = extra_size + pext->offset;
+	auto alloc_size = extra_size + m_offset;
 	if (m_alloc_size >= alloc_size)
 		return TRUE;
 	if (FALSE == pext->b_alloc) {
@@ -2176,11 +2176,11 @@ BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 	if (alloc_size < m_alloc_size * 2)
 		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
 		alloc_size = m_alloc_size * 2;
-	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(udata, m_alloc_size));
+	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(m_udata, m_alloc_size));
 	if (NULL == pdata) {
 		return FALSE;
 	}
-	pext->data = pdata;
+	m_udata = pdata;
 	m_alloc_size = alloc_size;
 	return TRUE;
 }
@@ -2190,7 +2190,7 @@ int EXT_PUSH::advance(uint32_t size)
 	auto pext = this;
 	if (!pext->check_ovf(size))
 		return EXT_ERR_BUFSIZE;
-	pext->offset += size;
+	m_offset += size;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2199,8 +2199,8 @@ int EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
 	auto pext = this;
 	if (!pext->check_ovf(n))
 		return EXT_ERR_BUFSIZE;
-	memcpy(pext->data + pext->offset, pdata, n);
-	pext->offset += n;
+	memcpy(&m_udata[m_offset], pdata, n);
+	m_offset += n;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2209,8 +2209,8 @@ int EXT_PUSH::p_uint8(uint8_t v)
 	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
-	pext->data[pext->offset] = v;
-	pext->offset += sizeof(uint8_t);
+	m_udata[m_offset] = v;
+	m_offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2220,8 +2220,8 @@ int EXT_PUSH::p_uint16(uint16_t v)
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_le16(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint16_t);
+	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2231,8 +2231,8 @@ int EXT_PUSH::p_uint32(uint32_t v)
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_le32(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint32_t);
+	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2242,8 +2242,8 @@ int EXT_PUSH::p_uint64(uint64_t v)
 	if (!pext->check_ovf(sizeof(uint64_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_le64(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint64_t);
+	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	m_offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2252,8 +2252,8 @@ int EXT_PUSH::p_float(float v)
 	auto pext = this;
 	if (!pext->check_ovf(sizeof(float)))
 		return EXT_ERR_BUFSIZE;
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(float);
+	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	m_offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2263,8 +2263,8 @@ int EXT_PUSH::p_double(double v)
 	static_assert(sizeof(v) == 8 && CHAR_BIT == 8, "");
 	if (!pext->check_ovf(sizeof(double)))
 		return EXT_ERR_BUFSIZE;
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(double);
+	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	m_offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2282,8 +2282,8 @@ int EXT_PUSH::p_bool(BOOL v)
 	}
 	if (!pext->check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
-	pext->data[pext->offset] = tmp_byte;
-	pext->offset += sizeof(uint8_t);
+	m_udata[m_offset] = tmp_byte;
+	m_offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 	
 }
@@ -2627,23 +2627,22 @@ int EXT_PUSH::p_store_eid(const STORE_ENTRYID *r)
 static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
     const MOVECOPY_ACTION *r)
 {
-	uint32_t offset;
-	uint32_t offset1;
+	auto &ext = *pext;
 	uint16_t eid_size;
 	
 	TRY(pext->p_uint8(r->same_store));
 	if (0 == r->same_store) {
-		offset = pext->offset;
+		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint16_t)));
 		if (NULL == r->pstore_eid) {
 			return EXT_ERR_FORMAT;
 		}
 		TRY(pext->p_store_eid(r->pstore_eid));
-		offset1 = pext->offset;
+		uint32_t offset1 = ext.m_offset;
 		eid_size = offset1 - (offset + sizeof(uint16_t));
-		pext->offset = offset;
+		ext.m_offset = offset;
 		TRY(pext->p_uint16(eid_size));
-		pext->offset = offset1;
+		ext.m_offset = offset1;
 	} else {
 		TRY(pext->p_uint16(1));
 		TRY(pext->p_uint8(0));
@@ -2697,11 +2696,9 @@ static int ext_buffer_push_forwarddelegate_action(
 static int ext_buffer_push_action_block(
 	EXT_PUSH *pext, const ACTION_BLOCK *r)
 {
-	uint32_t offset;
-	uint32_t offset1;
-	uint16_t tmp_len;
-	
-	offset = pext->offset;
+	auto &ext = *pext;
+	uint32_t offset = ext.m_offset;
+
 	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(pext->p_uint8(r->type));
 	TRY(pext->p_uint32(r->flavor));
@@ -2715,10 +2712,11 @@ static int ext_buffer_push_action_block(
 	case OP_OOF_REPLY:
 		TRY(ext_buffer_push_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata)));
 		break;
-	case OP_DEFER_ACTION:
-		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
+	case OP_DEFER_ACTION: {
+		uint16_t tmp_len = r->length - sizeof(uint8_t) - 2 * sizeof(uint32_t);
 		TRY(pext->p_bytes(r->pdata, tmp_len));
 		break;
+	}
 	case OP_BOUNCE:
 		TRY(pext->p_uint32(*static_cast<uint32_t *>(r->pdata)));
 		break;
@@ -2734,11 +2732,11 @@ static int ext_buffer_push_action_block(
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	tmp_len = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint16_t tmp_len = ext.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint16(tmp_len));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2865,23 +2863,20 @@ int EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY *r)
 int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
 {
 	auto pext = this;
-	uint32_t offset;
-	uint32_t offset1;
-	uint8_t name_size;
 	
 	TRY(pext->p_uint8(r->kind));
 	TRY(pext->p_guid(&r->guid));
 	if (r->kind == MNID_ID) {
 		TRY(pext->p_uint32(r->lid));
 	} else if (r->kind == MNID_STRING) {
-		offset = pext->offset;
+		uint32_t offset = m_offset;
 		TRY(pext->advance(sizeof(uint8_t)));
 		TRY(pext->p_wstr(r->pname));
-		name_size = pext->offset - (offset + sizeof(uint8_t));
-		offset1 = pext->offset;
-		pext->offset = offset;
+		uint8_t name_size = m_offset - (offset + sizeof(uint8_t));
+		uint32_t offset1 = m_offset;
+		m_offset = offset;
 		TRY(pext->p_uint8(name_size));
-		pext->offset = offset1;
+		m_offset = offset1;
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3155,43 +3150,37 @@ int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_RO
 int EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r)
 {
 	auto pext = this;
-	uint32_t offset;
-	uint32_t offset1;
-	uint16_t row_size;
 	
 	TRY(pext->p_uint8(r->recipient_type));
 	TRY(pext->p_uint16(r->cpid));
 	TRY(pext->p_uint16(r->reserved));
-	offset = pext->offset;
+	uint32_t offset = m_offset;
 	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(pext->p_recipient_row(pproptags, &r->recipient_row));
-	row_size = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint16_t row_size = m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = m_offset;
+	m_offset = offset;
 	TRY(pext->p_uint16(row_size));
-	pext->offset = offset1;
+	m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
 {
 	auto pext = this;
-	uint32_t offset;
-	uint32_t offset1;
-	uint16_t row_size;
 	
 	TRY(pext->p_uint32(r->row_id));
 	TRY(pext->p_uint8(r->recipient_type));
 	TRY(pext->p_uint16(r->cpid));
 	TRY(pext->p_uint16(r->reserved));
-	offset = pext->offset;
+	uint32_t offset = m_offset;
 	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(pext->p_recipient_row(pproptags, &r->recipient_row));
-	row_size = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint16_t row_size = m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = m_offset;
+	m_offset = offset;
 	TRY(pext->p_uint16(row_size));
-	pext->offset = offset1;
+	m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3254,22 +3243,19 @@ static int ext_buffer_push_persistelement(
 
 static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 {
-	uint32_t offset;
-	uint32_t offset1;
-	uint16_t tmp_size;
-	
+	auto &ext = *pext;
 	TRY(pext->p_uint16(r->persist_id));
 	if (PERSIST_SENTINEL == r->persist_id) {
 		return pext->p_uint16(0);
 	}
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(ext_buffer_push_persistelement(pext, &r->element));
-	tmp_size = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint16_t tmp_size = ext.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint16(tmp_size));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3610,9 +3596,9 @@ int EXT_PUSH::p_msgctnt(const MESSAGE_CONTENT *r)
 uint8_t *EXT_PUSH::release()
 {
 	auto p = this;
-	uint8_t *t = p->data;
-	p->data = nullptr;
+	auto t = p->m_udata;
+	m_udata = nullptr;
 	p->b_alloc = false;
-	p->offset = 0;
+	m_offset = 0;
 	return t;
 }

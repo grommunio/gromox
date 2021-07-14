@@ -106,8 +106,8 @@ static int exmdb_client_push_request(uint8_t call_id,
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	pbin_out->cb = ext_push.offset;
-	ext_push.offset = 0;
+	pbin_out->cb = ext_push.m_offset;
+	ext_push.m_offset = 0;
 	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t));
 	if (status != EXT_ERR_SUCCESS)
 		return status;

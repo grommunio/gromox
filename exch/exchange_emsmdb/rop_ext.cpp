@@ -408,21 +408,18 @@ static int rop_ext_pull_getsearchcriteria_request(
 static int rop_ext_push_getsearchcriteria_response(
 	EXT_PUSH *pext, const GETSEARCHCRITERIA_RESPONSE *r)
 {
-	uint32_t offset1;
-	uint32_t offset2;
-	uint16_t res_size;
-	
+	auto &ext = *pext;
 	if (NULL == r->pres) {
 		TRY(pext->p_uint16(0));
 	} else {
-		offset1 = pext->offset;
+		uint32_t offset1 = ext.m_offset;
 		TRY(pext->advance(sizeof(uint16_t)));
 		TRY(pext->p_restriction(r->pres));
-		res_size = pext->offset - (offset1 + sizeof(uint16_t));
-		offset2 = pext->offset;
-		pext->offset = offset1;
+		uint16_t res_size = ext.m_offset - (offset1 + sizeof(uint16_t));
+		uint32_t offset2 = ext.m_offset;
+		ext.m_offset = offset1;
 		TRY(pext->p_uint16(res_size));
-		pext->offset = offset2;
+		ext.m_offset = offset2;
 	}
 	TRY(pext->p_uint8(r->logon_id));
 	TRY(pext->p_uint64_sa(&r->folder_ids));
@@ -815,9 +812,6 @@ static int rop_ext_push_openmessage_response(
 {
 	auto &ext = *pext;
 	uint8_t i;
-	uint32_t offset;
-	uint32_t offset1;
-	uint32_t last_offset;
 	
 	TRY(pext->p_uint8(r->has_named_properties));
 	TRY(pext->p_typed_str(&r->subject_prefix));
@@ -827,24 +821,24 @@ static int rop_ext_push_openmessage_response(
 	if (0 == r->row_count) {
 		return pext->p_uint8(0);
 	}
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
-		last_offset = pext->offset;
+		uint32_t last_offset = ext.m_offset;
 		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-		    ext.m_alloc_size - pext->offset < 256) {
-			pext->offset = last_offset;
+		    ext.m_alloc_size - ext.m_offset < 256) {
+			ext.m_offset = last_offset;
 			break;
 		}
 	}
 	if (0 == i) {
 		return EXT_ERR_SUCCESS;
 	}
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint8(i));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -935,9 +929,6 @@ static int rop_ext_push_reloadcachedinformation_response(
 {
 	auto &ext = *pext;
 	uint8_t i;
-	uint32_t offset;
-	uint32_t offset1;
-	uint32_t last_offset;
 	
 	TRY(pext->p_uint8(r->has_named_properties));
 	TRY(pext->p_typed_str(&r->subject_prefix));
@@ -947,24 +938,24 @@ static int rop_ext_push_reloadcachedinformation_response(
 	if (0 == r->row_count) {
 		return pext->p_uint8(0);
 	}
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
-		last_offset = pext->offset;
+		uint32_t last_offset = ext.m_offset;
 		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-		    ext.m_alloc_size - pext->offset < 256) {
-			pext->offset = last_offset;
+		    ext.m_alloc_size - ext.m_offset < 256) {
+			ext.m_offset = last_offset;
 			break;
 		}
 	}
 	if (0 == i) {
 		return EXT_ERR_SUCCESS;
 	}
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint8(i));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1082,9 +1073,6 @@ static int rop_ext_push_openembeddedmessage_response(
 {
 	auto &ext = *pext;
 	int i;
-	uint32_t offset;
-	uint32_t offset1;
-	uint32_t last_offset;
 	
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint64(r->message_id));
@@ -1096,24 +1084,24 @@ static int rop_ext_push_openembeddedmessage_response(
 	if (0 == r->row_count) {
 		return pext->p_uint8(0);
 	}
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
-		last_offset = pext->offset;
+		uint32_t last_offset = ext.m_offset;
 		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-		    ext.m_alloc_size - pext->offset < 256) {
-			pext->offset = last_offset;
+		    ext.m_alloc_size - ext.m_offset < 256) {
+			ext.m_offset = last_offset;
 			break;
 		}
 	}
 	if (0 == i) {
 		return EXT_ERR_SUCCESS;
 	}
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint8(i));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1147,20 +1135,17 @@ static int rop_ext_pull_abortsubmit_request(
 static int rop_ext_push_getaddresstypes_response(
 	EXT_PUSH *pext, const GETADDRESSTYPES_RESPONSE *r)
 {
-	uint16_t size;
-	uint32_t offset;
-	uint32_t offset1;
-	
+	auto &ext = *pext;
 	TRY(pext->p_uint16(r->address_types.count));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint16_t)));
 	for (size_t i = 0; i < r->address_types.count; ++i)
 		TRY(pext->p_str(r->address_types.ppstr[i]));
-	size = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
+	uint16_t size = ext.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = ext.m_offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint16(size));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3280,7 +3265,6 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	int i;
 	EXT_PUSH subext;
 	EXT_PUSH ext_push;
-	uint32_t compressed_len;
 	uint8_t ext_buff[0x10000];
 	uint8_t tmp_buff[0x10000];
 	RPC_HEADER_EXT rpc_header_ext;
@@ -3294,16 +3278,14 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	}
 	rpc_header_ext.version = prop_buff->rhe_version;
 	rpc_header_ext.flags = prop_buff->rhe_flags;
-	rpc_header_ext.size_actual = subext.offset;
+	rpc_header_ext.size_actual = subext.m_offset;
 	rpc_header_ext.size = rpc_header_ext.size_actual;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			compressed_len = lzxpress_compress(ext_buff,
-								subext.offset, tmp_buff);
-			if (0 == compressed_len ||
-				compressed_len >= subext.offset) {
+			uint32_t compressed_len = lzxpress_compress(ext_buff, subext.m_offset, tmp_buff);
+			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
@@ -3320,7 +3302,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 		return EXT_ERR_ALLOC;
 	TRY(ext_push.p_rpchdr(&rpc_header_ext));
 	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));
-	*pout_len = ext_push.offset;
+	*pout_len = ext_push.m_offset;
 	return EXT_ERR_SUCCESS;
 }
 

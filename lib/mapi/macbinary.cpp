@@ -150,32 +150,33 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 
 static int macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
+	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_be16(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint16_t);
+	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
 
 static int macbinary_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
+	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_be32(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint32_t);
+	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
 static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 {
-	uint16_t crc;
-	uint32_t offset;
+	auto &ext = *pext;
 	int32_t tmp_int;
 	uint8_t tmp_byte;
 	
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->p_uint8(r->old_version));
 	tmp_byte = strlen(r->file_name);
 	if (tmp_byte > 63) {
@@ -219,7 +220,7 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(pext->p_uint8(r->mini_version));
-	crc = macbinary_crc(pext->data + offset, 124, 0);
+	uint16_t crc = macbinary_crc(&ext.m_udata[offset], 124, 0);
 	TRY(macbinary_push_uint16(pext, crc));
 	return pext->p_bytes(r->pads2, 2);
 }
@@ -269,7 +270,7 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 
 int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 {
-	uint32_t pad_len;
+	auto &ext = *pext;
 	uint8_t pad_buff[128]{};
 	
 	TRY(macbinary_push_header(pext, &r->header));
@@ -277,7 +278,7 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 		if (NULL == r->pxheader) {
 			return EXT_ERR_FORMAT;
 		}
-		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
+		uint32_t pad_len = ((ext.m_offset + 127) & ~127) - ext.m_offset;
 		TRY(pext->p_bytes(pad_buff, pad_len));
 		TRY(pext->p_bytes(r->pxheader, r->header.xheader_len));
 	}
@@ -285,7 +286,7 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 		if (NULL == r->pdata) {
 			return EXT_ERR_FORMAT;
 		}
-		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
+		uint32_t pad_len = ((ext.m_offset + 127) & ~127) - ext.m_offset;
 		TRY(pext->p_bytes(pad_buff, pad_len));
 		TRY(pext->p_bytes(r->pdata, r->header.data_len));
 	}
@@ -293,7 +294,7 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 		if (NULL == r->presource) {
 			return EXT_ERR_FORMAT;
 		}
-		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
+		uint32_t pad_len = ((ext.m_offset + 127) & ~127) - ext.m_offset;
 		TRY(pext->p_bytes(pad_buff, pad_len));
 		TRY(pext->p_bytes(r->presource, r->header.res_len));
 	}
@@ -301,7 +302,7 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 		if (NULL == r->pcomment) {
 			return EXT_ERR_FORMAT;
 		}
-		pad_len = ((pext->offset + 127) & ~127) - pext->offset;
+		uint32_t pad_len = ((ext.m_offset + 127) & ~127) - ext.m_offset;
 		TRY(pext->p_bytes(pad_buff, pad_len));
 		TRY(pext->p_bytes(r->pcomment, r->header.comment_len));
 	}

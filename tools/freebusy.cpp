@@ -209,8 +209,8 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, uint8_t call_id,
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	pbin_out->cb = ext_push.offset;
-	ext_push.offset = 0;
+	pbin_out->cb = ext_push.m_offset;
+	ext_push.m_offset = 0;
 	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
 	/* memory referenced by ext_push.data will be freed outside */
 	pbin_out->pb = ext_push.release();
@@ -1253,10 +1253,9 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
-			if (FALSE == encode_hex_binary(tmp_buff,
-				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
+			if (!encode_hex_binary(tmp_buff, ext_push.m_offset,
+			    tmp_buff1, sizeof(tmp_buff1)))
 				return FALSE;
-			}
 			HX_strupper(tmp_buff1);
 			strcpy(uid_buff, tmp_buff1);
 		}
@@ -1275,10 +1274,9 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
-		if (FALSE == encode_hex_binary(tmp_buff,
-			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
+		if (!encode_hex_binary(tmp_buff, ext_push.m_offset, tmp_buff1,
+		    sizeof(tmp_buff1)))
 			return FALSE;
-		}
 		HX_strupper(tmp_buff1);
 		strcpy(uid_buff, tmp_buff1);
 	}

@@ -3427,8 +3427,8 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	pbin_out->cb = ext_push.offset;
-	ext_push.offset = 0;
+	pbin_out->cb = ext_push.m_offset;
+	ext_push.m_offset = 0;
 	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
@@ -5625,8 +5625,8 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	pbin_out->cb = ext_push.offset;
-	ext_push.offset = 1;
+	pbin_out->cb = ext_push.m_offset;
+	ext_push.m_offset = 1;
 	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1);
 	if (status != EXT_ERR_SUCCESS)
 		return status;
@@ -5994,8 +5994,8 @@ static int exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	pbin_out->cb = ext_push.offset;
-	ext_push.offset = 0;
+	pbin_out->cb = ext_push.m_offset;
+	ext_push.m_offset = 0;
 	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
 	pbin_out->pb = ext_push.release();
 	return EXT_ERR_SUCCESS;

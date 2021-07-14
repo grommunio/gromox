@@ -523,7 +523,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	EXT_PUSH ext_push;
 	EXT_PUSH ext_push1;
 	PROPERTY_ROW tmp_row;
-	uint32_t last_offset;
 	char ext_buff[0x8000];
 	char ext_buff1[0x8000];
 	TPROPVAL_ARRAY propvals;
@@ -552,7 +551,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		if (NULL == pnode1) {
 			return ecMAPIOOM;
 		}
-		emsmdb_interface_set_rop_left(tmp_len - ext_push.offset);
+		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
 		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
 		result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
 				prop_buff->phandles, prop_buff->hnum);
@@ -588,7 +587,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		if (NULL == pnode1->pdata) {
 			continue;
 		}
-		last_offset = ext_push.offset;
+		uint32_t last_offset = ext_push.m_offset;
 		status = rop_ext_push_rop_response(&ext_push,
 				((ROP_REQUEST*)pnode->pdata)->logon_id,
 		         static_cast<ROP_RESPONSE *>(pnode1->pdata));
@@ -613,7 +612,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			((BUFFERTOOSMALL_RESPONSE*)((ROP_RESPONSE*)
 				pnode1->pdata)->ppayload)->buffer =
 					((ROP_REQUEST*)pnode->pdata)->bookmark;
-			ext_push.offset = last_offset;
+			ext_push.m_offset = last_offset;
 			if (rop_ext_push_rop_response(&ext_push,
 			    static_cast<ROP_REQUEST *>(pnode->pdata)->logon_id,
 			    static_cast<ROP_RESPONSE *>(pnode1->pdata)) != EXT_ERR_SUCCESS)
@@ -639,7 +638,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		if (NULL == pnode) {
 			break;
 		}
-		last_offset = ext_push.offset;
+		uint32_t last_offset = ext_push.m_offset;
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
 		pobject = rop_processor_get_object(pemsmdb_info->plogmap,
 					pnotify->logon_id, pnotify->handle, &type);
@@ -670,19 +669,19 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 					&propvals, pcolumns, &tmp_row) ||
 				    ext_push1.p_proprow(pcolumns, &tmp_row) != EXT_ERR_SUCCESS)
 					goto NEXT_NOTIFY;
-				tmp_bin.cb = ext_push1.offset;
-				tmp_bin.pb = ext_push1.data;
+				tmp_bin.cb = ext_push1.m_offset;
+				tmp_bin.pb = ext_push1.m_udata;
 				pnotify->notification_data.prow_data = &tmp_bin;
 			}
 			if (EXT_ERR_SUCCESS != rop_ext_push_notify_response(
 				&ext_push, pnotify)) {
-				ext_push.offset = last_offset;
+				ext_push.m_offset = last_offset;
 				double_list_insert_as_head(pnotify_list, pnode);
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				status = rop_ext_push_pending_response(
 								&ext_push, &tmp_pending);
 				if (EXT_ERR_SUCCESS != status) {
-					ext_push.offset = last_offset;
+					ext_push.m_offset = last_offset;
 				}
 				break;
 			}
@@ -694,10 +693,9 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	}
 	
  MAKE_RPC_EXT:
-	if (EXT_ERR_SUCCESS != rop_ext_make_rpc_ext(ext_buff,
-		ext_push.offset, prop_buff, pbuff, pbuff_len)) {
+	if (rop_ext_make_rpc_ext(ext_buff, ext_push.m_offset, prop_buff,
+	    pbuff, pbuff_len) != EXT_ERR_SUCCESS)
 		return ecError;
-	}
 	return ecSuccess;
 }
 

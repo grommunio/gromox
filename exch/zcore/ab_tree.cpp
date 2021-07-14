@@ -1700,7 +1700,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (bv->pv == nullptr || !ext_push.init(bv->pv, 1280, 0) ||
 		    ext_push.p_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		bv->cb = ext_push.offset;
+		bv->cb = ext_push.m_offset;
 		*ppvalue = pvalue;
 		return TRUE;
 	}

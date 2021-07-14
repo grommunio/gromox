@@ -561,7 +561,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		double_list_free(&aux_out.aux_list);
 		return ecMAPIOOM;
 	}
-	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ? 0 : ext_push.offset;
+	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ?
+	              0 : ext_push.m_offset;
 	double_list_free(&aux_out.aux_list);
 	
 	pdn_prefix[0] = '\0';

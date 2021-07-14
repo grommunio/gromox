@@ -374,15 +374,11 @@ static bool rtf_escape_output(RTF_READER *preader, char *string)
 
 static bool rtf_flush_iconv_cache(RTF_READER *preader)
 {
-	char *in_buff;
 	char *out_buff;
-	size_t in_size;
-	size_t tmp_len;
 	size_t out_size;
 	
-	if (0 == preader->iconv_push.offset) {
+	if (preader->iconv_push.m_offset == 0)
 		return true;
-	}
 	if ((iconv_t)-1 == preader->conv_id) {
 		if ('\0' == preader->default_encoding[0]) {
 			if (!rtf_iconv_open(preader, "windows-1252"))
@@ -392,19 +388,19 @@ static bool rtf_flush_iconv_cache(RTF_READER *preader)
 				return false;
 		}
 	}
-	tmp_len = 4*preader->iconv_push.offset;
+	size_t tmp_len = 4 * preader->iconv_push.m_offset;
 	auto ptmp_buff = static_cast<char *>(malloc(tmp_len));
 	if (NULL == ptmp_buff) {
 		return false;
 	}
-	in_buff = preader->iconv_push.cdata;
-	in_size = preader->iconv_push.offset;
+	auto in_buff = preader->iconv_push.m_cdata;
+	size_t in_size = preader->iconv_push.m_offset;
 	out_buff = ptmp_buff;
 	out_size = tmp_len;
 	if (iconv(preader->conv_id, &in_buff, &in_size, &out_buff, &out_size) == static_cast<size_t>(-1)) {
 		free(ptmp_buff);
 		/* ignore the characters which can not be converted */
-		preader->iconv_push.offset = 0;
+		preader->iconv_push.m_offset = 0;
 		return true;
 	}
 	tmp_len -= out_size;
@@ -414,7 +410,7 @@ static bool rtf_flush_iconv_cache(RTF_READER *preader)
 		return false;
 	}
 	free(ptmp_buff);
-	preader->iconv_push.offset = 0;
+	preader->iconv_push.m_offset = 0;
 	return true;
 }
 
@@ -3142,8 +3138,8 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		}
 	}
 	if (preader->is_within_picture && b_picture_push) {
-		if (picture_push.offset > 0) {
-			tmp_bin.cb = picture_push.offset/2;
+		if (picture_push.m_offset > 0) {
+			tmp_bin.cb = picture_push.m_offset / 2;
 			tmp_bin.pv = malloc(tmp_bin.cb);
 			if (tmp_bin.pv == nullptr)
 				return -EINVAL;
@@ -3151,8 +3147,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			if (FALSE == decode_hex_binary(picture_push.cdata,
-			    tmp_bin.pv, tmp_bin.cb)) {
+			if (!decode_hex_binary(picture_push.m_cdata, tmp_bin.pv, tmp_bin.cb)) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
@@ -3234,7 +3229,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	int i;
 	int tmp_len;
 	iconv_t conv_id;
-	char *pin, *pout;
+	char *pout;
 	RTF_READER reader;
 	char tmp_buff[128];
 	SIMPLE_TREE_NODE *proot;
@@ -3278,13 +3273,12 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		*pbuff_out = static_cast<char *>(malloc(reader.ext_push.offset));
+		*pbuff_out = static_cast<char *>(malloc(reader.ext_push.m_offset));
 		if (*pbuff_out == nullptr) {
 			return false;
 		}
-		memcpy(*pbuff_out, reader.ext_push.data,
-			reader.ext_push.offset);
-		*plength = reader.ext_push.offset;
+		memcpy(*pbuff_out, reader.ext_push.m_udata, reader.ext_push.m_offset);
+		*plength = reader.ext_push.m_offset;
 		return true;
 	}
 	snprintf(tmp_buff, 128, "%s//TRANSLIT",
@@ -3293,9 +3287,9 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	if ((iconv_t)-1 == conv_id) {
 		return false;
 	}
-	pin = (char*)reader.ext_push.data;
+	auto pin = reader.ext_push.m_cdata;
 	/* Assumption for 3x is that no codepage maps to points beyond BMP */
-	*plength = 3 * reader.ext_push.offset;
+	*plength = 3 * reader.ext_push.m_offset;
 	size_t out_len = *plength;
 	*pbuff_out = static_cast<char *>(malloc(out_len + 1));
 	if (*pbuff_out == nullptr) {
@@ -3303,7 +3297,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		return false;
 	}
 	pout = *pbuff_out;
-	size_t in_len = reader.ext_push.offset;
+	size_t in_len = reader.ext_push.m_offset;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return false;

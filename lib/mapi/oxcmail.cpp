@@ -305,7 +305,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;
 	}
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return TRUE;
 }
 
@@ -323,7 +323,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return TRUE;
 }
 
@@ -806,11 +806,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	uint32_t count;
 	BINARY tmp_bin;
 	int str_offset;
-	uint32_t bytes;
 	uint8_t pad_len;
-	uint32_t offset;
-	uint32_t offset1;
-	uint32_t offset2;
 	EXT_PUSH ext_push;
 	char *ptoken_prev;
 	char tmp_buff[256];
@@ -832,7 +828,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		return false;
 	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	offset = ext_push.offset;
+	uint32_t offset = ext_push.m_offset;
 	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
 	str_offset = 0;
@@ -879,7 +875,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 			if (email_addr.local_part[0] != '\0' && email_addr.domain[0] != '\0' &&
 			    oxcmail_check_ascii(email_addr.local_part) &&
 			    oxcmail_check_ascii(email_addr.domain)) {
-				offset1 = ext_push.offset;
+				uint32_t offset1 = ext_push.m_offset;
 				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 					return FALSE;
 				sprintf(tmp_buff, "%s@%s",
@@ -887,19 +883,19 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 				status = ext_push.p_oneoff_eid(&tmp_entry);
 				if (EXT_ERR_CHARCNV == status) {
-					ext_push.offset = offset1 + sizeof(uint32_t);
+					ext_push.m_offset = offset1 + sizeof(uint32_t);
 					tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
 					status = ext_push.p_oneoff_eid(&tmp_entry);
 				}
 				if (EXT_ERR_SUCCESS != status) {
 					return FALSE;
 				}
-				offset2 = ext_push.offset;
-				bytes = offset2 - (offset1 + sizeof(uint32_t));
-				ext_push.offset = offset1;
+				uint32_t offset2 = ext_push.m_offset;
+				uint32_t bytes = offset2 - (offset1 + sizeof(uint32_t));
+				ext_push.m_offset = offset1;
 				if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
 					return FALSE;
-				ext_push.offset = offset2;
+				ext_push.m_offset = offset2;
 				pad_len = ((bytes + 3) & ~3) - bytes;
 				if (ext_push.p_bytes(pad_bytes, pad_len) != EXT_ERR_SUCCESS)
 					return FALSE;
@@ -910,13 +906,13 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		}
 	}
 	if (0 != count) {
-		tmp_bin.cb = ext_push.offset;
+		tmp_bin.cb = ext_push.m_offset;
 		tmp_bin.pb = bin_buff;
-		bytes = ext_push.offset - (offset + sizeof(uint32_t));
-		ext_push.offset = 0;
+		uint32_t bytes = ext_push.m_offset - (offset + sizeof(uint32_t));
+		ext_push.m_offset = 0;
 		if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
 			return FALSE;
-		ext_push.offset = offset;
+		ext_push.m_offset = offset;
 		if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
 			return FALSE;
 		propval.proptag = PROP_TAG_REPLYRECIPIENTENTRIES;

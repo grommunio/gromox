@@ -147,7 +147,7 @@ static void object_tree_free_root(ROOT_OBJECT *prootobj)
 			prootobj->maildir);
 		fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
 		if (-1 != fd) {
-			write(fd, ext_push.data, ext_push.offset);
+			write(fd, ext_push.m_udata, ext_push.m_offset);
 			close(fd);
 		}
 	}

@@ -189,7 +189,7 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_oneoff_eid(&tmp_entry) != EXT_ERR_SUCCESS)
 		return false;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return TRUE;
 }
 
@@ -1845,8 +1845,7 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 
 static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 {
-	uint32_t offset;
-	uint32_t offset1;
+	auto &ext = *pext;
 	uint32_t tmp_int;
 	
 	TRY(pext->p_guid(&r->guid));
@@ -1860,14 +1859,14 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	if (0 == tmp_int) {
 		return pext->p_uint32(r->lid);
 	} else if (1 == tmp_int) {
-		offset = pext->offset;
+		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_wstr(r->pname));
-		offset1 = pext->offset;
+		uint32_t offset1 = ext.m_offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
-		pext->offset = offset;
+		ext.m_offset = offset;
 		TRY(pext->p_uint32(tmp_int));
-		pext->offset = offset1;
+		ext.m_offset = offset1;
 		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	}
 	return EXT_ERR_SUCCESS;
@@ -1876,8 +1875,7 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
-	uint32_t offset;
-	uint32_t offset1;
+	auto &ext = *pext;
 	uint32_t tmp_int;
 	
 	TRY(pext->p_uint16(r->proptype));
@@ -1904,28 +1902,30 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_I8:
 	case PT_SYSTIME:
 		return pext->p_uint64(*static_cast<uint64_t *>(r->pvalue));
-	case PT_STRING8:
+	case PT_STRING8: {
 		TRY(pext->p_uint32(1));
-		offset = pext->offset;
+		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_str(static_cast<char *>(r->pvalue)));
-		offset1 = pext->offset;
+		uint32_t offset1 = ext.m_offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
-		pext->offset = offset;
+		ext.m_offset = offset;
 		TRY(pext->p_uint32(tmp_int));
-		pext->offset = offset1;
+		ext.m_offset = offset1;
 		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
-	case PT_UNICODE:
+	}
+	case PT_UNICODE: {
 		TRY(pext->p_uint32(1));
-		offset = pext->offset;
+		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_wstr(static_cast<char *>(r->pvalue)));
-		offset1 = pext->offset;
+		uint32_t offset1 = ext.m_offset;
 		tmp_int = offset1 - (offset + sizeof(uint32_t));
-		pext->offset = offset;
+		ext.m_offset = offset;
 		TRY(pext->p_uint32(tmp_int));
-		pext->offset = offset1;
+		ext.m_offset = offset1;
 		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
+	}
 	case PT_CLSID:
 		return pext->p_guid(static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
@@ -1940,17 +1940,17 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			return pext->p_bytes(g_pad_bytes,
 			       tnef_align(bv->cb + 16));
 		} else {
-			offset = pext->offset;
+			uint32_t offset = ext.m_offset;
 			TRY(pext->advance(sizeof(uint32_t)));
 			TRY(pext->p_bytes(IID_IMessage, 16));
 			if (FALSE == tnef_serialize_internal(pext, TRUE,
 			    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
 				return EXT_ERR_FORMAT;
-			offset1 = pext->offset;
+			uint32_t offset1 = ext.m_offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
-			pext->offset = offset;
+			ext.m_offset = offset;
 			TRY(pext->p_uint32(tmp_int));
-			pext->offset = offset1;
+			ext.m_offset = offset1;
 			return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 		}
 	}
@@ -1988,14 +1988,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
 		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
-			offset = pext->offset;
+			uint32_t offset = ext.m_offset;
 			TRY(pext->advance(sizeof(uint32_t)));
 			TRY(pext->p_str(sa->ppstr[i]));
-			offset1 = pext->offset;
+			uint32_t offset1 = ext.m_offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
-			pext->offset = offset;
+			ext.m_offset = offset;
 			TRY(pext->p_uint32(tmp_int));
-			pext->offset = offset1;
+			ext.m_offset = offset1;
 			TRY(pext->p_bytes(g_pad_bytes, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
@@ -2004,14 +2004,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		auto sa = static_cast<STRING_ARRAY *>(r->pvalue);
 		TRY(pext->p_uint32(sa->count));
 		for (size_t i = 0; i < sa->count; ++i) {
-			offset = pext->offset;
+			uint32_t offset = ext.m_offset;
 			TRY(pext->advance(sizeof(uint32_t)));
 			TRY(pext->p_wstr(sa->ppstr[i]));
-			offset1 = pext->offset;
+			uint32_t offset1 = ext.m_offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
-			pext->offset = offset;
+			ext.m_offset = offset;
 			TRY(pext->p_uint32(tmp_int));
-			pext->offset = offset1;
+			ext.m_offset = offset1;
 			TRY(pext->p_bytes(g_pad_bytes, tnef_align(tmp_int)));
 		}
 		return EXT_ERR_SUCCESS;
@@ -2040,19 +2040,17 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
+	auto &ext = *pext;
 	DTR tmp_dtr;
-	uint32_t offset;
-	uint32_t offset1;
 	uint16_t tmp_len;
 	time_t unix_time;
 	struct tm tmp_tm;
-    uint16_t checksum;
 	TRP_HEADER header;
 	static uint8_t empty_bytes[8];
 
 	TRY(pext->p_uint8(r->lvl));
 	TRY(pext->p_uint32(r->attr_id));
-	offset = pext->offset;
+	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint32_t)));
 	switch (r->attr_id) {
 	case ATTRIBUTE_ID_FROM:
@@ -2164,13 +2162,13 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	offset1 = pext->offset;
+	uint32_t offset1 = ext.m_offset;
 	tmp_len = offset1 - (offset + sizeof(uint32_t));
-	pext->offset = offset;
+	ext.m_offset = offset;
 	TRY(pext->p_uint32(tmp_len));
-	pext->offset = offset1;
+	ext.m_offset = offset1;
 	offset += sizeof(uint32_t);
-	checksum = tnef_generate_checksum(pext->data + offset, tmp_len);
+	uint16_t checksum = tnef_generate_checksum(&ext.m_udata[offset], tmp_len);
 	return pext->p_uint16(checksum);
 }
 
@@ -2983,7 +2981,7 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	pbin->pb = ext_push.release();
 	return pbin;
 }

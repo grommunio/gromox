@@ -441,10 +441,10 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	uint16_t reserved, uint8_t *pcount, EXT_PUSH *pext,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
+	auto &ext = *pext;
 	size_t i;
 	int object_type;
 	TARRAY_SET tmp_set;
-	uint32_t last_offset;
 	READRECIPIENT_ROW tmp_row;
 	
 	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
@@ -468,10 +468,10 @@ uint32_t rop_readrecipients(uint32_t row_id,
 			message_object_get_rcpt_columns(pmessage), &tmp_row)) {
 			return ecMAPIOOM;
 		}
-		last_offset = pext->offset;
+		uint32_t last_offset = ext.m_offset;
 		if (pext->p_readrecipient_row(message_object_get_rcpt_columns(pmessage),
 		    &tmp_row) != EXT_ERR_SUCCESS) {
-			pext->offset = last_offset;
+			ext.m_offset = last_offset;
 			break;
 		}
 	}

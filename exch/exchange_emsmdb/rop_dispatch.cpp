@@ -536,7 +536,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			phandles[prequest->hindex]);
 		if ((*ppresponse)->result == ecSuccess) {
 			rsp->bin_rows.pv = pdata;
-			rsp->bin_rows.cb = ext_push.offset;
+			rsp->bin_rows.cb = ext_push.m_offset;
 		}
 		break;
 	}
@@ -680,7 +680,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		if ((*ppresponse)->result == ecSuccess) {
 			rsp->bin_rows.pv = pdata;
-			rsp->bin_rows.cb = ext_push.offset;
+			rsp->bin_rows.cb = ext_push.m_offset;
 		}
 		break;
 	}
@@ -812,7 +812,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			phandles[prequest->hindex]);
 		if ((*ppresponse)->result == ecSuccess) {
 			rsp->bin_recipients.pv = pdata;
-			rsp->bin_recipients.cb = ext_push.offset;
+			rsp->bin_recipients.cb = ext_push.m_offset;
 		}
 		break;
 	}

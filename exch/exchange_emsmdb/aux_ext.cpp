@@ -1047,7 +1047,6 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 {
 	uint16_t size;
 	EXT_PUSH subext;
-	uint16_t actual_size;
 	uint8_t tmp_buff[0x1008];
 	uint8_t paddings[AUX_ALIGN_SIZE]{};
 	
@@ -1063,12 +1062,12 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
-	actual_size = subext.offset + sizeof(uint16_t) + 2*sizeof(uint8_t);
+	uint16_t actual_size = subext.m_offset + sizeof(uint16_t) + 2 * sizeof(uint8_t);
 	size = (actual_size + (AUX_ALIGN_SIZE - 1)) & ~(AUX_ALIGN_SIZE - 1);
 	TRY(pext->p_uint16(size));
 	TRY(pext->p_uint8(r->version));
 	TRY(pext->p_uint8(r->type));
-	TRY(pext->p_bytes(subext.data, subext.offset));
+	TRY(pext->p_bytes(subext.m_udata, subext.m_offset));
 	return pext->p_bytes(paddings, size - actual_size);
 }
 
@@ -1123,7 +1122,6 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 {
 	EXT_PUSH subext;
-	uint32_t compressed_len;
 	DOUBLE_LIST_NODE *pnode;
 	uint8_t ext_buff[0x1008];
 	uint8_t tmp_buff[0x1008];
@@ -1141,16 +1139,14 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 	}
 	rpc_header_ext.version = r->rhe_version;
 	rpc_header_ext.flags = r->rhe_flags;
-	rpc_header_ext.size_actual = subext.offset;
+	rpc_header_ext.size_actual = subext.m_offset;
 	rpc_header_ext.size = rpc_header_ext.size_actual;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			compressed_len = lzxpress_compress(ext_buff,
-								subext.offset, tmp_buff);
-			if (0 == compressed_len ||
-				compressed_len >= subext.offset) {
+			uint32_t compressed_len = lzxpress_compress(ext_buff, subext.m_offset, tmp_buff);
+			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;

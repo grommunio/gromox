@@ -372,10 +372,8 @@ static BOOL ftstream_producer_write_propdef(
 	default:
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, tmp_buff, ext_push.offset)) {
+	if (!ftstream_producer_write_internal(pstream, tmp_buff, ext_push.m_offset))
 		return FALSE;
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -719,8 +717,6 @@ static BOOL ftstream_producer_write_groupinfo(
 	const PROPERTY_GROUPINFO *pginfo)
 {
 	uint16_t propid;
-	uint32_t offset;
-	uint32_t offset1;
 	EXT_PUSH ext_push;
 	uint32_t name_size;
 	PROPERTY_NAME propname;
@@ -753,26 +749,27 @@ static BOOL ftstream_producer_write_groupinfo(
 				if (ext_push.p_uint32(propname.lid) != EXT_ERR_SUCCESS)
 					return FALSE;
 				break;
-			case MNID_STRING:
-				offset = ext_push.offset;
+			case MNID_STRING: {
+				uint32_t offset = ext_push.m_offset;
 				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS ||
 				    ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
 					return FALSE;
-				offset1 = ext_push.offset - sizeof(uint16_t);
+				uint32_t offset1 = ext_push.m_offset - sizeof(uint16_t);
 				name_size = offset1 - (offset + sizeof(uint32_t));
-				ext_push.offset = offset;
+				ext_push.m_offset = offset;
 				if (ext_push.p_uint32(name_size) != EXT_ERR_SUCCESS)
 					return FALSE;
-				ext_push.offset = offset1;
+				ext_push.m_offset = offset1;
 				break;
+			}
 			default:
 				return FALSE;
 			}
 		}
 	}
 	BINARY tmp_bin;
-	tmp_bin.cb = ext_push.offset;
-	tmp_bin.pb = ext_push.data;
+	tmp_bin.cb = ext_push.m_offset;
+	tmp_bin.pb = ext_push.m_udata;
 	return ftstream_producer_write_binary(pstream, &tmp_bin);
 }
 

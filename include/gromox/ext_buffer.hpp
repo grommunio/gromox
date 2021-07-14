@@ -228,10 +228,10 @@ struct EXT_PUSH {
 
 	BOOL b_alloc = false;
 	union {
-		uint8_t *data, *udata;
-		char *cdata;
-		void *vdata = nullptr;
+		uint8_t *m_udata;
+		char *m_cdata;
+		void *m_vdata = nullptr;
 	};
-	uint32_t m_alloc_size = 0, offset = 0, m_flags = 0;
+	uint32_t m_alloc_size = 0, m_offset = 0, m_flags = 0;
 	EXT_BUFFER_MGT m_mgt{};
 };

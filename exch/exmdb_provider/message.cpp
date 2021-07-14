@@ -1299,13 +1299,11 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 	if (!ext_push.init(indices_buff, sizeof(indices_buff), 0) ||
 	    ext_push.p_proptag_a(pindices) != EXT_ERR_SUCCESS)
 		return false;
-	sqlite3_bind_blob(pstmt, 3, ext_push.data,
-			ext_push.offset, SQLITE_STATIC);
+	sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	if (!ext_push.init(proptags_buff, sizeof(proptags_buff), 0) ||
 	    ext_push.p_proptag_a(pungroup_proptags) != EXT_ERR_SUCCESS)
 		return false;
-	sqlite3_bind_blob(pstmt, 4, ext_push.data,
-			ext_push.offset, SQLITE_STATIC);
+	sqlite3_bind_blob(pstmt, 4, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
@@ -3636,8 +3634,8 @@ static BOOL message_make_deferred_action_message(
 		return FALSE;
 	}
 	BINARY tmp_bin;
-	tmp_bin.pb = ext_push.data;
-	tmp_bin.cb = ext_push.offset;
+	tmp_bin.pb = ext_push.m_udata;
+	tmp_bin.cb = ext_push.m_offset;
 	propval.proptag = PROP_TAG_CLIENTACTIONS;
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {

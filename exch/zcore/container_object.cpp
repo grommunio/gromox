@@ -262,7 +262,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -296,7 +296,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -642,7 +642,7 @@ BOOL container_object_fetch_special_property(
 		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0) ||
 		    ext_push.p_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		bv->cb = ext_push.offset;
+		bv->cb = ext_push.m_offset;
 		*ppvalue = pvalue;
 		return TRUE;
 	}

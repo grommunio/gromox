@@ -3819,8 +3819,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sqlite3_close(psqlite);
 			return FALSE;
 		}
-		sqlite3_bind_blob(pstmt, 3, ext_push.data,
-			ext_push.offset, SQLITE_STATIC);
+		sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	}
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		*pstate_id = sqlite3_column_int64(pstmt, 0);
@@ -3841,8 +3840,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		if (NULL == ptnode->psorts || 0 == ptnode->psorts->ccategories) {
 			sqlite3_bind_null(pstmt, 3);
 		} else {
-			sqlite3_bind_blob(pstmt, 3, ext_push.data,
-				ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 		}
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			pstmt.finalize();
@@ -4186,8 +4184,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 			pstmt.finalize();
 			goto RESTORE_POSITION;
 		}
-		if (static_cast<unsigned int>(sqlite3_column_bytes(pstmt, 2)) != ext_push.offset ||
-		    memcmp(sqlite3_column_blob(pstmt, 2), ext_push.data, ext_push.offset) != 0) {
+		if (static_cast<unsigned int>(sqlite3_column_bytes(pstmt, 2)) != ext_push.m_offset ||
+		    memcmp(sqlite3_column_blob(pstmt, 2), ext_push.m_udata, ext_push.m_offset) != 0) {
 			pstmt.finalize();
 			goto RESTORE_POSITION;
 		}

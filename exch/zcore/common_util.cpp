@@ -1058,7 +1058,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -1079,7 +1079,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return TRUE;
 }
 
@@ -1142,7 +1142,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;
 	}
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	if (NULL != paddress_type) {
 		*paddress_type = 0;
 	}
@@ -1311,7 +1311,7 @@ BINARY* common_util_to_folder_entryid(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -1399,7 +1399,7 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -1438,7 +1438,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -2172,7 +2172,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
 	    ext_push.p_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -2192,7 +2192,7 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
 		    ext_push.p_store_eid(pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
-		pmovecopy1->store_eid.cb = ext_push.offset;
+		pmovecopy1->store_eid.cb = ext_push.m_offset;
 		pmovecopy1->folder_eid = *(BINARY*)pmovecopy->pfolder_eid;
 	} else {
 		pbin = common_util_to_store_entryid(pstore);

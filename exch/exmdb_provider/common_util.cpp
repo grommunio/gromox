@@ -1273,7 +1273,7 @@ static BINARY* common_util_to_folder_entryid(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -1326,7 +1326,7 @@ static BINARY* common_util_to_message_entryid(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -3380,8 +3380,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(temp_buff, 16, 0) ||
 			    ext_push.p_guid(static_cast<GUID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3390,8 +3389,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(temp_buff, 256, 0) ||
 			    ext_push.p_svreid(static_cast<SVREID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3400,8 +3398,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_restriction(static_cast<RESTRICTION *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3410,8 +3407,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_rule_actions(static_cast<RULE_ACTIONS *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3430,8 +3426,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_uint16_a(static_cast<SHORT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3440,8 +3435,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_uint32_a(static_cast<LONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3450,8 +3444,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_uint64_a(static_cast<LONGLONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3479,8 +3472,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_str_a(pstrings) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3489,8 +3481,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_str_a(static_cast<STRING_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3499,8 +3490,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_guid_a(static_cast<GUID_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -3509,8 +3499,7 @@ BOOL common_util_set_properties(int table_type,
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_bin_a(static_cast<BINARY_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
-			sqlite3_bind_blob(pstmt, 2, ext_push.data,
-					ext_push.offset, SQLITE_STATIC);
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
@@ -4032,7 +4021,7 @@ BINARY* common_util_to_private_folder_entryid(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -4072,7 +4061,7 @@ BINARY* common_util_to_private_message_entryid(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -4160,7 +4149,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -4239,10 +4228,7 @@ static BINARY* common_util_get_message_parent_svrid(
 	    ext_push.p_uint64(0) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (ext_push.offset != pbin->cb) {
-		return NULL;
-	}
-	return pbin;
+	return ext_push.m_offset == pbin->cb ? pbin : nullptr;
 }
 
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
@@ -5523,7 +5509,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
 		return NULL;
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
@@ -5648,15 +5634,13 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		if (!ext_push.init(temp_buff, 16, 0) ||
 		    ext_push.p_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
-		sqlite3_bind_blob(pstmt, bind_index, ext_push.data,
-							ext_push.offset, SQLITE_STATIC);
+		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 		break;
 	case PT_SVREID:
 		if (!ext_push.init(temp_buff, 256, 0) ||
 		    ext_push.p_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
-		sqlite3_bind_blob(pstmt, bind_index, ext_push.data,
-							ext_push.offset, SQLITE_STATIC);
+		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 		break;
 	case PT_OBJECT:
 	case PT_BINARY: {

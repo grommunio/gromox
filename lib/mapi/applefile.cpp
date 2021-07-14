@@ -293,21 +293,23 @@ static int applefile_pull_entry(EXT_PULL *pext,
 
 static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
+	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_be16(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint16_t);
+	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
 
 static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
+	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
 	v = cpu_to_be32(v);
-	memcpy(&pext->data[pext->offset], &v, sizeof(v));
-	pext->offset += sizeof(uint32_t);
+	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -497,27 +499,24 @@ int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 
 int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
 {
+	auto &ext = *pext;
 	int i;
-	uint32_t offset;
-	uint32_t des_offset;
-	uint32_t entry_offset;
-	uint32_t entry_length;
 	
 	TRY(applefile_push_asheader(pext, &r->header));
 	TRY(applefile_push_uint16(pext, r->count));
-	des_offset = pext->offset;
+	uint32_t des_offset = ext.m_offset;
 	TRY(pext->advance(r->count * 3 * sizeof(uint32_t)));
-	entry_offset = pext->offset;
+	uint32_t entry_offset = ext.m_offset;
 	for (i=0; i<r->count; i++) {
 		TRY(applefile_push_entry(pext, r->pentries[i].entry_id, r->pentries[i].pentry));
-		entry_length = pext->offset - entry_offset;
-		offset = pext->offset;
-		pext->offset = des_offset;
+		uint32_t entry_length = ext.m_offset - entry_offset;
+		uint32_t offset = ext.m_offset;
+		ext.m_offset = des_offset;
 		TRY(applefile_push_uint32(pext, r->pentries[i].entry_id));
 		TRY(applefile_push_uint32(pext, entry_offset));
 		TRY(applefile_push_uint32(pext, entry_length));
-		des_offset = pext->offset;
-		pext->offset = offset;
+		des_offset = ext.m_offset;
+		ext.m_offset = offset;
 		entry_offset = offset;
 	}
 	return EXT_ERR_SUCCESS;

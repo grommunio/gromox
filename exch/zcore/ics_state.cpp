@@ -168,12 +168,12 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	}
 	tpropval_array_free(pproplist);
 	pbin = cu_alloc<BINARY>();
-	pbin->cb = ext_push.offset;
+	pbin->cb = ext_push.m_offset;
 	pbin->pv = common_util_alloc(pbin->cb);
 	if (pbin->pv == nullptr) {
 		return NULL;
 	}
-	memcpy(pbin->pv, ext_push.data, pbin->cb);
+	memcpy(pbin->pv, ext_push.m_udata, pbin->cb);
 	return pbin;
 }
 
