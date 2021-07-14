@@ -5,6 +5,8 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <cerrno>
+#include <string>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -369,7 +371,6 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
 	int n;
-	char temp_path[256];
 	char temp_command[256];
 	
 	memcpy(temp_command, cmd_line, line_length);
@@ -393,12 +394,16 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	pcontext->until_line = 0x7FFFFFFF;
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
-		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
-			punit->file_name);
-		pcontext->message_fd = open(temp_path, O_RDONLY);
+		std::string eml_path;
+		pcontext->message_fd = -1;
+		try {
+			eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
+			pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1469: ENOMEM\n");
+		}
 		if (-1 == pcontext->message_fd) {
-			pop3_parser_log_info(pcontext, 8, "fail"
-					" to open message %s", temp_path);
+			pop3_parser_log_info(pcontext, 8, "failed to open message %s: %s", eml_path.c_str(), strerror(errno));
 			return 1709;
 		}
 		stream_clear(&pcontext->stream);
@@ -407,8 +412,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			stream_clear(&pcontext->stream);
 			return 1719;
 		}
-		pop3_parser_log_info(pcontext, 8, "message %s"
-				" is going to be retrieved", temp_path);
+		pop3_parser_log_info(pcontext, 8, "message %s is going to be retrieved", eml_path.c_str());
 		return DISPATCH_DATA;
 	}
 	return 1707;
@@ -454,7 +458,6 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 {
 	int n;
 	char *ptoken;
-	char temp_path[256];
 	char temp_buff[1024];
 	char temp_command[256];
 	
@@ -488,9 +491,13 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	pcontext->cur_line = -1;
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = &pcontext->array.at(n - 1);
-		snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
-			punit->file_name);
-		pcontext->message_fd = open(temp_path, O_RDONLY);
+		pcontext->message_fd = -1;
+		try {
+			auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
+			pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1470: ENOMEM\n");
+		}
 		if (-1 == pcontext->message_fd) {
 			return 1709;
 		}
@@ -509,7 +516,6 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
 	size_t string_length = 0;
-	char temp_path[256];
 	char temp_buff[1024];
 	SINGLE_LIST_NODE *pnode;
     
@@ -541,14 +547,14 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				"FOLDER-TOUCH %s inbox", pcontext->username);
 			system_services_broadcast_event(temp_buff);
 
-			while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) {
+			while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) try {
 				auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
-				snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
-					punit->file_name);
-				if (0 == remove(temp_path)) {
-					pop3_parser_log_info(pcontext, 8, "message %s is deleted",
-						temp_path);
-				}
+				auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
+				if (remove(eml_path.c_str()) == 0)
+					pop3_parser_log_info(pcontext, 8, "message %s has been deleted",
+						eml_path.c_str());
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1471: ENOMEM\n");
 			}
 		}
 	}
