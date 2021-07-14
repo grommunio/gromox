@@ -84,7 +84,7 @@ noinst_DATA += \
 agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-kpd2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -254,6 +254,8 @@ mkprivate_SOURCES = tools/mkprivate.cpp
 mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 mkpublic_SOURCES = tools/mkpublic.cpp
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+gromox_kpd2mt_SOURCES = tools/genimport.cpp tools/kpd2mt.cpp
+gromox_kpd2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 gromox_mt2exm_SOURCES = tools/genimport.cpp tools/mt2exm.cpp
 gromox_mt2exm_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pffimport.cpp

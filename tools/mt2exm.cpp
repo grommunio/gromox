@@ -110,6 +110,20 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 	}
 }
 
+static void exm_folder_adjust(TPROPVAL_ARRAY &props)
+{
+	/*
+	 * exmdb_server_create_folder_by_properties only takes two types,
+	 * upgrade everything else for best import.
+	 */
+	auto ftp = tpropval_array_get_propval(&props, PROP_TAG_FOLDERTYPE);
+	if (ftp != nullptr) {
+		auto &ft = *static_cast<uint32_t *>(ftp);
+		if (ft != FOLDER_TYPE_GENERIC && ft != FOLDER_TYPE_SEARCH)
+			ft = FOLDER_TYPE_GENERIC;
+	}
+}
+
 static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 {
 	if (g_verbose) {
@@ -119,6 +133,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		if (g_show_props)
 			gi_dump_tpropval_a(0, props);
 	}
+	exm_folder_adjust(props);
 
 	auto current_it  = g_folder_map.find(obd.nid);
 	auto parent_it   = g_folder_map.find(obd.parent.folder_id);

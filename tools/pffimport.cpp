@@ -722,7 +722,7 @@ static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
 		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
 			return;
 		pn_req.kind = MNID_STRING;
-		pn_req.pname = pnstr.release();
+		pn_req.pname = pnstr.release(); // leak
 	}
 	map.emplace((etype << 16) | vtype, pn_req);
 	pn_req.pname = nullptr;

@@ -13,7 +13,7 @@ class YError : public std::exception {
 	public:
 	YError(const std::string &);
 	YError(std::string &&);
-	YError(const char *fmt, ...);
+	YError(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 	virtual const char *what() const noexcept { return m_str.c_str(); }
 
 	protected:
