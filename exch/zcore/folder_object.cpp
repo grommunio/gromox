@@ -962,7 +962,7 @@ BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 		auto act = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
 					&plist->prule[i].propvals,
 		           PROP_TAG_RULEACTIONS));
-		if (NULL != pactions) {
+		if (act != nullptr) {
 			b_delegate = TRUE;
 			pactions = act;
 		}
