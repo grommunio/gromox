@@ -474,14 +474,13 @@ PROPERTY_GROUPINFO *STORE_OBJECT::get_last_property_groupinfo()
 PROPERTY_GROUPINFO *STORE_OBJECT::get_property_groupinfo(uint32_t group_id)
 {
 	auto pstore = this;
-	PROPERTY_GROUPINFO *pgpinfo;
 	
 	if (group_id == msgchg_grouping_get_last_group_id()) {
 		return get_last_property_groupinfo();
 	}
 	for (auto pnode = double_list_get_head(&pstore->group_list); pnode != nullptr;
 	     pnode = double_list_get_after(&pstore->group_list, pnode)) {
-		pgpinfo = (PROPERTY_GROUPINFO*)pnode->pdata;
+		auto pgpinfo = static_cast<PROPERTY_GROUPINFO *>(pnode->pdata);
 		if (pgpinfo->group_id == group_id) {
 			return pgpinfo;
 		}
@@ -490,7 +489,7 @@ PROPERTY_GROUPINFO *STORE_OBJECT::get_property_groupinfo(uint32_t group_id)
 	if (NULL == pnode) {
 		return NULL;
 	}
-	pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, group_id);
+	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, group_id);
 	if (NULL == pgpinfo) {
 		free(pnode);
 		return NULL;
@@ -1289,7 +1288,6 @@ BOOL STORE_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 static BOOL store_object_set_oof_property(const char *maildir,
 	uint32_t proptag, const void *pvalue)
 {
-	int fd;
 	char *pbuff;
 	int buff_len;
 	char *ptoken;
@@ -1299,7 +1297,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	
 	sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 	if (0 != stat(temp_path, &node_stat)) {
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		auto fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
 			return FALSE;
 		}
@@ -1379,7 +1377,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return TRUE;
 	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
-	case PR_EC_EXTERNAL_SUBJECT:
+	case PR_EC_EXTERNAL_SUBJECT: {
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
 		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
@@ -1403,7 +1401,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			if (NULL == ptoken) {
 				return FALSE;
 			}
-			fd = open(temp_path, O_RDONLY);
+			auto fd = open(temp_path, O_RDONLY);
 			if (-1 == fd) {
 				return FALSE;
 			}
@@ -1424,7 +1422,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue), ptoken);
 			}
 		}
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		auto fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
 			return FALSE;
 		}
@@ -1434,6 +1432,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		}
 		close(fd);
 		return TRUE;
+	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
 		auto pconfig = config_file_prg(nullptr, temp_path);

@@ -632,12 +632,12 @@ static void *ev_deqwork(void *param)
 	hl_hold.unlock();
 	
 	while (!g_notify_stop) {
-		std::unique_lock dc_hold(pdequeue->cond_mutex);
+		dc_hold.lock();
 		pdequeue->waken_cond.wait_for(dc_hold, std::chrono::seconds(1));
 		dc_hold.unlock();
 		if (g_notify_stop)
 			break;
-		std::unique_lock dq_hold(pdequeue->lock);
+		dq_hold.lock();
 		pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo));
 		if (NULL != pfile) {
 			temp_file = *pfile;

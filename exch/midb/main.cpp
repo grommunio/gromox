@@ -72,9 +72,8 @@ int main(int argc, const char **argv)
 	int listen_port;
 	unsigned int threads_num;
 	struct rlimit rl;
-	char charset[32];
+	char charset[32], tmzone[64];
 	int console_port;
-	char timezone[64];
 	char org_name[256];
 	int cache_interval;
 	char temp_buff[45];
@@ -273,12 +272,12 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DEFAULT_TIMEZONE");
 	if (NULL == str_value) {
-		strcpy(timezone, "Asia/Shanghai");
-		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", timezone);
+		strcpy(tmzone, "Asia/Shanghai");
+		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", tmzone);
 	} else {
-		gx_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
+		gx_strlcpy(tmzone, str_value, arsizeof(tmzone));
 	}
-	printf("[system]: default timezone is \"%s\"\n", timezone);
+	printf("[system]: default timezone is \"%s\"\n", tmzone);
 	
 	str_value = config_file_get_value(pconfig, "SQLITE_SYNCHRONOUS");
 	if (NULL == str_value) {
@@ -369,7 +368,7 @@ int main(int argc, const char **argv)
 	exmdb_client_init(proxy_num, stub_num);
 	listener_init(listen_ip, listen_port);
 	auto cl_0b = make_scope_exit([&]() { listener_free(); });
-	mail_engine_init(charset, timezone, org_name, table_size,
+	mail_engine_init(charset, tmzone, org_name, table_size,
 		b_async, b_wal, mmap_size, cache_interval, mime_num);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT);

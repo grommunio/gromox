@@ -215,7 +215,7 @@ static void *midcp_thrwork(void *param)
 		pconnection->thr_id = pthread_self();
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			pconnection->is_selecting = FALSE;
-			std::unique_lock co_hold(g_connection_lock);
+			co_hold.lock();
 			double_list_remove(&g_connection_list, &pconnection->node);
 			co_hold.unlock();
 			close(pconnection->sockd);
@@ -226,7 +226,7 @@ static void *midcp_thrwork(void *param)
 		read_len = read(pconnection->sockd, buffer + offset,
 					CONN_BUFFLEN - offset);
 		if (read_len <= 0) {
-			std::unique_lock co_hold(g_connection_lock);
+			co_hold.lock();
 			double_list_remove(&g_connection_list, &pconnection->node);
 			co_hold.unlock();
 			close(pconnection->sockd);
@@ -238,7 +238,7 @@ static void *midcp_thrwork(void *param)
 			if ('\r' == buffer[i] && '\n' == buffer[i + 1]) {
 				if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
 					write(pconnection->sockd, "BYE\r\n", 5);
-					std::unique_lock co_hold(g_connection_lock);
+					co_hold.lock();
 					double_list_remove(&g_connection_list, &pconnection->node);
 					co_hold.unlock();
 					close(pconnection->sockd);
@@ -283,7 +283,7 @@ static void *midcp_thrwork(void *param)
 		}
 
 		if (CONN_BUFFLEN == offset) {
-			std::unique_lock co_hold(g_connection_lock);
+			co_hold.lock();
 			double_list_remove(&g_connection_list, &pconnection->node);
 			co_hold.unlock();
 			close(pconnection->sockd);

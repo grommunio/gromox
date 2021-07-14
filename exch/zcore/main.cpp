@@ -98,8 +98,7 @@ int main(int argc, const char **argv)
 	int max_item_num;
 	int max_rule_len;
 	int console_port;
-	char charset[32];
-	char timezone[64];
+	char charset[32], tmzone[64];
 	int ping_interval;
 	char separator[16];
 	char org_name[256];
@@ -165,12 +164,12 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DEFAULT_TIMEZONE");
 	if (NULL == str_value) {
-		strcpy(timezone, "Asia/Shanghai");
-		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", timezone);
+		strcpy(tmzone, "Asia/Shanghai");
+		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", tmzone);
 	} else {
-		gx_strlcpy(timezone, str_value, GX_ARRAY_SIZE(timezone));
+		gx_strlcpy(tmzone, str_value, arsizeof(tmzone));
 	}
-	printf("[system]: default timezone is \"%s\"\n", timezone);
+	printf("[system]: default timezone is \"%s\"\n", tmzone);
 	
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {
@@ -357,7 +356,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		str_value = PKGLIBEXECDIR "/freebusy";
 	}
-	common_util_init(org_name, host_name, charset, timezone, mime_num,
+	common_util_init(org_name, host_name, charset, tmzone, mime_num,
 		max_rcpt, max_mail, max_length, max_rule_len, smtp_ip, smtp_port,
 		str_value, submit_command);
 	auto cl_0b = make_scope_exit([&]() { common_util_free(); });

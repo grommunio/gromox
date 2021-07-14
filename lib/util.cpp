@@ -1241,11 +1241,10 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 		out[outPos++] = base64tab[c3 & 0x3F];
 		lineLen += 4;
 		if (lineLen >= MAXLINE-3) {
-			const char* cp = DW_EOL;
-			out[outPos++] = *cp++;
-			if (*cp) {
-				out[outPos++] = *cp;
-			}
+			const char *cq = DW_EOL;
+			out[outPos++] = *cq++;
+			if (*cq != '\0')
+				out[outPos++] = *cq;
 			lineLen = 0;
 		}
 	}

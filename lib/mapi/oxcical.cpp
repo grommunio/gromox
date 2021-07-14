@@ -3018,13 +3018,12 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	}
 	
 	size_t tmp_count = 0;
-	for (auto piline : pmain_event->line_list) {
-		if (strcasecmp(piline->m_name.c_str(), "ATTACH") != 0)
+	for (auto line : pmain_event->line_list) {
+		if (strcasecmp(line->m_name.c_str(), "ATTACH") != 0)
 			continue;
 		tmp_count ++;
-		if (FALSE == oxcical_parse_attachment(piline, tmp_count, pmsg)) {
+		if (!oxcical_parse_attachment(line, tmp_count, pmsg))
 			return FALSE;
-		}
 	}
 	
 	b_alarm = FALSE;

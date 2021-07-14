@@ -528,7 +528,7 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 	return false;
 }
 
-BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
+BOOL mysql_adaptor_get_timezone(const char *username, char *zone)
 {
 	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
@@ -544,22 +544,22 @@ BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1) {
-		timezone[0] = '\0';	
+		zone[0] = '\0';
 	} else {
 		auto myrow = pmyres.fetch_row();
-		strcpy(timezone, myrow[0]);
+		strcpy(zone, myrow[0]);
 	}
 	return TRUE;
 }
 
-BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone)
+BOOL mysql_adaptor_set_timezone(const char *username, const char *zone)
 {
 	char temp_name[UADDR_SIZE*2];
 	char temp_zone[128];
 	char sql_string[1024];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
-	mysql_adaptor_encode_squote(timezone, temp_zone);
+	mysql_adaptor_encode_squote(zone, temp_zone);
 	snprintf(sql_string, 1024, "UPDATE users set timezone='%s'"
 				" WHERE username='%s'", temp_zone, temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
@@ -1549,7 +1549,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 }
 
 BOOL mysql_adaptor_get_user_info(const char *username,
-    char *maildir, char *lang, char *timezone)
+    char *maildir, char *lang, char *zone)
 {
 	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
@@ -1574,7 +1574,7 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 		if (0 == atoi(myrow[1])) {
 			strcpy(maildir, myrow[0]);
 			strcpy(lang, myrow[2]);
-			strcpy(timezone, myrow[3]);
+			strcpy(zone, myrow[3]);
 		} else {
 			maildir[0] = '\0';
 		}

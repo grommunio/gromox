@@ -1017,7 +1017,7 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 {
 	int offset;
-	int i, rstat, j, last_pos = 0;
+	int rstat, j, last_pos = 0;
 	size_t temp_len;
 	BOOL b_digit;
 	char temp_tag[128];
@@ -1034,7 +1034,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		temp_mime.mime_type = MJSON_MIME_SINGLE;
 	}
 	rstat = RETRIEVE_TAG_FINDING;
-    for (i=0; i<length; i++) {
+	for (int i = 0; i < length; ++i) {
 		switch (rstat) {
 		case RETRIEVE_TAG_FINDING:
 			if ('"' == value[i]) {

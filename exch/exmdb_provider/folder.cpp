@@ -1087,7 +1087,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	if (pstmt == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
+		fid_val = sqlite3_column_int64(pstmt, 0);
 		if ((TRUE == b_private && fid_val < PRIVATE_FID_CUSTOM) ||
 			(FALSE == b_private && fid_val < PUBLIC_FID_CUSTOM)) {
 			*pb_partial = TRUE;

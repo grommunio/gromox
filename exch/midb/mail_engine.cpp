@@ -3240,9 +3240,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	uint8_t b_read;
 	size_t mess_len;
 	uint64_t nt_time;
-	char charset[32];
+	char charset[32], tmzone[64];
 	uint8_t b_unsent;
-	char timezone[64];
 	uint32_t tmp_flags;
 	char temp_path[256];
 	uint64_t change_num;
@@ -3250,7 +3249,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	struct stat node_stat;
 	TAGGED_PROPVAL propval;
-	MESSAGE_CONTENT *pmsgctnt;
 	char temp_buff[MAX_DIGLEN];
 	
 	if (6 != argc || strlen(argv[1]) >= 256
@@ -3336,11 +3334,11 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
 	}
-	if (!system_services_get_timezone(pidb->username.c_str(), timezone) ||
-	    timezone[0] == '\0')
-		strcpy(timezone, g_default_timezone);
-	pmsgctnt = oxcmail_import(charset, timezone, &imail,
-	           common_util_alloc, common_util_get_propids_create);
+	if (!system_services_get_timezone(pidb->username.c_str(), tmzone) ||
+	    tmzone[0] == '\0')
+		strcpy(tmzone, g_default_timezone);
+	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
+	                common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
 	free(pbuff);
 	if (NULL == pmsgctnt) {
@@ -3519,9 +3517,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	int flags_len;
 	uint8_t b_read;
 	uint64_t nt_time;
-	char charset[32];
+	char charset[32], tmzone[64];
 	uint8_t b_unsent;
-	char timezone[64];
 	uint32_t tmp_flags;
 	char flags_buff[16];
 	uint64_t change_num;
@@ -3533,7 +3530,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	struct stat node_stat;
 	TAGGED_PROPVAL propval;
-	MESSAGE_CONTENT *pmsgctnt;
 
 	if (5 != argc || strlen(argv[1]) >= 256 ||
 		strlen(argv[2]) >= 1024 || strlen(argv[4]) >= 1024) {
@@ -3639,11 +3635,11 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
 	}
-	if (!system_services_get_timezone(pidb->username.c_str(),
-	    timezone) || timezone[0] == '\0')
-		strcpy(timezone, g_default_timezone);
-	pmsgctnt = oxcmail_import(charset, timezone, &imail,
-	           common_util_alloc, common_util_get_propids_create);
+	if (!system_services_get_timezone(pidb->username.c_str(), tmzone) ||
+	    tmzone[0] == '\0')
+		strcpy(tmzone, g_default_timezone);
+	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
+	                common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
 	free(pbuff);
 	if (NULL == pmsgctnt) {

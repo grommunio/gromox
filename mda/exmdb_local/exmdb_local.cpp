@@ -392,14 +392,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	int sequence_ID;
 	time_t cur_time;
 	uint64_t nt_time;
-	char charset[32];
-	char timezone[64];
+	char charset[32], tmzone[64];
 	char hostname[128];
 	char home_dir[256];
 	uint32_t tmp_int32;
 	char file_name[128];
 	char temp_path[256];
-	MESSAGE_CONTENT *pmsg;
 	TAGGED_PROPVAL propval;
 	uint32_t suppress_mask;
 	BOOL b_bounce_delivered = false;
@@ -407,9 +405,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	char temp_buff[MAX_DIGLEN];
 	MESSAGE_CONTEXT *pcontext1;
 
-	
-	if (FALSE == exmdb_local_get_user_info(
-		address, home_dir, lang, timezone)) {
+	if (!exmdb_local_get_user_info(address, home_dir, lang, tmzone)) {
 		exmdb_local_log_info(pcontext, address, 8, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
@@ -424,9 +420,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			"there's no user in mail system");
 		return DELIVERY_NO_USER;
 	}
-	if ('\0' == timezone[0]) {
-		strcpy(timezone, g_default_timezone);
-	}
+	if (tmzone[0] == '\0')
+		strcpy(tmzone, g_default_timezone);
 	
 	pmail = pcontext->pmail;
 	if (TRUE == mail_check_dot(pcontext->pmail)) {
@@ -501,8 +496,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	alloc_context_init(&alloc_ctx);
 	pthread_setspecific(g_alloc_key, &alloc_ctx);
-	pmsg = oxcmail_import(charset, timezone, pmail,
-		exmdb_local_alloc, exmdb_local_get_propids);
+	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
+	            exmdb_local_get_propids);
 	if (NULL != pcontext1) {
 		put_context(pcontext1);
 	}

@@ -434,7 +434,7 @@ int exmdb_client_run(const char *configdir)
 			ag.sockd = -1;
 			static_assert(std::is_same_v<decltype(g_agent_list), std::list<decltype(g_agent_list)::value_type>>,
 				"addrof AGENT_THREADs must not change; other thread has its address in use");
-			auto ret = pthread_create(&ag.thr_id, nullptr, zccl_thrwork, &ag);
+			ret = pthread_create(&ag.thr_id, nullptr, zccl_thrwork, &ag);
 			if (ret != 0) {
 				printf("[exmdb_client]: E-1442 pthread_create: %s\n", strerror(ret));
 				g_notify_stop = true;

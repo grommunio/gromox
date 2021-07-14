@@ -2644,9 +2644,7 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 	STORE_OBJECT *pstore, const BINARY *peml_bin)
 {
 	MAIL imail;
-	char charset[32];
-	char timezone[64];
-	MESSAGE_CONTENT *pmsgctnt;
+	char charset[32], tmzone[64];
 	
 	auto pinfo = zarafa_server_get_info();
 	mail_init(&imail, g_mime_pool);
@@ -2657,12 +2655,12 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
 	    charset[0] == '\0')
 		strcpy(charset, g_default_charset);
-	if (!system_services_get_timezone(pinfo->get_username(), timezone) ||
-	    timezone[0] == '\0')
-		strcpy(timezone, g_default_zone);
+	if (!system_services_get_timezone(pinfo->get_username(), tmzone) ||
+	    tmzone[0] == '\0')
+		strcpy(tmzone, g_default_zone);
 	common_util_set_dir(pstore->get_dir());
-	pmsgctnt = oxcmail_import(charset, timezone, &imail,
-	           common_util_alloc, common_util_get_propids_create);
+	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
+	                common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
 	return pmsgctnt;
 }
@@ -2700,13 +2698,12 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	STORE_OBJECT *pstore, const BINARY *pical_bin)
 {
 	ICAL ical;
-	char timezone[64];
-	MESSAGE_CONTENT *pmsgctnt;
+	char tmzone[64];
 	
 	auto pinfo = zarafa_server_get_info();
-	if (!system_services_get_timezone(pinfo->get_username(), timezone) ||
-	    timezone[0] == '\0')
-		strcpy(timezone, g_default_zone);
+	if (!system_services_get_timezone(pinfo->get_username(), tmzone) ||
+	    tmzone[0] == '\0')
+		strcpy(tmzone, g_default_zone);
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (NULL == pbuff) {
 		return nullptr;
@@ -2718,10 +2715,8 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	if (!ical_retrieve(&ical, pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
-	pmsgctnt = oxcical_import(timezone, &ical,
-	           common_util_alloc, common_util_get_propids_create,
-		common_util_username_to_entryid);
-	return pmsgctnt;
+	return oxcical_import(tmzone, &ical, common_util_alloc,
+	       common_util_get_propids_create, common_util_username_to_entryid);
 }
 
 BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)

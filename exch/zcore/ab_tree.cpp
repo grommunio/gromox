@@ -1121,10 +1121,10 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	case NODE_TYPE_MLIST: try {
 		id = pabnode->id;
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		std::string username = obj->username;
-		auto pos = username.find('@');
-		if (pos != username.npos)
-			username.erase(pos);
+		std::string ustr = obj->username;
+		auto pos = ustr.find('@');
+		if (pos != ustr.npos)
+			ustr.erase(pos);
 		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 			pabnode = (AB_NODE*)pnode;
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
@@ -1135,7 +1135,7 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-			g_zcab_org_name, hex_string1, hex_string, username.c_str());
+			g_zcab_org_name, hex_string1, hex_string, ustr.c_str());
 		HX_strupper(pbuff);
 		break;
 	} catch (...) {

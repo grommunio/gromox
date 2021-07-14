@@ -156,17 +156,16 @@ void auto_response_reply(const char *user_home,
 					mime_field.field_value_len);
 				content_type[mime_field.field_value_len] = '\0';
 				charset[0] = '\0';
-				auto ptoken = strchr(content_type, ';');
-				if (NULL != ptoken) {
-					*ptoken = '\0';
-					ptoken ++;
-					ptoken = strcasestr(ptoken, "charset=");
-					if (NULL != ptoken) {
-						gx_strlcpy(charset, ptoken + 8, GX_ARRAY_SIZE(charset));
-						ptoken = strchr(charset, ';');
-						if (NULL != ptoken) {
-							*ptoken = '\0';
-						}
+				auto ptoken2 = strchr(content_type, ';');
+				if (ptoken2 != nullptr) {
+					*ptoken2 = '\0';
+					++ptoken2;
+					ptoken2 = strcasestr(ptoken2, "charset=");
+					if (ptoken2 != nullptr) {
+						gx_strlcpy(charset, ptoken2 + 8, GX_ARRAY_SIZE(charset));
+						ptoken2 = strchr(charset, ';');
+						if (ptoken2 != nullptr)
+							*ptoken2 = '\0';
 						HX_strrtrim(charset);
 						HX_strltrim(charset);
 						len = strlen(charset);

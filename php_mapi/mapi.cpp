@@ -240,9 +240,8 @@ static zend_function_entry mapi_functions[] = {
 
 ZEND_DECLARE_MODULE_GLOBALS(mapi)
 
-static void php_mapi_init_globals(zend_mapi_globals *mapi_globals)
+static void php_mapi_init_globals(zend_mapi_globals *)
 {
-	/* nothing to do */
 }
 
 zend_module_entry mapi_module_entry = {
@@ -856,9 +855,9 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 	{
 	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
 	if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
-		auto username = zend_hash_find(Z_ARRVAL_P(server_vars), str_user.get());
-		if (username != nullptr && Z_TYPE_P(username) == IS_STRING &&
-		    Z_STRLEN_P(username) > 0)
+		auto ustr = zend_hash_find(Z_ARRVAL_P(server_vars), str_user.get());
+		if (ustr != nullptr && Z_TYPE_P(ustr) == IS_STRING &&
+		    Z_STRLEN_P(ustr) > 0)
 			password = nullptr;
 	}
 	result = zarafa_client_logon(username, password, 0, &presource->hsession);

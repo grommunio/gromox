@@ -21,8 +21,7 @@ DECLARE_API();
 static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
 	int conn_num;
-	char charset[32];
-	char timezone[64];
+	char charset[32], tmzone[64];
 	char org_name[256];
 	char separator[16];
 	char temp_buff[45];
@@ -67,8 +66,8 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		printf("[exmdb_local]: default charset is \"%s\"\n", charset);
 		
 		str_value = config_file_get_value(pfile, "DEFAULT_TIMEZONE");
-		gx_strlcpy(timezone, str_value != nullptr ? str_value : "Asia/Shanghai", arsizeof(timezone));
-		printf("[exmdb_local]: default timezone is \"%s\"\n", timezone);
+		gx_strlcpy(tmzone, str_value != nullptr ? str_value : "Asia/Shanghai", arsizeof(tmzone));
+		printf("[exmdb_local]: default timezone is \"%s\"\n", tmzone);
 		
 		str_value = config_file_get_value(pfile, "EXMDB_CONNECTION_NUM");
 		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5;
@@ -146,7 +145,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client_init(conn_num);
-		exmdb_local_init(org_name, charset, timezone);
+		exmdb_local_init(org_name, charset, tmzone);
 		
 		if (0 != net_failure_run()) {
 			printf("[exmdb_local]: failed to run net failure\n");

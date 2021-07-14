@@ -325,8 +325,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			stream_clear(&pcontext->stream);
 			size = STREAM_BLOCK_SIZE;
-			auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
-			             reinterpret_cast<unsigned int *>(&size)));
+			pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
+			        reinterpret_cast<unsigned int *>(&size)));
 			/* 
 			 * do not need to check the pbuff pointer because it will never
 			 * be NULL because of stream's characteristic
