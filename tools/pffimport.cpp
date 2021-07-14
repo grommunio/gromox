@@ -12,12 +12,9 @@
 #include <ctime>
 #include <list>
 #include <memory>
-#include <optional>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include <libpff.h>
-#include <mysql.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
@@ -35,6 +32,7 @@
 #include <gromox/tie.hpp>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/util.hpp>
+#include "genimport.hpp"
 
 #define E(a, b) static_assert(static_cast<unsigned int>(LIBPFF_VALUE_TYPE_ ## a) == static_cast<unsigned int>(PT_ ## b));
 E(UNSPECIFIED, UNSPECIFIED)
@@ -60,14 +58,6 @@ E(BINARY_DATA, BINARY)
 
 namespace {
 
-struct afree {
-	void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
-	void operator()(BINARY *x) const { rop_util_free_binary(x); }
-	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-	void operator()(PCL *x) const { pcl_free(x); }
-	void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
-};
-
 struct libpff_error_del { void operator()(libpff_error_t *x) { libpff_error_free(&x); } };
 struct libpff_file_del { void operator()(libpff_file_t *x) { libpff_file_free(&x, nullptr); } };
 struct libpff_item_del { void operator()(libpff_item_t *x) { libpff_item_free(&x, nullptr); } };
@@ -75,6 +65,14 @@ struct libpff_record_set_del { void operator()(libpff_record_set_t *x) { libpff_
 struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) { libpff_record_entry_free(&x, nullptr); } };
 struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpff_multi_value_free(&x, nullptr); } };
 struct libpff_noop_del { void operator()(void *x) { } };
+
+using libpff_error_ptr        = std::unique_ptr<libpff_error_t, libpff_error_del>;
+using libpff_file_ptr         = std::unique_ptr<libpff_file_t, libpff_file_del>;
+using libpff_item_ptr         = std::unique_ptr<libpff_item_t, libpff_item_del>;
+using libpff_record_set_ptr   = std::unique_ptr<libpff_record_set_t, libpff_record_set_del>;
+using libpff_record_entry_ptr = std::unique_ptr<libpff_record_entry_t, libpff_record_entry_del>;
+using libpff_multi_value_ptr  = std::unique_ptr<libpff_multi_value_t, libpff_multi_value_del>;
+using libpff_nti_entry_ptr    = std::unique_ptr<libpff_name_to_id_map_entry_t, libpff_noop_del>;
 
 enum {
 	NID_TYPE_HID = 0x0,
@@ -114,60 +112,13 @@ enum {
 	NID_SEARCH_GATHERER_FOLDER_QUEUE = 0x320 | NID_TYPE_INTERNAL,
 };
 
-struct parent_desc {
-	enum mapi_object_type type = MAPI_STORE; /* here: pseudo-value for "unset" */
-	union {
-		void *unknown = nullptr;
-		uint64_t folder_id;
-		MESSAGE_CONTENT *message;
-		ATTACHMENT_CONTENT *attach;
-	};
-
-	static inline parent_desc as_msg(MESSAGE_CONTENT *m)
-	{
-		parent_desc d{MAPI_MESSAGE};
-		d.message = m;
-		return d;
-	}
-	static inline parent_desc as_attach(ATTACHMENT_CONTENT *a)
-	{
-		parent_desc d{MAPI_ATTACH};
-		d.attach = a;
-		return d;
-	}
-	static inline parent_desc as_folder(uint64_t id)
-	{
-		parent_desc d{MAPI_FOLDER};
-		d.folder_id = id;
-		return d;
-	}
-};
-
-struct tgt_folder {
-	bool create = false;
-	uint64_t fid_to = 0;
-	std::string create_name;
-};
-
 }
 
 using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
-using libpff_error_ptr        = std::unique_ptr<libpff_error_t, libpff_error_del>;
-using libpff_file_ptr         = std::unique_ptr<libpff_file_t, libpff_file_del>;
-using libpff_item_ptr         = std::unique_ptr<libpff_item_t, libpff_item_del>;
-using libpff_record_set_ptr   = std::unique_ptr<libpff_record_set_t, libpff_record_set_del>;
-using libpff_record_entry_ptr = std::unique_ptr<libpff_record_entry_t, libpff_record_entry_del>;
-using libpff_multi_value_ptr  = std::unique_ptr<libpff_multi_value_t, libpff_multi_value_del>;
-using libpff_nti_entry_ptr    = std::unique_ptr<libpff_name_to_id_map_entry_t, libpff_noop_del>;
 
-static std::unordered_map<uint32_t, tgt_folder> g_folder_map;
-static std::unordered_map<uint16_t, uint16_t> g_propname_cache;
 static char *g_username;
-static std::string g_storedir_s;
-static const char *g_storedir;
-static unsigned int g_wet_run = 1, g_show_tree, g_user_id, g_show_props;
 static unsigned int g_splice;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
@@ -180,25 +131,6 @@ static const struct HXoption g_options_table[] = {
 };
 
 static int do_item(unsigned int, const parent_desc &, libpff_item_t *);
-
-static int g_socket = -1;
-
-static void tree(unsigned int depth)
-{
-	if (!g_show_tree)
-		return;
-	printf("%-*s \\_ ", depth * 4, "");
-}
-
-static void tlog(const char *fmt, ...)
-{
-	if (!g_show_tree)
-		return;
-	va_list args;
-	va_start(args, fmt);
-	vprintf(fmt, args);
-	va_end(args);
-}
 
 static int az_error(const char *prefix, const libpff_error_ptr &err)
 {
@@ -446,170 +378,6 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 	return 0;
 }
 
-static std::string sql_escape(MYSQL *sqh, const char *in)
-{
-	std::string out;
-	out.resize(strlen(in) * 2 + 1);
-	auto ret = mysql_real_escape_string(sqh, out.data(), in, strlen(in));
-	out.resize(ret);
-	return out;
-}
-
-static MYSQL *sql_login()
-{
-	auto cfg = config_file_initd("mysql_adaptor.cfg", PKGSYSCONFDIR);
-	if (cfg == nullptr) {
-		fprintf(stderr, "No mysql_adaptor.cfg: %s\n", strerror(errno));
-		return nullptr;
-	}
-	auto sql_host = config_file_get_value(cfg, "mysql_host");
-	auto v = config_file_get_value(cfg, "mysql_port");
-	auto sql_port = v != nullptr ? strtoul(v, nullptr, 0) : 0;
-	auto sql_user = config_file_get_value(cfg, "mysql_username");
-	if (sql_user == nullptr)
-		sql_user = "root";
-	auto sql_pass = config_file_get_value(cfg, "mysql_password");
-	auto sql_dbname = config_file_get_value(cfg, "mysql_dbname");
-	if (sql_dbname == nullptr)
-		sql_dbname = "email";
-	auto conn = mysql_init(nullptr);
-	if (conn == nullptr) {
-		fprintf(stderr, "mysql_init failed\n");
-		return nullptr;
-	}
-	mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-	if (mysql_real_connect(conn, sql_host, sql_user, sql_pass, sql_dbname,
-	    sql_port, nullptr, 0) != nullptr)
-		return conn;
-	fprintf(stderr, "Failed to connect to SQL %s@%s: %s\n",
-	        sql_user, sql_host, mysql_error(conn));
-	mysql_close(conn);
-	return nullptr;
-}
-
-static int sql_meta(MYSQL *sqh, const char *username, unsigned int *user_id,
-    std::string &storedir) try
-{
-	auto query = "SELECT id, maildir FROM users WHERE username='" +
-	             sql_escape(sqh, username) + "'";
-	if (mysql_real_query(sqh, query.c_str(), query.size()) != 0) {
-		fprintf(stderr, "mysql_query: %s\n", mysql_error(sqh));
-		return -EINVAL;
-	}
-	DB_RESULT result = mysql_store_result(sqh);
-	if (result == nullptr) {
-		fprintf(stderr, "mysql_store: %s\n", mysql_error(sqh));
-		return -ENOENT;
-	}
-	auto row = result.fetch_row();
-	if (row == nullptr)
-		return -ENOENT;
-	*user_id = strtoul(row[0], nullptr, 0);
-	storedir = row[1] != nullptr ? row[1] : "";
-	return 0;
-} catch (const std::bad_alloc &) {
-	return -ENOMEM;
-}
-
-static BOOL exm_dorpc(const char *dir, const EXMDB_REQUEST *prequest, EXMDB_RESPONSE *presponse)
-{
-	BINARY tb;
-	if (exmdb_ext_push_request(prequest, &tb) != EXT_ERR_SUCCESS)
-		return FALSE;
-	if (!exmdb_client_write_socket(g_socket, &tb)) {
-		free(tb.pb);
-		return FALSE;
-	}
-	free(tb.pb);
-	if (!exmdb_client_read_socket(g_socket, &tb))
-		return FALSE;
-	auto cl_0 = make_scope_exit([&]() { free(tb.pb); });
-	if (tb.cb < 5 || tb.pb[0] != exmdb_response::SUCCESS)
-		return FALSE;
-	presponse->call_id = prequest->call_id;
-	BINARY tb2 = tb;
-	tb2.cb -= 5;
-	tb2.pb += 5;
-	return exmdb_ext_pull_response(&tb2, presponse) == EXT_ERR_SUCCESS ? TRUE : false;
-}
-
-static int exm_connect(const char *dir)
-{
-	std::vector<EXMDB_ITEM> exmlist;
-	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, exmlist);
-	if (ret < 0) {
-		fprintf(stderr, "[exmdb_client]: list_file_read_exmdb: %s\n", strerror(-ret));
-		return ret;
-	}
-	auto xn = std::find_if(exmlist.begin(), exmlist.end(),
-	          [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
-	if (xn == exmlist.end()) {
-		fprintf(stderr, "No target for %s\n", dir);
-		return -ENOENT;
-	}
-	wrapfd fd(gx_inet_connect(xn->host.c_str(), xn->port, 0));
-	if (fd.get() < 0) {
-		fprintf(stderr, "gx_inet_connect pffimport@[%s]:%hu: %s\n",
-		        xn->host.c_str(), xn->port, strerror(-fd.get()));
-		return -errno;
-	}
-	exmdb_rpc_exec = exm_dorpc;
-
-	char rid[64];
-	snprintf(rid, GX_ARRAY_SIZE(rid), "pffimport:%ld", static_cast<long>(getpid()));
-	EXMDB_REQUEST rq;
-	rq.call_id = exmdb_callid::CONNECT;
-	rq.payload.connect.prefix    = deconst(xn->prefix.c_str());
-	rq.payload.connect.remote_id = rid;
-	rq.payload.connect.b_private = TRUE;
-	BINARY tb{};
-	if (exmdb_ext_push_request(&rq, &tb) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(fd.get(), &tb)) {
-		fprintf(stderr, "Protocol failure\n");
-		return -1;
-	}
-	free(tb.pb);
-	if (!exmdb_client_read_socket(fd.get(), &tb)) {
-		fprintf(stderr, "Protocol failure\n");
-		return -1;
-	}
-	auto cl_0 = make_scope_exit([&]() { free(tb.pb); });
-	auto response_code = tb.pb[0];
-	if (response_code == exmdb_response::SUCCESS) {
-		if (tb.cb != 5) {
-			fprintf(stderr, "response format error during connect to "
-				"[%s]:%hu/%s\n", xn->host.c_str(),
-				xn->port, xn->prefix.c_str());
-			return -1;
-		}
-		return fd.release();
-	}
-	fprintf(stderr, "Failed to connect to [%s]:%hu/%s: %s\n",
-	        xn->host.c_str(), xn->port, xn->prefix.c_str(), exmdb_rpc_strerror(response_code));
-	return -1;
-}
-
-static int gi_setup(const char *username)
-{
-	auto sqh = sql_login();
-	if (sqh == nullptr)
-		return EXIT_FAILURE;
-	auto ret = sql_meta(sqh, g_username, &g_user_id, g_storedir_s);
-	mysql_close(sqh);
-	if (ret == -ENOENT) {
-		fprintf(stderr, "No such user \"%s\"\n", g_username);
-		return EXIT_FAILURE;
-	} else if (ret < 0) {
-		fprintf(stderr, "sql_meta(\"%s\"): %s\n", g_username, strerror(-ret));
-		return EXIT_FAILURE;
-	}
-	g_storedir = g_storedir_s.c_str();
-	g_socket = exm_connect(g_storedir);
-	if (g_socket < 0)
-		return EXIT_FAILURE;
-	return EXIT_SUCCESS;
-}
-
 static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 {
 	if (!g_wet_run)
@@ -849,137 +617,12 @@ static int recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *pr
 	return 0;
 }
 
-static int exm_create_folder(unsigned int depth, uint64_t parent_fld,
-    TPROPVAL_ARRAY *props, uint64_t *new_fld_id)
-{
-	uint64_t change_num = 0;
-	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "allocate_cn RPC failed\n");
-		return -EIO;
-	}
-	SIZED_XID zxid;
-	char tmp_buff[22];
-	BINARY bxid;
-	zxid.size = 22;
-	zxid.xid.guid = rop_util_make_user_guid(g_user_id);
-	rop_util_value_to_gc(change_num, zxid.xid.local_id);
-	EXT_PUSH ep;
-	if (!ep.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "ext_push: ENOMEM\n");
-		return -ENOMEM;
-	}
-	bxid.pv = tmp_buff;
-	bxid.cb = ep.m_offset;
-	std::unique_ptr<PCL, afree> pcl(pcl_init());
-	if (pcl == nullptr) {
-		fprintf(stderr, "pcl_init: ENOMEM\n");
-		return -ENOMEM;
-	}
-	if (!pcl_append(pcl.get(), &zxid)) {
-		fprintf(stderr, "pcl_append: ENOMEM\n");
-		return -ENOMEM;
-	}
-	std::unique_ptr<BINARY, afree> pclbin(pcl_serialize(pcl.get()));
-	if (pclbin == nullptr){
-		fprintf(stderr, "pcl_serialize: ENOMEM\n");
-		return -ENOMEM;
-	}
-	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
-	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
-	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
-		fprintf(stderr, "tpropval: ENOMEM\n");
-		return -ENOMEM;
-	}
-	auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
-	if (g_splice && dn != nullptr) {
-		if (!exmdb_client::get_folder_by_name(g_storedir,
-		    parent_fld, dn, new_fld_id)) {
-			fprintf(stderr, "get_folder_by_name \"%s\" RPC/network failed\n", dn);
-			return -EIO;
-		}
-		if (*new_fld_id != 0)
-			return 0;
-	}
-	if (dn == nullptr)
-		dn = "";
-	if (!exmdb_client::create_folder_by_properties(g_storedir, 0, props, new_fld_id)) {
-		fprintf(stderr, "create_folder_by_properties \"%s\" RPC failed\n", dn);
-		return -EIO;
-	}
-	if (*new_fld_id == 0) {
-		fprintf(stderr, "createfolder: folder \"%s\" already existed or some other problem\n", dn);
-		return -EEXIST;
-	}
-	return 0;
-}
-
-static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
-{
-	uint64_t msg_id = 0, change_num = 0;
-	if (!exmdb_client::allocate_message_id(g_storedir, parent_fld, &msg_id)) {
-		fprintf(stderr, "allocate_message_id RPC failed (timeout?)\n");
-		return -EIO;
-	} else if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "allocate_cn RPC failed\n");
-		return -EIO;
-	}
-
-	SIZED_XID zxid;
-	char tmp_buff[22];
-	BINARY bxid;
-	zxid.size = 22;
-	zxid.xid.guid = rop_util_make_user_guid(g_user_id);
-	rop_util_value_to_gc(change_num, zxid.xid.local_id);
-	EXT_PUSH ep;
-	if (!ep.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "ext_push: ENOMEM\n");
-		return -ENOMEM;
-	}
-	bxid.pv = tmp_buff;
-	bxid.cb = ep.m_offset;
-	std::unique_ptr<PCL, afree> pcl(pcl_init());
-	if (pcl == nullptr) {
-		fprintf(stderr, "pcl_init: ENOMEM\n");
-		return -ENOMEM;
-	}
-	if (!pcl_append(pcl.get(), &zxid)) {
-		fprintf(stderr, "pcl_append: ENOMEM\n");
-		return -ENOMEM;
-	}
-	std::unique_ptr<BINARY, afree> pclbin(pcl_serialize(pcl.get()));
-	if (pclbin == nullptr){
-		fprintf(stderr, "pcl_serialize: ENOMEM\n");
-		return -ENOMEM;
-	}
-	auto props = &ctnt->proplist;
-	if (!tpropval_array_set_propval(props, PROP_TAG_MID, &msg_id) ||
-	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
-	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
-		fprintf(stderr, "tpropval: ENOMEM\n");
-		return -ENOMEM;
-	}
-	gxerr_t e_result = GXERR_SUCCESS;
-	if (!exmdb_client::write_message(g_storedir, g_username, 65001,
-	    parent_fld, ctnt, &e_result)) {
-		fprintf(stderr, "write_message RPC failed\n");
-		return -EIO;
-	} else if (e_result != 0) {
-		fprintf(stderr, "write_message: gxerr %d\n", e_result);
-		return -EIO;
-	}
-	return 0;
-}
-
 /* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
 static int do_item2(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item, unsigned int item_type, uint32_t ident, int nsets,
     uint64_t *new_fld_id)
 {
-	std::unique_ptr<TPROPVAL_ARRAY, afree> props(tpropval_array_init());
+	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> props(tpropval_array_init());
 	if (props == nullptr) {
 		fprintf(stderr, "tpropval_array_init: ENOMEM\n");
 		return -ENOMEM;
@@ -1016,8 +659,10 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_FOLDER) {
 		auto iter = g_folder_map.find(ident);
 		if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
+			/* O_EXCL style behavior <=> not splicing. */
+			bool o_excl = !g_splice;
 			/* PST folder with name -> new folder in store */
-			auto ret = exm_create_folder(depth, parent.folder_id, props.get(), new_fld_id);
+			auto ret = exm_create_folder(parent.folder_id, props.get(), o_excl, new_fld_id);
 			if (ret < 0)
 				return ret;
 		} else if (iter == g_folder_map.end()) {
@@ -1032,13 +677,13 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 				fprintf(stderr, "tpropval: ENOMEM\n");
 				return -ENOMEM;
 			}
-			auto ret = exm_create_folder(depth, iter->second.fid_to,
-			           props.get(), new_fld_id);
+			auto ret = exm_create_folder(iter->second.fid_to,
+			           props.get(), false, new_fld_id);
 			if (ret < 0)
 				return ret;
 		}
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
-		std::unique_ptr<ATTACHMENT_CONTENT, afree> atc(attachment_content_init());
+		std::unique_ptr<ATTACHMENT_CONTENT, gi_delete> atc(attachment_content_init());
 		if (atc == nullptr) {
 			fprintf(stderr, "attachment_content_init: ENOMEM\n");
 			return -ENOMEM;
@@ -1061,7 +706,7 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	 * Unconditionally parse recipients/attachments into @ctnt. If it is
 	 * not a message, it just gets freed without being sent to the server.
 	 */
-	std::unique_ptr<MESSAGE_CONTENT, afree> ctnt(message_content_init());
+	std::unique_ptr<MESSAGE_CONTENT, gi_delete> ctnt(message_content_init());
 	if (ctnt == nullptr) {
 		fprintf(stderr, "message_content_init: ENOMEM\n");
 		return -ENOMEM;
