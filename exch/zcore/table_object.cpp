@@ -328,9 +328,6 @@ static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable,
 		return FALSE;
 	}
 	for (size_t i = ptable->position; i <= end_pos; ++i) {
-		if (0 != i && 1 != i) {
-			continue;
-		}
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count]) {
 			return FALSE;
