@@ -232,6 +232,6 @@ struct EXT_PUSH {
 		char *cdata;
 		void *vdata = nullptr;
 	};
-	uint32_t alloc_size = 0, offset = 0, flags = 0;
-	EXT_BUFFER_MGT mgt{};
+	uint32_t m_alloc_size = 0, offset = 0, m_flags = 0;
+	EXT_BUFFER_MGT m_mgt{};
 };

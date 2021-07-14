@@ -2127,22 +2127,22 @@ BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
 {
 	auto pext = this;
 	const EXT_BUFFER_MGT default_mgt = {malloc, realloc, free};
-	pext->mgt = mgt != nullptr ? *mgt : default_mgt;
+	m_mgt = mgt != nullptr ? *mgt : default_mgt;
 	if (NULL == pdata) {
 		pext->b_alloc = TRUE;
-		pext->alloc_size = 8192;
-		pext->data = static_cast<uint8_t *>(pext->mgt.alloc(pext->alloc_size));
+		m_alloc_size = 8192;
+		udata = static_cast<uint8_t *>(m_mgt.alloc(m_alloc_size));
 		if (NULL == pext->data) {
-			pext->alloc_size = 0;
+			m_alloc_size = 0;
 			return FALSE;
 		}
 	} else {
 		pext->b_alloc = FALSE;
 		pext->data = static_cast<uint8_t *>(pdata);
-		pext->alloc_size = alloc_size;
+		m_alloc_size = alloc_size;
 	}
 	pext->offset = 0;
-	pext->flags = flags;
+	m_flags = flags;
 	return TRUE;
 }
 
@@ -2150,7 +2150,7 @@ EXT_PUSH::~EXT_PUSH()
 {
 	auto pext = this;
 	if (TRUE == pext->b_alloc) {
-		pext->mgt.free(pext->data);
+		m_mgt.free(udata);
 	}
 }
 
@@ -2168,20 +2168,20 @@ BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 {
 	auto pext = this;
 	auto alloc_size = extra_size + pext->offset;
-	if (pext->alloc_size >= alloc_size)
+	if (m_alloc_size >= alloc_size)
 		return TRUE;
 	if (FALSE == pext->b_alloc) {
 		return FALSE;
 	}
-	if (alloc_size < pext->alloc_size * 2)
+	if (alloc_size < m_alloc_size * 2)
 		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
-		alloc_size = pext->alloc_size * 2;
-	auto pdata = static_cast<uint8_t *>(pext->mgt.realloc(pext->data, alloc_size));
+		alloc_size = m_alloc_size * 2;
+	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(udata, m_alloc_size));
 	if (NULL == pdata) {
 		return FALSE;
 	}
 	pext->data = pdata;
-	pext->alloc_size = alloc_size;
+	m_alloc_size = alloc_size;
 	return TRUE;
 }
 
@@ -2297,7 +2297,7 @@ int EXT_PUSH::p_blob(DATA_BLOB blob)
 int EXT_PUSH::p_bin(const BINARY *r)
 {
 	auto pext = this;
-	if (pext->flags & EXT_FLAG_WCOUNT) {
+	if (m_flags & EXT_FLAG_WCOUNT) {
 		TRY(pext->p_uint32(r->cb));
 	} else {
 		if (r->cb > 0xFFFF) {
@@ -2348,7 +2348,7 @@ int EXT_PUSH::p_str(const char *pstr)
 {
 	auto pext = this;
 	size_t len = strlen(pstr);
-	if (pext->flags & EXT_FLAG_TBLLMT) {
+	if (m_flags & EXT_FLAG_TBLLMT) {
 		if (len > 509) {
 			TRY(pext->p_bytes(pstr, 509));
 			return pext->p_uint8(0);
@@ -2362,9 +2362,8 @@ int EXT_PUSH::p_wstr(const char *pstr)
 	auto pext = this;
 	int len;
 	
-	if (0 == (pext->flags & EXT_FLAG_UTF16)) {
+	if (!(m_flags & EXT_FLAG_UTF16))
 		return pext->p_str(pstr);
-	}
 	len = 2*strlen(pstr) + 2;
 	std::unique_ptr<char[]> pbuff;
 	try {
@@ -2378,7 +2377,7 @@ int EXT_PUSH::p_wstr(const char *pstr)
 		pbuff[1] = '\0';
 		len = 2;
 	}
-	if (pext->flags & EXT_FLAG_TBLLMT) {
+	if (m_flags & EXT_FLAG_TBLLMT) {
 		if (len > 510) {
 			len = 510;
 			pbuff[508] = '\0';
@@ -2466,11 +2465,11 @@ int EXT_PUSH::p_guid_a(const GUID_ARRAY *r)
 static int ext_buffer_push_restriction_and_or(
 	EXT_PUSH *pext, const RESTRICTION_AND_OR *r)
 {
-	if (pext->flags & EXT_FLAG_WCOUNT) {
+	auto &ext = *pext;
+	if (ext.m_flags & EXT_FLAG_WCOUNT)
 		TRY(pext->p_uint32(r->count));
-	} else {
+	else
 		TRY(pext->p_uint16(r->count));
-	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_restriction(&r->pres[i]));
 	return EXT_ERR_SUCCESS;

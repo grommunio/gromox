@@ -813,6 +813,7 @@ static int rop_ext_pull_openmessage_request(
 static int rop_ext_push_openmessage_response(
 	EXT_PUSH *pext, const OPENMESSAGE_RESPONSE *r)
 {
+	auto &ext = *pext;
 	uint8_t i;
 	uint32_t offset;
 	uint32_t offset1;
@@ -832,7 +833,7 @@ static int rop_ext_push_openmessage_response(
 		last_offset = pext->offset;
 		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-			pext->alloc_size - pext->offset < 256) {
+		    ext.m_alloc_size - pext->offset < 256) {
 			pext->offset = last_offset;
 			break;
 		}
@@ -932,6 +933,7 @@ static int rop_ext_pull_reloadcachedinformation_request(
 static int rop_ext_push_reloadcachedinformation_response(
 	EXT_PUSH *pext, RELOADCACHEDINFORMATION_RESPONSE *r)
 {
+	auto &ext = *pext;
 	uint8_t i;
 	uint32_t offset;
 	uint32_t offset1;
@@ -951,7 +953,7 @@ static int rop_ext_push_reloadcachedinformation_response(
 		last_offset = pext->offset;
 		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-			pext->alloc_size - pext->offset < 256) {
+		    ext.m_alloc_size - pext->offset < 256) {
 			pext->offset = last_offset;
 			break;
 		}
@@ -1078,6 +1080,7 @@ static int rop_ext_pull_openembeddedmessage_request(
 static int rop_ext_push_openembeddedmessage_response(
 	EXT_PUSH *pext, const OPENEMBEDDEDMESSAGE_RESPONSE *r)
 {
+	auto &ext = *pext;
 	int i;
 	uint32_t offset;
 	uint32_t offset1;
@@ -1099,7 +1102,7 @@ static int rop_ext_push_openembeddedmessage_response(
 		last_offset = pext->offset;
 		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-			pext->alloc_size - pext->offset < 256) {
+		    ext.m_alloc_size - pext->offset < 256) {
 			pext->offset = last_offset;
 			break;
 		}
