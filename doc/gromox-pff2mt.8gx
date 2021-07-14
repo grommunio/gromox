@@ -8,7 +8,7 @@ gromox\-pff2mt(8gx) \(em Utility for analysis of PFF/PST/OST files
 .SH Description
 .PP
 gromox\-pff2mt reads a file that conforms to the Personal Folder File (PFF) and
-the Offline Folder File (OFF) format and re-writes the data in a
+the Offline Folder File (OFF) format and re-exports the data in a
 Gromox-specific mailbox transfer format to stdout for consumption by pipe by
 the gromox-mt2exm(8gx) program. Optionally, pff2mt can print a tree summary of
 the PFF. The PFF format is used in several file types:
