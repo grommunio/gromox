@@ -603,7 +603,6 @@ static void *ev_enqwork(void *param)
 
 static void *ev_deqwork(void *param)
 {
-	int len;
 	MEM_FILE *pfile;
 	time_t cur_time;
 	time_t last_time;
@@ -671,7 +670,7 @@ static void *ev_deqwork(void *param)
 			continue;
 		}
 		
-		len = mem_file_read(&temp_file, buff, MAX_CMD_LENGTH);
+		int len = mem_file_read(&temp_file, buff, arsizeof(buff) - 2);
 		buff[len] = '\r';
 		len ++;
 		buff[len] = '\n';
