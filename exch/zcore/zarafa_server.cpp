@@ -4033,7 +4033,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		}
 		if (!b_writable)
 			return ecAccessDenied;
-		auto pmessage = message_object_create(pstore, TRUE,
+		pmessage = message_object_create(pstore, TRUE,
 			pinfo->cpid, 0, pattachment, tag_access,
 			TRUE, NULL);
 		if (pmessage == nullptr)
