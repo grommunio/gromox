@@ -30,6 +30,7 @@
 #include <mysql.h>
 #define LLU(x) static_cast<unsigned long long>(x)
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static uint32_t g_last_art;
@@ -231,7 +232,6 @@ int main(int argc, const char **argv)
 	uint64_t max_size;
 	MYSQL_RES *pmyres;
 	char tmp_buff[256];
-	char temp_path[256];
 	char mysql_host[256];
 	char mysql_user[256];
 	char mysql_string[1024];
@@ -340,22 +340,21 @@ int main(int argc, const char **argv)
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	
-	snprintf(temp_path, 256, "%s/exmdb", dir);
-	if (mkdir(temp_path, 0777) && errno != EEXIST) {
-		fprintf(stderr, "E-1398: mkdir %s: %s\n", temp_path, strerror(errno));
+	auto temp_path = dir + "/exmdb"s;
+	if (mkdir(temp_path.c_str(), 0777) && errno != EEXIST) {
+		fprintf(stderr, "E-1398: mkdir %s: %s\n", temp_path.c_str(), strerror(errno));
 		return 6;
 	}
-	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", dir);
+	temp_path += "/exchange.sqlite3";
 	/*
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under
 	 * EXCL semantics ahead of time.
 	 */
-	auto tfd = open(temp_path, O_RDWR | O_CREAT | O_EXCL, 0600);
+	auto tfd = open(temp_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
 	if (tfd >= 0) {
 		close(tfd);
 	} else if (errno == EEXIST) {
-		printf("can not create store database,"
-			" %s already exists\n", temp_path);
+		printf("can not create store database, %s already exists\n", temp_path.c_str());
 		return 6;
 	}
 	
@@ -377,14 +376,14 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
-	if (SQLITE_OK != sqlite3_open_v2(temp_path, &psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(temp_path.c_str(), &psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK) {
 		printf("fail to create store database\n");
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	if (chmod(temp_path, 0666) < 0)
-		fprintf(stderr, "W-1400: chmod %s: %s\n", temp_path, strerror(errno));
+	if (chmod(temp_path.c_str(), 0666) < 0)
+		fprintf(stderr, "W-1400: chmod %s: %s\n", temp_path.c_str(), strerror(errno));
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	

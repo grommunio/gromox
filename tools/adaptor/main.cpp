@@ -4,6 +4,7 @@
 #endif
 #include <atomic>
 #include <cerrno>
+#include <string>
 #include <unistd.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -22,6 +23,7 @@
 #include <cstdlib>
 #include <csignal>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static std::atomic<bool> g_notify_stop{false}, g_hup_signalled{false};
@@ -39,12 +41,9 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 {
-	char log_path[256];
-	char state_dir[256], domainlist_path[256];
-	char aliasaddress_path[256];
-	char unchkusr_path[256];
-	char console_path[256];
+	char log_path[256], state_dir[256], unchkusr_path[256];
 	char mysql_host[256];
+	std::string domainlist_path, aliasaddress_path, console_path;
 	int mysql_port;
 	char mysql_user[256];
 	char db_name[256];
@@ -68,9 +67,9 @@ int main(int argc, const char **argv)
 		gx_strlcpy(state_dir, str_value, sizeof(state_dir));
 	}
 	printf("[system]: state path is %s\n", state_dir);
-	snprintf(domainlist_path, sizeof(domainlist_path), "%s/domain_list.txt", state_dir);
-	snprintf(aliasaddress_path, sizeof(aliasaddress_path), "%s/alias_addresses.txt", state_dir);
-	snprintf(console_path, sizeof(console_path), "%s/console_table.txt", state_dir);
+	domainlist_path = state_dir + "/domain_list.txt"s;
+	aliasaddress_path = state_dir + "/alias_addresses.txt"s;
+	console_path = state_dir + "/console_table.txt"s;
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
@@ -109,11 +108,9 @@ int main(int argc, const char **argv)
 	printf("[system]: mysql database name is %s\n", db_name);
 	system_log_init(log_path);
 	auto cl_0 = make_scope_exit(system_log_free);
-	gateway_control_init(console_path);
-	
+	gateway_control_init(console_path.c_str());
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
-	engine_init(domainlist_path, aliasaddress_path, unchkusr_path);
-	
+	engine_init(domainlist_path.c_str(), aliasaddress_path.c_str(), unchkusr_path);
 	if (0 != system_log_run()) {
 		printf("[system]: failed to run system log\n");
 		return 3;
