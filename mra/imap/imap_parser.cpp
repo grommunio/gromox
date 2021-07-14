@@ -7,6 +7,7 @@
 #include <climits>
 #include <csignal>
 #include <mutex>
+#include <string>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -50,6 +51,8 @@
 #define SCAN_INTERVAL			3600
 
 #define SELECT_INTERVAL			20*60
+
+using namespace std::string_literals;
 
 static void *imps_thrwork(void *);
 static void *imps_scanwork(void *);
@@ -1160,7 +1163,6 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 	int copy_result;
 	char *last_line;
 	char *ptr, *ptr1;
-	char temp_path[256];
 	
 	while (TRUE) {
 		line_length = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1187,8 +1189,13 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 				} else {
 					*ptr = '\0';
 					*ptr1 = '\0';
-					snprintf(temp_path, 256, "%s/eml/%s", pcontext->maildir, last_line + 8);
-					pcontext->message_fd = open(temp_path, O_RDONLY);
+					pcontext->message_fd = -1;
+					try {
+						auto eml_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
+						pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+					} catch (const std::bad_alloc &) {
+						fprintf(stderr, "E-1466: ENOMEM\n");
+					}
 					if (-1 == pcontext->message_fd) {
 						memcpy(pcontext->write_buff + pcontext->write_length, "NIL", 3);
 						pcontext->write_length += 3;
@@ -1228,10 +1235,13 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 				} else {
 					*ptr = '\0';
 					*ptr1 = '\0';
-					snprintf(temp_path, 256, "%s/tmp/imap.rfc822/%s",
-						pcontext->maildir, last_line + 10);
-					
-					pcontext->message_fd = open(temp_path, O_RDONLY);
+					pcontext->message_fd = -1;
+					try {
+						auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
+						pcontext->message_fd = open(rfc_path.c_str(), O_RDONLY);
+					} catch (const std::bad_alloc &) {
+						fprintf(stderr, "E-1467: ENOMEM\n");
+					}
 					if (-1 == pcontext->message_fd) {
 						memcpy(pcontext->write_buff + pcontext->write_length, "NIL", 3);
 						pcontext->write_length += 3;
@@ -1345,9 +1355,13 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 		}
 	}
 	hl_hold.unlock();
-	snprintf(buff, 1024, "MESSAGE-FLAG %s %s %s",
-		pcontext->username, pcontext->selected_folder, mid_string);
-	system_services_broadcast_event(buff);
+	try {
+		auto buf = "MESSAGE-FLAG "s + pcontext->username + " " +
+		           pcontext->selected_folder + " " + mid_string;
+		system_services_broadcast_event(buf.c_str());
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1468: ENOMEM\n");
+	}
 }
 
 static void imap_parser_event_flag(const char *username, const char *folder,
