@@ -6,6 +6,7 @@
 #include <csignal>
 #include <cstring>
 #include <mutex>
+#include <string>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -258,13 +259,10 @@ static int cache_queue_increase_mess_ID()
 static void *mdl_thrwork(void *arg)
 {
 	DIR *dirp;
-	int i, times, size, bounce_type = 0;
-	int scan_interval, fd, mess_len;
+	int i, times, size, bounce_type = 0, scan_interval, mess_len;
 	time_t scan_begin, scan_end, original_time;
     struct dirent *direntp;
-	struct stat node_stat;
 	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
-    char temp_path[256];
 	char *ptr;
 	MESSAGE_CONTEXT *pcontext, *pbounce_context;
 	BOOL need_bounce, need_remove;
@@ -296,14 +294,20 @@ static void *mdl_thrwork(void *arg)
 			if (strcmp(direntp->d_name, ".") == 0 ||
 			    strcmp(direntp->d_name, "..") == 0)
 				continue;
-			snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-			         "%s/%s", g_path, direntp->d_name);
-			if (0 != stat(temp_path, &node_stat) ||
-                0 == S_ISREG(node_stat.st_mode)) {
-                continue;
-            }
-            fd = open(temp_path, O_RDWR);
+			std::string temp_path;
+			int fd = -1;
+			try {
+				temp_path = std::string(g_path) + "/" + direntp->d_name;
+				fd = open(temp_path.c_str(), O_RDWR);
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1475: ENOMEM\n");
+			}
 			if (-1 == fd) {
+				continue;
+			}
+			struct stat node_stat;
+			if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
+				close(fd);
 				continue;
 			}
 			if (sizeof(int) != read(fd, &times, sizeof(int))) {
@@ -410,10 +414,9 @@ static void *mdl_thrwork(void *arg)
 				}
 			}
 			close(fd);
-			if (TRUE == need_remove) {
-				if (remove(temp_path) < 0 && errno != ENOENT)
-					fprintf(stderr, "W-1432: remove %s: %s\n", temp_path, strerror(errno));
-			}
+			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1432: remove %s: %s\n",
+				        temp_path.c_str(), strerror(errno));
 			need_bounce &= pcontext->pcontrol->need_bounce;
 			
 			if (TRUE == need_bounce && 0 != strcasecmp(
