@@ -228,7 +228,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	}
 	free(tmp_bin.pb);
 	tmp_bin.pb = nullptr;
-	if (!cl_rd_sock(sockd, &tmp_bin)) {
+	if (!cl_rd_sock(sockd, &tmp_bin) || tmp_bin.pb == nullptr) {
 		close(sockd);
 		return -1;
 	}
