@@ -25,16 +25,12 @@ static int rop_ext_push_logon_time(EXT_PUSH *pext, const LOGON_TIME *r)
 
 static int rop_ext_push_ghost_server(EXT_PUSH *pext, const GHOST_SERVER *r)
 {
-	int i;
-	
-	if (0 == r->server_count || r->cheap_server_count > r->server_count) {
+	if (r->server_count == 0 || r->cheap_server_count > r->server_count)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint16(r->server_count));
 	TRY(pext->p_uint16(r->cheap_server_count));
-	for (i=0; i<r->server_count; i++) {
+	for (size_t i = 0; i < r->server_count; ++i)
 		TRY(pext->p_str(r->ppservers[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -55,27 +51,20 @@ static int rop_ext_push_property_problem(
 
 static int rop_ext_push_problem_array(EXT_PUSH *pext, const PROBLEM_ARRAY *r)
 {
-	int i;
-	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(rop_ext_push_property_problem(pext, r->pproblem + i));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_push_propidname_array(
 	EXT_PUSH *pext, const PROPIDNAME_ARRAY *r)
 {
-	int i;
-	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint16(r->ppropid[i]));
-	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_propname(&r->ppropname[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -99,25 +88,20 @@ static int rop_ext_pull_logon_request(EXT_PULL *pext, LOGON_REQUEST *r)
 		return EXT_ERR_SUCCESS;
 	}
 	r->pessdn = pext->anew<char>(size);
-	if (NULL == r->pessdn) {
+	if (r->pessdn == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	TRY(pext->g_bytes(r->pessdn, size));
-	if ('\0' != r->pessdn[size - 1]) {
+	if (r->pessdn[size-1] != '\0')
 		return EXT_ERR_FORMAT;
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_push_logon_pmb_response(
 	EXT_PUSH *pext, const LOGON_PMB_RESPONSE *r)
 {
-	int i;
-	
 	TRY(pext->p_uint8(r->logon_flags));
-	for (i=0; i<13; i++) {
+	for (size_t i = 0; i < 13; ++i)
 		TRY(pext->p_uint64(r->folder_ids[i]));
-	}
 	TRY(pext->p_uint8(r->response_flags));
 	TRY(pext->p_guid(&r->mailbox_guid));
 	TRY(pext->p_uint16(r->replica_id));
@@ -130,13 +114,9 @@ static int rop_ext_push_logon_pmb_response(
 static int rop_ext_push_logon_pf_response(
 	EXT_PUSH *pext, const LOGON_PF_RESPONSE *r)
 {
-	
-	int i;
-	
 	TRY(pext->p_uint8(r->logon_flags));
-	for (i=0; i<13; i++) {
+	for (size_t i = 0; i < 13; ++i)
 		TRY(pext->p_uint64(r->folder_ids[i]));
-	}
 	TRY(pext->p_uint16(r->replica_id));
 	TRY(pext->p_guid(&r->replica_guid));
 	return pext->p_guid(&r->per_user_guid);
@@ -176,16 +156,14 @@ static int rop_ext_pull_setreceivefolder_request(
 static int rop_ext_push_getreceivefoldertable_response(
 	EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *r)
 {
-	int i;
 	PROPTAG_ARRAY columns;
 	uint32_t proptags[3] = {PROP_TAG_FOLDERID, PROP_TAG_MESSAGECLASS_STRING8, PR_LAST_MODIFICATION_TIME};
 	
 	columns.count = 3;
 	columns.pproptag = proptags;
 	TRY(pext->p_uint32(r->rows.count));
-	for (i=0; i<r->rows.count; i++) {
+	for (size_t i = 0; i < r->rows.count; ++i)
 		TRY(pext->p_proprow(&columns, &r->rows.prows[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -297,9 +275,8 @@ static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
 	TRY(pext->g_sbin(&r->data));
 	if (0 == r->offset && TRUE == b_private) {
 		r->pguid = pext->anew<GUID>();
-		if (NULL == r->pguid) {
+		if (r->pguid == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_guid(r->pguid);
 	}
 	r->pguid = NULL;
@@ -384,9 +361,8 @@ static int rop_ext_pull_setsearchcriteria_request(
 		r->pres = NULL;
 	} else {
 		r->pres = pext->anew<RESTRICTION>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
 		if (ext.m_offset > offset)
@@ -448,11 +424,10 @@ static int rop_ext_pull_movefolder_request(
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->use_unicode));
 	TRY(pext->g_uint64(&r->folder_id));
-	if (0 == r->use_unicode) {
+	if (!r->use_unicode)
 		return pext->g_str(&r->pnew_name);
-	} else {
+	else
 		return pext->g_wstr(&r->pnew_name);
-	}
 }
 
 static int rop_ext_push_movefolder_response(
@@ -469,11 +444,10 @@ static int rop_ext_pull_copyfolder_request(
 	TRY(pext->g_uint8(&r->want_recursive));
 	TRY(pext->g_uint8(&r->use_unicode));
 	TRY(pext->g_uint64(&r->folder_id));
-	if (0 == r->use_unicode) {
+	if (!r->use_unicode)
 		return pext->g_str(&r->pnew_name);
-	} else {
+	else
 		return pext->g_wstr(&r->pnew_name);
-	}
 }
 
 static int rop_ext_push_copyfolder_response(
@@ -600,9 +574,8 @@ static int rop_ext_pull_restrict_request(
 		r->pres = NULL;
 	} else {
 		r->pres = pext->anew<RESTRICTION>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
 		if (ext.m_offset > offset)
@@ -713,9 +686,8 @@ static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
 		r->pres = NULL;
 	} else {
 		r->pres = pext->anew<RESTRICTION>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
 		if (ext.m_offset > offset)
@@ -818,9 +790,8 @@ static int rop_ext_push_openmessage_response(
 	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(&r->recipient_columns));
-	if (0 == r->row_count) {
+	if (r->row_count == 0)
 		return pext->p_uint8(0);
-	}
 	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
@@ -832,9 +803,8 @@ static int rop_ext_push_openmessage_response(
 			break;
 		}
 	}
-	if (0 == i) {
+	if (i == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	uint32_t offset1 = ext.m_offset;
 	ext.m_offset = offset;
 	TRY(pext->p_uint8(i));
@@ -885,8 +855,6 @@ static int rop_ext_pull_removeallrecipients_request(
 static int rop_ext_pull_modifyrecipients_request(
 	EXT_PULL *pext, MODIFYRECIPIENTS_REQUEST *r)
 {
-	int i;
-
 	TRY(pext->g_proptag_a(&r->proptags));
 	TRY(pext->g_uint16(&r->count));
 	if (0 == r->count) {
@@ -898,9 +866,8 @@ static int rop_ext_pull_modifyrecipients_request(
 			return EXT_ERR_ALLOC;
 		}
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_modrcpt_row(&r->proptags, &r->prow[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -935,9 +902,8 @@ static int rop_ext_push_reloadcachedinformation_response(
 	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(&r->recipient_columns));
-	if (0 == r->row_count) {
+	if (r->row_count == 0)
 		return pext->p_uint8(0);
-	}
 	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
@@ -949,9 +915,8 @@ static int rop_ext_push_reloadcachedinformation_response(
 			break;
 		}
 	}
-	if (0 == i) {
+	if (i == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	uint32_t offset1 = ext.m_offset;
 	ext.m_offset = offset;
 	TRY(pext->p_uint8(i));
@@ -1009,9 +974,8 @@ static int rop_ext_pull_setmessagereadflag_request(EXT_PULL *pext,
 		return EXT_ERR_SUCCESS;
 	} else {
 		r->pclient_data = pext->anew<LONG_TERM_ID>();
-		if (NULL == r->pclient_data) {
+		if (r->pclient_data == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_longterm(r->pclient_data);
 	}
 }
@@ -1081,9 +1045,8 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(&r->recipient_columns));
-	if (0 == r->row_count) {
+	if (r->row_count == 0)
 		return pext->p_uint8(0);
-	}
 	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
@@ -1095,9 +1058,8 @@ static int rop_ext_push_openembeddedmessage_response(
 			break;
 		}
 	}
-	if (0 == i) {
+	if (i == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	uint32_t offset1 = ext.m_offset;
 	ext.m_offset = offset;
 	TRY(pext->p_uint8(i));
@@ -1195,9 +1157,8 @@ static int rop_ext_push_optionsdata_response(
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_bin_s(&r->options_info));
 	TRY(pext->p_bin_s(&r->help_file));
-	if (r->help_file.cb > 0) {
+	if (r->help_file.cb > 0)
 		return pext->p_str(r->pfile_name);
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1337,9 +1298,8 @@ static int rop_ext_pull_querynamedproperties_request(
 		return EXT_ERR_SUCCESS;
 	}
 	r->pguid = pext->anew<GUID>();
-	if (NULL == r->pguid) {
+	if (r->pguid == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	return pext->g_guid(r->pguid);
 }
 
@@ -1521,8 +1481,6 @@ static int rop_ext_pull_clonestream_request(
 static int rop_ext_pull_modifypermissions_request(
 	EXT_PULL *pext, MODIFYPERMISSIONS_REQUEST *r)
 {
-	int i;
-
 	TRY(pext->g_uint8(&r->flags));
 	TRY(pext->g_uint16(&r->count));
 	if (0 == r->count) {
@@ -1534,9 +1492,8 @@ static int rop_ext_pull_modifypermissions_request(
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_permission_data(&r->prow[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1550,21 +1507,17 @@ static int rop_ext_pull_getpermissionstable_request(
 static int rop_ext_pull_modifyrules_request(
 	EXT_PULL *pext, MODIFYRULES_REQUEST *r)
 {
-	int i;
-	
 	TRY(pext->g_uint8(&r->flags));
 	TRY(pext->g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->prow = pext->anew<RULE_DATA>(r->count);
 	if (NULL == r->prow) {
 		r->count = 0;
 		return EXT_ERR_SUCCESS;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_rule_data(&r->prow[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1668,11 +1621,8 @@ static int rop_ext_pull_fasttransfersourcecopyproperties_request(
 static int rop_ext_pull_tellversion_request(
 	EXT_PULL *pext, TELLVERSION_REQUEST *r)
 {
-	int i;
-
-	for (i=0; i<3; i++) {
+	for (size_t i = 0; i < 3; ++i)
 		TRY(pext->g_uint16(&r->version[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1691,9 +1641,8 @@ static int rop_ext_pull_syncconfigure_request(
 		r->pres = NULL;
 	} else {
 		r->pres = pext->anew<RESTRICTION>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		uint32_t offset = ext.m_offset + res_size;
 		TRY(pext->g_restriction(r->pres));
 		if (ext.m_offset > offset)
@@ -1726,9 +1675,8 @@ static int rop_ext_pull_syncimportreadstatechanges_request(
 	MESSAGE_READ_STAT tmp_array[0x1000];
 	
 	TRY(pext->g_uint16(&size));
-	if (0 == size) {
+	if (size == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->count = 0;
 	uint32_t offset = ext.m_offset + size;
 	while (ext.m_offset < offset && r->count < 0x1000) {
@@ -1817,9 +1765,8 @@ static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 	TRY(pext->g_uint16(&data_size));
 	uint32_t offset = ext.m_offset + data_size;
 	TRY(pext->g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->prange = pext->anew<LONG_TERM_ID_RANGE>(r->count);
 	if (NULL == r->prange) {
 		r->count = 0;
@@ -1855,14 +1802,12 @@ static int rop_ext_pull_registernotification_request(
 	TRY(pext->g_uint8(&r->want_whole_store));
 	if (0 == r->want_whole_store) {
 		r->pfolder_id = pext->anew<uint64_t>();
-		if (NULL == r->pfolder_id) {
+		if (r->pfolder_id == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_uint64(r->pfolder_id));
 		r->pmessage_id = pext->anew<uint64_t>();
-		if (NULL == r->pmessage_id) {
+		if (r->pmessage_id == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint64(r->pmessage_id);
 	} else {
 		r->pfolder_id = NULL;
@@ -1875,67 +1820,48 @@ static int rop_ext_push_notification_data(
 	EXT_PUSH *pext, const NOTIFICATION_DATA *r)
 {
 	TRY(pext->p_uint16(r->notification_flags));
-	if (NULL != r->ptable_event) {
+	if (r->ptable_event != nullptr)
 		TRY(pext->p_uint16(*r->ptable_event));
-	}
-	if (NULL != r->prow_folder_id) {
+	if (r->prow_folder_id != nullptr)
 		TRY(pext->p_uint64(*r->prow_folder_id));
-	}
-	if (NULL != r->prow_message_id) {
+	if (r->prow_message_id != nullptr)
 		TRY(pext->p_uint64(*r->prow_message_id));
-	}
-	if (NULL != r->prow_instance) {
+	if (r->prow_instance != nullptr)
 		TRY(pext->p_uint32(*r->prow_instance));
-	}
-	if (NULL != r->pafter_folder_id) {
+	if (r->pafter_folder_id != nullptr)
 		TRY(pext->p_uint64(*r->pafter_folder_id));
-	}
-	if (NULL != r->pafter_row_id) {
+	if (r->pafter_row_id != nullptr)
 		TRY(pext->p_uint64(*r->pafter_row_id));
-	}
-	if (NULL != r->pafter_instance) {
+	if (r->pafter_instance != nullptr)
 		TRY(pext->p_uint32(*r->pafter_instance));
-	}
-	if (NULL != r->prow_data) {
+	if (r->prow_data != nullptr)
 		TRY(pext->p_bin_s(r->prow_data));
-	}
-	if (NULL != r->pfolder_id) {
+	if (r->pfolder_id != nullptr)
 		TRY(pext->p_uint64(*r->pfolder_id));
-	}
-	if (NULL != r->pmessage_id) {
+	if (r->pmessage_id != nullptr)
 		TRY(pext->p_uint64(*r->pmessage_id));
-	}
-	if (NULL != r->pparent_id) {
+	if (r->pparent_id != nullptr)
 		TRY(pext->p_uint64(*r->pparent_id));
-	}
-	if (NULL != r->pold_folder_id) {
+	if (r->pold_folder_id != nullptr)
 		TRY(pext->p_uint64(*r->pold_folder_id));
-	}
-	if (NULL != r->pold_message_id) {
+	if (r->pold_message_id != nullptr)
 		TRY(pext->p_uint64(*r->pold_message_id));
-	}
-	if (NULL != r->pold_parent_id) {
+	if (r->pold_parent_id != nullptr)
 		TRY(pext->p_uint64(*r->pold_parent_id));
-	}
-	if (NULL != r->pproptags) {
+	if (r->pproptags != nullptr)
 		TRY(pext->p_proptag_a(r->pproptags));
-	}
-	if (NULL != r->ptotal_count) {
+	if (r->ptotal_count != nullptr)
 		TRY(pext->p_uint32(*r->ptotal_count));
-	}
-	if (NULL != r->punread_count) {
+	if (r->punread_count != nullptr)
 		TRY(pext->p_uint32(*r->punread_count));
-	}
-	if (NULL != r->pmessage_flags) {
+	if (r->pmessage_flags != nullptr)
 		TRY(pext->p_uint32(*r->pmessage_flags));
-	}
 	if (NULL != r->punicode_flag) {
 		TRY(pext->p_uint8(*r->punicode_flag));
-		if (0 == *r->punicode_flag) {
+		if (!*r->punicode_flag)
 			TRY(pext->p_str(r->pstr_class));
-		} else {
+		else
 			TRY(pext->p_wstr(r->pstr_class));
-		}
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -1971,23 +1897,20 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 	switch (r->rop_id) {
 	case ropLogon:
 		r->ppayload = pext->anew<LOGON_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_logon_request(pext,
 		       static_cast<LOGON_REQUEST *>(r->ppayload));
 	case ropGetReceiveFolder:
 		r->ppayload = pext->anew<GETRECEIVEFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getreceivefolder_request(pext,
 		       static_cast<GETRECEIVEFOLDER_REQUEST *>(r->ppayload));
 	case ropSetReceiveFolder:
 		r->ppayload = pext->anew<SETRECEIVEFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setreceivefolder_request(pext,
 		       static_cast<SETRECEIVEFOLDER_REQUEST *>(r->ppayload));
 	case ropGetReceiveFolderTable:
@@ -1996,191 +1919,164 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		return EXT_ERR_SUCCESS;
 	case ropGetOwningServers:
 		r->ppayload = pext->anew<GETOWNINGSERVERS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getowningservers_request(pext,
 		       static_cast<GETOWNINGSERVERS_REQUEST *>(r->ppayload));
 	case ropPublicFolderIsGhosted:
 		r->ppayload = pext->anew<PUBLICFOLDERISGHOSTED_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_publicfolderisghosted_request(pext,
 		       static_cast<PUBLICFOLDERISGHOSTED_REQUEST *>(r->ppayload));
 	case ropLongTermIdFromId:
 		r->ppayload = pext->anew<LONGTERMIDFROMID_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_longtermidfromid_request(pext,
 		       static_cast<LONGTERMIDFROMID_REQUEST *>(r->ppayload));
 	case ropIdFromLongTermId:
 		r->ppayload = pext->anew<IDFROMLONGTERMID_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_idfromlongtermid_request(pext,
 		       static_cast<IDFROMLONGTERMID_REQUEST *>(r->ppayload));
 	case ropGetPerUserLongTermIds:
 		r->ppayload = pext->anew<GETPERUSERLONGTERMIDS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getperuserlongtermids_request(pext,
 		       static_cast<GETPERUSERLONGTERMIDS_REQUEST *>(r->ppayload));
 	case ropGetPerUserGuid:
 		r->ppayload = pext->anew<GETPERUSERGUID_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getperuserguid_request(pext,
 		       static_cast<GETPERUSERGUID_REQUEST *>(r->ppayload));
 	case ropReadPerUserInformation:
 		r->ppayload = pext->anew<READPERUSERINFORMATION_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_readperuserinformation_request(pext,
 		       static_cast<READPERUSERINFORMATION_REQUEST *>(r->ppayload));
 	case ropWritePerUserInformation: {
 		r->ppayload = pext->anew<WRITEPERUSERINFORMATION_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
-		if (NULL == plogon) {
+		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		}
 		return rop_ext_pull_writeperuserinformation_request(pext,
 		       static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r->ppayload),
 		       plogon->check_private());
 	}
 	case ropOpenFolder:
 		r->ppayload = pext->anew<OPENFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_openfolder_request(pext,
 		       static_cast<OPENFOLDER_REQUEST *>(r->ppayload));
 	case ropCreateFolder:
 		r->ppayload = pext->anew<CREATEFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_createfolder_request(pext,
 		       static_cast<CREATEFOLDER_REQUEST *>(r->ppayload));
 	case ropDeleteFolder:
 		r->ppayload = pext->anew<DELETEFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_deletefolder_request(pext,
 		       static_cast<DELETEFOLDER_REQUEST *>(r->ppayload));
 	case ropSetSearchCriteria:
 		r->ppayload = pext->anew<SETSEARCHCRITERIA_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setsearchcriteria_request(pext,
 		       static_cast<SETSEARCHCRITERIA_REQUEST *>(r->ppayload));
 	case ropGetSearchCriteria:
 		r->ppayload = pext->anew<GETSEARCHCRITERIA_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getsearchcriteria_request(pext,
 		       static_cast<GETSEARCHCRITERIA_REQUEST *>(r->ppayload));
 	case ropMoveCopyMessages:
 		r->ppayload = pext->anew<MOVECOPYMESSAGES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_movecopymessages_request(pext,
 		       static_cast<MOVECOPYMESSAGES_REQUEST *>(r->ppayload));
 	case ropMoveFolder:
 		r->ppayload = pext->anew<MOVEFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_movefolder_request(pext,
 		       static_cast<MOVEFOLDER_REQUEST *>(r->ppayload));
 	case ropCopyFolder:
 		r->ppayload = pext->anew<COPYFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_copyfolder_request(pext,
 		       static_cast<COPYFOLDER_REQUEST *>(r->ppayload));
 	case ropEmptyFolder:
 		r->ppayload = pext->anew<EMPTYFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_emptyfolder_request(pext,
 		       static_cast<EMPTYFOLDER_REQUEST *>(r->ppayload));
 	case ropHardDeleteMessagesAndSubfolders:
 		r->ppayload = pext->anew<HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_harddeletemessagesandsubfolders_request(pext,
 		       static_cast<HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST *>(r->ppayload));
 	case ropDeleteMessages:
 		r->ppayload = pext->anew<DELETEMESSAGES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_deletemessages_request(pext,
 		       static_cast<DELETEMESSAGES_REQUEST *>(r->ppayload));
 	case ropHardDeleteMessages:
 		r->ppayload = pext->anew<HARDDELETEMESSAGES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_harddeletemessages_request(pext,
 		       static_cast<HARDDELETEMESSAGES_REQUEST *>(r->ppayload));
 	case ropGetHierarchyTable:
 		r->ppayload = pext->anew<GETHIERARCHYTABLE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_gethierarchytable_request(pext,
 		       static_cast<GETHIERARCHYTABLE_REQUEST *>(r->ppayload));
 	case ropGetContentsTable:
 		r->ppayload = pext->anew<GETCONTENTSTABLE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getcontentstable_request(pext,
 		       static_cast<GETCONTENTSTABLE_REQUEST *>(r->ppayload));
 	case ropSetColumns:
 		r->ppayload = pext->anew<SETCOLUMNS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setcolumns_request(pext,
 		       static_cast<SETCOLUMNS_REQUEST *>(r->ppayload));
 	case ropSortTable:
 		r->ppayload = pext->anew<SORTTABLE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_sorttable_request(pext,
 		       static_cast<SORTTABLE_REQUEST *>(r->ppayload));
 	case ropRestrict:
 		r->ppayload = pext->anew<RESTRICT_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_restrict_request(pext,
 		       static_cast<RESTRICT_REQUEST *>(r->ppayload));
 	case ropQueryRows:
 		r->ppayload = pext->anew<QUERYROWS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_queryrows_request(pext,
 		       static_cast<QUERYROWS_REQUEST *>(r->ppayload));
 	case ropAbort:
@@ -2191,23 +2087,20 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		return EXT_ERR_SUCCESS;
 	case ropSeekRow:
 		r->ppayload = pext->anew<SEEKROW_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_seekrow_request(pext,
 		       static_cast<SEEKROW_REQUEST *>(r->ppayload));
 	case ropSeekRowBookmark:
 		r->ppayload = pext->anew<SEEKROWBOOKMARK_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_seekrowbookmark_request(pext,
 		       static_cast<SEEKROWBOOKMARK_REQUEST *>(r->ppayload));
 	case ropSeekRowFractional:
 		r->ppayload = pext->anew<SEEKROWFRACTIONAL_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_seekrowfractional_request(pext,
 		       static_cast<SEEKROWFRACTIONAL_REQUEST *>(r->ppayload));
 	case ropCreateBookmark:
@@ -2216,188 +2109,162 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		return EXT_ERR_SUCCESS;
 	case ropFindRow:
 		r->ppayload = pext->anew<FINDROW_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_findrow_request(pext,
 		       static_cast<FINDROW_REQUEST *>(r->ppayload));
 	case ropFreeBookmark:
 		r->ppayload = pext->anew<FREEBOOKMARK_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_freebookmark_request(pext,
 		       static_cast<FREEBOOKMARK_REQUEST *>(r->ppayload));
 	case ropResetTable:
 		return EXT_ERR_SUCCESS;
 	case ropExpandRow:
 		r->ppayload = pext->anew<EXPANDROW_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_expandrow_request(pext,
 		       static_cast<EXPANDROW_REQUEST *>(r->ppayload));
 	case ropCollapseRow:
 		r->ppayload = pext->anew<COLLAPSEROW_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_collapserow_request(pext,
 		       static_cast<COLLAPSEROW_REQUEST *>(r->ppayload));
 	case ropGetCollapseState:
 		r->ppayload = pext->anew<GETCOLLAPSESTATE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getcollapsestate_request(pext,
 		       static_cast<GETCOLLAPSESTATE_REQUEST *>(r->ppayload));
 	case ropSetCollapseState:
 		r->ppayload = pext->anew<SETCOLLAPSESTATE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setcollapsestate_request(pext,
 		       static_cast<SETCOLLAPSESTATE_REQUEST *>(r->ppayload));
 	case ropOpenMessage:
 		r->ppayload = pext->anew<OPENMESSAGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_openmessage_request(pext,
 		       static_cast<OPENMESSAGE_REQUEST *>(r->ppayload));
 	case ropCreateMessage:
 		r->ppayload = pext->anew<CREATEMESSAGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_createmessage_request(pext,
 		       static_cast<CREATEMESSAGE_REQUEST *>(r->ppayload));
 	case ropSaveChangesMessage:
 		r->ppayload = pext->anew<SAVECHANGESMESSAGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_savechangesmessage_request(pext,
 		       static_cast<SAVECHANGESMESSAGE_REQUEST *>(r->ppayload));
 	case ropRemoveAllRecipients:
 		r->ppayload = pext->anew<REMOVEALLRECIPIENTS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_removeallrecipients_request(pext,
 		       static_cast<REMOVEALLRECIPIENTS_REQUEST *>(r->ppayload));
 	case ropModifyRecipients:
 		r->ppayload = pext->anew<MODIFYRECIPIENTS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_modifyrecipients_request(pext,
 		       static_cast<MODIFYRECIPIENTS_REQUEST *>(r->ppayload));
 	case ropReadRecipients:
 		r->ppayload = pext->anew<READRECIPIENTS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_readrecipients_request(pext,
 		       static_cast<READRECIPIENTS_REQUEST *>(r->ppayload));
 	case ropReloadCachedInformation:
 		r->ppayload = pext->anew<RELOADCACHEDINFORMATION_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_reloadcachedinformation_request(pext,
 		       static_cast<RELOADCACHEDINFORMATION_REQUEST *>(r->ppayload));
 	case ropSetMessageStatus:
 		r->ppayload = pext->anew<SETMESSAGESTATUS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setmessagestatus_request(pext,
 		       static_cast<SETMESSAGESTATUS_REQUEST *>(r->ppayload));
 	case ropGetMessageStatus:
 		r->ppayload = pext->anew<GETMESSAGESTATUS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getmessagestatus_request(pext,
 		       static_cast<GETMESSAGESTATUS_REQUEST *>(r->ppayload));
 	case ropSetReadFlags:
 		r->ppayload = pext->anew<SETREADFLAGS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setreadflags_request(pext,
 		       static_cast<SETREADFLAGS_REQUEST *>(r->ppayload));
 	case ropSetMessageReadFlag: {
 		r->ppayload = pext->anew<SETMESSAGEREADFLAG_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
-		if (NULL == plogon) {
+		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		}
 		return rop_ext_pull_setmessagereadflag_request(pext,
 		       static_cast<SETMESSAGEREADFLAG_REQUEST *>(r->ppayload),
 		       plogon->check_private());
 	}
 	case ropOpenAttachment:
 		r->ppayload = pext->anew<OPENATTACHMENT_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_openattachment_request(pext,
 		       static_cast<OPENATTACHMENT_REQUEST *>(r->ppayload));
 	case ropCreateAttachment:
 		r->ppayload = pext->anew<CREATEATTACHMENT_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_createattachment_request(pext,
 		       static_cast<CREATEATTACHMENT_REQUEST *>(r->ppayload));
 	case ropDeleteAttachment:
 		r->ppayload = pext->anew<DELETEATTACHMENT_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_deleteattachment_request(pext,
 		       static_cast<DELETEATTACHMENT_REQUEST *>(r->ppayload));
 	case ropSaveChangesAttachment:
 		r->ppayload = pext->anew<SAVECHANGESATTACHMENT_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_savechangesattachment_request(pext,
 		       static_cast<SAVECHANGESATTACHMENT_REQUEST *>(r->ppayload));
 	case ropOpenEmbeddedMessage:
 		r->ppayload = pext->anew<OPENEMBEDDEDMESSAGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_openembeddedmessage_request(pext,
 		       static_cast<OPENEMBEDDEDMESSAGE_REQUEST *>(r->ppayload));
 	case ropGetAttachmentTable:
 		r->ppayload = pext->anew<GETATTACHMENTTABLE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getattachmenttable_request(pext,
 		       static_cast<GETATTACHMENTTABLE_REQUEST *>(r->ppayload));
 	case ropGetValidAttachments:
 		return EXT_ERR_SUCCESS;
 	case ropSubmitMessage:
 		r->ppayload = pext->anew<SUBMITMESSAGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_submitmessage_request(pext,
 		       static_cast<SUBMITMESSAGE_REQUEST *>(r->ppayload));
 	case ropAbortSubmit:
 		r->ppayload = pext->anew<ABORTSUBMIT_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_abortsubmit_request(pext,
 		       static_cast<ABORTSUBMIT_REQUEST *>(r->ppayload));
 	case ropGetAddressTypes:
@@ -2406,134 +2273,116 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		return EXT_ERR_SUCCESS;
 	case ropSpoolerLockMessage:
 		r->ppayload = pext->anew<SPOOLERLOCKMESSAGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_spoolerlockmessage_request(pext,
 		       static_cast<SPOOLERLOCKMESSAGE_REQUEST *>(r->ppayload));
 	case ropTransportSend:
 		return EXT_ERR_SUCCESS;
 	case ropTransportNewMail:
 		r->ppayload = pext->anew<TRANSPORTNEWMAIL_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_transportnewmail_request(pext,
 		       static_cast<TRANSPORTNEWMAIL_REQUEST *>(r->ppayload));
 	case ropGetTransportFolder:
 		return EXT_ERR_SUCCESS;
 	case ropOptionsData:
 		r->ppayload = pext->anew<OPTIONSDATA_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_optionsdata_request(pext,
 		       static_cast<OPTIONSDATA_REQUEST *>(r->ppayload));
 	case ropGetPropertyIdsFromNames:
 		r->ppayload = pext->anew<GETPROPERTYIDSFROMNAMES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getpropertyidsfromnames_request(pext,
 		       static_cast<GETPROPERTYIDSFROMNAMES_REQUEST *>(r->ppayload));
 	case ropGetNamesFromPropertyIds:
 		r->ppayload = pext->anew<GETNAMESFROMPROPERTYIDS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getnamesfrompropertyids_request(pext,
 		       static_cast<GETNAMESFROMPROPERTYIDS_REQUEST *>(r->ppayload));
 	case ropGetPropertiesSpecific:
 		r->ppayload = pext->anew<GETPROPERTIESSPECIFIC_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getpropertiesspecific_request(pext,
 		       static_cast<GETPROPERTIESSPECIFIC_REQUEST *>(r->ppayload));
 	case ropGetPropertiesAll:
 		r->ppayload = pext->anew<GETPROPERTIESALL_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getpropertiesall_request(pext,
 		       static_cast<GETPROPERTIESALL_REQUEST *>(r->ppayload));
 	case ropGetPropertiesList:
 		return EXT_ERR_SUCCESS;
 	case ropSetProperties:
 		r->ppayload = pext->anew<SETPROPERTIES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setproperties_request(pext,
 		       static_cast<SETPROPERTIES_REQUEST *>(r->ppayload));
 	case ropSetPropertiesNoReplicate:
 		r->ppayload = pext->anew<SETPROPERTIESNOREPLICATE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setpropertiesnoreplicate_request(pext,
 		       static_cast<SETPROPERTIESNOREPLICATE_REQUEST *>(r->ppayload));
 	case ropDeleteProperties:
 		r->ppayload = pext->anew<DELETEPROPERTIES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_deleteproperties_request(pext,
 		       static_cast<DELETEPROPERTIES_REQUEST *>(r->ppayload));
 	case ropDeletePropertiesNoReplicate:
 		r->ppayload = pext->anew<DELETEPROPERTIESNOREPLICATE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_deletepropertiesnoreplicate_request(pext,
 		       static_cast<DELETEPROPERTIESNOREPLICATE_REQUEST *>(r->ppayload));
 	case ropQueryNamedProperties:
 		r->ppayload = pext->anew<QUERYNAMEDPROPERTIES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_querynamedproperties_request(pext,
 		       static_cast<QUERYNAMEDPROPERTIES_REQUEST *>(r->ppayload));
 	case ropCopyProperties:
 		r->ppayload = pext->anew<COPYPROPERTIES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_copyproperties_request(pext,
 		       static_cast<COPYPROPERTIES_REQUEST *>(r->ppayload));
 	case ropCopyTo:
 		r->ppayload = pext->anew<COPYTO_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_copyto_request(pext,
 		       static_cast<COPYTO_REQUEST *>(r->ppayload));
 	case ropProgress:
 		r->ppayload = pext->anew<PROGRESS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_progress_request(pext,
 		       static_cast<PROGRESS_REQUEST *>(r->ppayload));
 	case ropOpenStream:
 		r->ppayload = pext->anew<OPENSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_openstream_request(pext,
 		       static_cast<OPENSTREAM_REQUEST *>(r->ppayload));
 	case ropReadStream:
 		r->ppayload = pext->anew<READSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_readstream_request(pext,
 		       static_cast<READSTREAM_REQUEST *>(r->ppayload));
 	case ropWriteStream:
 		r->ppayload = pext->anew<WRITESTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_writestream_request(pext,
 		       static_cast<WRITESTREAM_REQUEST *>(r->ppayload));
 	case ropCommitStream:
@@ -2542,235 +2391,202 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		return EXT_ERR_SUCCESS;
 	case ropSetStreamSize:
 		r->ppayload = pext->anew<SETSTREAMSIZE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setstreamsize_request(pext,
 		       static_cast<SETSTREAMSIZE_REQUEST *>(r->ppayload));
 	case ropSeekStream:
 		r->ppayload = pext->anew<SEEKSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_seekstream_request(pext,
 		       static_cast<SEEKSTREAM_REQUEST *>(r->ppayload));
 	case ropCopyToStream:
 		r->ppayload = pext->anew<COPYTOSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_copytostream_request(pext,
 		       static_cast<COPYTOSTREAM_REQUEST *>(r->ppayload));
 	case ropLockRegionStream:
 		r->ppayload = pext->anew<LOCKREGIONSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_lockregionstream_request(pext,
 		       static_cast<LOCKREGIONSTREAM_REQUEST *>(r->ppayload));
 	case ropUnlockRegionStream:
 		r->ppayload = pext->anew<UNLOCKREGIONSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_unlockregionstream_request(pext,
 		       static_cast<UNLOCKREGIONSTREAM_REQUEST *>(r->ppayload));
 	case ropWriteAndCommitStream:
 		r->ppayload = pext->anew<WRITEANDCOMMITSTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_writeandcommitstream_request(pext,
 		       static_cast<WRITEANDCOMMITSTREAM_REQUEST *>(r->ppayload));
 	case ropCloneStream:
 		r->ppayload = pext->anew<CLONESTREAM_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_clonestream_request(pext,
 		       static_cast<CLONESTREAM_REQUEST *>(r->ppayload));
 	case ropModifyPermissions:
 		r->ppayload = pext->anew<MODIFYPERMISSIONS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_modifypermissions_request(pext,
 		       static_cast<MODIFYPERMISSIONS_REQUEST *>(r->ppayload));
 	case ropGetPermissionsTable:
 		r->ppayload = pext->anew<GETPERMISSIONSTABLE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getpermissionstable_request(pext,
 		       static_cast<GETPERMISSIONSTABLE_REQUEST *>(r->ppayload));
 	case ropModifyRules:
 		r->ppayload = pext->anew<MODIFYRULES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_modifyrules_request(pext,
 		       static_cast<MODIFYRULES_REQUEST *>(r->ppayload));
 	case ropGetRulesTable:
 		r->ppayload = pext->anew<GETRULESTABLE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getrulestable_request(pext,
 		       static_cast<GETRULESTABLE_REQUEST *>(r->ppayload));
 	case ropUpdateDeferredActionMessages:
 		r->ppayload = pext->anew<UPDATEDEFERREDACTIONMESSAGES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_updatedeferredactionmessages_request(pext,
 		       static_cast<UPDATEDEFERREDACTIONMESSAGES_REQUEST *>(r->ppayload));
 	case ropFastTransferDestinationConfigure:
 		r->ppayload = pext->anew<FASTTRANSFERDESTCONFIGURE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransferdestconfigure_request(pext,
 		       static_cast<FASTTRANSFERDESTCONFIGURE_REQUEST *>(r->ppayload));
 	case ropFastTransferDestinationPutBuffer:
 		r->ppayload = pext->anew<FASTTRANSFERDESTPUTBUFFER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransferdestputbuffer_request(pext,
 		       static_cast<FASTTRANSFERDESTPUTBUFFER_REQUEST *>(r->ppayload));
 	case ropFastTransferSourceGetBuffer:
 		r->ppayload = pext->anew<FASTTRANSFERSOURCEGETBUFFER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransfersourcegetbuffer_request(pext,
 		       static_cast<FASTTRANSFERSOURCEGETBUFFER_REQUEST *>(r->ppayload));
 	case ropFastTransferSourceCopyFolder:
 		r->ppayload = pext->anew<FASTTRANSFERSOURCECOPYFOLDER_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransfersourcecopyfolder_request(pext,
 		       static_cast<FASTTRANSFERSOURCECOPYFOLDER_REQUEST *>(r->ppayload));
 	case ropFastTransferSourceCopyMessages:
 		r->ppayload = pext->anew<FASTTRANSFERSOURCECOPYMESSAGES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransfersourcecopymessages_request(pext,
 		       static_cast<FASTTRANSFERSOURCECOPYMESSAGES_REQUEST *>(r->ppayload));
 	case ropFastTransferSourceCopyTo:
 		r->ppayload = pext->anew<FASTTRANSFERSOURCECOPYTO_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransfersourcecopyto_request(pext,
 		       static_cast<FASTTRANSFERSOURCECOPYTO_REQUEST *>(r->ppayload));
 	case ropFastTransferSourceCopyProperties:
 		r->ppayload = pext->anew<FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_fasttransfersourcecopyproperties_request(pext,
 		       static_cast<FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST *>(r->ppayload));
 	case ropTellVersion:
 		r->ppayload = pext->anew<TELLVERSION_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_tellversion_request(pext,
 		       static_cast<TELLVERSION_REQUEST *>(r->ppayload));
 	case ropSynchronizationConfigure:
 		r->ppayload = pext->anew<SYNCCONFIGURE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncconfigure_request(pext,
 		       static_cast<SYNCCONFIGURE_REQUEST *>(r->ppayload));
 	case ropSynchronizationImportMessageChange:
 		r->ppayload = pext->anew<SYNCIMPORTMESSAGECHANGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncimportmessagechange_request(pext,
 		       static_cast<SYNCIMPORTMESSAGECHANGE_REQUEST *>(r->ppayload));
 	case ropSynchronizationImportReadStateChanges:
 		r->ppayload = pext->anew<SYNCIMPORTREADSTATECHANGES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncimportreadstatechanges_request(pext,
 		       static_cast<SYNCIMPORTREADSTATECHANGES_REQUEST *>(r->ppayload));
 	case ropSynchronizationImportHierarchyChange:
 		r->ppayload = pext->anew<SYNCIMPORTHIERARCHYCHANGE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncimporthierarchychange_request(pext,
 		       static_cast<SYNCIMPORTHIERARCHYCHANGE_REQUEST *>(r->ppayload));
 	case ropSynchronizationImportDeletes:
 		r->ppayload = pext->anew<SYNCIMPORTDELETES_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncimportdeletes_request(pext,
 		       static_cast<SYNCIMPORTDELETES_REQUEST *>(r->ppayload));
 	case ropSynchronizationImportMessageMove:
 		r->ppayload = pext->anew<SYNCIMPORTMESSAGEMOVE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncimportmessagemove_request(pext,
 		       static_cast<SYNCIMPORTMESSAGEMOVE_REQUEST *>(r->ppayload));
 	case ropSynchronizationOpenCollector:
 		r->ppayload = pext->anew<SYNCOPENCOLLECTOR_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncopencollector_request(pext,
 		       static_cast<SYNCOPENCOLLECTOR_REQUEST *>(r->ppayload));
 	case ropSynchronizationGetTransferState:
 		r->ppayload = pext->anew<SYNCGETTRANSFERSTATE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncgettransferstate_request(pext,
 		       static_cast<SYNCGETTRANSFERSTATE_REQUEST *>(r->ppayload));
 	case ropSynchronizationUploadStateStreamBegin:
 		r->ppayload = pext->anew<SYNCUPLOADSTATESTREAMBEGIN_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncuploadstatestreambegin_request(pext,
 		       static_cast<SYNCUPLOADSTATESTREAMBEGIN_REQUEST *>(r->ppayload));
 	case ropSynchronizationUploadStateStreamContinue:
 		r->ppayload = pext->anew<SYNCUPLOADSTATESTREAMCONTINUE_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_syncuploadstatestreamcontinue_request(pext,
 		       static_cast<SYNCUPLOADSTATESTREAMCONTINUE_REQUEST *>(r->ppayload));
 	case ropSynchronizationUploadStateStreamEnd:
 		return EXT_ERR_SUCCESS;
 	case ropSetLocalReplicaMidsetDeleted:
 		r->ppayload = pext->anew<SETLOCALREPLICAMIDSETDELETED_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_setlocalreplicamidsetdeleted_request(pext,
 		       static_cast<SETLOCALREPLICAMIDSETDELETED_REQUEST *>(r->ppayload));
 	case ropGetLocalReplicaIds:
 		r->ppayload = pext->anew<GETLOCALREPLICAIDS_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_getlocalreplicaids_request(pext,
 		       static_cast<GETLOCALREPLICAIDS_REQUEST *>(r->ppayload));
 	case ropRegisterNotification:
 		r->ppayload = pext->anew<REGISTERNOTIFICATION_REQUEST>();
-		if (NULL == r->ppayload) {
+		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return rop_ext_pull_registernotification_request(pext,
 		       static_cast<REGISTERNOTIFICATION_REQUEST *>(r->ppayload));
 	case ropRelease:
@@ -2840,9 +2656,8 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropLogon: {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, logon_id);
-		if (NULL == plogon) {
+		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		}
 		if (plogon->check_private())
 			return rop_ext_push_logon_pmb_response(pext,
 			       static_cast<LOGON_PMB_RESPONSE *>(r->ppayload));
@@ -3187,7 +3002,6 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 {
 	auto &ext = *pext;
-	uint16_t i;
 	int tmp_num;
 	uint16_t size;
 	EXT_PULL subext;
@@ -3196,31 +3010,26 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	TRY(pext->g_rpc_header_ext(&rpc_header_ext));
-	if (0 == (rpc_header_ext.flags & RHE_FLAG_LAST)) {
+	if (!(rpc_header_ext.flags & RHE_FLAG_LAST))
 		return EXT_ERR_HEADER_FLAGS;
-	}
 	r->rhe_version = rpc_header_ext.version;
 	r->rhe_flags = rpc_header_ext.flags;
 	double_list_init(&r->rop_list);
-	if (0 == rpc_header_ext.size) {
+	if (rpc_header_ext.size == 0)
 		return EXT_ERR_HEADER_SIZE;
-	}
 	auto pbuff = pext->anew<uint8_t>(0x8000);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	auto pdata = ext.m_udata + ext.m_offset;
 	/* obfuscation case */
-	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
+	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
-	}
 	/* lzxpress case */
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 		decompressed_len = lzxpress_decompress(pdata,
 					rpc_header_ext.size, pbuff, 0x8000);
-		if (decompressed_len < rpc_header_ext.size_actual) {
+		if (decompressed_len < rpc_header_ext.size_actual)
 			return EXT_ERR_LZXPRESS;
-		}
 	} else {
 		memcpy(pbuff, pdata, rpc_header_ext.size_actual);
 	}
@@ -3228,13 +3037,11 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	TRY(subext.g_uint16(&size));
 	while (subext.m_offset < size) {
 		pnode = pext->anew<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		pnode->pdata = pext->anew<ROP_REQUEST>();
-		if (NULL == pnode->pdata) {
+		if (pnode->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(rop_ext_pull_rop_request(&subext, static_cast<ROP_REQUEST *>(pnode->pdata)));
 		double_list_append_as_tail(&r->rop_list, pnode);
 	}
@@ -3244,25 +3051,22 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 		r->phandles = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	if (tmp_num > 255) {
+	if (tmp_num > 255)
 		return EXT_ERR_RANGE;
-	}
 	r->hnum = tmp_num;
 	r->phandles = pext->anew<uint32_t>(r->hnum);
 	if (NULL == r->phandles) {
 		r->hnum = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->hnum; i++) {
+	for (size_t i = 0; i < r->hnum; ++i)
 		TRY(subext.g_uint32(&r->phandles[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
     const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len)
 {
-	int i;
 	EXT_PUSH subext;
 	EXT_PUSH ext_push;
 	uint8_t ext_buff[0x10000];
@@ -3273,9 +3077,8 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 		return EXT_ERR_ALLOC;
 	TRY(subext.p_uint16(in_len + sizeof(uint16_t)));
 	TRY(subext.p_bytes(pbuff_in, in_len));
-	for (i=0; i<prop_buff->hnum; i++) {
+	for (size_t i = 0; i < prop_buff->hnum; ++i)
 		TRY(subext.p_uint32(prop_buff->phandles[i]));
-	}
 	rpc_header_ext.version = prop_buff->rhe_version;
 	rpc_header_ext.flags = prop_buff->rhe_flags;
 	rpc_header_ext.size_actual = subext.m_offset;
@@ -3295,9 +3098,8 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 			}
 		}
 	}
-	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
+	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
-	}
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(ext_push.p_rpchdr(&rpc_header_ext));
