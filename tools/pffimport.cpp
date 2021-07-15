@@ -1274,7 +1274,7 @@ int main(int argc, const char **argv)
 		g_storedir = g_storedir_s.c_str();
 		g_socket = exm_connect(g_storedir);
 		if (g_socket < 0)
-			return false;
+			return EXIT_FAILURE;
 	}
 	int ret = EXIT_SUCCESS;
 	while (--argc > 0) {
