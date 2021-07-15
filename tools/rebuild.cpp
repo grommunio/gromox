@@ -206,6 +206,8 @@ int main(int argc, const char **argv)
 	char temp_path1[256];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
 	if (2 != argc) {
 		printf("usage: %s <maildir>\n", argv[0]);
 		return 1;
