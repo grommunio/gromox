@@ -118,7 +118,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	auto cleanup_1 = make_scope_exit(service_stop);
 
 	BOOL (*fptr_login)(const char *, const char *, char *, int);
-	fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_smtp", "system", typeid(*fptr_login)));
+	fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_smtp", "system", typeid(decltype(*fptr_login))));
 	if (fptr_login == nullptr)
 		return PAM_AUTH_ERR;
 	auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_smtp", "system"); });

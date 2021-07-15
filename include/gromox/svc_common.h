@@ -20,8 +20,8 @@ typedef void (*TALK_MAIN)(int, char**, char*, int);
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_prog_id)(); \
 	x void *(*ndr_stack_alloc)(int, size_t);
-#define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(*(f)))
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
+#define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
 #ifdef DECLARE_API_STATIC

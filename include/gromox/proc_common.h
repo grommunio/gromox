@@ -72,8 +72,8 @@ struct DCERPC_INTERFACE {
 	x void (*rpc_new_environment)(); \
 	x void (*rpc_free_environment)(); \
 	x void (*async_reply)(int, void *);
-#define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(*(f)))
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
+#define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC
 DECLARE_API(static);

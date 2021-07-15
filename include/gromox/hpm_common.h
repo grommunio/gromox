@@ -82,7 +82,7 @@ struct HTTP_AUTH_INFO {
 	x void *(*ndr_stack_alloc)(int, size_t); \
 	x BOOL (*rpc_new_environment)(); \
 	x void (*rpc_free_environment)();
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC
 DECLARE_API(static);

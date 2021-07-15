@@ -26,13 +26,13 @@ E(log_info)
 int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
 		return -1; \
 	} \
 } while (false)
-#define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))))
+#define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))))
 
 	E2(system_services_judge_ip, "ip_filter_judge");
 	E2(system_services_add_ip_into_temp_list, "ip_filter_add");

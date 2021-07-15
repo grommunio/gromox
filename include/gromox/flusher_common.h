@@ -71,7 +71,7 @@ typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 	x int (*inc_flush_ID)(); \
 	x BOOL (*check_domain)(const char *); \
 	x BOOL (*is_domainlist_valid)();
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(*(f)))))
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_API_STATIC
 DECLARE_API(static);
