@@ -11,7 +11,18 @@
  * (i.e. the operator should have returned unsigned all the time)
  */
 #define PROP_TAG(type, tag) ((((unsigned int)tag) << 16) | (type))
-enum { /* MS-OAUT */
+enum {
+	/*
+	 * MAPI sucks, episode #17: INSIDE MAPI pg.36 and
+	 * https://docs.microsoft.com/en-us/office/client-developer/outlook/mapi/property-types
+	 * have a contradiction, saying PT_LONG is "signed or unsigned", yet
+	 * also "This property type is the same as […] the OLE type VT_I4".
+	 *
+	 * MS-OAUT clearly distinguishes signed and unsigned types, and since
+	 * MAPI shares the same enum values, there is ample reason to treat
+	 * PT_LONG etc. as signed throughout — especially when comparing values
+	 * in restrictions.
+	 */
 	PT_UNSPECIFIED = 0x0000, /* VT_EMPTY */
 	PT_NULL = 0x0001, /* VT_NULL */
 	PT_SHORT = 0x0002, /* VT_I2, PT_I2 */
@@ -23,7 +34,12 @@ enum { /* MS-OAUT */
 	PT_ERROR = 0x000A, /* VT_ERROR */
 	PT_BOOLEAN = 0x000B, /* VT_BOOL */
 	PT_OBJECT = 0x000D, /* VT_UNKNOWN */
+	// VT_I1 = 0x0010,
+	// VT_UI1 = 0x0011,
+	// VT_UI2 = 0x0012,
+	// VT_UI4 = 0x0013,
 	PT_I8 = 0x0014, /* VT_I8 */
+	// VT_UI8 = 0x0015,
 	PT_STRING8 = 0x001E, /* VT_LPSTR */
 	PT_UNICODE = 0x001F, /* VT_LPWSTR */
 	PT_SYSTIME = 0x0040, /* VT_FILETIME */
