@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <string>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -700,7 +701,6 @@ size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param)
 int mjson_seek_fd(MJSON *pjson, const char *id, int whence)
 {
 	MJSON_MIME *pmime;
-	char temp_path[256];
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson) {
@@ -723,8 +723,12 @@ int mjson_seek_fd(MJSON *pjson, const char *id, int whence)
 	}
 	
 	if (-1 == pjson->message_fd) {
-		snprintf(temp_path, 256, "%s/%s", pjson->path, pjson->filename);
-		pjson->message_fd = open(temp_path, O_RDONLY);
+		try {
+			auto temp_path = std::string(pjson->path) + "/" + pjson->filename;
+			pjson->message_fd = open(temp_path.c_str(), O_RDONLY);
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1476: ENOMEM\n");
+		}
 		if (-1 == pjson->message_fd) {
 			return -1;
 		}
