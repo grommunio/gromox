@@ -280,9 +280,8 @@ static int mod_fastcgi_push_align_record(NDR_PUSH *pndr)
 {
 	uint8_t padding_len;
 	
-	if (0 == (pndr->offset & 7)) {
+	if (!(pndr->offset & 7))
 		return NDR_ERR_SUCCESS;
-	}
 	padding_len = 8 - (pndr->offset & 7);
 	pndr->data[6] = padding_len;
 	return ndr_push_zero(pndr, padding_len);
@@ -295,9 +294,8 @@ static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	
 	offset = pndr->offset;
 	len = offset - 8;
-	if (len > 0xFFFF) {
+	if (len > 0xFFFF)
 		return NDR_ERR_FAILURE;
-	}
 	pndr->offset = 4;
 	TRY(ndr_push_uint16(pndr, len));
 	pndr->offset = offset;
@@ -379,9 +377,8 @@ static int mod_fastcgi_connect_backend(const char *path)
 
 	/* create a UNIX domain stream socket */
 	sockd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sockd < 0) {
+	if (sockd < 0)
 		return -1;
-	}
 	/* fill socket address structure with server's address */
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
@@ -422,9 +419,8 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 		domain[tmp_len] = '\0';
 	}
 	ptoken = strchr(domain, ':');
-	if (NULL != ptoken) {
+	if (ptoken != nullptr)
 		*ptoken = '\0';
-	}
 	tmp_len = mem_file_get_total_length(
 		&phttp->request.f_request_uri);
 	if (0 == tmp_len) {
@@ -446,17 +442,15 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	ptoken = strrchr(request_uri, '?');
-	if (NULL != ptoken) {
+	if (ptoken != nullptr)
 		*ptoken = '\0';
-	}
 	ptoken = strrchr(request_uri, '.');
-	if (NULL != ptoken) {
+	if (ptoken != nullptr) {
 		*ptoken = '\0';
 		ptoken ++;
 		ptoken1 = strchr(ptoken, '/');
-		if (NULL != ptoken1) {
+		if (ptoken1 != nullptr)
 			*ptoken1 = '\0';
-		}
 		tmp_len = strlen(ptoken);
 		if (tmp_len >= 16) {
 			http_parser_log_info(phttp, 6, "suffix in"
@@ -477,9 +471,8 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	auto pfnode = mod_fastcgi_find_backend(domain, request_uri, file_name, suffix, &b_index);
-	if (NULL == pfnode) {
+	if (pfnode == nullptr)
 		return FALSE;
-	}
 	http_parser_log_info(phttp, 6, "http request \"%s\" "
 		"to \"%s\" will be relayed to fastcgi back-end %s",
 		tmp_buff, domain, pfnode->sock_path.c_str());
@@ -510,9 +503,8 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 				MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		mem_file_read(&phttp->request.f_transfer_encoding, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
-		if (0 == strcasecmp(tmp_buff, "chunked")) {
+		if (strcasecmp(tmp_buff, "chunked") == 0)
 			b_chunked = TRUE;
-		}
 	}
 	auto pcontext = &g_context_list[phttp->context_id];
 	time(&pcontext->last_time);
@@ -521,9 +513,8 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
 		pcontext->cache_fd = open(tmp_buff,
 			O_CREAT|O_TRUNC|O_RDWR, 0666);
-		if (-1 == pcontext->cache_fd) {
+		if (pcontext->cache_fd == -1)
 			return FALSE;
-		}
 		pcontext->cache_size = 0;
 	} else {
 		pcontext->cache_fd = -1;
@@ -590,9 +581,8 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	}
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", domain));
 	ptoken = strchr(domain, ':');
-	if (NULL != ptoken) {
+	if (ptoken != nullptr)
 		*ptoken = '\0';
-	}
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", domain));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
 	sprintf(tmp_buff, "%d", phttp->connection.server_port);
@@ -753,35 +743,28 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	} else {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_SCHEME", "http"));
 	}
-	if (TRUE == phttp->b_close) {
+	if (phttp->b_close)
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "close"));
-	} else {
+	else
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "keep-alive"));
-	}
-	if (TRUE == mod_fastcgi_get_others_field(
-		&phttp->request.f_others, "Referer",
-		tmp_buff, sizeof(tmp_buff))) {
+	if (mod_fastcgi_get_others_field(&phttp->request.f_others, "Referer",
+	    tmp_buff, arsizeof(tmp_buff)))
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_REFERER", tmp_buff));
-	}
-	if (TRUE == mod_fastcgi_get_others_field(
-		&phttp->request.f_others, "Cache-Control",
-		tmp_buff, 128)) {
+	if (mod_fastcgi_get_others_field(&phttp->request.f_others, "Cache-Control",
+	    tmp_buff, arsizeof(tmp_buff)))
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", tmp_buff));
-	}
-	for (const auto &hdr : pfnode->header_list) {
+	for (const auto &hdr : pfnode->header_list)
 		if (mod_fastcgi_get_others_field(&phttp->request.f_others,
 		    hdr.c_str(), tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			QRF(mod_fastcgi_push_name_value(&ndr_push,
 			    hdr.c_str(), tmp_buff));
-	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(phttp->pfast_context->content_length));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
 	} else {
-		if (0 != fstat(phttp->pfast_context->cache_fd, &node_stat)) {
+		if (fstat(phttp->pfast_context->cache_fd, &node_stat) != 0)
 			return FALSE;
-		}
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(node_stat.st_size));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
@@ -803,15 +786,12 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	
 	ndr_push_init(&ndr_push, tmp_buff, 16,
 		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
-	if (NDR_ERR_SUCCESS != mod_fastcgi_push_begin_request(
-		&ndr_push) || 16 != ndr_push.offset) {
+	if (mod_fastcgi_push_begin_request(&ndr_push) != NDR_ERR_SUCCESS ||
+	    ndr_push.offset != 16)
 		return FALSE;
-	}
 	ndr_length = sizeof(ndr_buff);
-	if (FALSE == mod_fastcgi_build_params(
-		phttp, ndr_buff, &ndr_length)) {
+	if (!mod_fastcgi_build_params(phttp, ndr_buff, &ndr_length))
 		return FALSE;	
-	}
 	cli_sockd = mod_fastcgi_connect_backend(phttp->pfast_context->pfnode->sock_path.c_str());
 	if (cli_sockd < 0) {
 		http_parser_log_info(phttp, 6, "fail to "
@@ -840,9 +820,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	if (-1 == phttp->pfast_context->cache_fd) {
-		if (0 == phttp->pfast_context->content_length) {
+		if (phttp->pfast_context->content_length == 0)
 			goto END_OF_STDIN;
-		}
 		unsigned int tmp_len = sizeof(tmp_buff);
 		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in, &tmp_len)) != nullptr) {
 			if (tmp_len > phttp->pfast_context->content_length) {
@@ -870,9 +849,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 					phttp->pfast_context->pfnode->sock_path.c_str());
 				return FALSE;
 			}
-			if (0 == phttp->pfast_context->content_length) {
+			if (phttp->pfast_context->content_length == 0)
 				break;
-			}
 			tmp_len = sizeof(tmp_buff);
 		}
 	} else {
@@ -944,9 +922,8 @@ void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 		if (remove(tmp_path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1361: remove %s: %s\n", tmp_path, strerror(errno));
 	}
-	if (-1 != phttp->pfast_context->cli_sockd) {
+	if (phttp->pfast_context->cli_sockd != -1)
 		close(phttp->pfast_context->cli_sockd);
-	}
 	phttp->pfast_context = NULL;
 }
 
@@ -958,24 +935,20 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	char *ptoken;
 	char tmp_buff[1024];
 	
-	if (TRUE == phttp->pfast_context->b_end) {
+	if (phttp->pfast_context->b_end)
 		return TRUE;
-	}
 	if (-1 == phttp->pfast_context->cache_fd) {
 		if (phttp->pfast_context->content_length <=
-			stream_get_total_length(&phttp->stream_in)) {
+		    stream_get_total_length(&phttp->stream_in))
 			phttp->pfast_context->b_end = TRUE;	
-		}
 		return TRUE;
 	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
 		if (phttp->pfast_context->cache_size +
-			stream_get_total_length(&phttp->stream_in) <
-			phttp->pfast_context->content_length &&
-			stream_get_total_length(&phttp->stream_in) <
-			g_cache_size) {
+		    stream_get_total_length(&phttp->stream_in) <
+		    phttp->pfast_context->content_length &&
+		    stream_get_total_length(&phttp->stream_in) < g_cache_size)
 			return TRUE;	
-		}
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
 		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
@@ -1010,9 +983,8 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			phttp->pfast_context->chunk_offset) {
 			size = stream_peek_buffer(&phttp->stream_in,
 										tmp_buff, 1024);
-			if (size < 5) {
+			if (size < 5)
 				return TRUE;
-			}
 			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
 				stream_forward_reading_ptr(&phttp->stream_in, 5);
 				phttp->pfast_context->b_end = TRUE;
@@ -1073,10 +1045,9 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 						" length is too long for mod_fastcgi");
 				return FALSE;
 			}
-			if (phttp->pfast_context->chunk_offset
-				== phttp->pfast_context->chunk_size) {
+			if (phttp->pfast_context->chunk_offset ==
+			    phttp->pfast_context->chunk_size)
 				goto CHUNK_BEGIN;	
-			}
 		}
 	}
 	stream_clear(&phttp->stream_in);
@@ -1096,15 +1067,13 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pfast_context->cli_sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			return FALSE;
-		}
 		read_len = read(pfast_context->cli_sockd,
 		           static_cast<char *>(pbuff) + offset,
 		           length - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return FALSE;
-		}
 		offset += read_len;
 		if (length == offset) {
 			time(&pfast_context->last_time);
@@ -1123,9 +1092,8 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 				+ threads_pool_get_param(THREADS_POOL_CUR_THR_NUM);
 	tv_msec = POLL_MILLISECONDS_FOR_CHECK *
 			(g_unavailable_times / context_num);
-	if (tv_msec > 999) {
+	if (tv_msec > 999)
 		tv_msec = 999;
-	}
 	pfd_read.fd = phttp->pfast_context->cli_sockd;
 	pfd_read.events = POLLIN|POLLPRI;
 	if (1 == poll(&pfd_read, 1, tv_msec)) {
@@ -1133,9 +1101,8 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 		return RESPONSE_AVAILABLE;
 	}
 	g_unavailable_times ++;
-	if (time(NULL) - phttp->pfast_context->last_time > g_exec_timeout) {
+	if (time(nullptr) - phttp->pfast_context->last_time > g_exec_timeout)
 		return RESPONSE_TIMEOUT;
-	}
 	return RESPONSE_WAITING;
 }
 
@@ -1198,21 +1165,19 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			}
 			ndr_pull_init(&ndr_pull, tmp_buff, tmp_len,
 				NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
-			if (NDR_ERR_SUCCESS != mod_fastcgi_pull_end_request(
-				&ndr_pull, header.padding_len, &end_request)) {
+			if (mod_fastcgi_pull_end_request(&ndr_pull,
+			    header.padding_len, &end_request) != NDR_ERR_SUCCESS)
 				http_parser_log_info(phttp, 6, "fail to"
 					" pull record body in mod_fastcgi");
-			} else {
+			else
 				http_parser_log_info(phttp, 6, "app_status %u, "
 						"protocol_status %d from fastcgi back-end"
 						" %s", end_request.app_status,
 						(int)end_request.protocol_status,
 						phttp->pfast_context->pfnode->sock_path.c_str());
-			}
-			if (TRUE == phttp->pfast_context->b_header &&
-				TRUE == phttp->pfast_context->b_chunked) {
+			if (phttp->pfast_context->b_header &&
+			    phttp->pfast_context->b_chunked)
 				stream_write(&phttp->stream_out, "0\r\n\r\n", 5);
-			}
 			mod_fastcgi_put_context(phttp);
 			return FALSE;
 		case RECORD_TYPE_STDOUT:
@@ -1290,17 +1255,15 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			response_offset += std_stream.length;
 			pbody = static_cast<char *>(memmem(response_buff,
 			        response_offset, "\r\n\r\n", 4));
-			if (NULL == pbody) {
+			if (pbody == nullptr)
 				continue;
-			}
 			if (0 == strncasecmp(response_buff, "Status:", 7)) {
 				ptoken = response_buff + 7;
 			} else {
 				ptoken = search_string(response_buff,
 					"\r\nStatus:", response_offset);
-				if (NULL != ptoken) {
+				if (ptoken != NULL)
 					ptoken += 9;
-				}
 			}
 			if (NULL == ptoken) {
 				strcpy(status_line, "200 Success");
@@ -1322,16 +1285,14 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			pbody[2] = '\0';
 			pbody += 4;
 			/* Content-Length */
-			if (0 == strncasecmp(response_buff, "Content-Length:", 15) ||
-				NULL != strcasestr(response_buff, "\r\nContent-Length:")) {
-				phttp->pfast_context->b_chunked = FALSE;
-			} else {
-				phttp->pfast_context->b_chunked = TRUE;
-			}
+			phttp->pfast_context->b_chunked =
+				strncasecmp(response_buff, "Content-Length:", 15) != 0 &&
+				strcasestr(response_buff, "\r\nContent-Length:") == nullptr ?
+				TRUE : false;
 			time(&cur_time);
 			gmtime_r(&cur_time, &tmp_tm);
 			strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-			if (0 == strcasecmp(phttp->request.method, "HEAD")) {
+			if (strcasecmp(phttp->request.method, "HEAD") == 0)
 				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 								"HTTP/1.1 %s\r\n"
 								"Server: %s\r\n"
@@ -1339,26 +1300,23 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								"%s\r\n", status_line,
 								resource_get_string("HOST_ID"),
 								dstring, response_buff);
-			} else {
-				if (TRUE == phttp->pfast_context->b_chunked) {
-					tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
-								"HTTP/1.1 %s\r\n"
-								"Server: %s\r\n"
-								"Date: %s\r\n"
-								"Transfer-Encoding: chunked\r\n"
-								"%s\r\n", status_line,
-								resource_get_string("HOST_ID"),
-								dstring, response_buff);
-				} else {
-					tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
-								"HTTP/1.1 %s\r\n"
-								"Server: %s\r\n"
-								"Date: %s\r\n"
-								"%s\r\n", status_line,
-								resource_get_string("HOST_ID"),
-								dstring, response_buff);
-				}
-			}
+			else if (phttp->pfast_context->b_chunked)
+				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				          "HTTP/1.1 %s\r\n"
+				          "Server: %s\r\n"
+				          "Date: %s\r\n"
+				          "Transfer-Encoding: chunked\r\n"
+				          "%s\r\n", status_line,
+				          resource_get_string("HOST_ID"),
+				          dstring, response_buff);
+			else
+				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				          "HTTP/1.1 %s\r\n"
+				          "Server: %s\r\n"
+				          "Date: %s\r\n"
+				          "%s\r\n", status_line,
+				          resource_get_string("HOST_ID"),
+				          dstring, response_buff);
 			if (STREAM_WRITE_OK != stream_write(
 				&phttp->stream_out, tmp_buff, tmp_len)) {
 				http_parser_log_info(phttp, 6, "fail to write "
@@ -1367,9 +1325,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			phttp->pfast_context->b_header = TRUE;
-			if (0 == strcasecmp(phttp->request.method, "HEAD")) {
+			if (strcasecmp(phttp->request.method, "HEAD") == 0)
 				return TRUE;
-			}
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
 				if (TRUE == phttp->pfast_context->b_chunked) {
