@@ -69,8 +69,6 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 	return ldap_next_message(ld, msg) == nullptr;
 }
 
-static constexpr const char *zero_attrs[] = {nullptr};
-
 static ldap_ptr make_conn(bool perform_bind)
 {
 	ldap_ptr ld;
