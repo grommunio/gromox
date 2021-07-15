@@ -188,24 +188,18 @@ static int aux_ext_push_aux_perf_clientinfo(
 	TRY(pext->p_uint16(mac_address_offset));
 	TRY(pext->p_uint16(r->client_mode));
 	TRY(pext->p_uint16(r->reserved));
-	if (NULL != r->machine_name) {
+	if (r->machine_name != nullptr)
 		TRY(pext->p_str(r->machine_name));
-	}
-	if (NULL != r->user_name) {
+	if (r->user_name != nullptr)
 		TRY(pext->p_str(r->user_name));
-	}
-	if (NULL != r->client_ip) {
+	if (r->client_ip != nullptr)
 		TRY(pext->p_bytes(r->client_ip, r->client_ip_size));
-	}
-	if (NULL != r->client_ip_mask) {
+	if (r->client_ip_mask != nullptr)
 		TRY(pext->p_bytes(r->client_ip_mask, r->client_ip_mask_size));
-	}
-	if (NULL != r->adapter_name) {
+	if (r->adapter_name != nullptr)
 		TRY(pext->p_str(r->adapter_name));
-	}
-	if (NULL != r->mac_address) {
+	if (r->mac_address != nullptr)
 		TRY(pext->p_bytes(r->mac_address, r->mac_address_size));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -252,12 +246,10 @@ static int aux_ext_push_aux_perf_serverinfo(
 	TRY(pext->p_uint16(server_dn_offset));
 	uint16_t server_name_offset = r->server_name == nullptr ? 0 : 12 + server_dn_size;
 	TRY(pext->p_uint16(server_name_offset));
-	if (NULL != r->server_dn) {
+	if (r->server_dn != nullptr)
 		TRY(pext->p_str(r->server_dn));
-	}
-	if (NULL != r->server_name) {
+	if (r->server_name != nullptr)
 		TRY(pext->p_str(r->server_name));
-	}
 	return EXT_ERR_SUCCESS;
 }
 static int aux_ext_pull_aux_perf_processinfo(
@@ -290,9 +282,8 @@ static int aux_ext_push_aux_perf_processinfo(
 	uint16_t process_name_offset = r->process_name == nullptr ? 0 : 28;
 	TRY(pext->p_uint16(process_name_offset));
 	TRY(pext->p_uint16(r->reserved2));
-	if (NULL != r->process_name) {
+	if (r->process_name != nullptr)
 		TRY(pext->p_str(r->process_name));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -604,9 +595,8 @@ static int aux_ext_push_aux_client_connection_info(
 	TRY(pext->p_uint16(r->reserved));
 	TRY(pext->p_uint32(r->connection_attempts));
 	TRY(pext->p_uint32(r->connection_flags));
-	if (NULL != r->connection_context_info) {
+	if (r->connection_context_info != nullptr)
 		TRY(pext->p_str(r->connection_context_info));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -632,9 +622,8 @@ static int aux_ext_push_aux_server_session_info(
 {
 	uint16_t offset_server_session_context_info = r->server_session_context_info == nullptr ? 0 : 6;
 	TRY(pext->p_uint16(offset_server_session_context_info));
-	if (NULL != r->server_session_context_info) {
+	if (r->server_session_context_info != nullptr)
 		TRY(pext->p_str(r->server_session_context_info));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -742,21 +731,16 @@ static int aux_ext_push_aux_protocol_device_identification(
 		device_firmware_version_offset = 0;
 	}
 	TRY(pext->p_uint16(device_firmware_version_offset));
-	if (NULL != r->device_manufacturer) {
+	if (r->device_manufacturer != nullptr)
 		TRY(pext->p_str(r->device_manufacturer));
-	}
-	if (NULL != r->device_model) {
+	if (r->device_model != nullptr)
 		TRY(pext->p_str(r->device_model));
-	}
-	if (NULL != r->device_serial_number) {
+	if (r->device_serial_number != nullptr)
 		TRY(pext->p_str(r->device_serial_number));
-	}
-	if (NULL != r->device_version) {
+	if (r->device_version != nullptr)
 		TRY(pext->p_str(r->device_version));
-	}
-	if (NULL != r->device_firmware_version) {
+	if (r->device_firmware_version != nullptr)
 		TRY(pext->p_str(r->device_firmware_version));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -766,127 +750,108 @@ static int aux_ext_pull_aux_header_type_union1(
 	switch (type) {
 	case AUX_TYPE_PERF_REQUESTID:
 		(*pppayload) = pext->anew<AUX_PERF_REQUESTID>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_requestid(pext, static_cast<AUX_PERF_REQUESTID *>(*pppayload));
 	case AUX_TYPE_PERF_CLIENTINFO:
 		(*pppayload) = pext->anew<AUX_PERF_CLIENTINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_clientinfo(pext, static_cast<AUX_PERF_CLIENTINFO *>(*pppayload));
 	case AUX_TYPE_PERF_SERVERINFO:
 		(*pppayload) = pext->anew<AUX_PERF_SERVERINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_serverinfo(pext, static_cast<AUX_PERF_SERVERINFO *>(*pppayload));
 	case AUX_TYPE_PERF_SESSIONINFO:
 		(*pppayload) = pext->anew<AUX_PERF_SESSIONINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_sessioninfo(pext, static_cast<AUX_PERF_SESSIONINFO *>(*pppayload));
 	case AUX_TYPE_PERF_DEFMDB_SUCCESS:
 	case AUX_TYPE_PERF_BG_DEFMDB_SUCCESS:
 	case AUX_TYPE_PERF_FG_DEFMDB_SUCCESS:
 		(*pppayload) = pext->anew<AUX_PERF_DEFMDB_SUCCESS>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_defmdb_success(pext, static_cast<AUX_PERF_DEFMDB_SUCCESS *>(*pppayload));
 	case AUX_TYPE_PERF_DEFGC_SUCCESS:
 	case AUX_TYPE_PERF_BG_DEFGC_SUCCESS:
 	case AUX_TYPE_PERF_FG_DEFGC_SUCCESS:
 		(*pppayload) = pext->anew<AUX_PERF_DEFGC_SUCCESS>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_defgc_success(pext, static_cast<AUX_PERF_DEFGC_SUCCESS *>(*pppayload));
 	case AUX_TYPE_PERF_MDB_SUCCESS:
 	case AUX_TYPE_PERF_BG_MDB_SUCCESS:
 	case AUX_TYPE_PERF_FG_MDB_SUCCESS:
 		(*pppayload) = pext->anew<AUX_PERF_MDB_SUCCESS>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_mdb_success(pext, static_cast<AUX_PERF_MDB_SUCCESS *>(*pppayload));
 	case AUX_TYPE_PERF_GC_SUCCESS:
 	case AUX_TYPE_PERF_BG_GC_SUCCESS:
 	case AUX_TYPE_PERF_FG_GC_SUCCESS:
 		(*pppayload) = pext->anew<AUX_PERF_GC_SUCCESS>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_gc_success(pext, static_cast<AUX_PERF_GC_SUCCESS *>(*pppayload));
 	case AUX_TYPE_PERF_FAILURE:
 	case AUX_TYPE_PERF_BG_FAILURE:
 	case AUX_TYPE_PERF_FG_FAILURE:
 		(*pppayload) = pext->anew<AUX_PERF_FAILURE>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_failure(pext, static_cast<AUX_PERF_FAILURE *>(*pppayload));
 	case AUX_TYPE_CLIENT_CONTROL:
 		(*pppayload) = pext->anew<AUX_CLIENT_CONTROL>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_client_control(pext, static_cast<AUX_CLIENT_CONTROL *>(*pppayload));
 	case AUX_TYPE_PERF_PROCESSINFO:
 		(*pppayload) = pext->anew<AUX_PERF_PROCESSINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_processinfo(pext, static_cast<AUX_PERF_PROCESSINFO *>(*pppayload));
 	case AUX_TYPE_OSVERSIONINFO:
 		(*pppayload) = pext->anew<AUX_OSVERSIONINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_osversioninfo(pext, static_cast<AUX_OSVERSIONINFO *>(*pppayload));
 	case AUX_TYPE_EXORGINFO:
 		(*pppayload) = pext->anew<AUX_EXORGINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_exorginfo(pext, static_cast<AUX_EXORGINFO *>(*pppayload));
 	case AUX_TYPE_PERF_ACCOUNTINFO:
 		(*pppayload) = pext->anew<AUX_PERF_ACCOUNTINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_accountinfo(pext, static_cast<AUX_PERF_ACCOUNTINFO *>(*pppayload));
 	case AUX_TYPE_ENDPOINT_CAPABILITIES:
 		(*pppayload) = pext->anew<AUX_ENDPOINT_CAPABILITIES>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_endpoint_capabilities(pext, static_cast<AUX_ENDPOINT_CAPABILITIES *>(*pppayload));
 	case AUX_TYPE_CLIENT_CONNECTION_INFO:
 		(*pppayload) = pext->anew<AUX_CLIENT_CONNECTION_INFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_client_connection_info(pext, static_cast<AUX_CLIENT_CONNECTION_INFO *>(*pppayload));
 	case AUX_TYPE_SERVER_SESSION_INFO:
 		(*pppayload) = pext->anew<AUX_SERVER_SESSION_INFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_server_session_info(pext, static_cast<AUX_SERVER_SESSION_INFO *>(*pppayload));
 	case AUX_TYPE_PROTOCOL_DEVICE_ID:
 		(*pppayload) = pext->anew<AUX_PROTOCOL_DEVICE_IDENTIFICATION>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_protocol_device_identification(pext, static_cast<AUX_PROTOCOL_DEVICE_IDENTIFICATION *>(*pppayload));
 	}
 	(*pppayload) = pext->anew<DATA_BLOB>();
-	if (NULL == (*pppayload)) {
+	if ((*pppayload) == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	return pext->g_blob(static_cast<DATA_BLOB *>(*pppayload));
 }
 
@@ -950,45 +915,39 @@ static int aux_ext_pull_aux_header_type_union2(
 	switch (type) {
 	case AUX_TYPE_PERF_SESSIONINFO:
 		(*pppayload) = pext->anew<AUX_PERF_SESSIONINFO_V2>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_sessioninfo_v2(pext, static_cast<AUX_PERF_SESSIONINFO_V2 *>(*pppayload));
 	case AUX_TYPE_PERF_MDB_SUCCESS:
 	case AUX_TYPE_PERF_BG_MDB_SUCCESS:
 	case AUX_TYPE_PERF_FG_MDB_SUCCESS:
 		(*pppayload) = pext->anew<AUX_PERF_MDB_SUCCESS_V2>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_mdb_success_v2(pext, static_cast<AUX_PERF_MDB_SUCCESS_V2 *>(*pppayload));
 	case AUX_TYPE_PERF_GC_SUCCESS:
 	case AUX_TYPE_PERF_BG_GC_SUCCESS:
 	case AUX_TYPE_PERF_FG_GC_SUCCESS:
 		(*pppayload) = pext->anew<AUX_PERF_GC_SUCCESS_V2>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_gc_success_v2(pext, static_cast<AUX_PERF_GC_SUCCESS_V2 *>(*pppayload));
 	case AUX_TYPE_PERF_FAILURE:
 	case AUX_TYPE_PERF_BG_FAILURE:
 	case AUX_TYPE_PERF_FG_FAILURE:
 		(*pppayload) = pext->anew<AUX_PERF_FAILURE_V2>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_failure_v2(pext, static_cast<AUX_PERF_FAILURE_V2 *>(*pppayload));
 	case AUX_TYPE_PERF_PROCESSINFO:
 		(*pppayload) = pext->anew<AUX_PERF_PROCESSINFO>();
-		if (NULL == (*pppayload)) {
+		if ((*pppayload) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return aux_ext_pull_aux_perf_processinfo(pext, static_cast<AUX_PERF_PROCESSINFO *>(*pppayload));
 	}
 	(*pppayload) = pext->anew<DATA_BLOB>();
-		if (NULL == (*pppayload)) {
-			return EXT_ERR_ALLOC;
-		}
+	if ((*pppayload) == nullptr)
+		return EXT_ERR_ALLOC;
 	return pext->g_blob(static_cast<DATA_BLOB *>(*pppayload));
 }
 
@@ -1081,37 +1040,32 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 	RPC_HEADER_EXT rpc_header_ext;
 	
 	TRY(pext->g_rpc_header_ext(&rpc_header_ext));
-	if (0 == (rpc_header_ext.flags & RHE_FLAG_LAST)) {
+	if (!(rpc_header_ext.flags & RHE_FLAG_LAST))
 		return EXT_ERR_HEADER_FLAGS;
-	}
 	r->rhe_version = rpc_header_ext.version;
 	r->rhe_flags = rpc_header_ext.flags;
 	double_list_init(&r->aux_list);
 	if (0 != rpc_header_ext.size) {
 		auto pdata = ext.m_udata + ext.m_offset;
 		/* obfuscation case */
-		if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
+		if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 			common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
-		}
 		/* lzxpress case */
 		if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 			decompressed_len = lzxpress_decompress(pdata,
 				rpc_header_ext.size, buff, sizeof(buff));
-			if (decompressed_len != rpc_header_ext.size_actual) {
+			if (decompressed_len != rpc_header_ext.size_actual)
 				return EXT_ERR_LZXPRESS;
-			}
 			pdata = buff;
 		}
 		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 		while (subext.m_offset < subext.m_data_size) {
 			pnode = pext->anew<DOUBLE_LIST_NODE>();
-			if (NULL == pnode) {
+			if (pnode == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 			pnode->pdata = pext->anew<AUX_HEADER>();
-			if (NULL == pnode->pdata) {
+			if (pnode->pdata == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 			TRY(aux_ext_pull_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
 			double_list_append_as_tail(&r->aux_list, pnode);
 		}
@@ -1128,15 +1082,13 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 	RPC_HEADER_EXT rpc_header_ext;
 
 
-	if ((r->rhe_flags & RHE_FLAG_LAST) == 0) {
+	if ((r->rhe_flags & RHE_FLAG_LAST) == 0)
 		return EXT_ERR_HEADER_FLAGS;
-	}
 	if (!subext.init(ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	for (pnode=double_list_get_head(&r->aux_list); NULL!=pnode;
-		pnode=double_list_get_after(&r->aux_list, pnode)) {
+	     pnode = double_list_get_after(&r->aux_list, pnode))
 		TRY(aux_ext_push_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
-	}
 	rpc_header_ext.version = r->rhe_version;
 	rpc_header_ext.flags = r->rhe_flags;
 	rpc_header_ext.size_actual = subext.m_offset;
@@ -1156,9 +1108,8 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 			}
 		}
 	}
-	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC) {
+	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
-	}
 	TRY(pext->p_rpchdr(&rpc_header_ext));
 	return pext->p_bytes(ext_buff, rpc_header_ext.size);
 }
