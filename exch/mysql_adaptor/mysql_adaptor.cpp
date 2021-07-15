@@ -1087,11 +1087,11 @@ BOOL mysql_adaptor_check_same_org2(
 	int org_id1;
 	int org_id2;
 	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
-	char sql_string[1024];
+	char sql_string[80+arsizeof(temp_name1)+arsizeof(temp_name2)];
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);
 	mysql_adaptor_encode_squote(domainname2, temp_name2);
-	snprintf(sql_string, 1024, "SELECT org_id FROM domains "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT org_id FROM domains "
 		"WHERE domainname='%s' OR domainname='%s'",
 		temp_name1, temp_name2);
 	auto conn = g_sqlconn_pool.get_wait();

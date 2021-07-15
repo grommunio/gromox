@@ -63,6 +63,7 @@
 
 #define MAX_DB_WAITING_THREADS			5
 
+using namespace std::string_literals;
 using namespace gromox;
 
 enum {
@@ -5546,7 +5547,6 @@ static BOOL mail_engine_add_notification_folder(
 	int tmp_len;
 	void *pvalue;
 	uint64_t commit_max;
-	char temp_name[512];
 	char sql_string[1280];
 	char decoded_name[512];
 	PROPTAG_ARRAY proptags;
@@ -5630,17 +5630,22 @@ static BOOL mail_engine_add_notification_folder(
 	if (tmp_len >= 256) {
 		return FALSE;
 	}
-	if (PRIVATE_FID_IPMSUBTREE == parent_id) {
-		memcpy(temp_name, pvalue, tmp_len);
-	} else {
-		if (tmp_len + strlen(decoded_name) >= 511) {
-			return FALSE;
+	std::string temp_name;
+	try {
+		if (parent_id == PRIVATE_FID_IPMSUBTREE) {
+			temp_name.assign(static_cast<const char *>(pvalue), tmp_len);
+		} else {
+			if (tmp_len + strlen(decoded_name) >= 511) {
+				return FALSE;
+			}
+			temp_name = decoded_name + "/"s +
+			            static_cast<const char *>(pvalue);
 		}
-		snprintf(temp_name, sizeof(temp_name), "%s/%s",
-		         decoded_name, static_cast<const char *>(pvalue));
-		tmp_len = strlen(temp_name);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1477: ENOMEM\n");
+		return false;
 	}
-	encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
+	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, arsizeof(encoded_name));
 	sprintf(sql_string, "INSERT INTO folders (folder_id, parent_fid, "
 	        "commit_max, name) VALUES (%llu, %llu, %llu, '%s')", LLU(folder_id),
 	        LLU(parent_id), LLU(commit_max), encoded_name);
@@ -5703,7 +5708,6 @@ static void mail_engine_move_notification_folder(
 {
 	int tmp_len;
 	void *pvalue;
-	char temp_name[512];
 	uint32_t tmp_proptag;
 	char sql_string[1280];
 	char decoded_name[512];
@@ -5768,21 +5772,25 @@ static void mail_engine_move_notification_folder(
 	if (tmp_len >= 256) {
 		return;
 	}
-	if (PRIVATE_FID_IPMSUBTREE == parent_id) {
-		memcpy(temp_name, pvalue, tmp_len);
-	} else {
-		if (tmp_len + strlen(decoded_name) >= 511) {
-			return;
+	std::string temp_name;
+	try {
+		if (parent_id == PRIVATE_FID_IPMSUBTREE) {
+			temp_name.assign(static_cast<const char *>(pvalue), tmp_len);
+		} else {
+			if (tmp_len + strlen(decoded_name) >= 511) {
+				return;
+			}
+			temp_name = decoded_name + "/"s +
+			            static_cast<const char *>(pvalue);
 		}
-		snprintf(temp_name, sizeof(temp_name), "%s/%s",
-		         decoded_name, static_cast<const char *>(pvalue));
-		tmp_len = strlen(temp_name);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1478: ENOMEM\n");
 	}
-	encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
+	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, arsizeof(encoded_name));
 	sprintf(sql_string, "UPDATE folders SET parent_fid=%llu, name='%s' "
 	        "WHERE folder_id=%llu", LLU(parent_id), encoded_name, LLU(folder_id));
 	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
-	mail_engine_update_subfolders_name(pidb, folder_id, temp_name);
+	mail_engine_update_subfolders_name(pidb, folder_id, temp_name.c_str());
 }
 
 static void mail_engine_modify_notification_folder(

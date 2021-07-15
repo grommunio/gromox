@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <ctime>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 enum{
@@ -526,9 +527,15 @@ BOOL bounce_producer_make(const char *username,
 			mime_set_field(pmime, "Thread-Index", tmp_buff);
 		}
 	}
-	snprintf(tmp_buff, sizeof(tmp_buff), "\"%s\" <%s>", mime_from, username);
-	mime_set_field(pmime, "From", tmp_buff);
-	snprintf(tmp_buff, 256, "<%s>", username);
+	std::string t_addr;
+	try {
+		t_addr = "\""s + mime_from + "\" <" + username + ">";
+		mime_set_field(pmime, "From", t_addr.c_str());
+		t_addr = "<"s + username + ">";
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1481: ENOMEM\n");
+		return false;
+	}
 	pvalue = common_util_get_propvals(&pbrief->proplist,
 						PROP_TAG_SENTREPRESENTINGNAME);
 	if (NULL != pvalue && '\0' != ((char*)pvalue)[0]) {
@@ -572,8 +579,12 @@ BOOL bounce_producer_make(const char *username,
 	}
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);
-	snprintf(tmp_buff, 1024, "rfc822;%s", username);
-	dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff);
+	try {
+		t_addr = "rfc822;"s + username;
+		dsn_append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1482: ENOMEM\n");
+	}
 	switch (bounce_type) {
 	case BOUNCE_NOTIFY_READ:
 		dsn_append_field(pdsn_fields, "Disposition",
