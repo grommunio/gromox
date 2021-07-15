@@ -26,25 +26,21 @@ int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	TRY(ndr_pull_uint32(pndr, &r->rpc));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
-	if (NULL == r->pctx) {
+	if (r->pctx == nullptr)
 		return NDR_ERR_ALLOC;
-	}
 	TRY(ndr_pull_array_uint8(pndr, r->pctx, size));
 	TRY(ndr_pull_uint16(pndr, &r->cb_ctx));
-	if (size != r->cb_ctx) {
+	if (r->cb_ctx != size)
 		return NDR_ERR_ARRAY_SIZE;
-	}
 	TRY(ndr_pull_uint32(pndr, &r->advise_bits));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->paddr = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
-	if (NULL == r->paddr) {
+	if (r->paddr == nullptr)
 		return NDR_ERR_ALLOC;
-	}
 	TRY(ndr_pull_array_uint8(pndr, r->paddr, size));
 	TRY(ndr_pull_uint16(pndr, &r->cb_addr));
-	if (size != r->cb_addr) {
+	if (r->cb_addr != size)
 		return NDR_ERR_ARRAY_SIZE;
-	}
 	return NDR_ERR_SUCCESS;
 }
 
@@ -70,9 +66,8 @@ int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	TRY(ndr_pull_uint32(pndr, &size));
 	TRY(ndr_pull_ulong(pndr, &offset));
 	TRY(ndr_pull_ulong(pndr, &length));
-	if (0 != offset || length > size || length > 1024) {
+	if (offset != 0 || length > size || length > 1024)
 		return NDR_ERR_ARRAY_SIZE;
-	}
 	TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
 	TRY(ndr_pull_string(pndr, r->puserdn, length));
 	TRY(ndr_pull_uint32(pndr, &r->flags));
@@ -89,18 +84,15 @@ int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->timestamp));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
-	if (NULL == r->pauxin) {
+	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
-	}
 	TRY(ndr_pull_array_uint8(pndr, r->pauxin, size));
 	TRY(ndr_pull_uint32(pndr, &r->cb_auxin));
-	if (r->cb_auxin != size) {
+	if (r->cb_auxin != size)
 		return NDR_ERR_ARRAY_SIZE;
-	}
 	TRY(ndr_pull_uint32(pndr, &r->cb_auxout));
-	if (r->cb_auxout > 0x1008) {
+	if (r->cb_auxout > 0x1008)
 		return NDR_ERR_RANGE;
-	}
 	return NDR_ERR_SUCCESS;
 }
 
@@ -133,9 +125,8 @@ int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr, const ECDOCONNECTEX_OUT *r)
 	TRY(ndr_push_uint16(pndr, r->pbest_vers[1]));
 	TRY(ndr_push_uint16(pndr, r->pbest_vers[2]));
 	TRY(ndr_push_uint32(pndr, r->timestamp));
-	if (r->cb_auxout > 0x1008) {
+	if (r->cb_auxout > 0x1008)
 		return NDR_ERR_RANGE;
-	}
 	TRY(ndr_push_ulong(pndr, r->cb_auxout));
 	TRY(ndr_push_ulong(pndr, 0));
 	TRY(ndr_push_ulong(pndr, r->cb_auxout));
@@ -152,32 +143,26 @@ int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	TRY(ndr_pull_uint32(pndr, &r->flags));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
-	if (NULL == r->pin) {
+	if (r->pin == nullptr)
 		return NDR_ERR_ALLOC;
-	}
 	TRY(ndr_pull_array_uint8(pndr, r->pin, size));
 	TRY(ndr_pull_uint32(pndr, &r->cb_in));
-	if (r->cb_in != size) {
+	if (r->cb_in != size)
 		return NDR_ERR_ARRAY_SIZE;
-	}
 	TRY(ndr_pull_uint32(pndr, &r->cb_out));
-	if (r->cb_out > 0x40000) {
+	if (r->cb_out > 0x40000)
 		return NDR_ERR_RANGE;
-	}
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
-	if (NULL == r->pauxin) {
+	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
-	}
 	TRY(ndr_pull_array_uint8(pndr, r->pauxin, size));
 	TRY(ndr_pull_uint32(pndr, &r->cb_auxin));
-	if (size != r->cb_auxin) {
+	if (r->cb_auxin != size)
 		return NDR_ERR_ARRAY_SIZE;
-	}
 	TRY(ndr_pull_uint32(pndr, &r->cb_auxout));
-	if (r->cb_auxout > 0x1008) {
+	if (r->cb_auxout > 0x1008)
 		return NDR_ERR_RANGE;
-	}
 	return NDR_ERR_SUCCESS;
 }
 
@@ -185,17 +170,15 @@ int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
 {
 	TRY(ndr_push_context_handle(pndr, &r->cxh));
 	TRY(ndr_push_uint32(pndr, r->flags));
-	if (r->cb_out > 0x40000) {
+	if (r->cb_out > 0x40000)
 		return NDR_ERR_RANGE;
-	}
 	TRY(ndr_push_ulong(pndr, r->cb_out));
 	TRY(ndr_push_ulong(pndr, 0));
 	TRY(ndr_push_ulong(pndr, r->cb_out));
 	TRY(ndr_push_array_uint8(pndr, r->pout, r->cb_out));
 	TRY(ndr_push_uint32(pndr, r->cb_out));
-	if (r->cb_auxout > 0x1008) {
+	if (r->cb_auxout > 0x1008)
 		return NDR_ERR_RANGE;
-	}
 	TRY(ndr_push_ulong(pndr, r->cb_auxout));
 	TRY(ndr_push_ulong(pndr, 0));
 	TRY(ndr_push_ulong(pndr, r->cb_auxout));
