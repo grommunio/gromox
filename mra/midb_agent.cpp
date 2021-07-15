@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cassert>
 #include <csignal>
+#include <cstdint>
 #include <deque>
 #include <mutex>
 #include <libHX/string.h>
@@ -70,9 +71,9 @@ struct SEQUENCE_NODE {
 struct BACK_SVR {
 	DOUBLE_LIST_NODE node;
 	char prefix[256];
-	int prefix_len;
 	char ip_addr[40];
-	int port;
+	int prefix_len;
+	uint16_t port;
 	DOUBLE_LIST conn_list;
 };
 
@@ -88,7 +89,7 @@ struct BACK_CONN {
 static void *midbag_scanwork(void *);
 static BOOL read_line(int sockd, char *buff, int length);
 
-static int connect_midb(const char *ip_addr, int port);
+static int connect_midb(const char *host, uint16_t port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
 static int list_mail(const char *path, const char *folder, std::deque<MSG_UNIT> &, int *num, uint64_t *size);
@@ -3335,7 +3336,7 @@ static BOOL check_full(const char *path)
 	return TRUE;
 }
 
-static int connect_midb(const char *ip_addr, int port)
+static int connect_midb(const char *ip_addr, uint16_t port)
 {
 	int tv_msec;
     int read_len;

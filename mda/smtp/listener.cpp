@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
@@ -35,16 +36,11 @@ static void *smls_thrworkssl(void *);
 static pthread_t g_thr_id;
 static std::atomic<bool> g_stop_accept{false};
 static int g_listener_sock;
-static int g_listener_port;
+static uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
 static int g_listener_ssl_sock;
-static int g_listener_ssl_port;
-/*
- *    istener's construction function
- *    @param    
- *        glistener_port    port to listen
- */
-void listener_init(int port, int ssl_port)
+
+void listener_init(uint16_t port, uint16_t ssl_port)
 {
 	g_listener_port = port;
 	g_listener_ssl_port = ssl_port;
@@ -64,13 +60,15 @@ int listener_run()
 {
 	g_listener_sock = gx_inet_listen("::", g_listener_port);
 	if (g_listener_sock < 0) {
-		printf("[listener]: failed to create socket: %s\n", strerror(-g_listener_sock));
+		printf("[listener]: failed to create socket [*]:%hu: %s\n",
+		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
-			printf("[listener]: failed to create socket: %s\n", strerror(-g_listener_ssl_sock));
+			printf("[listener]: failed to create socket [*]:%hu: %s\n",
+			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
 	}

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
@@ -17,7 +18,6 @@ struct DATA_COLLECT {
 	DOUBLE_LIST_NODE *pnode;
 };
 
-void data_source_init(const char *host, int port, const char *user,
-	const char *password, const char *db_name);
+extern void data_source_init(const char *host, uint16_t port, const char *user, const char *password, const char *db_name);
 extern BOOL data_source_get_domain_list(std::vector<DOMAIN_ITEM> &);
 extern BOOL data_source_get_alias_list(std::vector<ALIAS_ITEM> &);

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdint>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -20,13 +21,13 @@
 #define GROUP_PRIVILEGE_DOMAIN_MONITOR		0x200
 
 static char g_host[256];
-static int g_port;
+static uint16_t g_port;
 static char g_user[256];
 static char *g_password;
 static char g_password_buff[256];
 static char g_db_name[256];
 
-void data_source_init(const char *host, int port, const char *user,
+void data_source_init(const char *host, uint16_t port, const char *user,
 	const char *password, const char *db_name)
 {
 	gx_strlcpy(g_host, host, GX_ARRAY_SIZE(g_host));

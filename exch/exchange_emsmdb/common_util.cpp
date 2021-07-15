@@ -50,7 +50,7 @@ enum {
 };
 
 static int g_max_rcpt;
-static int g_smtp_port;
+static uint16_t g_smtp_port;
 static int g_max_message;
 static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_faststream_id;
@@ -1872,7 +1872,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	
 	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
 	if (sockd < 0) {
-		log_err("Cannot connect to SMTP server [%s]:%d: %s",
+		log_err("Cannot connect to SMTP server [%s]:%hu: %s",
 			g_smtp_ip, g_smtp_port, strerror(-sockd));
 		return FALSE;
 	}
@@ -2302,7 +2302,7 @@ LIB_BUFFER* common_util_get_allocator()
 
 void common_util_init(const char *org_name, int average_blocks,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
-	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
+	unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *submit_command)
 {
 	gx_strlcpy(g_emsmdb_org_name, org_name, arsizeof(g_emsmdb_org_name));

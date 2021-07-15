@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdint>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -18,9 +19,8 @@ namespace {
 
 struct CONSOLE_PORT {
 	char smtp_ip[40];
-	int smtp_port;
 	char delivery_ip[40];
-	int delivery_port;
+	uint16_t smtp_port, delivery_port;
 };
 
 }
@@ -28,7 +28,7 @@ struct CONSOLE_PORT {
 static char g_list_path[256];
 static std::vector<CONSOLE_PORT> g_console_list;
 
-static BOOL gateway_control_send(const char *ip, int port, const char *command);
+static BOOL gateway_control_send(const char *ip, uint16_t port, const char *command);
 
 void gateway_control_init(const char *path)
 {
@@ -71,7 +71,7 @@ void gateway_control_notify(const char *command, int control_mask)
 	}
 }
 
-static BOOL gateway_control_send(const char *ip, int port, const char *command)
+static BOOL gateway_control_send(const char *ip, uint16_t port, const char *command)
 {
 	int cmd_len, read_len, offset;
 	int sockd = gx_inet_connect(ip, port, 0);

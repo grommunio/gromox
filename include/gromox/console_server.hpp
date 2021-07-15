@@ -1,9 +1,10 @@
 #pragma once
+#include <cstdint>
 #include <gromox/common_types.hpp>
 
 using COMMAND_HANDLER = BOOL (*)(int argc, char **argv);
 
-void console_server_init(const char* bind_ip, int port);
+extern void console_server_init(const char *host, uint16_t port);
 extern void console_server_free();
 extern int console_server_run();
 extern int console_server_stop();

@@ -27,7 +27,7 @@
 
 using namespace gromox;
 
-static int g_listen_port;
+static uint16_t g_listen_port;
 static int g_listen_sockd;
 static std::atomic<bool> g_notify_stop{false};
 static char g_listen_ip[40];
@@ -94,7 +94,7 @@ static void *mdpls_thrwork(void *param)
 	return nullptr;
 }
 
-void exmdb_listener_init(const char *ip, int port)
+void exmdb_listener_init(const char *ip, uint16_t port)
 {
 	if (ip[0] != '\0')
 		gx_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));

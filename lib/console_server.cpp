@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -59,7 +60,7 @@ extern std::atomic<bool> g_notify_stop;
 static std::atomic<bool> g_terminate{false};
 static size_t g_cmd_num;
 static char g_listen_ip[40];
-static int g_listen_port;
+static uint16_t g_listen_port;
 static pthread_t g_listening_tid;
 static CONSOLE_NODE *g_console_buff;
 static DOUBLE_LIST g_free_list;
@@ -73,13 +74,7 @@ static int  console_server_parse_line(const char* cmdline, char** argv);
 static void *consrv_thrwork(void *);
 static void *consrv_work(void *);
 
-/*
- *	console server's construct function
- *	@param
- *		bind_ip [in]		ip address to be listened
- *		port				port to be listened
- */
-void console_server_init(const char* bind_ip, int port)
+void console_server_init(const char *bind_ip, uint16_t port)
 {
 	gx_strlcpy(g_listen_ip, bind_ip, GX_ARRAY_SIZE(g_listen_ip));
     g_listen_port = port;
@@ -112,7 +107,8 @@ int console_server_run()
 
 	auto sock = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (sock < 0) {
-		printf("[console_server]: failed to create socket: %s\n", strerror(-sock));
+		printf("[console_server]: failed to create socket [*]:%hu: %s\n",
+		       g_listen_port, strerror(-sock));
         return -1;
 	}
 	pnodes = (CONSOLE_NODE*)malloc(MAX_CONSOLE_NUMBER*sizeof(CONSOLE_NODE));

@@ -177,8 +177,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		gx_strlcpy(smtp_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(smtp_ip));
 		str_value = config_file_get_value(pfile, "SMTP_SERVER_PORT");
-		smtp_port = str_value != nullptr ? strtol(str_value, nullptr, 0) : 25;
-		if (smtp_port <= 0)
+		smtp_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 25;
+		if (smtp_port == 0)
 			smtp_port = 25;
 		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");

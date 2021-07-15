@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
@@ -35,17 +36,11 @@ static int g_mss_size;
 static std::atomic<bool> g_stop_accept{false};
 static pthread_t g_thr_id;
 static int g_listener_sock;
-static int g_listener_port;
+static uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
 static int g_listener_ssl_sock;
-static int g_listener_ssl_port;
 
-/*
- *    istener's construction function
- *    @param    
- *        glistener_port    port to listen
- */
-void listener_init(int port, int ssl_port, int mss_size)
+void listener_init(uint16_t port, uint16_t ssl_port, int mss_size)
 {
 	g_listener_port = port;
 	g_listener_ssl_port = ssl_port;
@@ -66,7 +61,8 @@ int listener_run()
 {
 	g_listener_sock = gx_inet_listen("::", g_listener_port);
 	if (g_listener_sock < 0) {
-		printf("[listener]: failed to create socket: %s\n", strerror(-g_listener_sock));
+		printf("[listener]: failed to create socket [*]:%hu: %s\n",
+		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
 	if (g_mss_size > 0) {
@@ -79,7 +75,8 @@ int listener_run()
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
-			printf("[listener]: failed to create socket: %s\n", strerror(-g_listener_ssl_sock));
+			printf("[listener]: failed to create socket [*]:%hu: %s\n",
+			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
 		if (g_mss_size > 0) {
@@ -144,8 +141,7 @@ void listener_stop_accept()
 static void *htls_thrwork(void *arg)
 {
 	socklen_t addrlen;
-	int sockd2, client_port;
-	int len, flag;
+	int len, flag, sockd2;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	HTTP_CONTEXT *pcontext;
@@ -189,7 +185,7 @@ static void *htls_thrwork(void *arg)
 			close(sockd2);
 			continue;
 		}
-		client_port = strtoul(client_txtport, nullptr, 0);
+		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(6, "New connection from [%s]:%hu",
 			client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
@@ -275,8 +271,7 @@ static void *htls_thrwork(void *arg)
 static void *htls_thrworkssl(void *arg)
 {
 	socklen_t addrlen;
-	int sockd2, client_port;
-	int len, flag;
+	int len, flag, sockd2;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	HTTP_CONTEXT *pcontext;
@@ -320,7 +315,7 @@ static void *htls_thrworkssl(void *arg)
 			close(sockd2);
 			continue;
 		}
-		client_port = strtoul(client_txtport, nullptr, 0);
+		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(6, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)

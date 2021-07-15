@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <libHX/string.h>
@@ -24,7 +25,7 @@
 
 using namespace gromox;
 
-static int g_listen_port;
+static uint16_t g_listen_port;
 static char g_listen_ip[40];
 static int g_listen_sockd;
 static std::atomic<bool> g_notify_stop{false};
@@ -32,7 +33,7 @@ static std::vector<std::string> g_acl_list;
 
 static void *midls_thrwork(void *);
 
-void listener_init(const char *ip, int port)
+void listener_init(const char *ip, uint16_t port)
 {
 	if ('\0' != ip[0]) {
 		gx_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));

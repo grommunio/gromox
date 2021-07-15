@@ -2,6 +2,7 @@
 #define DECLARE_API_STATIC
 #include <atomic>
 #include <csignal>
+#include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -40,7 +41,7 @@ typedef void (*EVENT_STUB_FUNC)(char *);
 
 static std::atomic<bool> g_notify_stop{false};
 static char g_event_ip[40];
-static int g_event_port;
+static uint16_t g_event_port;
 static DOUBLE_LIST g_back_list;
 static EVENT_STUB_FUNC g_event_stub_func;
 
@@ -93,11 +94,11 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		if (NULL == str_value) {
 			g_event_port = 33333;
 		} else {
-			g_event_port = atoi(str_value);
-			if (g_event_port <= 0)
+			g_event_port = strtoul(str_value, nullptr, 0);
+			if (g_event_port == 0)
 				g_event_port = 33333;
 		}
-		printf("[event_proxy]: event address is [%s]:%d\n",
+		printf("[event_proxy]: event address is [%s]:%hu\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
 
 		g_notify_stop = false;

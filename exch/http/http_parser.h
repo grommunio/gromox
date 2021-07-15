@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <cstdint>
 #include <vector>
 #include "mod_fastcgi.h"
 #include <gromox/common_types.hpp>
@@ -87,7 +88,8 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	char username[UADDR_SIZE]{}, password[128]{}, maildir[256]{}, lang[32]{};
 	DOUBLE_LIST_NODE node{};
 	char host[256]{};
-	int port = 0, channel_type = 0;
+	uint16_t port = 0;
+	int channel_type = 0;
 	void *pchannel = nullptr;
 	FASTCGI_CONTEXT *pfast_context = nullptr;
 };

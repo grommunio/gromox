@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_API_STATIC
 #include <atomic>
+#include <cstdint>
 #include <mutex>
 #include <csignal>
 #include <libHX/string.h>
@@ -39,7 +40,7 @@ struct BACK_CONN {
 
 static std::atomic<bool> g_notify_stop{false};
 static char g_event_ip[40];
-static int g_event_port;
+static uint16_t g_event_port;
 static pthread_t g_scan_id;
 static std::mutex g_back_lock;
 static DOUBLE_LIST g_back_list;
@@ -98,11 +99,11 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		if (NULL == str_value) {
 			g_event_port = 33333;
 		} else {
-			g_event_port = atoi(str_value);
-			if (g_event_port <= 0)
+			g_event_port = strtoul(str_value, nullptr, 0);
+			if (g_event_port == 0)
 				g_event_port = 33333;
 		}
-		printf("[event_proxy]: event address is [%s]:%d\n",
+		printf("[event_proxy]: event address is [%s]:%hu\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
 
 		for (i=0; i<conn_num; i++) {

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -41,7 +42,7 @@ struct BACK_CONN {
 
 static std::atomic<bool> g_notify_stop{false};
 static char g_timer_ip[40];
-static int g_timer_port;
+static uint16_t g_timer_port;
 static pthread_t g_scan_id;
 static std::mutex g_back_lock;
 static DOUBLE_LIST g_back_list;
@@ -92,10 +93,10 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 		gx_strlcpy(g_timer_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(g_timer_ip));
 		str_value = config_file_get_value(pfile, "TIMER_PORT");
-		g_timer_port = str_value != nullptr ? strtol(str_value, nullptr, 0) : 6666;
-		if (g_timer_port <= 0)
+		g_timer_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 6666;
+		if (g_timer_port == 0)
 			g_timer_port = 6666;
-		printf("[timer_agent]: timer address is [%s]:%d\n",
+		printf("[timer_agent]: timer address is [%s]:%hu\n",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
 		for (i=0; i<conn_num; i++) {

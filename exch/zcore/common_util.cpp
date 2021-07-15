@@ -72,7 +72,7 @@ struct LANGMAP_ITEM {
 
 static int g_max_rcpt;
 static int g_mime_num;
-static int g_smtp_port;
+static uint16_t g_smtp_port;
 static int g_max_message;
 static char g_smtp_ip[40];
 static char g_org_name[256];
@@ -562,7 +562,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
-	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
+    unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *freebusy_path, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
