@@ -3046,7 +3046,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 					if ((pvalue1 == nullptr ||
 					    strcasecmp(pvalue1, "DATE-TIME") == 0) &&
 					    ical_datetime_to_utc(ptz_component, pvalue, &tmp_time)) {
-						tmp_int32 = abs(start_time - tmp_time)/60;
+						tmp_int32 = llabs(start_time - tmp_time) / 60;
 					} else {
 						if (FALSE == b_allday) {
 							tmp_int32 = 15;
@@ -3063,7 +3063,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 							tmp_int32 = 1080;
 						}
 					} else {
-						tmp_int32 = abs(duration)/60;
+						tmp_int32 = labs(duration) / 60;
 					}
 				}
 			}
