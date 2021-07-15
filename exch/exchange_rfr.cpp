@@ -12,6 +12,11 @@
 #include <cstdio>
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 
+enum {
+	RfrGetNewDSA = 0,
+	RfrGetFQDNFromServerDN = 1,
+};
+
 namespace {
 
 struct RFRGETNEWDSA_IN {
@@ -154,7 +159,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 
 	
 	switch (opnum) {
-	case 0:
+	case RfrGetNewDSA:
 		prfr = ndr_stack_anew<RFRGETNEWDSA_IN>(NDR_STACK_IN);
 		if (prfr == nullptr)
 			return NDR_ERR_ALLOC;
@@ -203,7 +208,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		}
 		*ppin = prfr;
 		return NDR_ERR_SUCCESS;
-	case 1:
+	case RfrGetFQDNFromServerDN:
 		prfr_dn = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_IN>(NDR_STACK_IN);
 		if (prfr_dn == nullptr)
 			return NDR_ERR_ALLOC;
@@ -235,7 +240,7 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 	RFRGETFQDNFROMLEGACYDN_OUT *prfr_dn_out;
 	
 	switch (opnum) {
-	case 0:	
+	case RfrGetNewDSA:
 		prfr_in = (RFRGETNEWDSA_IN*)pin;
 		prfr_out = ndr_stack_anew<RFRGETNEWDSA_OUT>(NDR_STACK_OUT);
 		if (prfr_out == nullptr)
@@ -247,7 +252,7 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 		strcpy(prfr_out->pserver, prfr_in->pserver);
 		*ppout = prfr_out;
 		return DISPATCH_SUCCESS;
-	case 1:
+	case RfrGetFQDNFromServerDN:
 		prfr_dn_in = (RFRGETFQDNFROMLEGACYDN_IN*)pin;
 		prfr_dn_out = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_OUT>(NDR_STACK_OUT);
 		if (prfr_dn_out == nullptr)
@@ -270,7 +275,7 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	RFRGETFQDNFROMLEGACYDN_OUT *prfr_dn;
 	
 	switch (opnum) {
-	case 0:
+	case RfrGetNewDSA:
 		prfr = (RFRGETNEWDSA_OUT*)pout;
 		if ('\0' == *prfr->punused) {
 			TRY(ndr_push_unique_ptr(pndr, nullptr));
@@ -296,7 +301,7 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 			TRY(ndr_push_string(pndr, prfr->pserver, length));
 		}
 		return ndr_push_uint32(pndr, prfr->result);
-	case 1:
+	case RfrGetFQDNFromServerDN:
 		prfr_dn = (RFRGETFQDNFROMLEGACYDN_OUT*)pout;
 		if ('\0' == *prfr_dn->serverfqdn) {
 			TRY(ndr_push_unique_ptr(pndr, nullptr));
