@@ -12,6 +12,8 @@
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
+using namespace gromox;
+
 void EXT_PULL::init(const void *pdata, uint32_t data_size,
     EXT_BUFFER_ALLOC alloc, uint32_t flags)
 {
@@ -108,13 +110,12 @@ int EXT_PULL::g_bool(BOOL *v)
 	    m_offset + sizeof(uint8_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	auto tmp_byte = m_udata[m_offset++];
-	if (0 == tmp_byte) {
+	if (tmp_byte == 0)
 		*v = FALSE;
-	} else if (1 == tmp_byte) {
+	else if (tmp_byte == 1)
 		*v = TRUE;
-	} else {
+	else
 		return EXT_ERR_FORMAT;
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -148,9 +149,8 @@ int EXT_PULL::g_str(char **ppstr)
 		return EXT_ERR_BUFSIZE;
 	len ++;
 	*ppstr = pext->anew<char>(len);
-	if (NULL == *ppstr) {
+	if (*ppstr == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	memcpy(*ppstr, &m_udata[m_offset], len);
 	return pext->advance(len);
 }
@@ -165,22 +165,18 @@ int EXT_PULL::g_wstr(char **ppstr)
 	if (m_offset >= m_data_size)
 		return EXT_ERR_BUFSIZE;
 	int max_len = m_data_size - m_offset;
-	for (i=0; i<max_len-1; i+=2) {
+	for (i = 0; i < max_len - 1; i += 2)
 		if (m_udata[m_offset+i] == '\0' && m_udata[m_offset+i+1] == '\0')
 			break;
-	}
-	if (i >= max_len - 1) {
+	if (i >= max_len - 1)
 		return EXT_ERR_BUFSIZE;
-	}
 	len = i + 2;
 	*ppstr = pext->anew<char>(2 * len);
-	if (NULL == *ppstr) {
+	if (*ppstr == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	auto pbuff = static_cast<char *>(malloc(len));
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	memcpy(pbuff, &m_udata[m_offset], len);
 	if (FALSE == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
 		free(pbuff);
@@ -198,9 +194,8 @@ int EXT_PULL::g_blob(DATA_BLOB *pblob)
 		return EXT_ERR_BUFSIZE;
 	uint32_t length = m_data_size - m_offset;
 	pblob->data = pext->anew<uint8_t>(length);
-	if (NULL == pblob->data) {
+	if (pblob->data == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	memcpy(pblob->data, &m_udata[m_offset], length);
 	pblob->length = length;
 	m_offset += length;
@@ -512,27 +507,23 @@ static int ext_buffer_pull_restriction_subobj(
 static int ext_buffer_pull_restriction_comment(
 	EXT_PULL *pext, RESTRICTION_COMMENT *r)
 {
-	int i;
 	uint8_t res_present;
 	
 	TRY(pext->g_uint8(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
-	}
 	TRY(pext->g_uint8(&res_present));
 	if (0 != res_present) {
 		r->pres = pext->anew<RESTRICTION>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_restriction(r->pres);
 	}
 	r->pres = NULL;
@@ -557,69 +548,58 @@ int EXT_PULL::g_restriction(RESTRICTION *r)
 	case RES_AND:
 	case RES_OR:
 		r->pres = pext->anew<RESTRICTION_AND_OR>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_and_or(pext, r->andor);
 	case RES_NOT:
 		r->pres = pext->anew<RESTRICTION_NOT>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_not(pext, r->xnot);
 	case RES_CONTENT:
 		r->pres = pext->anew<RESTRICTION_CONTENT>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_content(pext, r->cont);
 	case RES_PROPERTY:
 		r->pres = pext->anew<RESTRICTION_PROPERTY>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_property(pext, r->prop);
 	case RES_PROPCOMPARE:
 		r->pres = pext->anew<RESTRICTION_PROPCOMPARE>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_propcompare(pext, r->pcmp);
 	case RES_BITMASK:
 		r->pres = pext->anew<RESTRICTION_BITMASK>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_bitmask(pext, r->bm);
 	case RES_SIZE:
 		r->pres = pext->anew<RESTRICTION_SIZE>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_size(pext, r->size);
 	case RES_EXIST:
 		r->pres = pext->anew<RESTRICTION_EXIST>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_exist(pext, r->exist);
 	case RES_SUBRESTRICTION:
 		r->pres = pext->anew<RESTRICTION_SUBOBJ>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_subobj(pext, r->sub);
 	case RES_COMMENT:
 		r->pres = pext->anew<RESTRICTION_COMMENT>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_comment(pext, r->comment);
 	case RES_COUNT:
 		r->pres = pext->anew<RESTRICTION_COUNT>();
-		if (NULL == r->pres) {
+		if (r->pres == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_restriction_count(pext, r->count);
 	case RES_NULL:
 		r->pres = NULL;
@@ -642,9 +622,8 @@ int EXT_PULL::g_svreid(SVREID *r)
 		r->message_id = 0;
 		r->instance = 0;
 		r->pbin = pext->anew<BINARY>();
-		if (NULL == r->pbin) {
+		if (r->pbin == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		r->pbin->cb = length > 0 ? length - 1 : 0;
 		r->pbin->pv = m_alloc(r->pbin->cb);
 		if (r->pbin->pv == nullptr) {
@@ -653,9 +632,8 @@ int EXT_PULL::g_svreid(SVREID *r)
 		}
 		return pext->g_bytes(r->pbin->pv, r->pbin->cb);
 	}
-	if (21 != length) {
+	if (length != 21)
 		return EXT_ERR_FORMAT;
-	}
 	r->pbin = NULL;
 	TRY(pext->g_uint64(&r->folder_id));
 	TRY(pext->g_uint64(&r->message_id));
@@ -685,9 +663,8 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 	TRY(pext->g_uint16(&eid_size));
 	if (0 == r->same_store) {
 		r->pstore_eid = pext->anew<STORE_ENTRYID>();
-		if (NULL == r->pstore_eid) {
+		if (r->pstore_eid == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_store_eid(r->pstore_eid));
 	} else {
 		r->pstore_eid = NULL;
@@ -695,15 +672,13 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 	}
 	if (0 != r->same_store) {
 		r->pfolder_eid = pext->anew<SVREID>();
-		if (NULL == r->pfolder_eid) {
+		if (r->pfolder_eid == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_svreid(static_cast<SVREID *>(r->pfolder_eid));
 	} else {
 		r->pfolder_eid = pext->anew<BINARY>();
-		if (NULL == r->pfolder_eid) {
+		if (r->pfolder_eid == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_bin(static_cast<BINARY *>(r->pfolder_eid));
 	}
 }
@@ -717,41 +692,33 @@ static int ext_buffer_pull_reply_action(EXT_PULL *pext, REPLY_ACTION *r)
 
 static int ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
 {
-	int i;
-	
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_pull_forwarddelegate_action(
 	EXT_PULL *pext, FORWARDDELEGATE_ACTION *r)
 {
-	int i;
-	
 	TRY(pext->g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_recipient_block(pext, &r->pblock[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -768,42 +735,36 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 	case OP_MOVE:
 	case OP_COPY:
 		r->pdata = pext->anew<MOVECOPY_ACTION>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata));
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		r->pdata = pext->anew<REPLY_ACTION>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = ext.m_alloc(tmp_len);
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_bytes(r->pdata, tmp_len);
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint32(static_cast<uint32_t *>(r->pdata));
 	case OP_FORWARD:
 	case OP_DELEGATE:
 		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
@@ -816,21 +777,18 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 
 int EXT_PULL::g_rule_actions(RULE_ACTIONS *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->pblock = pext->anew<ACTION_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_action_block(pext, &r->pblock[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -843,49 +801,42 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 	switch (type) {
 	case PT_UNSPECIFIED:
 		*ppval = pext->anew<TYPED_PROPVAL>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_typed_pv(static_cast<TYPED_PROPVAL *>(*ppval));
 	case PT_SHORT:
 		*ppval = pext->anew<uint16_t>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint16(static_cast<uint16_t *>(*ppval));
 	case PT_LONG:
 	case PT_ERROR:
 		*ppval = pext->anew<uint32_t>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint32(static_cast<uint32_t *>(*ppval));
 	case PT_FLOAT:
 		*ppval = pext->anew<float>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_float(static_cast<float *>(*ppval));
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		*ppval = pext->anew<double>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_double(static_cast<double *>(*ppval));
 	case PT_BOOLEAN:
 		*ppval = pext->anew<uint8_t>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint8(static_cast<uint8_t *>(*ppval));
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
 		*ppval = pext->anew<uint64_t>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint64(static_cast<uint64_t *>(*ppval));
 	case PT_STRING8:
 		return pext->g_str(reinterpret_cast<char **>(ppval));
@@ -893,76 +844,64 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 		return pext->g_wstr(reinterpret_cast<char **>(ppval));
 	case PT_SVREID:
 		*ppval = pext->anew<SVREID>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_svreid(static_cast<SVREID *>(*ppval));
 	case PT_CLSID:
 		*ppval = pext->anew<GUID>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_guid(static_cast<GUID *>(*ppval));
 	case PT_SRESTRICT:
 		*ppval = pext->anew<RESTRICTION>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_restriction(static_cast<RESTRICTION *>(*ppval));
 	case PT_ACTIONS:
 		*ppval = pext->anew<RULE_ACTIONS>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_rule_actions(static_cast<RULE_ACTIONS *>(*ppval));
 	case PT_BINARY:
 	case PT_OBJECT:
 		*ppval = pext->anew<BINARY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_bin(static_cast<BINARY *>(*ppval));
 	case PT_MV_SHORT:
 		*ppval = pext->anew<SHORT_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint16_a(static_cast<SHORT_ARRAY *>(*ppval));
 	case PT_MV_LONG:
 		*ppval = pext->anew<LONG_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint32_a(static_cast<LONG_ARRAY *>(*ppval));
 	case PT_MV_I8:
 		*ppval = pext->anew<LONGLONG_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval));
 	case PT_MV_STRING8:
 		*ppval = pext->anew<STRING_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_str_a(static_cast<STRING_ARRAY *>(*ppval));
 	case PT_MV_UNICODE:
 		*ppval = pext->anew<STRING_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_wstr_a(static_cast<STRING_ARRAY *>(*ppval));
 	case PT_MV_CLSID:
 		*ppval = pext->anew<GUID_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_guid_a(static_cast<GUID_ARRAY *>(*ppval));
 	case PT_MV_BINARY:
 		*ppval = pext->anew<BINARY_ARRAY>();
-		if (NULL == (*ppval)) {
+		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_bin_a(static_cast<BINARY_ARRAY *>(*ppval));
 	default:
 		return EXT_ERR_BAD_SWITCH;
@@ -1000,7 +939,6 @@ int EXT_PULL::g_longterm_rang(LONG_TERM_ID_RANGE *r)
 
 int EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
@@ -1013,9 +951,8 @@ int EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_uint32(&r->pproptag[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1032,9 +969,8 @@ int EXT_PULL::g_propname(PROPERTY_NAME *r)
 		TRY(pext->g_uint32(&r->lid));
 	} else if (r->kind == MNID_STRING) {
 		TRY(pext->g_uint8(&name_size));
-		if (name_size < 2) {
+		if (name_size < 2)
 			return EXT_ERR_FORMAT;
-		}
 		uint32_t offset = m_offset + name_size;
 		TRY(pext->g_wstr(&r->pname));
 		if (m_offset > offset)
@@ -1046,7 +982,6 @@ int EXT_PULL::g_propname(PROPERTY_NAME *r)
 
 int EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
@@ -1059,15 +994,13 @@ int EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_propname(&r->ppropname[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_propid_a(PROPID_ARRAY *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
@@ -1080,15 +1013,13 @@ int EXT_PULL::g_propid_a(PROPID_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_uint16(&r->ppropid[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
@@ -1101,9 +1032,8 @@ int EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1122,9 +1052,8 @@ int EXT_PULL::g_tarray_set(TARRAY_SET *r)
 	}
 	for (size_t i = 0; i < r->count; ++i) {
 		r->pparray[i] = pext->anew<TPROPVAL_ARRAY>();
-		if (NULL == r->pparray[i]) {
+		if (r->pparray[i] == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_tpropval_a(r->pparray[i]));
 	}
 	return EXT_ERR_SUCCESS;
@@ -1139,7 +1068,6 @@ static int ext_buffer_pull_property_problem(EXT_PULL *pext, PROPERTY_PROBLEM *r)
 
 int EXT_PULL::g_problem_a(PROBLEM_ARRAY *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
@@ -1148,18 +1076,16 @@ int EXT_PULL::g_problem_a(PROBLEM_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_property_problem(pext, r->pproblem + i));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_xid(uint8_t size, XID *pxid)
 {
 	auto pext = this;
-	if (size < 17 || size > 24) {
+	if (size < 17 || size > 24)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->g_guid(&pxid->guid));
 	return pext->g_bytes(pxid->local_id, size - 16);
 }
@@ -1181,15 +1107,13 @@ static int ext_buffer_pull_ext_movecopy_action(
 	uint32_t size;
 	
 	TRY(pext->g_uint32(&size));
-	if (0 == size) {
+	if (size == 0)
 		return EXT_ERR_FORMAT;
-	} else {
+	else
 		TRY(pext->advance(size));
-	}
 	TRY(pext->g_uint32(&size));
-	if (46 != size) {
+	if (size != 46)
 		return EXT_ERR_FORMAT;
-	}
 	return pext->g_folder_eid(&r->folder_eid);
 }
 
@@ -1213,9 +1137,8 @@ static int ext_buffer_pull_ext_reply_action(
 	uint32_t size;
 	
 	TRY(pext->g_uint32(&size));
-	if (70 != size) {
+	if (size != 70)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->g_msg_eid(&r->message_eid));
 	return pext->g_guid(&r->template_guid);
 }
@@ -1226,9 +1149,8 @@ static int ext_buffer_pull_ext_recipient_block(
 {
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		r->count = 0;
@@ -1243,9 +1165,8 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	EXT_FORWARDDELEGATE_ACTION *r)
 {
 	TRY(pext->g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->pblock = pext->anew<EXT_RECIPIENT_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		r->count = 0;
@@ -1270,42 +1191,36 @@ static int ext_buffer_pull_ext_action_block(
 	case OP_MOVE:
 	case OP_COPY:
 		r->pdata = pext->anew<EXT_MOVECOPY_ACTION>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_ext_movecopy_action(pext, static_cast<EXT_MOVECOPY_ACTION *>(r->pdata));
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		r->pdata = pext->anew<EXT_REPLY_ACTION>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_ext_reply_action(pext, static_cast<EXT_REPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - sizeof(uint32_t);
 		r->pdata = ext.m_alloc(tmp_len);
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_bytes(r->pdata, tmp_len);
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint32(static_cast<uint32_t *>(r->pdata));
 	case OP_FORWARD:
 	case OP_DELEGATE:
 		r->pdata = pext->anew<EXT_FORWARDDELEGATE_ACTION>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_ext_forwarddelegate_action(pext, static_cast<EXT_FORWARDDELEGATE_ACTION *>(r->pdata));
 	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
-		if (NULL == r->pdata) {
+		if (r->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
@@ -1320,9 +1235,8 @@ int EXT_PULL::g_ext_rule_actions(EXT_RULE_ACTIONS *r)
 {
 	auto pext = this;
 	TRY(pext->g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	r->pblock = pext->anew<EXT_ACTION_BLOCK>(r->count);
 	if (NULL == r->pblock) {
 		r->count = 0;
@@ -1335,7 +1249,6 @@ int EXT_PULL::g_ext_rule_actions(EXT_RULE_ACTIONS *r)
 
 int EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFOMATION *r)
 {
-	int i;
 	uint32_t size;
 	auto pext = this;
 	
@@ -1355,14 +1268,12 @@ int EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFOMATION *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_uint16(&r->ppropid[i]));
-	}
 	TRY(pext->g_uint32(&size));
 	uint32_t offset = m_offset + size;
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_propname(&r->ppropname[i]));
-	}
 	if (offset < m_offset)
 		return EXT_ERR_FORMAT;
 	m_offset = offset;
@@ -1377,9 +1288,8 @@ int EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 	if (type == PT_UNSPECIFIED) {
 		TRY(pext->g_uint16(&type));
 		r->pvalue = pext->anew<TYPED_PROPVAL>();
-		if (NULL == r->pvalue) {
+		if (r->pvalue == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		((TYPED_PROPVAL*)r->pvalue)->type = type;
 		ppvalue = &((TYPED_PROPVAL*)r->pvalue)->pvalue;
 	} else {
@@ -1394,9 +1304,8 @@ int EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 		return EXT_ERR_SUCCESS;
 	case FLAGGED_PROPVAL_FLAG_ERROR:
 		*ppvalue = pext->anew<uint32_t>();
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return pext->g_uint32(static_cast<uint32_t *>(*ppvalue));
 	default:
 		return EXT_ERR_BAD_SWITCH;
@@ -1405,25 +1314,21 @@ int EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 
 int EXT_PULL::g_proprow(const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint8(&r->flag));
 	r->pppropval = pext->anew<void *>(pcolumns->count);
-	if (NULL == r->pppropval) {
+	if (r->pppropval == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
-		for (i=0; i<pcolumns->count; i++) {
+		for (size_t i = 0; i < pcolumns->count; ++i)
 			TRY(pext->g_propval(PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]));
-		}
 		return EXT_ERR_SUCCESS;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
-		for (i=0; i<pcolumns->count; i++) {
+		for (size_t i = 0; i < pcolumns->count; ++i) {
 			r->pppropval[i] = pext->anew<FLAGGED_PROPVAL>();
-			if (NULL == r->pppropval[i]) {
+			if (r->pppropval[i] == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 			TRY(pext->g_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
 			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		}
@@ -1445,24 +1350,20 @@ int EXT_PULL::g_sortorder(SORT_ORDER *r)
 
 int EXT_PULL::g_sortorder_set(SORTORDER_SET *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(pext->g_uint16(&r->count));
 	TRY(pext->g_uint16(&r->ccategories));
 	TRY(pext->g_uint16(&r->cexpanded));
-	if (0 == r->count || r->ccategories > r->count ||
-		r->cexpanded > r->ccategories) {
+	if (r->count == 0 || r->ccategories > r->count || r->cexpanded > r->ccategories)
 		return EXT_ERR_FORMAT;
-	}
 	r->psort = pext->anew<SORT_ORDER>(r->count);
 	if (NULL == r->psort) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_sortorder(&r->psort[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1476,22 +1377,19 @@ int EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
 	TRY(pext->g_uint16(&r->flags));
 	type = r->flags & 0x0007;
 	b_unicode = FALSE;
-	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE) {
+	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE)
 		b_unicode = TRUE;
-	}
 	r->pprefix_used = NULL;
 	r->pdisplay_type = NULL;
 	r->px500dn = NULL;
 	if (RECIPIENT_ROW_TYPE_X500DN == type) {
 		r->pprefix_used = pext->anew<uint8_t>();
-		if (NULL == r->pprefix_used) {
+		if (r->pprefix_used == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_uint8(r->pprefix_used));
 		r->pdisplay_type = pext->anew<uint8_t>();
-		if (NULL == r->pprefix_used) {
+		if (r->pprefix_used == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_uint8(r->pdisplay_type));
 		TRY(pext->g_str(&r->px500dn));
 	}
@@ -1500,64 +1398,55 @@ int EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
 	if (RECIPIENT_ROW_TYPE_PERSONAL_DLIST1 == type ||
 		RECIPIENT_ROW_TYPE_PERSONAL_DLIST2 == type) {
 		r->pentry_id = pext->anew<BINARY>();
-		if (NULL == r->pentry_id) {
+		if (r->pentry_id == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_bin(r->pentry_id));
 		r->psearch_key = pext->anew<BINARY>();
-		if (NULL == r->psearch_key) {
+		if (r->psearch_key == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_bin(r->psearch_key));
 	}
 	r->paddress_type = NULL;
-	if (RECIPIENT_ROW_TYPE_NONE == type &&
-		(r->flags & RECIPIENT_ROW_FLAG_OUTOFSTANDARD)) {
+	if (type == RECIPIENT_ROW_TYPE_NONE &&
+	    (r->flags & RECIPIENT_ROW_FLAG_OUTOFSTANDARD))
 		TRY(pext->g_str(&r->paddress_type));
-	}
 	r->pmail_address = NULL;
 	if (RECIPIENT_ROW_FLAG_EMAIL & r->flags) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->g_wstr(&r->pmail_address));
-		} else {
+		else
 			TRY(pext->g_str(&r->pmail_address));
-		}
 	}
 	r->pdisplay_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_DISPLAY) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->g_wstr(&r->pdisplay_name));
-		} else {
+		else
 			TRY(pext->g_str(&r->pdisplay_name));
-		}
 	}
 	r->psimple_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_SIMPLE) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->g_wstr(&r->psimple_name));
-		} else {
+		else
 			TRY(pext->g_str(&r->psimple_name));
-		}
 	}
 	r->ptransmittable_name = NULL;
 	if (r->flags & RECIPIENT_ROW_FLAG_TRANSMITTABLE) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->g_wstr(&r->ptransmittable_name));
-		} else {
+		else
 			TRY(pext->g_str(&r->ptransmittable_name));
-		}
 	}
 	if (RECIPIENT_ROW_FLAG_SAME == r->flags) {
-		if (NULL == r->pdisplay_name && NULL != r->ptransmittable_name) {
+		if (r->pdisplay_name == nullptr && r->ptransmittable_name != nullptr)
 			r->pdisplay_name = r->ptransmittable_name;
-		} else if (NULL != r->pdisplay_name && NULL == r->ptransmittable_name) {
+		else if (r->pdisplay_name != nullptr && r->ptransmittable_name == nullptr)
 			r->ptransmittable_name = r->pdisplay_name;
-		}
 	}
 	TRY(pext->g_uint16(&r->count));
-	if (r->count > pproptags->count) {
+	if (r->count > pproptags->count)
 		return EXT_ERR_FORMAT;
-	}
 	proptags.count = r->count;
 	proptags.pproptag = (uint32_t*)pproptags->pproptag;
 	return pext->g_proprow(&proptags, &r->properties);
@@ -1577,9 +1466,8 @@ int EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
 	}
 	uint32_t offset = m_offset + row_size;
 	r->precipient_row = pext->anew<RECIPIENT_ROW>();
-	if (NULL == r->precipient_row) {
+	if (r->precipient_row == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	TRY(g_recipient_row(pproptags, r->precipient_row));
 	if (m_offset > offset)
 		return EXT_ERR_FORMAT;
@@ -1719,7 +1607,6 @@ static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 
 int EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 {
-	int i;
 	uint16_t cbheader;
 	char tmp_buff[262];
 	uint16_t cchkeyname;
@@ -1729,23 +1616,19 @@ int EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 	TRY(pext->g_uint8(&r->major));
 	TRY(pext->g_uint8(&r->minor));
 	TRY(pext->g_uint16(&cbheader));
-	if (cbheader > 266) {
+	if (cbheader > 266)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->g_uint16(&r->reserved));
 	TRY(pext->g_uint16(&cchkeyname));
-	if (cbheader != 6 + 2*cchkeyname) {
+	if (cbheader != 6 + 2 * cchkeyname)
 		return EXT_ERR_FORMAT;
-	}
 	memset(tmp_buff, 0, sizeof(tmp_buff));
 	TRY(pext->g_bytes(tmp_buff, cbheader - 6));
-	if (FALSE == utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, 1024)) {
+	if (!utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, arsizeof(tmp_buff1)))
 		return EXT_ERR_CHARCNV;
-	}
 	r->keyname = pext->anew<char>(strlen(tmp_buff1) + 1);
-	if (NULL == r->keyname) {
+	if (r->keyname == nullptr)
 		return EXT_ERR_ALLOC;
-	}
 	strcpy(r->keyname, tmp_buff1);
 	TRY(pext->g_uint16(&r->crules));
 	r->prules = pext->anew<TZRULE>(r->crules);
@@ -1753,9 +1636,8 @@ int EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 		r->crules = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (i=0; i<r->crules; i++) {
+	for (size_t i = 0; i < r->crules; ++i)
 		TRY(ext_buffer_pull_tzrule(pext, &r->prules[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1837,50 +1719,39 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 	if (r->overrideflags & OVERRIDEFLAG_SUBJECT) {
 		TRY(pext->g_uint16(&tmp_len));
 		TRY(pext->g_uint16(&tmp_len2));
-		if (tmp_len != tmp_len2 + 1) {
+		if (tmp_len != tmp_len2 + 1)
 			return EXT_ERR_FORMAT;
-		}
 		r->subject = pext->anew<char>(tmp_len);
-		if (NULL == r->subject) {
+		if (r->subject == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_bytes(r->subject, tmp_len2));
 		r->subject[tmp_len2] = '\0';
 	}
-	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE) {
+	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE)
 		TRY(pext->g_uint32(&r->meetingtype));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA) {
+	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA)
 		TRY(pext->g_uint32(&r->reminderdelta));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_REMINDER) {
+	if (r->overrideflags & OVERRIDEFLAG_REMINDER)
 		TRY(pext->g_uint32(&r->reminderset));
-	}
 	if (r->overrideflags & OVERRIDEFLAG_LOCATION) {
 		TRY(pext->g_uint16(&tmp_len));
 		TRY(pext->g_uint16(&tmp_len2));
-		if (tmp_len != tmp_len2 + 1) {
+		if (tmp_len != tmp_len2 + 1)
 			return EXT_ERR_FORMAT;
-		}
 		r->location = pext->anew<char>(tmp_len);
-		if (NULL == r->location) {
+		if (r->location == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_bytes(r->location, tmp_len2));
 		r->location[tmp_len2] = '\0';
 	}
-	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS) {
+	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS)
 		TRY(pext->g_uint32(&r->busystatus));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT) {
+	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT)
 		TRY(pext->g_uint32(&r->attachment));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE) {
+	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE)
 		TRY(pext->g_uint32(&r->subtype));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR) {
+	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR)
 		TRY(pext->g_uint32(&r->appointmentcolor));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1910,9 +1781,8 @@ static int ext_buffer_pull_extendedexception(
 	int string_len;
 	uint16_t tmp_len;
 	
-	if (writerversion2 >= 0x00003009) {
+	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_pull_changehighlight(pext, &r->changehighlight));
-	}
 	TRY(pext->g_uint32(&r->reservedblockee1size));
 	if (0 == r->reservedblockee1size) {
 		r->preservedblockee1 = NULL;
@@ -1946,9 +1816,8 @@ static int ext_buffer_pull_extendedexception(
 			return EXT_ERR_CHARCNV;
 		string_len = strlen(&pbuff[tmp_len]);
 		r->subject = pext->anew<char>(string_len + 1);
-		if (NULL == r->subject) {
+		if (r->subject == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		strcpy(r->subject, &pbuff[tmp_len]);
 	}
 	if (overrideflags & OVERRIDEFLAG_LOCATION) {
@@ -1967,9 +1836,8 @@ static int ext_buffer_pull_extendedexception(
 			return EXT_ERR_CHARCNV;
 		string_len = strlen(&pbuff[tmp_len]);
 		r->location = pext->anew<char>(string_len + 1);
-		if (NULL == r->location) {
+		if (r->location == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		strcpy(r->location, &pbuff[tmp_len]);
 	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
@@ -1991,7 +1859,6 @@ static int ext_buffer_pull_extendedexception(
 
 int EXT_PULL::g_apptrecpat(APPOINTMENTRECURRENCEPATTERN *r)
 {
-	int i;
 	auto pext = this;
 	
 	TRY(ext_buffer_pull_recurrencepattern(pext, &r->recurrencepattern));
@@ -2015,9 +1882,8 @@ int EXT_PULL::g_apptrecpat(APPOINTMENTRECURRENCEPATTERN *r)
 			return EXT_ERR_ALLOC;
 		}
 	}
-	for (i=0; i<r->exceptioncount; i++) {
+	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_pull_exceptioninfo(pext, &r->pexceptioninfo[i]));
-	}
 	TRY(pext->g_uint32(&r->reservedblock1size));
 	if (0 == r->reservedblock1size) {
 		r->preservedblock1 = NULL;
@@ -2029,9 +1895,8 @@ int EXT_PULL::g_apptrecpat(APPOINTMENTRECURRENCEPATTERN *r)
 		}
 		TRY(pext->g_bytes(r->preservedblock1, r->reservedblock1size));
 	}
-	for (i=0; i<r->exceptioncount; i++) {
+	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_pull_extendedexception(pext, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
-	}
 	TRY(pext->g_uint32(&r->reservedblock2size));
 	if (0 == r->reservedblock2size) {
 		r->preservedblock2 = NULL;
@@ -2075,16 +1940,14 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 	}
 	for (i=0; i<r->count; i++) {
 		r->pplist[i] = pext->anew<ATTACHMENT_CONTENT>();
-		if (NULL == r->pplist[i]) {
+		if (r->pplist[i] == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_tpropval_a(&r->pplist[i]->proplist));
 		TRY(pext->g_uint8(&tmp_byte));
 		if (0 != tmp_byte) {
 			r->pplist[i]->pembedded = pext->anew<MESSAGE_CONTENT>();
-			if (NULL == r->pplist[i]->pembedded) {
+			if (r->pplist[i]->pembedded == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 			TRY(pext->g_msgctnt(r->pplist[i]->pembedded));
 		} else {
 			r->pplist[i]->pembedded = NULL;
@@ -2102,9 +1965,8 @@ int EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
 	TRY(pext->g_uint8(&tmp_byte));
 	if (0 != tmp_byte) {
 		r->children.prcpts = pext->anew<TARRAY_SET>();
-		if (NULL == r->children.prcpts) {
+		if (r->children.prcpts == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		TRY(pext->g_tarray_set(r->children.prcpts));
 	} else {
 		r->children.prcpts = NULL;
@@ -2112,9 +1974,8 @@ int EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
 	TRY(pext->g_uint8(&tmp_byte));
 	if (0 != tmp_byte) {
 		r->children.pattachments = pext->anew<ATTACHMENT_LIST>();
-		if (NULL == r->children.pattachments) {
+		if (r->children.pattachments == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		return ext_buffer_pull_attachment_list(
 				pext, r->children.pattachments);
 	}
@@ -2148,10 +2009,8 @@ BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
 
 EXT_PUSH::~EXT_PUSH()
 {
-	auto pext = this;
-	if (TRUE == pext->b_alloc) {
+	if (b_alloc)
 		m_mgt.free(m_udata);
-	}
 }
 
 int EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT *r)
@@ -2166,20 +2025,17 @@ int EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT *r)
 /* FALSE: overflow, TRUE: not overflow */
 BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 {
-	auto pext = this;
 	auto alloc_size = extra_size + m_offset;
 	if (m_alloc_size >= alloc_size)
 		return TRUE;
-	if (FALSE == pext->b_alloc) {
+	if (!b_alloc)
 		return FALSE;
-	}
 	if (alloc_size < m_alloc_size * 2)
 		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
 		alloc_size = m_alloc_size * 2;
 	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(m_udata, m_alloc_size));
-	if (NULL == pdata) {
+	if (pdata == nullptr)
 		return FALSE;
-	}
 	m_udata = pdata;
 	m_alloc_size = alloc_size;
 	return TRUE;
@@ -2273,13 +2129,12 @@ int EXT_PUSH::p_bool(BOOL v)
 	auto pext = this;
 	uint8_t tmp_byte;
 	
-	if (TRUE == v) {
+	if (v)
 		tmp_byte = 1;
-	} else if (FALSE == v) {
+	else if (!v)
 		tmp_byte = 0;
-	} else {
+	else
 		return EXT_ERR_FORMAT;
-	}
 	if (!pext->check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
 	m_udata[m_offset] = tmp_byte;
@@ -2300,27 +2155,23 @@ int EXT_PUSH::p_bin(const BINARY *r)
 	if (m_flags & EXT_FLAG_WCOUNT) {
 		TRY(pext->p_uint32(r->cb));
 	} else {
-		if (r->cb > 0xFFFF) {
+		if (r->cb > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
 		TRY(pext->p_uint16(r->cb));
 	}
-	if (0 == r->cb) {
+	if (r->cb == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->p_bytes(r->pb, r->cb);
 }
 
 int EXT_PUSH::p_bin_s(const BINARY *r)
 {
 	auto pext = this;
-	if (r->cb > 0xFFFF) {
+	if (r->cb > 0xFFFF)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint16(r->cb));
-	if (0 == r->cb) {
+	if (r->cb == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->p_bytes(r->pb, r->cb);
 }
 
@@ -2328,9 +2179,8 @@ int EXT_PUSH::p_bin_ex(const BINARY *r)
 {
 	auto pext = this;
 	TRY(pext->p_uint32(r->cb));
-	if (0 == r->cb) {
+	if (r->cb == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->p_bytes(r->pb, r->cb);
 }
 
@@ -2417,9 +2267,8 @@ int EXT_PUSH::p_uint64_a(const LONGLONG_ARRAY *r)
 int EXT_PUSH::p_uint64_sa(const LONGLONG_ARRAY *r)
 {
 	auto pext = this;
-	if (r->count > 0xFFFF) {
+	if (r->count > 0xFFFF)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint16(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint64(r->pll[i]));
@@ -2537,15 +2386,11 @@ static int ext_buffer_push_restriction_subobj(
 static int ext_buffer_push_restriction_comment(
 	EXT_PUSH *pext, const RESTRICTION_COMMENT *r)
 {
-	int i;
-	
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint8(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_tagged_pv(&r->ppropval[i]));
-	}
 	if (NULL != r->pres) {
 		TRY(pext->p_uint8(1));
 		return pext->p_restriction(r->pres);
@@ -2634,9 +2479,8 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 	if (0 == r->same_store) {
 		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint16_t)));
-		if (NULL == r->pstore_eid) {
+		if (r->pstore_eid == nullptr)
 			return EXT_ERR_FORMAT;
-		}
 		TRY(pext->p_store_eid(r->pstore_eid));
 		uint32_t offset1 = ext.m_offset;
 		eid_size = offset1 - (offset + sizeof(uint16_t));
@@ -2647,11 +2491,10 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 		TRY(pext->p_uint16(1));
 		TRY(pext->p_uint8(0));
 	}
-	if (0 != r->same_store) {
+	if (r->same_store != 0)
 		return pext->p_svreid(static_cast<SVREID *>(r->pfolder_eid));
-	} else {
+	else
 		return pext->p_bin(static_cast<BINARY *>(r->pfolder_eid));
-	}
 }
 
 static int ext_buffer_push_reply_action(
@@ -2665,31 +2508,23 @@ static int ext_buffer_push_reply_action(
 static int ext_buffer_push_recipient_block(
 	EXT_PUSH *pext, const RECIPIENT_BLOCK *r)
 {
-	int i;
-	
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_tagged_pv(&r->ppropval[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_push_forwarddelegate_action(
 	EXT_PUSH *pext, const FORWARDDELEGATE_ACTION *r)
 {
-	int i;
-	
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_recipient_block(pext, &r->pblock[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2743,15 +2578,12 @@ static int ext_buffer_push_action_block(
 int EXT_PUSH::p_rule_actions(const RULE_ACTIONS *r)
 {
 	auto pext = this;
-	int i;
 	
-	if (0 == r->count) {
+	if (r->count == 0)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_action_block(pext, &r->pblock[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2839,24 +2671,20 @@ int EXT_PUSH::p_longterm(const LONG_TERM_ID *r)
 int EXT_PUSH::p_longterm_a(const LONG_TERM_ID_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_longterm(&r->pids[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint32(r->pproptag[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2884,36 +2712,30 @@ int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
 int EXT_PUSH::p_propname_a(const PROPNAME_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_propname(&r->ppropname[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PUSH::p_propid_a(const PROPID_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint16(r->ppropid[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_tagged_pv(&r->ppropval[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2937,21 +2759,18 @@ static int ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBL
 int EXT_PUSH::p_problem_a(const PROBLEM_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_property_problem(pext, r->pproblem + i));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PUSH::p_xid(uint8_t size, const XID *pxid)
 {
 	auto pext = this;
-	if (size < 17 || size > 24) {
+	if (size < 17 || size > 24)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_guid(&pxid->guid));
 	return pext->p_bytes(pxid->local_id, size - 16);
 }
@@ -3016,19 +2835,16 @@ int EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *r)
 int EXT_PUSH::p_proprow(const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(pext->p_uint8(r->flag));
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
-		for (i=0; i<pcolumns->count; i++) {
+		for (size_t i = 0; i < pcolumns->count; ++i)
 			TRY(pext->p_propval(PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]));
-		}
 		return EXT_ERR_SUCCESS;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
-		for (i=0; i<pcolumns->count; i++) {
+		for (size_t i = 0; i < pcolumns->count; ++i)
 			TRY(pext->p_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
 			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
-		}
 		return EXT_ERR_SUCCESS;
 	}
 	return EXT_ERR_BAD_SWITCH;
@@ -3048,18 +2864,14 @@ int EXT_PUSH::p_sortorder(const SORT_ORDER *r)
 int EXT_PUSH::p_sortorder_set(const SORTORDER_SET *r)
 {
 	auto pext = this;
-	int i;
 	
-	if (0 == r->count || r->ccategories > r->count ||
-		r->cexpanded > r->ccategories) {
+	if (r->count == 0 || r->ccategories > r->count || r->cexpanded > r->ccategories)
 		return EXT_ERR_FORMAT;
-	}
 	TRY(pext->p_uint16(r->count));
 	TRY(pext->p_uint16(r->ccategories));
 	TRY(pext->p_uint16(r->cexpanded));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_sortorder(&r->psort[i]));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3088,60 +2900,48 @@ int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_RO
 	PROPTAG_ARRAY proptags;
 	
 	b_unicode = FALSE;
-	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE) {
+	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE)
 		b_unicode = TRUE;
-	}
 	TRY(pext->p_uint16(r->flags));
-	if (NULL != r->pprefix_used) {
+	if (r->pprefix_used != nullptr)
 		TRY(pext->p_uint8(*r->pprefix_used));
-	}
-	if (NULL != r->pdisplay_type) {
+	if (r->pdisplay_type != nullptr)
 		TRY(pext->p_uint8(*r->pdisplay_type));
-	}
-	if (NULL != r->px500dn) {
+	if (r->px500dn != nullptr)
 		TRY(pext->p_str(r->px500dn));
-	}
-	if (NULL != r->pentry_id) {
+	if (r->pentry_id != nullptr)
 		TRY(pext->p_bin(r->pentry_id));
-	}
-	if (NULL != r->psearch_key) {
+	if (r->psearch_key != nullptr)
 		TRY(pext->p_bin(r->psearch_key));
-	}
-	if (NULL != r->paddress_type) {
+	if (r->paddress_type != nullptr)
 		TRY(pext->p_str(r->paddress_type));
-	}
 	if (NULL != r->pmail_address) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->p_wstr(r->pmail_address));
-		} else {
+		else
 			TRY(pext->p_str(r->pmail_address));
-		}
 	}
 	if (NULL != r->pdisplay_name) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->p_wstr(r->pdisplay_name));
-		} else {
+		else
 			TRY(pext->p_str(r->pdisplay_name));
-		}
 	}
 	if (NULL != r->psimple_name) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->p_wstr(r->psimple_name));
-		} else {
+		else
 			TRY(pext->p_str(r->psimple_name));
-		}
 	}
 	if (NULL != r->ptransmittable_name) {
-		if (TRUE == b_unicode) {
+		if (b_unicode)
 			TRY(pext->p_wstr(r->ptransmittable_name));
-		} else {
+		else
 			TRY(pext->p_str(r->ptransmittable_name));
-		}
 	}
 	TRY(pext->p_uint16(r->count));
-	if (r->count > pproptags->count) {
+	if (r->count > pproptags->count)
 		return EXT_ERR_FORMAT;
-	}
 	proptags.count = r->count;
 	proptags.pproptag = (uint32_t*)pproptags->pproptag;
 	return pext->p_proprow(&proptags, &r->properties);
@@ -3245,9 +3045,8 @@ static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 {
 	auto &ext = *pext;
 	TRY(pext->p_uint16(r->persist_id));
-	if (PERSIST_SENTINEL == r->persist_id) {
+	if (r->persist_id == PERSIST_SENTINEL)
 		return pext->p_uint16(0);
-	}
 	uint32_t offset = ext.m_offset;
 	TRY(pext->advance(sizeof(uint16_t)));
 	TRY(ext_buffer_push_persistelement(pext, &r->element));
@@ -3262,12 +3061,10 @@ static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 int EXT_PUSH::p_persistdata_a(const PERSISTDATA_ARRAY *r)
 {
 	auto pext = this;
-	int i;
 	PERSISTDATA last_data;
 	
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_push_persistdata(pext, r->ppitems[i]));
-	}
 	last_data.persist_id = PERSIST_SENTINEL;
 	last_data.element.element_id = ELEMENT_SENTINEL;
 	last_data.element.pentry_id = NULL;
@@ -3326,7 +3123,6 @@ static int ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION *r)
 {
 	auto pext = this;
-	int i;
 	int len;
 	uint16_t cbheader;
 	char tmp_buff[262];
@@ -3334,9 +3130,8 @@ int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION *r)
 	TRY(pext->p_uint8(r->major));
 	TRY(pext->p_uint8(r->minor));
 	len = utf8_to_utf16le(r->keyname, tmp_buff, 262);
-	if (len < 2) {
+	if (len < 2)
 		return EXT_ERR_CHARCNV;
-	}
 	len -= 2;
 	cbheader = 6 + len;
 	TRY(pext->p_uint16(cbheader));
@@ -3344,9 +3139,8 @@ int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION *r)
 	TRY(pext->p_uint16(len / 2));
 	TRY(pext->p_bytes(tmp_buff, len));
 	TRY(pext->p_uint16(r->crules));
-	for (i=0; i<r->crules; i++) {
+	for (size_t i = 0; i < r->crules; ++i)
 		TRY(ext_buffer_push_tzrule(pext, r->prules + i));
-	}
 	return EXT_ERR_SUCCESS;
 }
 static int ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
@@ -3412,33 +3206,26 @@ static int ext_buffer_push_exceptioninfo(
 		TRY(pext->p_uint16(tmp_len));
 		TRY(pext->p_bytes(r->subject, tmp_len));
 	}
-	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE) {
+	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE)
 		TRY(pext->p_uint32(r->meetingtype));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA) {
+	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA)
 		TRY(pext->p_uint32(r->reminderdelta));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_REMINDER) {
+	if (r->overrideflags & OVERRIDEFLAG_REMINDER)
 		TRY(pext->p_uint32(r->reminderset));
-	}
 	if (r->overrideflags & OVERRIDEFLAG_LOCATION) {
 		tmp_len = strlen(r->location);
 		TRY(pext->p_uint16(tmp_len + 1));
 		TRY(pext->p_uint16(tmp_len));
 		TRY(pext->p_bytes(r->location, tmp_len));
 	}
-	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS) {
+	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS)
 		TRY(pext->p_uint32(r->busystatus));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT) {
+	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT)
 		TRY(pext->p_uint32(r->attachment));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE) {
+	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE)
 		TRY(pext->p_uint32(r->subtype));
-	}
-	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR) {
+	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR)
 		TRY(pext->p_uint32(r->appointmentcolor));
-	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -3447,11 +3234,10 @@ static int ext_buffer_push_changehighlight(
 {
 	TRY(pext->p_uint32(r->size));
 	TRY(pext->p_uint32(r->value));
-	if (r->size < sizeof(uint32_t)) {
+	if (r->size < sizeof(uint32_t))
 		return EXT_ERR_FORMAT;
-	} else if (sizeof(uint32_t) == r->size) {
+	else if (sizeof(uint32_t) == r->size)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->p_bytes(r->preserved, r->size - sizeof(uint32_t));
 }
 
@@ -3462,13 +3248,11 @@ static int ext_buffer_push_extendedexception(
 	int string_len;
 	uint16_t tmp_len;
 	
-	if (writerversion2 >= 0x00003009) {
+	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_push_changehighlight(pext, &r->changehighlight));
-	}
 	TRY(pext->p_uint32(r->reservedblockee1size));
-	if (0 != r->reservedblockee1size) {
+	if (r->reservedblockee1size != 0)
 		TRY(pext->p_bytes(r->preservedblockee1, r->reservedblockee1size));
-	}
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
 		TRY(pext->p_uint32(r->startdatetime));
@@ -3484,9 +3268,8 @@ static int ext_buffer_push_extendedexception(
 			return EXT_ERR_ALLOC;
 		}
 		string_len = utf8_to_utf16le(r->subject, pbuff.get(), 2 * tmp_len);
-		if (string_len < 2) {
+		if (string_len < 2)
 			return EXT_ERR_CHARCNV;
-		}
 		string_len -= 2;
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
@@ -3500,9 +3283,8 @@ static int ext_buffer_push_extendedexception(
 			return EXT_ERR_ALLOC;
 		}
 		string_len = utf8_to_utf16le(r->location, pbuff.get(), 2 * tmp_len);
-		if (string_len < 2) {
+		if (string_len < 2)
 			return EXT_ERR_CHARCNV;
-		}
 		string_len -= 2;
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
@@ -3510,9 +3292,8 @@ static int ext_buffer_push_extendedexception(
 	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
 		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
 		TRY(pext->p_uint32(r->reservedblockee2size));
-		if (0 != r->reservedblockee2size) {
+		if (r->reservedblockee2size != 0)
 			TRY(pext->p_bytes(r->preservedblockee2, r->reservedblockee2size));
-		}
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -3520,7 +3301,6 @@ static int ext_buffer_push_extendedexception(
 int EXT_PUSH::p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *r)
 {
 	auto pext = this;
-	int i;
 	
 	TRY(ext_buffer_push_recurrencepattern(pext, &r->recurrencepattern));
 	TRY(pext->p_uint32(r->readerversion2));
@@ -3528,17 +3308,14 @@ int EXT_PUSH::p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *r)
 	TRY(pext->p_uint32(r->starttimeoffset));
 	TRY(pext->p_uint32(r->endtimeoffset));
 	TRY(pext->p_uint16(r->exceptioncount));
-	for (i=0; i<r->exceptioncount; i++) {
+	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_push_exceptioninfo(pext, &r->pexceptioninfo[i]));
-	}
 	TRY(pext->p_uint32(r->reservedblock1size));
-	for (i=0; i<r->exceptioncount; i++) {
+	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_push_extendedexception(pext, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
-	}
 	TRY(pext->p_uint32(r->reservedblock2size));
-	if (0 == r->reservedblock2size) {
+	if (r->reservedblock2size == 0)
 		return EXT_ERR_SUCCESS;
-	}
 	return pext->p_bytes(r->preservedblock2, r->reservedblock2size);
 }
 
