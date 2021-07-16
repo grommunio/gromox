@@ -36,6 +36,7 @@ AC_ARG_WITH([asan], AS_HELP_STRING([--with-asan], [Activate Address Sanitizer]),
 	[
 	my_CFLAGS="$my_CFLAGS -fsanitize=address"
 	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=address"
+	my_LDFLAGS="$my_LDFLAGS -fsanitize=address"
 	])
 dnl fvis is non-conforming and (rightfully) triggers ubsan warnings;
 dnl hence we disable fvis as a workaround.
@@ -44,6 +45,7 @@ AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior
 	[
 	my_CFLAGS="$my_CFLAGS -fsanitize=undefined"
 	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=undefined"
+	my_LDFLAGS="$my_CXXFLAGS -fsanitize=undefined"
 	NO_VSYM=1],
 	[
 	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"

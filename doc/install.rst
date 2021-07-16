@@ -29,6 +29,19 @@ installation from the grammm distribution.
 The rest of the documentation assumes that Gromox was configured with
 ``--prefix=/usr --sysconfdir=/etc --localstatedir=/var``.
 
+ASAN notes
+----------
+
+The following additional developer options are available:
+
+* --with-asan: shorthand for enabling Address Sanitizer
+* --with-ubsan: shorthand for enabling UB Sanitizer
+
+Due to an omission in libtool <= 2.4.6 (fixed in v2.4.6-22-ga5c64665), it is
+necessary to also call `make` with the sanitizer libs (asan, ubsan or both,
+depending on choice) if they are shared libraries (usually gcc): ``make
+LIBS="-lasan -lubsan"``
+
 
 Runtime desirables
 ==================
