@@ -483,6 +483,7 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 			handle <<= 32;
 			handle |= pcontext->context_id;
 			pcontext->pinterface->unbind(handle);
+			pthread_setspecific(g_call_key, nullptr);
 		}
 		pdu_processor_free_context(pcontext);
 	}

@@ -56,6 +56,7 @@ exchange_plugins = \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
+	libgxh_mh_emsmdb.la libgxh_mh_nsp.la \
 	libgxs_abktplug.la \
 	libgxs_at_client.la \
 	libgxs_authmgr.la \
@@ -72,6 +73,7 @@ noinst_DATA += \
 	libgxp_exchange_emsmdb.ldd \
 	libgxp_exchange_nsp.ldd \
 	libgxp_exchange_rfr.ldd \
+	libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd \
 	libgxs_abktplug.ldd \
 	libgxs_at_client.ldd \
 	libgxs_authmgr.ldd \
@@ -188,6 +190,14 @@ libgxp_exchange_rfr_la_SOURCES = exch/exchange_rfr.cpp
 libgxp_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxp_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = ${default_sym}
+libgxh_mh_emsmdb_la_SOURCES = exch/mh/emsmdb.cpp exch/mh/mh_common.cpp
+libgxh_mh_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_mh_emsmdb_la_LIBADD = -lpthread libgromox_common.la libgromox_mapi.la
+EXTRA_libgxh_mh_emsmdb_la_DEPENDENCIES = ${default_sym}
+libgxh_mh_nsp_la_SOURCES = exch/mh/mh_common.cpp exch/mh/nsp.cpp exch/mh/nsp_bridge.cpp exch/mh/nsp_common.cpp exch/mh/nsp_ops.cpp
+libgxh_mh_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_mh_nsp_la_LIBADD = -lpthread libgromox_common.la libgromox_mapi.la
+EXTRA_libgxh_mh_nsp_la_DEPENDENCIES = ${default_sym}
 libgxs_abktplug_la_SOURCES = exch/abktplug.cpp
 libgxs_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_abktplug_la_LIBADD = libgromox_cplus.la
@@ -300,6 +310,7 @@ man_MANS = \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
+	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \

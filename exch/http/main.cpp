@@ -53,6 +53,8 @@ static struct HXoption g_options_table[] = {
 };
 
 static const char *const g_dfl_hpm_plugins[] = {
+	"libgxh_mh_emsmdb.so",
+	"libgxh_mh_nsp.so",
 	NULL,
 };
 

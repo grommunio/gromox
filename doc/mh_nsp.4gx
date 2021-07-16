@@ -1,0 +1,15 @@
+.TH mh_nsp 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+mh_nsp \(em MAPI-HTTP processor for NSPI
+.SH Description
+mh_nsp is a processing plugin for http(8gx) which reacts to URIs starting in
+\fB/mapi/nspi/\fP. The ROP stream inside the HTTP request bodies is handed off
+to exchange_nsp(4gx) for processing.
+.SH Config file directives
+This plugin has no directives.
+.SH Normative references
+.IP \(bu 4
+MS-OXCMAPIHTTP: Messaging Application Programming Interface (MAPI) Extensions
+for HTTP
+.SH See also
+\fBgromox\fP(7), \fBhttp\fP(8gx), \fBexchange_nsp\fP(4gx)
