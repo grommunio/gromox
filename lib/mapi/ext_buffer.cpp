@@ -2033,7 +2033,7 @@ BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 	if (alloc_size < m_alloc_size * 2)
 		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
 		alloc_size = m_alloc_size * 2;
-	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(m_udata, m_alloc_size));
+	auto pdata = static_cast<uint8_t *>(m_mgt.realloc(m_udata, alloc_size));
 	if (pdata == nullptr)
 		return FALSE;
 	m_udata = pdata;
