@@ -47,6 +47,8 @@ struct dlgitem {
 	char user[324];
 };
 
+static constexpr char dlgitem_format[] = "%s:324";
+
 }
 
 enum {
@@ -1628,7 +1630,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
 		         "%s/config/delegates.txt", maildir);
-		auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
+		auto pfile = list_file_initd(temp_path, nullptr, dlgitem_format);
 		if (NULL == pfile) {
 			result = ecSuccess;
 			goto EXIT_GET_MATCHES;
@@ -2539,7 +2541,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		goto EXIT_MOD_LINKATT;
 	}
 	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/config/delegates.txt", maildir);
-	pfile = list_file_initd(temp_path, nullptr, "%s:256");
+	pfile = list_file_initd(temp_path, nullptr, dlgitem_format);
 	if (NULL != pfile) {
 		item_num = pfile->get_size();
 		auto pitem = static_cast<const dlgitem *>(pfile->get_list());

@@ -178,8 +178,8 @@ static BOOL oxomsg_check_permission(const char *account,
 		return FALSE;
 	}
 	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/config/delegates.txt", maildir);
-	struct srcitem { char a[256]; };
-	auto pfile = list_file_initd(temp_path, nullptr, "%s:256");
+	struct srcitem { char a[324]; };
+	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
 	if (NULL == pfile) {
 		return FALSE;
 	}
