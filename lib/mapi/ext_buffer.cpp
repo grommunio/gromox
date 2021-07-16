@@ -342,8 +342,18 @@ int EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->count; ++i)
+	for (size_t i = 0; i < r->count; ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			uint8_t value_set;
+			TRY(pext->g_uint8(&value_set));
+			if (value_set == 0) {
+				r->pbin[i].cb = 0;
+				r->pbin[i].pb = nullptr;
+				continue;
+			}
+		}
 		TRY(pext->g_bin(&r->pbin[i]));
+	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -360,8 +370,17 @@ int EXT_PULL::g_str_a(STRING_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->count; ++i)
+	for (size_t i = 0; i < r->count; ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			uint8_t value_set;
+			TRY(pext->g_uint8(&value_set));
+			if (value_set == 0) {
+				r->ppstr[i] = nullptr;
+				continue;
+			}
+		}
 		TRY(pext->g_str(&r->ppstr[i]));
+	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -378,8 +397,17 @@ int EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->count; ++i)
+	for (size_t i = 0; i < r->count; ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			uint8_t value_set;
+			TRY(pext->g_uint8(&value_set));
+			if (value_set == 0) {
+				r->ppstr[i] = nullptr;
+				continue;
+			}
+		}
 		TRY(pext->g_wstr(&r->ppstr[i]));
+	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -789,9 +817,20 @@ int EXT_PULL::g_rule_actions(RULE_ACTIONS *r)
 int EXT_PULL::g_propval(uint16_t type, void **ppval)
 {
 	auto pext = this;
+	if (m_flags & EXT_FLAG_ABK && (type == PT_STRING8 || type == PT_UNICODE ||
+	    type == PT_BINARY || (type & MV_FLAG))) {
+		uint8_t value_set;
+		TRY(pext->g_uint8(&value_set));
+		if (value_set == 0) {
+			*ppval = nullptr;
+			return EXT_ERR_SUCCESS;
+		} else if (value_set != 0xFF) {
+			return EXT_ERR_FORMAT;
+		}
+	} else if ((type & MVI_FLAG) == MVI_FLAG) {
 	/* convert multi-value instance into single value */
-	if ((type & MVI_FLAG) == MVI_FLAG)
 		type &= ~MVI_FLAG;
+	}
 	switch (type) {
 	case PT_UNSPECIFIED:
 		*ppval = pext->anew<TYPED_PROPVAL>();
@@ -898,7 +937,7 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		return pext->g_bin_a(static_cast<BINARY_ARRAY *>(*ppval));
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return m_flags & EXT_FLAG_ABK ? EXT_ERR_FORMAT : EXT_ERR_BAD_SWITCH;
 	}
 }
 
@@ -947,6 +986,23 @@ int EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_uint32(&r->pproptag[i]));
+	return EXT_ERR_SUCCESS;
+}
+
+int EXT_PULL::g_proptag_a(LPROPTAG_ARRAY *r)
+{
+	TRY(g_uint32(&r->cvalues));
+	if (r->cvalues == 0) {
+		r->pproptag = nullptr;
+		return EXT_ERR_SUCCESS;
+	}
+	r->pproptag = anew<uint32_t>(strange_roundup(r->cvalues, SR_GROW_PROPTAG_ARRAY));
+	if (r->pproptag == nullptr) {
+		r->cvalues = 0;
+		return EXT_ERR_ALLOC;
+	}
+	for (size_t i = 0; i < r->cvalues; ++i)
+		TRY(g_uint32(&r->pproptag[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1028,6 +1084,23 @@ int EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
+	return EXT_ERR_SUCCESS;
+}
+
+int EXT_PULL::g_tpropval_a(LTPROPVAL_ARRAY *r)
+{
+	TRY(g_uint32(&r->count));
+	if (r->count == 0) {
+		r->propval = nullptr;
+		return EXT_ERR_SUCCESS;
+	}
+	r->propval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
+	if (r->propval == nullptr) {
+		r->count = 0;
+		return EXT_ERR_ALLOC;
+	}
+	for (size_t i = 0; i < r->count; ++i)
+		TRY(g_tagged_pv(&r->propval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -1280,6 +1353,7 @@ int EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 	auto pext = this;
 	
 	if (type == PT_UNSPECIFIED) {
+		/* OXCDATA §2.11.6 FlaggedPropertyValueWithType */
 		TRY(pext->g_uint16(&type));
 		r->pvalue = pext->anew<TYPED_PROPVAL>();
 		if (r->pvalue == nullptr)
@@ -2273,8 +2347,16 @@ int EXT_PUSH::p_bin_a(const BINARY_ARRAY *r)
 {
 	auto pext = this;
 	TRY(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i)
+	for (size_t i = 0; i < r->count; ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			if (r->pbin[i].cb == 0) {
+				TRY(pext->p_uint8(0));
+				continue;
+			}
+			TRY(pext->p_uint8(0xFF));
+		}
 		TRY(pext->p_bin(&r->pbin[i]));
+	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2282,8 +2364,16 @@ int EXT_PUSH::p_str_a(const STRING_ARRAY *r)
 {
 	auto pext = this;
 	TRY(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i)
+	for (size_t i = 0; i < r->count; ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			if (r->ppstr[i] == nullptr) {
+				TRY(pext->p_uint8(0));
+				continue;
+			}
+			TRY(pext->p_uint8(0xFF));
+		}
 		TRY(pext->p_str(r->ppstr[i]));
+	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2291,8 +2381,16 @@ int EXT_PUSH::p_wstr_a(const STRING_ARRAY *r)
 {
 	auto pext = this;
 	TRY(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i)
+	for (size_t i = 0; i < r->count; ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			if (r->ppstr[i] == nullptr) {
+				TRY(pext->p_uint8(0));
+				continue;
+			}
+			TRY(pext->p_uint8(0xFF));
+		}
 		TRY(pext->p_wstr(r->ppstr[i]));
+	}
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2584,9 +2682,15 @@ int EXT_PUSH::p_rule_actions(const RULE_ACTIONS *r)
 int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 {
 	auto pext = this;
-	/* convert multi-value instance into single value */
-	if ((type & MVI_FLAG) == MVI_FLAG)
+	if (m_flags & EXT_FLAG_ABK && (type == PT_STRING8 ||
+	    type == PT_UNICODE || type == PT_BINARY || (type & MV_FLAG))) {
+		if (pval == nullptr)
+			return p_uint8(0);
+		TRY(p_uint8(0xFF));
+	} else if ((type & MVI_FLAG) == MVI_FLAG) {
+		/* convert multi-value instance into single value */
 		type &= ~MVI_FLAG;
+	}
 	switch (type) {
 	case PT_UNSPECIFIED:
 		return pext->p_typed_pv(static_cast<const TYPED_PROPVAL *>(pval));
@@ -2682,6 +2786,14 @@ int EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
+int EXT_PUSH::p_proptag_a(const LPROPTAG_ARRAY *r)
+{
+	TRY(p_uint32(r->cvalues));
+	for (size_t i = 0; i < r->cvalues; ++i)
+		TRY(p_uint32(r->pproptag[i]));
+	return EXT_ERR_SUCCESS;
+}
+
 int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
 {
 	auto pext = this;
@@ -2730,6 +2842,14 @@ int EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY *r)
 	TRY(pext->p_uint16(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_tagged_pv(&r->ppropval[i]));
+	return EXT_ERR_SUCCESS;
+}
+
+int EXT_PUSH::p_tpropval_a(const LTPROPVAL_ARRAY *r)
+{
+	TRY(p_uint32(r->count));
+	for (size_t i = 0; i < r->count; ++i)
+		TRY(p_tagged_pv(&r->propval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2799,7 +2919,7 @@ int EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *r)
 	auto pext = this;
 	void *pvalue = nullptr;
 	
-	if (type == PT_UNSPECIFIED) {
+	if (type == PT_UNSPECIFIED && !(m_flags & EXT_FLAG_ABK)) {
 		if (FLAGGED_PROPVAL_FLAG_UNAVAILABLE == r->flag) {
 			type = 0;
 		} else if (FLAGGED_PROPVAL_FLAG_ERROR == r->flag) {
@@ -2838,6 +2958,22 @@ int EXT_PUSH::p_proprow(const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r)
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
 		for (size_t i = 0; i < pcolumns->count; ++i)
 			TRY(pext->p_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
+			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
+		return EXT_ERR_SUCCESS;
+	}
+	return EXT_ERR_BAD_SWITCH;
+}
+
+int EXT_PUSH::p_proprow(const LPROPTAG_ARRAY *cols, const PROPERTY_ROW *r)
+{
+	TRY(p_uint8(r->flag));
+	if (r->flag == PROPERTY_ROW_FLAG_NONE) {
+		for (size_t i = 0; i < cols->cvalues; ++i)
+			TRY(p_propval(PROP_TYPE(cols->pproptag[i]), r->pppropval[i]));
+		return EXT_ERR_SUCCESS;
+	} else if (r->flag == PROPERTY_ROW_FLAG_FLAGGED) {
+		for (size_t i = 0; i < cols->cvalues; ++i)
+			TRY(p_flagged_pv(PROP_TYPE(cols->pproptag[i]),
 			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		return EXT_ERR_SUCCESS;
 	}

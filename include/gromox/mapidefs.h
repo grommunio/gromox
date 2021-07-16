@@ -745,6 +745,11 @@ struct TPROPVAL_ARRAY {
 	TAGGED_PROPVAL *ppropval;
 };
 
+struct LTPROPVAL_ARRAY {
+	uint32_t count;
+	TAGGED_PROPVAL *propval;
+};
+
 struct TARRAY_SET {
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;

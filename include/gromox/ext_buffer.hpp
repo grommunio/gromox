@@ -15,9 +15,13 @@
 #define EXT_ERR_HEADER_SIZE					8
 #define EXT_ERR_RANGE						9
 #define EXT_ERR_INVALID_OBJECT				10
-#define EXT_FLAG_UTF16						0x00000001
-#define EXT_FLAG_WCOUNT						0x00000002
-#define EXT_FLAG_TBLLMT						0x00000004
+
+enum {
+	EXT_FLAG_UTF16 = 1U << 0,
+	EXT_FLAG_WCOUNT = 1U << 1,
+	EXT_FLAG_TBLLMT = 1U << 2,
+	EXT_FLAG_ABK = 1U << 3,
+};
 
 typedef void* (*EXT_BUFFER_ALLOC)(size_t);
 
@@ -103,6 +107,7 @@ struct EXT_PULL {
 	int g_wstr_a(STRING_ARRAY *);
 	int g_guid_a(GUID_ARRAY *);
 	int g_proptag_a(PROPTAG_ARRAY *);
+	int g_proptag_a(LPROPTAG_ARRAY *);
 	int g_restriction(RESTRICTION *);
 	int g_svreid(SVREID *);
 	int g_store_eid(STORE_ENTRYID *);
@@ -120,6 +125,7 @@ struct EXT_PULL {
 	int g_propname_a(PROPNAME_ARRAY *);
 	int g_propid_a(PROPID_ARRAY *);
 	int g_tpropval_a(TPROPVAL_ARRAY *);
+	int g_tpropval_a(LTPROPVAL_ARRAY *);
 	int g_tarray_set(TARRAY_SET *);
 	int g_problem_a(PROBLEM_ARRAY *);
 	int g_xid(uint8_t size, XID *);
@@ -186,6 +192,7 @@ struct EXT_PUSH {
 	int p_wstr_a(const STRING_ARRAY *);
 	int p_guid_a(const GUID_ARRAY *);
 	int p_proptag_a(const PROPTAG_ARRAY *);
+	int p_proptag_a(const LPROPTAG_ARRAY *);
 	int p_restriction(const RESTRICTION *);
 	int p_svreid(const SVREID *);
 	int p_store_eid(const STORE_ENTRYID *);
@@ -197,10 +204,12 @@ struct EXT_PUSH {
 	int p_typed_pv(const TYPED_PROPVAL *);
 	int p_flagged_pv(uint16_t, const FLAGGED_PROPVAL *);
 	int p_proprow(const PROPTAG_ARRAY *, const PROPERTY_ROW *);
+	int p_proprow(const LPROPTAG_ARRAY *, const PROPERTY_ROW *);
 	int p_propname(const PROPERTY_NAME *);
 	int p_propname_a(const PROPNAME_ARRAY *);
 	int p_propid_a(const PROPID_ARRAY *);
 	int p_tpropval_a(const TPROPVAL_ARRAY *);
+	int p_tpropval_a(const LTPROPVAL_ARRAY *);
 	int p_tarray_set(const TARRAY_SET *);
 	int p_problem_a(const PROBLEM_ARRAY *);
 	int p_xid(uint8_t, const XID *);
