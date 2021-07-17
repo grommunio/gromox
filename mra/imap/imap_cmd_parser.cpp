@@ -1135,10 +1135,9 @@ static BOOL imap_cmd_parser_covert_imaptime(
 	time_t tmp_time;
 	char tmp_buff[3];
 	struct tm tmp_tm;
-	const char *str_zone;
 	
 	memset(&tmp_tm, 0, sizeof(tmp_tm));
-	str_zone = strptime(str_time, "d-%b-%Y %T ", &tmp_tm);
+	auto str_zone = strptime(str_time, "%d-%b-%Y %T ", &tmp_tm);
 	if (NULL == str_zone) {
 		return FALSE;
 	}
