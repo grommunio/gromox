@@ -1,12 +1,4 @@
 #!/usr/bin/perl
-#
-#	Extract templates from an ActiveDirectory dump
-#
-#	Usage: ldapsearch -b dc=whatever ... | gromox-abktpull
-#
-#	Files will be created in the current directory (so better mkdir & cd to
-#	something beforehand).
-#
 use File::Path qw(make_path);
 use MIME::Base64;
 use strict;
