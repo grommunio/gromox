@@ -289,7 +289,7 @@ man_MANS = \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
-	doc/freebusy.8gx doc/gromox.7 \
+	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
 	doc/gromox-dbop.8gx doc/gromox-mailq.8gx \
 	doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
