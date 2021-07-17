@@ -1126,8 +1126,7 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 	}
 }
 
-static BOOL imap_cmd_parser_covert_imaptime(
-	const char *str_time, time_t *ptime)
+static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime)
 {
 	int hour;
 	int minute;
@@ -2574,10 +2573,9 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		strcat(flag_buff, "U");
 	}
 	strcat(flag_buff, ")");
-	if (NULL == str_received || FALSE ==
-		imap_cmd_parser_covert_imaptime(str_received, &tmp_time)) {
+	if (str_received == nullptr ||
+	    !imap_cmd_parser_convert_imaptime(str_received, &tmp_time))
 		time(&tmp_time);
-	}
 	std::string mid_string, eml_path;
 	int fd = -1;
 	try {
@@ -2833,10 +2831,9 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		strcat(flag_buff, "U");
 	}
 	strcat(flag_buff, ")");
-	if ('\0' == str_internal[0] ||
-		FALSE == imap_cmd_parser_covert_imaptime(str_internal, &tmp_time)) {
+	if (str_internal[0] == '\0' ||
+	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
-	}
 	std::string eml_path;
 	int fd = -1;
 	try {
