@@ -419,7 +419,7 @@ static zend_bool stream_object_seek(STREAM_OBJECT *pstream,
 		default: return 0;
 	}
 	auto newoff = safe_add_s(origin, offset);
-	if (newoff > !stream_object_set_length(pstream, offset))
+	if (newoff > pstream->content_bin.cb && !stream_object_set_length(pstream, offset))
 		return 0;
 	pstream->seek_offset = newoff;
 	return 1;
