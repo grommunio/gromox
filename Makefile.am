@@ -88,6 +88,7 @@ sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pffimport
 endif
+sbin_SCRIPTS = gromox-abktpull
 pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
 
 BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
