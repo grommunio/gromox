@@ -26,6 +26,7 @@ Makefile.in
 /digest
 /event
 /freebusy
+/gromox-abktconv
 /gromox-dbop
 /gromox-mailq
 /gromox-pffimport
@@ -47,7 +48,6 @@ Makefile.in
 /php_mapi/zarafa_rpc.cpp
 /exch/exmdb_provider/exmdb_rpc.cpp
 /system/*.service
-/tests/abktconv
 /tests/bodyconv
 /tests/cryptest
 /tests/icalparse

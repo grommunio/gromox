@@ -84,7 +84,7 @@ noinst_DATA += \
 agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
-sbin_PROGRAMS = gromox-dbop gromox-mailq
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pffimport
 endif
@@ -242,6 +242,8 @@ adaptor_SOURCES = lib/system_log.cpp tools/adaptor/data_source.cpp tools/adaptor
 adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 event_SOURCES = tools/event.cpp lib/fifo.cpp
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
+gromox_abktconv_SOURCES = tools/abktconv.cpp
+gromox_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp tools/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_mailq_SOURCES = tools/mailq.cpp
@@ -269,9 +271,7 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
-noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/cryptest tests/icalparse tests/zendfake
-tests_abktconv_SOURCES = tests/abktconv.cpp
-tests_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
+noinst_PROGRAMS = tests/bodyconv tests/cryptest tests/icalparse tests/zendfake
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 tests_cryptest_SOURCES = tests/cryptest.cpp
