@@ -2388,7 +2388,7 @@ int common_util_run()
 	return 0;
 }
 
-int common_util_stop()
+void common_util_stop()
 {
 	if (NULL != g_file_allocator) {
 		lib_buffer_free(g_file_allocator);
@@ -2398,7 +2398,6 @@ int common_util_stop()
 		mime_pool_free(g_mime_pool);
 		g_mime_pool = NULL;
 	}
-	return 0;
 }
 
 void common_util_free()

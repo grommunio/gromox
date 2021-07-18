@@ -150,13 +150,12 @@ int exmdb_local_run()
 	return 0;
 }
 
-int exmdb_local_stop()
+void exmdb_local_stop()
 {
 	if (NULL != g_str_hash) {
 		str_hash_free(g_str_hash);
 		g_str_hash = NULL;
 	}
-	return 0;
 }
 
 void exmdb_local_free()

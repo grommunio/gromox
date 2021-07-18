@@ -452,13 +452,12 @@ PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
 	return pinfo;
 }
 
-int msgchg_grouping_stop()
+void msgchg_grouping_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&g_info_list)) != nullptr)
 		msgchg_grouping_free_info_node(static_cast<INFO_NODE *>(pnode->pdata));
-	return 0;
 }
 
 void msgchg_grouping_free()

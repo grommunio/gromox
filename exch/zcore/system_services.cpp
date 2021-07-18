@@ -90,7 +90,7 @@ int system_services_run()
 #undef E
 }
 
-int system_services_stop()
+void system_services_stop()
 {
 #define E(b) service_release(b, "system")
 	E("get_user_lang");
@@ -128,5 +128,4 @@ int system_services_stop()
 	E("get_user_privilege_bits");
 	E("add_timer");
 #undef E
-	return 0;
 }

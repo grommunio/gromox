@@ -43,7 +43,7 @@ int system_services_run()
 #undef E2
 }
 
-int system_services_stop()
+void system_services_stop()
 {
 	service_release("ip_filter_judge", "system");
 	service_release("user_filter_judge", "system");
@@ -58,5 +58,4 @@ int system_services_stop()
 	if (system_services_check_full != nullptr)
 		service_release("check_full", "system");
 	service_release("log_info", "system");
-	return 0;
 }

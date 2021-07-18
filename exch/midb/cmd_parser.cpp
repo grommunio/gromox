@@ -123,9 +123,7 @@ int cmd_parser_run()
 	return -1;
 }
 
-
-
-int cmd_parser_stop()
+void cmd_parser_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION *pconnection;
@@ -159,7 +157,6 @@ int cmd_parser_stop()
 		close(pconnection->sockd);
 		free(pconnection);
 	}
-	return 0;
 }
 
 

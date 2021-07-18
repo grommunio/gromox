@@ -90,7 +90,7 @@ int listener_run(const char *CS_PATH)
 	return 0;
 }
 
-int listener_stop()
+void listener_stop()
 {
 	g_notify_stop = true;
 	shutdown(g_listen_sockd, SHUT_RDWR);
@@ -98,5 +98,4 @@ int listener_stop()
 	pthread_join(g_listener_id, NULL);
 	close(g_listen_sockd);
 	g_listen_sockd = -1;
-	return 0;
 }

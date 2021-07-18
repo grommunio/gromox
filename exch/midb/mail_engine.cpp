@@ -6125,7 +6125,7 @@ int mail_engine_run()
 	return 0;
 }
 
-int mail_engine_stop()
+void mail_engine_stop()
 {
 	g_notify_stop = true;
 	pthread_kill(g_scan_tid, SIGALRM);
@@ -6133,7 +6133,6 @@ int mail_engine_stop()
 	g_hash_table.clear();
 	mime_pool_free(g_mime_pool);
 	lib_buffer_free(g_alloc_mjson);
-	return 0;
 }
 
 int mail_engine_get_param(int param)

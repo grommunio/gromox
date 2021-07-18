@@ -245,14 +245,13 @@ void message_dequeue_put(MESSAGE *pmessage)
 	g_dequeued_num ++;
 }
 
-int message_dequeue_stop()
+void message_dequeue_stop()
 {
 	g_notify_stop = true;
 	pthread_kill(g_thread_id, SIGALRM);
 	pthread_join(g_thread_id, NULL);
 
 	message_dequeue_collect_resource();
-	return 0;
 }
 
 void message_dequeue_free()

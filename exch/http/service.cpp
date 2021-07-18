@@ -105,12 +105,11 @@ int service_run()
 	return 0;
 }
 
-int service_stop()
+void service_stop()
 {
 	g_list_plug.clear();
 	g_init_path[0] = '\0';
 	g_plugin_names = NULL;
-	return 0;
 }
 
 /*

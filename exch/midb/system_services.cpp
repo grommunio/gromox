@@ -45,7 +45,7 @@ int system_services_run()
 #undef E
 }
 
-int system_services_stop()
+void system_services_stop()
 {
 	service_release("get_user_lang", "system");
 	service_release("get_timezone", "system");
@@ -60,5 +60,4 @@ int system_services_stop()
 	service_release("mime_to_extension", "system");
 	service_release("extension_to_mime", "system");
 	service_release("broadcast_event", "system");
-	return 0;
 }

@@ -617,11 +617,10 @@ int common_util_run(const char *data_path)
 	return 0;
 }
 
-int common_util_stop()
+void common_util_stop()
 {
 	g_langmap_list.reset();
 	g_folderlang_list.reset();
-	return 0;
 }
 
 void common_util_free()

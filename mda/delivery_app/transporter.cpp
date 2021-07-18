@@ -390,7 +390,7 @@ static void transporter_collect_resource()
 	}
 }
 
-int transporter_stop()
+void transporter_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 	THREAD_DATA *pthr;
@@ -413,7 +413,6 @@ int transporter_stop()
 	for (size_t i = 0; i < g_free_num; ++i)
 		mail_free(&g_free_ptr[i].mail);
 	transporter_collect_resource();
-    return 0;
 }
 
 void transporter_free()

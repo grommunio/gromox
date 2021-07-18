@@ -141,10 +141,10 @@ int exmdb_listener_trigger_accept()
 	return 0;
 }
 
-int exmdb_listener_stop()
+void exmdb_listener_stop()
 {
 	if (0 == g_listen_port) {
-		return 0;
+		return;
 	}
 	if (!g_notify_stop) {
 		g_notify_stop = true;
@@ -156,5 +156,4 @@ int exmdb_listener_stop()
 		close(g_listen_sockd);
 		g_listen_sockd = -1;
 	}
-	return 0;
 }

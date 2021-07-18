@@ -80,13 +80,12 @@ int listener_trigger_accept()
 	return 0;
 }
 
-int listener_stop() {
+void listener_stop() {
 	g_notify_stop = true;
 	if (g_listen_sockd > 0) {
 		close(g_listen_sockd);
 		g_listen_sockd = -1;
 	}
-	return 0;
 }
 
 void listener_free(){

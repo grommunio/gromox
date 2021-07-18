@@ -44,7 +44,7 @@ struct ROUTER_CONNECTION {
 int exmdb_parser_get_param(int param);
 extern void exmdb_parser_init(size_t max_threads, size_t max_routers);
 extern int exmdb_parser_run(const char *config_path);
-extern int exmdb_parser_stop();
+extern void exmdb_parser_stop();
 extern std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_get_connection();
 void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&);
 extern std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_get_router(const char *remote_id);

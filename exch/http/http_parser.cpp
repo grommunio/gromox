@@ -225,7 +225,7 @@ int http_parser_run()
     return 0;
 }
 
-int http_parser_stop()
+void http_parser_stop()
 {
 	if (NULL != g_inchannel_allocator) {
 		lib_buffer_free(g_inchannel_allocator);
@@ -252,7 +252,6 @@ int http_parser_stop()
 		g_ssl_mutex_buf.reset();
 	}
 	pthread_key_delete(g_context_key);
-    return 0;
 }
 
 int http_parser_threads_event_proc(int action)

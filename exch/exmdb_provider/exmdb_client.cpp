@@ -477,7 +477,7 @@ int exmdb_client_run(const char *config_path)
 	return 0;
 }
 
-int exmdb_client_stop()
+void exmdb_client_stop()
 {
 	if (0 != g_conn_num) {
 		if (!g_notify_stop) {
@@ -496,7 +496,6 @@ int exmdb_client_stop()
 	for (auto &srv : g_server_list)
 		for (auto &conn : srv.conn_list)
 			close(conn.sockd);
-	return 0;
 }
 
 BOOL exmdb_client_check_local(const char *prefix, BOOL *pb_private)

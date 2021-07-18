@@ -985,7 +985,7 @@ int exmdb_parser_run(const char *config_path)
 	return 0;
 }
 
-int exmdb_parser_stop()
+void exmdb_parser_stop()
 {
 	size_t i = 0;
 	pthread_t *pthr_ids;
@@ -996,7 +996,7 @@ int exmdb_parser_stop()
 	if (num > 0) {
 		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
-			return -1;
+			return;
 		}
 	for (auto &pconnection : g_connection_list) {
 		pthr_ids[i++] = pconnection->thr_id;
@@ -1018,7 +1018,7 @@ int exmdb_parser_stop()
 	if (num > 0) {
 		pthr_ids = me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
-			return -2;
+			return;
 		}
 	i = 0;
 	for (auto &rt : g_router_list) {
@@ -1036,5 +1036,4 @@ int exmdb_parser_stop()
 		pthr_ids = NULL;
 	}
 	}
-	return 0;
 }

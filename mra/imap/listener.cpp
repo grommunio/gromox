@@ -366,7 +366,7 @@ static void *imls_thrworkssl(void *arg)
 	return nullptr;
 }
 
-int listener_stop()
+void listener_stop()
 {
 	if (g_listener_sock > 2) {
 		close(g_listener_sock);
@@ -374,7 +374,6 @@ int listener_stop()
 	if (g_listener_ssl_port > 0 && g_listener_ssl_port > 2) {
 		close(g_listener_ssl_sock);
 	}
-	return 0;
 }
 
 void listener_free()

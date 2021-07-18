@@ -132,7 +132,7 @@ extern void pdu_processor_init(int connection_num, int connection_ratio,
 	BOOL header_signing, size_t max_request_mem, const char *plugins_path,
 	const char *const *names, bool ignerr);
 extern int pdu_processor_run();
-extern int pdu_processor_stop();
+extern void pdu_processor_stop();
 extern void pdu_processor_free();
 PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port);
 void pdu_processor_destroy(PDU_PROCESSOR *pprocessor);

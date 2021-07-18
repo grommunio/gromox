@@ -2,7 +2,7 @@
 #include <gromox/common_types.hpp>
 
 extern int system_services_run();
-extern int system_services_stop();
+extern void system_services_stop();
 
 extern BOOL (*system_services_get_user_lang)(const char*, char*);
 extern BOOL (*system_services_get_timezone)(const char*, char *);

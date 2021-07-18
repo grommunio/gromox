@@ -23,14 +23,13 @@ int blocks_allocator_run()
     return 0;
 }
 
-int blocks_allocator_stop()
+void blocks_allocator_stop()
 {
     if (NULL == g_allocator) {
-        return 0;
+		return;
     }
     lib_buffer_free(g_allocator);
 	g_allocator = nullptr;
-    return 0;
 }
 
 void blocks_allocator_free()

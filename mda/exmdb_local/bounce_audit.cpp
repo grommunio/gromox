@@ -65,13 +65,12 @@ int bounce_audit_get_param(int type)
     return -1;
 }
 
-int bounce_audit_stop() 
+void bounce_audit_stop()
 {
     if (NULL != g_audit_hash) {
         str_hash_free(g_audit_hash);
         g_audit_hash = NULL;
     }
-    return 0;
 }
 
 BOOL bounce_audit_check(const char *audit_string) 

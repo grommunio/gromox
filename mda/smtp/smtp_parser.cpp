@@ -218,7 +218,7 @@ int smtp_parser_run()
 	return 0;
 }
 
-int smtp_parser_stop()
+void smtp_parser_stop()
 {
 	g_context_list2.clear();
 	g_context_list.clear();
@@ -232,7 +232,6 @@ int smtp_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-	return 0;
 }
 
 void smtp_parser_free()

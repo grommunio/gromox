@@ -299,7 +299,7 @@ int imap_parser_run()
     return 0;
 }
 
-int imap_parser_stop()
+void imap_parser_stop()
 {
 	system_services_install_event_stub(nullptr);
 	if (!g_notify_stop) {
@@ -350,7 +350,6 @@ int imap_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-    return 0;
 }
 
 void imap_parser_free()

@@ -99,7 +99,7 @@ int system_services_run()
 #undef E2
 }
 
-int system_services_stop()
+void system_services_stop()
 {
 	service_release("ip_filter_judge", "system");
 	service_release("user_filter_judge", "system");
@@ -140,5 +140,4 @@ int system_services_stop()
 	service_release("broadcast_event", "system");
 	service_release("broadcast_select", "system");
 	service_release("broadcast_unselect", "system");
-	return 0;
 }

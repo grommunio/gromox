@@ -453,14 +453,13 @@ int hpm_processor_run()
 	return 0;
 }
 
-int hpm_processor_stop()
+void hpm_processor_stop()
 {
 	g_plugin_list.clear();
 	if (NULL != g_context_list) {
 		free(g_context_list);
 		g_context_list = NULL;
 	}
-	return 0;
 }
 
 void hpm_processor_free()

@@ -298,7 +298,7 @@ AB_BASE::AB_BASE()
 	single_list_init(&remote_list);
 }
 
-int ab_tree_stop()
+void ab_tree_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
@@ -310,7 +310,6 @@ int ab_tree_stop()
 		lib_buffer_free(g_file_allocator);
 		g_file_allocator = NULL;
 	}
-	return 0;
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)

@@ -37,7 +37,7 @@ int system_services_run()
 #undef E2
 }
 
-int system_services_stop()
+void system_services_stop()
 {
 	service_release("ip_filter_judge", "system");
 	service_release("ip_container_add", "system");
@@ -47,5 +47,4 @@ int system_services_stop()
 	service_release("user_filter_add", "system");
 	service_release("auth_login_exch", "system");
 	service_release("extension_to_mime", "system");
-	return 0;
 }

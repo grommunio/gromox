@@ -40,7 +40,7 @@ struct USER_INFO {
 
 extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);
 extern int zarafa_server_run();
-extern int zarafa_server_stop();
+extern void zarafa_server_stop();
 extern void zarafa_server_free();
 int zarafa_server_get_param(int param);
 extern USER_INFO *zarafa_server_get_info();

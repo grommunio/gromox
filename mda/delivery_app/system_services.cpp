@@ -21,9 +21,8 @@ int system_services_run()
 #undef E
 }
 
-int system_services_stop()
+void system_services_stop()
 {
 	service_release("log_info", "system");
 	service_release("domain_list_query", "system");
-	return 0;
 }

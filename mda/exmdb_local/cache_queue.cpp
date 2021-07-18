@@ -86,14 +86,13 @@ int cache_queue_run()
 	return 0;
 }
 
-int cache_queue_stop()
+void cache_queue_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		pthread_kill(g_thread_id, SIGALRM);
 		pthread_join(g_thread_id, NULL);
 	}
-	return 0;
 }
 
 void cache_queue_free()

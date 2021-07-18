@@ -4,7 +4,7 @@
 #include <gromox/common_types.hpp>
 
 extern int resource_run();
-extern int resource_stop();
+extern void resource_stop();
 extern const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_t *len);
 extern const char *const *resource_get_folder_strings(const char *lang);
 const char* resource_get_default_charset(const char *lang);

@@ -2,7 +2,7 @@
 #include <gromox/common_types.hpp>
 
 extern int system_services_run();
-extern int system_services_stop();
+extern void system_services_stop();
 
 extern BOOL (*system_services_judge_ip)(const char*);
 extern BOOL (*system_services_container_add_ip)(const char*);

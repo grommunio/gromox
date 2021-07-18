@@ -111,7 +111,7 @@ int threads_pool_run()
 	return 0;
 }
 
-int threads_pool_stop()
+void threads_pool_stop()
 {
 	THR_DATA *pthr;
 	pthread_t thr_id;
@@ -142,7 +142,6 @@ int threads_pool_stop()
 		}
 	}
 	lib_buffer_free(g_threads_data_buff);
-	return 0;
 }
 
 void threads_pool_free()

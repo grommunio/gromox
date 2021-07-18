@@ -14,7 +14,7 @@ struct service_init_param {
 
 extern void service_init(const struct service_init_param &);
 extern int service_run();
-extern int service_stop();
+extern void service_stop();
 int service_load_library(const char *path);
 int service_unload_library(const char *path);
 extern void *service_query(const char *service_name, const char *module, const std::type_info &);

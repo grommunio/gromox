@@ -59,10 +59,9 @@ int resource_run()
     return 0;
 }
 
-int resource_stop()
+void resource_stop()
 {
 	g_def_code_table.clear();
-    return 0;
 }
 
 const char *resource_get_pop3_code(unsigned int code_type, unsigned int n, size_t *len)

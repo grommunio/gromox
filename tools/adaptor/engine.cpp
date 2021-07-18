@@ -56,14 +56,13 @@ void engine_trig()
 	pthread_kill(g_thread_id1, SIGALRM);
 }
 
-int engine_stop()
+void engine_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		pthread_kill(g_thread_id1, SIGALRM);
 		pthread_join(g_thread_id1, NULL);
 	}
-	return 0;
 }
 
 static void *adap_thrwork(void *param)

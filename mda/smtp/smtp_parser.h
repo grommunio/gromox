@@ -176,7 +176,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 extern void smtp_parser_init(unsigned int context_num, unsigned int threads_num, BOOL dm_valid, BOOL need_auth, size_t max_mail_length, size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size, size_t timeout, size_t auth_times, size_t blktime_auths, BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
-extern int smtp_parser_stop();
+extern void smtp_parser_stop();
 extern void smtp_parser_free();
 long smtp_parser_get_param(int param);
 int smtp_parser_set_param(int param, long value);

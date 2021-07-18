@@ -76,13 +76,11 @@ int str_filter_run()
     return 0;
 }
 
-int str_filter_stop() 
+void str_filter_stop() 
 {
     grey_list_stop();
     audit_filter_stop();
     temp_list_stop();
-   
-    return 0;
 }
 
 

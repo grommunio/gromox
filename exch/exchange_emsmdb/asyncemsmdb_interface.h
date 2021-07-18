@@ -4,7 +4,7 @@
 extern void asyncemsmdb_interface_register_active(void *);
 void asyncemsmdb_interface_init(int threads_num);
 extern int asyncemsmdb_interface_run();
-extern int asyncemsmdb_interface_stop();
+extern void asyncemsmdb_interface_stop();
 extern void asyncemsmdb_interface_free();
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout);

@@ -248,10 +248,9 @@ static int codepage_lang_run(const char *filename, const char *sdlist)
 	return 0;
 }
 
-static int codepage_lang_stop()
+static void codepage_lang_stop()
 {
 	codepage_lang_unload_cplist(&g_cp_list);
-	return 0;
 }
 
 static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,

@@ -483,7 +483,7 @@ int rop_processor_run()
 	return 0;
 }
 
-int rop_processor_stop()
+void rop_processor_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
@@ -505,7 +505,6 @@ int rop_processor_stop()
 	if (NULL != g_logon_hash) {
 		str_hash_free(g_logon_hash);
 	}
-	return 0;
 }
 
 static int rop_processor_execute_and_push(uint8_t *pbuff,

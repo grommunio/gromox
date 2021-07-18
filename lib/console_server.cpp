@@ -131,13 +131,12 @@ int console_server_run()
     return 0;
 }
 
-int console_server_stop()
+void console_server_stop()
 {
 	if (NULL != g_console_buff) {
 		free(g_console_buff);
 		g_console_buff = NULL;
 	}
-    return 0;
 }
 
 /*

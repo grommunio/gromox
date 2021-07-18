@@ -120,7 +120,7 @@ int asyncemsmdb_interface_run()
 	return 0;
 }
 
-int asyncemsmdb_interface_stop()
+void asyncemsmdb_interface_stop()
 {
 	int i;
 	
@@ -150,7 +150,6 @@ int asyncemsmdb_interface_stop()
 		int_hash_free(g_async_hash);
 		g_async_hash = NULL;
 	}
-	return 0;
 }
 
 void asyncemsmdb_interface_free()

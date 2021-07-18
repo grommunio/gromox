@@ -806,7 +806,7 @@ int rpc_parser_run()
 	return 0;
 }
 
-int rpc_parser_stop()
+void rpc_parser_stop()
 {
 	int i;
 	
@@ -817,5 +817,4 @@ int rpc_parser_stop()
 		pthread_join(g_thread_ids[i], NULL);
 	}
 	free(g_thread_ids);
-	return 0;
 }

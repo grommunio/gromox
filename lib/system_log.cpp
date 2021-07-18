@@ -62,11 +62,10 @@ void system_log_info(const char *format, ...)
 	write(g_log_fd, log_buf, len);
 }
 
-int system_log_stop()
+void system_log_stop()
 {
 	if (g_log_fd != -1 && g_log_fd != STDERR_FILENO)
 		close(g_log_fd);
-	return 0;
 }
 
 void system_log_free()

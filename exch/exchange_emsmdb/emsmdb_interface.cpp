@@ -406,7 +406,7 @@ int emsmdb_interface_run()
 	return 0;
 }
 
-int emsmdb_interface_stop()
+void emsmdb_interface_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
@@ -425,7 +425,6 @@ int emsmdb_interface_stop()
 		str_hash_free(g_handle_hash);
 		g_handle_hash = NULL;
 	}
-	return 0;
 }
 
 void emsmdb_interface_free()

@@ -6,7 +6,7 @@
 
 extern void exmdb_client_init();
 extern int exmdb_client_run();
-extern int exmdb_client_stop();
+extern void exmdb_client_stop();
 extern void exmdb_client_free();
 extern BOOL exmdb_client_get_named_propid(const char *dir, BOOL create, const PROPERTY_NAME *, uint16_t *ppropid);
 extern BOOL exmdb_client_get_named_propname(const char *dir, uint16_t propid, PROPERTY_NAME *);

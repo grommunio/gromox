@@ -449,7 +449,7 @@ int exmdb_client_run()
 	return 0;
 }
 
-int exmdb_client_stop()
+void exmdb_client_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
@@ -460,7 +460,6 @@ int exmdb_client_stop()
 	for (auto &srv : g_server_list)
 		for (auto &conn : srv.conn_list)
 			close(conn.sockd);
-	return 0;
 }
 
 int exmdb_client_delivery_message(const char *dir,

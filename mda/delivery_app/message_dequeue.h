@@ -38,7 +38,7 @@ struct MESSAGE {
 
 extern void message_dequeue_init(const char *path, size_t max_memory);
 extern int message_dequeue_run();
-extern int message_dequeue_stop();
+extern void message_dequeue_stop();
 extern void message_dequeue_free();
 extern MESSAGE *message_dequeue_get();
 void message_dequeue_put(MESSAGE *pmessage);

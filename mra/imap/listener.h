@@ -5,4 +5,4 @@ extern int listener_run();
 extern int listener_trigger_accept();
 extern void listener_stop_accept();
 extern void listener_free();
-extern int listener_stop();
+extern void listener_stop();

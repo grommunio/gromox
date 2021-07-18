@@ -38,13 +38,12 @@ int temp_list_run()
 	return 0;
 }
 
-int temp_list_stop() 
+void temp_list_stop()
 {
 	if (NULL != g_string_hash) {
 		str_hash_free(g_string_hash);
 		g_string_hash = NULL;
 	}
-	return 0;
 }
 
 void temp_list_free() 

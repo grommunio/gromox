@@ -285,7 +285,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 	lib_buffer_put(g_context_allocator, pcontext);
 }
 
-int pdu_processor_stop()
+void pdu_processor_stop()
 {
 	uint64_t handle;
 	DOUBLE_LIST_NODE *pnode;
@@ -366,8 +366,6 @@ int pdu_processor_stop()
 	
 	pthread_key_delete(g_call_key);
 	pthread_key_delete(g_stack_key);
-	
-	return 0;
 }
 
 void pdu_processor_free()

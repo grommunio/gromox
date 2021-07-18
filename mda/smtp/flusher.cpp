@@ -136,12 +136,10 @@ int flusher_run()
 	return 0;
 }
 
-int flusher_stop()
+void flusher_stop()
 {
 	lib_buffer_free(g_allocator);
-	if (TRUE == flusher_unload_plugin())
-		return 0;
-	return -1;
+	flusher_unload_plugin();
 }
 
 /*

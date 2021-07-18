@@ -244,7 +244,7 @@ int contexts_pool_run()
 	return 0;    
 }
 
-int contexts_pool_stop()
+void contexts_pool_stop()
 {
 	g_notify_stop = true;
 	pthread_kill(g_thread_id, SIGALRM);
@@ -255,7 +255,6 @@ int contexts_pool_stop()
 	g_epoll_fd = -1;
 	free(g_events);
 	g_events = NULL;
-	return 0;
 }
 
 void contexts_pool_free()

@@ -686,7 +686,7 @@ int zarafa_server_run()
 	return 0;
 }
 
-int zarafa_server_stop()
+void zarafa_server_stop()
 {
 	g_notify_stop = true;
 	pthread_kill(g_scan_id, SIGALRM);
@@ -694,7 +694,6 @@ int zarafa_server_stop()
 	g_session_table.clear();
 	g_user_table.clear();
 	g_notify_table.clear();
-	return 0;
 }
 
 void zarafa_server_free()

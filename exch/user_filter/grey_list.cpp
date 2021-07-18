@@ -69,14 +69,12 @@ int grey_list_run()
 
 }
 
-int grey_list_stop()
+void grey_list_stop()
 {
     if (NULL != g_grey_table) {
         str_hash_free(g_grey_table);
         g_grey_table = NULL;
     }
-    return 0;
-
 }
 
 

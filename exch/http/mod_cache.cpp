@@ -218,7 +218,7 @@ int mod_cache_run()
 	return 0;
 }
 
-int mod_cache_stop()
+void mod_cache_stop()
 {
 	CACHE_ITEM *pitem;
 	CACHE_ITEM **ppitem;
@@ -252,7 +252,6 @@ int mod_cache_stop()
 		free(pitem->blob.data);
 		free(pitem);
 	}
-	return 0;
 }
 
 void mod_cache_free()

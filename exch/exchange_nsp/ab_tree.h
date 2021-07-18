@@ -58,7 +58,7 @@ using AB_BASE_REF = std::unique_ptr<AB_BASE, ab_tree_del>;
 
 extern void ab_tree_init(const char *org_name, size_t base_size, int cache_interval, int file_blocks);
 extern int ab_tree_run();
-extern int ab_tree_stop();
+extern void ab_tree_stop();
 extern AB_BASE_REF ab_tree_get_base(int base_id);
 uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
 void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid);

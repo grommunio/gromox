@@ -796,7 +796,7 @@ int db_engine_run()
 	return 0;
 }
 
-int db_engine_stop()
+void db_engine_stop()
 {
 	int i;
 	DOUBLE_LIST_NODE *pnode;
@@ -821,7 +821,6 @@ int db_engine_stop()
 		free(psearch);
 	}
 	sqlite3_shutdown();
-	return 0;
 }
 
 void db_engine_free()

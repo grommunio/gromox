@@ -44,10 +44,9 @@ int mysql_adaptor_run()
 	return 0;
 }
 
-int mysql_adaptor_stop()
+void mysql_adaptor_stop()
 {
 	g_sqlconn_pool.clear();
-	return 0;
 }
 
 BOOL mysql_adaptor_meta(const char *username, const char *password,

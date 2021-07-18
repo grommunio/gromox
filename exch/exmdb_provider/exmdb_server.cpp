@@ -45,13 +45,12 @@ int exmdb_server_run()
 	return 0;
 }
 
-int exmdb_server_stop()
+void exmdb_server_stop()
 {
 	if (NULL != g_ctx_allocator) {
 		lib_buffer_free(g_ctx_allocator);
 		g_ctx_allocator = NULL;
 	}
-	return 0;
 }
 
 void exmdb_server_free()

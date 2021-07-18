@@ -64,13 +64,12 @@ static int str_table_run()
     return 0;
 }
 
-static int str_table_stop()
+static void str_table_stop()
 {
     if (NULL != g_string_list_table) {
         str_hash_free(g_string_list_table);
         g_string_list_table = NULL;
     }
-    return 0;
 }
 
 /*
