@@ -20,6 +20,8 @@
 #define DOMAIN_PRIVILEGE_EXTPASSWD          0x20
 #define GROUP_PRIVILEGE_DOMAIN_MONITOR		0x200
 
+using namespace gromox;
+
 static char g_host[256];
 static uint16_t g_port;
 static char g_user[256];
@@ -69,7 +71,7 @@ BOOL data_source_get_domain_list(std::vector<DOMAIN_ITEM> &pcollect)
 		goto RETRYING;
 	}
 
-	sprintf(sql_string, "SELECT domainname, homedir FROM domains "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT domainname, homedir FROM domains "
 		"WHERE domain_status=0");
 	
 	if (0 != mysql_query(pmysql, sql_string) ||
@@ -125,7 +127,7 @@ BOOL data_source_get_alias_list(std::vector<ALIAS_ITEM> &pcollect)
 		goto RETRYING;
 	}
 
-	sprintf(sql_string, "SELECT aliasname, mainname FROM aliases");
+	snprintf(sql_string, arsizeof(sql_string), "SELECT aliasname, mainname FROM aliases");
 	
 	if (0 != mysql_query(pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pmysql))) {
