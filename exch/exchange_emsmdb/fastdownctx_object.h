@@ -6,6 +6,14 @@
 
 struct FASTDOWNCTX_OBJECT final {
 	~FASTDOWNCTX_OBJECT();
+	/* make_xxx function can be invoked only once on the object */
+	BOOL make_messagecontent(MESSAGE_CONTENT *);
+	BOOL make_attachmentcontent(ATTACHMENT_CONTENT *);
+	BOOL make_foldercontent(BOOL subfolders, FOLDER_CONTENT *);
+	BOOL make_topfolder(FOLDER_CONTENT *);
+	BOOL make_messagelist(BOOL chginfo, EID_ARRAY *msglst);
+	BOOL make_state(ICS_STATE *);
+	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
 	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
 	BOOL b_back = false, b_last = false, b_chginfo = false;
@@ -15,23 +23,4 @@ struct FASTDOWNCTX_OBJECT final {
 	uint32_t total_steps = 0, progress_steps = 0;
 };
 
-/* make_xxx function can be invoked only once on the object */
 extern std::unique_ptr<FASTDOWNCTX_OBJECT> fastdownctx_object_create(LOGON_OBJECT *, uint8_t string_option);
-BOOL fastdownctx_object_make_messagecontent(
-	FASTDOWNCTX_OBJECT *pctx, MESSAGE_CONTENT *pmsgctnt);
-BOOL fastdownctx_object_make_attachmentcontent(
-	FASTDOWNCTX_OBJECT *pctx,
-	ATTACHMENT_CONTENT *pattachment);
-BOOL fastdownctx_object_make_foldercontent(
-	FASTDOWNCTX_OBJECT *pctx,
-	BOOL b_subfolders, FOLDER_CONTENT *pfldctnt);
-BOOL fastdownctx_object_make_topfolder(
-	FASTDOWNCTX_OBJECT *pctx, FOLDER_CONTENT *pfldctnt);
-BOOL fastdownctx_object_make_messagelist(
-	FASTDOWNCTX_OBJECT *pctx,
-	BOOL b_chginfo, EID_ARRAY *pmsglst);
-BOOL fastdownctx_object_make_state(
-	FASTDOWNCTX_OBJECT *pctx, ICS_STATE *pstate);
-BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
-	void *pbuff, uint16_t *plen, BOOL *pb_last,
-	uint16_t *pprogress, uint16_t *ptotal);

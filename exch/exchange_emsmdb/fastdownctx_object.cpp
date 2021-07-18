@@ -202,9 +202,9 @@ static BOOL fastdownctx_object_record_subfolder(
 	return TRUE;
 }
 
-BOOL fastdownctx_object_make_messagecontent(
-	FASTDOWNCTX_OBJECT *pctx, MESSAGE_CONTENT *pmsgctnt)
+BOOL FASTDOWNCTX_OBJECT::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
 {
+	auto pctx = this;
 	if (!pctx->pstream->write_messagecontent(false, pmsgctnt))
 		return FALSE;	
 	pctx->progress_steps = 0;
@@ -212,10 +212,9 @@ BOOL fastdownctx_object_make_messagecontent(
 	return TRUE;
 }
 
-BOOL fastdownctx_object_make_attachmentcontent(
-	FASTDOWNCTX_OBJECT *pctx,
-	ATTACHMENT_CONTENT *pattachment)
+BOOL FASTDOWNCTX_OBJECT::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
 {
+	auto pctx = this;
 	if (!pctx->pstream->write_attachmentcontent(false, pattachment))
 		return FALSE;	
 	pctx->progress_steps = 0;
@@ -223,13 +222,13 @@ BOOL fastdownctx_object_make_attachmentcontent(
 	return TRUE;
 }
 
-BOOL fastdownctx_object_make_state(
-	FASTDOWNCTX_OBJECT *pctx, ICS_STATE *pstate)
+BOOL FASTDOWNCTX_OBJECT::make_state(ICS_STATE *pstate)
 {
 	auto pproplist = pstate->serialize();
 	if (NULL == pproplist) {
 		return FALSE;
 	}
+	auto pctx = this;
 	if (!pctx->pstream->write_state(pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;	
@@ -240,10 +239,9 @@ BOOL fastdownctx_object_make_state(
 	return TRUE;
 }
 
-BOOL fastdownctx_object_make_foldercontent(
-	FASTDOWNCTX_OBJECT *pctx,
-	BOOL b_subfolders, FOLDER_CONTENT *pfldctnt)
+BOOL FASTDOWNCTX_OBJECT::make_foldercontent(BOOL b_subfolders, FOLDER_CONTENT *pfldctnt)
 {
+	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == fastdownctx_object_record_flow_node(
@@ -286,9 +284,9 @@ BOOL fastdownctx_object_make_foldercontent(
 	return TRUE;
 }
 	
-BOOL fastdownctx_object_make_topfolder(
-	FASTDOWNCTX_OBJECT *pctx, FOLDER_CONTENT *pfldctnt)
+BOOL FASTDOWNCTX_OBJECT::make_topfolder(FOLDER_CONTENT *pfldctnt)
 {
+	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == fastdownctx_object_record_flow_node(
@@ -316,10 +314,9 @@ BOOL fastdownctx_object_make_topfolder(
 	return TRUE;
 }
 
-BOOL fastdownctx_object_make_messagelist(
-	FASTDOWNCTX_OBJECT *pctx,
-	BOOL b_chginfo, EID_ARRAY *pmsglst)
+BOOL FASTDOWNCTX_OBJECT::make_messagelist(BOOL b_chginfo, EID_ARRAY *pmsglst)
 {
+	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == fastdownctx_object_record_messagelist(
@@ -450,10 +447,10 @@ static BOOL fastdownctx_object_get_buffer_internal(
 	return TRUE;
 }
 
-BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
-	void *pbuff, uint16_t *plen, BOOL *pb_last,
+BOOL FASTDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
+	auto pctx = this;
 	uint16_t ratio;
 	
 	ratio = pctx->total_steps / 0xFFFF + 1;
@@ -461,10 +458,8 @@ BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
 	if (0 == *ptotal) {
 		*ptotal = 1;
 	}
-	if (FALSE == fastdownctx_object_get_buffer_internal(
-		pctx, pbuff, plen, pb_last)) {
+	if (!fastdownctx_object_get_buffer_internal(this, pbuff, plen, pb_last))
 		return FALSE;	
-	}
 	*pprogress = pctx->progress_steps / ratio;
 	if (TRUE == *pb_last) {
 		*pprogress = *ptotal;

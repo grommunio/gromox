@@ -399,7 +399,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	if (ptransfer_data->pv == nullptr)
 		return ecMAPIOOM;
 	if (OBJECT_TYPE_FASTDOWNCTX == object_type) {
-		if (!fastdownctx_object_get_buffer(static_cast<FASTDOWNCTX_OBJECT *>(pobject),
+		if (!static_cast<FASTDOWNCTX_OBJECT *>(pobject)->get_buffer(
 		    ptransfer_data->pv, &len, &b_last, pin_progress_count, ptotal_step_count))
 			return ecError;
 	} else if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
@@ -465,7 +465,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		folder_content_free(pfldctnt);
 		return ecError;
 	}
-	if (!fastdownctx_object_make_topfolder(pctx.get(), pfldctnt)) {
+	if (!pctx->make_topfolder(pfldctnt)) {
 		pctx.reset();
 		folder_content_free(pfldctnt);
 		return ecError;
@@ -546,7 +546,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		eid_array_free(pmids);
 		return ecError;
 	}
-	if (!fastdownctx_object_make_messagelist(pctx.get(), b_chginfo, pmids)) {
+	if (!pctx->make_messagelist(b_chginfo, pmids)) {
 		pctx.reset();
 		eid_array_free(pmids);
 		return ecError;
@@ -644,7 +644,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			tpropval_array_remove_propval(
 				pproplist, pproptags->pproptag[i]);
 		}
-		if (!fastdownctx_object_make_foldercontent(pctx.get(), b_sub, pfldctnt)) {
+		if (!pctx->make_foldercontent(b_sub, pfldctnt)) {
 			folder_content_free(pfldctnt);
 			return ecError;
 		}
@@ -675,7 +675,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (!fastdownctx_object_make_messagecontent(pctx.get(), &msgctnt))
+		if (!pctx->make_messagecontent(&msgctnt))
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
@@ -697,7 +697,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 				break;
 			}
 		}
-		if (!fastdownctx_object_make_attachmentcontent(pctx.get(), &attctnt))
+		if (!pctx->make_attachmentcontent(&attctnt))
 			return ecError;
 		break;
 	}
@@ -802,7 +802,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			}
 			i ++;
 		}
-		if (!fastdownctx_object_make_foldercontent(pctx.get(), b_sub, pfldctnt)) {
+		if (!pctx->make_foldercontent(b_sub, pfldctnt)) {
 			folder_content_free(pfldctnt);
 			return ecError;
 		}
@@ -833,7 +833,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			msgctnt.children.prcpts = NULL;
 			msgctnt.children.pattachments = NULL;
 		}
-		if (!fastdownctx_object_make_messagecontent(pctx.get(), &msgctnt))
+		if (!pctx->make_messagecontent(&msgctnt))
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
@@ -856,7 +856,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		}
 		if (common_util_index_proptags(pproptags, PR_ATTACH_DATA_OBJ) == -1)
 			attctnt.pembedded = NULL;
-		if (!fastdownctx_object_make_attachmentcontent(pctx.get(), &attctnt))
+		if (!pctx->make_attachmentcontent(&attctnt))
 			return ecError;
 		break;
 	}
@@ -1841,7 +1841,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	if (NULL == pctx) {
 		return ecError;
 	}
-	if (!fastdownctx_object_make_state(pctx.get(), pstate))
+	if (!pctx->make_state(pstate))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
