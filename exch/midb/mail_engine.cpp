@@ -3647,17 +3647,20 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
-	tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+		return 4;
 	if (0 != b_read) {
 		propval.proptag = PR_READ;
 		propval.pvalue = &b_read;
-		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+			return 4;
 	}
 	if (0 != b_unsent) {
 		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = &tmp_flags;
 		tmp_flags = MSGFLAG_UNSENT;
-		tpropval_array_set_propval(&pmsgctnt->proplist, &propval);
+		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+			return 4;
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
