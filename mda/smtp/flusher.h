@@ -8,20 +8,6 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
-/* enumeration for indicating the action of the flusher */
-enum {
-    FLUSH_WHOLE_MAIL,
-    FLUSH_PART_MAIL
-};
-
-/* enumeration for indicating the result of the flushing */
-enum {
-    FLUSH_NONE,
-    FLUSH_RESULT_OK,
-    FLUSH_TEMP_FAIL,
-	FLUSH_PERMANENT_FAIL
-};
-
 void flusher_init(const char* path, size_t queue_len);
 extern void flusher_free();
 extern int flusher_run();

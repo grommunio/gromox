@@ -205,14 +205,15 @@ static BOOL message_enqueue_check()
 
 static void *meq_thrwork(void *arg)
 {
-    FLUSH_ENTITY *pentity = NULL;
 	MSG_BUFF msg;
 
 	while (!g_notify_stop) {
-        if (NULL == (pentity = get_from_queue())) {
+		auto entlist = get_from_queue(); /* always size 1 */
+		if (entlist.size() == 0) {
             usleep(50000);
             continue;
         }
+		auto pentity = &entlist.front();
 		if (TRUE == message_enqueue_try_save_mess(pentity)) {
 			if (FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action) {
     			msg.msg_type = MESSAGE_MESS;
@@ -224,7 +225,7 @@ static void *meq_thrwork(void *arg)
 		} else {
 			pentity->pflusher->flush_result = FLUSH_TEMP_FAIL;
 		}
-		feedback_entity(pentity);
+		feedback_entity(std::move(entlist));
 	}
 	return NULL;
 }

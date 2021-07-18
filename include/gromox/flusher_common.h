@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <typeinfo>
 #include <sys/time.h>
 #include <gromox/defs.h>
@@ -6,15 +7,20 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/stream.hpp>
-#define FLUSH_WHOLE_MAIL            0
-#define FLUSH_PART_MAIL             1
 
-#define FLUSH_NONE                  0
-#define FLUSH_RESULT_OK             1
-#define FLUSH_TEMP_FAIL             2
-#define FLUSH_PERMANENT_FAIL        3
+enum {
+	FLUSH_WHOLE_MAIL = 0,
+	FLUSH_PART_MAIL = 1,
+};
 
-struct ENVELOPE_INFO {
+enum {
+	FLUSH_NONE = 0,
+	FLUSH_RESULT_OK = 1,
+	FLUSH_TEMP_FAIL = 2,
+	FLUSH_PERMANENT_FAIL = 3,
+};
+
+struct ENVELOPE_INFO_BASE {
 	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
 	char hello_domain[UDOM_SIZE]; /* domain name after helo */
 	char from[UADDR_SIZE]; /* envelope's from message */
@@ -25,7 +31,7 @@ struct ENVELOPE_INFO {
     BOOL        is_relay;          /* indicate whether this mail is relaying */
 };
 
-struct CONNECTION {
+struct CONNECTION_BASE {
 	char client_ip[40]; /* client ip address string */
     int            client_port;        /* value of client port */
 	char server_ip[40]; /* server ip address */
@@ -41,24 +47,26 @@ struct FLUSH_INFO {
     void          *flush_ptr;     /* extended data pointer */
 };
 
-struct FLUSH_ENTITY {
-    STREAM           *pstream; 
-    CONNECTION       *pconnection;
-    FLUSH_INFO       *pflusher; /* the flusher for saving mail information */
-	ENVELOPE_INFO *penvelope;
-    BOOL             is_spam;   /* whether the mail is spam */
-    int              context_ID;
+struct SMTP_CONTEXT;
+struct FLUSH_ENTITY final {
+	STREAM *pstream = nullptr;
+	CONNECTION_BASE *pconnection = nullptr;
+	FLUSH_INFO *pflusher = nullptr; /* the flusher for saving mail information */
+	ENVELOPE_INFO_BASE *penvelope = nullptr;
+	BOOL is_spam = false; /* whether the mail is spam */
+	int context_ID = 0;
+	SMTP_CONTEXT *pcontext = nullptr;
 };
 
-typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
+typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY *);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x int (*get_queue_length)(); \
 	x void (*log_info)(unsigned int, const char *, ...); \
-	x BOOL (*feedback_entity)(FLUSH_ENTITY *); \
+	x BOOL (*feedback_entity)(std::list<FLUSH_ENTITY> &&); \
 	x BOOL (*register_cancel)(CANCEL_FUNCTION); \
-	x FLUSH_ENTITY *(*get_from_queue)(); \
+	x std::list<FLUSH_ENTITY> (*get_from_queue)(); \
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_plugin_name)(); \
 	x const char *(*get_config_path)(); \

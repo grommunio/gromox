@@ -14,24 +14,9 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <gromox/flusher_common.h>
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
-
-namespace {
-struct FLUSH_ENTITY {
-	STREAM           *pstream; 
-	CONNECTION       *pconn;
-	FLUSH_INFO       *pflusher;     /* the flusher for saving mail 
-										information */
-	ENVELOPE_INFO *penvelope;
-	BOOL             is_spam;       /* whether the mail is spam */
-	int              context_ID;
-	SMTP_CONTEXT     *pcontext;     /* put at the last of the structure */
-	SINGLE_LIST_NODE        node;
-};
-}
-
-typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 
 namespace {
 
@@ -58,9 +43,6 @@ static BOOL flusher_unload_plugin();
 static void *flusher_queryservice(const char *service, const std::type_info &);
 static int flusher_get_queue_length();
 static const char *flusher_get_host_ID();
-static FLUSH_ENTITY *flusher_get_from_queue();
-static BOOL flusher_feedback_entity(FLUSH_ENTITY *pentity);
-
 static int flusher_get_extra_num(int context_ID);
 
 static const char* flusher_get_extra_tag(int context_ID, int pos);
@@ -77,11 +59,10 @@ static int flusher_increase_max_ID();
 static BOOL flusher_set_flush_ID(int ID);
 	
 static FLH_PLUG_ENTITY *g_flusher_plug;
-static LIB_BUFFER *g_allocator;
 static BOOL g_can_register;
 static size_t g_max_queue_len;
 static std::mutex g_flush_mutex, g_flush_id_mutex;
-static SINGLE_LIST            g_flush_queue;
+static std::list<FLUSH_ENTITY> g_flush_queue;
 static unsigned int    g_current_ID;
 
 
@@ -116,15 +97,6 @@ int flusher_run()
 		printf("[flusher]: Failed to allocate memory for FLUSHER\n");
 		return -3;
 	}
-	g_allocator = lib_buffer_init(sizeof(FLUSH_ENTITY), 
-		g_max_queue_len, TRUE);
-
-	if (NULL == g_allocator) {
-		printf("[flusher]: Failed to allocate FIFO memory\n");
-		return -1;
-	}
-	single_list_init(&g_flush_queue);
-
 	if (FALSE == flusher_load_plugin(g_flusher_plug->path)) {
 		return -2;
 	}
@@ -138,7 +110,6 @@ int flusher_run()
 
 void flusher_stop()
 {
-	lib_buffer_free(g_allocator);
 	flusher_unload_plugin();
 }
 
@@ -150,46 +121,40 @@ void flusher_stop()
  *      TRUE    OK to put
  *      FALSE   fail to put
  */
-BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext)
+BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext) try
 {
-	auto pentity = static_cast<FLUSH_ENTITY *>(lib_buffer_get(g_allocator));
-	if (pentity == nullptr)
-		return FALSE;
+	FLUSH_ENTITY e, *pentity = &e;
 	if (0 == pcontext->flusher.flush_ID) {
 		pcontext->flusher.flush_ID = flusher_increase_max_ID();
 	}
 	
 	pentity->is_spam        = pcontext->is_spam;
-	pentity->pconn          = &pcontext->connection;
+	pentity->pconnection    = &pcontext->connection;
 	pentity->penvelope      = &pcontext->mail.envelope;
 	pentity->pflusher       = &pcontext->flusher;
 	pentity->pstream        = &pcontext->stream;
 	pentity->context_ID     = pcontext->context_id;
 	pentity->pcontext       = pcontext;
-	pentity->node.pdata     = pentity;
 
-	std::unique_lock fl_hold(g_flush_mutex);
-	return single_list_append_as_tail(&g_flush_queue, &pentity->node);
+	std::lock_guard fl_hold(g_flush_mutex);
+	g_flush_queue.push_back(std::move(e));
+	return true;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static FLUSH_ENTITY* flusher_get_from_queue()
+static std::list<FLUSH_ENTITY> flusher_get_from_queue()
 {
-	SINGLE_LIST_NODE*   pnode;
-	std::unique_lock fl_hold(g_flush_mutex);
-	pnode = single_list_pop_front(&g_flush_queue);
-	if (NULL == pnode) {
-		return NULL;
-	}
-	return (FLUSH_ENTITY*)pnode->pdata;
+	std::list<FLUSH_ENTITY> e2;
+	std::lock_guard fl_hold(g_flush_mutex);
+	if (g_flush_queue.size() > 0)
+		e2.splice(e2.end(), g_flush_queue, g_flush_queue.begin());
+	return e2;
 }
 
-static BOOL flusher_feedback_entity(FLUSH_ENTITY *pentity)
+static BOOL flusher_feedback_entity(std::list<FLUSH_ENTITY> &&e2)
 {
-	SMTP_CONTEXT *pcontext;
-	pcontext = pentity->pcontext;
-	lib_buffer_put(g_allocator, pentity->node.pdata);
-	return contexts_pool_wakeup_context(
-		(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
+	return contexts_pool_wakeup_context(e2.front().pcontext, CONTEXT_TURNING);
 }
 
 /*
@@ -199,13 +164,12 @@ static BOOL flusher_feedback_entity(FLUSH_ENTITY *pentity)
  */
 void flusher_cancel(SMTP_CONTEXT *pcontext)
 {
-	FLUSH_ENTITY entity;
-
 	if (NULL == g_flusher_plug->flush_cancel) {
 		return;
 	}   
+	FLUSH_ENTITY entity;
 	entity.is_spam      = pcontext->is_spam;
-	entity.pconn        = &pcontext->connection;
+	entity.pconnection  = &pcontext->connection;
 	entity.penvelope    = &pcontext->mail.envelope;
 	entity.pflusher     = &pcontext->flusher;
 	entity.pstream      = &pcontext->stream;
