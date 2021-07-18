@@ -175,7 +175,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 };
 
 struct smtp_param {
-	unsigned int context_num = 0, threads_num = 0;
+	unsigned int context_num = 0;
 	BOOL domainlist_valid = false, need_auth = false;
 	BOOL support_pipeline = TRUE;
 	BOOL support_starttls = false, force_starttls = false;

@@ -528,9 +528,6 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_11 = make_scope_exit(blocks_allocator_free);
 	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
-	scfg.threads_num = scfg.context_num % thread_charge_num == 0 ?
-		(scfg.context_num / thread_charge_num) :
-		(scfg.context_num / thread_charge_num + 1);
 
 	smtp_parser_init(std::move(scfg));
 	if (0 != smtp_parser_run()) { 
