@@ -15,24 +15,6 @@
 #include <cstdio>
 #include <ctime>
 
-static uint32_t g_kind_imaddress = 0x00008062;
-static uint32_t g_kind_categories = 0x00002328;
-static uint32_t g_kind_email1address = 0x00008083;
-static uint32_t g_kind_email2address = 0x00008093;
-static uint32_t g_kind_email3address = 0x000080A3;
-static uint32_t g_kind_workaddresscity = 0x00008046;
-static uint32_t g_kind_freebusylocation = 0x000080D8;
-static uint32_t g_kind_workaddressstate = 0x00008047;
-static uint32_t g_kind_workaddressstreet = 0x00008045;
-static uint32_t g_kind_contactuserfield1 = 0x0000804F;
-static uint32_t g_kind_contactuserfield2 = 0x00008050;
-static uint32_t g_kind_contactuserfield3 = 0x00008051;
-static uint32_t g_kind_contactuserfield4 = 0x00008052;
-static uint32_t g_kind_workaddresscountry = 0x00008049;
-static uint32_t g_kind_bcdisplaydefinition = 0x00008040;
-static uint32_t g_kind_workaddresspostalcode = 0x00008048;
-static uint32_t g_kind_workaddresspostofficebox = 0x0000804A;
-
 static const uint32_t g_n_proptags[] = 
 	{PROP_TAG_SURNAME, PROP_TAG_GIVENNAME, PROP_TAG_MIDDLENAME,
 	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
@@ -91,55 +73,55 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_workaddresspostofficebox;
+	bf[z++].lid = PidLidWorkAddressPostOfficeBox;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_workaddressstreet;
+	bf[z++].lid = PidLidWorkAddressStreet;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_workaddresscity;
+	bf[z++].lid = PidLidWorkAddressCity;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_workaddressstate;
+	bf[z++].lid = PidLidWorkAddressState;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_workaddresspostalcode;
+	bf[z++].lid = PidLidWorkAddressPostalCode;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_workaddresscountry;
+	bf[z++].lid = PidLidWorkAddressCountry;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_email1address;
+	bf[z++].lid = PidLidEmail1EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_email2address;
+	bf[z++].lid = PidLidEmail2EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_email3address;
+	bf[z++].lid = PidLidEmail3EmailAddress;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_imaddress;
+	bf[z++].lid = PidLidInstantMessagingAddress;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_categories;
+	bf[z++].lid = PidLidCategories;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_bcdisplaydefinition;
+	bf[z++].lid = PidLidBusinessCardDisplayDefinition;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_contactuserfield1;
+	bf[z++].lid = PidLidContactUserField1;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_contactuserfield2;
+	bf[z++].lid = PidLidContactUserField2;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_contactuserfield3;
+	bf[z++].lid = PidLidContactUserField3;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_contactuserfield4;
+	bf[z++].lid = PidLidContactUserField4;
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
 	bf[z].kind = MNID_ID;
-	bf[z++].lid = g_kind_freebusylocation;
+	bf[z++].lid = PidLidFreeBusyLocation;
 	rop_util_get_common_pset(PSETID_GROMOX, &bf[z].guid);
 	bf[z].kind = MNID_STRING;
 	bf[z++].pname = deconst("vcarduid");
