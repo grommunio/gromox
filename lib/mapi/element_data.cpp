@@ -161,50 +161,39 @@ ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist)
 	return plist1;
 }
 
-FOLDER_CONTENT* folder_content_init()
+FOLDER_CONTENT::FOLDER_CONTENT()
 {
-	auto pfldctnt = static_cast<FOLDER_CONTENT *>(malloc(sizeof(FOLDER_CONTENT)));
-	if (NULL == pfldctnt) {
-		return NULL;
-	}
-	if (!tpropval_array_init_internal(&pfldctnt->proplist)) {
-		free(pfldctnt);
-		return NULL;
-	}
-	pfldctnt->fldmsgs.pfai_msglst = NULL;
-	pfldctnt->fldmsgs.pnormal_msglst = NULL;
-	pfldctnt->count = 0;
-	pfldctnt->psubflds = static_cast<FOLDER_CONTENT *>(malloc(10 * sizeof(FOLDER_CONTENT)));
-	if (NULL == pfldctnt->psubflds) {
-		tpropval_array_free_internal(&pfldctnt->proplist);
-		free(pfldctnt);
-		return NULL;
-	}
-	return pfldctnt;
+	if (!tpropval_array_init_internal(&proplist))
+		throw std::bad_alloc();
 }
 
-BOOL folder_content_append_subfolder_internal(
-	FOLDER_CONTENT *pfldctnt, FOLDER_CONTENT *psubfld)
+FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) :
+	proplist(std::move(o.proplist)), fldmsgs(std::move(o.fldmsgs)),
+	psubflds(std::move(o.psubflds))
 {
-	FOLDER_CONTENT *psubflds;
-	auto count = (pfldctnt->count / 10 + 1) * 10;
-	if (pfldctnt->count + 1 >= count) {
-		count += 10;
-		psubflds = static_cast<FOLDER_CONTENT *>(realloc(pfldctnt->psubflds, count * sizeof(FOLDER_CONTENT)));
-		if (NULL == psubflds) {
-			return FALSE;
-		}
-		pfldctnt->psubflds = psubflds;
-	}
-	memcpy(pfldctnt->psubflds + pfldctnt->count,
-				psubfld, sizeof(FOLDER_CONTENT));
-	pfldctnt->count ++;
-	free(psubfld);
+	o.proplist = {}; // TPROPVAL_ARRAY yet without move
+	o.fldmsgs = {}; // FOLDER_MESSAGES yet without move
+}
+
+std::unique_ptr<FOLDER_CONTENT> folder_content_init() try
+{
+	return std::make_unique<FOLDER_CONTENT>();
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
+BOOL folder_content_append_subfolder_internal(FOLDER_CONTENT *pfldctnt,
+    FOLDER_CONTENT &&psubfld) try
+{
+	pfldctnt->psubflds.push_back(std::move(psubfld));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static void folder_content_free_internal(FOLDER_CONTENT *pfldctnt)
+FOLDER_CONTENT::~FOLDER_CONTENT()
 {
+	auto pfldctnt = this;
 	tpropval_array_free_internal(&pfldctnt->proplist);
 	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
 		eid_array_free(pfldctnt->fldmsgs.pfai_msglst);
@@ -212,15 +201,6 @@ static void folder_content_free_internal(FOLDER_CONTENT *pfldctnt)
 	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
 		eid_array_free(pfldctnt->fldmsgs.pnormal_msglst);
 	}
-	for (size_t i = 0; i < pfldctnt->count; ++i)
-		folder_content_free_internal(pfldctnt->psubflds + i);
-	free(pfldctnt->psubflds);
-}
-
-void folder_content_free(FOLDER_CONTENT *pfldctnt)
-{
-	folder_content_free_internal(pfldctnt);
-	free(pfldctnt);
 }
 
 TPROPVAL_ARRAY* folder_content_get_proplist(FOLDER_CONTENT *pfldctnt)

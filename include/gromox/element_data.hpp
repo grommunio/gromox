@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <memory>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapi_types.hpp>
 
@@ -66,10 +68,14 @@ struct FOLDER_MESSAGES {
 };
 
 struct FOLDER_CONTENT {
-	TPROPVAL_ARRAY proplist;
-	FOLDER_MESSAGES fldmsgs;
-	uint32_t count;
-	struct FOLDER_CONTENT *psubflds;
+	FOLDER_CONTENT();
+	FOLDER_CONTENT(FOLDER_CONTENT &&);
+	~FOLDER_CONTENT();
+	void operator=(FOLDER_CONTENT &&) = delete;
+
+	TPROPVAL_ARRAY proplist{};
+	FOLDER_MESSAGES fldmsgs{};
+	std::vector<FOLDER_CONTENT> psubflds;
 };
 
 struct FOLDER_CHANGES {
@@ -88,10 +94,8 @@ void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index);
 BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment);
 ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist);
-extern FOLDER_CONTENT *folder_content_init();
-void folder_content_free(FOLDER_CONTENT *pfldctnt);
-BOOL folder_content_append_subfolder_internal(
-	FOLDER_CONTENT *pfldctnt, FOLDER_CONTENT *psubfld);
+extern GX_EXPORT std::unique_ptr<FOLDER_CONTENT> folder_content_init();
+extern GX_EXPORT BOOL folder_content_append_subfolder_internal(FOLDER_CONTENT *, FOLDER_CONTENT &&);
 TPROPVAL_ARRAY* folder_content_get_proplist(FOLDER_CONTENT *pfldctnt);
 void folder_content_append_failist_internal(
 	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist);

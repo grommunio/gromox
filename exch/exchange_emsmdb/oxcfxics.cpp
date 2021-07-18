@@ -76,7 +76,7 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	return pmessage_ids;
 }
 
-static FOLDER_CONTENT* oxcfxics_load_folder_content(
+static std::unique_ptr<FOLDER_CONTENT> oxcfxics_load_folder_content(
 	LOGON_OBJECT *plogon, uint64_t folder_id,
 	BOOL b_fai, BOOL b_normal, BOOL b_sub)
 {
@@ -92,13 +92,10 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	uint64_t *pfolder_id;
 	uint32_t tmp_proptag;
 	EID_ARRAY *pmessage_ids;
-	FOLDER_CONTENT *pfldctnt;
-	TPROPVAL_ARRAY *pproplist;
 	LONG_TERM_ID long_term_id;
 	TAGGED_PROPVAL tmp_propval;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	FOLDER_CONTENT *psubfldctnt;
 	
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
@@ -111,26 +108,23 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	} else {
 		username = NULL;
 	}
-	pfldctnt = folder_content_init();
+	auto pfldctnt = folder_content_init();
 	if (NULL == pfldctnt) {
 		return NULL;
 	}
 	if (!exmdb_client_get_folder_all_proptags(plogon->get_dir(),
 	    folder_id, &tmp_proptags)) {
-		folder_content_free(pfldctnt);
 		return NULL;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_get_folder_properties(plogon->get_dir(), pinfo->cpid,
 	    folder_id, &tmp_proptags, &tmp_propvals)) {
-		folder_content_free(pfldctnt);
 		return NULL;
 	}
-	pproplist = folder_content_get_proplist(pfldctnt);
+	auto pproplist = folder_content_get_proplist(pfldctnt.get());
 	for (size_t i = 0; i < tmp_propvals.count; ++i) {
 		if (!tpropval_array_set_propval(pproplist,
 		    tmp_propvals.ppropval + i)) {
-			folder_content_free(pfldctnt);
 			return NULL;
 		}
 	}
@@ -138,7 +132,6 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	if (1 != replid) {
 		if (!exmdb_client_get_mapping_guid(plogon->get_dir(), replid,
 		    &b_found, &long_term_id.guid) || !b_found) {
-			folder_content_free(pfldctnt);
 			return NULL;
 		}
 		rop_util_get_gc_array(folder_id,
@@ -148,14 +141,12 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		pbin = common_util_to_folder_replica(
 				&long_term_id, tmp_essdn);
 		if (NULL == pbin) {
-			folder_content_free(pfldctnt);
 			return NULL;
 		}
 		tmp_propval.proptag = META_TAG_NEWFXFOLDER;
 		tmp_propval.pvalue = pbin;
 		if (!tpropval_array_set_propval(pproplist,
 		    &tmp_propval)) {
-			folder_content_free(pfldctnt);
 			return NULL;
 		}
 		return pfldctnt;
@@ -164,21 +155,17 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, TRUE);
 		if (NULL == pmessage_ids) {
-			folder_content_free(pfldctnt);
 			return NULL;
 		}
-		folder_content_append_failist_internal(
-						pfldctnt, pmessage_ids);
+		folder_content_append_failist_internal(pfldctnt.get(), pmessage_ids);
 	}
 	if (TRUE == b_normal) {
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, FALSE);
 		if (NULL == pmessage_ids) {
-			folder_content_free(pfldctnt);
 			return NULL;
 		}
-		folder_content_append_normallist_internal(
-							pfldctnt, pmessage_ids);
+		folder_content_append_normallist_internal(pfldctnt.get(), pmessage_ids);
 	}
 	if (TRUE == b_sub) {
 		DCERPC_INFO rpc_info;
@@ -191,7 +178,6 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		if (!exmdb_client_load_hierarchy_table(plogon->get_dir(),
 		    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 		    &table_id, &row_count)) {
-			folder_content_free(pfldctnt);
 			return NULL;	
 		}
 		tmp_proptags.count = 1;
@@ -199,7 +185,6 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		tmp_proptag = PROP_TAG_FOLDERID;
 		if (!exmdb_client_query_table(plogon->get_dir(), nullptr, 0,
 		    table_id, &tmp_proptags, 0, row_count, &tmp_set)) {
-			folder_content_free(pfldctnt);
 			return NULL;	
 		}
 		exmdb_client_unload_table(plogon->get_dir(), table_id);
@@ -207,21 +192,15 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 			pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
 			             tmp_set.pparray[i], PROP_TAG_FOLDERID));
 			if (NULL == pfolder_id) {
-				folder_content_free(pfldctnt);
 				return NULL;
 			}
-			psubfldctnt = oxcfxics_load_folder_content(
+			auto psubfldctnt = oxcfxics_load_folder_content(
 				plogon, *pfolder_id, TRUE, TRUE, TRUE);
 			if (NULL == psubfldctnt) {
-				folder_content_free(pfldctnt);
 				return NULL;
 			}
-			if (FALSE == folder_content_append_subfolder_internal(
-				pfldctnt, psubfldctnt)) {
-				folder_content_free(psubfldctnt);
-				folder_content_free(pfldctnt);
+			if (!folder_content_append_subfolder_internal(pfldctnt.get(), std::move(*psubfldctnt)))
 				return NULL;
-			}
 		}
 	}
 	return pfldctnt;
@@ -425,7 +404,6 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 {
 	BOOL b_sub;
 	int object_type;
-	FOLDER_CONTENT *pfldctnt;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
@@ -455,21 +433,17 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		flags & FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS) {
 		b_sub = TRUE;
 	}
-	pfldctnt = oxcfxics_load_folder_content(plogon, pfolder->folder_id,
+	auto pfldctnt = oxcfxics_load_folder_content(plogon, pfolder->folder_id,
 	           TRUE, TRUE, b_sub);
 	if (NULL == pfldctnt) {
 		return ecError;
 	}
 	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
-		folder_content_free(pfldctnt);
 		return ecError;
 	}
-	if (!pctx->make_topfolder(pfldctnt)) {
-		pctx.reset();
-		folder_content_free(pfldctnt);
+	if (!pctx->make_topfolder(std::move(pfldctnt)))
 		return ecError;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
 	if (hnd < 0) {
@@ -572,8 +546,6 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	void *pobject;
 	int object_type;
 	MESSAGE_CONTENT msgctnt;
-	FOLDER_CONTENT *pfldctnt;
-	TPROPVAL_ARRAY *pproplist;
 	ATTACHMENT_CONTENT attctnt;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
@@ -610,7 +582,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecError;
 	}
 	switch (object_type) {
-	case OBJECT_TYPE_FOLDER:
+	case OBJECT_TYPE_FOLDER: {
 		if (0 == level) {
 			b_sub = TRUE;
 			b_fai = TRUE;
@@ -633,22 +605,21 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			b_fai = FALSE;
 			b_normal = FALSE;
 		}
-		pfldctnt = oxcfxics_load_folder_content(plogon,
+		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		           static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
 		           b_fai, b_normal, b_sub);
 		if (NULL == pfldctnt) {
 			return ecError;
 		}
-		pproplist = folder_content_get_proplist(pfldctnt);
+		auto pproplist = folder_content_get_proplist(pfldctnt.get());
 		for (i=0; i<pproptags->count; i++) {
 			tpropval_array_remove_propval(
 				pproplist, pproptags->pproptag[i]);
 		}
-		if (!pctx->make_foldercontent(b_sub, pfldctnt)) {
-			folder_content_free(pfldctnt);
+		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
-		}
 		break;
+	}
 	case OBJECT_TYPE_MESSAGE:
 		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
 			return ecError;
@@ -722,8 +693,6 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	void *pobject;
 	int object_type;
 	MESSAGE_CONTENT msgctnt;
-	FOLDER_CONTENT *pfldctnt;
-	TPROPVAL_ARRAY *pproplist;
 	ATTACHMENT_CONTENT attctnt;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
@@ -760,7 +729,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		return ecError;
 	}
 	switch (object_type) {
-	case OBJECT_TYPE_FOLDER:
+	case OBJECT_TYPE_FOLDER: {
 		if (0 == level) {
 			b_sub = FALSE;
 			b_fai = FALSE;
@@ -783,13 +752,13 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			b_fai = FALSE;
 			b_normal = FALSE;
 		}
-		pfldctnt = oxcfxics_load_folder_content(plogon,
+		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		           static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
 		           b_fai, b_normal, b_sub);
 		if (NULL == pfldctnt) {
 			return ecError;
 		}
-		pproplist = folder_content_get_proplist(pfldctnt);
+		auto pproplist = folder_content_get_proplist(pfldctnt.get());
 		i = 0;
 		while (i < pproplist->count) {
 			if (META_TAG_NEWFXFOLDER != pproplist->ppropval[i].proptag) {
@@ -802,11 +771,10 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			}
 			i ++;
 		}
-		if (!pctx->make_foldercontent(b_sub, pfldctnt)) {
-			folder_content_free(pfldctnt);
+		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
-		}
 		break;
+	}
 	case OBJECT_TYPE_MESSAGE:
 		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
 			return ecError;
