@@ -182,9 +182,9 @@ std::unique_ptr<FOLDER_CONTENT> folder_content_init() try
 	return nullptr;
 }
 
-BOOL folder_content_append_subfolder_internal(FOLDER_CONTENT *pfldctnt,
-    FOLDER_CONTENT &&psubfld) try
+BOOL FOLDER_CONTENT::append_subfolder_internal(FOLDER_CONTENT &&psubfld) try
 {
+	auto pfldctnt = this;
 	pfldctnt->psubflds.push_back(std::move(psubfld));
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -203,23 +203,18 @@ FOLDER_CONTENT::~FOLDER_CONTENT()
 	}
 }
 
-TPROPVAL_ARRAY* folder_content_get_proplist(FOLDER_CONTENT *pfldctnt)
+void FOLDER_CONTENT::append_failist_internal(EID_ARRAY *plist)
 {
-	return &pfldctnt->proplist;
-}
-
-void folder_content_append_failist_internal(
-	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist)
-{
+	auto pfldctnt = this;
 	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
 		eid_array_free(pfldctnt->fldmsgs.pfai_msglst);
 	}
 	pfldctnt->fldmsgs.pfai_msglst = plist;
 }
 
-void folder_content_append_normallist_internal(
-	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist)
+void FOLDER_CONTENT::append_normallist_internal(EID_ARRAY *plist)
 {
+	auto pfldctnt = this;
 	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
 		eid_array_free(pfldctnt->fldmsgs.pnormal_msglst);
 	}

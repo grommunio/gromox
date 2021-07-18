@@ -67,11 +67,15 @@ struct FOLDER_MESSAGES {
 	EID_ARRAY *pnormal_msglst;
 };
 
-struct FOLDER_CONTENT {
+struct GX_EXPORT FOLDER_CONTENT {
 	FOLDER_CONTENT();
 	FOLDER_CONTENT(FOLDER_CONTENT &&);
 	~FOLDER_CONTENT();
 	void operator=(FOLDER_CONTENT &&) = delete;
+	BOOL append_subfolder_internal(FOLDER_CONTENT &&);
+	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
+	void append_failist_internal(EID_ARRAY *);
+	void append_normallist_internal(EID_ARRAY *);
 
 	TPROPVAL_ARRAY proplist{};
 	FOLDER_MESSAGES fldmsgs{};
@@ -95,12 +99,6 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment);
 ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist);
 extern GX_EXPORT std::unique_ptr<FOLDER_CONTENT> folder_content_init();
-extern GX_EXPORT BOOL folder_content_append_subfolder_internal(FOLDER_CONTENT *, FOLDER_CONTENT &&);
-TPROPVAL_ARRAY* folder_content_get_proplist(FOLDER_CONTENT *pfldctnt);
-void folder_content_append_failist_internal(
-	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist);
-void folder_content_append_normallist_internal(
-	FOLDER_CONTENT *pfldctnt, EID_ARRAY *plist);
 extern MESSAGE_CONTENT *message_content_init();
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);
 TPROPVAL_ARRAY* message_content_get_proplist(MESSAGE_CONTENT *pmsgctnt);

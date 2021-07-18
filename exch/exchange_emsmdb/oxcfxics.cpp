@@ -121,7 +121,7 @@ static std::unique_ptr<FOLDER_CONTENT> oxcfxics_load_folder_content(
 	    folder_id, &tmp_proptags, &tmp_propvals)) {
 		return NULL;
 	}
-	auto pproplist = folder_content_get_proplist(pfldctnt.get());
+	auto pproplist = pfldctnt->get_proplist();
 	for (size_t i = 0; i < tmp_propvals.count; ++i) {
 		if (!tpropval_array_set_propval(pproplist,
 		    tmp_propvals.ppropval + i)) {
@@ -157,7 +157,7 @@ static std::unique_ptr<FOLDER_CONTENT> oxcfxics_load_folder_content(
 		if (NULL == pmessage_ids) {
 			return NULL;
 		}
-		folder_content_append_failist_internal(pfldctnt.get(), pmessage_ids);
+		pfldctnt->append_failist_internal(pmessage_ids);
 	}
 	if (TRUE == b_normal) {
 		pmessage_ids = oxcfxics_load_folder_messages(
@@ -165,7 +165,7 @@ static std::unique_ptr<FOLDER_CONTENT> oxcfxics_load_folder_content(
 		if (NULL == pmessage_ids) {
 			return NULL;
 		}
-		folder_content_append_normallist_internal(pfldctnt.get(), pmessage_ids);
+		pfldctnt->append_normallist_internal(pmessage_ids);
 	}
 	if (TRUE == b_sub) {
 		DCERPC_INFO rpc_info;
@@ -199,7 +199,7 @@ static std::unique_ptr<FOLDER_CONTENT> oxcfxics_load_folder_content(
 			if (NULL == psubfldctnt) {
 				return NULL;
 			}
-			if (!folder_content_append_subfolder_internal(pfldctnt.get(), std::move(*psubfldctnt)))
+			if (!pfldctnt->append_subfolder_internal(std::move(*psubfldctnt)))
 				return NULL;
 		}
 	}
@@ -611,7 +611,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (NULL == pfldctnt) {
 			return ecError;
 		}
-		auto pproplist = folder_content_get_proplist(pfldctnt.get());
+		auto pproplist = pfldctnt->get_proplist();
 		for (i=0; i<pproptags->count; i++) {
 			tpropval_array_remove_propval(
 				pproplist, pproptags->pproptag[i]);
@@ -758,7 +758,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (NULL == pfldctnt) {
 			return ecError;
 		}
-		auto pproplist = folder_content_get_proplist(pfldctnt.get());
+		auto pproplist = pfldctnt->get_proplist();
 		i = 0;
 		while (i < pproplist->count) {
 			if (META_TAG_NEWFXFOLDER != pproplist->ppropval[i].proptag) {
