@@ -585,12 +585,12 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		*ptoken = '\0';
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", domain));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
-	sprintf(tmp_buff, "%d", phttp->connection.server_port);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%d", phttp->connection.server_port);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_ip));
-	sprintf(tmp_buff, "%d", phttp->connection.client_port);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%d", phttp->connection.client_port);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", tmp_buff));
-	sprintf(tmp_buff, "HTTP/%s", phttp->request.version);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
 	tmp_len = mem_file_get_total_length(
@@ -1218,7 +1218,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					return FALSE;
 				}
 				if (TRUE == phttp->pfast_context->b_chunked) {
-					tmp_len = sprintf(tmp_buff, "%x\r\n", std_stream.length);
+					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", std_stream.length);
 					if (STREAM_WRITE_OK != stream_write(
 						&phttp->stream_out, tmp_buff, tmp_len) ||
 						STREAM_WRITE_OK != stream_write(
@@ -1330,7 +1330,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
 				if (TRUE == phttp->pfast_context->b_chunked) {
-					tmp_len = sprintf(tmp_buff, "%x\r\n", response_offset);
+					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", response_offset);
 					if (STREAM_WRITE_OK != stream_write(
 						&phttp->stream_out, tmp_buff, tmp_len) ||
 						STREAM_WRITE_OK != stream_write(

@@ -343,23 +343,23 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		return 0;
 	}
 	folder_id = sqlite3_column_int64(pstmt, 9);
-	sprintf(tmp_buff, "\"%s\"", mid_string);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "\"%s\"", mid_string);
 	set_digest(digest_buff, MAX_DIGLEN, "file", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 0));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 0));
 	set_digest(digest_buff, MAX_DIGLEN, "uid", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 1));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 1));
 	set_digest(digest_buff, MAX_DIGLEN, "recent", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 2));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 2));
 	set_digest(digest_buff, MAX_DIGLEN, "read", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 3));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 3));
 	set_digest(digest_buff, MAX_DIGLEN, "unsent", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 4));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 4));
 	set_digest(digest_buff, MAX_DIGLEN, "flag", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 5));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 5));
 	set_digest(digest_buff, MAX_DIGLEN, "replied", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 6));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 6));
 	set_digest(digest_buff, MAX_DIGLEN, "forwarded", tmp_buff);
-	sprintf(tmp_buff, "%llu", sqlite3_column_int64(pstmt, 7));
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 7));
 	set_digest(digest_buff, MAX_DIGLEN, "deleted", tmp_buff);
 	if (SQLITE_NULL == sqlite3_column_type(pstmt, 8)) {
 		return folder_id;

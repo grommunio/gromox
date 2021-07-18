@@ -15,6 +15,8 @@
 #include <cstdio>
 #include <ctime>
 
+using namespace gromox;
+
 static const uint32_t g_n_proptags[] = 
 	{PROP_TAG_SURNAME, PROP_TAG_GIVENNAME, PROP_TAG_MIDDLENAME,
 	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
@@ -320,7 +322,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = deconst(photo_type);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			sprintf(tmp_buff, "ContactPhoto.%s", photo_type);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "ContactPhoto.%s", photo_type);
 			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))

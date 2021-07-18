@@ -28,6 +28,8 @@
 
 #define MAX_TABLE_ITEMS						1024
 
+using namespace gromox;
+
 namespace {
 using rgb_t = unsigned int;
 
@@ -370,7 +372,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 	}
 	QRF(pwriter->ext_push.p_bytes("}{\\colortbl", 11));
 	for (auto color : pwriter->colors_ordered) {
-		length = sprintf(tmp_string, "\\red%d\\green%d\\blue%d;",
+		length = snprintf(tmp_string, arsizeof(tmp_string), "\\red%d\\green%d\\blue%d;",
 		         (color & 0xFF0000) >> 16, (color & 0xFF00) >> 8,
 		         color & 0xFF);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
@@ -397,7 +399,7 @@ static BOOL html_write_style_color(RTF_WRITER *pwriter, int color)
 	
 	index = html_get_colortable(pwriter, color);
 	if (index >= 0) {
-		length = sprintf(tmp_buff, "\\cf%d", index);
+		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cf%d", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return TRUE;
@@ -412,7 +414,7 @@ static BOOL html_write_style_font_family(
 	
 	index = html_get_fonttable(pwriter, font_name);
 	if (index >= 0) {
-		length = sprintf(tmp_buff, "\\f%d ", index);
+		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\f%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return TRUE;
@@ -430,7 +432,7 @@ static BOOL html_write_style_font_size(RTF_WRITER *pwriter,
 	} else {
 		font_size *= 2;
 	}
-	length = sprintf(tmp_buff, "\\fs%d ", font_size);
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\fs%d ", font_size);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -440,7 +442,7 @@ static BOOL html_write_style_line_height(RTF_WRITER *pwriter, int line_height)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\sl%d ", line_height*15);
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sl%d ", line_height*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -450,7 +452,7 @@ static BOOL html_write_style_margin_top(RTF_WRITER *pwriter, int margin_top)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\sa%d ", margin_top*15);
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sa%d ", margin_top*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -460,7 +462,7 @@ static BOOL html_write_style_text_indent(RTF_WRITER *pwriter, int text_indent)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\fi%d ", text_indent*15);
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\fi%d ", text_indent*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -675,7 +677,7 @@ static BOOL html_write_b_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\b ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\b ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -691,7 +693,7 @@ static BOOL html_write_i_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\i ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\i ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -707,7 +709,7 @@ static BOOL html_write_div_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pard ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -717,7 +719,7 @@ static BOOL html_write_div_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\sb70\\par}");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -727,7 +729,7 @@ static BOOL html_write_h_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pard ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -737,7 +739,7 @@ static BOOL html_write_h_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\sb70\\par}");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -747,7 +749,7 @@ static BOOL html_write_p_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pard ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -757,7 +759,7 @@ static BOOL html_write_p_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\sb70\\par}");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -767,7 +769,7 @@ static BOOL html_write_s_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\strike ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\strike ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -783,7 +785,7 @@ static BOOL html_write_em_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\b ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\b ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -835,7 +837,7 @@ static BOOL html_write_li_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pntext\\tab\\f3 \\'b7}");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pntext\\tab\\f3 \\'b7}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -845,7 +847,7 @@ static BOOL html_write_li_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\par\n");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\par\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -855,7 +857,7 @@ static BOOL html_write_center_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pard\\qr ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\qr ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -865,7 +867,7 @@ static BOOL html_write_center_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\par}");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -915,7 +917,7 @@ static BOOL html_write_mark_begin(RTF_WRITER *pwriter)
 	QRF(pwriter->ext_push.p_uint8('{'));
 	index = html_get_colortable(pwriter, 0xFFFF00);
 	if (index >= 0) {
-		length = sprintf(tmp_buff, "\\highlight%d ", index);
+		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\highlight%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return TRUE;
@@ -932,7 +934,7 @@ static BOOL html_write_td_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pard\\intbl\\qc ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\intbl\\qc ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -942,7 +944,7 @@ static BOOL html_write_td_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\cell}\n");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cell}\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -952,7 +954,7 @@ static BOOL html_write_th_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\pard\\intbl\\qc ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\intbl\\qc ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -962,7 +964,7 @@ static BOOL html_write_th_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\cell}\n");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cell}\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -974,14 +976,14 @@ static BOOL html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 	double percell;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\trowd\\trgaph10 ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\trowd\\trgaph10 ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	if (0 == cell_num) {
 		return TRUE;
 	}
 	percell = 8503/cell_num;
 	for (i=0; i<cell_num; i++) {
-		length = sprintf(tmp_buff, "\\clbrdrt\\brdrw15\\brdrs"
+		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\clbrdrt\\brdrw15\\brdrs"
 				"\\clbrdrl\\brdrw15\\brdrs\\clbrdrb\\brdrw15"
 				"\\brdrs\\clbrdrr\\brdrw15\\brdrs\\cellx%d\n",
 				(int)(percell*(i + 1)));
@@ -995,7 +997,7 @@ static BOOL html_write_tr_end(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\row}\n");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\row}\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -1005,7 +1007,7 @@ static BOOL html_write_sub_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\sub ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\sub ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -1022,7 +1024,7 @@ static BOOL html_write_sup_begin(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "{\\super ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\super ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -1038,7 +1040,7 @@ static BOOL html_write_br(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\line ");
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\line ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;
 }
@@ -1048,7 +1050,7 @@ static BOOL html_write_hr(RTF_WRITER *pwriter)
 	int length;
 	char tmp_buff[256];
 	
-	length = sprintf(tmp_buff, "\\pard\\brdrb\\brdrs"
+	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\pard\\brdrb\\brdrs"
 			"\\brdrw10\\brsp20{\\fs4\\~}\\par\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return TRUE;

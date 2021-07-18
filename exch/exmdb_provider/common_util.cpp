@@ -4976,14 +4976,14 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			gx_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
 			snprintf(mid_string, 128, "%lld.%d.%s", LLD(time(nullptr)),
 					common_util_sequence_ID(), get_host_ID());
-			sprintf(tmp_path, "%s/eml/%s",
+			snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string);
-			sprintf(tmp_path1, "%s/eml/%s",
+			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string1);
 			link(tmp_path1, tmp_path);
-			sprintf(tmp_path, "%s/ext/%s",
+			snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s",
 				exmdb_server_get_dir(), mid_string);
-			sprintf(tmp_path1, "%s/ext/%s",
+			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/ext/%s",
 				exmdb_server_get_dir(), mid_string1);
 			link(tmp_path1, tmp_path);
 		}

@@ -442,13 +442,13 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 				ptzstruct->standarddate.month,
 				ptzstruct->standarddate.day,
 				ptzstruct->standarddate.dayofweek);
-			sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				year, (int)ptzstruct->standarddate.month,
 				day, (int)ptzstruct->standarddate.hour,
 				(int)ptzstruct->standarddate.minute,
 				(int)ptzstruct->standarddate.second);
 		} else if (1 == ptzstruct->standarddate.year) {
-			sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				year, (int)ptzstruct->standarddate.month,
 				(int)ptzstruct->standarddate.day,
 				(int)ptzstruct->standarddate.hour,
@@ -492,25 +492,25 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			}
 			switch (ptzstruct->standarddate.dayofweek) {
 			case 0:
-				sprintf(tmp_buff, "%dSU", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
 				break;
 			case 1:
-				sprintf(tmp_buff, "%dMO", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dMO", order);
 				break;
 			case 2:
-				sprintf(tmp_buff, "%dTU", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dTU", order);
 				break;
 			case 3:
-				sprintf(tmp_buff, "%dWE", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dWE", order);
 				break;
 			case 4:
-				sprintf(tmp_buff, "%dTH", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dTH", order);
 				break;
 			case 5:
-				sprintf(tmp_buff, "%dFR", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dFR", order);
 				break;
 			case 6:
-				sprintf(tmp_buff, "%dSA", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSA", order);
 				break;
 			default:
 				return NULL;
@@ -523,7 +523,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 		} else if (1 == ptzstruct->standarddate.year) {
@@ -547,14 +547,14 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.day);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
 				return NULL;
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 		}
@@ -592,13 +592,13 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			ptzstruct->daylightdate.month,
 			ptzstruct->daylightdate.day,
 			ptzstruct->daylightdate.dayofweek);
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			year, (int)ptzstruct->daylightdate.month,
 			day, (int)ptzstruct->daylightdate.hour,
 			(int)ptzstruct->daylightdate.minute,
 			(int)ptzstruct->daylightdate.second);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			year, (int)ptzstruct->daylightdate.month,
 			(int)ptzstruct->daylightdate.day,
 			(int)ptzstruct->daylightdate.hour,
@@ -640,25 +640,25 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 		switch (ptzstruct->daylightdate.dayofweek) {
 		case 0:
-			sprintf(tmp_buff, "%dSU", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
 			break;
 		case 1:
-			sprintf(tmp_buff, "%dMO", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dMO", order);
 			break;
 		case 2:
-			sprintf(tmp_buff, "%dTU", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dTU", order);
 			break;
 		case 3:
-			sprintf(tmp_buff, "%dWE", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dWE", order);
 			break;
 		case 4:
-			sprintf(tmp_buff, "%dTH", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dTH", order);
 			break;
 		case 5:
-			sprintf(tmp_buff, "%dFR", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dFR", order);
 			break;
 		case 6:
-			sprintf(tmp_buff, "%dSA", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSA", order);
 			break;
 		default:
 			return NULL;
@@ -671,7 +671,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	} else if (1 == ptzstruct->daylightdate.year) {
@@ -695,14 +695,14 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.day);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		pivalue = ical_new_value("BYMONTH");
 		if (NULL == pivalue) {
 			return NULL;
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	}
@@ -751,7 +751,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return false;
 		if (!pivalue->append_subval("DAILY"))
 			return FALSE;
-		sprintf(tmp_buff, "%u",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			papprecurr->recurrencepattern.period/1440);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
@@ -771,7 +771,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return false;
 		if (!pivalue->append_subval("WEEKLY"))
 			return FALSE;
-		sprintf(tmp_buff, "%u",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			papprecurr->recurrencepattern.period);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
@@ -841,7 +841,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -861,7 +861,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.dayofmonth);
 			}
@@ -870,7 +870,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period/12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -890,7 +890,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.dayofmonth);
 			}
@@ -905,7 +905,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			ical_get_itime_from_yearday(1601, 
 				papprecurr->recurrencepattern.firstdatetime/
 				1440 + 1, &itime);
-			sprintf(tmp_buff, "%u", itime.month);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		}
@@ -921,7 +921,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -982,7 +982,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.monthnth.recurrencenum);
 			}
@@ -991,7 +991,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period/12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -1052,7 +1052,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.monthnth.recurrencenum);
 			}
@@ -1064,7 +1064,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.firstdatetime);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
@@ -1075,7 +1075,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	}
 	if (ENDTYPE_AFTER_N_OCCURRENCES ==
 		papprecurr->recurrencepattern.endtype) {
-		sprintf(tmp_buff, "%u",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			papprecurr->recurrencepattern.occurrencecount);
 		pivalue = ical_new_value("COUNT");
 		if (NULL == pivalue) {
@@ -1092,7 +1092,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(ptz_component, unix_time, &itime);
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 			itime.year, itime.month, itime.day,
 			itime.hour, itime.minute, itime.second);
 		pivalue = ical_new_value("UNTIL");
@@ -2018,7 +2018,7 @@ int main(int argc, const char **argv)
 	}
 	dir_num = atoi(pdirs);
 	for (decltype(dir_num) i = 0; i < dir_num; ++i) {
-		sprintf(tmp_buff, "dir%d", i);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "dir%d", i);
 		pdir = cookie_parser_get(pparser, tmp_buff);
 		if (NULL != pdir) {
 			get_freebusy(pdir);

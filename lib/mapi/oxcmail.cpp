@@ -568,7 +568,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			username, essdn, &address_type)) {
 			essdn[0] = '\0';
 			address_type = ADDRESS_TYPE_NORMAL;
-			tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s", username) + 1;
+			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s", username) + 1;
 			HX_strupper(tmp_buff);
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue  = deconst("SMTP");
@@ -579,7 +579,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
 		} else {
-			tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
+			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "EX:%s", essdn) + 1;
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue  = deconst("EX");
 			if (!tpropval_array_set_propval(pproplist, &propval))
@@ -765,10 +765,10 @@ static BOOL oxcmail_parse_address(const char *charset,
 			return FALSE;
 		if (FALSE == oxcmail_username_to_essdn(username, essdn, NULL)) {
 			essdn[0] = '\0';
-			tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s", username) + 1;
+			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s", username) + 1;
 			HX_strupper(tmp_buff);
 		} else {
-			tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
+			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "EX:%s", essdn) + 1;
 		}
 		tmp_bin.pc = tmp_buff;
 		propval.proptag = proptag5;
@@ -877,7 +877,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 				uint32_t offset1 = ext_push.m_offset;
 				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 					return FALSE;
-				sprintf(tmp_buff, "%s@%s",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
 					email_addr.local_part, email_addr.domain);
 				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 				status = ext_push.p_oneoff_eid(&tmp_entry);
@@ -1225,7 +1225,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		}
 		propval.pvalue = deconst("IPM.Note.Microsoft.Voicemail.UM");
 	} if (0 == strncasecmp(field, "urn:content-class:custom.", 25)) {
-		sprintf(tmp_class, "IPM.Note.Custom.%s", field + 25);
+		snprintf(tmp_class, arsizeof(tmp_class), "IPM.Note.Custom.%s", field + 25);
 		propval.pvalue = tmp_class;
 	} else if (0 == strncasecmp(field, "InfoPathForm.", 13)) {
 		ptoken = strchr(field + 13, '.');
@@ -1245,7 +1245,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 				(*plast_propid) ++;
 			}
 		}
-		sprintf(tmp_class, "IPM.InfoPathForm.%s", field + 13);
+		snprintf(tmp_class, arsizeof(tmp_class), "IPM.InfoPathForm.%s", field + 13);
 		propval.pvalue = tmp_class;
 	} else {
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
@@ -3454,7 +3454,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		f_info.final_recipient, essdn, &address_type)) {
 		essdn[0] = '\0';
 		address_type = ADDRESS_TYPE_NORMAL;
-		tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s",
+		tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s",
 					f_info.final_recipient) + 1;
 		HX_strupper(tmp_buff);
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
@@ -3860,7 +3860,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		} else if (0 == strcasecmp(tmp_buff, "deleted") ||
 			0 == strcasecmp(tmp_buff, "denied") ||
 			0 == strcasecmp(tmp_buff, "failed")) {
-			sprintf(tmp_buff, "REPORT.IPM.Note.IPNNRN");
+			snprintf(tmp_buff, arsizeof(tmp_buff), "REPORT.IPM.Note.IPNNRN");
 		} else {
 			return true;
 		}
@@ -5466,7 +5466,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	pvalue = tpropval_array_get_propval(&pmsg->proplist,
 						PROP_TAG_VOICEMESSAGEDURATION);
 	if (NULL != pvalue) {
-		sprintf(tmp_field, "%d", *(uint32_t*)pvalue);
+		snprintf(tmp_field, arsizeof(tmp_field), "%d", *(uint32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
 			"X-VoiceMessageDuration", tmp_field)) {
 			return FALSE;
@@ -5482,7 +5482,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	pvalue = tpropval_array_get_propval(&pmsg->proplist,
 							PROP_TAG_FAXNUMBEROFPAGES);
 	if (NULL != pvalue) {
-		sprintf(tmp_field, "%u", *(uint32_t*)pvalue);
+		snprintf(tmp_field, arsizeof(tmp_field), "%u", *(uint32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
 			"X-FaxNumverOfPages", tmp_field)) {
 			return FALSE;
@@ -5938,7 +5938,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	pvalue = tpropval_array_get_propval(&pmsg->proplist,
 			PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL);
 	if (NULL != pvalue) {
-		sprintf(tmp_field, "%d", *(int32_t*)pvalue);
+		snprintf(tmp_field, arsizeof(tmp_field), "%d", *(int32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
 			"X-MS-Exchange-Organization-SCL", tmp_field)) {
 			return FALSE;
@@ -6257,7 +6257,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
  EXPORT_MDN_CONTENT:
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);
-	sprintf(tmp_buff, "rfc822;%s", tmp_address);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "rfc822;%s", tmp_address);
 	if (!dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff)) {
 		dsn_free(&dsn);
 		return FALSE;
@@ -6992,7 +6992,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 					goto EXPORT_FAILURE;
 				}
 				free(pbuff);
-				sprintf(tmp_charset, "\"%s\"", mime_skeleton.charset);
+				snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
 			}
 			if (FALSE == mime_set_content_param(
 				pplain, "charset", tmp_charset)) {
@@ -7030,7 +7030,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
 		}
-		sprintf(tmp_charset, "\"%s\"", mime_skeleton.charset);
+		snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
 		if (FALSE == mime_set_content_param(
 			phtml, "charset", tmp_charset)) {
 			goto EXPORT_FAILURE;

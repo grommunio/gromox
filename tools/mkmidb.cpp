@@ -102,7 +102,7 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 	
-	sprintf(tmp_sql, "SELECT address_type, address_status,"
+	snprintf(tmp_sql, arsizeof(tmp_sql), "SELECT address_type, address_status,"
 		" maildir FROM users WHERE username='%s'", argv[1]);
 	
 	if (0 != mysql_query(pmysql, tmp_sql) ||

@@ -34,6 +34,8 @@ marginheight=\"0\" marginwidth=\"0\">\r\n<CENTER><BR>\r\n\
 
 #define BOUND_ALARM				6
 
+using namespace gromox;
+
 static int g_times;
 static int g_interval;
 static time_t g_last_check_point;
@@ -199,7 +201,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 				localtime_r(&current_time, &time_buff));
 		mime_set_field(pmime, "Date", tmp_buff);
-		sprintf(tmp_buff, "Local Delivery Alarm from %s", get_host_ID());
+		snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
 		mime_set_field(pmime, "Subject", tmp_buff);
 		enqueue_context(pcontext);
 	}

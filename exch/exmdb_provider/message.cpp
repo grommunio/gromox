@@ -3356,7 +3356,7 @@ static BOOL message_forward_message(const char *from_address,
 	}
 	if (NULL != pdigest) {
 		get_digest(pdigest, "file", mid_string, 128);
-		sprintf(tmp_path, "%s/eml/%s",
+		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 			exmdb_server_get_dir(), mid_string);
 		wrapfd fd = open(tmp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
@@ -3433,9 +3433,9 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		mime_set_content_type(pmime, "message/rfc822");
 		if (action_flavor & ACTION_FLAVOR_PR) {
-			sprintf(tmp_buff, "<%s>", from_address);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "<%s>", from_address);
 		} else {
-			sprintf(tmp_buff, "\"Forwarder\"<forwarder@%s>", pdomain);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "\"Forwarder\"<forwarder@%s>", pdomain);
 		}
 		mime_set_field(pmime, "From", tmp_buff);
 		offset = 0;
@@ -3452,7 +3452,7 @@ static BOOL message_forward_message(const char *from_address,
 			mime_append_field(pmime, "Delivered-To", static_cast<char *>(pnode->pdata));
 		}
 		mime_set_field(pmime, "To", tmp_buff);
-		sprintf(tmp_buff, "Automatic forwarded message from %s", username);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "Automatic forwarded message from %s", username);
 		mime_set_field(pmime, "Subject", tmp_buff);
 		time(&cur_time);
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
@@ -3462,7 +3462,7 @@ static BOOL message_forward_message(const char *from_address,
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			strcpy(tmp_buff, from_address);
 		} else {
-			sprintf(tmp_buff, "forwarder@%s", pdomain);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
 		}
 		common_util_send_mail(&imail1, tmp_buff, &rcpt_list);
 		mail_free(&imail1);
@@ -3482,7 +3482,7 @@ static BOOL message_forward_message(const char *from_address,
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			strcpy(tmp_buff, from_address);
 		} else {
-			sprintf(tmp_buff, "forwarder@%s", pdomain);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
 		}
 		common_util_send_mail(&imail, tmp_buff, &rcpt_list);
 	}
@@ -4102,7 +4102,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				get_digest(pdigest, "file", mid_string1, 128);
-				sprintf(tmp_path1, "%s/eml/%s",
+				snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 					exmdb_server_get_dir(), mid_string1);
 				for (pnode1=double_list_get_head(&rcpt_list);
 					NULL!=pnode1; pnode1=double_list_get_after(
@@ -4520,7 +4520,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				get_digest(pdigest, "file", mid_string1, 128);
-				sprintf(tmp_path1, "%s/eml/%s",
+				snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 					exmdb_server_get_dir(), mid_string1);
 				for (pnode1=double_list_get_head(&rcpt_list);
 					NULL!=pnode1; pnode1=double_list_get_after(
@@ -4592,7 +4592,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		}
 		if (NULL != pdigest) {
 			get_digest(pdigest, "file", mid_string1, 128);
-			sprintf(tmp_path1, "%s/eml/%s",
+			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string1);
 			remove(tmp_path1);
 		}
@@ -4805,7 +4805,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		pdigest, "file", mid_string, 128)) {
 		strcpy(digest_buff, pdigest);
 		set_digest(digest_buff, MAX_DIGLEN, "file", "\"\"");
-		sprintf(tmp_path, "%s/ext/%s", exmdb_server_get_dir(), mid_string);
+		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s", exmdb_server_get_dir(), mid_string);
 		fd = open(tmp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 != fd) {
 			write(fd, digest_buff, strlen(digest_buff));
@@ -4978,7 +4978,7 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 		return FALSE;
 	}
 	if (NULL != pmid_string) {
-		sprintf(tmp_path, "%s/ext/%s",
+		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s",
 			exmdb_server_get_dir(), pmid_string);
 		fd = open(tmp_path, O_RDONLY);
 		if (-1 != fd) {

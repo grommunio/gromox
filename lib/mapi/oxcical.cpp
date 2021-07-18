@@ -25,6 +25,8 @@
 
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)
 
+using namespace gromox;
+
 namespace {
 struct UID_EVENTS {
 	const char *puid;
@@ -2288,7 +2290,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			pvalue = piline->get_first_paramval("FILENAME");
 		}
 		if (NULL == pvalue) {
-			sprintf(tmp_buff, "calendar_attachment%d.dat", count);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "calendar_attachment%d.dat", count);
 			pvalue = tmp_buff;
 		}
 		pvalue1 = strrchr(pvalue, '.');
@@ -3339,13 +3341,13 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 				ptzstruct->standarddate.month,
 				ptzstruct->standarddate.day,
 				ptzstruct->standarddate.dayofweek);
-			sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				year, (int)ptzstruct->standarddate.month,
 				day, (int)ptzstruct->standarddate.hour,
 				(int)ptzstruct->standarddate.minute,
 				(int)ptzstruct->standarddate.second);
 		} else if (1 == ptzstruct->standarddate.year) {
-			sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				year, (int)ptzstruct->standarddate.month,
 				(int)ptzstruct->standarddate.day,
 				(int)ptzstruct->standarddate.hour,
@@ -3389,25 +3391,25 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			}
 			switch (ptzstruct->standarddate.dayofweek) {
 			case 0:
-				sprintf(tmp_buff, "%dSU", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
 				break;
 			case 1:
-				sprintf(tmp_buff, "%dMO", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dMO", order);
 				break;
 			case 2:
-				sprintf(tmp_buff, "%dTU", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dTU", order);
 				break;
 			case 3:
-				sprintf(tmp_buff, "%dWE", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dWE", order);
 				break;
 			case 4:
-				sprintf(tmp_buff, "%dTH", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dTH", order);
 				break;
 			case 5:
-				sprintf(tmp_buff, "%dFR", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dFR", order);
 				break;
 			case 6:
-				sprintf(tmp_buff, "%dSA", order);
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSA", order);
 				break;
 			default:
 				return NULL;
@@ -3420,7 +3422,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 		} else if (1 == ptzstruct->standarddate.year) {
@@ -3444,14 +3446,14 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.day);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
 			pivalue = ical_new_value("BYMONTH");
 			if (NULL == pivalue) {
 				return NULL;
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			sprintf(tmp_buff, "%d", (int)ptzstruct->standarddate.month);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 		}
@@ -3494,13 +3496,13 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			ptzstruct->daylightdate.month,
 			ptzstruct->daylightdate.day,
 			ptzstruct->daylightdate.dayofweek);
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			year, (int)ptzstruct->daylightdate.month,
 			day, (int)ptzstruct->daylightdate.hour,
 			(int)ptzstruct->daylightdate.minute,
 			(int)ptzstruct->daylightdate.second);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			year, (int)ptzstruct->daylightdate.month,
 			(int)ptzstruct->daylightdate.day,
 			(int)ptzstruct->daylightdate.hour,
@@ -3542,25 +3544,25 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		}
 		switch (ptzstruct->daylightdate.dayofweek) {
 		case 0:
-			sprintf(tmp_buff, "%dSU", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
 			break;
 		case 1:
-			sprintf(tmp_buff, "%dMO", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dMO", order);
 			break;
 		case 2:
-			sprintf(tmp_buff, "%dTU", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dTU", order);
 			break;
 		case 3:
-			sprintf(tmp_buff, "%dWE", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dWE", order);
 			break;
 		case 4:
-			sprintf(tmp_buff, "%dTH", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dTH", order);
 			break;
 		case 5:
-			sprintf(tmp_buff, "%dFR", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dFR", order);
 			break;
 		case 6:
-			sprintf(tmp_buff, "%dSA", order);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSA", order);
 			break;
 		default:
 			return NULL;
@@ -3573,7 +3575,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	} else if (1 == ptzstruct->daylightdate.year) {
@@ -3597,14 +3599,14 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.day);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		pivalue = ical_new_value("BYMONTH");
 		if (NULL == pivalue) {
 			return NULL;
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		sprintf(tmp_buff, "%d", (int)ptzstruct->daylightdate.month);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 	}
@@ -3896,7 +3898,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return false;
 		if (!pivalue->append_subval("DAILY"))
 			return FALSE;
-		sprintf(tmp_buff, "%u",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			papprecurr->recurrencepattern.period/1440);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
@@ -3916,7 +3918,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return false;
 		if (!pivalue->append_subval("WEEKLY"))
 			return FALSE;
-		sprintf(tmp_buff, "%u",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			papprecurr->recurrencepattern.period);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
@@ -3986,7 +3988,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -4006,7 +4008,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.dayofmonth);
 			}
@@ -4015,7 +4017,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period/12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -4035,7 +4037,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				patterntypespecific.dayofmonth) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.dayofmonth);
 			}
@@ -4050,7 +4052,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			ical_get_itime_from_yearday(1601, 
 				papprecurr->recurrencepattern.firstdatetime/
 				1440 + 1, &itime);
-			sprintf(tmp_buff, "%u", itime.month);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		}
@@ -4066,7 +4068,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (0 != papprecurr->recurrencepattern.period%12) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -4127,7 +4129,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.monthnth.recurrencenum);
 			}
@@ -4136,7 +4138,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.period/12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
@@ -4197,7 +4199,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				patterntypespecific.monthnth.recurrencenum) {
 				strcpy(tmp_buff, "-1");
 			} else {
-				sprintf(tmp_buff, "%u",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 					papprecurr->recurrencepattern.
 					patterntypespecific.monthnth.recurrencenum);
 			}
@@ -4209,7 +4211,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			sprintf(tmp_buff, "%u",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 				papprecurr->recurrencepattern.firstdatetime);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
@@ -4220,7 +4222,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	}
 	if (ENDTYPE_AFTER_N_OCCURRENCES ==
 		papprecurr->recurrencepattern.endtype) {
-		sprintf(tmp_buff, "%u",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			papprecurr->recurrencepattern.occurrencecount);
 		pivalue = ical_new_value("COUNT");
 		if (NULL == pivalue) {
@@ -4240,7 +4242,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (!ical_itime_to_utc(ptz_component, itime, &unix_time))
 			return FALSE;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 			itime.year, itime.month, itime.day,
 			itime.hour, itime.minute, itime.second);
 		pivalue = ical_new_value("UNTIL");
@@ -4391,15 +4393,15 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		tmp_time = rop_util_nttime_to_unix(tmp_int64);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		if (TRUE == b_date) {
-			sprintf(tmp_buff, "%04d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 		} else {
 			if (NULL == tzid) {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 							itime.year, itime.month, itime.day,
 							itime.hour, itime.minute, itime.second);
 			} else {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 							itime.year, itime.month, itime.day,
 							itime.hour, itime.minute, itime.second);
 			}
@@ -4498,15 +4500,15 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		tmp_time = rop_util_nttime_to_unix(tmp_int64);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		if (TRUE == b_date) {
-			sprintf(tmp_buff, "%04d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 		} else {
 			if (NULL == tzid) {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 							itime.year, itime.month, itime.day,
 							itime.hour, itime.minute, itime.second);
 			} else {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 							itime.year, itime.month, itime.day,
 							itime.hour, itime.minute, itime.second);
 			}
@@ -5087,11 +5089,11 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (NULL != pvalue) {
 		if (FALSE == b_allday) {
 			if (NULL == ptz_component) {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 						itime.year, itime.month, itime.day,
 						itime.hour, itime.minute, itime.second);
 			} else {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 					itime.year, itime.month, itime.day,
 					itime.hour, itime.minute, itime.second);
 			}
@@ -5112,7 +5114,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 					return FALSE;
 			}
 		} else {
-			sprintf(tmp_buff, "%04d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 			piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
 			if (NULL == piline) {
@@ -5153,15 +5155,15 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	if (NULL == ptz_component) {
 		if (TRUE == b_allday) {
-			sprintf(tmp_buff, "%04d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 		} else {
-			sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 					itime.year, itime.month, itime.day,
 					itime.hour, itime.minute, itime.second);
 		}
 	} else {
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			itime.year, itime.month, itime.day,
 			itime.hour, itime.minute, itime.second);
 	}
@@ -5199,15 +5201,15 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (NULL == ptz_component) {
 			if (TRUE == b_allday) {
-			sprintf(tmp_buff, "%04d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 			} else {
-				sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 						itime.year, itime.month, itime.day,
 						itime.hour, itime.minute, itime.second);
 			}
 		} else {
-			sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				itime.year, itime.month, itime.day,
 				itime.hour, itime.minute, itime.second);
 		}
@@ -5328,7 +5330,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		ical_utc_to_datetime(NULL,
 			rop_util_nttime_to_unix(
 			*(uint64_t*)pvalue), &itime);
-		sprintf(tmp_buff, "%04d%02d%02dT%02d%02d%02dZ",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 					itime.year, itime.month, itime.day,
 					itime.hour, itime.minute, itime.second);
 		piline = ical_new_simple_line("DTSTAMP", tmp_buff);
@@ -5382,7 +5384,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	auto psequence = static_cast<uint32_t *>(tpropval_array_get_propval(
 	                 &pmsg->proplist, proptag));
 	if (NULL != psequence) {
-		sprintf(tmp_buff, "%u", *psequence);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
 		piline = ical_new_simple_line("SEQUENCE", tmp_buff);
 		if (NULL == piline) {
 			return FALSE;
@@ -5439,7 +5441,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (NULL != psequence) {
-		sprintf(tmp_buff, "%u", *psequence);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
 		piline = ical_new_simple_line(
 			"X-MICROSOFT-CDO-APPT-SEQUENCE", tmp_buff);
 		if (NULL == piline) {
@@ -5452,7 +5454,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_OWNERAPPOINTMENTID);
 	if (NULL != pvalue) {
-		sprintf(tmp_buff, "%u", *(uint32_t*)pvalue);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *(uint32_t*)pvalue);
 		piline = ical_new_simple_line(
 			"X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
 		if (NULL == piline) {
@@ -5627,7 +5629,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (NULL == pvalue || 0x5AE980E1 == *(uint32_t*)pvalue) {
 			strcpy(tmp_buff, "-PT15M");
 		} else {
-			sprintf(tmp_buff, "-PT%uM", *(uint32_t*)pvalue);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "-PT%uM", *(uint32_t*)pvalue);
 		}
 		piline = ical_new_simple_line("TRIGGER", tmp_buff);
 		if (NULL == piline) {

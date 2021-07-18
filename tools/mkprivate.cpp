@@ -466,7 +466,7 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 	
-	sprintf(tmp_sql, "SELECT max_size, maildir, lang,"
+	snprintf(tmp_sql, arsizeof(tmp_sql), "SELECT max_size, maildir, lang,"
 		"address_type, address_status, id FROM users "
 		"WHERE username='%s'", argv[1]);
 	
@@ -775,7 +775,7 @@ int main(int argc, const char **argv)
 		printf("fail to create \"calendar\" folder\n");
 		return 10;
 	}
-	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
+	snprintf(tmp_sql, arsizeof(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
@@ -891,7 +891,7 @@ int main(int argc, const char **argv)
 		printf("fail to create \"freebusy data\" folder\n");
 		return 10;
 	}
-	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
+	snprintf(tmp_sql, arsizeof(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);

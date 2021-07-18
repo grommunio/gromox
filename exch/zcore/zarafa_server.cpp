@@ -342,7 +342,7 @@ static void zarafa_server_notification_proc(const char *dir,
 	
 	if (b_table)
 		return;
-	sprintf(tmp_buff, "%u|%s", notify_id, dir);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "%u|%s", notify_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
 	auto iter = g_notify_table.find(tmp_buff);
 	if (iter == g_notify_table.end())
@@ -2701,7 +2701,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(psink->padvise[i].hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			continue;
-		sprintf(tmp_buff, "%u|%s",
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u|%s",
 			psink->padvise[i].sub_id,
 			pstore->get_dir());
 		std::unique_lock nl_hold(g_notify_lock);

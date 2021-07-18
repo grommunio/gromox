@@ -1954,7 +1954,7 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 	pin = pstring;
 	pout = tmp_buff;
 	memset(tmp_buff, 0, sizeof(tmp_buff));
-	sprintf(tmp_charset, "%s//IGNORE", charset);
+	snprintf(tmp_charset, arsizeof(tmp_charset), "%s//IGNORE", charset);
 	conv_id = iconv_open(tmp_charset, charset);
 	iconv(conv_id, &pin, &in_len, &pout, &out_len);
 	iconv_close(conv_id);
@@ -3753,7 +3753,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
 		return TRUE;
 	}
-	sprintf(tmp_path, "%s/tmp/state.sqlite3", exmdb_server_get_dir());
+	snprintf(tmp_path, arsizeof(tmp_path), "%s/tmp/state.sqlite3", exmdb_server_get_dir());
 	if (0 != stat(tmp_path, &node_stat)) {
 		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 		if (ret != SQLITE_OK) {
@@ -4142,7 +4142,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
 		return TRUE;
 	}
-	sprintf(tmp_path, "%s/tmp/state.sqlite3", exmdb_server_get_dir());
+	snprintf(tmp_path, arsizeof(tmp_path), "%s/tmp/state.sqlite3", exmdb_server_get_dir());
 	if (0 != stat(tmp_path, &node_stat)) {
 		return TRUE;
 	}

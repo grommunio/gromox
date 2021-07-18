@@ -71,7 +71,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 		return NULL;
 	}
 	prootobj->b_touched = FALSE;
-	sprintf(tmp_path, "%s/config/zarafa.dat", maildir);
+	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat", maildir);
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 		prootobj->pprivate_proplist = tpropval_array_init();
@@ -143,7 +143,7 @@ static void object_tree_free_root(ROOT_OBJECT *prootobj)
 	    ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) &&
 	    ext_push.p_tpropval_a(prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
 	    ext_push.p_tarray_set(prootobj->pprof_set) == EXT_ERR_SUCCESS) {
-		sprintf(tmp_path, "%s/config/zarafa.dat",
+		snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
 			prootobj->maildir);
 		fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
 		if (-1 != fd) {
