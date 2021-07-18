@@ -46,7 +46,7 @@ BOOL exmdb_server_get_all_named_propids(
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	sprintf(sql_string, "SELECT "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"count(*) FROM named_properties");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
@@ -62,7 +62,7 @@ BOOL exmdb_server_get_all_named_propids(
 	if (NULL == ppropids->ppropid) {
 		return FALSE;
 	}
-	sprintf(sql_string, "SELECT"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT"
 		" propid FROM named_properties");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
@@ -141,7 +141,7 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	guid_to_string(&guid, guid_string, 64);
-	sprintf(sql_string, "SELECT replid FROM "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
@@ -235,7 +235,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
-	sprintf(sql_string, "SELECT permission "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT permission "
 				"FROM permissions WHERE username=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
@@ -248,7 +248,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	pstmt.finalize();
 
 	/* add in mlist permissions(?) */
-	sprintf(sql_string, "SELECT "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"username, permission FROM permissions");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
@@ -316,7 +316,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	sprintf(sql_string, "SELECT range_begin, "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT range_begin, "
 				"range_end, is_system FROM allocated_eids"
 				" WHERE allocate_time>=%lu",
 				time(NULL) - ALLOCATION_INTERVAL);
@@ -352,14 +352,14 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 		*pbegin_eid = 0;
 		return TRUE;
 	}
-	sprintf(sql_string, "SELECT "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
 	pstmt.finalize();
-	sprintf(sql_string, "INSERT INTO allocated_eids "
+	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids "
 	          "VALUES (%llu, %llu, %lld, 0)",
 	          static_cast<unsigned long long>(tmp_eid),
 	          static_cast<unsigned long long>(tmp_eid + count),
@@ -536,13 +536,13 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 	proptags[1] = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
-	sprintf(sql_string, "SELECT folder_id"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
 				" FROM folders WHERE parent_id=?");
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
-	sprintf(sql_string, "SELECT messages.message_id"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id"
 		" FROM messages JOIN message_properties ON "
 		"messages.message_id=message_properties.message_id "
 		"WHERE parent_fid=? AND (message_properties.proptag=%u"

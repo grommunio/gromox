@@ -67,7 +67,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	sprintf(sql_string, "SELECT message_id FROM"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -102,7 +102,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			continue;
 		case PR_BODY:
 		case PR_BODY_A:
-			sprintf(sql_string, "SELECT proptag, propval FROM "
+			snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
 				PR_BODY, LLU(message_id), PR_BODY_A);
@@ -124,7 +124,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			break;
 		case PROP_TAG_HTML:
 		case PROP_TAG_RTFCOMPRESSED:
-			sprintf(sql_string, "SELECT propval FROM "
+			snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
 				"proptag=%u", LLU(message_id), UI(proptags.pproptag[i]));
 			pstmt = gx_sql_prep(psqlite, sql_string);
@@ -144,7 +144,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			break;
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-			sprintf(sql_string, "SELECT proptag, propval FROM "
+			snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
 				PROP_TAG_TRANSPORTMESSAGEHEADERS, LLU(message_id),
@@ -186,14 +186,14 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		return FALSE;
 	}
 	message_content_set_rcpts_internal(pmsgctnt, prcpts);
-	sprintf(sql_string, "SELECT recipient_id FROM"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU(message_id));
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
-	sprintf(sql_string, "SELECT proptag FROM"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM"
 		" recipients_properties WHERE recipient_id=?");
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
@@ -243,14 +243,14 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		return FALSE;
 	}
 	message_content_set_attachments_internal(pmsgctnt, pattachments);
-	sprintf(sql_string, "SELECT attachment_id FROM "
+	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
 	          "attachments WHERE message_id=%llu", LLU(message_id));
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
-	sprintf(sql_string, "SELECT message_id"
+	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
 			" FROM messages WHERE parent_attid=?");
 	pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
@@ -287,7 +287,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			switch (proptags.pproptag[i]) {
 			case PR_ATTACH_DATA_BIN:
 			case PR_ATTACH_DATA_OBJ: {
-				sprintf(sql_string, "SELECT propval FROM "
+				snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 					"attachment_properties WHERE attachment_id=%llu AND"
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
 					static_cast<unsigned int>(proptags.pproptag[i]));
