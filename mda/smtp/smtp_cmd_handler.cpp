@@ -22,6 +22,7 @@ static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
+	pcontext->command_protocol = HT_SMTP;
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
         /* command error, cannot be recognized by system */
         if (cmd_line[4] != ' ') {
@@ -42,7 +43,7 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 	return 205;
 }    
 
-int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
+static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
 	size_t string_length = 0;
@@ -90,6 +91,20 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 		write(pcontext->connection.sockd, buff, string_length);
 	}
     return DISPATCH_CONTINUE;
+}
+
+int smtp_cmd_handler_lhlo(const char* cmd_line, int line_length,
+    SMTP_CONTEXT *pcontext)
+{
+	pcontext->command_protocol = HT_LMTP;
+	return smtp_cmd_handler_xhlo(cmd_line, line_length, pcontext);
+}
+
+int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
+    SMTP_CONTEXT *pcontext)
+{
+	pcontext->command_protocol = HT_SMTP;
+	return smtp_cmd_handler_xhlo(cmd_line, line_length, pcontext);
 }
 
 int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,

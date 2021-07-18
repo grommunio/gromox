@@ -141,6 +141,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	CONNECTION connection{};
 	STREAM stream{}; /* stream accepted from smtp client */
 	BOOL is_splitted = false; /* whether stream_second has data in */
+	unsigned int command_protocol = 0;
 	STREAM stream_second{}; /* stream for recording splitted data */
 	int last_cmd = 0; /* indicate SMTP state of the connection */
 	MAIL_INFO mail{}; /* for recording the mail information */
@@ -163,6 +164,7 @@ struct smtp_param {
 	int max_mail_sessions = 0; /* max num of mails in any one session */
 	size_t flushing_size = 0;
 	int timeout = 0x7FFFFFFF, auth_times = 0, blktime_auths = 60, blktime_sessions = 60;
+	unsigned int cmd_prot = HT_LMTP | HT_SMTP;
 	std::string cert_path, cert_passwd, key_path;
 };
 

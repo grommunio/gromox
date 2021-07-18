@@ -20,6 +20,11 @@ enum {
 	FLUSH_PERMANENT_FAIL = 3,
 };
 
+enum {
+	HT_LMTP = 1 << 0,
+	HT_SMTP = 1 << 1,
+};
+
 struct ENVELOPE_INFO_BASE {
 	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
 	char hello_domain[UDOM_SIZE]; /* domain name after helo */
@@ -55,6 +60,7 @@ struct FLUSH_ENTITY final {
 	ENVELOPE_INFO_BASE *penvelope = nullptr;
 	BOOL is_spam = false; /* whether the mail is spam */
 	int context_ID = 0;
+	unsigned int command_protocol = 0;
 	SMTP_CONTEXT *pcontext = nullptr;
 };
 

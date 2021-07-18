@@ -13,6 +13,7 @@ enum{
 
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
+extern int smtp_cmd_handler_lhlo(const char *line, int len, SMTP_CONTEXT *);
 int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
 int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,

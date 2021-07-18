@@ -830,11 +830,17 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 							pcontext->connection.client_ip);
 		return DISPATCH_SHOULD_CLOSE; 
 	}
-	if (0 == strncasecmp(cmd_line, "HELO", 4)) {
-		return smtp_cmd_handler_helo(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "EHLO", 4)) {
-		return smtp_cmd_handler_ehlo(cmd_line, line_length, pcontext);
-	} else if (0 == strncasecmp(cmd_line, "STARTTLS", 8)) {
+	if (g_param.cmd_prot & HT_LMTP) {
+		if (strncasecmp(cmd_line, "LHLO", 4) == 0)
+			return smtp_cmd_handler_lhlo(cmd_line, line_length, pcontext);
+	}
+	if (g_param.cmd_prot & HT_SMTP) {
+		if (strncasecmp(cmd_line, "HELO", 4) == 0)
+			return smtp_cmd_handler_helo(cmd_line, line_length, pcontext);
+		if (strncasecmp(cmd_line, "EHLO", 4) == 0)
+			return smtp_cmd_handler_ehlo(cmd_line, line_length, pcontext);
+	}
+	if (strncasecmp(cmd_line, "STARTTLS", 8) == 0) {
 		return smtp_cmd_handler_starttls(cmd_line, line_length, pcontext);
 	} else if (0 == strncasecmp(cmd_line, "AUTH", 4)) {
 		return smtp_cmd_handler_auth(cmd_line, line_length, pcontext);    

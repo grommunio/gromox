@@ -442,6 +442,18 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: state path is %s\n", state_dir);
 
+	str_val = resource_get_string("command_protocol");
+	if (str_val == nullptr)
+		scfg.cmd_prot = HT_LMTP | HT_SMTP;
+	else if (strcasecmp(str_val, "both") == 0)
+		scfg.cmd_prot = HT_LMTP | HT_SMTP;
+	else if (strcasecmp(str_val, "lmtp") == 0)
+		scfg.cmd_prot = HT_LMTP;
+	else if (strcasecmp(str_val, "smtp") == 0)
+		scfg.cmd_prot = HT_SMTP;
+	else
+		scfg.cmd_prot = 0;
+
 	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
 	if (console_server_ip == NULL) {
 		console_server_ip = "::1";

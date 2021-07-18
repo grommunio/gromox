@@ -31,6 +31,12 @@ service because it tried to queue too many messages.
 .br
 Default: \fI1 minute\fP
 .TP
+\fBcommand_protocol\fP
+Selects what kind of hello command is accepted of clients. Can be \fIlmtp\fP,
+\fIsmtp\fP or \fIboth\fP.
+.br
+Default: \fIboth\fP
+.TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
 configuration files, especially those used by plugin instances.

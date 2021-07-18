@@ -262,11 +262,13 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
         cur_time = time(NULL);
         strftime(time_buff, 128,"%a, %d %b %Y %H:%M:%S %z",
 			localtime_r(&cur_time, &tm_buff));
-		tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "X-Lasthop: %s\r\nReceived: from %s "
-		          "(helo %s)(%s@%s)\r\n\tby %s with SMTP; %s\r\n",
+		tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
+		          "(helo %s)(%s@%s)\r\n\tby %s with %s; %s\r\n",
 		          pentity->pconnection->client_ip, pentity->penvelope->parsed_domain,
 		          pentity->penvelope->hello_domain, pentity->penvelope->parsed_domain,
-		          pentity->pconnection->client_ip, get_host_ID(), time_buff);
+		          pentity->pconnection->client_ip, get_host_ID(),
+		          pentity->command_protocol == HT_LMTP ? "LMTP" : "SMTP",
+		          time_buff);
 		write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 		if (write_len != static_cast<size_t>(tmp_len))
 			goto REMOVE_MESS;
