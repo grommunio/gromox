@@ -207,7 +207,6 @@ void transporter_init(const char *path, const char *const *names,
 }
 
 /*
- *	run the transport module
  *	@return
  *		0			OK
  *		<>0			fail
@@ -391,12 +390,6 @@ static void transporter_collect_resource()
 	}
 }
 
-/*
- *	stop the transporter module
- *	@return
- *		0				OK
- *		<>0				fail
- */
 int transporter_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -423,9 +416,6 @@ int transporter_stop()
     return 0;
 }
 
-/*
- *	transporter's destruct function
- */
 void transporter_free()
 {
 	g_path[0] = '\0';
@@ -441,9 +431,6 @@ void transporter_free()
 	double_list_free(&g_free_threads);
 }
 
-/*
- *	wake up one thread in threads pool
- */
 void transporter_wakeup_one_thread()
 {
 	g_waken_cond.notify_one();
@@ -514,11 +501,6 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	}
 }
 
-/*
- *    thread's work function of transporter
- *    @param
- *        arg [in]    argument passed by thread creator
- */
 static void *dxp_thrwork(void *arg)
 {
 	char *ptr;
@@ -630,12 +612,6 @@ static void *dxp_thrwork(void *arg)
 	return NULL;
 }
 
-
-/*
- *    thread's work function of scanner
- *    @param
- *        arg [in]    argument passed by thread creator
- */
 static void *dxp_scanwork(void *arg)
 {
 	THREAD_DATA *pthr_data;
@@ -1109,14 +1085,6 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
     return ret_val;
 }
 
-/*
- *	register a hook into mpc
- *	@param
- *		func [in]		function address
- *	@return
- *		TRUE			OK to register
- *		FALSE			fail
- */
 static BOOL transporter_register_hook(HOOK_FUNCTION func)
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -1176,14 +1144,6 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     return TRUE;
 }
 
-/*
- *	register the local delivery hook
- *	@param
- *		func [in]			function address
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
 static BOOL transporter_register_local(HOOK_FUNCTION func)
 {
 	if (g_local_path[0] != '\0') {
@@ -1195,14 +1155,6 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
 	return TRUE;
 }
 
-/*
- *	register a console talk function
- *	@param
- *		talk [in]			talk function
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
 static BOOL transporter_register_talk(TALK_MAIN talk)
 {
     if(NULL == g_cur_lib) {
@@ -1227,11 +1179,6 @@ static const char* transporter_get_admin_mailbox()
 	return resource_get_string("ADMIN_MAILBOX");
 }
 
-/*
- *	get the config files path
- *	@return
- *		path string
- */
 static const char* transporter_get_config_path()
 {
 	const char *ret_value  = resource_get_string("CONFIG_FILE_PATH");
@@ -1241,11 +1188,6 @@ static const char* transporter_get_config_path()
     return ret_value;
 }
 
-/*
- *	get the data files path
- *	@return
- *		path string
- */
 static const char* transporter_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
@@ -1255,32 +1197,16 @@ static const char* transporter_get_data_path()
     return ret_value;
 }
 
-/*
- *	get context number of system
- *	@return
- *		context number
- */
 static int transporter_get_context_num()
 {
     return g_threads_max + g_free_num;
 }
 
-/*
- *	get threads number of mpc
- *	@return
- *		threads number
- */
 static int transporter_get_threads_num()
 {
 	return g_threads_max;
 }
 
-/*
- *	get the plugin name
- *	@return
- *		NULL		fail
- *		plugin name string
- */
 static const char* transporter_get_plugin_name()
 {
 	if (NULL == g_cur_lib) {
@@ -1291,12 +1217,6 @@ static const char* transporter_get_plugin_name()
     return g_cur_lib->file_name;
 }
 
-/*
- *	get the queue path
- *	@return
- *		NULL		fail
- *		queue path string
- */
 static const char* transporter_get_queue_path()
 {
 	return resource_get_string("DEQUEUE_PATH");

@@ -98,7 +98,6 @@ static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
 #endif
 
 /* 
- * run the pop3 parser module
  *    @return
  *         0    success
  *        <>0    fail    
@@ -169,12 +168,6 @@ int pop3_parser_run()
     return 0;
 }
 
-/* 
- * stop the pop3 parser module
- * @return
- *          0  success
- *         <>0 fail
- */
 int pop3_parser_stop()
 {
 	g_context_list2.clear();
@@ -192,9 +185,6 @@ int pop3_parser_stop()
     return 0;
 }
 
-/* 
- * pop3 parser's destruct function 
- */
 void pop3_parser_free()
 {
     g_context_num		= 0;
@@ -624,14 +614,6 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	return POP3_RETRIEVE_OK;
 }
 
-
-/*
- *    get pop3_parser's property
- *    @param
- *        param    indicate the parameter type
- *    @return
- *        value of property
- */
 int pop3_parser_get_param(int param)
 {
     switch (param) {
@@ -660,14 +642,6 @@ SCHEDULE_CONTEXT **pop3_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-/*
- *    set pop3_parser's property
- *    @param
- *        param    indicate the pram type
- *    @return
- *         0        success
- *        <>0        fail
- */
 int pop3_parser_set_param(int param, int value)
 {
     switch (param) {
@@ -757,11 +731,6 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 	return ret & DISPATCH_ACTMASK;
 }
 
-/*
- *    pop3 context's construct function
- *    @param
- *        pcontext [in]    indicate the pop3 context object
- */
 POP3_CONTEXT::POP3_CONTEXT()
 {
 	auto pcontext = this;
@@ -771,11 +740,6 @@ POP3_CONTEXT::POP3_CONTEXT()
 	single_list_init(&pcontext->list);
 }
 
-/*
- *    clear the pop3 context object
- *    @param
- *        pcontext [in]    indicate the pop3 context object
- */
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 {
     if (NULL == pcontext) {

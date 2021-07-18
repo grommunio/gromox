@@ -6,12 +6,6 @@
 void (*system_services_log_info)(unsigned int, const char *, ...);
 BOOL (*system_services_check_domain)(const char*);
 
-/*
- *	run system services module
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_run()
 {
 #define E(f, s) do { \
@@ -27,12 +21,6 @@ int system_services_run()
 #undef E
 }
 
-/*
- *	stop the system services
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_stop()
 {
 	service_release("log_info", "system");

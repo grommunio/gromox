@@ -33,7 +33,7 @@ static int str_filter_search(char* str);
 static char g_module_name[256];
 
 /*
- *  string filter's construction function, it includes two parts 
+ *  includes two parts
  *  --- blacklist and auditing list
  *  @param 
  *      case_sensitive      is filter case-sensitive?
@@ -54,22 +54,12 @@ void str_filter_init(const char *module_name,
     temp_list_init(case_sensitive, temp_list_size);
 }
 
-
-/*
- *  string filter's destruction function
- */
 void str_filter_free()
 {
     grey_list_free();
     temp_list_free();
 }
 
-/*
- *  run string filter module
- *  @return  
- *      0       success
- *      <>0     fail
- */
 int str_filter_run()
 {
     if (0 != grey_list_run()) {
@@ -86,13 +76,6 @@ int str_filter_run()
     return 0;
 }
 
-/*
- *  stop the string filter
- *  @return  
- *      0       success
- *      <>0     fail
- *
- */
 int str_filter_stop() 
 {
     grey_list_stop();

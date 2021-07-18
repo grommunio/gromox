@@ -25,15 +25,6 @@ void temp_list_init(BOOL case_sensitive, int size)
 	g_case_sensitive = case_sensitive;
 }
 
-/*
- * temp	list's construction	function
- *
- *	@param
- *		size	the size of the list
- *	@return		
- *		0		success
- *		<>0		fail
- */
 int temp_list_run()
 {
 	if (g_size <= 0) {
@@ -46,16 +37,6 @@ int temp_list_run()
 	}
 	return 0;
 }
-
-
-
-/*
- *	temp list's	destruction	function
- *
- *	@return		
- *		0		success
- *		<>0		fail
- */
 
 int temp_list_stop() 
 {

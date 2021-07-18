@@ -147,7 +147,6 @@ VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
 }
 
 /* 
- * run the http parser module
  *    @return
  *         0    success
  *        <>0    fail    
@@ -226,12 +225,6 @@ int http_parser_run()
     return 0;
 }
 
-/* 
- * stop the http parser module
- * @return
- *          0  success
- *         <>0 fail
- */
 int http_parser_stop()
 {
 	if (NULL != g_inchannel_allocator) {
@@ -1992,13 +1985,6 @@ void http_parser_vconnection_async_reply(const char *host,
 	contexts_pool_signal((SCHEDULE_CONTEXT*)pvconnection->pcontext_out);
 }
 
-/*
- *    get http_parser's property
- *    @param
- *        param    indicate the parameter type
- *    @return
- *        value of property
- */
 int http_parser_get_param(int param)
 {
     switch (param) {
@@ -2015,24 +2001,11 @@ int http_parser_get_param(int param)
     }
 }
 
-/* 
- *    get contexts list for contexts pool
- *    @return
- *        contexts array's address
- */
 SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 {
 	return g_context_list2.data();
 }
 
-/*
- *    set http_parser's property
- *    @param
- *        param    indicate the pram type
- *    @return
- *         0        success
- *        <>0        fail
- */
 int http_parser_set_param(int param, int value)
 {
     switch (param) {
@@ -2051,11 +2024,6 @@ int http_parser_set_param(int param, int value)
     return 0;
 }
 
-/*
- *    http context's construct function
- *    @param
- *        pcontext [in]    indicate the http context object
- */
 HTTP_CONTEXT::HTTP_CONTEXT()
 {
 	auto pcontext = this;
@@ -2079,11 +2047,6 @@ HTTP_CONTEXT::HTTP_CONTEXT()
 	pcontext->node.pdata = pcontext;
 }
 
-/*
- *    clear the http context object
- *    @param
- *        pcontext [in]    indicate the http context object
- */
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 {
     if (NULL == pcontext) {

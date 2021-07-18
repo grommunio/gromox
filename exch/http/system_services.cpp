@@ -13,12 +13,6 @@ BOOL (*system_services_auth_login)(const char*, const char*, char*, char*, char*
 const char* (*system_services_extension_to_mime)(const char*);
 void (*system_services_log_info)(unsigned int, const char *, ...);
 
-/*
- *	run system services module
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_run()
 {
 #define E(f, s) do { \
@@ -43,12 +37,6 @@ int system_services_run()
 #undef E2
 }
 
-/*
- *	stop the system services
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_stop()
 {
 	service_release("ip_filter_judge", "system");

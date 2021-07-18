@@ -66,7 +66,6 @@ static int			g_enqueued_num;
 static int			g_last_pos;
 
 /*
- *    message queue's construct function
  *    @param
  *    	path [in]    	path for saving files
  */
@@ -80,7 +79,6 @@ static void message_enqueue_init(const char *path)
 }
 
 /*
- *    run the message queue 
  *    @return
  *    	0			success
  *		<>0			fail
@@ -140,12 +138,6 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity)
     pentity->pflusher->flush_ID = 0;
 }
 
-/*
- *  stop the message queue 
- *  @return
- *       0  success
- *      -1  fail
- */
 static int message_enqueue_stop()
 {
 	if (!g_notify_stop) {
@@ -156,19 +148,11 @@ static int message_enqueue_stop()
     return 0;
 }
 
-/*
- *	get last flush ID from queue
- *	@return
- *		flush ID
- */
 static int message_enqueue_retrieve_flush_ID()
 {
 	return g_last_flush_ID;
 }
 
-/*
- *  message queue's destruct function
- */
 static void message_enqueue_free()
 {
     g_path[0] = '\0';
@@ -219,12 +203,6 @@ static BOOL message_enqueue_check()
     return TRUE;
 }
 
-
-/*
-*    thread's work function in message queue 
-*    @param
-*        arg [in]    argument passed by thread creator
-*/
 static void *meq_thrwork(void *arg)
 {
     FLUSH_ENTITY *pentity = NULL;

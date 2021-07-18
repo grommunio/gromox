@@ -110,7 +110,6 @@ void mjson_allocator_free(LIB_BUFFER *pallocator)
 }
 
 /*
- *	mjson's construct function
  *	@param
  *		pjson [in]			indicate the mjson object
  *		ppool [in]		    indicate the allocator for mime object
@@ -190,11 +189,6 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 	lib_buffer_put(((MJSON_MIME*)pnode->pdata)->ppool, pnode->pdata);
 }
 
-/*
- *	mjson's destruct function
- *	@param
- *		pjson [in]			indicate the mjson object
- */
 void mjson_free(MJSON *pjson)
 {
 #ifdef _DEBUG_UMTA

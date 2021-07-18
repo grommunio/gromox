@@ -42,12 +42,6 @@ decltype(mysql_adaptor_check_same_org) *system_services_check_same_org;
 int (*system_services_add_timer)(const char *, int);
 void (*system_services_log_info)(unsigned int, const char *, ...);
 
-/*
- *	run system services module
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_run()
 {
 #define E(f, s) do { \
@@ -96,12 +90,6 @@ int system_services_run()
 #undef E
 }
 
-/*
- *	stop the system services
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_stop()
 {
 #define E(b) service_release(b, "system")

@@ -49,7 +49,6 @@ void listener_init(uint16_t port, uint16_t ssl_port, int mss_size)
 }
 
 /*
- *    run the listener
  *    @return     
  *         0    success 
  *        -1    fail to create socket for listening
@@ -90,9 +89,6 @@ int listener_run()
 	return 0;
 }
 
-/*
- *  trigger the listener to accept the connection
- */
 int listener_trigger_accept()
 {
 	pthread_attr_t  attr;
@@ -118,9 +114,6 @@ int listener_trigger_accept()
 	return 0;
 }
 
-/*
- *  stop accept the connection
- */
 void listener_stop_accept()
 {
 	g_stop_accept = true;
@@ -134,10 +127,6 @@ void listener_stop_accept()
 	}
 }
 
-/*
- * listener's thread work function
- *
- */
 static void *htls_thrwork(void *arg)
 {
 	socklen_t addrlen;
@@ -264,10 +253,6 @@ static void *htls_thrwork(void *arg)
 	return nullptr;
 }
 
-/*
- * ssl listener's thread work function
- *
- */
 static void *htls_thrworkssl(void *arg)
 {
 	socklen_t addrlen;
@@ -394,11 +379,6 @@ static void *htls_thrworkssl(void *arg)
 	return nullptr;
 }
 
-/*
- *    stop listener
- *    @return     
-		0    success
-*/
 int listener_stop()
 {
 	if (g_listener_sock > 2) {
@@ -410,10 +390,6 @@ int listener_stop()
 	return 0;
 }
 
-
-/*
- *    listener's destruction function
- */
 void listener_free()
 {
 	g_listener_port = 0;

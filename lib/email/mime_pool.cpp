@@ -3,7 +3,6 @@
 #include <gromox/mime_pool.hpp>
 
 /*
- *	mime pool's construct function
  *	@param
  *		number			number of mimes
  *		ratio			proportion between mem file blocks and mime
@@ -57,11 +56,6 @@ MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe)
 	return pmime_pool;
 }
 
-/*
- *	mime pool's destruct function
- *	@param
- *		pmime_pool [in]			indicate mime pool object to be freed
- */
 void mime_pool_free(MIME_POOL *pmime_pool)
 {
 	size_t i;
@@ -129,8 +123,6 @@ MIME* mime_pool_get(MIME_POOL *pmime_pool)
 
 /*
  *	release one mime object back into mime pool
- *	@param
- *		pmime [in]				indicate the mime object 
  */
 void mime_pool_put(MIME *pmime)
 {

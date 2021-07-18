@@ -39,9 +39,6 @@ static char g_module_name[256];
 static int g_growing_num;
 static int g_hash_cap;
 
-/*
- *	string table's construct function
- */
 static void str_table_init(const char *module_name, BOOL case_sensitive,
 	const char *path, int growing_num)
 {
@@ -52,9 +49,6 @@ static void str_table_init(const char *module_name, BOOL case_sensitive,
 	g_hash_cap = 0;
 }
 
-/*
- *	string table's destruct function
- */
 static void str_table_free()
 {
 	g_list_path[0] = '\0';
@@ -62,12 +56,6 @@ static void str_table_free()
 	g_hash_cap = 0;
 }
 
-/*
- *	run string table
- *	@return
- *		 0		success
- *		<>0		fail
- */
 static int str_table_run()
 {
     if (STR_TABLE_REFRESH_OK != str_table_refresh()) {
@@ -76,12 +64,6 @@ static int str_table_run()
     return 0;
 }
 
-/*
- *	stop string table
- *	@return
- *		 0		success
- *		<>0		fail
- */
 static int str_table_stop()
 {
     if (NULL != g_string_list_table) {

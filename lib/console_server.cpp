@@ -83,9 +83,6 @@ void console_server_init(const char *bind_ip, uint16_t port)
 	pthread_key_create(&g_client_fd_key, NULL);
 }
 
-/*
- *	console server's destruct function
- */
 void console_server_free()
 {
 	g_listen_ip[0] = '\0';
@@ -96,7 +93,6 @@ void console_server_free()
 }
 
 /*
- *  start the console server
  *    @return
  *         0            run successfully
  *        <>0		failed to run the module
@@ -135,12 +131,6 @@ int console_server_run()
     return 0;
 }
 
-/*
- *  stop the console server, accepting thread will be
- *  stopped by main thread or console thread
- *  @return
- *		0				OK
- */
 int console_server_stop()
 {
 	if (NULL != g_console_buff) {
@@ -235,8 +225,6 @@ static void *consrv_thrwork(void *argp)
 
 /*
  *  thread work function for handling console request
- *  @param
- *      argp [in]        console thread information
  */
 static void *consrv_work(void *argp)
 {

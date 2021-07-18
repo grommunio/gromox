@@ -153,7 +153,6 @@ static void imap_parser_ssl_id(CRYPTO_THREADID* id)
 #endif
 
 /* 
- * run the imap parser module
  *    @return
  *         0    success
  *        <>0    fail    
@@ -300,12 +299,6 @@ int imap_parser_run()
     return 0;
 }
 
-/* 
- * stop the imap parser module
- * @return
- *          0  success
- *         <>0 fail
- */
 int imap_parser_stop()
 {
 	system_services_install_event_stub(nullptr);
@@ -360,9 +353,6 @@ int imap_parser_stop()
     return 0;
 }
 
-/* 
- * imap parser's destruct function 
- */
 void imap_parser_free()
 {
 	double_list_free(&g_sleeping_list);
@@ -1663,11 +1653,6 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
 	       imap_parser_dispatch_cmd2(argc, argv, ctx));
 }
 
-/*
- *    imap context's construct function
- *    @param
- *        pcontext [in]    indicate the imap context object
- */
 IMAP_CONTEXT::IMAP_CONTEXT()
 {
 	auto pcontext = this;
@@ -1681,11 +1666,6 @@ IMAP_CONTEXT::IMAP_CONTEXT()
 	mem_file_init(&pcontext->f_flags, g_alloc_file);
 }
 
-/*
- *    clear the imap context object
- *    @param
- *        pcontext [in]    indicate the imap context object
- */
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 {
     if (NULL == pcontext) {

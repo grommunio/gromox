@@ -17,12 +17,6 @@ E(check_full)
 E(log_info)
 #undef E
 
-/*
- *	run system services module
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_run()
 {
 #define E(f, s) do { \
@@ -49,12 +43,6 @@ int system_services_run()
 #undef E2
 }
 
-/*
- *	stop the system services
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_stop()
 {
 	service_release("ip_filter_judge", "system");

@@ -18,12 +18,6 @@ const char* (*system_services_mime_to_extension)(const char*);
 const char* (*system_services_extension_to_mime)(const char*);
 void (*system_services_broadcast_event)(const char*);
 
-/*
- *	run system services module
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_run()
 {
 #define E(f, s) do { \
@@ -51,12 +45,6 @@ int system_services_run()
 #undef E
 }
 
-/*
- *	stop the system services
- *	@return
- *		0		OK
- *		<>0		fail
- */
 int system_services_stop()
 {
 	service_release("get_user_lang", "system");

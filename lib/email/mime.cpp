@@ -31,12 +31,6 @@ bool mail_set_header(MAIL *mail, const char *hdr, const char *val)
 	return mime_set_field(static_cast<MIME *>(node->pdata), hdr, val);
 }
 
-/*
- *	this is the MIME's construct function
- *	@param
- *		pmime [in,out]	MIME object
- *		palloc [in]		allocator for mem files			
- */
 void mime_init(MIME *pmime, LIB_BUFFER *palloc)
 {
 #ifdef _DEBUG_UMTA
@@ -64,11 +58,6 @@ void mime_init(MIME *pmime, LIB_BUFFER *palloc)
 	
 }
 
-/*
- *	this is the MIME's destruct function
- *	@param
- *		pmime [in,out]	MIME object
- */
 void mime_free(MIME *pmime)
 {
 	MIME *pmime_child;
@@ -273,11 +262,6 @@ BOOL mime_retrieve(MIME *pmime_parent,
 	return FALSE;
 }
 
-/*
- *	clear the MIME object
- *	@param
- *		pmime [in,out]	pointer to MIME object
- */
 void mime_clear(MIME *pmime)
 {
 #ifdef _DEBUG_UMTA
@@ -2731,13 +2715,6 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 	}
 }
 
-/*
- *	get the mime type
- *  @param
- *		pmime [in]		indicate the mime object
- *	@return
- *		mime type
- */
 int mime_get_type(MIME *pmime)
 {
 #ifdef _DEBUG_UMTA

@@ -8,10 +8,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/util.hpp>
 
-/*	  double list's construct function
- *	  @param
- *		  plist [in]	indicate the list object
- */
 void double_list_init(DOUBLE_LIST* plist)
 {
 #ifdef _DEBUG_UMTA	  
@@ -24,10 +20,6 @@ void double_list_init(DOUBLE_LIST* plist)
 	plist->nodes_num = 0;
 }
 
-/*	  double list's destruct function
- *	  @param
- *		  plist [in]	indicate the list object
- */
 void double_list_free(DOUBLE_LIST* plist)
 {
 #ifdef _DEBUG_UMTA

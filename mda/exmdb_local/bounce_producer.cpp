@@ -116,12 +116,6 @@ static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
-/*
- *	bounce producer's construct function
- *	@param
- *		path [in]			path of resource
- *		separator [in]		separator character for rcpts and attachements
- */
 void bounce_producer_init(const char *separator)
 {
 	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
@@ -129,7 +123,6 @@ void bounce_producer_init(const char *separator)
 }
 
 /*
- *	run the bounce producer module
  *	@return
  *		 0				OK
  *		<>0				fail

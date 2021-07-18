@@ -44,9 +44,6 @@ static BOOL g_case_sensitive;
 static int g_growing_num;
 static int g_hash_cap;
 
-/*
- *	grey list's construct function
- */
 void grey_list_init(BOOL case_sensitive, const char *path, int growing_num)
 {
 	g_case_sensitive = case_sensitive;
@@ -55,9 +52,6 @@ void grey_list_init(BOOL case_sensitive, const char *path, int growing_num)
 	g_hash_cap = 0;
 }
 
-/*
- *	grey list's destruct function
- */
 void grey_list_free()
 {
     g_list_path[0] ='\0';
@@ -65,12 +59,6 @@ void grey_list_free()
 	g_hash_cap = 0;
 }
 
-/*
- *	run grey list module
- *	@return
- *		 0		sucess
- *		<>0		fail
- */
 int grey_list_run()
 {
 
@@ -81,12 +69,6 @@ int grey_list_run()
 
 }
 
-/*
- *	stop grey list module
- *	@return
- *		 0		sucess
- *		<>0		fail
- */
 int grey_list_stop()
 {
     if (NULL != g_grey_table) {
@@ -215,7 +197,6 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 }
 
 /*
- *	reload the grey list
  *	@return
  *		GREY_REFRESH_OK				OK
  *		GREY_REFRESH_HASH_FAIL		hash fail

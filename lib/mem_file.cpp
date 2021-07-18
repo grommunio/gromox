@@ -8,12 +8,6 @@
 
 static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile); 
 
-/*
- *	  mem file's construction function
- *	  @param 
- *		  pfile [out]	 identify the mem file object
- *		  palloc [in]	 indicate the memory alloctor
- */
 void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -645,12 +639,6 @@ void mem_file_clear(MEM_FILE *pfile)
 	pfile->pnode_rd			   = phead;
 }
 
-
-/*
- *	  mem file's destruction function
- *	  @param 
- *		  pfile [in]	identify the mem file object
- */
 void mem_file_free(MEM_FILE *pfile)
 {	 
 	DOUBLE_LIST_NODE *phead;
@@ -694,13 +682,6 @@ static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile)
 	return pnode;
 }
 
-/*
- *	get the length of mem file
- *	@param
- *		pfile [in,out]		indicate the file object
- *	@return
- *		length of mem file
- */
 size_t mem_file_get_total_length(MEM_FILE *pfile) 
 {
 #ifdef _DEBUG_UMTA

@@ -16,12 +16,6 @@ static void simple_tree_strip_group(SIMPLE_TREE *ptree,
 static void simple_tree_cohere_group(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode);
 
-/*
- *	simple tree's construct function
- *	@param
- *		ptree [out]	pointer to tree object
- *		root [in]	root node of the tree
- */
 void simple_tree_init(SIMPLE_TREE *ptree)
 {
 #ifdef _DEBUG_UMTA
@@ -55,13 +49,6 @@ BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode)
 	return TRUE;
 }
 
-/*
- *	get the root node of tree
- *	@param
- *		ptree [in]	indicate the tree object
- *	@return
- *		the pointer to root node
- */
 SIMPLE_TREE_NODE* simple_tree_get_root(SIMPLE_TREE *ptree)
 {
 #ifdef _DEBUG_UMTA
@@ -722,11 +709,6 @@ BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *ptree_dst,
 
 }
 
-/*
- *	tree object's destruct function
- *	@param
- *		ptree [in]	indicate the tree object
- */
 void simple_tree_free(SIMPLE_TREE *ptree)
 {
 #ifdef _DEBUG_UMTA

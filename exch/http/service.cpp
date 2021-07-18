@@ -93,12 +93,6 @@ void service_init(const struct service_init_param &parm)
 	double_list_init(&g_system_image.list_service);
 }
 
-/*
- *  run the module
- *  @return 
- *      0       success
- *      <0      fail
- */
 int service_run()
 {
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
@@ -111,13 +105,6 @@ int service_run()
 	return 0;
 }
 
-/*
- *  stop the module
- *
- *  @return
- *      0       success
- *      <0      fail
- */
 int service_stop()
 {
 	g_list_plug.clear();
@@ -289,12 +276,6 @@ static void *service_query_service(const char *service, const std::type_info &ti
 	return service_query(service, nullptr, ti);
 }
 
-/*
- *	get current plugin name
- *	@return
- *		plugin name
- *
- */
 static const char* service_get_plugin_name()
 {
 	if (NULL == g_cur_plug) {
@@ -304,41 +285,21 @@ static const char* service_get_plugin_name()
 	return strncmp(fn, "libgxs_", 7) == 0 ? fn + 7 : fn;
 }
 
-/*
- *	get config folder path
- *	@return
- *		config folder path
- */
 static const char* service_get_config_path()
 {
 	return g_config_dir;
 }
 
-/*
- *	get data folder path
- *	@return
- *		data folder path
- */
 static const char* service_get_data_path()
 {
 	return g_data_dir;
 }
 
-/*
- *	get system context number
- *	@return
- *		context number
- */
 static unsigned int service_get_context_num()
 {
 	return g_context_num;
 }
 
-/*
- *	get system host ID
- *	@return
- *		host ID string
- */
 static const char* service_get_host_ID()
 {
 	const char *ret_value = resource_get_string("HOST_ID");
@@ -398,13 +359,6 @@ BOOL service_register_service(const char *func_name, void *addr, const std::type
 	return TRUE;
 }
 
-/*
- *  register the console talk function
- *  @param
- *      talk    pointer to talk function
- *  @return
- *      TRUE or FALSE
- */
 static BOOL service_register_talk(TALK_MAIN talk)
 {
 	if(NULL == g_cur_plug) {

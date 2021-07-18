@@ -74,7 +74,6 @@ static void message_dequeue_collect_resource();
 static void *mdq_thrwork(void *);
 
 /* 
- * message dequeue's construct function
  *	@param
  *		path [in]	path of directory
  *		max_memory	maximum memory system allowed concurrently
@@ -137,9 +136,6 @@ static BOOL message_dequeue_check()
 	return TRUE;
 }
 
-/*
- *	collect the global resources system allocated
- */
 static void message_dequeue_collect_resource()
 {
 	if (NULL != g_message_ptr) {
@@ -152,12 +148,6 @@ static void message_dequeue_collect_resource()
 	}
 }
 
-/*
- *	run the message dequeue module
- *	@return
- *		0			OK
- *		<>0			fail
- */
 int message_dequeue_run()
 {
 	size_t size;
@@ -255,12 +245,6 @@ void message_dequeue_put(MESSAGE *pmessage)
 	g_dequeued_num ++;
 }
 
-/*
- *	stop the message dequeue module
- *	@return
- *		0			OK
- *		<>0			fail
- */
 int message_dequeue_stop()
 {
 	g_notify_stop = true;
@@ -271,9 +255,6 @@ int message_dequeue_stop()
 	return 0;
 }
 
-/*
- *	message dequeue's destruct function
- */
 void message_dequeue_free()
 {
 	g_path[0] = '\0';
@@ -286,7 +267,6 @@ void message_dequeue_free()
 }
 
 /*
- *	retrieve buffer into message struct
  *	@param
  *		pmessage [out]			message struct pointer
  *		in_buff [in]			buffer of mail message

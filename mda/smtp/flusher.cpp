@@ -102,9 +102,6 @@ void flusher_init(const char* path, size_t queue_len)
 	g_max_queue_len = queue_len;
 }
 
-/*
- *  flusher's destruct function
- */
 void flusher_free()
 {
 	if (NULL != g_flusher_plug) {
@@ -113,12 +110,6 @@ void flusher_free()
 	}
 }
 
-/*
- *  run the flusher object
- *  @return
- *       0  success
- *      <>0 fail
- */
 int flusher_run()
 {
 	if (NULL == g_flusher_plug) {
@@ -145,12 +136,6 @@ int flusher_run()
 	return 0;
 }
 
-/*
- *  stop the flusher object
- *  @return
- *       0  success
- *      <>0 fail
- */
 int flusher_stop()
 {
 	lib_buffer_free(g_allocator);

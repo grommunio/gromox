@@ -150,7 +150,6 @@ static void smtp_parser_ssl_id(CRYPTO_THREADID* id)
 #endif
 
 /* 
- * run the smtp parser module
  *    @return
  *         0    success
  *        <>0    fail    
@@ -219,12 +218,6 @@ int smtp_parser_run()
 	return 0;
 }
 
-/* 
- * stop the smtp parser module
- * @return
- *          0  success
- *         <>0 fail
- */
 int smtp_parser_stop()
 {
 	g_context_list2.clear();
@@ -242,9 +235,6 @@ int smtp_parser_stop()
 	return 0;
 }
 
-/* 
- * smtp parser's destruct function 
- */
 void smtp_parser_free()
 {
 	g_context_num       = 0;
@@ -957,11 +947,6 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 	return ret & DISPATCH_ACTMASK;
 }
 
-/*
- *    reset the smtp context
- *    @param
- *        pcontext [in]    indicate the smtp context object
- */
 void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 {
 	if (pcontext->mail.envelope.is_login)
@@ -974,11 +959,6 @@ void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 	mem_file_clear(&pcontext->mail.envelope.f_rcpt_to);
 }
 
-/*
- *    smtp context's construct function
- *    @param
- *        pcontext [in]    indicate the smtp context object
- */
 SMTP_CONTEXT::SMTP_CONTEXT()
 {
 	auto pcontext = this;
@@ -1001,11 +981,6 @@ SMTP_CONTEXT::SMTP_CONTEXT()
 	stream_init(&pcontext->stream, palloc_stream);
 }
 
-/*
- *    clear the smtp context object
- *    @param
- *        pcontext [in]    indicate the smtp context object
- */
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 {
 	if (NULL == pcontext) {
@@ -1026,8 +1001,6 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 
 /*
  *    reset the session when /r/n./r/n is met
- *    @param
- *        pcontext [in, out]    indicate the context object
  */
 static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 {
@@ -1073,11 +1046,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
 }
 
-/*
- *    smtp context's destruct function
- *    @param
- *        pcontext [in]    indicate the smtp context object
- */
 SMTP_CONTEXT::~SMTP_CONTEXT()
 {
 	auto pcontext = this;
@@ -1110,8 +1078,6 @@ SMTP_CONTEXT::~SMTP_CONTEXT()
 
 /*
  *    reset the stream only for smtp parser
- *    @param
- *        pcontext [in, out] indicate the stream object
  */
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext)
 {

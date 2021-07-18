@@ -20,12 +20,6 @@ enum {
 
 static BOOL stream_append_node(STREAM *pstream); 
 
-/*
- *	  stream's construction function
- *	  @param 
- *		  pstream [in]	  identify the stream object
- *		  palloc [in]	  indicate the memory alloctor
- */
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
 {
 	BOOL bappend;
@@ -228,12 +222,6 @@ void stream_clear(STREAM *pstream)
 	pstream->pnode_rd			  = phead;
 }
 
-
-/*
- *	  stream's destruction function
- *	  @param
- *		  pstream [in]	  identify the stream object
- */
 void stream_free(STREAM *pstream)
 {
 	DOUBLE_LIST_NODE *phead;

@@ -26,7 +26,6 @@ static void  mail_enum_text_mime_charset(
 static void mail_enum_html_charset(MIME *pmime, char *email_charset);
 
 /*
- *	mail's construct function
  *	@param
  *		pmail [in]			indicate the mail object
  *		pmime_pool [in]		indicate the allocator for mime object
@@ -44,11 +43,6 @@ void mail_init(MAIL *pmail, MIME_POOL *pmime_pool)
 	pmail->buffer = NULL;
 }
 
-/*
- *	clear the mail object
- *	@param
- *		pmail [in]		indicate the mail object
- */
 void mail_clear(MAIL *pmail)
 {
 	SIMPLE_TREE_NODE *pnode;
@@ -367,11 +361,6 @@ ssize_t mail_get_length(MAIL *pmail)
 	return mime_get_length((MIME*)(pnode->pdata));
 }
 
-/*
- *	mail's destruct function
- *	@param
- *		pmail [in]			indicate the mail object
- */
 void mail_free(MAIL *pmail)
 {
 #ifdef _DEBUG_UMTA
@@ -415,13 +404,6 @@ MIME* mail_add_head(MAIL *pmail)
 	return pmime;
 }
 
-/*
- *	get mail head
- *	@param
- *		pmail [in]			indicate the mail object
- *	@return
- *		pointer to mail head mime
- */
 MIME* mail_get_head(MAIL *pmail)
 {
 	SIMPLE_TREE_NODE *pnode;

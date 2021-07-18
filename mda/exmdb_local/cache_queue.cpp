@@ -39,7 +39,6 @@ static int cache_queue_increase_mess_ID();
 static void *mdl_thrwork(void *);
 
 /*
- *	timer queue's construct function
  *	@param
  *		path [in]				queue path
  *		scan_interval			interval of queue scanning
@@ -54,7 +53,6 @@ void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 }
 
 /*
- *	run the timer queue module
  *	@return
  *		 0				OK
  *		<>0				fail
@@ -88,12 +86,6 @@ int cache_queue_run()
 	return 0;
 }
 
-/*
- *	stop the timer queue module
- *	@return
- *		 0					OK
- *		<>0					fail
- */
 int cache_queue_stop()
 {
 	if (!g_notify_stop) {
@@ -104,9 +96,6 @@ int cache_queue_stop()
 	return 0;
 }
 
-/*
- *	timer queue's destruct function
- */
 void cache_queue_free()
 {
 	g_path[0] = '\0';
